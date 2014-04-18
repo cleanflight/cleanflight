@@ -95,7 +95,6 @@ retry:
         }
     }
 
-#ifdef BARO
     // Detect what pressure sensors are available. baro->update() is set to sensor-specific update function
     if (!ms5611Detect(&baro)) {
         // ms5611 disables BMP085, and tries to initialize + check PROM crc. if this works, we have a baro
@@ -104,7 +103,7 @@ retry:
             sensorsClear(SENSOR_BARO);
         }
     }
-#endif
+
 
     // Now time to init things, acc first
     if (sensors(SENSOR_ACC))
@@ -112,10 +111,8 @@ retry:
     // this is safe because either mpu6050 or mpu3050 or lg3d20 sets it, and in case of fail, we never get here.
     gyro.init(mcfg.gyro_align);
 
-#ifdef MAG
     if (!hmc5883lDetect(mcfg.mag_align))
         sensorsClear(SENSOR_MAG);
-#endif
 
     // calculate magnetic declination
     deg = cfg.mag_declination / 100;

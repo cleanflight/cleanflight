@@ -119,9 +119,7 @@ bool bmp085Detect(baro_t *baro)
     gpio.pin = Pin_14;
     gpio.mode = Mode_IN_FLOATING;
     gpioInit(GPIOC, &gpio);
-#ifdef BARO
     BARO_ON;
-#endif
 
     // EXTI interrupt for barometer EOC
     gpioExtiLineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource14);
@@ -159,9 +157,9 @@ bool bmp085Detect(baro_t *baro)
         baro->calculate = bmp085_calculate;
         return true;
     }
-#ifdef BARO
+
     BARO_OFF;
-#endif
+
     return false;
 }
 
@@ -173,7 +171,7 @@ static int32_t bmp085_get_temperature(uint32_t ut)
     x1 = (((int32_t)ut - (int32_t)bmp085.cal_param.ac6) * (int32_t)bmp085.cal_param.ac5) >> 15;
     x2 = ((int32_t)bmp085.cal_param.mc << 11) / (x1 + bmp085.cal_param.md);
     bmp085.param_b5 = x1 + x2;
-    temperature = ((bmp085.param_b5 * 10 + 8) >> 4);  // temperature in 0.01°C (make same as MS5611)
+    temperature = ((bmp085.param_b5 * 10 + 8) >> 4);  // temperature in 0.01ï¿½C (make same as MS5611)
 
     return temperature;
 }

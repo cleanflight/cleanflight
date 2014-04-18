@@ -59,10 +59,10 @@
 #define BARO_GPIO   GPIOC
 #define BARO_PIN    Pin_13
 
-#define GYRO
-#define ACC
-#define MAG
-#define BARO
+//#define GYRO
+//#define ACC
+//#define MAG
+//#define BARO
 #define LEDRING
 #define SONAR
 #define BUZZER

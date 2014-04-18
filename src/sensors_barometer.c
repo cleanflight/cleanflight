@@ -1,7 +1,6 @@
 #include "board.h"
 #include "mw.h"
 
-#ifdef BARO
 void Baro_Common(void)
 {
     static int32_t baroHistTab[BARO_TAB_SIZE_MAX];
@@ -44,4 +43,3 @@ int Baro_update(void)
         return 1;
     }
 }
-#endif /* BARO */

@@ -5,7 +5,6 @@
 
 int16_t magADC[XYZ_AXIS_COUNT];
 
-#ifdef MAG
 static uint8_t magInit = 0;
 
 void Mag_init(void)
@@ -66,4 +65,3 @@ int Mag_getADC(void)
 
     return 1;
 }
-#endif
