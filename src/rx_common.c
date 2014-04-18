@@ -5,7 +5,7 @@
 #include "platform.h"
 
 #include "rx_common.h"
-#include "config.h"
+#include "feature.h"
 
 #include "drivers/pwm_common.h"
 

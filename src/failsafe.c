@@ -13,8 +13,8 @@
 #include "battery.h" // FIXME this file should not have a dependency on battery, see batteryConfig_t from config_storage.h
 
 #include "runtime_config.h"
+#include "feature.h"
 #include "config.h"
-#include "config_storage.h"
 
 int16_t failsafeCnt = 0;
 int16_t failsafeEvents = 0;

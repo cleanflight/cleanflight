@@ -12,7 +12,7 @@
 #include "sensors_common.h"
 #include "battery.h"
 #include "boardalignment.h"
-#include "config.h"
+#include "feature.h"
 
 #include "drivers/serial_common.h"
 #include "runtime_config.h"

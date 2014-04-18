@@ -71,5 +71,12 @@
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
 
+#define MAX_SUPPORTED_MOTORS 12
+#define MAX_SUPPORTED_SERVOS 8
+
+#define MAX_MOTORS  12
+#define MAX_SERVOS  8
+#define MAX_INPUTS  8
+
 #endif
 #endif
