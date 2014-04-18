@@ -8,7 +8,7 @@
 #include "failsafe.h"
 #include "sensors_common.h"
 #include "runtime_config.h"
-#include "config.h"
+#include "feature.h"
 
 #include "buzzer.h"
 

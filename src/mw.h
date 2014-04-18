@@ -69,7 +69,7 @@ enum {
 
 #include "rx_common.h"
 #include "config.h"
-#include "config_storage.h"
+#include "feature.h"
 
 extern int16_t axisPID[3];
 extern int16_t rcCommand[4];

@@ -41,7 +41,7 @@ static void getEstimatedAttitude(void);
 
 void imuInit(void)
 {
-    accZ_25deg = acc_1G * cosf(RAD * 25.0f);
+    accZ_25deg = lrintf(acc_1G * cosf(RAD * 25.0f));
     accVelScale = 9.80665f / acc_1G / 10000.0f;
     throttleAngleScale = (1800.0f / M_PI) * (900.0f / cfg.throttle_correction_angle);
 
@@ -191,7 +191,7 @@ int32_t applyDeadband(int32_t value, int32_t deadband)
 static const float fc_acc = 0.5f / (M_PI * F_CUT_ACCZ);
 
 // rotate acc into Earth frame and calculate acceleration in it
-void acc_calc(uint32_t deltaT)
+void acc_calc(void)
 {
     static int32_t accZoffset = 0;
     static float accz_smooth;
@@ -218,20 +218,16 @@ void acc_calc(uint32_t deltaT)
     } else
         accel_ned.V.Z -= acc_1G;
 
-    accz_smooth = accz_smooth + (deltaT / (fc_acc + deltaT)) * (accel_ned.V.Z - accz_smooth); // low pass filter
+    accz_smooth = accz_smooth + (cycleTime / (fc_acc + cycleTime)) * (accel_ned.V.Z - accz_smooth); // low pass filter
 
     // apply Deadband to reduce integration drift and vibration influence
-    accel_ned.V.Z = applyDeadband(lrintf(accz_smooth), cfg.accz_deadband);
-    accel_ned.V.X = applyDeadband(lrintf(accel_ned.V.X), cfg.accxy_deadband);
-    accel_ned.V.Y = applyDeadband(lrintf(accel_ned.V.Y), cfg.accxy_deadband);
+    accSum[X] += applyDeadband(lrintf(accel_ned.V.X), cfg.accxy_deadband);
+    accSum[Y] += applyDeadband(lrintf(accel_ned.V.Y), cfg.accxy_deadband);
+    accSum[Z] += applyDeadband(lrintf(accz_smooth), cfg.accz_deadband);
 
     // sum up Values for later integration to get velocity and distance
-    accTimeSum += deltaT;
+    accTimeSum += cycleTime;
     accSumCount++;
-
-    accSum[X] += lrintf(accel_ned.V.X);
-    accSum[Y] += lrintf(accel_ned.V.Y);
-    accSum[Z] += lrintf(accel_ned.V.Z);
 }
 
 void accSum_reset(void)
@@ -267,19 +263,13 @@ static void getEstimatedAttitude(void)
     uint32_t axis;
     int32_t accMag = 0;
     static t_fp_vector EstM;
-    static t_fp_vector EstN = { .A = { 1000.0f, 0.0f, 0.0f } };
+    static t_fp_vector EstN = { .A = { 1.0f, 0.0f, 0.0f } };
     static float accLPF[3];
-    static uint32_t previousT;
-    uint32_t currentT = micros();
-    uint32_t deltaT;
-    float scale, deltaGyroAngle[3];
-    deltaT = currentT - previousT;
-    scale = deltaT * gyro.scale;
-    previousT = currentT;
-
+    float deltaGyroAngle[3];
+    float gyroScale = cycleTime * gyro.scale;
     // Initialization
     for (axis = 0; axis < 3; axis++) {
-        deltaGyroAngle[axis] = gyroADC[axis] * scale;
+        deltaGyroAngle[axis] = gyroADC[axis] * gyroScale;
         if (cfg.acc_lpf_factor > 0) {
             accLPF[axis] = accLPF[axis] * (1.0f - (1.0f / cfg.acc_lpf_factor)) + accADC[axis] * (1.0f / cfg.acc_lpf_factor);
             accSmooth[axis] = accLPF[axis];
@@ -311,10 +301,7 @@ static void getEstimatedAttitude(void)
             EstM.A[axis] = (EstM.A[axis] * (float)mcfg.gyro_cmpfm_factor + magADC[axis]) * INV_GYR_CMPFM_FACTOR;
     }
 
-   if (EstG.A[Z] > accZ_25deg)
-        f.SMALL_ANGLES_25 = 1;
-    else
-        f.SMALL_ANGLES_25 = 0;
+    f.SMALL_ANGLES_25 = (EstG.A[Z] > accZ_25deg);
 
     // Attitude of the estimated vector
     anglerad[AI_ROLL] = atan2f(EstG.V.Y, EstG.V.Z);
@@ -327,7 +314,7 @@ static void getEstimatedAttitude(void)
     else
         heading = calculateHeading(&EstN);
 
-    acc_calc(deltaT); // rotate acc vector into earth frame
+    acc_calc(); // rotate acc vector into earth frame
 
     if (cfg.throttle_correction_value) {
 
@@ -440,8 +427,8 @@ int getEstimatedAltitude(void)
     BaroPID += errorAltitudeI / 1024;     // I in range +/-200
 
     // D
-    accZ_old = accZ_tmp;
     BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 64, -150, 150);
+    accZ_old = accZ_tmp;
 
     return 1;
 }

@@ -8,8 +8,8 @@
 #include "telemetry_common.h"
 #include "gps_common.h"
 
-#include "config_storage.h"
 #include "config.h"
+#include "feature.h"
 
 
 #ifndef FLASH_PAGE_COUNT
@@ -21,7 +21,9 @@
 
 master_t mcfg;  // master config struct with data independent from profiles
 config_t cfg;   // profile config struct
-const char rcChannelLetters[] = "AERT1234";
+
+#define DEFAULT_RCMAP "AERT1234"
+const char rcChannelLetters[] = DEFAULT_RCMAP;
 
 static const uint8_t EEPROM_CONF_VERSION = 62;
 static void resetConf(void);
@@ -283,7 +285,7 @@ static void resetConf(void)
     cfg.acc_unarmedcal = 1;
 
     // Radio
-    parseRcChannels("AETR1234");
+    parseRcChannels(DEFAULT_RCMAP);
     cfg.deadband = 0;
     cfg.yawdeadband = 0;
     cfg.alt_hold_throttle_neutral = 40;

@@ -8,8 +8,8 @@ uint16_t calibratingG = 0;
 uint16_t acc_1G = 256;          // this is the 1G measured acceleration.
 int16_t heading, magHold;
 
-extern uint16_t batteryWarningVoltage;
-extern uint8_t batteryCellCount;
+//extern uint16_t batteryWarningVoltage;    // TODO unused
+//extern uint8_t batteryCellCount;          // TODO unused
 extern float magneticDeclination;
 
 sensor_t acc;                       // acc access functions

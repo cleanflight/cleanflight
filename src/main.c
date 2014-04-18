@@ -9,7 +9,7 @@
 #include "telemetry_common.h"
 #include "boardalignment.h"
 #include "config.h"
-#include "config_storage.h"
+#include "feature.h"
 
 #include "build_config.h"
 
