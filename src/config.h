@@ -3,6 +3,8 @@
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
 
+#define DEFAULT_RCMAP "AERT1234"
+
 enum {
     PIDROLL,
     PIDPITCH,

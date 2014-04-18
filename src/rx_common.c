@@ -11,7 +11,7 @@
 
 #include "drivers/pwm_common.h"
 
-const char rcChannelLetters[] = "AERT1234";
+const char rcChannelLetters[] = DEFAULT_RCMAP;
 
 int16_t lookupPitchRollRC[PITCH_LOOKUP_LENGTH];     // lookup table for expo & RC rate PITCH+ROLL
 int16_t lookupThrottleRC[THROTTLE_LOOKUP_LENGTH];   // lookup table for expo & mid THROTTLE
@@ -87,7 +87,7 @@ void parseRcChannels(const char *input, rxConfig_t *rxConfig)
     const char *c, *s;
 
     for (c = input; *c; c++) {
-        s = strchr(rcChannelLetters, *c);
+        s = strchr(DEFAULT_RCMAP, *c);
         if (s)
             rxConfig->rcmap[s - rcChannelLetters] = c - input;
     }

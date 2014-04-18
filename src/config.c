@@ -275,7 +275,7 @@ static void resetConf(void)
     cfg.acc_unarmedcal = 1;
 
     // Radio
-    parseRcChannels("AETR1234", &mcfg.rxConfig);
+    parseRcChannels(DEFAULT_RCMAP, &mcfg.rxConfig);
     cfg.deadband = 0;
     cfg.yawdeadband = 0;
     cfg.alt_hold_throttle_neutral = 40;
