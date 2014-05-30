@@ -278,11 +278,6 @@ static void getEstimatedAttitude(void)
             EstG.A[axis] = (EstG.A[axis] * (float)mcfg.gyro_cmpf_factor + accSmooth[axis]) * INV_GYR_CMPF_FACTOR;
     }
 
-    if (sensors(SENSOR_MAG)) {
-        for (axis = 0; axis < 3; axis++)
-            EstM.A[axis] = (EstM.A[axis] * (float)mcfg.gyro_cmpfm_factor + magADC[axis]) * INV_GYR_CMPFM_FACTOR;
-    }
-
     f.SMALL_ANGLE = (EstG.A[Z] > smallAngle);
 
     // Attitude of the estimated vector
@@ -291,10 +286,13 @@ static void getEstimatedAttitude(void)
     angle[ROLL] = lrintf(anglerad[ROLL] * (1800.0f / M_PI));
     angle[PITCH] = lrintf(anglerad[PITCH] * (1800.0f / M_PI));
 
-    if (sensors(SENSOR_MAG))
+    if (sensors(SENSOR_MAG)) {
+        for (axis = 0; axis < 3; axis++)
+            EstM.A[axis] = (EstM.A[axis] * (float)mcfg.gyro_cmpfm_factor + magADC[axis]) * INV_GYR_CMPFM_FACTOR;
         heading = calculateHeading(&EstM);
-    else
+    } else {
         heading = calculateHeading(&EstN);
+    }
 
     acc_calc(deltaT); // rotate acc vector into earth frame
 
