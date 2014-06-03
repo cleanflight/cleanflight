@@ -22,6 +22,7 @@ int16_t throttleAngleCorrection = 0;    // correction of throttle in lateral win
 float magneticDeclination = 0.0f;       // calculated at startup from config
 float accVelScale;
 float throttleAngleScale;
+float fc_acc;
 
 // **************
 // gyro+acc IMU
@@ -38,6 +39,8 @@ void imuInit(void)
     smallAngle = lrintf(acc_1G * cosf(RAD * cfg.small_angle));
     accVelScale = 9.80665f / acc_1G / 10000.0f;
     throttleAngleScale = (1800.0f / M_PI) * (900.0f / cfg.throttle_correction_angle);
+    
+    fc_acc = 0.5f / (M_PI * cfg.accz_lpf_cutoff); // calculate RC time constant used in the accZ lpf
 
 #ifdef MAG
     // if mag sensor is enabled, use it
@@ -161,9 +164,6 @@ int32_t applyDeadband(int32_t value, int32_t deadband)
     }
     return value;
 }
-
-#define F_CUT_ACCZ 10.0f // 10Hz should still be fast enough
-static const float fc_acc = 0.5f / (M_PI * F_CUT_ACCZ);
 
 // rotate acc into Earth frame and calculate acceleration in it
 void acc_calc(uint32_t deltaT)
@@ -383,7 +383,7 @@ int getEstimatedAltitude(void)
 
     // Integrator - Altitude in cm
     accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                         // integrate velocity to get distance (x= a/2 * t^2)
-    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt); 		// complementary filter for Altitude estimation (baro & acc)
+    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt);      // complementary filter for Altitude estimation (baro & acc)
 
     // when the sonar is in his best range
     if (sonarAlt > 0 && sonarAlt < 200)
