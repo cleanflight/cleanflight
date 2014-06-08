@@ -263,12 +263,6 @@ static void getEstimatedAttitude(void)
     accMag = accMag * 100 / ((int32_t)acc_1G * acc_1G);
 
     rotateV(&EstG.V, deltaGyroAngle);
-    if (sensors(SENSOR_MAG)) {
-        rotateV(&EstM.V, deltaGyroAngle);
-    } else {
-        rotateV(&EstN.V, deltaGyroAngle);
-        normalizeV(&EstN.V, &EstN.V);
-    }
 
     // Apply complimentary filter (Gyro drift correction)
     // If accel magnitude >1.15G or <0.85G and ACC vector outside of the limit range => we neutralize the effect of accelerometers in the angle estimation.
@@ -287,10 +281,13 @@ static void getEstimatedAttitude(void)
     angle[PITCH] = lrintf(anglerad[PITCH] * (1800.0f / M_PI));
 
     if (sensors(SENSOR_MAG)) {
+        rotateV(&EstM.V, deltaGyroAngle);
         for (axis = 0; axis < 3; axis++)
             EstM.A[axis] = (EstM.A[axis] * (float)mcfg.gyro_cmpfm_factor + magADC[axis]) * INV_GYR_CMPFM_FACTOR;
         heading = calculateHeading(&EstM);
     } else {
+        rotateV(&EstN.V, deltaGyroAngle);
+        normalizeV(&EstN.V, &EstN.V);
         heading = calculateHeading(&EstN);
     }
 
