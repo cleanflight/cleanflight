@@ -33,6 +33,10 @@ typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig
 
 pidControllerFuncPtr pid_controller = pidMultiWii; // which pid controller are we using, defaultMultiWii
 
+// PT1 element
+#define F_CUT   17.0f
+#define RC      0.5f / (M_PI * F_CUT)
+
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims)
 {
     rollAndPitchTrims->values.roll = 0;
@@ -66,6 +70,7 @@ bool shouldAutotune(void)
 static void pidBaseflight(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
         uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim)
 {
+    static float lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
     float RateError, errorAngle, AngleRate, gyroRate;
     float ITerm,PTerm,DTerm;
     static float lastGyroRate[3];
@@ -124,17 +129,19 @@ static void pidBaseflight(pidProfile_t *pidProfile, controlRateConfig_t *control
         delta = gyroRate - lastGyroRate[axis];  // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
         lastGyroRate[axis] = gyroRate;
 
-        // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
-        // would be scaled by different dt each time. Division by dT fixes that.
-        delta *= (1.0f / dT);
         // add moving average here to reduce noise
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        // calculate PT1 element on deltaSum
+        deltaSum = lastDTerm[axis] + (dT / (RC + dT)) * (deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = delta;
+
         DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis], -300.0f, 300.0f);
 
         // -----calculate total PID output
-        axisPID[axis] = constrain(lrintf(PTerm + ITerm - DTerm), -1000, 1000);
+        axisPID[axis] = constrain(PTerm + ITerm - DTerm, -1000, 1000);
     }
 
 }
