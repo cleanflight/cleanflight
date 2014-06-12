@@ -46,7 +46,6 @@ void imuInit(void)
 
 void computeIMU(void)
 {
-    uint32_t axis;
     static int16_t gyroYawSmooth = 0;
 
     Gyro_getADC();
