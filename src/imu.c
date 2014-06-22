@@ -359,7 +359,7 @@ int getEstimatedAltitude(void)
     BaroAlt_tmp -= baroGroundAltitude;
     BaroAlt = lrintf((float)BaroAlt * cfg.baro_noise_lpf + (float)BaroAlt_tmp * (1.0f - cfg.baro_noise_lpf)); // additional LPF to reduce baro noise
 
-	// calculate sonar altitude only if the sonar is facing downwards(<25deg)
+    // calculate sonar altitude only if the sonar is facing downwards(<25deg)
     if (tiltAngle > 250)
         sonarAlt = -1;
     else
