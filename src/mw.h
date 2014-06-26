@@ -448,6 +448,7 @@ void serialInit(uint32_t baudrate);
 void serialCom(void);
 
 // Config
+void initEEPROM(void);
 void parseRcChannels(const char *input);
 void activateConfig(void);
 void loadAndActivateConfig(void);

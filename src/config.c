@@ -12,7 +12,6 @@
 #endif
 
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
-#define FLASH_WRITE_ADDR                (0x08000000 + (uint32_t)FLASH_PAGE_SIZE * (FLASH_PAGE_COUNT - 2))       // use the last 2 KB for storage
 
 master_t mcfg;  // master config struct with data independent from profiles
 config_t cfg;   // profile config struct
@@ -21,6 +20,15 @@ const char rcChannelLetters[] = "AERT1234";
 static const uint8_t EEPROM_CONF_VERSION = 64;
 static uint32_t enabledSensors = 0;
 static void resetConf(void);
+static uint32_t FLASH_WRITE_ADDR = FLASH_PAGE_SIZE * (FLASH_PAGE_COUNT - 2);
+
+void initEEPROM(void)
+{
+    const uint32_t *flashSize = (uint32_t *)0x1FFFF7E0;
+
+    // calculate write address based on contents of Flash size register. Use last 2 kbytes for storage
+    FLASH_WRITE_ADDR = 0x08000000 + (FLASH_PAGE_SIZE * ((*flashSize & 0xFFFF) - 2));
+}
 
 void parseRcChannels(const char *input)
 {

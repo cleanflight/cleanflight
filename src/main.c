@@ -42,6 +42,7 @@ int main(void)
     serialPort_t* loopbackPort2 = NULL;
 #endif
 
+    initEEPROM();
     checkFirstTime(false);
     readEEPROM();
     systemInit(mcfg.emf_avoidance);
