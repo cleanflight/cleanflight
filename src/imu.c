@@ -10,7 +10,9 @@ int32_t baroPressure = 0;
 int32_t baroTemperature = 0;
 uint32_t baroPressureSum = 0;
 int32_t BaroAlt = 0;
-int32_t sonarAlt;              // to think about the unit
+float sonarTransition = 0;
+int32_t baroAlt_offset = 0;
+int32_t sonarAlt = -1;         // in cm , -1 indicate sonar is not in range 
 int32_t EstAlt;                // in cm
 int32_t BaroPID = 0;
 int32_t AltHold;
@@ -334,6 +336,7 @@ int getEstimatedAltitude(void)
     static int32_t lastBaroAlt;
     static int32_t baroGroundAltitude = 0;
     static int32_t baroGroundPressure = 0;
+    int16_t tiltAngle = max(abs(angle[ROLL]), abs(angle[PITCH]));
 
     dTime = currentT - previousT;
     if (dTime < UPDATE_INTERVAL)
@@ -356,6 +359,24 @@ int getEstimatedAltitude(void)
     BaroAlt_tmp -= baroGroundAltitude;
     BaroAlt = lrintf((float)BaroAlt * cfg.baro_noise_lpf + (float)BaroAlt_tmp * (1.0f - cfg.baro_noise_lpf)); // additional LPF to reduce baro noise
 
+    // calculate sonar altitude only if the sonar is facing downwards(<25deg)
+    if (tiltAngle > 250)
+        sonarAlt = -1;
+    else
+        sonarAlt = sonarAlt * (900.0f - tiltAngle) / 900.0f;
+
+    // do sonarAlt and baroAlt fusion
+    if (sonarAlt > 0 && sonarAlt < 200) {
+        baroAlt_offset = BaroAlt - sonarAlt;
+        BaroAlt = sonarAlt;
+    } else {
+        BaroAlt -= baroAlt_offset;
+        if (sonarAlt > 0) {
+            sonarTransition = (300 - sonarAlt) / 100.0f;
+            BaroAlt = sonarAlt * sonarTransition + BaroAlt * (1.0f - sonarTransition);
+        }
+    }
+
     dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
 
     // Integrator - velocity, cm/sec
@@ -364,8 +385,14 @@ int getEstimatedAltitude(void)
 
     // Integrator - Altitude in cm
     accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                         // integrate velocity to get distance (x= a/2 * t^2)
-    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt);      // complementary filter for Altitude estimation (baro & acc)
-    EstAlt = accAlt;
+    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt); 		// complementary filter for Altitude estimation (baro & acc)
+
+    // when the sonar is in his best range
+    if (sonarAlt > 0 && sonarAlt < 200)
+        EstAlt = BaroAlt;
+    else
+        EstAlt = accAlt;
+
     vel += vel_acc;
 
 #if 0
@@ -390,7 +417,7 @@ int getEstimatedAltitude(void)
     // set vario
     vario = applyDeadband(vel_tmp, 5);
 
-    if (abs(angle[ROLL]) < 800 && abs(angle[PITCH]) < 800) { // only calculate pid if the copters thrust is facing downwards(<80deg)
+    if (tiltAngle < 800) { // only calculate pid if the copters thrust is facing downwards(<80deg)
         // Altitude P-Controller
         error = constrain(AltHold - EstAlt, -500, 500);
         error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
