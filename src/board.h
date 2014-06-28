@@ -270,6 +270,8 @@ typedef struct baro_t {
 #endif
 
 // #define SOFT_I2C                 // enable to test software i2c
+// #define SOFT_I2C_PB1011          // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
+// #define SOFT_I2C_PB67
 
 #include "utils.h"
 
