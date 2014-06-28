@@ -1,3 +1,8 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
+
 #include "board.h"
 #include "mw.h"
 
@@ -278,8 +283,10 @@ void serialInit(uint32_t baudrate)
 static void evaluateCommand(void)
 {
     uint32_t i, tmp, junk;
+#ifdef GPS
     uint8_t wp_no;
     int32_t lat = 0, lon = 0, alt = 0;
+#endif
 
     switch (cmdMSP) {
     case MSP_SET_RAW_RC:
@@ -535,6 +542,7 @@ static void evaluateCommand(void)
         for (i = 0; i < 8; i++)
             serialize8(i + 1);
         break;
+#ifdef GPS
     case MSP_WP:
         wp_no = read8();    // get the wp number
         headSerialReply(18);
@@ -578,6 +586,7 @@ static void evaluateCommand(void)
         }
         headSerialReply(0);
         break;
+#endif /* GPS */
     case MSP_RESET_CONF:
         if (!f.ARMED)
             checkFirstTime(true);

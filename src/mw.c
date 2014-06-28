@@ -560,8 +560,10 @@ void loop(void)
                 // GYRO calibration
                 if (rcSticks == THR_LO + YAW_LO + PIT_LO + ROL_CE) {
                     calibratingG = CALIBRATING_GYRO_CYCLES;
+#ifdef GPS
                     if (feature(FEATURE_GPS))
                         GPS_reset_home_position();
+#endif
                     if (sensors(SENSOR_BARO))
                         calibratingB = 10; // calibrate baro to new ground level (10 * 25 ms = ~250 ms non blocking)
                     if (!sensors(SENSOR_MAG))
@@ -731,6 +733,7 @@ void loop(void)
         }
 #endif
 
+#ifdef GPS
         if (sensors(SENSOR_GPS)) {
             if (f.GPS_FIX && GPS_numSat >= 5) {
                 // if both GPS_HOME & GPS_HOLD are checked => GPS_HOME is the priority
@@ -768,6 +771,7 @@ void loop(void)
                 nav_mode = NAV_MODE_NONE;
             }
         }
+#endif
 
         if (rcOptions[BOXPASSTHRU]) {
             f.PASSTHRU_MODE = 1;
@@ -897,6 +901,7 @@ void loop(void)
             rcCommand[THROTTLE] += throttleAngleCorrection;
         }
 
+#ifdef GPS
         if (sensors(SENSOR_GPS)) {
             if ((f.GPS_HOME_MODE || f.GPS_HOLD_MODE) && f.GPS_FIX_HOME) {
                 float sin_yaw_y = sinf(heading * 0.0174532925f);
@@ -912,6 +917,7 @@ void loop(void)
                 }
             }
         }
+#endif
 
         // PID - note this is function pointer set by setPIDController()
         pid_controller();

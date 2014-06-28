@@ -1,5 +1,12 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
+
 #include "board.h"
 #include "mw.h"
+
+#ifdef GPS
 
 #ifndef sq
 #define sq(x) ((x)*(x))
@@ -99,7 +106,7 @@ void gpsInit(uint8_t baudrateIndex)
     gpsSetState(GPS_INITIALIZING);
 }
 
-void gpsInitHardware(void)
+static void gpsInitHardware(void)
 {
     switch (mcfg.gps_type) {
         case GPS_NMEA:
@@ -1261,3 +1268,17 @@ static bool UBLOX_parse_gps(void)
     }
     return false;
 }
+
+#else
+
+void gpsInit(uint8_t baudrateIndex)
+{
+    
+}
+
+void gpsThread(void)
+{
+    
+}
+
+#endif /* GPS */

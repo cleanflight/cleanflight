@@ -219,6 +219,7 @@ typedef struct baro_t {
 #define ACC
 #define MAG
 #define BARO
+#define GPS
 #define LEDRING
 #define SONAR
 #define BUZZER

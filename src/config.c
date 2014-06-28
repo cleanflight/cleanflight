@@ -99,7 +99,9 @@ void activateConfig(void)
     }
 
     setPIDController(cfg.pidController);
+#ifdef GPS
     gpsSetPIDs();
+#endif
 }
 
 void loadAndActivateConfig(void)
