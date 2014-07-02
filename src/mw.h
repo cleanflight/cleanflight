@@ -183,6 +183,7 @@ typedef struct config_t {
     float baro_cf_vel;                      // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity)
     float baro_cf_alt;                      // apply CF to use ACC for height estimation
     uint8_t acc_unarmedcal;                 // turn automatic acc compensation on/off
+    uint8_t small_angle;                    // what is considered a safe angle for arming
 
     uint16_t activate[CHECKBOXITEMS];       // activate switches
 

@@ -192,6 +192,7 @@ const clivalue_t valueTable[] = {
     { "accxy_deadband", VAR_UINT8, &cfg.accxy_deadband, 0, 100 },
     { "accz_deadband", VAR_UINT8, &cfg.accz_deadband, 0, 100 },
     { "acc_unarmedcal", VAR_UINT8, &cfg.acc_unarmedcal, 0, 1 },
+    { "small_angle", VAR_UINT8, &cfg.small_angle, 0, 90 },
     { "acc_trim_pitch", VAR_INT16, &cfg.angleTrim[PITCH], -300, 300 },
     { "acc_trim_roll", VAR_INT16, &cfg.angleTrim[ROLL], -300, 300 },
     { "baro_tab_size", VAR_UINT8, &cfg.baro_tab_size, 0, BARO_TAB_SIZE_MAX },
