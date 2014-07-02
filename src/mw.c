@@ -539,12 +539,15 @@ void loop(void)
             errorGyroI[YAW] = 0;
             errorAngleI[ROLL] = 0;
             errorAngleI[PITCH] = 0;
-            if (cfg.activate[BOXARM] > 0) { // Arming/Disarming via ARM BOX
+            if (cfg.activate[BOXARM] > 0) { // Arming via ARM BOX
                 if (rcOptions[BOXARM] && f.OK_TO_ARM)
                     mwArm();
-                else if (f.ARMED)
-                    mwDisarm();
             }
+        }
+
+        if (cfg.activate[BOXARM] > 0) { // Disarming via ARM BOX
+            if (!rcOptions[BOXARM] && f.ARMED)
+                    mwDisarm();
         }
 
         if (rcDelayCommand == 20) {

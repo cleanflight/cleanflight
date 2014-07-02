@@ -35,7 +35,7 @@ static void getEstimatedAttitude(void);
 
 void imuInit(void)
 {
-    smallAngle = lrintf(acc_1G * cosf(RAD * 25.0f));
+    smallAngle = lrintf(acc_1G * cosf(RAD * cfg.small_angle));
     accVelScale = 9.80665f / acc_1G / 10000.0f;
     throttleAngleScale = (1800.0f / M_PI) * (900.0f / cfg.throttle_correction_angle);
 
