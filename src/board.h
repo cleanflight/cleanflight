@@ -26,6 +26,7 @@
 
 #include "drv_system.h"         // timers, delays, etc
 #include "drv_gpio.h"
+#include "utils.h"
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846f
@@ -180,28 +181,8 @@ typedef struct baro_t {
 } baro_t;
 
 // Hardware definitions and GPIO
-#ifdef OLIMEXINO
-// OLIMEXINO
-
-#ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
-// LED2 is using one of the pwm pins (PWM2), so we must not use PWM2.  @See pwmInit()
-#define LED0_GPIO   GPIOA
-#define LED0_PIN    Pin_1 // D3, PA1/USART2_RTS/ADC1/TIM2_CH3 - "LED2" on silkscreen, Yellow
-#define LED0
-#endif
-
-#ifdef OLIMEXINO_UNCUT_LED1_E_JUMPER
-#define LED1_GPIO   GPIOA
-#define LED1_PIN    Pin_5 // D13, PA5/SPI1_SCK/ADC5 - "LED1" on silkscreen, Green
-#define LED1
-#endif
-
-#define GYRO
-#define ACC
-
-#define SENSORS_SET (SENSOR_ACC)
-
-#else
+// Target definitions (NAZE, OLIMEXINO, CJMCU, ... are same as in Makefile
+#if defined(NAZE)
 // Afroflight32
 
 #define LED0_GPIO   GPIOB
@@ -225,11 +206,105 @@ typedef struct baro_t {
 #define BUZZER
 #define LED0
 #define LED1
+#define MOTOR_PWM_RATE 400
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-// #define PROD_DEBUG
+#define I2C_DEVICE (I2CDEV_2)
 
+// #define PROD_DEBUG
+// #define SOFT_I2C                 // enable to test software i2c
+// #define SOFT_I2C_PB1011          // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
+// #define SOFT_I2C_PB67
+
+ // AfroFlight32
+#include "drv_adc.h"
+#include "drv_adxl345.h"
+#include "drv_bma280.h"
+#include "drv_bmp085.h"
+#include "drv_ms5611.h"
+#include "drv_hmc5883l.h"
+#include "drv_i2c.h"
+#include "drv_spi.h"
+#include "drv_ledring.h"
+#include "drv_mma845x.h"
+#include "drv_mpu3050.h"
+#include "drv_mpu6050.h"
+#include "drv_l3g4200d.h"
+#include "drv_pwm.h"
+#include "drv_timer.h"
+#include "drv_serial.h"
+#include "drv_uart.h"
+#include "drv_softserial.h"
+#include "drv_hcsr04.h"
+
+#elif defined(OLIMEXINO)
+// OLIMEXINO
+
+#ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
+// LED2 is using one of the pwm pins (PWM2), so we must not use PWM2.  @See pwmInit()
+#define LED0_GPIO   GPIOA
+#define LED0_PIN    Pin_1 // D3, PA1/USART2_RTS/ADC1/TIM2_CH3 - "LED2" on silkscreen, Yellow
+#define LED0
 #endif
+
+#ifdef OLIMEXINO_UNCUT_LED1_E_JUMPER
+#define LED1_GPIO   GPIOA
+#define LED1_PIN    Pin_5 // D13, PA5/SPI1_SCK/ADC5 - "LED1" on silkscreen, Green
+#define LED1
+#endif
+
+#define GYRO
+#define ACC
+#define MOTOR_PWM_RATE 400
+
+#define SENSORS_SET (SENSOR_ACC)
+#define I2C_DEVICE (I2CDEV_2)
+
+#include "drv_adc.h"
+#include "drv_i2c.h"
+#include "drv_spi.h"
+#include "drv_adxl345.h"
+#include "drv_mpu3050.h"
+#include "drv_mpu6050.h"
+#include "drv_l3g4200d.h"
+#include "drv_pwm.h"
+#include "drv_timer.h"
+#include "drv_serial.h"
+#include "drv_uart.h"
+#include "drv_softserial.h"
+
+#elif defined(CJMCU)
+// CJMCU brushed quad pcb
+
+#define LED0_GPIO   GPIOC
+#define LED0_PIN    Pin_13 // PC13 (LED)
+#define LED0
+#define LED1_GPIO   GPIOC
+#define LED1_PIN    Pin_14 // PC14 (LED)
+#define LED1
+#define LED2_GPIO   GPIOC
+#define LED2_PIN    Pin_15 // PC15 (LED)
+#define LED2
+
+#define GYRO
+#define ACC
+#define MAG
+#define MOTOR_PWM_RATE 16000
+
+#define SENSORS_SET (SENSOR_ACC | SENSOR_MAG)
+#define I2C_DEVICE (I2CDEV_1)
+
+#include "drv_hmc5883l.h"
+#include "drv_i2c.h"
+#include "drv_mpu6050.h"
+#include "drv_pwm.h"
+#include "drv_timer.h"
+#include "drv_serial.h"
+#include "drv_uart.h"
+
+#else
+#error TARGET NOT DEFINED!
+#endif /* all conditions */
 
 // Helpful macros
 #ifdef LED0
@@ -268,49 +343,4 @@ typedef struct baro_t {
 #else
 #define INV_OFF                 ;
 #define INV_ON                  ;
-#endif
-
-// #define SOFT_I2C                 // enable to test software i2c
-// #define SOFT_I2C_PB1011          // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
-// #define SOFT_I2C_PB67
-
-#include "utils.h"
-
-#ifdef OLIMEXINO
-// OLIMEXINO
-#include "drv_adc.h"
-#include "drv_i2c.h"
-#include "drv_spi.h"
-#include "drv_adxl345.h"
-#include "drv_mpu3050.h"
-#include "drv_mpu6050.h"
-#include "drv_l3g4200d.h"
-#include "drv_pwm.h"
-#include "drv_timer.h"
-#include "drv_serial.h"
-#include "drv_uart.h"
-#include "drv_softserial.h"
-#else
-
- // AfroFlight32
-#include "drv_adc.h"
-#include "drv_adxl345.h"
-#include "drv_bma280.h"
-#include "drv_bmp085.h"
-#include "drv_ms5611.h"
-#include "drv_hmc5883l.h"
-#include "drv_i2c.h"
-#include "drv_spi.h"
-#include "drv_ledring.h"
-#include "drv_mma845x.h"
-#include "drv_mpu3050.h"
-#include "drv_mpu6050.h"
-#include "drv_l3g4200d.h"
-#include "drv_pwm.h"
-#include "drv_timer.h"
-#include "drv_serial.h"
-#include "drv_uart.h"
-#include "drv_softserial.h"
-#include "drv_hcsr04.h"
-
 #endif

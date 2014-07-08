@@ -117,6 +117,7 @@ void systemInit(bool overclock)
     LED0_OFF;
     LED1_OFF;
 
+    // Hack - rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
     for (i = 0; i < gpio_count; i++) {
         if (hse_value == 12000000 && gpio_setup[i].cfg.mode == Mode_Out_OD)
             gpio_setup[i].cfg.mode = Mode_Out_PP;
@@ -130,7 +131,7 @@ void systemInit(bool overclock)
     SysTick_Config(SystemCoreClock / 1000);
 
     // Configure the rest of the stuff
-    i2cInit(I2CDEV_2);
+    i2cInit(I2C_DEVICE);
     spiInit();
 
     // sleep for 100ms
@@ -179,8 +180,8 @@ void delay(uint32_t ms)
 
 void failureMode(uint8_t mode)
 {
-    LED1_ON;
-    LED0_OFF;
+    LED1_OFF;
+    LED0_ON;
     while (1) {
         LED1_TOGGLE;
         LED0_TOGGLE;

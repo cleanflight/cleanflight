@@ -69,6 +69,16 @@ static uint16_t failsafeThreshold = 985;
 // external vars (ugh)
 extern int16_t failsafeCnt;
 
+#ifdef CJMCU
+static const uint8_t multiPPM[] = {
+    PWM1 | TYPE_IP,     // PPM input
+    PWM2 | TYPE_M,
+    PWM3 | TYPE_M,
+    PWM4 | TYPE_M,
+    PWM5 | TYPE_M,
+    0xFF
+};
+#else
 static const uint8_t multiPPM[] = {
     PWM1 | TYPE_IP,     // PPM input
     PWM9 | TYPE_M,      // Swap to servo if needed
@@ -83,6 +93,7 @@ static const uint8_t multiPPM[] = {
     PWM8 | TYPE_M,      // Swap to servo if needed
     0xFF
 };
+#endif
 
 static const uint8_t multiPWM[] = {
     PWM1 | TYPE_IW,     // input #1

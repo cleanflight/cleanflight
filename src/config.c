@@ -183,7 +183,11 @@ static void resetConf(void)
     mcfg.version = EEPROM_CONF_VERSION;
     mcfg.mixerConfiguration = MULTITYPE_QUADX;
     featureClearAll();
+#ifdef CJMCU
+    featureSet(FEATURE_PPM);
+#else
     featureSet(FEATURE_VBAT);
+#endif
 
     // global settings
     mcfg.current_profile = 0;       // default profile
@@ -226,7 +230,7 @@ static void resetConf(void)
     mcfg.deadband3d_high = 1514;
     mcfg.neutral3d = 1460;
     mcfg.deadband3d_throttle = 50;
-    mcfg.motor_pwm_rate = 400;
+    mcfg.motor_pwm_rate = MOTOR_PWM_RATE;
     mcfg.servo_pwm_rate = 50;
     // gps/nav stuff
     mcfg.gps_type = GPS_NMEA;
