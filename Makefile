@@ -71,7 +71,7 @@ HIGHEND_SRC	 = gps.c \
 		   drv_softserial.c \
 		   telemetry_common.c \
 		   telemetry_frsky.c \
-		   telemetry_hott.c \
+		   telemetry_hott.c
 
 # Source files for the NAZE target
 NAZE_SRC	 = drv_adc.c \
@@ -89,7 +89,7 @@ NAZE_SRC	 = drv_adc.c \
 		   drv_pwm.c \
 		   drv_spi.c \
 		   drv_timer.c \
-		   $(HIGHEND_SRC)
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
 # Source files for the OLIMEXINO target
@@ -101,7 +101,7 @@ OLIMEXINO_SRC	 = drv_spi.c \
 		   drv_l3g4200d.c \
 		   drv_pwm.c \
 		   drv_timer.c \
-		   $(HIGHEND_SRC)
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
 # Source files for the CJMCU target
