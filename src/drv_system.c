@@ -73,10 +73,12 @@ void systemInit(bool overclock)
             .cfg = { BEEP_PIN, Mode_Out_OD, Speed_2MHz }
         },
 #endif
+#ifdef INVERTER
         {
             .gpio = INV_GPIO,
             .cfg = { INV_PIN, Mode_Out_PP, Speed_2MHz }
         },
+#endif
     };
     gpio_config_t gpio;
     uint32_t i;
@@ -132,7 +134,9 @@ void systemInit(bool overclock)
 
     // Configure the rest of the stuff
     i2cInit(I2C_DEVICE);
+#ifndef CJMCU
     spiInit();
+#endif
 
     // sleep for 100ms
     delay(100);

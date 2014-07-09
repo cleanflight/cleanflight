@@ -192,7 +192,9 @@ void annexCode(void)
         if (f.ARMED)
             LED0_ON;
 
+#ifndef CJMCU
         checkTelemetryState();
+#endif
     }
 
 #ifdef LEDRING
@@ -217,9 +219,11 @@ void annexCode(void)
 
     serialCom();
 
+#ifndef CJMCU
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
         handleTelemetry();
     }
+#endif
 
     if (sensors(SENSOR_GPS)) {
         static uint32_t GPSLEDTime;
@@ -454,6 +458,7 @@ void loop(void)
     bool isThrottleLow = false;
     bool rcReady = false;
 
+#ifndef CJMCU
     // calculate rc stuff from serial-based receivers (spek/sbus)
     if (feature(FEATURE_SERIALRX)) {
         switch (mcfg.serialrx_type) {
@@ -472,6 +477,7 @@ void loop(void)
                 break;
         }
     }
+#endif
 
     if (((int32_t)(currentTime - rcTime) >= 0) || rcReady) { // 50Hz or data driven
         rcReady = false;
@@ -811,10 +817,12 @@ void loop(void)
             // hardware, wrong baud rates, init GPS if needed, etc. Don't use SENSOR_GPS here as gpsThread() can and will
             // change this based on available hardware
             taskOrder++;
+#ifdef GPS
             if (feature(FEATURE_GPS)) {
                 gpsThread();
                 break;
             }
+#endif
         case 4:
             taskOrder = 0;
 #ifdef SONAR

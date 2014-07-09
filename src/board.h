@@ -206,6 +206,7 @@ typedef struct baro_t {
 #define BUZZER
 #define LED0
 #define LED1
+#define INVERTER
 #define MOTOR_PWM_RATE 400
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
@@ -294,6 +295,7 @@ typedef struct baro_t {
 #define SENSORS_SET (SENSOR_ACC | SENSOR_MAG)
 #define I2C_DEVICE (I2CDEV_1)
 
+#include "drv_adc.h"
 #include "drv_hmc5883l.h"
 #include "drv_i2c.h"
 #include "drv_mpu6050.h"

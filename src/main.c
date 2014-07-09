@@ -139,6 +139,7 @@ int main(void)
     rcReadRawFunc = pwmReadRawRC;
     core.numRCChannels = MAX_INPUTS;
 
+#ifndef CJMCU
     if (feature(FEATURE_SERIALRX)) {
         switch (mcfg.serialrx_type) {
             case SERIALRX_SPEKTRUM1024:
@@ -160,6 +161,7 @@ int main(void)
         // gpsInit will return if FEATURE_GPS is not enabled.
         gpsInit(mcfg.gps_baudrate);
     }
+#endif
 #ifdef SONAR
     // sonar stuff only works with PPM
     if (feature(FEATURE_PPM)) {
@@ -168,6 +170,7 @@ int main(void)
     }
 #endif
 
+#ifndef CJMCU
     if (feature(FEATURE_SOFTSERIAL)) {
         //mcfg.softserial_baudrate = 19200; // Uncomment to override config value
 
@@ -186,6 +189,7 @@ int main(void)
 
     if (feature(FEATURE_TELEMETRY))
         initTelemetry();
+#endif
 
     previousTime = micros();
     if (mcfg.mixerConfiguration == MULTITYPE_GIMBAL)
