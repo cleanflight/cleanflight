@@ -105,7 +105,8 @@ OLIMEXINO_SRC	 = drv_spi.c \
 		   $(COMMON_SRC)
 
 # Source files for the CJMCU target
-CJMCU_SRC	 = drv_mpu6050.c \
+CJMCU_SRC	 = drv_adc.c \
+		   drv_mpu6050.c \
 		   drv_hmc5883l.c \
 		   drv_pwm.c \
 		   drv_timer.c \
