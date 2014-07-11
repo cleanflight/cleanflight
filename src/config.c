@@ -7,11 +7,18 @@
 #include "mw.h"
 #include <string.h>
 
+#define ASSERT_CONCAT_(a, b) a##b
+#define ASSERT_CONCAT(a, b) ASSERT_CONCAT_(a, b)
+#define ct_assert(e) enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
+
+// define this symbol to increase or decrease flash size. not rely on flash_size_register.
 #ifndef FLASH_PAGE_COUNT
 #define FLASH_PAGE_COUNT 128
 #endif
 
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
+// if sizeof(mcfg) is over this number, compile-time error will occur. so, need to add another page to config data.
+#define CONFIG_SIZE                     (FLASH_PAGE_SIZE * 2)
 
 master_t mcfg;  // master config struct with data independent from profiles
 config_t cfg;   // profile config struct
@@ -20,14 +27,12 @@ const char rcChannelLetters[] = "AERT1234";
 static const uint8_t EEPROM_CONF_VERSION = 65;
 static uint32_t enabledSensors = 0;
 static void resetConf(void);
-static uint32_t FLASH_WRITE_ADDR = FLASH_PAGE_SIZE * (FLASH_PAGE_COUNT - 2);
+static const uint32_t FLASH_WRITE_ADDR = 0x08000000 + (FLASH_PAGE_SIZE * (FLASH_PAGE_COUNT - (CONFIG_SIZE / 1024)));
 
 void initEEPROM(void)
 {
-    const uint32_t *flashSize = (uint32_t *)0x1FFFF7E0;
-
-    // calculate write address based on contents of Flash size register. Use last 2 kbytes for storage
-    FLASH_WRITE_ADDR = 0x08000000 + (FLASH_PAGE_SIZE * ((*flashSize & 0xFFFF) - 2));
+    // make sure (at compile time) that config struct doesn't overflow allocated flash pages
+    ct_assert(sizeof(mcfg) < CONFIG_SIZE);
 }
 
 void parseRcChannels(const char *input)

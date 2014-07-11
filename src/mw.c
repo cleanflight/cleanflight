@@ -454,7 +454,9 @@ void loop(void)
 #endif
     static uint32_t loopTime;
     uint16_t auxState = 0;
+#ifdef GPS
     static uint8_t GPSNavReset = 1;
+#endif
     bool isThrottleLow = false;
     bool rcReady = false;
 
