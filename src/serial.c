@@ -282,7 +282,7 @@ void serialInit(uint32_t baudrate)
 
 static void evaluateCommand(void)
 {
-    uint32_t i, tmp, junk;
+    uint32_t i, j, tmp, junk;
 #ifdef GPS
     uint8_t wp_no;
     int32_t lat = 0, lon = 0, alt = 0;
@@ -519,8 +519,12 @@ static void evaluateCommand(void)
         break;
     case MSP_BOXIDS:
         headSerialReply(numberBoxItems);
-        for (i = 0; i < numberBoxItems; i++)
-            serialize8(availableBoxes[i]);
+        for (i = 0; i < numberBoxItems; i++) {
+            for  (j = 0; j < CHECKBOXITEMS; j++) {
+                if (boxes[j].permanentId == availableBoxes[i])
+                    serialize8(boxes[j].permanentId);
+            }
+        }
         break;
     case MSP_MISC:
         headSerialReply(2 * 6 + 4 + 2 + 4);
