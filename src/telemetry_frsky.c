@@ -223,6 +223,18 @@ static void sendVoltageAmp(void)
     serialize16(((voltage % 100) + 5) / 10);
 }
 
+static void sendAmperage(void)
+{
+    sendDataHead(ID_CURRENT);
+    serialize16((uint16_t)(amperage / 10));
+}
+
+static void sendFuelLevel(void)
+{
+    sendDataHead(ID_FUEL_LEVEL);
+    serialize16((uint16_t)mAhdrawn);
+}
+
 static void sendHeading(void)
 {
     sendDataHead(ID_COURSE_BP);
@@ -253,11 +265,6 @@ bool canSendFrSkyTelemetry(void)
     return serialTotalBytesWaiting(core.telemport) == 0;
 }
 
-bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
-{
-    return currentMillis - lastCycleTime >= CYCLETIME;
-}
-
 void handleFrSkyTelemetry(void)
 {
     if (!canSendFrSkyTelemetry()) {
@@ -266,9 +273,8 @@ void handleFrSkyTelemetry(void)
 
     uint32_t now = millis();
 
-    if (!hasEnoughTimeLapsedSinceLastTelemetryTransmission(now)) {
+    if (now - lastCycleTime < CYCLETIME)
         return;
-    }
 
     lastCycleTime = now;
 
@@ -290,7 +296,8 @@ void handleFrSkyTelemetry(void)
 
         if (feature(FEATURE_VBAT)) {
             sendVoltage();
-            sendVoltageAmp();
+            sendAmperage();
+            sendFuelLevel();
         }
 
         if (sensors(SENSOR_GPS))
