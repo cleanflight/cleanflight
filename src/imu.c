@@ -16,7 +16,9 @@ int32_t sonarAlt = -1;         // in cm , -1 indicate sonar is not in range
 int32_t EstAlt;                // in cm
 int32_t BaroPID = 0;
 int32_t AltHold;
-int32_t errorAltitudeI = 0;
+int32_t setVelocity = 0;
+uint8_t velocityControl = 0;
+int32_t errorVelocityI = 0;
 int32_t vario = 0;                      // variometer in cm/s
 int16_t throttleAngleCorrection = 0;    // correction of throttle in lateral wind,
 float magneticDeclination = 0.0f;       // calculated at startup from config
@@ -417,19 +419,23 @@ int getEstimatedAltitude(void)
 
     if (tiltAngle < 800) { // only calculate pid if the copters thrust is facing downwards(<80deg)
         // Altitude P-Controller
-        error = constrain(AltHold - EstAlt, -500, 500);
-        error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
-        setVel = constrain((cfg.P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
-
+        if (!velocityControl) {
+            error = constrain(AltHold - EstAlt, -500, 500);
+            error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
+            setVel = constrain((cfg.P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
+        } else {
+            setVel = setVelocity;
+        }
+        
         // Velocity PID-Controller
         // P
         error = setVel - vel_tmp;
         BaroPID = constrain((cfg.P8[PIDVEL] * error / 32), -300, +300);
 
         // I
-        errorAltitudeI += (cfg.I8[PIDVEL] * error);
-        errorAltitudeI = constrain(errorAltitudeI, -(8196 * 200), (8196 * 200));
-        BaroPID += errorAltitudeI / 8196;     // I in the range of +/-200
+        errorVelocityI += (cfg.I8[PIDVEL] * error);
+        errorVelocityI = constrain(errorVelocityI, -(8196 * 200), (8196 * 200));
+        BaroPID += errorVelocityI / 8196;     // I in the range of +/-200
 
         // D
         BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
