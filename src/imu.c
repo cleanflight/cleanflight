@@ -383,7 +383,7 @@ int getEstimatedAltitude(void)
 
     // Integrator - Altitude in cm
     accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                         // integrate velocity to get distance (x= a/2 * t^2)
-    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt);      // complementary filter for Altitude estimation (baro & acc)
+    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt);      // complementary filter for altitude estimation (baro & acc)
 
     // when the sonar is in his best range
     if (sonarAlt > 0 && sonarAlt < 200)
@@ -404,8 +404,8 @@ int getEstimatedAltitude(void)
     baroVel = (BaroAlt - lastBaroAlt) * 1000000.0f / dTime;
     lastBaroAlt = BaroAlt;
 
-    baroVel = constrain(baroVel, -300, 300);    // constrain baro velocity +/- 300cm/s
-    baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
+    baroVel = constrain(baroVel, -1500, 1500);    // constrain baro velocity +/- 1500cm/s
+    baroVel = applyDeadband(baroVel, 10);         // to reduce noise near zero
 
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
@@ -427,12 +427,12 @@ int getEstimatedAltitude(void)
         BaroPID = constrain((cfg.P8[PIDVEL] * error / 32), -300, +300);
 
         // I
-        errorAltitudeI += (cfg.I8[PIDVEL] * error) / 8;
-        errorAltitudeI = constrain(errorAltitudeI, -(1024 * 200), (1024 * 200));
-        BaroPID += errorAltitudeI / 1024;     // I in range +/-200
+        errorAltitudeI += (cfg.I8[PIDVEL] * error);
+        errorAltitudeI = constrain(errorAltitudeI, -(8196 * 200), (8196 * 200));
+        BaroPID += errorAltitudeI / 8196;     // I in the range of +/-200
 
         // D
-        BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 64, -150, 150);
+        BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
 
     } else {
         BaroPID = 0;
