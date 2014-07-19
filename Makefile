@@ -175,6 +175,7 @@ ASFLAGS		 = $(ARCH_FLAGS) \
 # XXX Map/crossref output?
 LD_SCRIPT	 = $(ROOT)/stm32_flash.ld
 LDFLAGS		 = -lm \
+		   -nostartfiles \
 		   $(ARCH_FLAGS) \
 		   $(LTO_FLAGS) \
 		   $(DEBUG_FLAGS) \
