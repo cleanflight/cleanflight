@@ -176,6 +176,8 @@ ASFLAGS		 = $(ARCH_FLAGS) \
 LD_SCRIPT	 = $(ROOT)/stm32_flash.ld
 LDFLAGS		 = -lm \
 		   -nostartfiles \
+		   --specs=nano.specs \
+		   -lnosys \
 		   $(ARCH_FLAGS) \
 		   $(LTO_FLAGS) \
 		   $(DEBUG_FLAGS) \
