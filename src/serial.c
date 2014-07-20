@@ -70,11 +70,13 @@
 
 #define INBUF_SIZE 64
 
-struct box_t {
+typedef struct box_t {
     const uint8_t boxIndex;         // this is from boxnames enum
     const char *boxName;            // GUI-readable box name
-    const uint8_t permanentId;      //
-} boxes[] = {
+    const uint8_t permanentId;      // Permanent ID for reporting to GUI
+} box_t;
+
+static const box_t boxes[] = {
     { BOXARM, "ARM;", 0 },
     { BOXANGLE, "ANGLE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
