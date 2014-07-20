@@ -161,7 +161,8 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
 		   $(DEBUG_FLAGS) \
-		   -Wall \
+		   -std=gnu99 \
+		   -Wall -pedantic \
 		   -ffunction-sections \
 		   -fdata-sections \
 		   -DSTM32F10X_MD \
