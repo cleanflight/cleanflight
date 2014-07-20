@@ -178,6 +178,7 @@ LD_SCRIPT	 = $(ROOT)/stm32_flash.ld
 LDFLAGS		 = -lm \
 		   -nostartfiles \
 		   --specs=nano.specs \
+		   -lc \
 		   -lnosys \
 		   $(ARCH_FLAGS) \
 		   $(LTO_FLAGS) \
