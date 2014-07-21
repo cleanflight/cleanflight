@@ -238,7 +238,7 @@ static bool gpsNewFrame(uint8_t c)
 #define GPS_LOW_SPEED_D_FILTER     1    // below .5m/s speed ignore D term for POSHOLD_RATE, theoretically this also removed D term induced noise
 
 static bool check_missed_wp(void);
-static void GPS_distance_cm_bearing(int32_t * lat1, int32_t * lon1, int32_t * lat2, int32_t * lon2, uint32_t * dist, int32_t * bearing);
+static void GPS_distance_cm_bearing(int32_t * lat1, int32_t * lon1, int32_t * lat2, int32_t * lon2, int32_t * dist, int32_t * bearing);
 //static void GPS_distance(int32_t lat1, int32_t lon1, int32_t lat2, int32_t lon2, uint16_t* dist, int16_t* bearing);
 static void GPS_calc_longitude_scaling(int32_t lat);
 static void GPS_calc_velocity(void);
@@ -248,8 +248,8 @@ static void GPS_calc_nav_rate(int max_speed);
 static void GPS_update_crosstrack(void);
 static bool UBLOX_parse_gps(void);
 static int16_t GPS_calc_desired_speed(int16_t max_speed, bool _slow);
-int32_t wrap_18000(int32_t error);
-static int32_t wrap_36000(int32_t angle);
+int32_t wrap_18000(int32_t err);
+static int32_t wrap_36000(int32_t deg);
 
 typedef struct {
     int16_t last_velocity;
@@ -374,7 +374,7 @@ static int16_t crosstrack_error;
 // distance between plane and home in cm
 //static int32_t home_distance;
 // distance between plane and next_WP in cm
-static uint32_t wp_distance;
+static int32_t wp_distance;
 
 // used for slow speed wind up when start navigation;
 static int16_t waypoint_speed_gov;
@@ -402,7 +402,7 @@ static void gpsNewData(uint16_t c)
 {
     int axis;
     static uint32_t nav_loopTimer;
-    uint32_t dist;
+    int32_t dist;
     int32_t dir;
     int16_t speed;
 
@@ -616,7 +616,7 @@ static bool check_missed_wp(void)
 ////////////////////////////////////////////////////////////////////////////////////
 // Get distance between two points in cm
 // Get bearing from pos1 to pos2, returns an 1deg = 100 precision
-static void GPS_distance_cm_bearing(int32_t * lat1, int32_t * lon1, int32_t * lat2, int32_t * lon2, uint32_t * dist, int32_t * bearing)
+static void GPS_distance_cm_bearing(int32_t * lat1, int32_t * lon1, int32_t * lat2, int32_t * lon2, int32_t * dist, int32_t * bearing)
 {
     float dLat = *lat2 - *lat1; // difference of latitude in 1/10 000 000 degrees
     float dLon = (float)(*lon2 - *lon1) * GPS_scaleLonDown;
@@ -790,22 +790,22 @@ static int16_t GPS_calc_desired_speed(int16_t max_speed, bool _slow)
 ////////////////////////////////////////////////////////////////////////////////////
 // Utilities
 //
-int32_t wrap_18000(int32_t error)
+int32_t wrap_18000(int32_t err)
 {
-    if (error > 18000)
-        error -= 36000;
-    if (error < -18000)
-        error += 36000;
-    return error;
+    if (err > 18000)
+        err -= 36000;
+    if (err < -18000)
+        err += 36000;
+    return err;
 }
 
-static int32_t wrap_36000(int32_t angle)
+static int32_t wrap_36000(int32_t deg)
 {
-    if (angle > 36000)
-        angle -= 36000;
-    if (angle < 0)
-        angle += 36000;
-    return angle;
+    if (deg > 36000)
+        deg -= 36000;
+    if (deg < 0)
+        deg += 36000;
+    return deg;
 }
 
 // This code is used for parsing NMEA data

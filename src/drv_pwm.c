@@ -274,6 +274,7 @@ static void failsafeCheck(uint8_t channel, uint16_t pulse)
 
 static void ppmCallback(uint8_t port, uint16_t capture)
 {
+    (void)port;
     uint16_t diff;
     static uint16_t now;
     static uint16_t last = 0;

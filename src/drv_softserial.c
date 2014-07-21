@@ -318,6 +318,7 @@ void processRxState(softSerial_t *softSerial)
 
 void onSerialTimer(uint8_t portIndex, uint16_t capture)
 {
+    (void)capture;
     softSerial_t *softSerial = &(softSerialPorts[portIndex]);
 
     processTxState(softSerial);
@@ -326,6 +327,7 @@ void onSerialTimer(uint8_t portIndex, uint16_t capture)
 
 void onSerialRxPinChange(uint8_t portIndex, uint16_t capture)
 {
+    (void)capture;
     softSerial_t *softSerial = &(softSerialPorts[portIndex]);
 
     if ((softSerial->port.mode & MODE_RX) == 0) {
@@ -425,6 +427,8 @@ void softSerialWriteByte(serialPort_t *s, uint8_t ch)
 
 void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate)
 {
+    (void)s;
+    (void)baudRate;
     // not implemented.
 }
 
