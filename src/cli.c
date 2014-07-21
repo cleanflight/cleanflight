@@ -552,6 +552,7 @@ static void cliCMix(char *cmdline)
 
 static void cliDefaults(char *cmdline)
 {
+    (void)cmdline;
     cliPrint("Resetting to defaults...\r\n");
     checkFirstTime(true);
     cliPrint("Rebooting...");
@@ -561,7 +562,8 @@ static void cliDefaults(char *cmdline)
 
 static void cliDump(char *cmdline)
 {
-    int i;
+    (void)cmdline;
+    unsigned int i;
     char buf[16];
     float thr, roll, pitch, yaw;
     uint32_t mask;
@@ -700,6 +702,7 @@ static void cliFeature(char *cmdline)
 
 static void cliGpsPassthrough(char *cmdline)
 {
+    (void)cmdline;
 #ifdef GPS
     if (gpsSetPassthrough() == -1)
         cliPrint("Error: Enable and plug in GPS first\r\n");
@@ -712,6 +715,7 @@ static void cliGpsPassthrough(char *cmdline)
 
 static void cliHelp(char *cmdline)
 {
+    (void)cmdline;
     uint32_t i = 0;
 
     cliPrint("Available commands:\r\n");
@@ -847,6 +851,7 @@ static void cliProfile(char *cmdline)
 
 static void cliSave(char *cmdline)
 {
+    (void)cmdline;
     cliPrint("Saving...");
     writeEEPROM(0, true);
     cliPrint("\r\nRebooting...");
@@ -986,6 +991,7 @@ static void cliSet(char *cmdline)
 
 static void cliStatus(char *cmdline)
 {
+    (void)cmdline;
     uint8_t i;
     uint32_t mask;
 
@@ -1012,6 +1018,7 @@ static void cliStatus(char *cmdline)
 
 static void cliVersion(char *cmdline)
 {
+    (void)cmdline;
     cliPrint("Afro32 CLI version 2.2 " __DATE__ " / " __TIME__);
 }
 
@@ -1028,7 +1035,7 @@ void cliProcess(void)
         if (c == '\t' || c == '?') {
             // do tab completion
             const clicmd_t *cmd, *pstart = NULL, *pend = NULL;
-            int i = bufferIndex;
+            unsigned int i = bufferIndex;
             for (cmd = cmdTable; cmd < cmdTable + CMD_COUNT; cmd++) {
                 if (bufferIndex && (strncasecmp(cliBuffer, cmd->name, bufferIndex) != 0))
                     continue;

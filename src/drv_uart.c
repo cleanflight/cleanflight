@@ -204,6 +204,8 @@ void uartSetBaudRate(serialPort_t *instance, uint32_t baudRate)
 
 void uartSetMode(serialPort_t *s, portMode_t mode)
 {
+    (void)s;
+    (void)mode;
     // not implemented.
 }
 

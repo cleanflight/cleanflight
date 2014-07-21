@@ -18,6 +18,7 @@ extern uint16_t pwmReadRawRC(uint8_t chan);
 // gcc/GNU version
 static void _putc(void *p, char c)
 {
+    (void)p;
     serialWrite(core.mainport, c);
 }
 #else

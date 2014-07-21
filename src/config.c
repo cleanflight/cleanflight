@@ -118,7 +118,6 @@ void loadAndActivateConfig(void)
 void writeEEPROM(uint8_t b, uint8_t updateProfile)
 {
     FLASH_Status status;
-    int i, tries = 3;
     uint8_t chk = 0;
     const uint8_t *p;
 
@@ -142,12 +141,12 @@ void writeEEPROM(uint8_t b, uint8_t updateProfile)
 
     // write it
     FLASH_Unlock();
-    while (tries--) {
+    for (unsigned int tries = 3; tries; tries--) {
         FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
 
         FLASH_ErasePage(FLASH_WRITE_ADDR);
         status = FLASH_ErasePage(FLASH_WRITE_ADDR + FLASH_PAGE_SIZE);
-        for (i = 0; i < sizeof(master_t) && status == FLASH_COMPLETE; i += 4)
+        for (unsigned int i = 0; i < sizeof(master_t) && status == FLASH_COMPLETE; i += 4)
             status = FLASH_ProgramWord(FLASH_WRITE_ADDR + i, *(uint32_t *)((char *)&mcfg + i));
         if (status == FLASH_COMPLETE)
             break;

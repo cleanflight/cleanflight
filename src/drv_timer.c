@@ -90,7 +90,7 @@ typedef struct timerConfig_s {
     uint8_t reference;
 } timerConfig_t;
 
-timerConfig_t timerConfig[MAX_TIMERS * CC_CHANNELS_PER_TIMER];
+timerConfig_t timerConfigs[MAX_TIMERS * CC_CHANNELS_PER_TIMER];
 
 static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
 {
@@ -120,9 +120,9 @@ void configureTimerChannelCallback(TIM_TypeDef *tim, uint8_t channel, uint8_t re
         return;
     }
 
-    timerConfig[timerConfigIndex].callback = callback;
-    timerConfig[timerConfigIndex].channel = channel;
-    timerConfig[timerConfigIndex].reference = reference;
+    timerConfigs[timerConfigIndex].callback = callback;
+    timerConfigs[timerConfigIndex].channel = channel;
+    timerConfigs[timerConfigIndex].reference = reference;
 }
 
 void configureTimerInputCaptureCompareChannel(TIM_TypeDef *tim, const uint8_t channel)
@@ -188,7 +188,7 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 timerConfig_t *findTimerConfig(TIM_TypeDef *tim, uint8_t channel)
 {
     uint8_t timerConfigIndex = (lookupTimerIndex(tim) * MAX_TIMERS) + lookupChannelIndex(channel);
-    return &(timerConfig[timerConfigIndex]);
+    return &(timerConfigs[timerConfigIndex]);
 }
 
 static void timCCxHandler(TIM_TypeDef *tim)
