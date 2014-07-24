@@ -173,6 +173,13 @@ void acc_calc(uint32_t deltaT)
     float rpy[3];
     t_fp_vector accel_ned;
 
+
+    // sum up Values for later integration to get velocity and distance
+    accTimeSum += deltaT;
+    accSumCount++;
+    // deltaT is measured in us ticks
+    deltaT *= 1e-6f;
+
     // the accel values have to be rotated into the earth frame
     rpy[0] = -(float)anglerad[ROLL];
     rpy[1] = -(float)anglerad[PITCH];
@@ -199,10 +206,6 @@ void acc_calc(uint32_t deltaT)
     accSum[X] += applyDeadband(lrintf(accel_ned.V.X), cfg.accxy_deadband);
     accSum[Y] += applyDeadband(lrintf(accel_ned.V.Y), cfg.accxy_deadband);
     accSum[Z] += applyDeadband(lrintf(accz_smooth), cfg.accz_deadband);
-
-    // sum up Values for later integration to get velocity and distance
-    accTimeSum += deltaT;
-    accSumCount++;
 }
 
 void accSum_reset(void)
