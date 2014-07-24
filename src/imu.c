@@ -173,6 +173,9 @@ void acc_calc(uint32_t deltaT)
     float rpy[3];
     t_fp_vector accel_ned;
 
+    // deltaT is measured in us
+    deltaT *= 1e-6f;
+
     // the accel values have to be rotated into the earth frame
     rpy[0] = -(float)anglerad[ROLL];
     rpy[1] = -(float)anglerad[PITCH];
