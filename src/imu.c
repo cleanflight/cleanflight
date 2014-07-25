@@ -169,16 +169,13 @@ static const float fc_acc = 0.5f / (M_PI * F_CUT_ACCZ);
 void acc_calc(uint32_t deltaT)
 {
     static int32_t accZoffset = 0;
-    static float accz_smooth;
+    static float accz_smooth = 0;
+    float dT = 0;
     float rpy[3];
     t_fp_vector accel_ned;
 
-
-    // sum up Values for later integration to get velocity and distance
-    accTimeSum += deltaT;
-    accSumCount++;
     // deltaT is measured in us ticks
-    deltaT *= 1e-6f;
+    dT = (float)deltaT * 1e-6f;
 
     // the accel values have to be rotated into the earth frame
     rpy[0] = -(float)anglerad[ROLL];
@@ -200,12 +197,16 @@ void acc_calc(uint32_t deltaT)
     } else
         accel_ned.V.Z -= acc_1G;
 
-    accz_smooth = accz_smooth + (deltaT / (fc_acc + deltaT)) * (accel_ned.V.Z - accz_smooth); // low pass filter
+    accz_smooth = accz_smooth + (dT / (fc_acc + dT)) * (accel_ned.V.Z - accz_smooth); // low pass filter
 
-    // apply Deadband to reduce integration drift and vibration influence
+    // apply Deadband to reduce integration drift and vibration influence and
+    // sum up Values for later integration to get velocity and distance
     accSum[X] += applyDeadband(lrintf(accel_ned.V.X), cfg.accxy_deadband);
     accSum[Y] += applyDeadband(lrintf(accel_ned.V.Y), cfg.accxy_deadband);
     accSum[Z] += applyDeadband(lrintf(accz_smooth), cfg.accz_deadband);
+    
+    accTimeSum += deltaT;
+    accSumCount++;
 }
 
 void accSum_reset(void)
