@@ -16,12 +16,15 @@ int32_t sonarAlt = -1;         // in cm , -1 indicate sonar is not in range
 int32_t EstAlt;                // in cm
 int32_t BaroPID = 0;
 int32_t AltHold;
-int32_t errorAltitudeI = 0;
+int32_t setVelocity = 0;
+uint8_t velocityControl = 0;
+int32_t errorVelocityI = 0;
 int32_t vario = 0;                      // variometer in cm/s
 int16_t throttleAngleCorrection = 0;    // correction of throttle in lateral wind,
 float magneticDeclination = 0.0f;       // calculated at startup from config
 float accVelScale;
 float throttleAngleScale;
+float fc_acc;
 
 // **************
 // gyro+acc IMU
@@ -38,6 +41,8 @@ void imuInit(void)
     smallAngle = lrintf(acc_1G * cosf(RAD * cfg.small_angle));
     accVelScale = 9.80665f / acc_1G / 10000.0f;
     throttleAngleScale = (1800.0f / M_PI) * (900.0f / cfg.throttle_correction_angle);
+    
+    fc_acc = 0.5f / (M_PI * cfg.accz_lpf_cutoff); // calculate RC time constant used in the accZ lpf
 
 #ifdef MAG
     // if mag sensor is enabled, use it
@@ -161,9 +166,6 @@ int32_t applyDeadband(int32_t value, int32_t deadband)
     }
     return value;
 }
-
-#define F_CUT_ACCZ 10.0f // 10Hz should still be fast enough
-static const float fc_acc = 0.5f / (M_PI * F_CUT_ACCZ);
 
 // rotate acc into Earth frame and calculate acceleration in it
 void acc_calc(uint32_t deltaT)
@@ -383,7 +385,7 @@ int getEstimatedAltitude(void)
 
     // Integrator - Altitude in cm
     accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                         // integrate velocity to get distance (x= a/2 * t^2)
-    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt); 		// complementary filter for Altitude estimation (baro & acc)
+    accAlt = accAlt * cfg.baro_cf_alt + (float)BaroAlt * (1.0f - cfg.baro_cf_alt);      // complementary filter for altitude estimation (baro & acc)
 
     // when the sonar is in his best range
     if (sonarAlt > 0 && sonarAlt < 200)
@@ -404,8 +406,8 @@ int getEstimatedAltitude(void)
     baroVel = (BaroAlt - lastBaroAlt) * 1000000.0f / dTime;
     lastBaroAlt = BaroAlt;
 
-    baroVel = constrain(baroVel, -300, 300);    // constrain baro velocity +/- 300cm/s
-    baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
+    baroVel = constrain(baroVel, -1500, 1500);    // constrain baro velocity +/- 1500cm/s
+    baroVel = applyDeadband(baroVel, 10);         // to reduce noise near zero
 
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
@@ -417,22 +419,26 @@ int getEstimatedAltitude(void)
 
     if (tiltAngle < 800) { // only calculate pid if the copters thrust is facing downwards(<80deg)
         // Altitude P-Controller
-        error = constrain(AltHold - EstAlt, -500, 500);
-        error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
-        setVel = constrain((cfg.P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
-
+        if (!velocityControl) {
+            error = constrain(AltHold - EstAlt, -500, 500);
+            error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
+            setVel = constrain((cfg.P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
+        } else {
+            setVel = setVelocity;
+        }
+        
         // Velocity PID-Controller
         // P
         error = setVel - vel_tmp;
         BaroPID = constrain((cfg.P8[PIDVEL] * error / 32), -300, +300);
 
         // I
-        errorAltitudeI += (cfg.I8[PIDVEL] * error) / 8;
-        errorAltitudeI = constrain(errorAltitudeI, -(1024 * 200), (1024 * 200));
-        BaroPID += errorAltitudeI / 1024;     // I in range +/-200
+        errorVelocityI += (cfg.I8[PIDVEL] * error);
+        errorVelocityI = constrain(errorVelocityI, -(8196 * 200), (8196 * 200));
+        BaroPID += errorVelocityI / 8196;     // I in the range of +/-200
 
         // D
-        BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 64, -150, 150);
+        BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
 
     } else {
         BaroPID = 0;

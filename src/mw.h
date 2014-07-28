@@ -182,6 +182,7 @@ typedef struct config_t {
     float baro_noise_lpf;                   // additional LPF to reduce baro noise
     float baro_cf_vel;                      // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity)
     float baro_cf_alt;                      // apply CF to use ACC for height estimation
+    float accz_lpf_cutoff;                  // cutoff frequency for the low pass filter used on the acc z-axis for althold in Hz
     uint8_t acc_unarmedcal;                 // turn automatic acc compensation on/off
     uint8_t small_angle;                    // what is considered a safe angle for arming
 
@@ -362,7 +363,9 @@ extern int32_t BaroAlt;
 extern int32_t sonarAlt;
 extern int32_t EstAlt;
 extern int32_t AltHold;
-extern int32_t errorAltitudeI;
+extern int32_t setVelocity;
+extern uint8_t velocityControl;
+extern int32_t errorVelocityI;
 extern int32_t BaroPID;
 extern int32_t vario;
 extern int16_t throttleAngleCorrection;

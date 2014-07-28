@@ -199,6 +199,7 @@ const clivalue_t valueTable[] = {
     { "baro_noise_lpf", VAR_FLOAT, &cfg.baro_noise_lpf, 0, 1 },
     { "baro_cf_vel", VAR_FLOAT, &cfg.baro_cf_vel, 0, 1 },
     { "baro_cf_alt", VAR_FLOAT, &cfg.baro_cf_alt, 0, 1 },
+    { "accz_lpf_cutoff", VAR_FLOAT, &cfg.accz_lpf_cutoff, 1, 20 },
     { "mag_declination", VAR_INT16, &cfg.mag_declination, -18000, 18000 },
     { "gps_pos_p", VAR_UINT8, &cfg.P8[PIDPOS], 0, 200 },
     { "gps_pos_i", VAR_UINT8, &cfg.I8[PIDPOS], 0, 200 },
