@@ -939,119 +939,121 @@ static uint8_t hex_c(uint8_t n)
 #define FRAME_GGA  1
 #define FRAME_RMC  2
 
+typedef struct gpsMessage_t {
+    int32_t latitude;
+    int32_t longitude; 
+    uint8_t numSat;
+    uint16_t altitude;
+    uint16_t speed;
+    uint16_t ground_course;
+} gpsMessage_t;
+
 static bool gpsNewFrameNMEA(char c)
 {
-    typedef struct gpsdata_t {
-        int32_t latitude;
-        int32_t longitude; 
-        uint8_t numSat;
-        uint16_t altitude;
-        uint16_t speed;
-        uint16_t ground_course;
-    };
-    
-    static  gpsdata_t gps_Msg;
-
     uint8_t frameOK = 0;
     static uint8_t param = 0, offset = 0, parity = 0;
     static char string[15];
     static uint8_t checksum_param, gps_frame = NO_FRAME;
+    static gpsMessage_t gps_msg;
 
     switch (c) {
-    case '$':
-        param = 0;
-        offset = 0;
-        parity = 0;
-        break;
-    case ',':
-    case '*':
-        string[offset] = 0;
-        if (param == 0) {       //frame identification
-            gps_frame = NO_FRAME;
-            if (string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')
-                gps_frame = FRAME_GGA;
-            if (string[0] == 'G' && string[1] == 'P' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')
-                gps_frame = FRAME_RMC;
-        }
-
-        switch (gps_frame) {
-        case FRAME_GGA:        //************* GPGGA FRAME parsing
-            switch (param) {
-//          case 1:             // Time information
-//              break;
-            case 2:
-                gps_Msg.latitude = GPS_coord_to_degrees(string);
-                break;
-            case 3:
-                if (string[0] == 'S')
-                    gps_Msg.latitude *= -1;
-                break;
-            case 4:
-                gps_Msg.longitude = GPS_coord_to_degrees(string);
-                break;
-            case 5:
-                if (string[0] == 'W')
-                    gps_Msg.longitude *= -1;
-                break;
-            case 6:
-                f.GPS_FIX = string[0] > '0';
-                break;
-            case 7:
-                gps_Msg.numSat = grab_fields(string, 0);
-                break;
-            case 9:
-                gps_Msg.altitude = grab_fields(string, 0);     // altitude in meters added by Mis
-                break;
-            }
+        case '$':
+            param = 0;
+            offset = 0;
+            parity = 0;
             break;
-        case FRAME_RMC:        //************* GPRMC FRAME parsing
-            switch (param) {
-            case 7:
-                gps_Msg.speed = ((grab_fields(string, 1) * 5144L) / 1000L);    // speed in cm/s added by Mis
-                break;
-            case 8:
-                gps_Msg.ground_course = (grab_fields(string, 1));      // ground course deg * 10
-                break;
-            }
-            break;
-        }
 
-        param++;
-        offset = 0;
-        if (c == '*')
-            checksum_param = 1;
-        else
-            parity ^= c;
-        break;
-    case '\r':
-    case '\n':
-        if (checksum_param) {   //parity checksum
-            uint8_t checksum = 16 * ((string[0] >= 'A') ? string[0] - 'A' + 10 : string[0] - '0') + ((string[1] >= 'A') ? string[1] - 'A' + 10 : string[1] - '0');
-            if (checksum == parity) {
-                switch (gps_frame) {
-                case FRAME_GGA:
-                  frameOK = 1;
-                  if (f.GPS_FIX) {
-                        GPS_coord[LAT] = gps_Msg.latitude;
-                        GPS_coord[LON] = gps_Msg.longitude;
-                        GPS_numSat = gps_Msg.numSat;
-                        GPS_altitude = gps_Msg.altitude;
+        case ',':
+        case '*':
+            string[offset] = 0;
+            if (param == 0) {       // frame identification
+                gps_frame = NO_FRAME;
+                if (string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')
+                    gps_frame = FRAME_GGA;
+                if (string[0] == 'G' && string[1] == 'P' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')
+                    gps_frame = FRAME_RMC;
+            }
+
+            switch (gps_frame) {
+                case FRAME_GGA:        // ************* GPGGA FRAME parsing
+                    switch (param) {
+                        case 2:
+                            gps_msg.latitude = GPS_coord_to_degrees(string);
+                            break;
+                        case 3:
+                            if (string[0] == 'S')
+                                gps_msg.latitude *= -1;
+                            break;
+                        case 4:
+                            gps_msg.longitude = GPS_coord_to_degrees(string);
+                            break;
+                        case 5:
+                            if (string[0] == 'W')
+                                gps_msg.longitude *= -1;
+                            break;
+                        case 6:
+                            f.GPS_FIX = string[0] > '0';
+                            break;
+                        case 7:
+                            gps_msg.numSat = grab_fields(string, 0);
+                            break;
+                        case 9:
+                            gps_msg.altitude = grab_fields(string, 0);     // altitude in meters added by Mis
+                            break;
                     }
                     break;
-                case FRAME_RMC:
-                    GPS_speed = gps_Msg.speed;
-                    GPS_ground_course = gps_Msg.ground_course;
+
+                case FRAME_RMC:        // ************* GPRMC FRAME parsing
+                    switch (param) {
+                        case 7:
+                            gps_msg.speed = ((grab_fields(string, 1) * 5144L) / 1000L);    // speed in cm/s added by Mis
+                            break;
+                        case 8:
+                            gps_msg.ground_course = (grab_fields(string, 1));      // ground course deg * 10
+                            break;
+                    }
                     break;
-                } // end switch
             }
-        }
-        checksum_param = 0;
-        break;
-    default:
-        if (offset < 15)
-            string[offset++] = c;
-        if (!checksum_param)
-            parity ^= c;
+            param++;
+            offset = 0;
+            if (c == '*')
+                checksum_param = 1;
+            else
+                parity ^= c;
+            break;
+
+        case '\r':
+        case '\n':
+            if (checksum_param) {   //parity checksum
+                uint8_t checksum = 16 * ((string[0] >= 'A') ? string[0] - 'A' + 10 : string[0] - '0') + ((string[1] >= 'A') ? string[1] - 'A' + 10 : string[1] - '0');
+                if (checksum == parity) {
+                    switch (gps_frame) {
+                        case FRAME_GGA:
+                          frameOK = 1;
+                          if (f.GPS_FIX) {
+                                GPS_coord[LAT] = gps_msg.latitude;
+                                GPS_coord[LON] = gps_msg.longitude;
+                                GPS_numSat = gps_msg.numSat;
+                                GPS_altitude = gps_msg.altitude;
+                            }
+                            break;
+
+                        case FRAME_RMC:
+                            GPS_speed = gps_msg.speed;
+                            GPS_ground_course = gps_msg.ground_course;
+                            break;
+                    }
+                }
+            }
+            checksum_param = 0;
+            break;
+
+        default:
+            if (offset < 15)
+                string[offset++] = c;
+            if (!checksum_param)
+                parity ^= c;
+            break;
     }
     return frameOK;
 }
