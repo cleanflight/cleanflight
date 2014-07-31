@@ -74,6 +74,7 @@ static void cliMotor(char *cmdline);
 static void cliProfile(char *cmdline);
 static void cliSave(char *cmdline);
 static void cliSet(char *cmdline);
+static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
 
@@ -129,6 +130,7 @@ const clicmd_t cmdTable[] = {
     { "dump", "print configurable settings in a pastable form", cliDump },
     { "exit", "", cliExit },
     { "feature", "list or -val or val", cliFeature },
+    { "get", "get variable value", cliGet },
     { "gpspassthrough", "passthrough gps to serial", cliGpsPassthrough },
     { "help", "", cliHelp },
     { "map", "mapping of rc channel order", cliMap },
@@ -929,6 +931,29 @@ static void cliSet(char *cmdline)
             }
         }
     }
+}
+
+static void cliGet(char *cmdline)
+{
+    uint32_t i;
+    uint32_t len;
+    const clivalue_t *val;
+  	
+    len = strlen(cmdline);
+	
+	// Find the matching variable
+	for (i = 0; i < VALUE_COUNT; i++) {
+		if ((strncasecmp(cmdline, valueTable[i].name, strlen(valueTable[i].name)) == 0) && (len == strlen(valueTable[i].name))) {
+			val = &valueTable[i];
+			printf("%s = ", valueTable[i].name);
+			cliPrintVar(val, 0);
+			printf("\r\n");
+			return;
+		}
+	}
+	
+	// If we get down here, then the variable was not found
+	printf("Variable '%s' not found.\r\n ", cmdline);
 }
 
 static void cliStatus(char *cmdline)
