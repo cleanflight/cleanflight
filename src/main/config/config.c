@@ -73,7 +73,8 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
 #endif
 
-#define FLASH_WRITE_ADDR                (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG)) // use the last flash pages for storagemaster_t masterConfig;      // master config struct with data independent from profiles
+#define FLASH_WRITE_ADDR                (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG)) // use the last flash pages for storage
+master_t masterConfig;      // master config struct with data independent from profiles
 profile_t currentProfile;   // profile config struct
 
 static const uint8_t EEPROM_CONF_VERSION = 72;
@@ -588,7 +589,7 @@ void changeProfile(uint8_t profileIndex)
     masterConfig.current_profile_index = profileIndex;
     writeEEPROM();
     readEEPROM();
-    blinkLedAndSoundBeeper(2, 40, profileIndex);
+    blinkLedAndSoundBeeper(2, 40, profileIndex + 1);
 }
 
 bool feature(uint32_t mask)
