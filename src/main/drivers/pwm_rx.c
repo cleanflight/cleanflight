@@ -231,6 +231,11 @@ static void pwmEdgeCallback(uint8_t port, captureCompare_t capture)
         // switch state
         pwmInputPort->state = 0;
         pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+		
+		// Increment failsafe counter
+		if(pwmInputPort->channel == 1){
+			ppmFrameCount++;
+		}
     }
 }
 
