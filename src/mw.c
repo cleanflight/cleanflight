@@ -460,7 +460,6 @@ void loop(void)
     bool isThrottleLow = false;
     bool rcReady = false;
 
-#ifndef CJMCU
     // calculate rc stuff from serial-based receivers (spek/sbus)
     if (feature(FEATURE_SERIALRX)) {
         switch (mcfg.serialrx_type) {
@@ -479,7 +478,6 @@ void loop(void)
                 break;
         }
     }
-#endif
 
     if (((int32_t)(currentTime - rcTime) >= 0) || rcReady) { // 50Hz or data driven
         rcReady = false;

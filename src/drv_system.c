@@ -228,12 +228,9 @@ static void beepRev5(bool onoff)
         digitalLo(BEEP_GPIO, BEEP_PIN);
     }
 }
-#endif
 
 void systemBeep(bool onoff)
 {
-#ifdef BUZZER
     systemBeepPtr(onoff);
-#endif
 }
-
+#endif

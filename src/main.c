@@ -140,7 +140,6 @@ int main(void)
     rcReadRawFunc = pwmReadRawRC;
     core.numRCChannels = MAX_INPUTS;
 
-#ifndef CJMCU
     if (feature(FEATURE_SERIALRX)) {
         switch (mcfg.serialrx_type) {
             case SERIALRX_SPEKTRUM1024:
@@ -157,7 +156,9 @@ int main(void)
                 mspInit(&rcReadRawFunc);
                 break;
         }
-    } else { // spektrum and GPS are mutually exclusive
+    }
+#ifndef CJMCU
+    else { // spektrum and GPS are mutually exclusive
         // Optional GPS - available in both PPM and PWM input mode, in PWM input, reduces number of available channels by 2.
         // gpsInit will return if FEATURE_GPS is not enabled.
         gpsInit(mcfg.gps_baudrate);

@@ -59,15 +59,15 @@ COMMON_SRC	 = buzzer.c \
 		   drv_uart.c \
 		   printf.c \
 		   utils.c \
+		   sbus.c \
+		   sumd.c \
+		   spektrum.c \
 		   startup_stm32f10x_md_gcc.S \
 		   $(CMSIS_SRC) \
 		   $(STDPERIPH_SRC)
 
 # Source files for full-featured systems
 HIGHEND_SRC	 = gps.c \
-		   sbus.c \
-		   sumd.c \
-		   spektrum.c \
 		   drv_softserial.c \
 		   telemetry_common.c \
 		   telemetry_frsky.c \

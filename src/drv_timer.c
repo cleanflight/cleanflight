@@ -45,15 +45,6 @@
     TIM4 4 channels
 */
 
-#ifdef CJMCU
-const timerHardware_t timerHardware[] = {
-    { TIM2, GPIOA, Pin_0, TIM_Channel_1, TIM2_IRQn, 0, },          // PWM1
-    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 0, },          // PWM2
-    { TIM4, GPIOB, Pin_9, TIM_Channel_4, TIM4_IRQn, 0, },          // PWM3
-    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 0, },          // PWM4
-    { TIM4, GPIOB, Pin_8, TIM_Channel_3, TIM4_IRQn, 0, },          // PWM5
-};
-#else
 const timerHardware_t timerHardware[] = {
     { TIM2, GPIOA, Pin_0, TIM_Channel_1, TIM2_IRQn, 0, },          // PWM1
     { TIM2, GPIOA, Pin_1, TIM_Channel_2, TIM2_IRQn, 0, },          // PWM2
@@ -70,7 +61,6 @@ const timerHardware_t timerHardware[] = {
     { TIM4, GPIOB, Pin_8, TIM_Channel_3, TIM4_IRQn, 0, },          // PWM13
     { TIM4, GPIOB, Pin_9, TIM_Channel_4, TIM4_IRQn, 0, },          // PWM14
 };
-#endif
 
 #define MAX_TIMERS 4 // TIM1..TIM4
 #define CC_CHANNELS_PER_TIMER 4 // TIM_Channel_1..4
