@@ -22,7 +22,7 @@ All pull requests to add/improve the testability of the code or testing methods 
 2. Strike a balance between simplicity and not-repeating code.
 3. Methods that return a boolean should be named as a question, and should not change state.  e.g. 'isOkToArm()'
 4. Methods that start with the word 'find' can return a null, methods that start with 'get' should not.
-5. Methods should have verb or verb-phrase names, like `deletePage` or `save`. 
+5. Methods should have verb or verb-phrase names, like `deletePage` or `save`.  Variables should not, they generally should be nouns.  Tell the system to 'do' something 'with' something.  e.g. deleteAllPages(pageList).
 6. Keep methods short - it makes it easier to test.
 7. Don't be afraid of moving code to a new file - it helps to reduce test dependencies.
 8. Avoid noise-words in variable names, like 'data' or 'info'.  Think about what you're naming and name it well.  Don't be afraid to rename anything.
@@ -54,7 +54,16 @@ The tests are currently always compiled with debugging information enabled, ther
 
 * Test OpenLRSNG's RSSI PWM on AUX5-8.
 * Add support for UART3/4 on STM32F3.
+* Cleanup validateAndFixConfig and pwm_mapping.c to use some kind of feature/timer/io pin mapping to remove #ifdef
+* Split RX config into RC config and RX config.
+* Enabling/disabling features should not take effect until reboot since.  Main loop executes and uses new flags as they are set in the cli but
+appropriate init methods will not have been called which results in undefined behaviour and could damage connected devices - this is a legacy
+problem from baseflight.
+* Solve all the naze rev4/5 HSE_VALUE == 8000000/1200000 checking, the checks should only apply to the naze32 target.  See system_stm32f10x.c/SetSysClock().
 
 ##Known Issues
 
 * Softserial RX on STM32F3 does not work. TX is fine.
+* Dynamic throttle PID does not work with new pid controller.
+* Autotune does not work yet with with new pid controller.
+
