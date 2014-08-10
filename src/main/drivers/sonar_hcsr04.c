@@ -76,11 +76,6 @@ void EXTI1_IRQHandler(void)
     ECHO_EXTI_IRQHandler();
 }
 
-void EXTI9_5_IRQHandler(void)
-{
-    ECHO_EXTI_IRQHandler();
-}
-
 void hcsr04_init(sonar_config_t config)
 {
     gpio_config_t gpio;
@@ -95,7 +90,7 @@ void hcsr04_init(sonar_config_t config)
             echo_pin = Pin_9;      // PWM6 (PB9) - 5v tolerant
             exti_line = EXTI_Line9;
             exti_pin_source = GPIO_PinSource9;
-            exti_irqn = EXTI9_5_IRQn;
+            exti_irqn = EXTI1_IRQn;	// External interrupt 9_5 clashes with AccGyro, so we use exti1 instead
             break;
         case sonar_rc78:
             trigger_pin = Pin_0;   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
