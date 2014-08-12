@@ -22,6 +22,7 @@ enum {
     BOXANGLE,
     BOXHORIZON,
     BOXBARO,
+    BOXSONAR,
     BOXMAG,
     BOXHEADFREE,
     BOXHEADADJ,
@@ -53,6 +54,7 @@ typedef struct flags_t {
     uint8_t HORIZON_MODE;
     uint8_t MAG_MODE;
     uint8_t BARO_MODE;
+    uint8_t SONAR_MODE;
     uint8_t GPS_HOME_MODE;
     uint8_t GPS_HOLD_MODE;
     uint8_t HEADFREE_MODE;
