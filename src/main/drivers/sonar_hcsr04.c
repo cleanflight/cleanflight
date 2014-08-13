@@ -44,6 +44,9 @@ static IRQn_Type exti_irqn;
 
 static uint32_t last_measurement;
 static volatile int32_t *distance_ptr;
+static int32_t distance_init;
+
+extern int16_t debug[4];
 
 void ECHO_EXTI_IRQHandler(void)
 {
@@ -76,10 +79,19 @@ void EXTI1_IRQHandler(void)
     ECHO_EXTI_IRQHandler();
 }
 
+void EXTI9_5_IRQHandler(void)
+{
+    ECHO_EXTI_IRQHandler();
+}
+
 void hcsr04_init(sonar_config_t config)
 {
     gpio_config_t gpio;
     EXTI_InitTypeDef EXTIInit;
+
+	// Initialise our distance pointer, otherwise distance data will be written to a random memory location
+	distance_init = 0;
+    distance_ptr = &distance_init;
 
     // enable AFIO for EXTI support
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
@@ -90,7 +102,7 @@ void hcsr04_init(sonar_config_t config)
             echo_pin = Pin_9;      // PWM6 (PB9) - 5v tolerant
             exti_line = EXTI_Line9;
             exti_pin_source = GPIO_PinSource9;
-            exti_irqn = EXTI1_IRQn;	// External interrupt 9_5 clashes with AccGyro, so we use exti1 instead
+            exti_irqn = EXTI9_5_IRQn;
             break;
         case sonar_rc78:
             trigger_pin = Pin_0;   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
@@ -141,6 +153,10 @@ void hcsr04_get_distance(volatile int32_t *distance)
 
     last_measurement = current_time;
     distance_ptr = distance;
+
+#if 1
+	debug[0] = *distance;
+#endif
 
     digitalHi(GPIOB, trigger_pin);
     //  The width of trig signal must be greater than 10us
