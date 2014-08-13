@@ -621,7 +621,6 @@ void loop(void)
             if (f.SONAR_MODE) {
                 updateAltHold();
             }
-            debug[1] = rcCommand[THROTTLE];
         }
 #endif
 
