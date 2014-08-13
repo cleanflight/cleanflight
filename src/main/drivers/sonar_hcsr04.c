@@ -44,6 +44,9 @@ static IRQn_Type exti_irqn;
 
 static uint32_t last_measurement;
 static volatile int32_t *distance_ptr;
+static int32_t distance_init;
+
+extern int16_t debug[4];
 
 void ECHO_EXTI_IRQHandler(void)
 {
@@ -86,8 +89,12 @@ void hcsr04_init(sonar_config_t config)
     gpio_config_t gpio;
     EXTI_InitTypeDef EXTIInit;
 
-    // enable AFIO for EXTI support - already done is drv_system.c
-    // RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO | RCC_APB2Periph, ENABLE);
+	// Initialise our distance pointer, otherwise distance data will be written to a random memory location
+	distance_init = 0;
+    distance_ptr = &distance_init;
+
+    // enable AFIO for EXTI support
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
     switch (config) {
         case sonar_pwm56:
@@ -146,6 +153,10 @@ void hcsr04_get_distance(volatile int32_t *distance)
 
     last_measurement = current_time;
     distance_ptr = distance;
+
+#if 1
+	debug[0] = *distance;
+#endif
 
     digitalHi(GPIOB, trigger_pin);
     //  The width of trig signal must be greater than 10us
