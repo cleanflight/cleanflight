@@ -458,23 +458,18 @@ void validateAndFixConfig(void)
         featureClear(FEATURE_RX_PPM);
     }
 
-    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+    if (feature(FEATURE_CURRENT_METER)) {
 #if defined(STM32F10X_MD)
         // rssi adc needs the same ports
         featureClear(FEATURE_RSSI_ADC);
         // current meter needs the same ports
         featureClear(FEATURE_CURRENT_METER);
-#ifdef SONAR
-        // sonar needs a free PWM port
-        featureClear(FEATURE_SONAR);
-#endif
 #endif
 
 #if defined(STM32F10X_MD) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
         // led strip needs the same ports
         featureClear(FEATURE_LED_STRIP);
 #endif
-
 
         // software serial needs free PWM ports
         featureClear(FEATURE_SOFTSERIAL);
@@ -488,6 +483,17 @@ void validateAndFixConfig(void)
     }
 #endif
 
+#if defined(NAZE) && defined(SONAR)
+    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER)) {
+        featureClear(FEATURE_CURRENT_METER);
+    }
+#endif
+
+#if defined(OLIMEXINO) && defined(SONAR)
+    if (feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER)) {
+        featureClear(FEATURE_CURRENT_METER);
+    }
+#endif
 
     useRxConfig(&masterConfig.rxConfig);
 

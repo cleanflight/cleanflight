@@ -612,8 +612,8 @@ void loop(void)
             if (f.BARO_MODE) {
                 updateAltHold();
             }
-            debug[0] = rcCommand[THROTTLE];
         }
+
 #endif
 
 #ifdef SONAR
