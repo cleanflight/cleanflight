@@ -1,3 +1,7 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
 #include "board.h"
 
 // MMA8452QT, Standard address 0x1C
@@ -60,7 +64,7 @@ bool mma8452Detect(sensor_t *acc)
     uint8_t sig = 0;
 
     // Not supported with this frequency
-    if (hse_value == 12000000)
+    if (hw_revision >= NAZE32_REV5)
         return false;
 
     ack = i2cRead(MMA8452_ADDRESS, MMA8452_WHO_AM_I, 1, &sig);

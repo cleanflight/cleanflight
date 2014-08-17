@@ -25,7 +25,7 @@ void adcInit(drv_adc_config_t *init)
     adcConfig[ADC_BATTERY].dmaIndex = numChannels - 1;
 
     // optional ADC5 input on rev.5 hardware
-    if (hse_value == 12000000) {
+    if (hw_revision >= NAZE32_REV5) {
         numChannels++;
         adcConfig[ADC_EXTERNAL_PAD].adcChannel = ADC_Channel_5;
         adcConfig[ADC_EXTERNAL_PAD].dmaIndex = numChannels - 1;

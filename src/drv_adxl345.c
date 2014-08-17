@@ -1,3 +1,7 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
 #include "board.h"
 
 // ADXL345, Alternative address mode 0x53
@@ -43,7 +47,7 @@ bool adxl345Detect(drv_adxl345_config_t *init, sensor_t *acc)
     uint8_t sig = 0;
 
     // Not supported with this frequency
-    if (hse_value == 12000000)
+    if (hw_revision >= NAZE32_REV5)
         return false;
 
     ack = i2cRead(ADXL345_ADDRESS, 0x00, 1, &sig);

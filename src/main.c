@@ -8,11 +8,15 @@
 #include "telemetry_common.h"
 
 core_t core;
+int hw_revision = 0;
 
 extern rcReadRawDataPtr rcReadRawFunc;
 
 // receiver read function
 extern uint16_t pwmReadRawRC(uint8_t chan);
+
+// from system_stm32f10x.c
+void SetSysClock(bool overclock);
 
 #ifdef USE_LAME_PRINTF
 // gcc/GNU version
@@ -35,6 +39,7 @@ int fputc(int c, FILE *f)
 int main(void)
 {
     uint8_t i;
+    int id;
     drv_pwm_config_t pwm_params;
     drv_adc_config_t adc_params;
     bool sensorsOK = false;
@@ -46,12 +51,31 @@ int main(void)
     initEEPROM();
     checkFirstTime(false);
     readEEPROM();
-    systemInit(mcfg.emf_avoidance);
+
+    // Configure clock, this figures out HSE for hardware autodetect
+    SetSysClock(mcfg.emf_avoidance);
+
+    // determine hardware revision
+    if (hse_value == 8000000)
+        hw_revision = NAZE32;
+    else if (hse_value == 12000000)
+        hw_revision = NAZE32_REV5;
+
+    systemInit();
 #ifdef USE_LAME_PRINTF
     init_printf(NULL, _putc);
 #endif
 
     activateConfig();
+
+#ifndef CJMCU
+    id = spiInit();
+    if (id == SPI_DEVICE_MPU && hw_revision == NAZE32_REV5)
+        hw_revision = NAZE32_SP;
+#endif
+
+    if (hw_revision != NAZE32_SP)
+        i2cInit(I2C_DEVICE);
 
     // configure power ADC
     if (mcfg.power_adc_channel > 0 && (mcfg.power_adc_channel == 1 || mcfg.power_adc_channel == 9))

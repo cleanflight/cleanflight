@@ -1,6 +1,6 @@
 #pragma once
 
-void systemInit(bool overclock);
+void systemInit(void);
 void delayMicroseconds(uint32_t us);
 void delay(uint32_t ms);
 
@@ -13,5 +13,7 @@ void failureMode(uint8_t mode);
 // bootloader/IAP
 void systemReset(bool toBootloader);
 
+// current auto-detected hardware revision (enum HardwareRevision in board.h)
+extern int hw_revision;
 // current crystal frequency - 8 or 12MHz
 extern uint32_t hse_value;

@@ -1,3 +1,8 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
+
 #include "board.h"
 
 // SPI2 Driver
@@ -6,16 +11,17 @@
 // PB13     26      SPI2_SCK
 // PB12     25      SPI2_NSS
 
-static bool spiTest(void);
+static int spiDetect(void);
 
-bool spiInit(void)
+#define FLASH_M25P16    (0x202015)
+
+int spiInit(void)
 {
     gpio_config_t gpio;
     SPI_InitTypeDef spi;
 
     // Enable SPI2 clock
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
-    RCC_APB1PeriphResetCmd(RCC_APB1Periph_SPI2, ENABLE);
 
     // MOSI + SCK as output
     gpio.mode = Mode_AF_PP;
@@ -45,7 +51,7 @@ bool spiInit(void)
     SPI_Init(SPI2, &spi);
     SPI_Cmd(SPI2, ENABLE);
 
-    return spiTest();
+    return spiDetect();
 }
 
 void spiSelect(bool select)
@@ -86,16 +92,27 @@ bool spiTransfer(uint8_t *out, uint8_t *in, int len)
     return true;
 }
 
-static bool spiTest(void)
+static int spiDetect(void)
 {
     uint8_t out[] = { 0x9F, 0, 0, 0 };
     uint8_t in[4];
+    uint32_t flash_id;
 
+    // try autodetect flash chip
     spiSelect(true);
     spiTransfer(in, out, sizeof(out));
     spiSelect(false);
-    if (in[1] == 0xEF)
-        return true;
+    flash_id = in[1] << 16 | in[2] << 8 | in[3];
+    if (flash_id == FLASH_M25P16)
+        return SPI_DEVICE_FLASH;
 
-    return false;
+    // try autodetect MPU
+    spiSelect(true);
+    spiTransferByte(0x75 | 0x80);
+    in[0] = spiTransferByte(0xff);
+    spiSelect(false);
+    if (in[0] == 0x70)
+        return SPI_DEVICE_MPU;
+
+    return SPI_DEVICE_NONE;
 }

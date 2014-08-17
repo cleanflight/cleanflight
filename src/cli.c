@@ -72,6 +72,11 @@ static const char * const accNames[] = {
     "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "None", NULL
 };
 
+// sync this with HardwareRevision in board.h
+static const char * const hwNames[] = {
+    "", "Naze 32", "Naze32 rev.5", "Naze32 SP"
+};
+
 typedef struct {
     const char *name;
     const char *param;
@@ -1000,7 +1005,7 @@ static void cliStatus(char *cmdline)
         millis() / 1000, vbat, batteryCellCount);
     mask = sensorsMask();
 
-    printf("CPU %dMHz, detected sensors: ", (SystemCoreClock / 1000000));
+    printf("Hardware: %s @ %dMHz, detected sensors: ", hwNames[hw_revision], (SystemCoreClock / 1000000));
     for (i = 0; ; i++) {
         if (sensorNames[i] == NULL)
             break;

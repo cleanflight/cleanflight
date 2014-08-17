@@ -1,3 +1,8 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
+
 #include "board.h"
 
 // HMC5883L, default address 0x1E
@@ -99,13 +104,13 @@ void hmc5883lInit(void)
     int32_t xyz_total[3] = { 0, 0, 0 }; // 32 bit totals so they won't overflow.
     bool bret = true;           // Error indicator
 
-    if (hse_value == 8000000) {
+    if (hw_revision == NAZE32) {
         // PB12 - MAG_DRDY output on rev4 hardware
         gpio.pin = Pin_12;
         gpio.speed = Speed_2MHz;
         gpio.mode = Mode_IN_FLOATING;
         gpioInit(GPIOB, &gpio);
-    } else if (hse_value == 12000000) {
+    } else if (hw_revision >= NAZE32_REV5) {
         // PC14 - MAG_DRDY output on rev5 hardware
         gpio.pin = Pin_14;
         gpioInit(GPIOC, &gpio);

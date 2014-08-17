@@ -1,7 +1,13 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
+
 #include "board.h"
 
 // MPU6050, Standard address 0x68
-// MPU_INT on PB13 on rev4 hardware
+// MPU_INT connected to PB13 on rev4 hardware
+// MPU_INT connected to PC13 on rev5 hardware
 #define MPU6050_ADDRESS         0x68
 
 #define DMP_MEM_START_ADDR 0x6E
@@ -234,9 +240,9 @@ static void mpu6050GyroInit(sensor_align_e align)
     gpio.pin = Pin_13;
     gpio.speed = Speed_2MHz;
     gpio.mode = Mode_IN_FLOATING;
-    if (hse_value == 8000000)
+    if (hw_revision == NAZE32)
         gpioInit(GPIOB, &gpio);
-    else if (hse_value == 12000000)
+    else if (hw_revision >= NAZE32_REV5)
         gpioInit(GPIOC, &gpio);
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1

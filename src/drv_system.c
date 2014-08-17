@@ -9,8 +9,6 @@
 static volatile uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
-// from system_stm32f10x.c
-void SetSysClock(bool overclock);
 #ifdef BUZZER
 void systemBeep(bool onoff);
 static void beepRev4(bool onoff);
@@ -48,7 +46,7 @@ uint32_t millis(void)
     return sysTickUptime;
 }
 
-void systemInit(bool overclock)
+void systemInit(void)
 {
     struct {
         GPIO_TypeDef *gpio;
@@ -81,12 +79,8 @@ void systemInit(bool overclock)
 #endif
     };
     gpio_config_t gpio;
-    uint32_t i;
-    uint8_t gpio_count = sizeof(gpio_setup) / sizeof(gpio_setup[0]);
+    int i, gpio_count = sizeof(gpio_setup) / sizeof(gpio_setup[0]);
 
-    // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
-    // Configure the Flash Latency cycles and enable prefetch buffer
-    SetSysClock(overclock);
     // Configure NVIC preempt/priority groups
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
@@ -110,7 +104,7 @@ void systemInit(bool overclock)
 #ifdef BUZZER
     // Configure gpio
     // rev5 needs inverted beeper. oops.
-    if (hse_value == 12000000)
+    if (hw_revision >= NAZE32_REV5)
         systemBeepPtr = beepRev5;
     else
         systemBeepPtr = beepRev4;
@@ -121,7 +115,7 @@ void systemInit(bool overclock)
 
     // Hack - rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
     for (i = 0; i < gpio_count; i++) {
-        if (hse_value == 12000000 && gpio_setup[i].cfg.mode == Mode_Out_OD)
+        if (hw_revision >= NAZE32_REV5 && gpio_setup[i].cfg.mode == Mode_Out_OD)
             gpio_setup[i].cfg.mode = Mode_Out_PP;
         gpioInit(gpio_setup[i].gpio, &gpio_setup[i].cfg);
     }
@@ -131,12 +125,6 @@ void systemInit(bool overclock)
 
     // SysTick
     SysTick_Config(SystemCoreClock / 1000);
-
-    // Configure the rest of the stuff
-    i2cInit(I2C_DEVICE);
-#ifndef CJMCU
-    spiInit();
-#endif
 
     // sleep for 100ms
     delay(100);

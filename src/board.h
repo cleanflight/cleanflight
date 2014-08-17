@@ -44,6 +44,13 @@
 #define U_ID_1 (*(uint32_t*)0x1FFFF7EC)
 #define U_ID_2 (*(uint32_t*)0x1FFFF7F0)
 
+
+typedef enum HardwareRevision {
+    NAZE32 = 1,                                         // Naze32 and compatible with 8MHz HSE
+    NAZE32_REV5,                                        // Naze32 and compatible with 12MHz HSE
+    NAZE32_SP                                           // Naze32 w/Sensor Platforms
+} HardwareRevision;
+
 typedef enum {
     SENSOR_GYRO = 1 << 0, // always present
     SENSOR_ACC = 1 << 1,

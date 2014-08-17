@@ -1,3 +1,7 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
 #include "board.h"
 
 // MS5611, Standard address 0x77
@@ -40,7 +44,7 @@ bool ms5611Detect(baro_t *baro)
     uint8_t sig;
     int i;
 
-    if (hse_value != 12000000) {
+    if (hw_revision == NAZE32) {
         // PC13 (BMP085's XCLR reset input, which we use to disable it). Only needed when running at 8MHz
         gpio_config_t gpio;
         gpio.pin = Pin_13;
