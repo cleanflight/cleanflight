@@ -236,14 +236,13 @@ static void mpu6050GyroInit(sensor_align_e align)
 {
     gpio_config_t gpio;
 
-    // MPU_INT output on rev4/5 hardware (PB13, PC13)
-    gpio.pin = Pin_13;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_IN_FLOATING;
-    if (hw_revision == NAZE32)
-        gpioInit(GPIOB, &gpio);
-    else if (hw_revision >= NAZE32_REV5)
+    // MPU_INT output on rev5 hardware (PC13). rev4 was on PB13, conflicts with SPI devices
+    if (hw_revision >= NAZE32_REV5) {
+        gpio.pin = Pin_13;
+        gpio.speed = Speed_2MHz;
+        gpio.mode = Mode_IN_FLOATING;
         gpioInit(GPIOC, &gpio);
+    }
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
     delay(5);
