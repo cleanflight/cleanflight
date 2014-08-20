@@ -126,6 +126,19 @@ void updateAltHoldState(void)
     } else {
         f.BARO_MODE = 0;
     }
+
+    // Sonar alt hold activate
+	if (rcOptions[BOXSONAR]) {
+		if (!f.SONAR_MODE) {
+			f.SONAR_MODE = 1;
+			AltHold = EstAlt;
+			initialThrottleHold = rcCommand[THROTTLE];
+			errorVelocityI = 0;
+			BaroPID = 0;
+		}
+	} else {
+		f.SONAR_MODE = 0;
+	}
 }
 
 #endif

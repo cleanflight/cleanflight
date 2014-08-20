@@ -146,7 +146,7 @@ struct box_t {
     { BOXANGLE, "ANGLE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
     { BOXBARO, "BARO;", 3 },
-    //{ BOXVARIO, "VARIO;", 4 },
+    { BOXSONAR, "SONAR;", 4 },
     { BOXMAG, "MAG;", 5 },
     { BOXHEADFREE, "HEADFREE;", 6 },
     { BOXHEADADJ, "HEADADJ;", 7 },
@@ -363,6 +363,10 @@ void mspInit(serialConfig_t *serialConfig)
         availableBoxes[idx++] = BOXBARO;
     }
 
+	if (feature(FEATURE_SONAR)){
+		availableBoxes[idx++] = BOXSONAR;
+	}
+
     if (sensors(SENSOR_ACC) || sensors(SENSOR_MAG)) {
         availableBoxes[idx++] = BOXMAG;
         availableBoxes[idx++] = BOXHEADFREE;
@@ -530,6 +534,7 @@ static void evaluateCommand(void)
         tmp = f.ANGLE_MODE << BOXANGLE |
             f.HORIZON_MODE << BOXHORIZON |
             f.BARO_MODE << BOXBARO |
+            f.SONAR_MODE << BOXSONAR |
             f.MAG_MODE << BOXMAG |
             f.HEADFREE_MODE << BOXHEADFREE |
             rcOptions[BOXHEADADJ] << BOXHEADADJ |

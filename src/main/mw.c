@@ -401,7 +401,7 @@ void executePeriodicTasks(void)
         break;
 
     case CALCULATE_ALTITUDE_TASK:
-        if (sensors(SENSOR_BARO) && isBaroReady()) {
+       if ((sensors(SENSOR_BARO) && isBaroReady()) || sensors(SENSOR_SONAR)) {
             calculateEstimatedAltitude(currentTime);
         }
         break;
@@ -571,7 +571,7 @@ void loop(void)
 #ifdef BARO
         // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
         if (haveProcessedAnnexCodeOnce) {
-            if (sensors(SENSOR_BARO)) {
+            if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
                 updateAltHoldState();
             }
         }
@@ -614,6 +614,14 @@ void loop(void)
             }
         }
 
+#endif
+
+#ifdef SONAR
+        if (sensors(SENSOR_SONAR)) {
+            if (f.SONAR_MODE) {
+                updateAltHold();
+            }
+        }
 #endif
 
         if (currentProfile.throttle_correction_value && (f.ANGLE_MODE || f.HORIZON_MODE)) {
