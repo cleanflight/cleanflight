@@ -191,9 +191,9 @@ static uint8_t cmdMSP;
 
 void mspSerialWrite(uint8_t a){
 	int i;
-	for(i=0;i<MAX_MSP_PORT_COUNT;i++){
+	for(i=0; i < MAX_MSP_PORT_COUNT; i++){
 		if(mspPort[i])
-			serialWrite(mspPort[i],a);
+			serialWrite(mspPort[i], a);
 	}   
 }
 
@@ -320,9 +320,9 @@ reset:
 static void openAllMSPSerialPorts(serialConfig_t *serialConfig)
 {
     int i;
-	for(i=0;i<MAX_MSP_PORT_COUNT;i++){
+	for (i = 0; i < MAX_MSP_PORT_COUNT; i++){
     	mspPort[i] = NULL;
-        uint32_t baudRate = serialConfig->msp_baudrate;
+        uint32_t baudRate = serialConfig -> msp_baudrate;
         bool triedFallbackRate = false;
 		do {
 			mspPort[i] = openSerialPort(FUNCTION_MSP, NULL, baudRate, MODE_RXTX, SERIAL_NOT_INVERTED);
@@ -841,7 +841,7 @@ static void evaluateCommand(void)
 
 void mspProcess(void){
 	int i;
-	for(i=0;i<MAX_MSP_PORT_COUNT;i++){
+	for(i=0; i < MAX_MSP_PORT_COUNT; i++){
 		if(mspPort[i])
 			mspSerialProcess(mspPort[i]);
 	}
