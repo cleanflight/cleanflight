@@ -167,6 +167,19 @@ static void sendVario(void)
 }
 
 /*
+ * Send voltage with ID_VOLTAGE_AMP
+ */
+static void sendVoltageAmp(void)
+{
+    uint16_t voltage = (vbat * 110) / 21;
+
+    sendDataHead(ID_VOLTAGE_AMP_BP);
+    serialize16(voltage / 100);
+    sendDataHead(ID_VOLTAGE_AMP_AP);
+    serialize16(((voltage % 100) + 5) / 10);
+}
+
+/*
  * Send voltage via ID_VOLT
  *
  * NOTE: This sends voltage divided by batteryCellCount. To get the real
@@ -282,6 +295,7 @@ void handleFrSkyTelemetry(void)
         sendTemperature1();
 
         if (feature(FEATURE_VBAT)) {
+            sendVoltageAmp();
             sendVoltage();
             sendAmperage();
             sendFuelLevel();
