@@ -41,7 +41,6 @@
 #include "rx/rx.h"
 #include "io/rc_controls.h"
 
-
 int16_t rcCommand[4];           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 
 bool areSticksInApModePosition(uint16_t ap_mode)
@@ -83,16 +82,20 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     rcSticks = stTmp;
 
     // perform actions
-    if (throttleStatus == THROTTLE_LOW) {
-        if (activate[BOXARM] > 0) { // Arming via ARM BOX
-            if (rcOptions[BOXARM] && f.OK_TO_ARM)
-                mwArm();
-        }
-    }
+    if (activate[BOXARM] > 0) {
 
-    if (activate[BOXARM] > 0) { // Disarming via ARM BOX
-        if (!rcOptions[BOXARM] && f.ARMED) {
-            mwDisarm();
+        if (rcOptions[BOXARM]) {
+            // Arming via ARM BOX
+            if (throttleStatus == THROTTLE_LOW) {
+                if (ARMING_FLAG(OK_TO_ARM)) {
+                    mwArm();
+                }
+            }
+        } else {
+            // Disarming via ARM BOX
+            if (ARMING_FLAG(ARMED)) {
+                mwDisarm();
+            }
         }
     }
 
@@ -100,10 +103,13 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         return;
     }
 
-    if (f.ARMED) {      // actions during armed
+    if (ARMING_FLAG(ARMED)) {
+        // actions during armed
+
         // Disarm on throttle down + yaw
         if (activate[BOXARM] == 0 && (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE))
             mwDisarm();
+
         // Disarm on roll (only when retarded_arm is enabled)
         if (retarded_arm && activate[BOXARM] == 0 && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO))
             mwDisarm();
@@ -174,7 +180,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
 
     if (rcSticks == THR_HI + YAW_HI + PIT_LO + ROL_CE) {
         // Calibrating Mag
-        f.CALIBRATE_MAG = 1;
+        ENABLE_STATE(CALIBRATE_MAG);
         return;
     }
 

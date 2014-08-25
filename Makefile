@@ -131,7 +131,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM3/CoreSupport \
 		   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f103.ld
+LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_128k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
 TARGET_FLAGS = -D$(TARGET) -pedantic
@@ -251,11 +251,16 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/serial_softserial.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f10x.c \
+		   drivers/sonar_hcsr04.c \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
+
+ifeq ($(TARGET),CJMCU)
+LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_64k.ld
+endif
 
 CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc.c \

@@ -239,7 +239,7 @@ void acc_calc(uint32_t deltaT)
     rotateV(&accel_ned.V, &rpy);
 
     if (imuRuntimeConfig->acc_unarmedcal == 1) {
-        if (!f.ARMED) {
+        if (!ARMING_FLAG(ARMED)) {
             accZoffset -= accZoffset / 64;
             accZoffset += accel_ned.V.Z;
         }
@@ -329,7 +329,11 @@ static void getEstimatedAttitude(void)
             EstG.A[axis] = (EstG.A[axis] * imuRuntimeConfig->gyro_cmpf_factor + accSmooth[axis]) * invGyroComplimentaryFilterFactor;
     }
 
-    f.SMALL_ANGLE = (EstG.A[Z] > smallAngle);
+    if (EstG.A[Z] > smallAngle) {
+        ENABLE_STATE(SMALL_ANGLE);
+    } else {
+        DISABLE_STATE(SMALL_ANGLE);
+    }
 
     // Attitude of the estimated vector
     anglerad[AI_ROLL] = atan2f(EstG.V.Y, EstG.V.Z);
@@ -484,7 +488,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     accAlt = accAlt * barometerConfig->baro_cf_alt + (float)BaroAlt * (1.0f - barometerConfig->baro_cf_alt);    // complementary filter for altitude estimation (baro & acc)
     vel += vel_acc;
 
-#if 1
+#if 0
     debug[1] = accSum[2] / accSumCount; // acceleration
     debug[2] = vel;                     // velocity
     debug[3] = accAlt;                  // height

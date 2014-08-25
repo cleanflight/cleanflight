@@ -105,7 +105,7 @@ bool determineNewTelemetryEnabledState(void)
         if (telemetryConfig->telemetry_switch)
             enabled = rcOptions[BOXTELEMETRY];
         else
-            enabled = f.ARMED;
+            enabled = ARMING_FLAG(ARMED);
     }
 
     return enabled;
@@ -125,6 +125,10 @@ uint32_t getTelemetryProviderBaudRate(void)
     if (isTelemetryProviderHoTT()) {
         return getHoTTTelemetryProviderBaudRate();
     }
+
+    if (isTelemetryProviderMSP()) {
+        return getMSPTelemetryProviderBaudRate();
+    }
     return 0;
 }
 
@@ -137,6 +141,10 @@ static void configureTelemetryPort(void)
     if (isTelemetryProviderHoTT()) {
         configureHoTTTelemetryPort();
     }
+
+    if (isTelemetryProviderMSP()) {
+        configureMSPTelemetryPort();
+    }
 }
 
 
@@ -148,6 +156,10 @@ void freeTelemetryPort(void)
 
     if (isTelemetryProviderHoTT()) {
         freeHoTTTelemetryPort();
+    }
+
+    if (isTelemetryProviderMSP()) {
+        freeMSPTelemetryPort();
     }
 }
 
@@ -175,6 +187,10 @@ void handleTelemetry(void)
 {
     if (!isTelemetryConfigurationValid || !determineNewTelemetryEnabledState())
         return;
+
+    if (!telemetryEnabled) {
+        return;
+    }
 
     if (isTelemetryProviderFrSky()) {
         handleFrSkyTelemetry();
