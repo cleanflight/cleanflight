@@ -36,6 +36,9 @@
 #ifdef CC3D
 #include "drivers/accgyro_spi_mpu6000.h"
 #endif
+#ifdef ANYFC
+#include "drivers/accgyro_spi_mpu6000.h"
+#endif
 
 #include "drivers/barometer.h"
 #include "drivers/barometer_bmp085.h"
@@ -127,6 +130,18 @@
 #endif
 
 #ifdef CC3D
+#undef USE_GYRO_L3GD20
+#undef USE_GYRO_L3G4200D
+#undef USE_GYRO_MPU6050
+#undef USE_GYRO_MPU3050
+#undef USE_ACC_LSM303DLHC
+#undef USE_ACC_ADXL345
+#undef USE_ACC_BMA280
+#undef USE_ACC_MPU6050
+#undef USE_ACC_MMA8452
+#endif
+
+#ifdef ANYFC
 #undef USE_GYRO_L3GD20
 #undef USE_GYRO_L3G4200D
 #undef USE_GYRO_MPU6050
@@ -232,6 +247,9 @@ bool detectGyro(uint16_t gyroLpf)
 #ifdef CC3D
         gyroAlign = CW270_DEG;
 #endif
+#ifdef ANYFC
+        gyroAlign = CW270_DEG;
+#endif
         return true;
     }
 #endif
@@ -324,6 +342,9 @@ retry:
             if (mpu6000SpiAccDetect(&acc)) {
                 accHardware = ACC_SPI_MPU6000;
 #ifdef CC3D
+                accAlign = CW270_DEG;
+#endif
+#ifdef ANYFC
                 accAlign = CW270_DEG;
 #endif
                 if (accHardwareToUse == ACC_SPI_MPU6000)

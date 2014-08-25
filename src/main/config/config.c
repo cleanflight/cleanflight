@@ -75,6 +75,12 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
 #endif
 
+#ifdef STM32F40_41xxx
+#define FLASH_PAGE_COUNT 1
+#define FLASH_PAGE_SIZE                 ((uint16_t)0x8000)
+#endif
+
+
 #ifndef FLASH_PAGE_COUNT
 #define FLASH_PAGE_COUNT 128
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
@@ -510,6 +516,10 @@ void initEEPROM(void)
     // calculate write address based on contents of Flash size register. Use last 2 kbytes for storage
     flashWriteAddress = 0x08000000 + (FLASH_PAGE_SIZE * (flashSize - 2));
 #endif
+#if defined(STM32F40_41xxx)
+    // calculate write address based on contents of Flash size register. Use last 128 kbytes for storage ADDR_FLASH_SECTOR_11
+    flashWriteAddress = 0x080E0000;
+#endif
 }
 
 void readEEPROM(void)
@@ -571,7 +581,11 @@ void writeEEPROM(void)
 #endif
         for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
             if (wordOffset % FLASH_PAGE_SIZE == 0) {
-                status = FLASH_ErasePage(flashWriteAddress + wordOffset);
+#ifdef STM32F40_41xxx
+            	status = FLASH_EraseSector(FLASH_Sector_11, VoltageRange_3);
+#else
+            	status = FLASH_ErasePage(flashWriteAddress + wordOffset);
+#endif
                 if (status != FLASH_COMPLETE) {
                     break;
                 }

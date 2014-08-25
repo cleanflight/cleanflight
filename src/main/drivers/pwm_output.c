@@ -34,6 +34,10 @@
 typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function pointer used to write motors
 
 typedef struct {
+#ifdef STM32F40_41xxx
+    volatile uint32_t *ccr;
+#endif
+
 #ifdef STM32F303xC
     volatile uint32_t *ccr;
 #endif

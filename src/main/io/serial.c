@@ -95,6 +95,18 @@ static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
 };
 #else
 
+#ifdef ANYFC
+static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
+    {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+    {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE}
+};
+
+static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+    {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
+    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE}
+};
+#else
+
 static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_USART2,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
@@ -112,6 +124,7 @@ static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_SOFTSERIAL2,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
 #endif
 };
+#endif
 #endif
 #endif
 

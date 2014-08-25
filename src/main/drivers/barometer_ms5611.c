@@ -66,7 +66,7 @@ bool ms5611Detect(baro_t *baro)
     uint8_t sig;
     int i;
 
-    if (hse_value != 12000000) {
+    /*if (hse_value != 12000000) {
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
         // PC13 (BMP085's XCLR reset input, which we use to disable it). Only needed when running at 8MHz
@@ -76,7 +76,7 @@ bool ms5611Detect(baro_t *baro)
         gpio.mode = Mode_Out_PP;
         gpioInit(GPIOC, &gpio);
         BMP085_OFF;
-    }
+    }*/
 
     delay(10); // No idea how long the chip takes to power-up, but let's make it 10ms
 

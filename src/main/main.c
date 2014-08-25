@@ -135,7 +135,7 @@ void init(void)
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
 
-    adcInit(&adc_params);
+//    adcInit(&adc_params);
 
     initBoardAlignment(&masterConfig.boardAlignment);
 
@@ -291,6 +291,15 @@ void processLoopback(void) {
 #define processLoopback()
 #endif
 
+
+/**
+* @}
+*/
+
+/**
+* @}
+*/
+
 int main(void) {
     init();
 
@@ -306,3 +315,4 @@ void HardFault_Handler(void)
     writeAllMotors(masterConfig.escAndServoConfig.mincommand);
     while (1);
 }
+

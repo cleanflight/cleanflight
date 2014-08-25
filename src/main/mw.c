@@ -558,11 +558,12 @@ void processRx(void)
 
 void loop(void)
 {
+	//serialPrint(core.mainport, "DBG ");
     static uint32_t loopTime;
 #ifdef BARO
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
-
+    LED0_ON;
     updateRx();
 
     if (shouldProcessRx(currentTime)) {

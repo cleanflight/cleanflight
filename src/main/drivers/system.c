@@ -35,6 +35,10 @@ static volatile uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
 
+#ifdef STM32F40_41xxx
+// from system_stm32f4xx.c
+void SetSysClock(void);
+#endif
 #ifdef STM32F303xC
 // from system_stm32f30x.c
 void SetSysClock(void);
@@ -82,6 +86,9 @@ void systemInit(bool overclock)
     SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
 #endif
 
+#ifdef STM32F40_41xxx
+    SetSysClock();
+#endif
 #ifdef STM32F303xC
     SetSysClock();
 #endif
@@ -126,6 +133,9 @@ void systemInit(bool overclock)
 #ifdef CC3D
     spiInit(SPI1);
     spiInit(SPI2);
+#endif
+#ifdef ANYFC
+    spiInit(SPI1);
 #endif
 
 #ifndef CC3D

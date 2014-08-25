@@ -47,18 +47,24 @@ void initSpi1(void)
     RCC_APB2PeriphResetCmd(RCC_APB2Periph_SPI1, ENABLE);
 
     // MOSI + SCK as output
-    gpio.mode = Mode_AF_PP;
+    gpio.mode = GPIO_Mode_AF;
     gpio.pin = Pin_7 | Pin_5;
     gpio.speed = Speed_50MHz;
     gpioInit(GPIOA, &gpio);
     // MISO as input
     gpio.pin = Pin_6;
-    gpio.mode = Mode_IN_FLOATING;
+    gpio.mode = GPIO_Mode_AF;
     gpioInit(GPIOA, &gpio);
     // NSS as gpio slave select
     gpio.pin = Pin_4;
     gpio.mode = Mode_Out_PP;
     gpioInit(GPIOA, &gpio);
+
+    //GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_USART1);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_SPI1);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_SPI1);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_SPI1);
+
 
     // Init SPI2 hardware
     SPI_I2S_DeInit(SPI1);
@@ -169,6 +175,9 @@ uint8_t spiTransferByte(SPI_TypeDef *instance, uint8_t data)
 #ifdef STM32F10X_MD
     SPI_I2S_SendData(instance, data);
 #endif
+#ifdef STM32F40_41xxx
+    SPI_I2S_SendData(instance, data);
+#endif
     spiTimeout = 1000;
     while (SPI_I2S_GetFlagStatus(instance, SPI_I2S_FLAG_RXNE) == RESET)
         if ((spiTimeout--) == 0)
@@ -178,6 +187,9 @@ uint8_t spiTransferByte(SPI_TypeDef *instance, uint8_t data)
     return ((uint8_t)SPI_ReceiveData8(instance));
 #endif
 #ifdef STM32F10X_MD
+    return ((uint8_t)SPI_I2S_ReceiveData(instance));
+#endif
+#ifdef STM32F40_41xxx
     return ((uint8_t)SPI_I2S_ReceiveData(instance));
 #endif
     }
@@ -200,6 +212,9 @@ bool spiTransfer(SPI_TypeDef *instance, uint8_t *out, uint8_t *in, int len)
 #ifdef STM32F10X_MD
         SPI_I2S_SendData(instance, b);
 #endif
+#ifdef STM32F40_41xxx
+        SPI_I2S_SendData(instance, b);
+#endif
         while (SPI_I2S_GetFlagStatus(instance, SPI_I2S_FLAG_RXNE) == RESET) {
             if ((spiTimeout--) == 0)
                 return spiTimeoutUserCallback(instance);
@@ -208,6 +223,9 @@ bool spiTransfer(SPI_TypeDef *instance, uint8_t *out, uint8_t *in, int len)
         b = SPI_I2S_ReceiveData16(instance);
 #endif
 #ifdef STM32F10X_MD
+        b = SPI_I2S_ReceiveData(instance);
+#endif
+#ifdef STM32F40_41xxx
         b = SPI_I2S_ReceiveData(instance);
 #endif
         if (out)

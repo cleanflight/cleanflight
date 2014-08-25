@@ -129,9 +129,19 @@ void hmc5883lInit(void)
     int i;
     int32_t xyz_total[3] = { 0, 0, 0 }; // 32 bit totals so they won't overflow.
     bool bret = true;           // Error indicator
-
+#ifdef STM32F40_41xxx
     if (hse_value == 8000000) {
-        RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+
+    	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
+        // PB12 - MAG_DRDY output on rev4 hardware
+        gpio.pin = Pin_7;
+        gpio.speed = Speed_2MHz;
+        gpio.mode = Mode_IN_FLOATING;
+        gpioInit(GPIOB, &gpio);
+    }
+#else
+    if (hse_value == 8000000) {
+    	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
         // PB12 - MAG_DRDY output on rev4 hardware
         gpio.pin = Pin_12;
         gpio.speed = Speed_2MHz;
@@ -143,6 +153,7 @@ void hmc5883lInit(void)
         gpio.pin = Pin_14;
         gpioInit(GPIOC, &gpio);
     }
+#endif
 
     delay(50);
     i2cWrite(MAG_ADDRESS, HMC58X3_R_CONFA, 0x010 + HMC_POS_BIAS);   // Reg A DOR = 0x010 + MS1, MS0 set to pos bias

@@ -33,11 +33,14 @@ void initInverter(void)
         gpio_config_t cfg;
     } gpio_setup = {
         .gpio = INVERTER_GPIO,
-        .cfg = { INVERTER_PIN, Mode_Out_OD, Speed_2MHz }
+        .cfg = { INVERTER_PIN, Mode_Out_PP, Speed_2MHz }
     };
 
+#ifdef ANYFC
+    RCC_AHB1PeriphClockCmd(INVERTER_PERIPHERAL, ENABLE);
+#else
     RCC_APB2PeriphClockCmd(INVERTER_PERIPHERAL, ENABLE);
-
+#endif
     gpioInit(gpio_setup.gpio, &gpio_setup.cfg);
 }
 

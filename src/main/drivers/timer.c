@@ -220,6 +220,33 @@ static const TIM_TypeDef const *timers[MAX_TIMERS] = {
 
 #endif
 
+#if defined(ANYFC)
+const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    { TIM12, GPIOB, Pin_14, TIM_Channel_1, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF}, // S1_IN
+    { TIM12, GPIOB, Pin_15, TIM_Channel_2, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF}, // S2_IN - GPIO_PartialRemap_TIM3
+    { TIM8, GPIOC, Pin_6, TIM_Channel_1, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S3_IN
+    { TIM8, GPIOC, Pin_7, TIM_Channel_2, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S4_IN
+    { TIM8, GPIOC, Pin_8, TIM_Channel_3, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S5_IN
+    { TIM8, GPIOC, Pin_9, TIM_Channel_4, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S6_IN
+
+    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF},    // S1_OUT
+    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF},    // S2_OUT
+    { TIM9, GPIOA, Pin_3, TIM_Channel_2, TIM1_BRK_TIM9_IRQn, 1, GPIO_Mode_AF},    // S3_OUT
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF}, // S4_OUT
+    { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 1, GPIO_Mode_AF},    // S5_OUT - GPIO_PartialRemap_TIM3
+    { TIM5, GPIOA, Pin_0, TIM_Channel_1, TIM5_IRQn, 1, GPIO_Mode_AF},    // S6_OUT
+};
+
+#define MAX_TIMERS 6 // TIM2..TIM12
+
+static const TIM_TypeDef const *timers[MAX_TIMERS] = {
+    TIM2, TIM3, TIM5, TIM8, TIM9, TIM12
+};
+
+#define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM5 | RCC_APB1Periph_TIM12 | RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC)
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM8 | RCC_APB2Periph_TIM9 )
+#endif
+
 
 #define CC_CHANNELS_PER_TIMER 4 // TIM_Channel_1..4
 static const uint16_t const channels[CC_CHANNELS_PER_TIMER] = {
@@ -327,8 +354,14 @@ void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz)
 
     // "The counter clock frequency (CK_CNT) is equal to f CK_PSC / (PSC[15:0] + 1)." - STM32F10x Reference Manual 14.4.11
     // Thus for 1Mhz: 72000000 / 1000000 = 72, 72 - 1 = 71 = TIM_Prescaler
+#if defined (STM32F40_41xxx)
+    if(tim == TIM1 || tim == TIM8 || tim == TIM9|| tim == TIM10|| tim == TIM11)
+		TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / ((uint32_t)mhz * 1000000)) - 1;
+    else
+    	TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / 2 / ((uint32_t)mhz * 1000000)) - 1;
+#else
     TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / ((uint32_t)mhz * 1000000)) - 1;
-
+#endif
 
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -446,6 +479,30 @@ void TIM1_TRG_COM_TIM17_IRQHandler(void)
 }
 #endif
 
+#if defined(STM32F40_41xxx)
+void TIM8_CC_IRQHandler(void)
+{
+    timCCxHandler(TIM8);
+}
+
+void TIM1_BRK_TIM9_IRQHandler(void)
+{
+    timCCxHandler(TIM9);
+}
+
+void TIM8_BRK_TIM12_IRQHandler(void)
+{
+    timCCxHandler(TIM12);
+}
+
+void TIM5_IRQHandler(void)
+{
+    timCCxHandler(TIM5);
+}
+#endif
+
+
+
 void timerInit(void)
 {
     memset(timerConfig, 0, sizeof (timerConfig));
@@ -498,5 +555,21 @@ void timerInit(void)
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource7,  GPIO_AF_2);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource8,  GPIO_AF_2);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource9,  GPIO_AF_2);
+#endif
+
+#ifdef STM32F40_41xxx
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_TIM12);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_TIM12);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM8);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_TIM8);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource8, GPIO_AF_TIM8);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_TIM8);
+
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource1, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_TIM9);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_TIM2);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_TIM5);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_TIM5);
 #endif
 }

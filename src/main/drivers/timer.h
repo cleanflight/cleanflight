@@ -25,10 +25,17 @@
 #define USABLE_TIMER_CHANNEL_COUNT 12
 #endif
 
+#ifdef ANYFC
+#define USABLE_TIMER_CHANNEL_COUNT 12
+#endif
+
 #if !defined(USABLE_TIMER_CHANNEL_COUNT)
 #define USABLE_TIMER_CHANNEL_COUNT 14
 #endif
 
+#ifdef STM32F40_41xxx
+typedef uint32_t captureCompare_t;
+#endif
 #ifdef STM32F303xC
 typedef uint32_t captureCompare_t;
 #endif

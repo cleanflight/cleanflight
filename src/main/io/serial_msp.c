@@ -295,7 +295,10 @@ reset:
             count += len;
         } else {
             for (j = 0; j < len; j++)
+            {
                 serialize8(boxes[idx].boxName[j]);
+                delay(1);
+            }
         }
     }
 

@@ -127,6 +127,14 @@
 #define MPU6000_SPI_INSTANCE SPI1
 #endif
 
+#ifdef ANYFC
+
+#define MPU6000_CS_GPIO       GPIOA
+#define MPU6000_CS_PIN        GPIO_Pin_4
+
+#define MPU6000_SPI_INSTANCE SPI1
+#endif
+
 #define DISABLE_MPU6000       GPIO_SetBits(MPU6000_CS_GPIO,   MPU6000_CS_PIN)
 #define ENABLE_MPU6000        GPIO_ResetBits(MPU6000_CS_GPIO, MPU6000_CS_PIN)
 
