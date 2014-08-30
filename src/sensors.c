@@ -30,16 +30,19 @@ bool sensorsAutodetect(void)
     int16_t deg, min;
 #ifndef CJMCU
     drv_adxl345_config_t acc_params;
+    bool haveMpu65 = false;
 #endif
     bool haveMpu6k = false;
 
-    // Autodetect gyro hardware. We have MPU3050 or MPU6050.
+    // Autodetect gyro hardware. We have MPU3050 or MPU6050 or MPU6500 on SPI
     if (mpu6050Detect(&acc, &gyro, mcfg.gyro_lpf, &core.mpu6050_scale)) {
         // this filled up  acc.* struct with init values
         haveMpu6k = true;
     } else
 #ifndef CJMCU
-        if (l3g4200dDetect(&gyro, mcfg.gyro_lpf)) {
+        if (hw_revision == NAZE32_SP && mpu6500Detect(&acc, &gyro, mcfg.gyro_lpf))
+            haveMpu65 = true;
+        else if (l3g4200dDetect(&gyro, mcfg.gyro_lpf)) {
         // well, we found our gyro
         ;
     } else if (!mpu3050Detect(&gyro, mcfg.gyro_lpf))
@@ -75,6 +78,14 @@ retry:
             }
             ; // fallthrough
 #ifdef NAZE
+        case ACC_MPU6500: // MPU6500
+            if (haveMpu65) {
+                mpu6500Detect(&acc, &gyro, mcfg.gyro_lpf); // yes, i'm rerunning it again.  re-fill acc struct
+                accHardware = ACC_MPU6500;
+                if (mcfg.acc_hardware == ACC_MPU6500)
+                    break;
+            }
+            ; // fallthrough
         case ACC_MMA8452: // MMA8452
             if (mma8452Detect(&acc)) {
                 accHardware = ACC_MMA8452;

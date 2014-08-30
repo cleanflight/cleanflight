@@ -68,8 +68,9 @@ static const char * const sensorNames[] = {
     "GYRO", "ACC", "BARO", "MAG", "SONAR", "GPS", "GPS+MAG", NULL
 };
 
+// sync this with AccelSensors enum from board.h
 static const char * const accNames[] = {
-    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "None", NULL
+    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "MPU6500", "None", NULL
 };
 
 // sync this with HardwareRevision in board.h

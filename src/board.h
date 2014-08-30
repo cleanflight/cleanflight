@@ -68,7 +68,8 @@ typedef enum AccelSensors {
     ACC_MPU6050 = 2,
     ACC_MMA8452 = 3,
     ACC_BMA280 = 4,
-    ACC_NONE = 5
+    ACC_MPU6500 = 5,
+    ACC_NONE = 6
 } AccelSensors;
 
 typedef enum {
@@ -237,6 +238,7 @@ typedef struct baro_t {
 #include "drv_mma845x.h"
 #include "drv_mpu3050.h"
 #include "drv_mpu6050.h"
+#include "drv_mpu6500.h"
 #include "drv_l3g4200d.h"
 #include "drv_pwm.h"
 #include "drv_timer.h"
