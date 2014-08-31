@@ -125,7 +125,7 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 #define PartialRemap_USART3    ((uint32_t)0x00000010)  // USART3 Partial Alternate Function mapping
     AFIO->MAPR |= PartialRemap_USART3;
 
-    RCC_APB2PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
     // USART3_TX    PB10
     // USART3_RX    PB11
     gpio.speed = Speed_2MHz;
