@@ -120,46 +120,56 @@ static const char pidnames[] =
     "MAG;"
     "VEL;";
 
-static uint8_t checksum, indRX, inBuf[INBUF_SIZE];
-static uint8_t cmdMSP;
+typedef enum serialState_t {
+    IDLE,
+    HEADER_START,
+    HEADER_M,
+    HEADER_ARROW,
+    HEADER_SIZE,
+    HEADER_CMD,
+} serialState_t;
+
+typedef  struct mspPortState_t {
+    serialPort_t *port;
+    uint8_t checksum;
+    uint8_t indRX;
+    uint8_t inBuf[INBUF_SIZE];
+    uint8_t cmdMSP;
+    uint8_t offset;
+    uint8_t dataSize;
+    serialState_t c_state;
+} mspPortState_t;
+
+static mspPortState_t ports[2];
+static mspPortState_t *currentPortState = &ports[0];
+static int numTelemetryPorts = 0;
+
+// static uint8_t checksum, indRX, inBuf[INBUF_SIZE];
+// static uint8_t cmdMSP;
+
+void serialize8(uint8_t a)
+{
+    serialWrite(currentPortState->port, a);
+    currentPortState->checksum ^= a;
+}
 
 void serialize32(uint32_t a)
 {
-    static uint8_t t;
-    t = a;
-    serialWrite(core.mainport, t);
-    checksum ^= t;
-    t = a >> 8;
-    serialWrite(core.mainport, t);
-    checksum ^= t;
-    t = a >> 16;
-    serialWrite(core.mainport, t);
-    checksum ^= t;
-    t = a >> 24;
-    serialWrite(core.mainport, t);
-    checksum ^= t;
+    serialize8(a & 0xFF);
+    serialize8((a >> 8) & 0xFF);
+    serialize8((a >> 16) & 0xFF);
+    serialize8((a >> 24) & 0xFF);
 }
 
 void serialize16(int16_t a)
 {
-    static uint8_t t;
-    t = a;
-    serialWrite(core.mainport, t);
-    checksum ^= t;
-    t = a >> 8 & 0xff;
-    serialWrite(core.mainport, t);
-    checksum ^= t;
-}
-
-void serialize8(uint8_t a)
-{
-    serialWrite(core.mainport, a);
-    checksum ^= a;
+    serialize8(a & 0xFF);
+    serialize8((a >> 8) & 0xFF);
 }
 
 uint8_t read8(void)
 {
-    return inBuf[indRX++] & 0xff;
+    return currentPortState->inBuf[currentPortState->indRX++] & 0xff;
 }
 
 uint16_t read16(void)
@@ -181,9 +191,9 @@ void headSerialResponse(uint8_t err, uint8_t s)
     serialize8('$');
     serialize8('M');
     serialize8(err ? '!' : '>');
-    checksum = 0;               // start calculating a new checksum
+    currentPortState->checksum = 0;               // start calculating a new checksum
     serialize8(s);
-    serialize8(cmdMSP);
+    serialize8(currentPortState->cmdMSP);
 }
 
 void headSerialReply(uint8_t s)
@@ -198,7 +208,7 @@ void headSerialError(uint8_t s)
 
 void tailSerialReply(void)
 {
-    serialize8(checksum);
+    serialize8(currentPortState->checksum);
 }
 
 void s_struct(uint8_t *cb, uint8_t siz)
@@ -245,6 +255,13 @@ void serialInit(uint32_t baudrate)
     int idx;
 
     core.mainport = uartOpen(USART1, NULL, baudrate, MODE_RXTX);
+    ports[0].port = core.mainport;
+    numTelemetryPorts++;
+    if (hw_revision >= NAZE32_SP) {
+        core.flexport = uartOpen(USART3, NULL, baudrate, MODE_RXTX);
+        ports[1].port = core.flexport;
+        numTelemetryPorts++;
+    }
 
     // calculate used boxes based on features and fill availableBoxes[] array
     memset(availableBoxes, 0xFF, sizeof(availableBoxes));
@@ -290,7 +307,7 @@ static void evaluateCommand(void)
     int32_t lat = 0, lon = 0, alt = 0;
 #endif
 
-    switch (cmdMSP) {
+    switch (currentPortState->cmdMSP) {
     case MSP_SET_RAW_RC:
         for (i = 0; i < 8; i++)
             rcData[i] = read16();
@@ -302,6 +319,7 @@ static void evaluateCommand(void)
         cfg.angleTrim[ROLL]  = read16();
         headSerialReply(0);
         break;
+#ifdef GPS
     case MSP_SET_RAW_GPS:
         f.GPS_FIX = read8();
         GPS_numSat = read8();
@@ -312,6 +330,7 @@ static void evaluateCommand(void)
         GPS_update |= 2;        // New data signalisation to GPS functions
         headSerialReply(0);
         break;
+#endif
     case MSP_SET_PID:
         for (i = 0; i < PIDITEMS; i++) {
             cfg.P8[i] = read8();
@@ -451,6 +470,7 @@ static void evaluateCommand(void)
         for (i = 0; i < 8; i++)
             serialize16(rcData[i]);
         break;
+#ifdef GPS
     case MSP_RAW_GPS:
         headSerialReply(16);
         serialize8(f.GPS_FIX);
@@ -467,6 +487,7 @@ static void evaluateCommand(void)
         serialize16(GPS_directionToHome);
         serialize8(GPS_update & 1);
         break;
+#endif
     case MSP_ATTITUDE:
         headSerialReply(6);
         for (i = 0; i < 2; i++)
@@ -665,57 +686,52 @@ static void evaluateOtherData(uint8_t sr)
 void serialCom(void)
 {
     uint8_t c;
-    static uint8_t offset;
-    static uint8_t dataSize;
-    static enum _serial_state {
-        IDLE,
-        HEADER_START,
-        HEADER_M,
-        HEADER_ARROW,
-        HEADER_SIZE,
-        HEADER_CMD,
-    } c_state = IDLE;
+    int i;
 
-    // in cli mode, all serial stuff goes to here. enter cli mode by sending #
-    if (cliMode) {
-        cliProcess();
-        return;
-    }
+    for (i = 0; i < numTelemetryPorts; i++) {
+        currentPortState = &ports[i];
 
-    while (serialTotalBytesWaiting(core.mainport)) {
-        c = serialRead(core.mainport);
+        // in cli mode, all serial stuff goes to here. enter cli mode by sending #
+        if (cliMode) {
+            cliProcess();
+            return;
+        }
 
-        if (c_state == IDLE) {
-            c_state = (c == '$') ? HEADER_START : IDLE;
-            if (c_state == IDLE && !f.ARMED)
-                evaluateOtherData(c); // if not armed evaluate all other incoming serial data
-        } else if (c_state == HEADER_START) {
-            c_state = (c == 'M') ? HEADER_M : IDLE;
-        } else if (c_state == HEADER_M) {
-            c_state = (c == '<') ? HEADER_ARROW : IDLE;
-        } else if (c_state == HEADER_ARROW) {
-            if (c > INBUF_SIZE) {       // now we are expecting the payload size
-                c_state = IDLE;
-                continue;
+        while (serialTotalBytesWaiting(currentPortState->port)) {
+            c = serialRead(currentPortState->port);
+
+            if (currentPortState->c_state == IDLE) {
+                currentPortState->c_state = (c == '$') ? HEADER_START : IDLE;
+                if (currentPortState->c_state == IDLE && !f.ARMED)
+                    evaluateOtherData(c); // if not armed evaluate all other incoming serial data
+            } else if (currentPortState->c_state == HEADER_START) {
+                currentPortState->c_state = (c == 'M') ? HEADER_M : IDLE;
+            } else if (currentPortState->c_state == HEADER_M) {
+                currentPortState->c_state = (c == '<') ? HEADER_ARROW : IDLE;
+            } else if (currentPortState->c_state == HEADER_ARROW) {
+                if (c > INBUF_SIZE) {       // now we are expecting the payload size
+                    currentPortState->c_state = IDLE;
+                    continue;
+                }
+                currentPortState->dataSize = c;
+                currentPortState->offset = 0;
+                currentPortState->checksum = 0;
+                currentPortState->indRX = 0;
+                currentPortState->checksum ^= c;
+                currentPortState->c_state = HEADER_SIZE;      // the command is to follow
+            } else if (currentPortState->c_state == HEADER_SIZE) {
+                currentPortState->cmdMSP = c;
+                currentPortState->checksum ^= c;
+                currentPortState->c_state = HEADER_CMD;
+            } else if (currentPortState->c_state == HEADER_CMD && currentPortState->offset < currentPortState->dataSize) {
+                currentPortState->checksum ^= c;
+                currentPortState->inBuf[currentPortState->offset++] = c;
+            } else if (currentPortState->c_state == HEADER_CMD && currentPortState->offset >= currentPortState->dataSize) {
+                if (currentPortState->checksum == c) {        // compare calculated and transferred checksum
+                    evaluateCommand();      // we got a valid packet, evaluate it
+                }
+                currentPortState->c_state = IDLE;
             }
-            dataSize = c;
-            offset = 0;
-            checksum = 0;
-            indRX = 0;
-            checksum ^= c;
-            c_state = HEADER_SIZE;      // the command is to follow
-        } else if (c_state == HEADER_SIZE) {
-            cmdMSP = c;
-            checksum ^= c;
-            c_state = HEADER_CMD;
-        } else if (c_state == HEADER_CMD && offset < dataSize) {
-            checksum ^= c;
-            inBuf[offset++] = c;
-        } else if (c_state == HEADER_CMD && offset >= dataSize) {
-            if (checksum == c) {        // compare calculated and transferred checksum
-                evaluateCommand();      // we got a valid packet, evaluate it
-            }
-            c_state = IDLE;
         }
     }
 }

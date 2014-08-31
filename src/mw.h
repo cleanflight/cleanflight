@@ -307,6 +307,7 @@ typedef struct master_t {
 // Core runtime settings
 typedef struct core_t {
     serialPort_t *mainport;
+    serialPort_t *flexport;
     serialPort_t *gpsport;
     serialPort_t *telemport;
     serialPort_t *rcvrport;
@@ -502,4 +503,3 @@ void GPS_reset_home_position(void);
 void GPS_reset_nav(void);
 void GPS_set_next_wp(int32_t* lat, int32_t* lon);
 int32_t wrap_18000(int32_t error);
-
