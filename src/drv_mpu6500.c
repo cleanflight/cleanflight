@@ -155,6 +155,7 @@ static void mpu6500GyroInit(sensor_align_e align)
     mpu6500WriteRegister(MPU6500_RA_PWR_MGMT_1, BIT_RESET);
     delay(100);
     mpu6500WriteRegister(MPU6500_RA_PWR_MGMT_1, 0);
+    delay(100);
     mpu6500WriteRegister(MPU6500_RA_PWR_MGMT_1, INV_CLK_PLL);
     mpu6500WriteRegister(MPU6500_RA_GYRO_CFG, INV_FSR_2000DPS << 3);
     mpu6500WriteRegister(MPU6500_RA_ACCEL_CFG, INV_FSR_8G << 3);
