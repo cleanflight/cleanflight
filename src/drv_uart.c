@@ -122,9 +122,6 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
     s->rxDMAChannel = DMA1_Channel3;
     s->txDMAChannel = DMA1_Channel2;
 
-#define PartialRemap_USART3    ((uint32_t)0x00000010)  // USART3 Partial Alternate Function mapping
-    AFIO->MAPR |= PartialRemap_USART3;
-
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
     // USART3_TX    PB10
     // USART3_RX    PB11
