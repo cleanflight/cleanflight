@@ -552,8 +552,13 @@ void loop(void)
         }
 
         if (cfg.activate[BOXARM] > 0) { // Disarming via ARM BOX
-            if (!rcOptions[BOXARM] && f.ARMED)
+            if (!rcOptions[BOXARM] && f.ARMED) {
+                if (mcfg.disarm_kill_switch) {
                     mwDisarm();
+                } else if (isThrottleLow) {
+                    mwDisarm();
+                }
+            }
         }
 
         if (rcDelayCommand == 20) {

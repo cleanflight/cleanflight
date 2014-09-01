@@ -224,6 +224,7 @@ static void resetConf(void)
     mcfg.mincheck = 1100;
     mcfg.maxcheck = 1900;
     mcfg.retarded_arm = 0;       // disable arm/disarm on roll left/right
+    mcfg.disarm_kill_switch = 1; // AUX disarm independently of throttle value
     mcfg.flaps_speed = 0;
     mcfg.fixedwing_althold_dir = 1;
     // Motor/ESC/Servo
