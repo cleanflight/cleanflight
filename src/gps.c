@@ -103,6 +103,8 @@ typedef struct gpsData_t {
     uint32_t lastLastMessage;       // last-last valid GPS message. Used to calculate delta.
 
     int ubx_init_state;             // state of ublox initialization
+    const uint8_t *init_ptr;        // pointer to init strings
+    int init_length;                // length of data pointed to by init_ptr
     int state_position;             // incremental variable for loops
     int config_position;            // position in ubloxConfigList
     uint32_t state_ts;              // timestamp for last state_position increment
@@ -160,8 +162,6 @@ static void gpsInitNmea(void)
 static void gpsInitUblox(void)
 {
     uint32_t m;
-    const uint8_t *init;  // pointer to ubx init strings
-    uint8_t length; // length of the set
 
     // UBX will run at mcfg.gps_baudrate, it shouldn't be "autodetected". So here we force it to that rate
 
@@ -198,14 +198,14 @@ static void gpsInitUblox(void)
             // GPS_CONFIGURATION, push some ublox config strings
             switch (gpsData.ubx_init_state) {
                 case UBX_INIT_START:
-                    init = ubloxConfigList[gpsData.config_position].data;
-                    length = ubloxConfigList[gpsData.config_position].length;
+                    gpsData.init_ptr = ubloxConfigList[gpsData.config_position].data;
+                    gpsData.init_length = ubloxConfigList[gpsData.config_position].length;
                     gpsData.ubx_init_state = UBX_INIT_RUN;
                     break;
 
                 case UBX_INIT_RUN:
-                    if (gpsData.state_position < length) {
-                        serialWrite(core.gpsport, init[gpsData.state_position]); // send ubx init binary
+                    if (gpsData.state_position < gpsData.init_length) {
+                        serialWrite(core.gpsport, gpsData.init_ptr[gpsData.state_position]); // send ubx init binary
                         gpsData.state_position++;
                     } else {
                         // move to next config set
