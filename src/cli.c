@@ -582,6 +582,7 @@ static void cliDump(char *cmdline)
     uint32_t mask;
     const clivalue_t *setval;
 
+    cliVersion(NULL);
     printf("Current Config: Copy everything below here...\r\n");
 
     // print out aux switches
@@ -1031,7 +1032,7 @@ static void cliStatus(char *cmdline)
 static void cliVersion(char *cmdline)
 {
     (void)cmdline;
-    cliPrint("Afro32 CLI version 2.2 " __DATE__ " / " __TIME__);
+    cliPrint("Afro32 CLI version 2.3 " __DATE__ " / " __TIME__);
 }
 
 void cliProcess(void)
