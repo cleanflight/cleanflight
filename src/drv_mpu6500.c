@@ -78,9 +78,6 @@ static void mpu6500ReadRegister(uint8_t reg, uint8_t *data, int length)
 {
     spiSelect(true);
     spiTransferByte(reg | 0x80); // read transaction
-    spiSelect(false);
-
-    spiSelect(true);
     spiTransfer(data, NULL, length);
     spiSelect(false);
 }

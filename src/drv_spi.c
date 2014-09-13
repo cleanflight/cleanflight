@@ -107,6 +107,7 @@ static int spiDetect(void)
         return SPI_DEVICE_FLASH;
 
     // try autodetect MPU
+    delay(50);
     spiSelect(true);
     spiTransferByte(0x75 | 0x80);
     in[0] = spiTransferByte(0xff);
