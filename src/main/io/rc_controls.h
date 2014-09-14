@@ -17,6 +17,34 @@
 
 #pragma once
 
+enum {
+    BOXARM = 0,
+    BOXANGLE,
+    BOXHORIZON,
+    BOXBARO,
+    // BOXVARIO,
+    BOXMAG,
+    BOXHEADFREE,
+    BOXHEADADJ,
+    BOXCAMSTAB,
+    BOXCAMTRIG,
+    BOXGPSHOME,
+    BOXGPSHOLD,
+    BOXPASSTHRU,
+    BOXBEEPERON,
+    BOXLEDMAX,
+    BOXLEDLOW,
+    BOXLLIGHTS,
+    BOXCALIB,
+    BOXGOV,
+    BOXOSD,
+    BOXTELEMETRY,
+    BOXAUTOTUNE,
+    CHECKBOX_ITEM_COUNT
+} boxId_e;
+
+extern uint8_t rcOptions[CHECKBOX_ITEM_COUNT];
+
 typedef enum rc_alias {
     ROLL = 0,
     PITCH,
@@ -63,6 +91,8 @@ extern int16_t rcCommand[4];
 
 bool areSticksInApModePosition(uint16_t ap_mode);
 throttleStatus_e calculateThrottleStatus(rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
-void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStatus, uint32_t *activate, bool retarded_arm);
+void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStatus, uint32_t *activate, bool retarded_arm, bool disarm_kill_switch);
 
+
+void updateRcOptions(uint32_t *activate);
 

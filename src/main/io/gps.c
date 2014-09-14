@@ -128,8 +128,11 @@ typedef struct ubloxSbas_s {
     uint8_t message[UBLOX_SBAS_MESSAGE_LENGTH];
 } ubloxSbas_t;
 
+
+
 // Note: these must be defined in the same order is sbasMode_e since no lookup table is used.
 static const ubloxSbas_t ubloxSbas[] = {
+    // NOTE this could be optimized to save a few bytes of flash space since the same prefix is used for each command.
     { SBAS_AUTO,  { 0xB5, 0x62, 0x06, 0x16, 0x08, 0x00, 0x03, 0x07, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31, 0xE5}},
     { SBAS_EGNOS, { 0xB5, 0x62, 0x06, 0x16, 0x08, 0x00, 0x03, 0x07, 0x03, 0x00, 0x51, 0x08, 0x00, 0x00, 0x8A, 0x41}},
     { SBAS_WAAS,  { 0xB5, 0x62, 0x06, 0x16, 0x08, 0x00, 0x03, 0x07, 0x03, 0x00, 0x04, 0xE0, 0x04, 0x00, 0x19, 0x9D}},
@@ -403,7 +406,7 @@ bool gpsNewFrame(uint8_t c)
   EOS increased the precision here, even if we think that the gps is not precise enough, with 10e5 precision it has 76cm resolution
   with 10e7 it's around 1 cm now. Increasing it further is irrelevant, since even 1cm resolution is unrealistic, however increased
   resolution also increased precision of nav calculations
-static uint32_t GPS_coord_to_degrees(char *s)
+static uint32_t GPS_coord_to_degrees(char *coordinateString)
 {
     char *p = s, *d = s;
     uint8_t min, deg = 0;

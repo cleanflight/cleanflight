@@ -75,15 +75,25 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
 #endif
 
+#ifndef FLASH_PAGE_COUNT
+
 #ifdef STM32F40_41xxx
 #define FLASH_PAGE_COUNT 1
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x8000)
 #endif
 
-
-#ifndef FLASH_PAGE_COUNT
+#ifdef STM32F10X_MD
 #define FLASH_PAGE_COUNT 128
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
+#endif
+
+#ifdef STM32F10X_HD
+#define FLASH_PAGE_COUNT 128
+#define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+#endif
+
+#ifndef FLASH_PAGE_COUNT
+#error "Flash page count not defined for target."
 #endif
 
 // use the last flash pages for storage
@@ -92,7 +102,7 @@ static uint32_t flashWriteAddress = (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * 
 master_t masterConfig;      // master config struct with data independent from profiles
 profile_t *currentProfile;   // profile config struct
 
-static const uint8_t EEPROM_CONF_VERSION = 75;
+static const uint8_t EEPROM_CONF_VERSION = 76;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -274,7 +284,8 @@ static void resetConf(void)
 
     masterConfig.inputFilteringMode = INPUT_FILTERING_DISABLED;
 
-    masterConfig.retarded_arm = 0;              // disable arm/disarm on roll left/right
+    masterConfig.retarded_arm = 0;
+    masterConfig.disarm_kill_switch = 1;
     masterConfig.small_angle = 25;
 
     masterConfig.airplaneConfig.flaps_speed = 0;
@@ -470,15 +481,15 @@ void validateAndFixConfig(void)
         featureClear(FEATURE_RX_PPM);
     }
 
-    if (feature(FEATURE_CURRENT_METER)) {
-#if defined(STM32F10X_MD)
+    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+#if defined(STM32F10X)
         // rssi adc needs the same ports
         featureClear(FEATURE_RSSI_ADC);
         // current meter needs the same ports
         featureClear(FEATURE_CURRENT_METER);
 #endif
 
-#if defined(STM32F10X_MD) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
+#if defined(STM32F10X) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
         // led strip needs the same ports
         featureClear(FEATURE_LED_STRIP);
 #endif
@@ -488,7 +499,7 @@ void validateAndFixConfig(void)
     }
 
 
-#if defined(STM32F10X_MD)
+#if defined(STM32F10X)
     // led strip needs the same timer as softserial
     if (feature(FEATURE_SOFTSERIAL)) {
         featureClear(FEATURE_LED_STRIP);
@@ -519,14 +530,14 @@ void validateAndFixConfig(void)
 
 void initEEPROM(void)
 {
-#if defined(STM32F10X_MD)
+#if defined(STM32F10X)
 
 #define FLASH_SIZE_REGISTER 0x1FFFF7E0
 
-    const uint32_t flashSize = *((uint32_t *)FLASH_SIZE_REGISTER) & 0xFFFF;
+    const uint32_t flashSizeInKB = *((uint32_t *)FLASH_SIZE_REGISTER) & 0xFFFF;
 
     // calculate write address based on contents of Flash size register. Use last 2 kbytes for storage
-    flashWriteAddress = 0x08000000 + (FLASH_PAGE_SIZE * (flashSize - 2));
+    flashWriteAddress = 0x08000000 + (FLASH_PAGE_SIZE * (flashSizeInKB - 2));
 #endif
 #if defined(STM32F40_41xxx)
     // calculate write address based on contents of Flash size register. Use last 128 kbytes for storage ADDR_FLASH_SECTOR_11
@@ -579,10 +590,10 @@ void writeEEPROM(void)
     // write it
     FLASH_Unlock();
     while (attemptsRemaining--) {
-#ifdef STM32F3DISCOVERY
+#ifdef STM32F303
         FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPERR);
 #endif
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
         FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR);
 #endif
         for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
@@ -623,22 +634,6 @@ void ensureEEPROMContainsValidData(void)
 
     resetEEPROM();
 }
-/*
- * This file is part of Cleanflight.
- *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
- */
 
 void resetEEPROM(void)
 {

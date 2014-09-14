@@ -43,7 +43,7 @@ void SetSysClock(void);
 // from system_stm32f30x.c
 void SetSysClock(void);
 #endif
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
 // from system_stm32f10x.c
 void SetSysClock(bool overclock);
 #endif
@@ -81,7 +81,7 @@ uint32_t millis(void)
 void systemInit(bool overclock)
 {
 
-#ifdef STM32F303xC
+#ifdef STM32F303
     // start fpu
     SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
 #endif
@@ -92,7 +92,7 @@ void systemInit(bool overclock)
 #ifdef STM32F303xC
     SetSysClock();
 #endif
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(overclock);
@@ -101,7 +101,7 @@ void systemInit(bool overclock)
     // Configure NVIC preempt/priority groups
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
     // Turn on clocks for stuff we use
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 #endif
@@ -112,7 +112,7 @@ void systemInit(bool overclock)
     enableGPIOPowerUsageAndNoiseReductions();
 
 
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
     // Turn off JTAG port 'cause we're using the GPIO for leds
 #define AFIO_MAPR_SWJ_CFG_NO_JTAG_SW            (0x2 << 24)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;

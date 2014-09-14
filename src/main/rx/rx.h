@@ -20,6 +20,7 @@
 #define PWM_RANGE_ZERO 0 // FIXME should all usages of this be changed to use PWM_RANGE_MIN?
 #define PWM_RANGE_MIN 1000
 #define PWM_RANGE_MAX 2000
+#define PWM_RANGE_MIDDLE (PWM_RANGE_MIN + ((PWM_RANGE_MAX - PWM_RANGE_MIN) / 2))
 
 #define DEFAULT_SERVO_MIN 1020
 #define DEFAULT_SERVO_MIDDLE 1500
@@ -62,6 +63,7 @@ typedef struct rxConfig_s {
 
 typedef struct rxRuntimeConfig_s {
     uint8_t channelCount;                  // number of rc channels as reported by current input driver
+    uint8_t auxChannelCount;
 } rxRuntimeConfig_t;
 
 extern rxRuntimeConfig_t rxRuntimeConfig;

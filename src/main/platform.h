@@ -44,7 +44,7 @@
 
 #endif
 
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
 
 #include "stm32f10x_conf.h"
 #include "stm32f10x_gpio.h"
@@ -55,7 +55,7 @@
 #define U_ID_1 (*(uint32_t*)0x1FFFF7EC)
 #define U_ID_2 (*(uint32_t*)0x1FFFF7F0)
 
-#endif // STM32F10X_MD
+#endif // STM32F10X
 
 #include "target.h"
 
