@@ -42,7 +42,7 @@
 
 #define GYRO
 #define ACC
-#define MAG
+//#define MAG
 #define BARO
 
 #define INVERTER
@@ -63,7 +63,7 @@
 
 #define I2C_DEVICE (I2CDEV_1)
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_MAG)
+#define SENSORS_SET (SENSOR_ACC)
 
 //#define GPS
 //#define LED_STRIP

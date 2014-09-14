@@ -37,7 +37,7 @@
 // Using RX DMA disables the use of receive callbacks
 //#define USE_USART1_RX_DMA
 //#define USE_USART2_RX_DMA
-//#define USE_USART3_RX_DMA
+#define USE_USART3_RX_DMA
 
 
 #ifdef USE_USART1
@@ -56,9 +56,8 @@ void uartStartTxDMA(uartPort_t *s);
 
 void usartIrqHandler(uartPort_t *s)
 {
-    uint32_t ISR = s->USARTx->SR;
 
-    if (!s->rxDMAStream && (ISR & USART_FLAG_RXNE)) {
+    if (!s->rxDMAStream && (USART_GetITStatus(s->USARTx, USART_IT_RXNE) == SET)) {
         if (s->port.callback) {
             s->port.callback(s->USARTx->DR);
         } else {
@@ -67,7 +66,7 @@ void usartIrqHandler(uartPort_t *s)
         }
     }
 
-    if (!s->txDMAStream && (ISR & USART_FLAG_TXE)) {
+    if (!s->txDMAStream && (USART_GetITStatus(s->USARTx, USART_IT_TXE) == SET)) {
         if (s->port.txBufferTail != s->port.txBufferHead) {
             USART_SendData(s->USARTx, s->port.txBuffer[s->port.txBufferTail]);
             s->port.txBufferTail = (s->port.txBufferTail + 1) % s->port.txBufferSize;
@@ -76,7 +75,7 @@ void usartIrqHandler(uartPort_t *s)
         }
     }
 
-    if (ISR & USART_FLAG_ORE)
+    if (USART_GetITStatus(s->USARTx, USART_FLAG_ORE) == SET)
     {
         USART_ClearITPendingBit (s->USARTx, USART_IT_ORE);
     }
@@ -124,7 +123,7 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     s->rxDMAStream = DMA2_Stream5;
 #endif
     s->txDMAChannel = DMA_Channel_4;
-    s->txDMAStream = DMA2_Stream7;
+    //s->txDMAStream = DMA2_Stream7;
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
@@ -153,8 +152,8 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
 
 #ifndef USE_USART1_RX_DMA
     NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 #endif
@@ -310,8 +309,8 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 #ifndef USE_USART3_RX_DMA
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 #endif

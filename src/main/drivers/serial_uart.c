@@ -188,7 +188,6 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
             DMA_Init(s->txDMAStream, &DMA_InitStructure);
             DMA_ITConfig(s->txDMAStream, DMA_IT_TC, ENABLE);
             DMA_SetCurrDataCounter(s->txDMAStream, 0);
-            s->txDMAStream->NDTR = 0;
 #else
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
