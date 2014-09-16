@@ -688,6 +688,7 @@ static void evaluateCommand(void)
         break;
 
     case MSP_SET_CONFIG:
+        headSerialReply(0);
         mcfg.mixerConfiguration = read8(); // multitype
         featureClearAll();
         featureSet(read32()); // features bitmap
@@ -714,6 +715,7 @@ static void evaluateCommand(void)
             serialize8(mcfg.rcmap[i]);
         break;
     case MSP_SET_RCMAP:
+        headSerialReply(0);
         for (i = 0; i < MAX_INPUTS; i++)
             mcfg.rcmap[i] = read8();
         break;
