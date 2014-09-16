@@ -12,6 +12,7 @@
 // Multiwii Serial Protocol 0
 #define MSP_VERSION              0
 #define CAP_PLATFORM_32BIT          ((uint32_t)1 << 31)
+#define CAP_BASEFLIGHT_CONFIG       ((uint32_t)1 << 30)
 #define CAP_DYNBALANCE              ((uint32_t)1 << 2)
 #define CAP_FLAPS                   ((uint32_t)1 << 3)
 
@@ -67,6 +68,13 @@
 #define MSP_ACC_TRIM             240    //out message         get acc angle trim values
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
+
+// Additional private MSP for baseflight configurator
+#define MSP_RCMAP                64     //out message         get channel map (also returns number of channels total)
+#define MSP_SET_RCMAP            65     //in message          set rc map, numchannels to set comes from MSP_RCMAP
+#define MSP_CONFIG               66     //out message         baseflight-specific settings that aren't covered elsewhere
+#define MSP_SET_CONFIG           67     //in message          baseflight-specific settings save
+#define MSP_REBOOT               68     //in message          reboot settings
 
 #define INBUF_SIZE 64
 
@@ -355,13 +363,19 @@ static void evaluateCommand(void)
         headSerialReply(0);
         break;
     case MSP_SET_MISC:
-        read16(); // powerfailmeter
+        tmp = read16();
+        // sanity check
+        if (tmp < 1600 && tmp > 1400)
+            mcfg.midrc = tmp;
         mcfg.minthrottle = read16();
         mcfg.maxthrottle = read16();
         mcfg.mincommand = read16();
         cfg.failsafe_throttle = read16();
+        mcfg.gps_type = read8();
+        mcfg.gps_baudrate = read8();
+        mcfg.gps_ubx_sbas = read8();
+        read8();
         read16();
-        read32();
         cfg.mag_declination = read16() * 10;
         mcfg.vbatscale = read8();           // actual vbatscale as intended
         mcfg.vbatmincellvoltage = read8();  // vbatlevel_warn1 in MWC2.3 GUI
@@ -393,7 +407,7 @@ static void evaluateCommand(void)
         serialize8(VERSION);                // multiwii version
         serialize8(mcfg.mixerConfiguration); // type of multicopter
         serialize8(MSP_VERSION);            // MultiWii Serial Protocol Version
-        serialize32(CAP_PLATFORM_32BIT | CAP_DYNBALANCE | (mcfg.flaps_speed ? CAP_FLAPS : 0));        // "capability"
+        serialize32(CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | (mcfg.flaps_speed ? CAP_FLAPS : 0));        // "capability"
         break;
     case MSP_STATUS:
         headSerialReply(11);
@@ -551,13 +565,16 @@ static void evaluateCommand(void)
         break;
     case MSP_MISC:
         headSerialReply(2 * 6 + 4 + 2 + 4);
-        serialize16(0); // intPowerTrigger1 (aka useless trash)
+        serialize16(mcfg.midrc);
         serialize16(mcfg.minthrottle);
         serialize16(mcfg.maxthrottle);
         serialize16(mcfg.mincommand);
         serialize16(cfg.failsafe_throttle);
-        serialize16(0); // plog useless shit
-        serialize32(0); // plog useless shit
+        serialize8(mcfg.gps_type);
+        serialize8(mcfg.gps_baudrate);
+        serialize8(mcfg.gps_ubx_sbas);
+        serialize8(0);
+        serialize16(0);
         serialize16(cfg.mag_declination / 10); // TODO check this shit
         serialize8(mcfg.vbatscale);
         serialize8(mcfg.vbatmincellvoltage);
@@ -667,6 +684,42 @@ static void evaluateCommand(void)
                serialize8(GPS_svinfo_cno[i]);
             }
         break;
+
+    case MSP_SET_CONFIG:
+        mcfg.mixerConfiguration = read8(); // multitype
+        featureClearAll();
+        featureSet(read32()); // features bitmap
+        mcfg.serialrx_type = read8(); // serialrx_type
+        mcfg.board_align_roll = read16(); // board_align_roll
+        mcfg.board_align_pitch = read16(); // board_align_pitch
+        mcfg.board_align_yaw = read16(); // board_align_yaw
+        /// ???
+        break;
+    case MSP_CONFIG:
+        headSerialReply(1 + 4 + 1 + 2 + 2 + 2);
+        serialize8(mcfg.mixerConfiguration);
+        serialize32(featureMask());
+        serialize8(mcfg.serialrx_type);
+        serialize16(mcfg.board_align_roll);
+        serialize16(mcfg.board_align_pitch);
+        serialize16(mcfg.board_align_yaw);
+        /// ???
+        break;
+
+    case MSP_RCMAP:
+        headSerialReply(MAX_INPUTS); // TODO fix this
+        for (i = 0; i < MAX_INPUTS; i++)
+            serialize8(mcfg.rcmap[i]);
+        break;
+    case MSP_SET_RCMAP:
+        for (i = 0; i < MAX_INPUTS; i++)
+            mcfg.rcmap[i] = read8();
+        break;
+
+    case MSP_REBOOT:
+        systemReset(false);
+        break;
+
     default:                   // we do not know how to handle the (valid) message, indicate error MSP $M!
         headSerialError(0);
         break;
