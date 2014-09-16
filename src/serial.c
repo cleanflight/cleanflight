@@ -115,6 +115,8 @@ static uint8_t availableBoxes[CHECKBOXITEMS];
 static uint8_t numberBoxItems = 0;
 // from mixer.c
 extern int16_t motor_disarmed[MAX_MOTORS];
+// cause reboot after MSP processing complete
+static bool pendReboot = false;
 
 static const char pidnames[] =
     "ROLL;"
@@ -717,7 +719,8 @@ static void evaluateCommand(void)
         break;
 
     case MSP_REBOOT:
-        systemReset(false);
+        headSerialReply(0);
+        pendReboot = true;
         break;
 
     default:                   // we do not know how to handle the (valid) message, indicate error MSP $M!
@@ -749,6 +752,9 @@ void serialCom(void)
             cliProcess();
             return;
         }
+
+        if (pendReboot)
+            systemReset(false); // noreturn
 
         while (serialTotalBytesWaiting(currentPortState->port)) {
             c = serialRead(currentPortState->port);
