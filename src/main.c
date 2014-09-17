@@ -24,8 +24,6 @@ static void _putc(void *p, char c)
 {
     (void)p;
     serialWrite(core.mainport, c);
-    if (core.flexport)
-        serialWrite(core.flexport, c);
 }
 #else
 // keil/armcc version
@@ -34,11 +32,6 @@ int fputc(int c, FILE *f)
     // let DMA catch up a bit when using set or dump, we're too fast.
     while (!isSerialTransmitBufferEmpty(core.mainport));
     serialWrite(core.mainport, c);
-    if (core.flexport) {
-        while (!isSerialTransmitBufferEmpty(core.flexport));
-        serialWrite(core.flexport, c);
-    }
-
     return c;
 }
 #endif
