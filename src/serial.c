@@ -376,7 +376,7 @@ static void evaluateCommand(void)
         mcfg.gps_type = read8();
         mcfg.gps_baudrate = read8();
         mcfg.gps_ubx_sbas = read8();
-        read8();
+        mcfg.multiwiicurrentoutput = read8();
         read16();
         cfg.mag_declination = read16() * 10;
         mcfg.vbatscale = read8();           // actual vbatscale as intended
@@ -575,7 +575,7 @@ static void evaluateCommand(void)
         serialize8(mcfg.gps_type);
         serialize8(mcfg.gps_baudrate);
         serialize8(mcfg.gps_ubx_sbas);
-        serialize8(0);
+        serialize8(mcfg.multiwiicurrentoutput);
         serialize16(0);
         serialize16(cfg.mag_declination / 10); // TODO check this shit
         serialize8(mcfg.vbatscale);
