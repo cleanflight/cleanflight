@@ -696,16 +696,20 @@ static void evaluateCommand(void)
         mcfg.board_align_roll = read16(); // board_align_roll
         mcfg.board_align_pitch = read16(); // board_align_pitch
         mcfg.board_align_yaw = read16(); // board_align_yaw
+        mcfg.currentscale = read16();
+        mcfg.currentoffset = read16();
         /// ???
         break;
     case MSP_CONFIG:
-        headSerialReply(1 + 4 + 1 + 2 + 2 + 2);
+        headSerialReply(1 + 4 + 1 + 2 + 2 + 2 + 4);
         serialize8(mcfg.mixerConfiguration);
         serialize32(featureMask());
         serialize8(mcfg.serialrx_type);
         serialize16(mcfg.board_align_roll);
         serialize16(mcfg.board_align_pitch);
         serialize16(mcfg.board_align_yaw);
+        serialize16(mcfg.currentscale);
+        serialize16(mcfg.currentoffset);
         /// ???
         break;
 
