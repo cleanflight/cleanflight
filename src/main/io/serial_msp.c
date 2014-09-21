@@ -25,8 +25,9 @@
 
 #include "platform.h"
 
-#include "common/maths.h"
 #include "common/axis.h"
+#include "common/color.h"
+#include "common/maths.h"
 
 #include "drivers/system.h"
 #include "drivers/accgyro.h"
@@ -47,6 +48,7 @@
 #include "io/gps.h"
 #include "io/gimbal.h"
 #include "io/serial.h"
+#include "io/ledstrip.h"
 #include "telemetry/telemetry.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"

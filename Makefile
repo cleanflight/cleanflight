@@ -177,6 +177,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 VPATH		:= $(VPATH):$(TARGET_DIR)
 
 COMMON_SRC	 = build_config.c \
+		   version.c \
 		   $(TARGET_SRC) \
 		   config/config.c \
 		   config/runtime_config.c \
@@ -206,6 +207,7 @@ COMMON_SRC	 = build_config.c \
 		   rx/msp.c \
 		   rx/sbus.c \
 		   rx/sumd.c \
+		   rx/sumh.c \
 		   rx/spektrum.c \
 		   sensors/acceleration.c \
 		   sensors/battery.c \
@@ -219,8 +221,10 @@ COMMON_SRC	 = build_config.c \
 HIGHEND_SRC  = flight/autotune.c \
 		   flight/navigation.c \
 		   flight/gps_conversion.c \
+		   common/colorconversion.c \
 		   io/gps.c \
 		   io/ledstrip.c \
+		   io/display.c \
 		   telemetry/telemetry.c \
 		   telemetry/frsky.c \
 		   telemetry/hott.c \
@@ -242,6 +246,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/display_ug2864hsweg01.h \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
 		   drivers/light_led_stm32f10x.c \
@@ -262,12 +267,14 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 
 EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/accgyro_mpu6050.c \
+		   drivers/accgyro_l3g4200d.c \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/display_ug2864hsweg01.h \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/light_led_stm32f10x.c \
 		   drivers/light_ws2811strip.c \
@@ -526,7 +533,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.s
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $< 
-$(OBJECT_DIR)/$(TARGET)/%.o): %.S
+$(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $< 

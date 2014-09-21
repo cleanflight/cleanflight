@@ -139,6 +139,7 @@ void tfp_format(void *putp, putcf putf, char *fmt, va_list va)
                 break;
             case '%':
                 putf(putp, ch);
+                break;
             default:
                 break;
             }
@@ -170,6 +171,7 @@ static void putcp(void *p, char c)
 void tfp_sprintf(char *s, char *fmt, ...)
 {
     va_list va;
+
     va_start(va, fmt);
     tfp_format(&s, putcp, fmt, va);
     putcp(&s, 0);

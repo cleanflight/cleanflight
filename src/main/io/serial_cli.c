@@ -24,10 +24,12 @@
 #include <ctype.h>
 
 #include "platform.h"
+#include "version.h"
 
 #include "build_config.h"
 
 #include "common/axis.h"
+#include "common/color.h"
 #include "common/typeconversion.h"
 
 #include "drivers/system.h"
@@ -47,6 +49,7 @@
 #include "io/gimbal.h"
 #include "io/rc_controls.h"
 #include "io/serial.h"
+#include "io/ledstrip.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
@@ -77,6 +80,10 @@ static void cliGpsPassthrough(char *cmdline);
 #endif
 static void cliHelp(char *cmdline);
 static void cliMap(char *cmdline);
+#ifdef LED_STRIP
+static void cliLed(char *cmdline);
+static void cliColor(char *cmdline);
+#endif
 static void cliMixer(char *cmdline);
 static void cliMotor(char *cmdline);
 static void cliProfile(char *cmdline);
@@ -97,7 +104,7 @@ uint8_t cliMode = 0;
 static char cliBuffer[48];
 static uint32_t bufferIndex = 0;
 
-// sync this with MultiType enum from mw.h
+// sync this with mutiType_e
 static const char * const mixerNames[] = {
     "TRI", "QUADP", "QUADX", "BI",
     "GIMBAL", "Y6", "HEX6",
@@ -107,15 +114,15 @@ static const char * const mixerNames[] = {
     "CUSTOM", NULL
 };
 
-// sync this with AvailableFeatures enum from board.h
+// sync this with features_e
 static const char * const featureNames[] = {
     "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
-    "RX_MSP", "RSSI_ADC", "LED_STRIP", NULL
+    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", NULL
 };
 
-// sync this with AvailableSensors enum from board.h
+// sync this with sensors_e
 static const char * const sensorNames[] = {
     "GYRO", "ACC", "BARO", "MAG", "SONAR", "GPS", "GPS+MAG", NULL
 };
@@ -134,6 +141,9 @@ typedef struct {
 const clicmd_t cmdTable[] = {
     { "aux", "feature_name auxflag or blank for list", cliAux },
     { "cmix", "design custom mixer", cliCMix },
+#ifdef LED_STRIP
+    { "color", "configure colors", cliColor },
+#endif
     { "defaults", "reset to defaults and reboot", cliDefaults },
     { "dump", "print configurable settings in a pastable form", cliDump },
     { "exit", "", cliExit },
@@ -143,6 +153,9 @@ const clicmd_t cmdTable[] = {
     { "gpspassthrough", "passthrough gps to serial", cliGpsPassthrough },
 #endif
     { "help", "", cliHelp },
+#ifdef LED_STRIP
+    { "led", "configure leds", cliLed },
+#endif
     { "map", "mapping of rc channel order", cliMap },
     { "mixer", "mixer name or list", cliMixer },
     { "motor", "get/set motor output value", cliMotor },
@@ -495,6 +508,60 @@ static void cliCMix(char *cmdline)
     }
 }
 
+#ifdef LED_STRIP
+static void cliLed(char *cmdline)
+{
+    int i;
+    uint8_t len;
+    char *ptr;
+    char ledConfigBuffer[20];
+
+    len = strlen(cmdline);
+    if (len == 0) {
+        for (i = 0; i < MAX_LED_STRIP_LENGTH; i++) {
+            generateLedConfig(i, ledConfigBuffer, sizeof(ledConfigBuffer));
+            printf("led %u %s\r\n", i, ledConfigBuffer);
+        }
+    } else {
+        ptr = cmdline;
+        i = atoi(ptr);
+        if (i < MAX_LED_STRIP_LENGTH) {
+            ptr = strchr(cmdline, ' ');
+            if (!parseLedStripConfig(i, ++ptr)) {
+                printf("Parse error\r\n", MAX_LED_STRIP_LENGTH);
+            }
+        } else {
+            printf("Invalid led index: must be < %u\r\n", MAX_LED_STRIP_LENGTH);
+        }
+    }
+}
+
+static void cliColor(char *cmdline)
+{
+    int i;
+    uint8_t len;
+    char *ptr;
+
+    len = strlen(cmdline);
+    if (len == 0) {
+        for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
+            printf("color %u %d,%u,%u\r\n", i, masterConfig.colors[i].h, masterConfig.colors[i].s, masterConfig.colors[i].v);
+        }
+    } else {
+        ptr = cmdline;
+        i = atoi(ptr);
+        if (i < CONFIGURABLE_COLOR_COUNT) {
+            ptr = strchr(cmdline, ' ');
+            if (!parseColor(i, ++ptr)) {
+                printf("Parse error\r\n", CONFIGURABLE_COLOR_COUNT);
+            }
+        } else {
+            printf("Invalid color index: must be < %u\r\n", CONFIGURABLE_COLOR_COUNT);
+        }
+    }
+}
+#endif
+
 static void dumpValues(uint8_t mask)
 {
     uint32_t i;
@@ -540,6 +607,10 @@ static void cliDump(char *cmdline)
     }
 
     if (dumpMask & DUMP_MASTER) {
+
+        printf("\r\n# version\r\n");
+        cliVersion(NULL);
+
         printf("\r\n# dump master\r\n");
         printf("\r\n# mixer\r\n");
 
@@ -592,12 +663,23 @@ static void cliDump(char *cmdline)
         buf[i] = '\0';
         printf("map %s\r\n", buf);
 
+#ifdef LED_STRIP
+        printf("\r\n\r\n# led\r\n");
+        cliLed("");
+
+        printf("\r\n\r\n# color\r\n");
+        cliColor("");
+#endif
         printSectionBreak();
         dumpValues(MASTER_VALUE);
     }
 
     if (dumpMask & DUMP_PROFILE) {
         printf("\r\n# dump profile\r\n");
+
+        printf("\r\n# profile\r\n");
+        cliProfile("");
+
         printf("\r\n# aux\r\n");
 
         cliAux("");
@@ -851,7 +933,7 @@ static void cliProfile(char *cmdline)
 
     len = strlen(cmdline);
     if (len == 0) {
-        printf("Current profile: %d\r\n", masterConfig.current_profile_index);
+        printf("profile %d\r\n", masterConfig.current_profile_index);
         return;
     } else {
         i = atoi(cmdline);
@@ -1086,7 +1168,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    cliPrint("Cleanflight/" __TARGET__ " " __DATE__ " / " __TIME__ " (" __REVISION__ ")");
+    printf("Cleanflight/%s" __DATE__ " / " __TIME__ " (%s)", targetName, shortGitRevision);
 }
 
 void cliProcess(void)
@@ -1147,14 +1229,16 @@ void cliProcess(void)
             cliPrint("\r\n");
             cliBuffer[bufferIndex] = 0; // null terminate
 
-            target.name = cliBuffer;
-            target.param = NULL;
+            if (cliBuffer[0] != '#') {
+                target.name = cliBuffer;
+                target.param = NULL;
 
-            cmd = bsearch(&target, cmdTable, CMD_COUNT, sizeof cmdTable[0], cliCompare);
-            if (cmd)
-                cmd->func(cliBuffer + strlen(cmd->name) + 1);
-            else
-                cliPrint("Unknown command, try 'help'");
+                cmd = bsearch(&target, cmdTable, CMD_COUNT, sizeof cmdTable[0], cliCompare);
+                if (cmd)
+                    cmd->func(cliBuffer + strlen(cmd->name) + 1);
+                else
+                    cliPrint("Unknown command, try 'help'");
+            }
 
             memset(cliBuffer, 0, sizeof(cliBuffer));
             bufferIndex = 0;
@@ -1162,6 +1246,7 @@ void cliProcess(void)
             // 'exit' will reset this flag, so we don't need to print prompt again
             if (!cliMode)
                 return;
+
             cliPrompt();
         } else if (c == 127) {
             // backspace

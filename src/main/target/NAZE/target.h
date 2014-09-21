@@ -46,6 +46,7 @@
 #define LED0
 #define LED1
 #define INVERTER
+#define DISPLAY
 
 #define USE_USART1
 #define USE_USART2
@@ -65,8 +66,6 @@
 #define GPS
 
 #define LED_STRIP
-//#define USE_ALTERNATE_LED_LAYOUT
-
 #define TELEMETRY
 #define SOFT_SERIAL
 #define SERIAL_RX

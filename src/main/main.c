@@ -23,6 +23,7 @@
 #include "platform.h"
 
 #include "common/axis.h"
+#include "common/color.h"
 
 #include "drivers/system.h"
 #include "drivers/gpio.h"
@@ -50,6 +51,8 @@
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "io/gimbal.h"
+#include "io/ledstrip.h"
+#include "io/display.h"
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
 #include "sensors/barometer.h"
@@ -66,8 +69,9 @@
 
 #include "build_config.h"
 
-extern rcReadRawDataPtr rcReadRawFunc;
-
+#ifdef DEBUG_SECTION_TIMES
+uint32_t sectionTimes[2][4];
+#endif
 extern uint32_t previousTime;
 
 #ifdef SOFTSERIAL_LOOPBACK
@@ -90,8 +94,8 @@ void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int16_t magDeclinationFromConfig);
 void imuInit(void);
-void ledStripInit(void);
-
+void displayInit(rxConfig_t *intialRxConfig);
+void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
 void loop(void);
 
 // FIXME bad naming - this appears to be for some new board that hasn't been made available yet.
@@ -138,6 +142,12 @@ void init(void)
 //    adcInit(&adc_params);
 
     initBoardAlignment(&masterConfig.boardAlignment);
+
+#ifdef DISPLAY
+    if (feature(FEATURE_DISPLAY)) {
+        displayInit(&masterConfig.rxConfig);
+    }
+#endif
 
     // We have these sensors; SENSORS_SET defined in board.h depending on hardware platform
     sensorsSet(SENSORS_SET);
@@ -191,6 +201,7 @@ void init(void)
     }
 #endif
 
+    pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
     pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
@@ -239,7 +250,7 @@ void init(void)
 #ifdef LED_STRIP
     if (feature(FEATURE_LED_STRIP)) {
         ws2811LedStripInit();
-        ledStripInit();
+        ledStripInit(masterConfig.ledConfigs, masterConfig.colors, failsafe);
     }
 #endif
 
@@ -275,6 +286,12 @@ void init(void)
     // Check battery type/voltage
     if (feature(FEATURE_VBAT))
         batteryInit(&masterConfig.batteryConfig);
+
+#ifdef DISPLAY
+    if (feature(FEATURE_DISPLAY)) {
+        displayEnablePageCycling();
+    }
+#endif
 }
 
 #ifdef SOFTSERIAL_LOOPBACK

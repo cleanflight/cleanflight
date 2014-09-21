@@ -23,6 +23,7 @@
 
 #include "build_config.h"
 
+#include "common/color.h"
 #include "common/axis.h"
 #include "flight/flight.h"
 
@@ -50,6 +51,7 @@
 #include "rx/rx.h"
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
+#include "io/ledstrip.h"
 #include "io/gps.h"
 #include "flight/failsafe.h"
 #include "flight/imu.h"
@@ -70,6 +72,7 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 
 #define FLASH_TO_RESERVE_FOR_CONFIG 0x800
 
+#ifndef FLASH_PAGE_COUNT
 #ifdef STM32F303xC
 #define FLASH_PAGE_COUNT 128
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
@@ -89,18 +92,19 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #define FLASH_PAGE_COUNT 128
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
 #endif
+#endif
 
-#ifndef FLASH_PAGE_COUNT
+#if !defined(FLASH_PAGE_COUNT) || !defined(FLASH_PAGE_SIZE)
 #error "Flash page count not defined for target."
 #endif
 
 // use the last flash pages for storage
-static uint32_t flashWriteAddress = (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG));
+#define CONFIG_START_FLASH_ADDRESS (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG))
 
 master_t masterConfig;      // master config struct with data independent from profiles
 profile_t *currentProfile;   // profile config struct
 
-static const uint8_t EEPROM_CONF_VERSION = 76;
+static const uint8_t EEPROM_CONF_VERSION = 79;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -377,6 +381,11 @@ static void resetConf(void)
     for (i = 0; i < MAX_SUPPORTED_MOTORS; i++)
         masterConfig.customMixer[i].throttle = 0.0f;
 
+#ifdef LED_STRIP
+    applyDefaultColors(masterConfig.colors, CONFIGURABLE_COLOR_COUNT);
+    applyDefaultLedStripConfig(masterConfig.ledConfigs);
+#endif
+
     // copy first profile into remaining profile
     for (i = 1; i < 3; i++)
         memcpy(&masterConfig.profile[i], currentProfile, sizeof(profile_t));
@@ -394,7 +403,7 @@ static uint8_t calculateChecksum(const uint8_t *data, uint32_t length)
 
 static bool isEEPROMContentValid(void)
 {
-    const master_t *temp = (const master_t *) flashWriteAddress;
+    const master_t *temp = (const master_t *) CONFIG_START_FLASH_ADDRESS;
     uint8_t checksum = 0;
 
     // check version number
@@ -528,15 +537,6 @@ void validateAndFixConfig(void)
 
 void initEEPROM(void)
 {
-#if defined(STM32F10X)
-
-#define FLASH_SIZE_REGISTER 0x1FFFF7E0
-
-    const uint32_t flashSizeInKB = *((uint32_t *)FLASH_SIZE_REGISTER) & 0xFFFF;
-
-    // calculate write address based on contents of Flash size register. Use last 2 kbytes for storage
-    flashWriteAddress = 0x08000000 + (FLASH_PAGE_SIZE * (flashSizeInKB - 2));
-#endif
 #if defined(STM32F40_41xxx)
     // calculate write address based on contents of Flash size register. Use last 128 kbytes for storage ADDR_FLASH_SECTOR_11
     flashWriteAddress = 0x080E0000;
@@ -550,7 +550,7 @@ void readEEPROM(void)
         failureMode(10);
 
     // Read flash
-    memcpy(&masterConfig, (char *) flashWriteAddress, sizeof(master_t));
+    memcpy(&masterConfig, (char *) CONFIG_START_FLASH_ADDRESS, sizeof(master_t));
     // Copy current profile
     if (masterConfig.current_profile_index > 2) // sanity check
         masterConfig.current_profile_index = 0;
@@ -599,14 +599,13 @@ void writeEEPROM(void)
 #ifdef STM32F40_41xxx
             	status = FLASH_EraseSector(FLASH_Sector_11, VoltageRange_3);
 #else
-            	status = FLASH_ErasePage(flashWriteAddress + wordOffset);
-#endif
+                status = FLASH_ErasePage(CONFIG_START_FLASH_ADDRESS + wordOffset);#endif
                 if (status != FLASH_COMPLETE) {
                     break;
                 }
             }
 
-            status = FLASH_ProgramWord(flashWriteAddress + wordOffset,
+            status = FLASH_ProgramWord(CONFIG_START_FLASH_ADDRESS + wordOffset,
                     *(uint32_t *) ((char *) &masterConfig + wordOffset));
             if (status != FLASH_COMPLETE) {
                 break;
