@@ -75,11 +75,9 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
 #endif
 
-#ifndef FLASH_PAGE_COUNT
-
 #ifdef STM32F40_41xxx
 #define FLASH_PAGE_COUNT 1
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x8000)
+#define FLASH_PAGE_SIZE                 ((uint16_t)0x20000)
 #endif
 
 #ifdef STM32F10X_MD
