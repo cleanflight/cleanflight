@@ -377,7 +377,8 @@ static void evaluateCommand(void)
         mcfg.gps_baudrate = read8();
         mcfg.gps_ubx_sbas = read8();
         mcfg.multiwiicurrentoutput = read8();
-        read16();
+        mcfg.rssi_aux_channel = read8();
+        read8();
         cfg.mag_declination = read16() * 10;
         mcfg.vbatscale = read8();           // actual vbatscale as intended
         mcfg.vbatmincellvoltage = read8();  // vbatlevel_warn1 in MWC2.3 GUI
@@ -576,7 +577,8 @@ static void evaluateCommand(void)
         serialize8(mcfg.gps_baudrate);
         serialize8(mcfg.gps_ubx_sbas);
         serialize8(mcfg.multiwiicurrentoutput);
-        serialize16(0);
+        serialize8(mcfg.rssi_aux_channel);
+        serialize8(0);
         serialize16(cfg.mag_declination / 10); // TODO check this shit
         serialize8(mcfg.vbatscale);
         serialize8(mcfg.vbatmincellvoltage);
