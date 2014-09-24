@@ -734,9 +734,9 @@ static void evaluateCommand(void)
         break;
 
     case MSP_BUILDINFO:
-        headSerialReply(10 + 4 + 4);
-        for (i = 0; i < 10; i++)
-            serialize8(build[i]);
+        headSerialReply(11 + 4 + 4);
+        for (i = 0; i < 11; i++)
+            serialize8(build[i]); // MMM DD YYYY as ascii, MMM = Jan/Feb... etc
         serialize32(0); // future exp
         serialize32(0); // future exp
         break;
