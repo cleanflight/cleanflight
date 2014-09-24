@@ -75,6 +75,7 @@
 #define MSP_CONFIG               66     //out message         baseflight-specific settings that aren't covered elsewhere
 #define MSP_SET_CONFIG           67     //in message          baseflight-specific settings save
 #define MSP_REBOOT               68     //in message          reboot settings
+#define MSP_BUILDINFO            69     //out message         build date as well as some space for future expansion
 
 #define INBUF_SIZE 64
 
@@ -316,6 +317,7 @@ static void evaluateCommand(void)
     uint8_t wp_no;
     int32_t lat = 0, lon = 0, alt = 0;
 #endif
+    const char *build = __DATE__;
 
     switch (currentPortState->cmdMSP) {
     case MSP_SET_RAW_RC:
@@ -729,6 +731,14 @@ static void evaluateCommand(void)
     case MSP_REBOOT:
         headSerialReply(0);
         pendReboot = true;
+        break;
+
+    case MSP_BUILDINFO:
+        headSerialReply(10 + 4 + 4);
+        for (i = 0; i < 10; i++)
+            serialize8(build[i]);
+        serialize32(0); // future exp
+        serialize32(0); // future exp
         break;
 
     default:                   // we do not know how to handle the (valid) message, indicate error MSP $M!
