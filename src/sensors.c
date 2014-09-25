@@ -151,11 +151,11 @@ retry:
           }
         ; // fallthrough
           
-        case MAG_MPU9150:
+        case MAG_AK8975:
           if (haveMpu6k) { // potentially MPU9150 present.
-            if (mpu9150detect(&mag)) {
-              magHardware = MAG_MPU9150;
-              if (mcfg.mag_hardware == MAG_MPU9150)
+            if (ak8975detect(&mag)) {
+              magHardware = MAG_AK8975;
+              if (mcfg.mag_hardware == MAG_AK8975)
                 break;
             }
           }

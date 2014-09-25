@@ -81,7 +81,7 @@
 static sensor_align_e magAlign = CW180_DEG;
 static float magGain[3] = { 1.0f, 1.0f, 1.0f };
 
-bool hmc5883lDetect(sensor_t * mag)
+bool hmc5883lDetect(sensor_t *mag)
 {
     bool ack = false;
     uint8_t sig = 0;
@@ -105,7 +105,7 @@ void hmc5883lInit(sensor_align_e align)
     bool bret = true;           // Error indicator
 
     if (align > 0)
-    magAlign = align;
+        magAlign = align;
     
     if (hw_revision == NAZE32) {
         // PB12 - MAG_DRDY output on rev4 hardware

@@ -72,12 +72,12 @@ typedef enum AccelSensors {
     ACC_NONE = 6
 } AccelSensors;
 
-typedef enum MagSensors {
+typedef enum CompassSensors {
     MAG_DEFAULT = 0,
     MAG_HMC5883L = 1,
-    MAG_MPU9150 = 2,
+    MAG_AK8975 = 2,
     MAG_NONE = 3
-} MagSensors;
+} CompassSensors;
 
 typedef enum {
     FEATURE_PPM = 1 << 0,
@@ -239,7 +239,7 @@ typedef struct baro_t {
 #include "drv_bmp085.h"
 #include "drv_ms5611.h"
 #include "drv_hmc5883l.h"
-#include "drv_mpu9150.h"
+#include "drv_ak8975.h"
 #include "drv_i2c.h"
 #include "drv_spi.h"
 #include "drv_ledring.h"

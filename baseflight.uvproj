@@ -619,9 +619,9 @@
               <FilePath>.\src\drv_mpu6500.c</FilePath>
             </File>
             <File>
-              <FileName>drv_mpu9150.c</FileName>
+              <FileName>drv_ak8975.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\src\drv_mpu9150.c</FilePath>
+              <FilePath>.\src\drv_ak8975.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1372,9 +1372,9 @@
               <FilePath>.\src\drv_mpu6500.c</FilePath>
             </File>
             <File>
-              <FileName>drv_mpu9150.c</FileName>
+              <FileName>drv_ak8975.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\src\drv_mpu9150.c</FilePath>
+              <FilePath>.\src\drv_ak8975.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -2888,9 +2888,9 @@
               </FileOption>
             </File>
             <File>
-              <FileName>drv_mpu9150.c</FileName>
+              <FileName>drv_ak8975.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\src\drv_mpu9150.c</FilePath>
+              <FilePath>.\src\drv_ak8975.c</FilePath>
             </File>
           </Files>
         </Group>
