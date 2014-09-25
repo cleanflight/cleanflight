@@ -183,6 +183,29 @@ retry:
     return true;
 }
 
+uint16_t RSSI_getValue(void) {
+    uint16_t value = 0;
+
+    if (mcfg.rssi_aux_channel > 0) {
+        const int16_t rssiChannelData = rcData[AUX1 + mcfg.rssi_aux_channel - 1];
+        // Range of rssiChannelData is [1000;2000]. rssi should be in [0;1023];
+        value = (uint16_t)((constrain(rssiChannelData - 1000, 0, 1000) / 1000.0f) * 1023.0f);
+    } else if (mcfg.rssi_adc_channel > 0) {
+        value = adcGetChannel(ADC_RSSI);
+
+        if (value > mcfg.rssi_adc_offset) {
+            value = (((uint32_t)(value - mcfg.rssi_adc_offset)) * 1023L) / mcfg.rssi_adc_max;
+
+            if(value > 1023)
+                value = 1023;
+        } else {
+            value = 0;
+        }
+    }
+
+    return value;  //[0;1023]
+}
+
 uint16_t batteryAdcToVoltage(uint16_t src)
 {
     // calculate battery voltage based on ADC reading
