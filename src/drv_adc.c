@@ -37,6 +37,12 @@ void adcInit(drv_adc_config_t *init)
         adcConfig[ADC_EXTERNAL_CURRENT].dmaIndex = numChannels - 1;
     }
 
+    if (init->rssiAdcChannel > 0) {
+        numChannels++;
+        adcConfig[ADC_RSSI].adcChannel = init->rssiAdcChannel;
+        adcConfig[ADC_RSSI].dmaIndex = numChannels - 1;
+    }
+
     // ADC driver assumes all the GPIO was already placed in 'AIN' mode
     DMA_DeInit(DMA1_Channel1);
     dma.DMA_PeripheralBaseAddr = (uint32_t)&ADC1->DR;

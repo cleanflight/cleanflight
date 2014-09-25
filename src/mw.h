@@ -284,6 +284,9 @@ typedef struct master_t {
     int8_t fixedwing_althold_dir;           // +1 or -1 for pitch/althold gain. later check if need more than just sign
 
     uint8_t rssi_aux_channel;               // Read rssi from channel. 1+ = AUX1+, 0 to disable.
+    uint8_t rssi_adc_channel;               // Read analog-rssi from RC-filter (RSSI-PWM to RSSI-Analog), RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9), 0 to disable (disabled if rssi_aux_channel > 0 or rssi_adc_channel == power_adc_channel)
+    uint16_t rssi_adc_max;                  // max input voltage defined by RC-filter (is RSSI never 100% reduce the value) (1...4095)
+    uint16_t rssi_adc_offset;               // input offset defined by RC-filter (0...4095)
 
     // gps-related stuff
     uint8_t gps_type;                       // See GPSHardware enum.
@@ -441,6 +444,7 @@ void Mag_init(void);
 int Mag_getADC(void);
 void Sonar_init(void);
 void Sonar_update(void);
+uint16_t RSSI_getValue(void);
 
 // Output
 void mixerInit(void);
