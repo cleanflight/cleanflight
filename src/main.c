@@ -85,6 +85,13 @@ int main(void)
         mcfg.power_adc_channel = 0;
     }
 
+    if (mcfg.rssi_adc_channel > 0 && (mcfg.rssi_adc_channel == 1 || mcfg.rssi_adc_channel == 9) && mcfg.rssi_adc_channel != mcfg.power_adc_channel)
+        adc_params.rssiAdcChannel = mcfg.rssi_adc_channel;
+    else {
+        adc_params.rssiAdcChannel = 0;
+        mcfg.rssi_adc_channel = 0;
+    }
+
     adcInit(&adc_params);
     // Check battery type/voltage
     if (feature(FEATURE_VBAT))
