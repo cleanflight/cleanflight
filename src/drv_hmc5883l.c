@@ -81,7 +81,7 @@
 static sensor_align_e magAlign = CW180_DEG;
 static float magGain[3] = { 1.0f, 1.0f, 1.0f };
 
-bool hmc5883lDetect(sensor_align_e align)
+bool hmc5883lDetect(sensor_t * mag)
 {
     bool ack = false;
     uint8_t sig = 0;
@@ -90,13 +90,13 @@ bool hmc5883lDetect(sensor_align_e align)
     if (!ack || sig != 'H')
         return false;
 
-    if (align > 0)
-        magAlign = align;
-
+    mag->init = hmc5883lInit;
+    mag->read = hmc5883lRead;
+    
     return true;
 }
 
-void hmc5883lInit(void)
+void hmc5883lInit(sensor_align_e align)
 {
     gpio_config_t gpio;
     int16_t magADC[3];
@@ -104,6 +104,9 @@ void hmc5883lInit(void)
     int32_t xyz_total[3] = { 0, 0, 0 }; // 32 bit totals so they won't overflow.
     bool bret = true;           // Error indicator
 
+    if (align > 0)
+    magAlign = align;
+    
     if (hw_revision == NAZE32) {
         // PB12 - MAG_DRDY output on rev4 hardware
         gpio.pin = Pin_12;
