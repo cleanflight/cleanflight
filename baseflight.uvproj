@@ -627,6 +627,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\drv_mpu6500.c</FilePath>
             </File>
+            <File>
+              <FileName>drv_ak8975.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\drv_ak8975.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1386,6 +1391,11 @@
               <FileName>drv_mpu6500.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\drv_mpu6500.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_ak8975.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\drv_ak8975.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -2946,6 +2956,11 @@
                   </Cads>
                 </FileArmAds>
               </FileOption>
+            </File>
+            <File>
+              <FileName>drv_ak8975.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\drv_ak8975.c</FilePath>
             </File>
           </Files>
         </Group>

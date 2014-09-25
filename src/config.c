@@ -208,6 +208,7 @@ static void resetConf(void)
     mcfg.board_align_pitch = 0;
     mcfg.board_align_yaw = 0;
     mcfg.acc_hardware = ACC_DEFAULT;     // default/autodetect
+    mcfg.mag_hardware = MAG_DEFAULT;
     mcfg.max_angle_inclination = 500;    // 50 degrees
     mcfg.yaw_control_direction = 1;
     mcfg.moron_threshold = 32;
