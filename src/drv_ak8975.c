@@ -4,9 +4,9 @@
  */
  
 #include "board.h"
- 
-// only the mag driver is included here as the accel/mag are the same as mpu6050.
- 
+
+// This sensor is available on MPU-9150. The accel/gyro in that chip use the same driver as MPU-6050.
+
 // AK8975, mag sensor address
 #define AK8975_MAG_I2C_ADDRESS     0x0C
 #define AK8975_MAG_ID_ADDRESS      0x00
