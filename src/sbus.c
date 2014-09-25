@@ -11,7 +11,6 @@
 #define SBUS_MAX_CHANNEL 8
 #define SBUS_FRAME_SIZE 25
 #define SBUS_SYNCBYTE 0x0F
-#define SBUS_OFFSET 988
 
 static bool sbusFrameDone = false;
 static void sbusDataReceive(uint16_t c);
@@ -26,7 +25,7 @@ void sbusInit(rcReadRawDataPtr *callback)
 {
     int b;
     for (b = 0; b < SBUS_MAX_CHANNEL; b++)
-        sbusChannelData[b] = 2 * (mcfg.midrc - SBUS_OFFSET);
+        sbusChannelData[b] = 2 * (mcfg.midrc - mcfg.sbus_offset);
     // Configure hardware inverter on PB2. If not available, this has no effect.
     INV_ON;
     core.rcvrport = uartOpen(USART2, sbusDataReceive, 100000, (portMode_t)(MODE_RX | MODE_SBUS));
@@ -109,5 +108,5 @@ bool sbusFrameComplete(void)
 
 static uint16_t sbusReadRawRC(uint8_t chan)
 {
-    return sbusChannelData[mcfg.rcmap[chan]] / 2 + SBUS_OFFSET;
+    return sbusChannelData[mcfg.rcmap[chan]] / 2 + mcfg.sbus_offset;
 }
