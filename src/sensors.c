@@ -152,13 +152,11 @@ retry:
         ; // fallthrough
           
         case MAG_AK8975:
-          if (haveMpu6k) { // potentially MPU9150 present.
             if (ak8975detect(&mag)) {
-              magHardware = MAG_AK8975;
-              if (mcfg.mag_hardware == MAG_AK8975)
-                break;
+                magHardware = MAG_AK8975;
+                if (mcfg.mag_hardware == MAG_AK8975)
+                    break;
             }
-          }
     }
     
     // Found anything? Check if user fucked up or mag is really missing.

@@ -21,7 +21,7 @@ bool ak8975detect(sensor_t * mag)
     uint8_t sig = 0;
   
     // device ID is in register 0 and is equal to 'H'
-    ack = i2cRead((AK8975_MAG_I2C_ADDRESS), AK8975_MAG_ID_ADDRESS, 1, &sig);
+    ack = i2cRead(AK8975_MAG_I2C_ADDRESS, AK8975_MAG_ID_ADDRESS, 1, &sig);
     if (!ack || sig != 'H')
         return false;
 
@@ -49,9 +49,9 @@ void ak8975Read(int16_t *magData)
     // x -> y
     // y -> x
     // z-> -z
-    mag[X] = -(int16_t)(buf[3] << 8 | buf[2]) *4;
-    mag[Y] = -(int16_t)(buf[1] << 8 | buf[0]) *4;
-    mag[Z] = -(int16_t)(buf[5] << 8 | buf[4]) *4;
+    mag[X] = -(int16_t)(buf[3] << 8 | buf[2]) * 4;
+    mag[Y] = -(int16_t)(buf[1] << 8 | buf[0]) * 4;
+    mag[Z] = -(int16_t)(buf[5] << 8 | buf[4]) * 4;
     
     alignSensors(mag, magData, magAlign);
     
