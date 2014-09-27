@@ -100,6 +100,9 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 #define ID_VERT_SPEED         0x30 //opentx vario
 
+static uint32_t lastCycleTime = 0;
+static uint8_t cycleNum = 0;
+
 static void sendDataHead(uint8_t id)
 {
     serialWrite(frskyPort, PROTOCOL_HEADER);
@@ -151,10 +154,52 @@ static void sendBaro(void)
     serialize16(abs(BaroAlt % 100));
 }
 
+static void sendGpsAltitude(void)
+{
+    uint16_t altitude = GPS_altitude;
+    //Send real GPS altitude only if it's reliable (there's a GPS fix)
+    if( !STATE(GPS_FIX) ) {
+        altitude = 0;
+    }
+    sendDataHead(ID_GPS_ALTIDUTE_BP);
+    serialize16(altitude);
+    sendDataHead(ID_GPS_ALTIDUTE_AP);
+    serialize16(0);
+}
+
 static void sendTemperature1(void)
 {
     sendDataHead(ID_TEMPRATURE1);
+    //If exist, use baro for T° instead of acc
+    #ifdef BARO
+    serialize16((baroTemperature + 50)/ 100);
+    #else
     serialize16(telemTemperature1 / 10);
+    #endif
+}
+
+static void sendTemperature2(void)
+{
+    uint16_t satellite = GPS_numSat;
+    //Send instead Num sat and quality GPS
+    if( GPS_hdop > 300 && ( (cycleNum % 16 ) < 8) ) {//Every 1s
+        //If GPS quality is not good, send GPS quality every 1s
+        satellite = constrain(GPS_hdop, 0, 9999);
+    }
+    sendDataHead(ID_TEMPRATURE2);
+    //FIXME : Working if taranis set to METRICS and not to IMPERIALS
+    serialize16(satellite);
+}
+
+static void sendSpeed(void)
+{
+    if( STATE(GPS_FIX) ) {      
+        //Speed should be sent in m/s (GPS speed is in cm/s)
+        sendDataHead(ID_GPS_SPEED_BP);
+        serialize16((GPS_speed * 0.01 + 0.5));
+        sendDataHead(ID_GPS_SPEED_AP);
+        serialize16(0); //Not used / displayed by Taranis
+    }
 }
 
 static void sendTime(void)
@@ -180,29 +225,41 @@ static void GPStoDDDMM_MMMM(int32_t mwiigps, gpsCoordinateDDDMMmmmm_t *result)
     absgps = (absgps - deg * 10000000) * 60;        // absgps = Minutes left * 10^7
     min    = absgps / 10000000;                     // minutes left
 
+    //FIXME : working if Taranis set to DMS or not using FLD02, otherwise it should be 60 instead of 100
     result->dddmm = deg * 100 + min;
     result->mmmm  = (absgps - min * 10000000) / 1000;
 }
 
 static void sendGPS(void)
 {
+    int32_t localGPS_coord[2];  
+    //Dummy data if no 3D fix, this way we can display heading in Taranis
+    if( STATE(GPS_FIX) ) {
+        localGPS_coord[LAT] = GPS_coord[LAT];
+        localGPS_coord[LON] = GPS_coord[LON];
+    } else {
+        localGPS_coord[LAT] = 200000;
+        localGPS_coord[LON] = 200000;
+    }  
+    
     gpsCoordinateDDDMMmmmm_t coordinate;
-    GPStoDDDMM_MMMM(GPS_coord[LAT], &coordinate);
+    GPStoDDDMM_MMMM(localGPS_coord[LAT], &coordinate);
     sendDataHead(ID_LATITUDE_BP);
     serialize16(coordinate.dddmm);
     sendDataHead(ID_LATITUDE_AP);
     serialize16(coordinate.mmmm);
     sendDataHead(ID_N_S);
-    serialize16(GPS_coord[LAT] < 0 ? 'S' : 'N');
+    serialize16(localGPS_coord[LAT] < 0 ? 'S' : 'N');
 
-    GPStoDDDMM_MMMM(GPS_coord[LON], &coordinate);
+    GPStoDDDMM_MMMM(localGPS_coord[LON], &coordinate);
     sendDataHead(ID_LONGITUDE_BP);
     serialize16(coordinate.dddmm);
     sendDataHead(ID_LONGITUDE_AP);
     serialize16(coordinate.mmmm);
     sendDataHead(ID_E_W);
-    serialize16(GPS_coord[LON] < 0 ? 'W' : 'E');
+    serialize16(localGPS_coord[LON] < 0 ? 'W' : 'E');
 }
+
 #endif
 
 
@@ -331,9 +388,6 @@ void configureFrSkyTelemetryPort(void)
     }
 }
 
-static uint32_t lastCycleTime = 0;
-static uint8_t cycleNum = 0;
-
 bool canSendFrSkyTelemetry(void)
 {
     return serialTotalBytesWaiting(frskyPort) == 0;
@@ -366,14 +420,17 @@ void handleFrSkyTelemetry(void)
     sendTelemetryTail();
 
     if ((cycleNum % 4) == 0) {      // Sent every 500ms
-        sendBaro();
+        if( lastCycleTime > 5000 ) { //Allow 5s to boot correctly
+            sendBaro();
+        }
         sendHeading();
         sendTelemetryTail();
     }
 
     if ((cycleNum % 8) == 0) {      // Sent every 1s
         sendTemperature1();
-
+        sendTemperature2 //Num sat and hdop
+        
         if (feature(FEATURE_VBAT)) {
             sendVoltage();
             sendVoltageAmp();
@@ -385,7 +442,8 @@ void handleFrSkyTelemetry(void)
         if (sensors(SENSOR_GPS))
             sendGPS();
 #endif
-
+        sendSpeed(); 
+        sendGpsAltitude(); 
         sendTelemetryTail();
     }
 
