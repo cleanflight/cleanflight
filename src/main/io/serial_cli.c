@@ -1161,14 +1161,20 @@ static void cliStatus(char *cmdline)
     }
     cliPrint("\r\n");
 
-    printf("Cycle Time: %d, I2C Errors: %d, config size: %d\r\n", cycleTime, i2cGetErrorCounter(), sizeof(master_t));
+#ifdef USE_I2C
+    uint16_t i2cErrorCounter = i2cGetErrorCounter();
+#else
+    uint16_t i2cErrorCounter = 0;
+#endif
+
+    printf("Cycle Time: %d, I2C Errors: %d, config size: %d\r\n", cycleTime, i2cErrorCounter, sizeof(master_t));
 }
 
 static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Cleanflight/%s" __DATE__ " / " __TIME__ " (%s)", targetName, shortGitRevision);
+    printf("Cleanflight/%s " __DATE__ " / " __TIME__ " (%s)", targetName, shortGitRevision);
 }
 
 void cliProcess(void)

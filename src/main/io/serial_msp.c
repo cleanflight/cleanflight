@@ -169,6 +169,7 @@ static const box_t const boxes[] = {
     { BOXOSD, "OSD SW;", 19 },
     { BOXTELEMETRY, "TELEMETRY;", 20 },
     { BOXAUTOTUNE, "AUTOTUNE;", 21 },
+    { BOXSONAR, "SONAR;", 22 },
     { CHECKBOX_ITEM_COUNT, NULL, 0xFF }
 };
 
@@ -457,6 +458,11 @@ void mspInit(serialConfig_t *serialConfig)
     activeBoxIds[activeBoxIdCount++] = BOXAUTOTUNE;
 #endif
 
+    if (feature(FEATURE_SONAR)){
+        activeBoxIds[activeBoxIdCount++] = BOXSONAR;
+    }
+
+
     memset(mspPorts, 0x00, sizeof(mspPorts));
 
     openAllMSPSerialPorts(serialConfig);
@@ -485,7 +491,11 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_STATUS:
         headSerialReply(11);
         serialize16(cycleTime);
+#ifdef USE_I2C
         serialize16(i2cGetErrorCounter());
+#else
+        serialize16(0);
+#endif
         serialize16(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
         // OK, so you waste all the fucking time to have BOXNAMES and BOXINDEXES etc, and then you go ahead and serialize enabled shit simply by stuffing all
         // the bits in order, instead of setting the enabled bits based on BOXINDEX. WHERE IS THE FUCKING LOGIC IN THIS, FUCKWADS.
@@ -510,6 +520,7 @@ static bool processOutCommand(uint8_t cmdMSP)
             rcOptions[BOXOSD] << BOXOSD |
             rcOptions[BOXTELEMETRY] << BOXTELEMETRY |
             rcOptions[BOXAUTOTUNE] << BOXAUTOTUNE |
+            IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
             IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM;
         for (i = 0; i < activeBoxIdCount; i++) {
             int flag = (tmp & (1 << activeBoxIds[i]));

@@ -53,6 +53,10 @@ typedef struct {
     uint8_t irq;
     uint8_t outputEnable;
     GPIO_Mode gpioInputMode;
+#ifdef STM32F303
+    uint8_t gpioPinSource;
+    uint8_t alternateFunction;
+#endif
 } timerHardware_t;
 
 extern const timerHardware_t timerHardware[];

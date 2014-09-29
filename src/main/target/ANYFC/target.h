@@ -42,9 +42,8 @@
 
 #define GYRO
 #define ACC
-//#define MAG
+#define MAG
 #define BARO
-
 #define INVERTER
 //#define BEEPER
 #define LED0
@@ -61,9 +60,10 @@
 
 #define SERIAL_PORT_COUNT 2
 
+#define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
-#define SENSORS_SET (SENSOR_ACC)
+#define SENSORS_SET (SENSOR_ACC|SENSOR_MAG|SENSOR_BARO)
 
 //#define GPS
 //#define LED_STRIP

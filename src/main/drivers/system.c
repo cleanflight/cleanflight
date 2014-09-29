@@ -21,6 +21,8 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #include "gpio.h"
 #include "light_led.h"
 #include "sound_beeper.h"
@@ -82,6 +84,7 @@ void systemInit(bool overclock)
 {
 
 #ifdef STM32F303
+    UNUSED(overclock);
     // start fpu
     SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
 #endif
@@ -97,7 +100,12 @@ void systemInit(bool overclock)
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(overclock);
 #endif
+#ifdef CC3D
+    /* Accounts for OP Bootloader, set the Vector Table base address as specified in .ld file */
+    extern void *isr_vector_table_base;
 
+    NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);
+#endif
     // Configure NVIC preempt/priority groups
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
@@ -138,7 +146,7 @@ void systemInit(bool overclock)
     spiInit(SPI1);
 #endif
 
-#ifndef CC3D
+#ifdef USE_I2C
     // Configure the rest of the stuff
     i2cInit(I2C_DEVICE);
 #endif

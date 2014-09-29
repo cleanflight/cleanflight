@@ -54,6 +54,7 @@
 #include "io/ledstrip.h"
 #include "io/gps.h"
 #include "flight/failsafe.h"
+#include "flight/altitudehold.h"
 #include "flight/imu.h"
 #include "flight/navigation.h"
 
@@ -79,8 +80,8 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 #endif
 
 #ifdef STM32F40_41xxx
-#define FLASH_PAGE_COUNT 1
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x20000)
+#define FLASH_PAGE_COUNT 8 // just to make calculations work
+#define FLASH_PAGE_SIZE                 ((uint32_t)0x20000)
 #endif
 
 #ifdef STM32F10X_MD
@@ -104,7 +105,7 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 master_t masterConfig;      // master config struct with data independent from profiles
 profile_t *currentProfile;   // profile config struct
 
-static const uint8_t EEPROM_CONF_VERSION = 79;
+static const uint8_t EEPROM_CONF_VERSION = 80;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -213,10 +214,11 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_GPS_ONLY);
 #if (SERIAL_PORT_COUNT > 2)
     serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_UNUSED);
+#if (SERIAL_PORT_COUNT > 3)
     serialConfig->serial_port_scenario[3] = lookupScenarioIndex(SCENARIO_UNUSED);
-
 #if (SERIAL_PORT_COUNT > 4)
     serialConfig->serial_port_scenario[4] = lookupScenarioIndex(SCENARIO_UNUSED);
+#endif
 #endif
 #endif
 
@@ -457,7 +459,8 @@ void activateConfig(void)
     imuRuntimeConfig.acc_unarmedcal = currentProfile->acc_unarmedcal;;
     imuRuntimeConfig.small_angle = masterConfig.small_angle;
 
-    configureImu(&imuRuntimeConfig, &currentProfile->pidProfile, &currentProfile->barometerConfig, &currentProfile->accDeadband);
+    configureImu(&imuRuntimeConfig, &currentProfile->pidProfile, &currentProfile->accDeadband);
+    configureAltitudeHold(&currentProfile->pidProfile, &currentProfile->barometerConfig);
 
     calculateThrottleAngleScale(currentProfile->throttle_correction_angle);
     calculateAccZLowPassFilterRCTimeConstant(currentProfile->accz_lpf_cutoff);
@@ -537,10 +540,6 @@ void validateAndFixConfig(void)
 
 void initEEPROM(void)
 {
-#if defined(STM32F40_41xxx)
-    // calculate write address based on contents of Flash size register. Use last 128 kbytes for storage ADDR_FLASH_SECTOR_11
-    flashWriteAddress = 0x080E0000;
-#endif
 }
 
 void readEEPROM(void)
@@ -599,7 +598,8 @@ void writeEEPROM(void)
 #ifdef STM32F40_41xxx
             	status = FLASH_EraseSector(FLASH_Sector_11, VoltageRange_3);
 #else
-                status = FLASH_ErasePage(CONFIG_START_FLASH_ADDRESS + wordOffset);#endif
+                status = FLASH_ErasePage(CONFIG_START_FLASH_ADDRESS + wordOffset);
+#endif
                 if (status != FLASH_COMPLETE) {
                     break;
                 }

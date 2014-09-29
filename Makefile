@@ -20,6 +20,9 @@ TARGET		?= NAZE
 # Compile-time options
 OPTIONS		?=
 
+# compile for OpenPilot BootLoader support
+OPBL ?=no
+
 # Debugger optons, must be empty or GDB
 DEBUG ?= GDB
 
@@ -33,6 +36,9 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 FORKNAME			 = cleanflight
 
 VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC ANYFC
+
+# Valid targets for OP BootLoader support
+OPBL_VALID_TARGETS = CC3D
 
 REVISION = $(shell git log -1 --format="%h")
 
@@ -321,6 +327,15 @@ ifeq ($(TARGET),CJMCU)
 LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_64k.ld
 endif
 
+ifeq ($(OPBL),yes)
+ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
+LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_128k_opbl.ld
+.DEFAULT_GOAL := binary
+else
+$(error OPBL specified with a unsupported target)
+endif
+endif
+
 CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
@@ -343,7 +358,6 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_spi_mpu6000.c \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
-		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/inverter.c \
@@ -364,7 +378,6 @@ CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
 		   
 ANYFC_SRC	 = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
-		   drivers/barometer_bmp085.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/adc.c \
@@ -399,7 +412,6 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/pwm_rx.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f30x.c \
-		   drivers/serial_softserial.c \
 		   drivers/serial_usb_vcp.c \
 		   drivers/sound_beeper_stm32f30x.c \
 		   drivers/system_stm32f30x.c \
@@ -506,7 +518,7 @@ ifeq ($(filter $(TARGET),$(VALID_TARGETS)),)
 $(error Target '$(TARGET)' is not valid, must be one of $(VALID_TARGETS))
 endif
 
-
+TARGET_BIN	 = $(BIN_DIR)/$(FORKNAME)_$(TARGET).bin
 TARGET_HEX	 = $(BIN_DIR)/$(FORKNAME)_$(TARGET).hex
 TARGET_ELF	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).elf
 TARGET_OBJS	 = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
@@ -517,6 +529,9 @@ TARGET_MAP   = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 
 $(TARGET_HEX): $(TARGET_ELF)
 	$(OBJCOPY) -O ihex --set-start 0x8000000 $< $@
+
+$(TARGET_BIN): $(TARGET_ELF)
+	$(OBJCOPY) -O binary $< $@
 
 $(TARGET_ELF):  $(TARGET_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -539,7 +554,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@$(CC) -c -o $@ $(ASFLAGS) $< 
 
 clean:
-	rm -f $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)
+	rm -f $(TARGET_BIN) $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)
 	rm -rf $(OBJECT_DIR)/$(TARGET)
 
 flash_$(TARGET): $(TARGET_HEX)
@@ -549,6 +564,7 @@ flash_$(TARGET): $(TARGET_HEX)
 
 flash: flash_$(TARGET)
 
+binary: $(TARGET_BIN)
 
 unbrick_$(TARGET): $(TARGET_HEX)
 	stty -F $(SERIAL_DEVICE) raw speed 115200 -crtscts cs8 -parenb -cstopb -ixon
