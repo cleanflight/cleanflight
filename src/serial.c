@@ -265,6 +265,7 @@ void serialInit(uint32_t baudrate)
 {
     int idx;
 
+	numTelemetryPorts = 0;
     core.mainport = uartOpen(USART1, NULL, baudrate, MODE_RXTX);
     ports[0].port = core.mainport;
     numTelemetryPorts++;
