@@ -772,8 +772,8 @@ void serialCom(void)
         if (pendReboot)
             systemReset(false); // noreturn
 
-        while (serialTotalBytesWaiting(currentPortState.port)) {
-            c = serialRead(currentPortState.port);
+        while (serialTotalBytesWaiting(core.mainport)) {
+            c = serialRead(core.mainport);
 
             if (currentPortState->c_state == IDLE) {
                 currentPortState->c_state = (c == '$') ? HEADER_START : IDLE;
