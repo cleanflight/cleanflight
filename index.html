@@ -1,83 +1,174 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+<!doctype html>
+<html class="no-js">
+	<head>
+		<meta charset="utf-8">
+		<title>Cleanflight Flight Controller - 32bit MultiWii</title>
+		<meta name="description" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+		<link rel="stylesheet" href="styles/vendor.css">
 
-    <title>Cleanflight by cleanflight</title>
-  </head>
+		<link rel="stylesheet" href="styles/main.css">
 
-  <body>
-    <header>
-      <div class="inner">
-        <h1>Cleanflight</h1>
-        <h2>Clean-code version of the baseflight flight controller</h2>
-        <a href="https://github.com/cleanflight/cleanflight" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
+		<script src="scripts/vendor/modernizr.js"></script>
+	</head>
+	<body>
+		<!--[if lt IE 10]>
+		<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+		<![endif]-->
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+		<div class="container">
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+			<div class="header">
+				<nav class="navbar navbar-default navbar-top" role="navigation">
+					<div class="container-fluid">
+						<ul class="nav navbar-nav">
+							<li><a href="https://github.com/hydra/cleanflight/tree/master/docs"><span class="glyphicon glyphicon-book"></span> Documentation</a></li>
+							<li><a href="http://github.com/hydra/cleanflight"><span class="glyphicon glyphicon-folder-open"></span> Firmware Source</a></li>
+							<li><a href="http://github.com/hydra/cleanflight-configurator"><span class="glyphicon glyphicon-folder-open"></span> GUI Source</a></li>
+							<li><a href="https://github.com/hydra/cleanflight/tree/master/obj"><span class="glyphicon glyphicon-download"></span> Firmware Download</a></li>
+							<li><a href="https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb"><span class="glyphicon glyphicon-download"></span> GUI Download</a></li>
+							<li><a href="irc://freenode.net/#cleanflight"><span class="glyphicon glyphicon-comment"></span> IRC channel</a></li>
+							<li><a href="https://twitter.com/Cleanflight"><span class="glyphicon glyphicon-retweet"></span> Twitter</a></li>
+							<li><a href="https://www.youtube.com/playlist?list=PL6H1fAj_XUNVBEcp8vbMH2DrllZAGWkt8"><span class="glyphicon glyphicon-film"></span> Videos</a></li>
+						</ul>
+					</div>
+				</nav>
+			</div>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+			<div class="well">
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+				<div class="row">
+					<div class="col-sm-2"></div>
+					<div class="col-sm-10"><h2 class="text-center">Cleanflight</h2></div>
+				</div>
+				<div class="row">
+					<div class="col-sm-2"><img src="images/multirotor.jpg" class="img-rounded" width="150"></div>
+					<div class="col-sm-10 text-center">
+						<p>Cleanflight can be used on multirotor aircraft and fixed-wing aircraft, it supports a variety for shapes and motor counts, not limited to</p>
+						<p>quadcopters, hexacopters, octocopters, tricopters and planes. Cleanflight is Open-Source flight controller software which is 32-bit version of the original 8-bit MultiWii code.</p>
+					</div>
+				</div>
 
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+			</div>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+			<div class="features">
+				<h2>Features</h2>
 
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+				<div class="row">
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Awesome flight performance</h3>
+							</div>
+							<div class="panel-body">
+								Most people that have tried other flight controller software are impressed how stable and responsive aircraft running cleanflight fly.
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Open-Source</h3>
+							</div>
+							<div class="panel-body">
+								Source code is on github, you're free to modify it and submit improvements. GPL Licensed. Issue tracker. Pull requests
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Modern 32-bit hardware support</h3>
+							</div>
+							<div class="panel-body">
+								When 32-bit equipped flight controllers are so cheap, why hold yourself back with old 8-bit hardware and software? Cleanflight leverages the capabilities of modern embedded processors to give you the best control.
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Community driven</h3>
+							</div>
+							<div class="panel-body">
+								Cleanflight maintainers actively seek and listen to user feedback from users. Friendly community. Active developers. IRC Channel.
+							</div>
+						</div>
+					</div>
+				</div>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+				<div class="row">
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Toys!</h3>
+							</div>
+							<div class="panel-body">
+								We know you like toys such as controllable LED strips, OLED displays and SONAR sensors, they're fun!
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Modern development principles</h3>
+							</div>
+							<div class="panel-body">
+								As software grows over time it often becomes harder to maintain and fragile; Cleanflight attempts to bring modern software development practices to the table. We like and encourage understandable, decoupled, well-tested and
+								self-explanatory code.
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Broad hardware support</h3>
+							</div>
+							<div class="panel-body">
+								Cleanflight currently runs on 8 different boards and supports enough sensors and CPUs for you to adapt it to you own custom flight controller board, even more off-the-shelf hardware support is planned.
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-3">
+						<div class="panel panel-info">
+							<div class="panel-heading">
+								<h3 class="panel-title text-center">Up-to-date documentation</h3>
+							</div>
+							<div class="panel-body">
+								The documentation is maintained along with the code and attempts to stay as up-to-date as possible. Code contributors are asked to provide documentation updates to go with the code.
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+			<div class="footer text-center">
+				(c)2014 Cleanflight Team<br>Images by: <a href="https://www.flickr.com/photos/fredflickr/">John Biehler</a> licensed under <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>
+			</div>
+		</div>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+		<!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+		<script>
+			(function (b, o, i, l, e, r) {
+				b.GoogleAnalyticsObject = l;
+				b[l] || (b[l] =
+				         function () {(b[l].q = b[l].q || []).push(arguments)});
+				b[l].l = +new Date;
+				e = o.createElement(i);
+				r = o.getElementsByTagName(i)[0];
+				e.src = '//www.google-analytics.com/analytics.js';
+				r.parentNode.insertBefore(e, r)
+			}(window, document, 'script', 'ga'));
+			ga('create', 'UA-52820920-3', 'auto');
+			ga('send', 'pageview');
+		</script>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+		<script src="scripts/vendor.js"></script>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-        </section>
+		<script src="scripts/plugins.js"></script>
 
-        <aside id="sidebar">
-          <a href="https://github.com/cleanflight/cleanflight/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/cleanflight/cleanflight/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/cleanflight/cleanflight"></a> is maintained by <a href="https://github.com/cleanflight">cleanflight</a>.</p>
-
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
-    </div>
-
-  
-  </body>
+		<script src="scripts/main.js"></script>
+	</body>
 </html>
