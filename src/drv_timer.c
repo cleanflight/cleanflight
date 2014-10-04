@@ -63,17 +63,17 @@ const timerHardware_t timerHardware[] = {
 };
 
 enum {
-    tim1 = 0,
-    tim2,
-    tim3,
-    tim4,
+    TIM1_IDX = 0,
+    TIM2_IDX,
+    TIM3_IDX,
+    TIM4_IDX,
     MAX_TIMERS
 };
 
 #define CC_CHANNELS_PER_TIMER 4 // TIM_Channel_1..4
 
 static const TIM_TypeDef * const timers[MAX_TIMERS] = {
-    [tim1] = TIM1, [tim2] = TIM2, [tim3] = TIM3, [tim4] = TIM4
+    [TIM1_IDX] = TIM1, [TIM2_IDX] = TIM2, [TIM3_IDX] = TIM3, [TIM4_IDX] = TIM4
 };
 
 typedef struct channelConfig_s {
@@ -226,20 +226,20 @@ static void timCCxHandler(TIM_TypeDef * const tim, unsigned int timerIndex)
 
 void TIM1_CC_IRQHandler(void)
 {
-    timCCxHandler(TIM1, tim1);
+    timCCxHandler(TIM1, TIM1_IDX);
 }
 
 void TIM2_IRQHandler(void)
 {
-    timCCxHandler(TIM2, tim2);
+    timCCxHandler(TIM2, TIM2_IDX);
 }
 
 void TIM3_IRQHandler(void)
 {
-    timCCxHandler(TIM3, tim3);
+    timCCxHandler(TIM3, TIM3_IDX);
 }
 
 void TIM4_IRQHandler(void)
 {
-    timCCxHandler(TIM4, tim4);
+    timCCxHandler(TIM4, TIM4_IDX);
 }
