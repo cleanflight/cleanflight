@@ -26,9 +26,9 @@
 #define PUPD_OFFSET 2
 #define OUTPUT_OFFSET 4
 
-#define MODE_MASK ((1|2) << MODE_OFFSET)
-#define PUPD_MASK ((1|2) << PUPD_OFFSET)
-#define OUTPUT_MASK ((1|2) << OUTPUT_OFFSET)
+#define MODE_MASK ((1|2))
+#define PUPD_MASK ((1|2))
+#define OUTPUT_MASK ((1|2))
 
 //#define GPIO_Speed_10MHz GPIO_Speed_Level_1   Fast Speed:10MHz
 //#define GPIO_Speed_2MHz  GPIO_Speed_Level_2   Medium Speed:2MHz

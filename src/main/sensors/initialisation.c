@@ -468,6 +468,9 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
 #ifdef MAG
     if (hmc5883lDetect()) {
         magAlign = CW180_DEG; // default NAZE alignment
+#ifdef ANYFC
+        magAlign = CW90_DEG;
+#endif
     } else {
         sensorsClear(SENSOR_MAG);
     }

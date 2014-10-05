@@ -47,13 +47,13 @@ void initSpi1(void)
     RCC_APB2PeriphResetCmd(RCC_APB2Periph_SPI1, ENABLE);
 
     // MOSI + SCK as output
-    gpio.mode = GPIO_Mode_AF;
+    gpio.mode = Mode_AF_PP;
     gpio.pin = Pin_7 | Pin_5;
     gpio.speed = Speed_50MHz;
     gpioInit(GPIOA, &gpio);
     // MISO as input
     gpio.pin = Pin_6;
-    gpio.mode = GPIO_Mode_AF;
+    gpio.mode = Mode_AF_PP;
     gpioInit(GPIOA, &gpio);
     // NSS as gpio slave select
     gpio.pin = Pin_4;
@@ -107,7 +107,7 @@ void initSpi2(void)
     gpioInit(GPIOB, &gpio);
     // MISO as input
     gpio.pin = Pin_14;
-    gpio.mode = Mode_IN_FLOATING;
+    gpio.mode = Mode_AF_PP;
     gpioInit(GPIOB, &gpio);
     // NSS as gpio slave select
     gpio.pin = Pin_12;

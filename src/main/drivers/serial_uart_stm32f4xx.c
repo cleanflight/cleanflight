@@ -132,11 +132,11 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     // USART1_RX    PA10
     gpio.speed = Speed_50MHz;
     gpio.pin = Pin_9;
-    gpio.mode = GPIO_Mode_AF;
+    gpio.mode = Mode_AF_PP;
     if (mode & MODE_TX)
         gpioInit(GPIOA, &gpio);
     gpio.pin = Pin_10;
-    gpio.mode = GPIO_Mode_AF;
+    gpio.mode = Mode_AF_PP;
     if (mode & MODE_RX)
         gpioInit(GPIOA, &gpio);
 
@@ -216,7 +216,7 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
     if (mode & MODE_TX)
         gpioInit(GPIOA, &gpio);
     gpio.pin = Pin_3;
-    gpio.mode = Mode_IPU;
+    gpio.mode = Mode_AF_PP;
     if (mode & MODE_RX)
         gpioInit(GPIOA, &gpio);
 
@@ -288,11 +288,11 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 
     gpio.speed = Speed_2MHz;
     gpio.pin = USART3_TX_PIN;
-    gpio.mode = GPIO_Mode_AF;
+    gpio.mode = Mode_AF_PP;
     if (mode & MODE_TX)
         gpioInit(USART3_GPIO, &gpio);
     gpio.pin = USART3_RX_PIN;
-    gpio.mode = GPIO_Mode_AF;
+    gpio.mode = Mode_AF_PP;
     if (mode & MODE_RX)
         gpioInit(USART3_GPIO, &gpio);
 

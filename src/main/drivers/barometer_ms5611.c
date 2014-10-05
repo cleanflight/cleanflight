@@ -63,13 +63,13 @@ bool ms5611Detect(baro_t *baro)
     uint8_t sig;
     int i;
 
-    delay(10); // No idea how long the chip takes to power-up, but let's make it 10ms
+    ms5611_reset();
+    delay(20); // No idea how long the chip takes to power-up, but let's make it 20ms
 
     ack = i2cRead(MS5611_ADDR, CMD_PROM_RD, 1, &sig);
     if (!ack)
         return false;
 
-    ms5611_reset();
     // read all coefficients
     for (i = 0; i < PROM_NB; i++)
         ms5611_c[i] = ms5611_prom(i);
