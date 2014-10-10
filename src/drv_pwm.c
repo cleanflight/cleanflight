@@ -65,6 +65,7 @@ static pwmWriteFuncPtr pwmWritePtr = NULL;
 static uint8_t numMotors = 0;
 static uint8_t numServos = 0;
 static uint8_t numInputs = 0;
+static uint8_t pwmFilter = 0;
 static uint16_t failsafeThreshold = 985;
 // external vars (ugh)
 extern int16_t failsafeCnt;
@@ -212,7 +213,7 @@ void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
     TIM_ICInitStructure.TIM_ICPolarity = polarity;
     TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-    TIM_ICInitStructure.TIM_ICFilter = 0x00;
+    TIM_ICInitStructure.TIM_ICFilter = pwmFilter;
 
     TIM_ICInit(tim, &TIM_ICInitStructure);
 }
@@ -347,6 +348,8 @@ bool pwmInit(drv_pwm_config_t *init)
 
     // to avoid importing cfg/mcfg
     failsafeThreshold = init->failsafeThreshold;
+    // pwm filtering on input
+    pwmFilter = init->pwmFilter;
 
     // this is pretty hacky shit, but it will do for now. array of 4 config maps, [ multiPWM multiPPM airPWM airPPM ]
     if (init->airplane)

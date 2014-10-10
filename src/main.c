@@ -143,6 +143,7 @@ int main(void)
     pwm_params.extraServos = cfg.gimbal_flags & GIMBAL_FORWARDAUX;
     pwm_params.motorPwmRate = mcfg.motor_pwm_rate;
     pwm_params.servoPwmRate = mcfg.servo_pwm_rate;
+    pwm_params.pwmFilter = mcfg.pwm_filter;
     pwm_params.idlePulse = PULSE_1MS; // standard PWM for brushless ESC (default, overridden below)
     if (feature(FEATURE_3D))
         pwm_params.idlePulse = mcfg.neutral3d;
