@@ -35,7 +35,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 FORKNAME			 = cleanflight
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC ANYFC
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU ANYFC EUSTM32F103RC MASSIVEF3
 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
@@ -49,6 +49,7 @@ OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
 INCLUDE_DIRS = $(SRC_DIR)
+LINKER_DIR   = $(ROOT)/src/main/target
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
@@ -78,13 +79,13 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F4xx \
 		   $(ROOT)/src/main/vcp
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f405.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
 DEVICE_FLAGS = -DSTM32F40_41xxx -DHSE_VALUE=8000000
 TARGET_FLAGS = -D$(TARGET)
 
-else ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO))
+else ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO MASSIVEF3))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
 USBFS_DIR		= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
@@ -112,13 +113,18 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F30x \
 		   $(ROOT)/src/main/vcp
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f303.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_256k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
 DEVICE_FLAGS = -DSTM32F303xC -DSTM32F303
 TARGET_FLAGS = -D$(TARGET)
 ifeq ($(TARGET),CHEBUZZF3)
 # CHEBUZZ is a VARIANT of STM32F3DISCOVERY
+TARGET_FLAGS := $(TARGET_FLAGS) -DSTM32F3DISCOVERY
+endif
+
+ifeq ($(TARGET),MASSIVEF3)
+# MASSIVEF3 is a VARIANT of STM32F3DISCOVERY
 TARGET_FLAGS := $(TARGET_FLAGS) -DSTM32F3DISCOVERY
 endif
 
@@ -140,7 +146,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM3/CoreSupport \
 		   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_256k.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_256k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
 TARGET_FLAGS = -D$(TARGET) -pedantic
@@ -164,7 +170,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM3/CoreSupport \
 		   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_128k.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
 TARGET_FLAGS = -D$(TARGET) -pedantic
@@ -324,12 +330,12 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   $(COMMON_SRC)
 
 ifeq ($(TARGET),CJMCU)
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_64k.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_64k.ld
 endif
 
 ifeq ($(OPBL),yes)
 ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f103_128k_opbl.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k_opbl.ld
 .DEFAULT_GOAL := binary
 else
 $(error OPBL specified with a unsupported target)
@@ -446,6 +452,15 @@ STM32F3DISCOVERY_SRC	 = $(STM32F3DISCOVERY_COMMON_SRC) \
 CHEBUZZF3_SRC	 = $(STM32F3DISCOVERY_SRC) \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
+
+MASSIVEF3_SRC	 = $(STM32F3DISCOVERY_SRC) \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)
+		   
+ifeq ($(TARGET),MASSIVEF3)
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_128k.ld
+endif
+		   
 
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
