@@ -151,12 +151,14 @@ retry:
           }
         ; // fallthrough
           
+#ifdef NAZE
         case MAG_AK8975:
             if (ak8975detect(&mag)) {
                 magHardware = MAG_AK8975;
                 if (mcfg.mag_hardware == MAG_AK8975)
                     break;
             }
+#endif
     }
     
     // Found anything? Check if user fucked up or mag is really missing.
