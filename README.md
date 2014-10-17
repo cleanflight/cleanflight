@@ -5,6 +5,14 @@ baseflight
 
 Before making any contributions, take a note of the https://github.com/multiwii/baseflight/wiki/CodingStyle
 
+binaries
+========
+
+The newest builds can be obtained here: http://leela.fiendie.net/baseflight
+
+Note that these images aren't necessarily flight-tested so use them at your own risk.
+When in doubt use the image from the obj-folder.
+
 license
 =======
 
