@@ -78,14 +78,15 @@ int main(void)
         i2cInit(I2C_DEVICE);
 
     // configure power ADC
-    if (mcfg.power_adc_channel > 0 && (mcfg.power_adc_channel == 1 || mcfg.power_adc_channel == 9))
+    if (mcfg.power_adc_channel > 0 && (mcfg.power_adc_channel == 1 || mcfg.power_adc_channel == 9 || mcfg.power_adc_channel == 5))
         adc_params.powerAdcChannel = mcfg.power_adc_channel;
     else {
         adc_params.powerAdcChannel = 0;
         mcfg.power_adc_channel = 0;
     }
 
-    if (mcfg.rssi_adc_channel > 0 && (mcfg.rssi_adc_channel == 1 || mcfg.rssi_adc_channel == 9) && mcfg.rssi_adc_channel != mcfg.power_adc_channel)
+    // configure rssi ADC
+    if (mcfg.rssi_adc_channel > 0 && (mcfg.rssi_adc_channel == 1 || mcfg.rssi_adc_channel == 9 || mcfg.rssi_adc_channel == 5) && mcfg.rssi_adc_channel != mcfg.power_adc_channel)
         adc_params.rssiAdcChannel = mcfg.rssi_adc_channel;
     else {
         adc_params.rssiAdcChannel = 0;
