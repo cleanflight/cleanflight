@@ -83,6 +83,16 @@ typedef enum {
 } serialPortIdentifier_e;
 
 #define SERIAL_PORT_IDENTIFIER_COUNT 5
+#elif defined(ANYFC)
+typedef enum {
+    SERIAL_PORT_USART3 = 0,
+    SERIAL_PORT_USART2,
+    SERIAL_PORT_USART1,
+    SERIAL_PORT_SOFTSERIAL1,
+    SERIAL_PORT_SOFTSERIAL2
+} serialPortIdentifier_e;
+
+#define SERIAL_PORT_IDENTIFIER_COUNT 5
 #else
 
 typedef enum {
