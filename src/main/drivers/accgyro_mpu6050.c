@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "platform.h"
 
@@ -127,16 +128,38 @@
 
 #define MPU6050_SMPLRT_DIV      0       // 8000Hz
 
-#define MPU6050_LPF_256HZ       0
-#define MPU6050_LPF_188HZ       1
-#define MPU6050_LPF_98HZ        2
-#define MPU6050_LPF_42HZ        3
-#define MPU6050_LPF_20HZ        4
-#define MPU6050_LPF_10HZ        5
-#define MPU6050_LPF_5HZ         6
+enum lpf_e {
+    INV_FILTER_256HZ_NOLPF2 = 0,
+    INV_FILTER_188HZ,
+    INV_FILTER_98HZ,
+    INV_FILTER_42HZ,
+    INV_FILTER_20HZ,
+    INV_FILTER_10HZ,
+    INV_FILTER_5HZ,
+    INV_FILTER_2100HZ_NOLPF,
+    NUM_FILTER
+};
+enum gyro_fsr_e {
+    INV_FSR_250DPS = 0,
+    INV_FSR_500DPS,
+    INV_FSR_1000DPS,
+    INV_FSR_2000DPS,
+    NUM_GYRO_FSR
+};
+enum clock_sel_e {
+    INV_CLK_INTERNAL = 0,
+    INV_CLK_PLL,
+    NUM_CLK
+};
+enum accel_fsr_e {
+    INV_FSR_2G = 0,
+    INV_FSR_4G,
+    INV_FSR_8G,
+    INV_FSR_16G,
+    NUM_ACCEL_FSR
+};
 
-static uint8_t mpuLowPassFilter = MPU6050_LPF_42HZ;
-
+static uint8_t mpuLowPassFilter = INV_FILTER_42HZ;
 static void mpu6050AccInit(void);
 static void mpu6050AccRead(int16_t *accData);
 static void mpu6050GyroInit(void);
@@ -148,6 +171,21 @@ typedef enum {
 } mpu6050Resolution_e;
 
 static mpu6050Resolution_e mpuAccelTrim;
+
+static const mpu6050Config_t *mpu6050Config = NULL;
+
+void mpu6050GpioInit(void) {
+    gpio_config_t gpio;
+
+    if (mpu6050Config->gpioAPB2Peripherals) {
+        RCC_APB2PeriphClockCmd(mpu6050Config->gpioAPB2Peripherals, ENABLE);
+    }
+
+    gpio.pin = mpu6050Config->gpioPin;
+    gpio.speed = Speed_2MHz;
+    gpio.mode = Mode_IN_FLOATING;
+    gpioInit(mpu6050Config->gpioPort, &gpio);
+}
 
 static bool mpu6050Detect(void)
 {
@@ -161,8 +199,8 @@ static bool mpu6050Detect(void)
         return false;
 
     // So like, MPU6xxx has a "WHO_AM_I" register, that is used to verify the identity of the device.
-    // The contents of WHO_AM_I are the upper 6 bits of the MPU-60X0’s 7-bit I2C address.
-    // The least significant bit of the MPU-60X0’s I2C address is determined by the value of the AD0 pin. (we know that already).
+    // The contents of WHO_AM_I are the upper 6 bits of the MPU-60X0ï¿½s 7-bit I2C address.
+    // The least significant bit of the MPU-60X0ï¿½s I2C address is determined by the value of the AD0 pin. (we know that already).
     // But here's the best part: The value of the AD0 pin is not reflected in this register.
 
     if (sig != (MPU6050_ADDRESS & 0x7e))
@@ -171,11 +209,13 @@ static bool mpu6050Detect(void)
     return true;
 }
 
-bool mpu6050AccDetect(acc_t *acc)
+bool mpu6050AccDetect(const mpu6050Config_t *configToUse, acc_t *acc)
 {
     uint8_t readBuffer[6];
     uint8_t revision;
     uint8_t productId;
+
+    mpu6050Config = configToUse;
 
     if (!mpu6050Detect()) {
         return false;
@@ -215,11 +255,14 @@ bool mpu6050AccDetect(acc_t *acc)
     return true;
 }
 
-bool mpu6050GyroDetect(gyro_t *gyro, uint16_t lpf)
+bool mpu6050GyroDetect(const mpu6050Config_t *configToUse, gyro_t *gyro, uint16_t lpf)
 {
+    mpu6050Config = configToUse;
+
     if (!mpu6050Detect()) {
         return false;
     }
+
 
     gyro->init = mpu6050GyroInit;
     gyro->read = mpu6050GyroRead;
@@ -227,37 +270,29 @@ bool mpu6050GyroDetect(gyro_t *gyro, uint16_t lpf)
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;
 
-    // default lpf is 42Hz
-    switch (lpf) {
-        case 256:
-            mpuLowPassFilter = MPU6050_LPF_256HZ;
-            break;
-        case 188:
-            mpuLowPassFilter = MPU6050_LPF_188HZ;
-            break;
-        case 98:
-            mpuLowPassFilter = MPU6050_LPF_98HZ;
-            break;
-        default:
-            case 42:
-            mpuLowPassFilter = MPU6050_LPF_42HZ;
-            break;
-        case 20:
-            mpuLowPassFilter = MPU6050_LPF_20HZ;
-            break;
-        case 10:
-            mpuLowPassFilter = MPU6050_LPF_10HZ;
-            break;
-        case 5:
-            mpuLowPassFilter = MPU6050_LPF_5HZ;
-            break;
-    }
+    if (lpf >= 188)
+        mpuLowPassFilter = INV_FILTER_188HZ;
+    else if (lpf >= 98)
+        mpuLowPassFilter = INV_FILTER_98HZ;
+    else if (lpf >= 42)
+        mpuLowPassFilter = INV_FILTER_42HZ;
+    else if (lpf >= 20)
+        mpuLowPassFilter = INV_FILTER_20HZ;
+    else if (lpf >= 10)
+        mpuLowPassFilter = INV_FILTER_10HZ;
+    else
+        mpuLowPassFilter = INV_FILTER_5HZ;
 
     return true;
 }
 
 static void mpu6050AccInit(void)
 {
+    if (mpu6050Config) {
+        mpu6050GpioInit();
+        mpu6050Config = NULL; // avoid re-initialisation of GPIO;
+    }
+
     switch (mpuAccelTrim) {
         case MPU_6050_HALF_RESOLUTION:
             acc_1G = 256 * 8;
@@ -280,29 +315,23 @@ static void mpu6050AccRead(int16_t *accData)
 
 static void mpu6050GyroInit(void)
 {
-    gpio_config_t gpio;
-
-    // MPU_INT output on rev4/5 hardware (PB13, PC13)
-    gpio.pin = Pin_13;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_IN_FLOATING;
-    if (hse_value == 8000000)
-        gpioInit(GPIOB, &gpio);
-    else if (hse_value == 12000000)
-        gpioInit(GPIOC, &gpio);
+    if (mpu6050Config) {
+        mpu6050GpioInit();
+        mpu6050Config = NULL; // avoid re-initialisation of GPIO;
+    }
 
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x80);      //PWR_MGMT_1    -- DEVICE_RESET 1
-    delay(5);
+    delay(100);
     i2cWrite(MPU6050_ADDRESS, MPU_RA_SMPLRT_DIV, 0x00); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_PWR_MGMT_1, 0x03); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
     i2cWrite(MPU6050_ADDRESS, MPU_RA_INT_PIN_CFG,
             0 << 7 | 0 << 6 | 0 << 5 | 0 << 4 | 0 << 3 | 0 << 2 | 1 << 1 | 0 << 0); // INT_PIN_CFG   -- INT_LEVEL_HIGH, INT_OPEN_DIS, LATCH_INT_DIS, INT_RD_CLEAR_DIS, FSYNC_INT_LEVEL_HIGH, FSYNC_INT_DIS, I2C_BYPASS_EN, CLOCK_DIS
     i2cWrite(MPU6050_ADDRESS, MPU_RA_CONFIG, mpuLowPassFilter); //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_GYRO_CONFIG, 0x18);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
 
     // ACC Init stuff. Moved into gyro init because the reset above would screw up accel config. Oops.
     // Accel scale 8g (4096 LSB/g)
-    i2cWrite(MPU6050_ADDRESS, MPU_RA_ACCEL_CONFIG, 2 << 3);
+    i2cWrite(MPU6050_ADDRESS, MPU_RA_ACCEL_CONFIG, INV_FSR_8G << 3);
 }
 
 static void mpu6050GyroRead(int16_t *gyroData)

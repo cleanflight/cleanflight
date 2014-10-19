@@ -20,6 +20,8 @@
 
 #include <platform.h>
 
+#include "build_config.h"
+
 #include "gpio.h"
 
 #include "bus_spi.h"
@@ -30,6 +32,7 @@ static volatile uint16_t spi2ErrorCount = 0;
 static volatile uint16_t spi3ErrorCount = 0;
 #endif
 
+#ifdef USE_SPI_DEVICE_1
 void initSpi1(void)
 {
     // Specific to the STM32F103
@@ -82,7 +85,9 @@ void initSpi1(void)
     SPI_Init(SPI1, &spi);
     SPI_Cmd(SPI1, ENABLE);
 }
+#endif
 
+#ifdef USE_SPI_DEVICE_2
 void initSpi2(void)
 {
 
@@ -114,6 +119,8 @@ void initSpi2(void)
     gpio.mode = Mode_Out_PP;
     gpioInit(GPIOB, &gpio);
 
+    GPIO_SetBits(GPIOB, GPIO_Pin_12);
+
     // Init SPI2 hardware
     SPI_I2S_DeInit(SPI2);
 
@@ -130,18 +137,27 @@ void initSpi2(void)
     SPI_Init(SPI2, &spi);
     SPI_Cmd(SPI2, ENABLE);
 }
+#endif
 
 bool spiInit(SPI_TypeDef *instance)
 {
+#if (!(defined(USE_SPI_DEVICE_1) && defined(USE_SPI_DEVICE_2)))
+    UNUSED(instance);
+#endif
+
+#ifdef USE_SPI_DEVICE_1
     if (instance == SPI1) {
         initSpi1();
-    } else if (instance == SPI2) {
-        initSpi2();
-    } else {
-        return false;
+        return true;
     }
-
-    return true;
+#endif
+#ifdef USE_SPI_DEVICE_2
+    if (instance == SPI1) {
+        initSpi2();
+        return true;
+    }
+#endif
+    return false;
 }
 
 uint32_t spiTimeoutUserCallback(SPI_TypeDef *instance)

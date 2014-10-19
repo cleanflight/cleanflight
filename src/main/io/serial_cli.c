@@ -29,6 +29,7 @@
 #include "build_config.h"
 
 #include "common/axis.h"
+#include "common/maths.h"
 #include "common/color.h"
 #include "common/typeconversion.h"
 
@@ -128,7 +129,7 @@ static const char * const sensorNames[] = {
 };
 
 static const char * const accNames[] = {
-    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "LSM303DLHC", "MPU6000", "FAKE", "None", NULL
+    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "LSM303DLHC", "MPU6000", "MPU6500", "FAKE", "None", NULL
 };
 
 typedef struct {
@@ -139,7 +140,7 @@ typedef struct {
 
 // should be sorted a..z for bsearch()
 const clicmd_t cmdTable[] = {
-    { "aux", "feature_name auxflag or blank for list", cliAux },
+    { "aux", "show/set aux settings", cliAux },
     { "cmix", "design custom mixer", cliCMix },
 #ifdef LED_STRIP
     { "color", "configure colors", cliColor },
@@ -240,6 +241,7 @@ const clivalue_t valueTable[] = {
 
     { "gps_provider",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
     { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
+	{ "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.gpsAutoConfig, 0, GPS_AUTOCONFIG_OFF },
 
 
     { "gps_pos_p",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOS], 0, 200 },
@@ -263,6 +265,11 @@ const clivalue_t valueTable[] = {
     { "telemetry_provider",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_provider, 0, TELEMETRY_PROVIDER_MAX },
     { "telemetry_switch",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_switch, 0, 1 },
     { "frsky_inversion",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_inversion, 0, 1 },
+    { "frsky_default_lattitude",    VAR_FLOAT  | MASTER_VALUE,  &masterConfig.telemetryConfig.gpsNoFixLatitude, -90.0, 90.0 },
+    { "frsky_default_longitude",    VAR_FLOAT  | MASTER_VALUE,  &masterConfig.telemetryConfig.gpsNoFixLongitude, -180.0, 180.0 },
+    { "frsky_coordinates_format",   VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_coordinate_format, 0, FRSKY_FORMAT_NMEA },
+    { "frsky_unit",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_unit, 0, FRSKY_UNIT_IMPERIALS },
+    { "frsky_battery_size",         VAR_UINT16 | MASTER_VALUE,  &masterConfig.telemetryConfig.batterySize, 0, 20000 },
 
     { "vbat_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatscale, VBAT_SCALE_MIN, VBAT_SCALE_MAX },
     { "vbat_max_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmaxcellvoltage, 10, 50 },
@@ -403,17 +410,61 @@ static void cliAux(char *cmdline)
     len = strlen(cmdline);
     if (len == 0) {
         // print out aux channel settings
-        for (i = 0; i < CHECKBOX_ITEM_COUNT; i++)
-            printf("aux %u %u\r\n", i, currentProfile->activate[i]);
+        for (i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
+            modeActivationCondition_t *mac = &currentProfile->modeActivationConditions[i];
+            printf("aux %u %u %u %u %u\r\n",
+                i,
+                mac->modeId,
+                mac->auxChannelIndex,
+                MODE_STEP_TO_CHANNEL_VALUE(mac->rangeStartStep),
+                MODE_STEP_TO_CHANNEL_VALUE(mac->rangeEndStep)
+            );
+        }
     } else {
         ptr = cmdline;
-        i = atoi(ptr);
-        if (i < CHECKBOX_ITEM_COUNT) {
-            ptr = strchr(cmdline, ' ');
-            val = atoi(ptr);
-            currentProfile->activate[i] = val;
+        i = atoi(ptr++);
+        if (i < MAX_MODE_ACTIVATION_CONDITION_COUNT) {
+            modeActivationCondition_t *mac = &currentProfile->modeActivationConditions[i];
+            uint8_t validArgumentCount = 0;
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                val = atoi(++ptr);
+                if (val >= 0 && val < CHECKBOX_ITEM_COUNT) {
+                    mac->modeId = val;
+                    validArgumentCount++;
+                }
+            }
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                val = atoi(++ptr);
+                if (val >= 0 && val < MAX_AUX_CHANNEL_COUNT) {
+                    mac->auxChannelIndex = val;
+                    validArgumentCount++;
+                }
+            }
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                val = atoi(++ptr);
+                val = CHANNEL_VALUE_TO_STEP(val);
+                if (val >= MIN_MODE_RANGE_STEP && val <= MAX_MODE_RANGE_STEP) {
+                    mac->rangeStartStep = val;
+                    validArgumentCount++;
+                }
+            }
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                val = atoi(++ptr);
+                val = CHANNEL_VALUE_TO_STEP(val);
+                if (val >= MIN_MODE_RANGE_STEP && val <= MAX_MODE_RANGE_STEP) {
+                    mac->rangeEndStep = val;
+                    validArgumentCount++;
+                }
+            }
+            if (validArgumentCount != 4) {
+                memset(mac, 0, sizeof(modeActivationCondition_t));
+            }
         } else {
-            printf("Invalid Feature index: must be < %u\r\n", CHECKBOX_ITEM_COUNT);
+            printf("index: must be < %u\r\n", MAX_MODE_ACTIVATION_CONDITION_COUNT);
         }
     }
 }
@@ -949,7 +1000,7 @@ static void cliProfile(char *cmdline)
 static void cliReboot(void) {
     cliPrint("\r\nRebooting");
     waitForSerialPortToFinishTransmitting(cliPort);
-    systemReset(false);
+    systemReset();
 }
 
 static void cliSave(char *cmdline)
@@ -1174,7 +1225,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Cleanflight/%s " __DATE__ " / " __TIME__ " (%s)", targetName, shortGitRevision);
+    printf("Cleanflight/%s %s / %s (%s)", targetName, buildDate, buildTime, shortGitRevision);
 }
 
 void cliProcess(void)

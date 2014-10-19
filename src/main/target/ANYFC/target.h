@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#define TARGET_BOARD_IDENTIFIER "CC3D" // CopterControl 3D
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_5 // Blue LEDs - PE8/PE12
@@ -37,11 +38,19 @@
 #define INVERTER_PERIPHERAL RCC_AHB1Periph_GPIOC
 #define INVERTER_USART USART1
 
+#define MPU6000_CS_GPIO       GPIOA
+#define MPU6000_CS_PIN        GPIO_Pin_4
+#define MPU6000_SPI_INSTANCE  SPI1
 
 #define BEEPER_INVERTED
 
-#define GYRO
+
 #define ACC
+#define USE_ACC_SPI_MPU6000
+
+#define GYRO
+#define USE_GYRO_SPI_MPU6000
+
 #define MAG
 #define BARO
 #define INVERTER
@@ -59,6 +68,10 @@
 
 
 #define SERIAL_PORT_COUNT 2
+
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+#define USE_SPI_DEVICE_2
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)

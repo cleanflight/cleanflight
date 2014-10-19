@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define TARGET_BOARD_IDENTIFIER "CJM1" // CJMCU
+
 #define FLASH_PAGE_COUNT 64
 #define FLASH_PAGE_SIZE ((uint16_t)0x400)
 
@@ -33,8 +35,13 @@
 #define LED2
 #define LED2_PERIPHERAL RCC_APB2Periph_GPIOC
 
+
 #define ACC
+#define USE_ACC_MPU6050
+
 #define GYRO
+#define USE_GYRO_MPU6050
+
 #define MAG
 
 #define BRUSHED_MOTORS

@@ -33,11 +33,14 @@
 
 
 #define BEEPER_INVERTED
-#define BARO_GPIO   GPIOC
-#define BARO_PIN    Pin_13
 
 #define GYRO
 #define ACC
+
+#define BARO
+#define USE_BARO_MS5611
+#define USE_BARO_BMP085
+
 #define BEEPER
 #define LED0
 #define LED1

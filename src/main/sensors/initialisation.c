@@ -32,22 +32,19 @@
 #include "drivers/accgyro_mma845x.h"
 #include "drivers/accgyro_mpu3050.h"
 #include "drivers/accgyro_mpu6050.h"
-#ifdef STM32F3DISCOVERY
+
 #include "drivers/accgyro_l3gd20.h"
 #include "drivers/accgyro_lsm303dlhc.h"
-#endif
-#ifdef CC3D
+
 #include "drivers/accgyro_spi_mpu6000.h"
-#endif
-#ifdef ANYFC
-#include "drivers/accgyro_spi_mpu6000.h"
-#endif
+#include "drivers/accgyro_spi_mpu6500.h"
 
 #include "drivers/barometer.h"
 #include "drivers/barometer_bmp085.h"
 #include "drivers/barometer_ms5611.h"
 #include "drivers/compass_hmc5883l.h"
 #include "drivers/sonar_hcsr04.h"
+#include "drivers/gpio.h"
 #include "drivers/system.h"
 
 #include "flight/flight.h"
@@ -60,144 +57,8 @@
 #include "sensors/compass.h"
 #include "sensors/sonar.h"
 
-
-// Use these to help with porting to new boards
-//#define USE_FAKE_GYRO
-#ifdef USE_I2C
-#define USE_GYRO_L3G4200D
-#define USE_GYRO_L3GD20
-#define USE_GYRO_MPU6050
-#define USE_GYRO_MPU3050
-#endif
-#define USE_GYRO_SPI_MPU6000
-
-//#define USE_FAKE_ACC
-#ifdef USE_I2C
-#define USE_ACC_ADXL345
-#define USE_ACC_BMA280
-#define USE_ACC_MMA8452
-#define USE_ACC_LSM303DLHC
-#define USE_ACC_MPU6050
-#endif
-#define USE_ACC_SPI_MPU6000
-
-#ifdef USE_I2C
-#define USE_BARO_MS5611
-#define USE_BARO_BMP085
-#endif
-
-#ifdef MASSIVEF3
-#define USE_FAKE_GYRO
-#define USE_FAKE_ACC
-#undef USE_GYRO_MPU6050
-#undef USE_ACC_MPU6050
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MMA8452
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_SPI_MPU6000
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU3050
-#undef USE_GYRO_SPI_MPU6000
-#undef USE_GYRO_L3GD20
-#undef USE_BARO_BMP085
-#endif
-
 #ifdef NAZE
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_SPI_MPU6000
-#undef USE_GYRO_SPI_MPU6000
-#undef USE_GYRO_L3GD20
-#endif
-
-#ifdef NAZE32PRO
-#define USE_FAKE_ACC
-#define USE_FAKE_GYRO
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MMA8452
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_MPU6050
-#undef USE_ACC_SPI_MPU6000
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_MPU3050
-#undef USE_GYRO_MPU6050
-#undef USE_GYRO_SPI_MPU6000
-#endif
-
-#if defined(OLIMEXINO) || defined(EUSTM32F103RC)
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU3050
-#undef USE_GYRO_SPI_MPU6000
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_BMA280
-#undef USE_ACC_MMA8452
-#undef USE_ACC_ADXL345
-#undef USE_ACC_SPI_MPU6000
-#undef USE_BARO_MS5611
-#endif
-
-#ifdef EUSTM32F103RC
-#define USE_FAKE_GYRO
-#define USE_FAKE_ACC
-#define USE_GYRO_L3G4200D
-#endif
-
-#ifdef STM32F3DISCOVERY
-#undef USE_ACC_SPI_MPU6000
-#undef USE_GYRO_SPI_MPU6000
-#endif
-
-#ifdef CHEBUZZF3
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU6050
-#undef USE_GYRO_MPU3050
-#undef USE_GYRO_SPI_MPU6000
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MPU6050
-#undef USE_ACC_MMA8452
-#undef USE_ACC_SPI_MPU6000
-#endif
-
-#ifdef CC3D
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU6050
-#undef USE_GYRO_MPU3050
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MPU6050
-#undef USE_ACC_MMA8452
-#endif
-
-#ifdef ANYFC
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU6050
-#undef USE_GYRO_MPU3050
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MPU6050
-#undef USE_ACC_MMA8452
-#undef USE_BARO_BMP085
-#endif
-
-#ifdef CJMCU
-#undef USE_GYRO_SPI_MPU6000
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU3050
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_SPI_MPU6000
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MMA8452
+#include "hardware_revision.h"
 #endif
 
 extern float magneticDeclination;
@@ -205,6 +66,31 @@ extern float magneticDeclination;
 extern gyro_t gyro;
 extern baro_t baro;
 extern acc_t acc;
+
+const mpu6050Config_t *selectMPU6050Config(void)
+{
+#ifdef NAZE
+    // MPU_INT output on rev4/5 hardware (PB13, PC13)
+    static const mpu6050Config_t nazeRev4MPU6050Config = {
+            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
+            .gpioPort = GPIOB,
+            .gpioPin = Pin_13
+    };
+    static const mpu6050Config_t nazeRev5MPU6050Config = {
+            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
+            .gpioPort = GPIOC,
+            .gpioPin = Pin_13
+    };
+
+
+    if (hardwareRevision < NAZE32_REV5) {
+        return &nazeRev4MPU6050Config;
+    } else {
+        return &nazeRev5MPU6050Config;
+    }
+#endif
+    return NULL;
+}
 
 #ifdef USE_FAKE_GYRO
 static void fakeGyroInit(void) {}
@@ -245,7 +131,7 @@ bool detectGyro(uint16_t gyroLpf)
     gyroAlign = ALIGN_DEFAULT;
 
 #ifdef USE_GYRO_MPU6050
-    if (mpu6050GyroDetect(&gyro, gyroLpf)) {
+    if (mpu6050GyroDetect(selectMPU6050Config(), &gyro, gyroLpf)) {
 #ifdef NAZE
         gyroAlign = CW0_DEG;
 #endif
@@ -289,6 +175,20 @@ bool detectGyro(uint16_t gyroLpf)
     }
 #endif
 
+#ifdef USE_GYRO_SPI_MPU6500
+#ifdef NAZE
+    if (hardwareRevision == NAZE32_SP && mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
+        gyroAlign = CW0_DEG;
+        return true;
+    }
+#else
+    if (mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
+        gyroAlign = CW0_DEG;
+        return true;
+    }
+#endif
+#endif
+
 #ifdef USE_FAKE_GYRO
     if (fakeGyroDetect(&gyro, gyroLpf)) {
         return true;
@@ -323,19 +223,22 @@ retry:
         case ACC_ADXL345: // ADXL345
             acc_params.useFifo = false;
             acc_params.dataRate = 800; // unused currently
-            if (adxl345Detect(&acc_params, &acc)) {
-                accHardware = ACC_ADXL345;
 #ifdef NAZE
+            if (hardwareRevision < NAZE32_REV5 && adxl345Detect(&acc_params, &acc)) {
                 accAlign = CW270_DEG;
+#else
+            if (adxl345Detect(&acc_params, &acc)) {
 #endif
+                accHardware = ACC_ADXL345;
+                accHardware = ACC_ADXL345;
+                if (accHardwareToUse == ACC_ADXL345)
+                    break;
             }
-            if (accHardwareToUse == ACC_ADXL345)
-                break;
             ; // fallthrough
 #endif
 #ifdef USE_ACC_MPU6050
         case ACC_MPU6050: // MPU6050
-            if (mpu6050AccDetect(&acc)) {
+            if (mpu6050AccDetect(selectMPU6050Config(), &acc)) {
                 accHardware = ACC_MPU6050;
 #ifdef NAZE
                 accAlign = CW0_DEG;
@@ -347,11 +250,14 @@ retry:
 #endif
 #ifdef USE_ACC_MMA8452
         case ACC_MMA8452: // MMA8452
-            if (mma8452Detect(&acc)) {
-                accHardware = ACC_MMA8452;
 #ifdef NAZE
+            // Not supported with this frequency
+            if (hardwareRevision < NAZE32_REV5 && mma8452Detect(&acc)) {
                 accAlign = CW90_DEG;
+#else
+            if (mma8452Detect(&acc)) {
 #endif
+                accHardware = ACC_MMA8452;
                 if (accHardwareToUse == ACC_MMA8452)
                     break;
             }
@@ -378,7 +284,7 @@ retry:
             }
             ; // fallthrough
 #endif
-#ifdef USE_GYRO_SPI_MPU6000
+#ifdef USE_ACC_SPI_MPU6000
         case ACC_SPI_MPU6000:
             if (mpu6000SpiAccDetect(&acc)) {
                 accHardware = ACC_SPI_MPU6000;
@@ -389,6 +295,22 @@ retry:
                 accAlign = CW270_DEG;
 #endif
                 if (accHardwareToUse == ACC_SPI_MPU6000)
+                    break;
+            }
+            ; // fallthrough
+#endif
+#ifdef USE_ACC_SPI_MPU6500
+        case ACC_SPI_MPU6500:
+#ifdef NAZE
+            if (hardwareRevision == NAZE32_SP && mpu6500SpiAccDetect(&acc)) {
+#else
+            if (mpu6500SpiAccDetect(&acc)) {
+#endif
+                accHardware = ACC_SPI_MPU6500;
+#ifdef NAZE
+                accAlign = CW0_DEG;
+#endif
+                if (accHardwareToUse == ACC_SPI_MPU6500)
                     break;
             }
             ; // fallthrough
@@ -411,20 +333,40 @@ retry:
 
 static void detectBaro()
 {
-#ifdef BARO
-#ifdef USE_BARO_BMP085
-    bmp085Disable();
-#endif
-#ifdef USE_BARO_MS5611
     // Detect what pressure sensors are available. baro->update() is set to sensor-specific update function
+
+    #ifdef BARO
+#ifdef USE_BARO_BMP085
+
+    const bmp085Config_t *bmp085Config = NULL;
+
+#if defined(BARO_XCLR_GPIO) && defined(BARO_EOC_GPIO)
+    static const bmp085Config_t defaultBMP085Config = {
+            .gpioAPB2Peripherals = BARO_APB2_PERIPHERALS,
+            .xclrGpioPin = BARO_XCLR_PIN,
+            .xclrGpioPort = BARO_XCLR_GPIO,
+            .eocGpioPin = BARO_EOC_PIN,
+            .eocGpioPort = BARO_EOC_GPIO
+    };
+    bmp085Config = &defaultBMP085Config;
+#endif
+
+#ifdef NAZE
+    if (hardwareRevision == NAZE32) {
+        bmp085Disable(bmp085Config);
+    }
+#endif
+
+#endif
+
+#ifdef USE_BARO_MS5611
     if (ms5611Detect(&baro)) {
         return;
     }
 #endif
 
 #ifdef USE_BARO_BMP085
-    // ms5611 disables BMP085, and tries to initialize + check PROM crc. if this works, we have a baro
-    if (bmp085Detect(&baro)) {
+    if (bmp085Detect(bmp085Config, &baro)) {
         return;
     }
 #endif

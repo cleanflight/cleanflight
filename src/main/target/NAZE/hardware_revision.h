@@ -15,14 +15,14 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+typedef enum nazeHardwareRevision_t {
+    UNKNOWN = 0,
+    NAZE32, // Naze32 and compatible with 8MHz HSE
+    NAZE32_REV5, // Naze32 and compatible with 12MHz HSE
+    NAZE32_SP // Naze32 w/Sensor Platforms
+} nazeHardwareRevision_e;
 
-typedef struct hmc5883Config_s {
-    uint32_t gpioAPB2Peripherals;
-    uint16_t gpioPin;
-    GPIO_TypeDef *gpioPort;
-} hmc5883Config_t;
+extern uint8_t hardwareRevision;
 
-bool hmc5883lDetect(void);
-void hmc5883lInit(hmc5883Config_t *hmc5883Config);
-void hmc5883lRead(int16_t *magData);
+void updateHardwareRevision(void);
+void detectHardwareRevision(void);

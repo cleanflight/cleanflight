@@ -64,6 +64,9 @@
 #include "config/config_master.h"
 
 #include "version.h"
+#ifdef NAZE
+#include "hardware_revision.h"
+#endif
 
 #include "serial_msp.h"
 
@@ -73,15 +76,150 @@ extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
 extern int16_t debug[4]; // FIXME dependency on mw.c
 
-// Multiwii Serial Protocol 0
-#define MSP_VERSION              0
+/**
+ * MSP Guidelines, emphasis is used to clarify.
+ *
+ * Each FlightController (FC, Server) MUST change the API version when any MSP command is added, deleted, or changed.
+ *
+ * If you fork the FC source code and release your own version, you MUST change the Flight Controller Identifier.
+ *
+ * NEVER release a modified copy of this code that shares the same Flight controller IDENT and API version
+ * if the API doesn't match EXACTLY.
+ *
+ * Consumers of the API (API clients) SHOULD first attempt to get a response from the MSP_API_VERSION command.
+ * If no response is obtained then client MAY try the legacy MSP_IDENT command.
+ *
+ * API consumers should ALWAYS handle communication failures gracefully and attempt to continue
+ * without the information if possible.  Clients MAY log/display a suitable message.
+ *
+ * API clients should NOT attempt any communication if they can't handle the API MAJOR VERSION.
+ *
+ * API clients SHOULD attempt communication if the API MINOR VERSION has increased from the time
+ * the API client was written and handle command failures gracefully.  Clients MAY disable
+ * functionality that depends on the commands while still leaving other functionality intact.
+ * Clients SHOULD operate in READ-ONLY mode and SHOULD present a warning to the user to state
+ * that the newer API version may cause problems before using API commands that change FC state.
+ *
+ * It is for this reason that each MSP command should be specific as possible, such that changes
+ * to commands break as little functionality as possible.
+ *
+ * API client authors MAY use a compatibility matrix/table when determining if they can support
+ * a given command from a given flight controller at a given api version level.
+ *
+ * Developers MUST NOT create new MSP commands that do more than one thing.
+ *
+ * Failure to follow these guidelines will likely invoke the wrath of developers trying to write tools
+ * that use the API and the users of those tools.
+ */
+
+#define MSP_PROTOCOL_VERSION                0
+
+#define API_VERSION_MAJOR                   1 // increment when major changes are made
+#define API_VERSION_MINOR                   0 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+
+#define API_VERSION_LENGTH                  2
+
+#define MULTIWII_IDENTIFIER "MWII";
+#define CLEANFLIGHT_IDENTIFIER "CLFL"
+#define BASEFLIGHT_IDENTIFIER "BAFL";
+
+#define FLIGHT_CONTROLLER_IDENTIFIER_LENGTH 4
+static const char *flightControllerIdentifier = CLEANFLIGHT_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
+
+#define FLIGHT_CONTROLLER_VERSION_LENGTH    3
+#define FLIGHT_CONTROLLER_VERSION_MASK      0xFFF
+
+const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
+#define BOARD_IDENTIFIER_LENGTH             4 // 4 UPPER CASE alpha numeric characters that identify the board being used.
+#define BOARD_HARDWARE_REVISION_LENGTH      2
+
+// These are baseflight specific flags but they are useless now since MW 2.3 uses the upper 4 bits for the navigation version.
 #define CAP_PLATFORM_32BIT          ((uint32_t)1 << 31)
+#define CAP_BASEFLIGHT_CONFIG       ((uint32_t)1 << 30)
+
+// MW 2.3 stores NAVI_VERSION in the top 4 bits of the capability mask.
+#define CAP_NAVI_VERSION_BIT_4_MSB  ((uint32_t)1 << 31)
+#define CAP_NAVI_VERSION_BIT_3      ((uint32_t)1 << 30)
+#define CAP_NAVI_VERSION_BIT_2      ((uint32_t)1 << 29)
+#define CAP_NAVI_VERSION_BIT_1_LSB  ((uint32_t)1 << 28)
+
 #define CAP_DYNBALANCE              ((uint32_t)1 << 2)
 #define CAP_FLAPS                   ((uint32_t)1 << 3)
-#define CAP_CHANNEL_FORWARDING      ((uint32_t)1 << 4)
-#define CAP_ACTIVATE_AUX1_TO_AUX8   ((uint32_t)1 << 5)
+#define CAP_NAVCAP                  ((uint32_t)1 << 4)
+#define CAP_EXTAUX                  ((uint32_t)1 << 5)
 
+/**
+ * Returns MSP protocol version
+ * API version
+ * Flight Controller Identifier
+ * Flight Controller build version (major, minor, patchlevel)
+ * Board Identifier
+ * Board Hardware Revision
+ * Build Date - "MMM DD YYYY" MMM = Jan/Feb/...
+ * Build Time - "HH:MM:SS"
+ * SCM reference length
+ * SCM reference (git revision, svn commit id)
+ * Additional FC information length
+ * Additional FC information (as decided by the FC, for FC specific tools to use as required)
+ **/
+#define MSP_API_VERSION                 1    //out message
+
+//
+// MSP commands for Cleanflight original features
+//
+#define MSP_CHANNEL_FORWARDING          32    //out message         Returns channel forwarding settings
+#define MSP_SET_CHANNEL_FORWARDING      33    //in message          Channel forwarding settings
+
+#define MSP_MODE_RANGES                 34    //out message         Returns all mode ranges
+#define MSP_SET_MODE_RANGE              35    //in message          Sets a single mode range
+
+#define MSP_FEATURE                     36
+#define MSP_SET_FEATURE                 37
+
+#define MSP_BOARD_ALIGNMENT             38
+#define MSP_SET_BOARD_ALIGNMENT         39
+
+#define MSP_CURRENT_METER_CONFIG        40
+#define MSP_SET_CURRENT_METER_CONFIG    41
+
+#define MSP_MIXER                       42
+#define MSP_SET_MIXER                   43
+
+#define MSP_RX_CONFIG                   44
+#define MSP_SET_RX_CONFIG               45
+
+#define MSP_LED_COLORS                  46
+#define MSP_SET_LED_COLORS              47
+
+#define MSP_LED_STRIP_CONFIG            48
+#define MSP_SET_LED_STRIP_CONFIG        49
+
+#define MSP_RSSI_CONFIG                 50
+#define MSP_SET_RSSI_CONFIG             51
+
+//
+// Baseflight MSP commands (if enabled they exist in Cleanflight)
+//
+#define MSP_RX_MAP                      64 //out message get channel map (also returns number of channels total)
+#define MSP_SET_RX_MAP                  65 //in message set rx map, numchannels to set comes from MSP_RX_MAP
+
+// DO NOT IMPLEMENT "MSP_CONFIG" and MSP_SET_CONFIG in Cleanflight, isolated commands already exist
+//#define MSP_CONFIG                    66 //out message baseflight-specific settings that aren't covered elsewhere
+//#define MSP_SET_CONFIG                67 //in message baseflight-specific settings save
+
+#define MSP_REBOOT                      68 //in message reboot settings
+
+// DEPRECATED - Use MSP_API_VERSION instead
+//#define MSP_BUILD_INFO                  69 //out message build date as well as some space for future expansion
+
+//
+// Multwii original MSP commands
+//
+
+// DEPRECATED - See MSP_API_VERSION and MSP_MIXER
 #define MSP_IDENT                100    //out message         multitype + multiwii version + protocol version + capability variable
+
+
 #define MSP_STATUS               101    //out message         cycletime & errors_count & sensor present & box activation & current setting number
 #define MSP_RAW_IMU              102    //out message         9 DOF
 #define MSP_SERVO                103    //out message         8 servos
@@ -104,7 +242,6 @@ extern int16_t debug[4]; // FIXME dependency on mw.c
 #define MSP_SERVO_CONF           120    //out message         Servo settings
 #define MSP_NAV_STATUS           121    //out message         Returns navigation status
 #define MSP_NAV_CONFIG           122    //out message         Returns navigation parameters
-#define MSP_CHANNEL_FORWARDING   123    //out message         Returns channel forwarding settings
 
 #define MSP_SET_RAW_RC           200    //in message          8 rc chan
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
@@ -119,7 +256,6 @@ extern int16_t debug[4]; // FIXME dependency on mw.c
 #define MSP_SELECT_SETTING       210    //in message          Select Setting Number (0-2)
 #define MSP_SET_HEAD             211    //in message          define a new heading hold direction
 #define MSP_SET_SERVO_CONF       212    //in message          Servo settings
-#define MSP_SET_CHANNEL_FORWARDING 213  //in message          Channel forwarding settings
 #define MSP_SET_MOTOR            214    //in message          PropBalance function
 #define MSP_SET_NAV_CONFIG       215    //in message          Sets nav config parameters - write to the eeprom
 
@@ -138,15 +274,14 @@ extern int16_t debug[4]; // FIXME dependency on mw.c
 
 #define INBUF_SIZE 64
 
-#define ACTIVATE_MASK 0xFFF // see
-
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
     const char *boxName;            // GUI-readable box name
     const uint8_t permanentId;      //
 } box_t;
 
-static const box_t const boxes[] = {
+// FIXME remove ;'s
+static const box_t const boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXARM, "ARM;", 0 },
     { BOXANGLE, "ANGLE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
@@ -179,6 +314,9 @@ static uint8_t activeBoxIds[CHECKBOX_ITEM_COUNT];
 static uint8_t activeBoxIdCount = 0;
 // from mixer.c
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
+
+// cause reboot after MSP processing complete
+static bool isRebootScheduled = false;
 
 static const char pidnames[] =
     "ROLL;"
@@ -315,13 +453,26 @@ void serializeNames(const char *s)
         serialize8(*c);
 }
 
-const box_t *findBoxById(uint8_t boxId)
+const box_t *findBoxByActiveBoxId(uint8_t activeBoxId)
 {
     uint8_t boxIndex;
     const box_t *candidate;
     for (boxIndex = 0; boxIndex < sizeof(boxes) / sizeof(box_t); boxIndex++) {
         candidate = &boxes[boxIndex];
-        if (candidate->boxId == boxId) {
+        if (candidate->boxId == activeBoxId) {
+            return candidate;
+        }
+    }
+    return NULL;
+}
+
+const box_t *findBoxByPermenantId(uint8_t permenantId)
+{
+    uint8_t boxIndex;
+    const box_t *candidate;
+    for (boxIndex = 0; boxIndex < sizeof(boxes) / sizeof(box_t); boxIndex++) {
+        candidate = &boxes[boxIndex];
+        if (candidate->permanentId == permenantId) {
             return candidate;
         }
     }
@@ -330,16 +481,16 @@ const box_t *findBoxById(uint8_t boxId)
 
 void serializeBoxNamesReply(void)
 {
-    int i, id, j, flag = 1, count = 0, len;
+    int i, activeBoxId, j, flag = 1, count = 0, len;
     const box_t *box;
 
 reset:
     // in first run of the loop, we grab total size of junk to be sent
     // then come back and actually send it
     for (i = 0; i < activeBoxIdCount; i++) {
-        id = activeBoxIds[i];
+        activeBoxId = activeBoxIds[i];
 
-        box = findBoxById(id);
+        box = findBoxByActiveBoxId(activeBoxId);
         if (!box) {
             continue;
         }
@@ -481,13 +632,68 @@ static bool processOutCommand(uint8_t cmdMSP)
 #endif
 
     switch (cmdMSP) {
+    case MSP_API_VERSION:
+        // the components of this command are in an order such that future changes could be made to it without breaking clients.
+        // i.e. most important first.
+        headSerialReply(
+            1 + // protocol version length
+            API_VERSION_LENGTH +
+            FLIGHT_CONTROLLER_IDENTIFIER_LENGTH +
+            FLIGHT_CONTROLLER_VERSION_LENGTH +
+            BOARD_IDENTIFIER_LENGTH +
+            BOARD_HARDWARE_REVISION_LENGTH +
+            BUILD_DATE_LENGTH +
+            BUILD_TIME_LENGTH +
+            1 + // scm reference length
+            GIT_SHORT_REVISION_LENGTH +
+            1 // additional FC specific length
+            // no addition FC specific data yet.
+        );
+        serialize8(MSP_PROTOCOL_VERSION);
+
+        serialize8(API_VERSION_MAJOR);
+        serialize8(API_VERSION_MINOR);
+
+        for (i = 0; i < FLIGHT_CONTROLLER_IDENTIFIER_LENGTH; i++) {
+            serialize8(flightControllerIdentifier[i]);
+        }
+
+        serialize8(FC_VERSION_MAJOR);
+        serialize8(FC_VERSION_MINOR);
+        serialize8(FC_VERSION_PATCH_LEVEL);
+
+        for (i = 0; i < BOARD_IDENTIFIER_LENGTH; i++) {
+            serialize8(boardIdentifier[i]);
+        }
+#ifdef NAZE
+        serialize16(hardwareRevision);
+#else
+        serialize16(0); // No other build targets currently have hardware revision detection.
+#endif
+
+        for (i = 0; i < BUILD_DATE_LENGTH; i++) {
+            serialize8(buildDate[i]);
+        }
+        for (i = 0; i < BUILD_TIME_LENGTH; i++) {
+            serialize8(buildTime[i]);
+        }
+
+        serialize8(GIT_SHORT_REVISION_LENGTH);
+        for (i = 0; i < GIT_SHORT_REVISION_LENGTH; i++) {
+            serialize8(shortGitRevision[i]);
+        }
+        serialize8(0); // No flight controller specific information to follow.
+        break;
+
+    // DEPRECATED - Use MSP_API_VERSION
     case MSP_IDENT:
         headSerialReply(7);
         serialize8(MW_VERSION);
         serialize8(masterConfig.mixerConfiguration); // type of multicopter
-        serialize8(MSP_VERSION);            // MultiWii Serial Protocol Version
-        serialize32(CAP_PLATFORM_32BIT | CAP_DYNBALANCE | (masterConfig.airplaneConfig.flaps_speed ? CAP_FLAPS : 0) | CAP_CHANNEL_FORWARDING | CAP_ACTIVATE_AUX1_TO_AUX8); // "capability"
+        serialize8(MSP_PROTOCOL_VERSION);
+        serialize32(CAP_DYNBALANCE | (masterConfig.airplaneConfig.flaps_speed ? CAP_FLAPS : 0)); // "capability"
         break;
+
     case MSP_STATUS:
         headSerialReply(11);
         serialize16(cycleTime);
@@ -506,20 +712,20 @@ static bool processOutCommand(uint8_t cmdMSP)
             IS_ENABLED(FLIGHT_MODE(BARO_MODE)) << BOXBARO |
             IS_ENABLED(FLIGHT_MODE(MAG_MODE)) << BOXMAG |
             IS_ENABLED(FLIGHT_MODE(HEADFREE_MODE)) << BOXHEADFREE |
-            rcOptions[BOXHEADADJ] << BOXHEADADJ |
-            rcOptions[BOXCAMSTAB] << BOXCAMSTAB |
-            rcOptions[BOXCAMTRIG] << BOXCAMTRIG |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXHEADADJ)) << BOXHEADADJ |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXCAMSTAB)) << BOXCAMSTAB |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXCAMTRIG)) << BOXCAMTRIG |
             IS_ENABLED(FLIGHT_MODE(GPS_HOME_MODE)) << BOXGPSHOME |
             IS_ENABLED(FLIGHT_MODE(GPS_HOLD_MODE)) << BOXGPSHOLD |
             IS_ENABLED(FLIGHT_MODE(PASSTHRU_MODE)) << BOXPASSTHRU |
-            rcOptions[BOXBEEPERON] << BOXBEEPERON |
-            rcOptions[BOXLEDMAX] << BOXLEDMAX |
-            rcOptions[BOXLLIGHTS] << BOXLLIGHTS |
-            rcOptions[BOXCALIB] << BOXCALIB |
-            rcOptions[BOXGOV] << BOXGOV |
-            rcOptions[BOXOSD] << BOXOSD |
-            rcOptions[BOXTELEMETRY] << BOXTELEMETRY |
-            rcOptions[BOXAUTOTUNE] << BOXAUTOTUNE |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBEEPERON)) << BOXBEEPERON |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXLEDMAX)) << BOXLEDMAX |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXLLIGHTS)) << BOXLLIGHTS |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXCALIB)) << BOXCALIB |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXGOV)) << BOXGOV |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXOSD)) << BOXOSD |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXTELEMETRY)) << BOXTELEMETRY |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAUTOTUNE)) << BOXAUTOTUNE |
             IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
             IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM;
         for (i = 0; i < activeBoxIdCount; i++) {
@@ -633,12 +839,16 @@ static bool processOutCommand(uint8_t cmdMSP)
         headSerialReply(sizeof(pidnames) - 1);
         serializeNames(pidnames);
         break;
-    case MSP_BOX:
-        headSerialReply(4 * activeBoxIdCount);
-        for (i = 0; i < activeBoxIdCount; i++)
-            serialize16(currentProfile->activate[activeBoxIds[i]] & ACTIVATE_MASK);
-        for (i = 0; i < activeBoxIdCount; i++)
-            serialize16((currentProfile->activate[activeBoxIds[i]] >> 16) & ACTIVATE_MASK);
+    case MSP_MODE_RANGES:
+        headSerialReply(4 * MAX_MODE_ACTIVATION_CONDITION_COUNT);
+        for (i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
+            modeActivationCondition_t *mac = &currentProfile->modeActivationConditions[i];
+            const box_t *box = &boxes[mac->modeId];
+            serialize8(box->permanentId);
+            serialize8(mac->auxChannelIndex);
+            serialize8(mac->rangeStartStep);
+            serialize8(mac->rangeEndStep);
+        }
         break;
     case MSP_BOXNAMES:
         // headSerialReply(sizeof(boxnames) - 1);
@@ -647,7 +857,7 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_BOXIDS:
         headSerialReply(activeBoxIdCount);
         for (i = 0; i < activeBoxIdCount; i++) {
-            const box_t *box = findBoxById(activeBoxIds[i]);
+            const box_t *box = findBoxByActiveBoxId(activeBoxIds[i]);
             if (!box) {
                 continue;
             }
@@ -734,12 +944,78 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(currentProfile->accelerometerTrims.values.pitch);
         serialize16(currentProfile->accelerometerTrims.values.roll);
         break;
+
     case MSP_UID:
         headSerialReply(12);
         serialize32(U_ID_0);
         serialize32(U_ID_1);
         serialize32(U_ID_2);
         break;
+
+    case MSP_FEATURE:
+        headSerialReply(4);
+        serialize32(featureMask());
+        break;
+
+    case MSP_BOARD_ALIGNMENT:
+        headSerialReply(3);
+        serialize16(masterConfig.boardAlignment.rollDegrees);
+        serialize16(masterConfig.boardAlignment.pitchDegrees);
+        serialize16(masterConfig.boardAlignment.yawDegrees);
+        break;
+
+    case MSP_CURRENT_METER_CONFIG:
+        headSerialReply(4);
+        serialize16(masterConfig.batteryConfig.currentMeterScale);
+        serialize16(masterConfig.batteryConfig.currentMeterOffset);
+        break;
+
+    case MSP_MIXER:
+        headSerialReply(1);
+        serialize8(masterConfig.mixerConfiguration);
+        break;
+
+    case MSP_RX_CONFIG:
+        headSerialReply(7);
+        serialize8(masterConfig.rxConfig.serialrx_provider);
+        serialize16(masterConfig.rxConfig.maxcheck);
+        serialize16(masterConfig.rxConfig.midrc);
+        serialize16(masterConfig.rxConfig.mincheck);
+
+    case MSP_RSSI_CONFIG:
+        headSerialReply(1);
+        serialize8(masterConfig.rxConfig.rssi_channel);
+        break;
+
+    case MSP_RX_MAP:
+        headSerialReply(MAX_MAPPABLE_RX_INPUTS);
+        for (i = 0; i < MAX_MAPPABLE_RX_INPUTS; i++)
+            serialize8(masterConfig.rxConfig.rcmap[i]);
+        break;
+
+#ifdef LED_STRIP
+    case MSP_LED_COLORS:
+        headSerialReply(CONFIGURABLE_COLOR_COUNT * 4);
+        for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
+            hsvColor_t *color = &masterConfig.colors[i];
+            serialize16(color->h);
+            serialize8(color->s);
+            serialize8(color->v);
+        }
+        break;
+
+    case MSP_LED_STRIP_CONFIG:
+        headSerialReply(MAX_LED_STRIP_LENGTH * 4);
+        for (i = 0; i < MAX_LED_STRIP_LENGTH; i++) {
+            ledConfig_t *ledConfig = &masterConfig.ledConfigs[i];
+            serialize16((ledConfig->flags & LED_DIRECTION_MASK) >> LED_DIRECTION_BIT_OFFSET);
+            serialize16((ledConfig->flags & LED_FUNCTION_MASK) >> LED_FUNCTION_BIT_OFFSET);
+            serialize8(GET_LED_X(ledConfig));
+            serialize8(GET_LED_Y(ledConfig));
+        }
+        break;
+#endif
+
     default:
         return false;
     }
@@ -804,11 +1080,23 @@ static bool processInCommand(void)
             }
         }
         break;
-    case MSP_SET_BOX:
-        for (i = 0; i < activeBoxIdCount; i++)
-            currentProfile->activate[activeBoxIds[i]] = read16() & ACTIVATE_MASK;
-        for (i = 0; i < activeBoxIdCount; i++)
-            currentProfile->activate[activeBoxIds[i]] |= (read16() & ACTIVATE_MASK) << 16;
+    case MSP_SET_MODE_RANGE:
+        i = read8();
+        if (i < MAX_MODE_ACTIVATION_CONDITION_COUNT) {
+            modeActivationCondition_t *mac = &currentProfile->modeActivationConditions[i];
+            i = read8();
+            const box_t *box = findBoxByPermenantId(i);
+            if (box) {
+                mac->modeId = box->boxId;
+                mac->auxChannelIndex = read8();
+                mac->rangeStartStep = read8();
+                mac->rangeEndStep = read8();
+            } else {
+                headSerialError(0);
+            }
+        } else {
+            headSerialError(0);
+        }
         break;
     case MSP_SET_RC_TUNING:
         currentProfile->controlRateConfig.rcRate8 = read8();
@@ -918,6 +1206,88 @@ static bool processInCommand(void)
         }
         break;
 #endif
+    case MSP_SET_FEATURE:
+        headSerialReply(0);
+        featureClearAll();
+        featureSet(read32()); // features bitmap
+        break;
+
+    case MSP_SET_BOARD_ALIGNMENT:
+        headSerialReply(0);
+        masterConfig.boardAlignment.rollDegrees = read16();
+        masterConfig.boardAlignment.pitchDegrees = read16();
+        masterConfig.boardAlignment.yawDegrees = read16();
+        break;
+
+    case MSP_SET_CURRENT_METER_CONFIG:
+        headSerialReply(0);
+        masterConfig.batteryConfig.currentMeterScale = read16();
+        masterConfig.batteryConfig.currentMeterOffset = read16();
+        break;
+
+    case MSP_SET_MIXER:
+        headSerialReply(0);
+        masterConfig.mixerConfiguration = read8();
+        break;
+
+    case MSP_SET_RX_CONFIG:
+        headSerialReply(0);
+        masterConfig.rxConfig.serialrx_provider = read8();
+        masterConfig.rxConfig.maxcheck = read16();
+        masterConfig.rxConfig.midrc = read16();
+        masterConfig.rxConfig.mincheck = read16();
+        break;
+
+    case MSP_SET_RSSI_CONFIG:
+        headSerialReply(0);
+        masterConfig.rxConfig.rssi_channel = read8();
+        break;
+
+
+    case MSP_SET_RX_MAP:
+        headSerialReply(0);
+        for (i = 0; i < MAX_MAPPABLE_RX_INPUTS; i++) {
+            masterConfig.rxConfig.rcmap[i] = read8();
+        }
+        break;
+
+#ifdef LED_STRIP
+    case MSP_SET_LED_COLORS:
+        headSerialReply(0);
+        for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
+            hsvColor_t *color = &masterConfig.colors[i];
+            color->h = read16();
+            color->s = read8();
+            color->v = read8();
+        }
+        break;
+
+    case MSP_SET_LED_STRIP_CONFIG:
+        headSerialReply(MAX_LED_STRIP_LENGTH * 6);
+        for (i = 0; i < MAX_LED_STRIP_LENGTH; i++) {
+            ledConfig_t *ledConfig = &masterConfig.ledConfigs[i];
+            uint16_t mask;
+            // currently we're storing directions and functions in a uint16 (flags)
+            // the msp uses 2 x uint16_t to cater for future expansion
+            mask = read16();
+            ledConfig->flags = (mask << LED_DIRECTION_BIT_OFFSET) & LED_DIRECTION_MASK;
+
+            mask = read16();
+            ledConfig->flags |= (mask << LED_FUNCTION_BIT_OFFSET) & LED_FUNCTION_MASK;
+
+            mask = read8();
+            ledConfig->xy = CALCULATE_LED_X(mask);
+
+            mask = read8();
+            ledConfig->xy |= CALCULATE_LED_Y(mask);
+        }
+        break;
+#endif
+    case MSP_REBOOT:
+        headSerialReply(0);
+        isRebootScheduled = true;
+        break;
+
     default:
         // we do not know how to handle the (valid) message, indicate error MSP $M!
         return false;
@@ -991,6 +1361,10 @@ void mspProcess(void)
 
         setCurrentPort(candidatePort);
         mspProcessPort();
+
+        if (isRebootScheduled) {
+            systemReset();
+        }
     }
 }
 

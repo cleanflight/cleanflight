@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define TARGET_BOARD_IDENTIFIER "AFNA" // AFroNAze - NAZE might be considerd misleading on Naze clones like the flip32.
+
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
@@ -29,18 +31,48 @@
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
-#define BARO_GPIO   GPIOC
-#define BARO_PIN    Pin_13
+#define BARO_XCLR_GPIO   GPIOC
+#define BARO_XCLR_PIN    Pin_13
+#define BARO_EOC_GPIO    GPIOC
+#define BARO_EOC_PIN     Pin_14
+#define BARO_APB2_PERIPHERALS RCC_APB2Periph_GPIOC
 
 #define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_GPIO GPIOB
 #define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
 #define INVERTER_USART USART2
 
+// SPI2
+// PB15 28 SPI2_MOSI
+// PB14 27 SPI2_MISO
+// PB13 26 SPI2_SCK
+// PB12 25 SPI2_NSS
+
+#define USE_SPI
+#define USE_SPI_DEVICE_2
+
+#define NAZE_SPI_INSTANCE     SPI2
+#define NAZE_SPI_CS_GPIO      GPIOB
+#define NAZE_SPI_CS_PIN       GPIO_Pin_12
+
+#define MPU6500_CS_GPIO       NAZE_SPI_CS_GPIO
+#define MPU6500_CS_PIN        NAZE_SPI_CS_PIN
+#define MPU6500_SPI_INSTANCE  NAZE_SPI_INSTANCE
+
 #define GYRO
+#define USE_GYRO_MPU6050
+
 #define ACC
-#define MAG
+#define USE_ACC_ADXL345
+#define USE_ACC_BMA280
+#define USE_ACC_MMA8452
+#define USE_ACC_MPU6050
+
 #define BARO
+#define USE_BARO_MS5611
+#define USE_BARO_BMP085
+
+#define MAG
 #define SONAR
 #define BEEPER
 #define LED0
@@ -55,6 +87,10 @@
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
+
+
+
+
 
 // #define SOFT_I2C // enable to test software i2c
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)

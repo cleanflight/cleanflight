@@ -105,7 +105,7 @@ void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DCon
 master_t masterConfig;      // master config struct with data independent from profiles
 profile_t *currentProfile;   // profile config struct
 
-static const uint8_t EEPROM_CONF_VERSION = 80;
+static const uint8_t EEPROM_CONF_VERSION = 82;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -206,6 +206,11 @@ void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
     telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_FRSKY;
     telemetryConfig->frsky_inversion = SERIAL_NOT_INVERTED;
     telemetryConfig->telemetry_switch = 0;
+    telemetryConfig->gpsNoFixLatitude = 0;
+    telemetryConfig->gpsNoFixLongitude = 0;
+    telemetryConfig->frsky_coordinate_format = FRSKY_FORMAT_DMS;
+    telemetryConfig->frsky_unit = FRSKY_UNIT_METRICS;
+    telemetryConfig->batterySize = 0;
 }
 
 void resetSerialConfig(serialConfig_t *serialConfig)
@@ -310,6 +315,7 @@ static void resetConf(void)
     // gps/nav stuff
     masterConfig.gpsConfig.provider = GPS_NMEA;
     masterConfig.gpsConfig.sbasMode = SBAS_AUTO;
+    masterConfig.gpsConfig.gpsAutoConfig = GPS_AUTOCONFIG_ON;
 #endif
 
     resetSerialConfig(&masterConfig.serialConfig);
@@ -431,6 +437,7 @@ void activateConfig(void)
 
     generatePitchCurve(&currentProfile->controlRateConfig);
     generateThrottleCurve(&currentProfile->controlRateConfig, &masterConfig.escAndServoConfig);
+    useRcControlsConfig(currentProfile->modeActivationConditions);
 
     useGyroConfig(&masterConfig.gyroConfig);
 #ifdef TELEMETRY

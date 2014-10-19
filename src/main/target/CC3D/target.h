@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define TARGET_BOARD_IDENTIFIER "CC3D" // CopterControl 3D
+
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
@@ -29,8 +31,16 @@
 #define BEEP_PIN Pin_15 // PA15 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
+#define MPU6000_CS_GPIO       GPIOA
+#define MPU6000_CS_PIN        GPIO_Pin_4
+#define MPU6000_SPI_INSTANCE  SPI1
+
 #define ACC
+#define USE_ACC_SPI_MPU6000
+
 #define GYRO
+#define USE_GYRO_SPI_MPU6000
+
 #define INVERTER
 #define BEEPER
 
@@ -44,6 +54,11 @@
 #define USART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
 
 #define SERIAL_PORT_COUNT 2
+
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+#define USE_SPI_DEVICE_2
+
 
 #define SENSORS_SET (SENSOR_ACC)
 
