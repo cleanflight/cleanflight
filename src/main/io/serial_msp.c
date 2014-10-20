@@ -501,7 +501,6 @@ reset:
         } else {
             for (j = 0; j < len; j++)
                 serialize8(box->boxName[j]);
-
         }
     }
 

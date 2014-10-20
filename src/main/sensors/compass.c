@@ -66,6 +66,13 @@ void compassInit(void)
 
     hmc5883Config = &nazeHmc5883Config;
 #endif
+#ifdef ANYFC
+    hmc5883Config_t anyfcHmc5883Config;
+    anyfcHmc5883Config.gpioAHB1Peripherals = RCC_AHB1Periph_GPIOB;
+    anyfcHmc5883Config.gpioPin = Pin_7;
+    anyfcHmc5883Config.gpioPort = GPIOB;
+    hmc5883Config = &anyfcHmc5883Config;
+#endif
 
     hmc5883lInit(hmc5883Config);
 

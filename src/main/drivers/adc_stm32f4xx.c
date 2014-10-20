@@ -45,20 +45,24 @@ void adcInit(drv_adc_config_t *init)
     memset(&adcConfig, 0, sizeof(adcConfig));
 
     GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_0 | GPIO_Pin_3;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL ;
+    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_8;
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-    adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_6;
+    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_1;
+    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
+    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+
+    adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_11;
     adcConfig[ADC_BATTERY].dmaIndex = adcChannelCount;
     adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_480Cycles;
     adcConfig[ADC_BATTERY].enabled = true;
     adcChannelCount++;
 
     if (init->enableCurrentMeter) {
-        GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_1;
-
-        adcConfig[ADC_CURRENT].adcChannel = ADC_Channel_7;
+        GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_2;
+        adcConfig[ADC_CURRENT].adcChannel = ADC_Channel_12;
         adcConfig[ADC_CURRENT].dmaIndex = adcChannelCount;
         adcConfig[ADC_CURRENT].sampleTime = ADC_SampleTime_480Cycles;
         adcConfig[ADC_CURRENT].enabled = true;
@@ -67,26 +71,20 @@ void adcInit(drv_adc_config_t *init)
     }
 
     if (init->enableRSSI) {
-        GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_2;
-
-		adcConfig[ADC_RSSI].adcChannel = ADC_Channel_8;
+        GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_3;
+		adcConfig[ADC_RSSI].adcChannel = ADC_Channel_13;
 		adcConfig[ADC_RSSI].dmaIndex = adcChannelCount;
 		adcConfig[ADC_RSSI].sampleTime = ADC_SampleTime_480Cycles;
 		adcConfig[ADC_RSSI].enabled = true;
 		adcChannelCount++;
     }
 
-    adcConfig[ADC_EXTERNAL1].adcChannel = ADC_Channel_9;
-    adcConfig[ADC_EXTERNAL1].dmaIndex = adcChannelCount;
-    adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_480Cycles;
-    adcConfig[ADC_EXTERNAL1].enabled = true;
-    adcChannelCount++;
-
     //RCC_ADCCLKConfig(RCC_ADC12PLLCLK_Div256);  // 72 MHz divided by 256 = 281.25 kHz
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 
-    DMA_DeInit(DMA2_Stream0);
+    DMA_DeInit(DMA2_Stream4);
 
     DMA_StructInit(&DMA_InitStructure);
     DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&ADC1->DR;
@@ -100,9 +98,9 @@ void adcInit(drv_adc_config_t *init)
     DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
     DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
     DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-    DMA_Init(DMA2_Stream0, &DMA_InitStructure);
+    DMA_Init(DMA2_Stream4, &DMA_InitStructure);
 
-    DMA_Cmd(DMA2_Stream0, ENABLE);
+    DMA_Cmd(DMA2_Stream4, ENABLE);
 
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
@@ -122,8 +120,10 @@ void adcInit(drv_adc_config_t *init)
     ADC_CommonStructInit(&ADC_CommonInitStructure);
     ADC_CommonInitStructure.ADC_Mode = ADC_Mode_Independent;
     ADC_CommonInitStructure.ADC_Prescaler = ADC_Prescaler_Div8;
-    ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_1;
-    ADC_CommonInitStructure.ADC_TwoSamplingDelay = 0;
+    //ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_1;
+    ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_Disabled;
+    ADC_CommonInitStructure.ADC_TwoSamplingDelay = ADC_TwoSamplingDelay_5Cycles;
+    //ADC_CommonInitStructure.ADC_TwoSamplingDelay = 0;
     ADC_CommonInit(&ADC_CommonInitStructure);
 
     ADC_StructInit(&ADC_InitStructure);
@@ -134,6 +134,7 @@ void adcInit(drv_adc_config_t *init)
     ADC_InitStructure.ADC_ExternalTrigConvEdge 	= ADC_ExternalTrigConvEdge_None;
     ADC_InitStructure.ADC_DataAlign             = ADC_DataAlign_Right;
     ADC_InitStructure.ADC_NbrOfConversion       = adcChannelCount;
+    ADC_InitStructure.ADC_ScanConvMode 			= ENABLE; // 1=scan more that one channel in group
 
     ADC_Init(ADC1, &ADC_InitStructure);
 
@@ -144,13 +145,10 @@ void adcInit(drv_adc_config_t *init)
         }
         ADC_RegularChannelConfig(ADC1, adcConfig[i].adcChannel, rank++, adcConfig[i].sampleTime);
     }
+    ADC_DMARequestAfterLastTransferCmd(ADC1, ENABLE);
 
-    ADC_Cmd(ADC1, ENABLE);
-
-    while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC));
-
- 
     ADC_DMACmd(ADC1, ENABLE);
+    ADC_Cmd(ADC1, ENABLE);
 
     ADC_SoftwareStartConv(ADC1);
 }

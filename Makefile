@@ -408,6 +408,7 @@ ANYFC_SRC	 = startup_stm32f40xx.s \
 		   drivers/serial_softserial.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f4xx.c \
+		   drivers/sound_beeper_stm32f4xx.c \
 		   drivers/system_stm32f4xx.c \
 		   drivers/timer.c \
 		   $(HIGHEND_SRC) \

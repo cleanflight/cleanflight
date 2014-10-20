@@ -116,6 +116,10 @@ void SetSysClock(void);
 // from system_stm32f10x.c
 void SetSysClock(bool overclock);
 #endif
+#ifdef STM32F40_41xxx
+// from system_stm32f4xx.c
+void SetSysClock(void);
+#endif
 
 // FIXME bad naming - this appears to be for some new board that hasn't been made available yet.
 #ifdef PROD_DEBUG
@@ -165,6 +169,9 @@ void init(void)
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(masterConfig.emf_avoidance);
+#endif
+#ifdef STM32F40_41xxx
+    SetSysClock();
 #endif
 
 #ifdef NAZE
@@ -232,7 +239,7 @@ void init(void)
     adc_params.enableExternal1 = (hardwareRevision >= NAZE32_REV5);
 #endif
 
-//    adcInit(&adc_params);
+    adcInit(&adc_params);
 
     initBoardAlignment(&masterConfig.boardAlignment);
 
@@ -288,7 +295,9 @@ void init(void)
     else
         pwm_params.airplane = false;
 
+#ifdef STM32F10X
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
@@ -397,15 +406,6 @@ void processLoopback(void) {
 #define processLoopback()
 #endif
 
-
-/**
-* @}
-*/
-
-/**
-* @}
-*/
-
 int main(void) {
     init();
 
@@ -421,4 +421,3 @@ void HardFault_Handler(void)
     writeAllMotors(masterConfig.escAndServoConfig.mincommand);
     while (1);
 }
-

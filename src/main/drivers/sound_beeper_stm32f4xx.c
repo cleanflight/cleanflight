@@ -15,15 +15,27 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-typedef struct hmc5883Config_s {
-    uint32_t gpioAPB2Peripherals;
-    uint32_t gpioAHB1Peripherals;
-    uint16_t gpioPin;
-    GPIO_TypeDef *gpioPort;
-} hmc5883Config_t;
+#include "platform.h"
 
-bool hmc5883lDetect(void);
-void hmc5883lInit(hmc5883Config_t *hmc5883Config);
-void hmc5883lRead(int16_t *magData);
+#include "gpio.h"
+
+#include "sound_beeper.h"
+
+void initBeeperHardware(beeperConfig_t *config)
+{
+#ifdef BEEPER
+    gpio_config_t gpioConfig = {
+        config->gpioPin,
+        config->gpioMode,
+        Speed_2MHz
+    };
+
+    RCC_AHB1PeriphClockCmd(config->gpioPeripheral, ENABLE);
+
+    gpioInit(config->gpioPort, &gpioConfig);
+#endif
+}

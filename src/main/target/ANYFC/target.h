@@ -16,7 +16,7 @@
  */
 
 #pragma once
-#define TARGET_BOARD_IDENTIFIER "CC3D" // CopterControl 3D
+#define TARGET_BOARD_IDENTIFIER "ANYFC"
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_5 // Blue LEDs - PE8/PE12
@@ -28,7 +28,7 @@
 //#define LED1_INVERTED
 
 #define BEEP_GPIO   GPIOB
-#define BEEP_PIN    Pin_3 // Red LEDs - PE9/PE13
+#define BEEP_PIN    Pin_6 // Red LEDs - PE9/PE13
 #define BEEP_PERIPHERAL RCC_AHB1Periph_GPIOB
 #define BEEPER_INVERTED
 
@@ -53,8 +53,11 @@
 
 #define MAG
 #define BARO
+#define USE_BARO_MS5611
+
+
 #define INVERTER
-//#define BEEPER
+#define BEEPER
 #define LED0
 #define LED1
 #define USE_USART1
@@ -78,7 +81,7 @@
 
 #define SENSORS_SET (SENSOR_ACC|SENSOR_MAG|SENSOR_BARO)
 
-//#define GPS
+#define GPS
 //#define LED_STRIP
 #define TELEMETRY
 //#define SOFT_SERIAL
