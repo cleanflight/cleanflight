@@ -264,7 +264,7 @@ static const TIM_TypeDef * const timers[MAX_TIMERS] = {
 typedef struct channelConfig_s {
     uint16_t channel;
     uint16_t interruptBit;
-    uint16_t (*TIM_GetCaptureFn)(TIM_TypeDef* TIMx);
+    captureCompare_t (*TIM_GetCaptureFn)(TIM_TypeDef* TIMx);
 } channelConfig_t;
 
 #define CC_CHANNELS_PER_TIMER 4 // TIM_Channel_1..4
@@ -454,17 +454,21 @@ void TIM4_IRQHandler(void)
     timCCxHandler(TIM4, TIM4_IDX);
 }
 
-#if defined(STM32F303) || defined(STM32F3DISCOVERY)
+#if defined(STM32F3DISCOVERY)
 void TIM8_CC_IRQHandler(void)
 {
     timCCxHandler(TIM8, TIM8_IDX);
 }
+#endif
 
+#if defined(CHEBUZZF3) || defined(NAZE32PRO)
 void TIM1_BRK_TIM15_IRQHandler(void)
 {
     timCCxHandler(TIM15, TIM15_IDX);
 }
+#endif
 
+#if defined(STM32F3DISCOVERY) || defined(CHEBUZZF3) || defined(NAZE32PRO)
 void TIM1_UP_TIM16_IRQHandler(void)
 {
     timCCxHandler(TIM16, TIM16_IDX);
