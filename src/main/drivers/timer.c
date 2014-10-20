@@ -85,10 +85,16 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM4, GPIOB, Pin_9, TIM_Channel_4, TIM4_IRQn, 0, Mode_IPD}           // PWM14
 };
 
-#define MAX_TIMERS 4 // TIM1..TIM4
+enum {
+    TIM1_IDX = 0,
+    TIM2_IDX,
+    TIM3_IDX,
+    TIM4_IDX,
+    MAX_TIMERS
+};
 
-static const TIM_TypeDef const *timers[MAX_TIMERS] = {
-    TIM1, TIM2, TIM3, TIM4
+static const TIM_TypeDef * const timers[MAX_TIMERS] = {
+    [TIM1_IDX] = TIM1, [TIM2_IDX] = TIM2, [TIM3_IDX] = TIM3, [TIM4_IDX] = TIM4
 };
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
@@ -112,10 +118,16 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF_PP},    // S6_OUT
 };
 
-#define MAX_TIMERS 4 // TIM1..TIM4
+enum {
+    TIM1_IDX = 0,
+    TIM2_IDX,
+    TIM3_IDX,
+    TIM4_IDX,
+    MAX_TIMERS
+};
 
-static const TIM_TypeDef const *timers[MAX_TIMERS] = {
-    TIM1, TIM2, TIM3, TIM4
+static const TIM_TypeDef * const timers[MAX_TIMERS] = {
+    [TIM1_IDX] = TIM1, [TIM2_IDX] = TIM2, [TIM3_IDX] = TIM3, [TIM4_IDX] = TIM4
 };
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
@@ -140,11 +152,21 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 0, Mode_AF_PP, GPIO_PinSource2, GPIO_AF_1}                    // PWM14 - PA2
 };
 
-#define MAX_TIMERS 7
-
-static const TIM_TypeDef const *timers[MAX_TIMERS] = {
-    TIM1, TIM2, TIM3, TIM4, TIM8, TIM16, TIM17
+enum {
+    TIM1_IDX = 0,
+    TIM2_IDX,
+    TIM3_IDX,
+    TIM4_IDX,
+    TIM8_IDX,
+    TIM16_IDX,
+    TIM17_IDX,
+    MAX_TIMERS
 };
+
+static const TIM_TypeDef * const timers[MAX_TIMERS] = {
+    [TIM1_IDX] = TIM1, [TIM2_IDX] = TIM2, [TIM3_IDX] = TIM3, [TIM4_IDX] = TIM4, [TIM8_IDX] = TIM8, [TIM16_IDX] = TIM16, [TIM17_IDX] = TIM17
+};
+
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
 #define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_TIM8 | RCC_APB2Periph_TIM16 | RCC_APB2Periph_TIM17)
@@ -177,10 +199,20 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM3,  GPIOA, Pin_4,  TIM_Channel_2, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource4, GPIO_AF_2}     // PWM18 - PA4
 };
 
-#define MAX_TIMERS 8
+enum {
+    TIM1_IDX = 0,
+    TIM2_IDX,
+    TIM3_IDX,
+    TIM4_IDX,
+    TIM8_IDX,
+    TIM15_IDX,
+    TIM16_IDX,
+    TIM17_IDX,
+    MAX_TIMERS
+};
 
-static const TIM_TypeDef const *timers[MAX_TIMERS] = {
-    TIM1, TIM2, TIM3, TIM4, TIM8, TIM15, TIM16, TIM17
+static const TIM_TypeDef * const timers[MAX_TIMERS] = {
+    [TIM1_IDX] = TIM1, [TIM2_IDX] = TIM2, [TIM3_IDX] = TIM3, [TIM4_IDX] = TIM4, [TIM8_IDX] = TIM8, [TIM15_IDX] = TIM15, [TIM16_IDX] = TIM16, [TIM17_IDX] = TIM17
 };
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
@@ -208,10 +240,19 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM17, GPIOA, Pin_7,  TIM_Channel_1, TIM1_TRG_COM_TIM17_IRQn, 1, Mode_AF_PP, GPIO_PinSource7, GPIO_AF_1}, // PA7 - untested
 };
 
-#define MAX_TIMERS 7
+enum {
+    TIM1_IDX = 0,
+    TIM2_IDX,
+    TIM3_IDX,
+    TIM4_IDX,
+    TIM15_IDX,
+    TIM16_IDX,
+    TIM17_IDX,
+    MAX_TIMERS
+};
 
-static const TIM_TypeDef const *timers[MAX_TIMERS] = {
-    TIM1, TIM2, TIM3, TIM4, TIM15, TIM16, TIM17
+static const TIM_TypeDef * const timers[MAX_TIMERS] = {
+    [TIM1_IDX] = TIM1, [TIM2_IDX] = TIM2, [TIM3_IDX] = TIM3, [TIM4_IDX] = TIM4, [TIM15_IDX] = TIM15, [TIM16_IDX] = TIM16, [TIM17_IDX] = TIM17
 };
 
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
@@ -220,10 +261,18 @@ static const TIM_TypeDef const *timers[MAX_TIMERS] = {
 
 #endif
 
+typedef struct channelConfig_s {
+    uint16_t channel;
+    uint16_t interruptBit;
+    uint16_t (*TIM_GetCaptureFn)(TIM_TypeDef* TIMx);
+} channelConfig_t;
 
 #define CC_CHANNELS_PER_TIMER 4 // TIM_Channel_1..4
-static const uint16_t const channels[CC_CHANNELS_PER_TIMER] = {
-    TIM_Channel_1, TIM_Channel_2, TIM_Channel_3, TIM_Channel_4
+static const channelConfig_t channels[CC_CHANNELS_PER_TIMER] = {
+    { TIM_Channel_1, TIM_IT_CC1, TIM_GetCapture1 },
+    { TIM_Channel_2, TIM_IT_CC2, TIM_GetCapture2 },
+    { TIM_Channel_3, TIM_IT_CC3, TIM_GetCapture3 },
+    { TIM_Channel_4, TIM_IT_CC4, TIM_GetCapture4 }
 };
 
 typedef struct timerConfig_s {
@@ -234,29 +283,26 @@ typedef struct timerConfig_s {
     uint8_t reference;
 } timerConfig_t;
 
-static timerConfig_t timerConfig[MAX_TIMERS * CC_CHANNELS_PER_TIMER];
+static timerConfig_t timerConfigs[MAX_TIMERS][CC_CHANNELS_PER_TIMER];
 
-static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
+static int lookupTimerIndex(const TIM_TypeDef *tim)
 {
-    uint8_t timerIndex = 0;
-    while (timers[timerIndex] != tim) {
-        timerIndex++;
+    int timerIndex;
+    for (timerIndex=0; timerIndex < MAX_TIMERS; timerIndex++ ) {
+        if (timers[timerIndex] == tim)
+            break;
     }
     return timerIndex;
 }
 
-static uint8_t lookupChannelIndex(const uint16_t channel)
+static int lookupChannelIndex(const int channel)
 {
-    uint8_t channelIndex = 0;
-    while (channels[channelIndex] != channel) {
-        channelIndex++;
+    int channelIndex;
+    for (channelIndex=0; channelIndex < CC_CHANNELS_PER_TIMER; channelIndex++ ) {
+        if (channels[channelIndex].channel == channel)
+            break;
     }
     return channelIndex;
-}
-
-static uint8_t lookupTimerConfigIndex(TIM_TypeDef *tim, const uint16_t channel)
-{
-    return lookupTimerIndex(tim) + (MAX_TIMERS * lookupChannelIndex(channel));
 }
 
 void configureTimerChannelCallback(TIM_TypeDef *tim, uint8_t channel, uint8_t reference, timerCCCallbackPtr *edgeCallback)
@@ -268,16 +314,17 @@ void configureTimerChannelCallbacks(TIM_TypeDef *tim, uint8_t channel, uint8_t r
 {
     assert_param(IS_TIM_CHANNEL(channel));
 
-    uint8_t timerConfigIndex = lookupTimerConfigIndex(tim, channel);
+    int timerIndex = lookupTimerIndex(tim);
+    int channelIndex = lookupChannelIndex(channel);
 
-    if (timerConfigIndex >= MAX_TIMERS * CC_CHANNELS_PER_TIMER) {
+    if (timerIndex >= MAX_TIMERS || channelIndex >= CC_CHANNELS_PER_TIMER) {
         return;
     }
 
-    timerConfig[timerConfigIndex].edgeCallback = edgeCallback;
-    timerConfig[timerConfigIndex].overflowCallback = overflowCallback;
-    timerConfig[timerConfigIndex].channel = channel;
-    timerConfig[timerConfigIndex].reference = reference;
+    timerConfigs[timerIndex][channelIndex].edgeCallback = edgeCallback;
+    timerConfigs[timerIndex][channelIndex].overflowCallback = overflowCallback;
+    timerConfigs[timerIndex][channelIndex].channel = channel;
+    timerConfigs[timerIndex][channelIndex].reference = reference;
 }
 
 void configureTimerInputCaptureCompareChannel(TIM_TypeDef *tim, const uint8_t channel)
@@ -320,7 +367,7 @@ void timerNVICConfigure(uint8_t irq)
 
 void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz)
 {
-    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 
     TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
     TIM_TimeBaseStructure.TIM_Period = period - 1; // AKA TIMx_ARR
@@ -342,113 +389,96 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
     timerNVICConfigure(timerHardwarePtr->irq);
 }
 
-timerConfig_t *findTimerConfig(TIM_TypeDef *tim, uint16_t channel)
+static timerConfig_t *findTimerConfig(unsigned int timerIndex, unsigned int channelIndex)
 {
-    uint8_t timerConfigIndex = lookupTimerConfigIndex(tim, channel);
-    return &(timerConfig[timerConfigIndex]);
+    assert_param(timerIndex < MAX_TIMERS);
+    assert_param(channelIndex < CC_CHANNELS_PER_TIMER);
+
+    return &(timerConfigs[timerIndex][channelIndex]);
 }
 
-static void timCCxHandler(TIM_TypeDef *tim)
+static void timCCxHandler(TIM_TypeDef * const tim, unsigned int timerIndex)
 {
     captureCompare_t capture;
-    timerConfig_t *timerConfig;
-    uint8_t channel;
-    uint8_t channelIndex;
+    unsigned int channelIndex;
 
     if (TIM_GetITStatus(tim, TIM_IT_Update) == SET) {
         TIM_ClearITPendingBit(tim, TIM_IT_Update);
         capture = tim->ARR;
 
         for (channelIndex = 0; channelIndex < CC_CHANNELS_PER_TIMER; channelIndex++) {
-            channel = channels[channelIndex];
-            timerConfig = findTimerConfig(tim, channel);
+		    timerConfig_t *timerConfig;
 
-            if (!timerConfig->overflowCallback) {
-                continue;
+            timerConfig = findTimerConfig(timerIndex, channelIndex);
+            if (timerConfig->overflowCallback) {
+	            timerConfig->overflowCallback(timerConfig->reference, capture);
             }
-            timerConfig->overflowCallback(timerConfig->reference, capture);
         }
     }
 
     for (channelIndex = 0; channelIndex < CC_CHANNELS_PER_TIMER; channelIndex++) {
-        channel = channels[channelIndex];
+        channelConfig_t const * const channel = &channels[channelIndex];
 
-        if (channel == TIM_Channel_1 && TIM_GetITStatus(tim, TIM_IT_CC1) == SET) {
-            TIM_ClearITPendingBit(tim, TIM_IT_CC1);
+        if (TIM_GetITStatus(tim, channel->interruptBit) == SET) {
+            TIM_ClearITPendingBit(tim, channel->interruptBit);
 
-            timerConfig = findTimerConfig(tim, TIM_Channel_1);
-            capture = TIM_GetCapture1(tim);
-        } else if (channel == TIM_Channel_2 && TIM_GetITStatus(tim, TIM_IT_CC2) == SET) {
-            TIM_ClearITPendingBit(tim, TIM_IT_CC2);
+            capture = channel->TIM_GetCaptureFn(tim);
 
-            timerConfig = findTimerConfig(tim, TIM_Channel_2);
-            capture = TIM_GetCapture2(tim);
-        } else if (channel == TIM_Channel_3 && TIM_GetITStatus(tim, TIM_IT_CC3) == SET) {
-            TIM_ClearITPendingBit(tim, TIM_IT_CC3);
+            timerConfig_t *timerConfig;
 
-            timerConfig = findTimerConfig(tim, TIM_Channel_3);
-            capture = TIM_GetCapture3(tim);
-        } else if (channel == TIM_Channel_4 && TIM_GetITStatus(tim, TIM_IT_CC4) == SET) {
-            TIM_ClearITPendingBit(tim, TIM_IT_CC4);
-
-            timerConfig = findTimerConfig(tim, TIM_Channel_4);
-            capture = TIM_GetCapture4(tim);
-        } else {
-            continue; // avoid uninitialised variable dereference
+            timerConfig = findTimerConfig(timerIndex, channelIndex);
+            if (timerConfig->edgeCallback) {
+                timerConfig->edgeCallback(timerConfig->reference, capture);
+            }
         }
-
-        if (!timerConfig->edgeCallback) {
-            continue;
-        }
-        timerConfig->edgeCallback(timerConfig->reference, capture);
     }
 }
 
 void TIM1_CC_IRQHandler(void)
 {
-    timCCxHandler(TIM1);
+    timCCxHandler(TIM1, TIM1_IDX);
 }
 
 void TIM2_IRQHandler(void)
 {
-    timCCxHandler(TIM2);
+    timCCxHandler(TIM2, TIM2_IDX);
 }
 
 void TIM3_IRQHandler(void)
 {
-    timCCxHandler(TIM3);
+    timCCxHandler(TIM3, TIM3_IDX);
 }
 
 void TIM4_IRQHandler(void)
 {
-    timCCxHandler(TIM4);
+    timCCxHandler(TIM4, TIM4_IDX);
 }
 
 #if defined(STM32F303) || defined(STM32F3DISCOVERY)
 void TIM8_CC_IRQHandler(void)
 {
-    timCCxHandler(TIM8);
+    timCCxHandler(TIM8, TIM8_IDX);
 }
 
 void TIM1_BRK_TIM15_IRQHandler(void)
 {
-    timCCxHandler(TIM15);
+    timCCxHandler(TIM15, TIM15_IDX);
 }
 
 void TIM1_UP_TIM16_IRQHandler(void)
 {
-    timCCxHandler(TIM16);
+    timCCxHandler(TIM16, TIM16_IDX);
 }
 
 void TIM1_TRG_COM_TIM17_IRQHandler(void)
 {
-    timCCxHandler(TIM17);
+    timCCxHandler(TIM17, TIM17_IDX);
 }
 #endif
 
 void timerInit(void)
 {
-    memset(timerConfig, 0, sizeof (timerConfig));
+    memset(timerConfigs, 0, sizeof timerConfigs);
 
 #ifdef CC3D
     GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);
