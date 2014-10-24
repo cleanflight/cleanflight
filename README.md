@@ -8,10 +8,13 @@ Before making any contributions, take a note of the https://github.com/multiwii/
 binaries
 ========
 
-The newest builds can be obtained here: http://leela.fiendie.net/baseflight
+The latest builds can be obtained here: http://firmware.baseflight.net
+
+Information about the builds is provided at http://dev.baseflight.net:8080/job/baseflight
 
 Note that these images aren't necessarily flight-tested so use them at your own risk.
-When in doubt use the image from the obj-folder.
+Stable releases have a corresponding commit tagged "release_YYYY_MM_DD".
+When in doubt use baseflight-configurator to flash the latest stable firmware release.
 
 license
 =======
