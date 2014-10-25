@@ -25,8 +25,8 @@
 
 #define WS2811_DMA_BUFFER_SIZE (WS2811_DATA_BUFFER_SIZE + WS2811_DELAY_BUFFER_LENGTH)   // number of bytes needed is #LEDs * 24 bytes + 42 trailing bytes)
 
-#define BIT_COMPARE_1 17 // timer compare value for logical 1
-#define BIT_COMPARE_0 9  // timer compare value for logical 0
+#define BIT_COMPARE_1 67 // timer compare value for logical 1
+#define BIT_COMPARE_0 33  // timer compare value for logical 0
 
 void ws2811LedStripInit(void);
 
@@ -46,7 +46,7 @@ void setStripColors(const hsvColor_t *colors);
 
 bool isWS2811LedStripReady(void);
 
-extern uint8_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
+extern uint32_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
 extern volatile uint8_t ws2811LedDataTransferInProgress;
 
 extern const hsvColor_t hsv_white;

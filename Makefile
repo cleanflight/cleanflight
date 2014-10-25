@@ -402,6 +402,8 @@ ANYFC_SRC	 = startup_stm32f40xx.s \
 		   drivers/gpio_stm32f4xx.c \
 		   drivers/inverter.c \
 		   drivers/light_led_stm32f4xx.c \
+		   drivers/light_ws2811strip.c \
+		   drivers/light_ws2811strip_stm32f4xx.c \
 		   drivers/pwm_mapping.c \
 		   drivers/pwm_output.c \
 		   drivers/pwm_rx.c \

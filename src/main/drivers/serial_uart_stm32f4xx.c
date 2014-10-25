@@ -37,7 +37,7 @@
 // Using RX DMA disables the use of receive callbacks
 //#define USE_USART1_RX_DMA
 //#define USE_USART2_RX_DMA
-//#define USE_USART3_RX_DMA
+#define USE_USART3_RX_DMA
 
 
 #ifdef USE_USART1

@@ -379,6 +379,11 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #define LED_STRIP_TIMER TIM16
 #endif
 
+#if defined(ANYFC)
+#define LED_STRIP_TIMER TIM5
+#endif
+
+
 #ifdef LED_STRIP_TIMER
         // skip LED Strip output
         if (init->useLEDStrip && timerHardwarePtr->tim == LED_STRIP_TIMER)
