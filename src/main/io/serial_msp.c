@@ -845,8 +845,8 @@ static bool processOutCommand(uint8_t cmdMSP)
             const box_t *box = &boxes[mac->modeId];
             serialize8(box->permanentId);
             serialize8(mac->auxChannelIndex);
-            serialize8(mac->rangeStartStep);
-            serialize8(mac->rangeEndStep);
+            serialize8(mac->range.startStep);
+            serialize8(mac->range.endStep);
         }
         break;
     case MSP_BOXNAMES:
@@ -1088,8 +1088,8 @@ static bool processInCommand(void)
             if (box) {
                 mac->modeId = box->boxId;
                 mac->auxChannelIndex = read8();
-                mac->rangeStartStep = read8();
-                mac->rangeEndStep = read8();
+                mac->range.startStep = read8();
+                mac->range.endStep = read8();
             } else {
                 headSerialError(0);
             }
@@ -1391,19 +1391,21 @@ void mspSetTelemetryPort(serialPort_t *serialPort)
     mspPort_t *matchedPort = NULL;
 
     // find existing telemetry port
-    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT && !matchedPort; portIndex++) {
+    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
         candidatePort = &mspPorts[portIndex];
         if (candidatePort->mspPortUsage == FOR_TELEMETRY) {
             matchedPort = candidatePort;
+            break;
         }
     }
 
     if (!matchedPort) {
         // find unused port
-        for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT && !matchedPort; portIndex++) {
+        for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
             candidatePort = &mspPorts[portIndex];
             if (candidatePort->mspPortUsage == UNUSED_PORT) {
                 matchedPort = candidatePort;
+                break;
             }
         }
     }

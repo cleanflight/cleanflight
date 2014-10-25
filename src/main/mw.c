@@ -190,8 +190,7 @@ void annexCode(void)
             rcCommand[axis] = lookupPitchRollRC[tmp2] + (tmp - tmp2 * 100) * (lookupPitchRollRC[tmp2 + 1] - lookupPitchRollRC[tmp2]) / 100;
             prop1 = 100 - (uint16_t)currentProfile->controlRateConfig.rollPitchRate * tmp / 500;
             prop1 = (uint16_t)prop1 * prop2 / 100;
-        }
-        if (axis == YAW) {
+        } else if (axis == YAW) {
             if (currentProfile->yaw_deadband) {
                 if (tmp > currentProfile->yaw_deadband) {
                     tmp -= currentProfile->yaw_deadband;
@@ -333,9 +332,9 @@ void handleInflightCalibrationStickPosition(void)
     } else {
         AccInflightCalibrationArmed = !AccInflightCalibrationArmed;
         if (AccInflightCalibrationArmed) {
-            queueConfirmationBeep(2);
+            queueConfirmationBeep(4);
         } else {
-            queueConfirmationBeep(3);
+            queueConfirmationBeep(6);
         }
     }
 }
@@ -495,6 +494,9 @@ void processRx(void)
     }
 
     updateActivatedModes(currentProfile->modeActivationConditions);
+
+    updateAdjustmentStates(currentProfile->adjustmentRanges);
+    processRcAdjustments(&currentProfile->controlRateConfig, &masterConfig.rxConfig);
 
     bool canUseHorizonMode = true;
 

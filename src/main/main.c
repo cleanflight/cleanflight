@@ -294,7 +294,6 @@ void init(void)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
-
 #ifdef STM32F10X
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
 #endif
@@ -302,6 +301,7 @@ void init(void)
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
     pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
+    pwm_params.useCurrentMeterADC = feature(FEATURE_CURRENT_METER);
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
     pwm_params.useServos = isMixerUsingServos();

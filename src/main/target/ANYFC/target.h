@@ -83,6 +83,7 @@
 
 #define GPS
 #define LED_STRIP
+#define LED_STRIP_TIMER TIM5
 #define TELEMETRY
 //#define SOFT_SERIAL
 #define SERIAL_RX

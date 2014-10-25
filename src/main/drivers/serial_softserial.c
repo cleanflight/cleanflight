@@ -21,10 +21,11 @@
 
 #include "platform.h"
 
-#ifdef USE_SOFT_SERIAL
+#if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 
 #include "build_config.h"
 
+#include "nvic.h"
 #include "system.h"
 #include "gpio.h"
 #include "timer.h"
@@ -32,26 +33,16 @@
 #include "serial.h"
 #include "serial_softserial.h"
 
-#if defined(STM32F10X) || defined(CHEBUZZF3)
-#define SOFT_SERIAL_1_TIMER_RX_HARDWARE 4 // PWM 5
-#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 5 // PWM 6
-#define SOFT_SERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
-#define SOFT_SERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
-#endif
-
-#if defined(STM32F303) && !defined(CHEBUZZF3)
-#define SOFT_SERIAL_1_TIMER_RX_HARDWARE 8 // PWM 9
-#define SOFT_SERIAL_1_TIMER_TX_HARDWARE 9 // PWM 10
-#define SOFT_SERIAL_2_TIMER_RX_HARDWARE 10 // PWM 11
-#define SOFT_SERIAL_2_TIMER_TX_HARDWARE 11 // PWM 12
-#endif
-
 #define RX_TOTAL_BITS 10
 #define TX_TOTAL_BITS 10
 
+#if defined(USE_SOFTSERIAL1) && defined(USE_SOFTSERIAL2)
 #define MAX_SOFTSERIAL_PORTS 2
-softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
+#else
+#define MAX_SOFTSERIAL_PORTS 1
+#endif
 
+softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
 
 void onSerialTimer(uint8_t portIndex, captureCompare_t capture);
 void onSerialRxPinChange(uint8_t portIndex, captureCompare_t capture);
@@ -138,13 +129,13 @@ static void serialOutputPortConfig(const timerHardware_t *timerHardwarePtr)
 
 static void resetBuffers(softSerial_t *softSerial)
 {
-    softSerial->port.rxBufferSize = SOFT_SERIAL_BUFFER_SIZE;
+    softSerial->port.rxBufferSize = SOFTSERIAL_BUFFER_SIZE;
     softSerial->port.rxBuffer = softSerial->rxBuffer;
     softSerial->port.rxBufferTail = 0;
     softSerial->port.rxBufferHead = 0;
 
     softSerial->port.txBuffer = softSerial->txBuffer;
-    softSerial->port.txBufferSize = SOFT_SERIAL_BUFFER_SIZE;
+    softSerial->port.txBufferSize = SOFTSERIAL_BUFFER_SIZE;
     softSerial->port.txBufferTail = 0;
     softSerial->port.txBufferHead = 0;
 }
@@ -153,15 +144,19 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
 {
     softSerial_t *softSerial = &(softSerialPorts[portIndex]);
 
+#ifdef USE_SOFTSERIAL1
     if (portIndex == SOFTSERIAL1) {
-        softSerial->rxTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_RX_HARDWARE]);
-        softSerial->txTimerHardware = &(timerHardware[SOFT_SERIAL_1_TIMER_TX_HARDWARE]);
+        softSerial->rxTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_RX_HARDWARE]);
+        softSerial->txTimerHardware = &(timerHardware[SOFTSERIAL_1_TIMER_TX_HARDWARE]);
     }
+#endif
 
+#ifdef USE_SOFTSERIAL2
     if (portIndex == SOFTSERIAL2) {
-        softSerial->rxTimerHardware = &(timerHardware[SOFT_SERIAL_2_TIMER_RX_HARDWARE]);
-        softSerial->txTimerHardware = &(timerHardware[SOFT_SERIAL_2_TIMER_TX_HARDWARE]);
+        softSerial->rxTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_RX_HARDWARE]);
+        softSerial->txTimerHardware = &(timerHardware[SOFTSERIAL_2_TIMER_TX_HARDWARE]);
     }
+#endif
 
     softSerial->port.vTable = softSerialVTable;
     softSerial->port.baudRate = baud;
@@ -375,7 +370,7 @@ uint8_t softSerialTotalBytesWaiting(serialPort_t *instance)
 
     softSerial_t *s = (softSerial_t *)instance;
 
-    return (s->port.rxBufferHead - s->port.rxBufferTail) & (s->port.txBufferSize - 1);
+    return (s->port.rxBufferHead - s->port.rxBufferTail) & (s->port.rxBufferSize - 1);
 }
 
 uint8_t softSerialReadByte(serialPort_t *instance)

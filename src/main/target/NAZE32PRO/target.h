@@ -43,8 +43,6 @@
 #define SENSORS_SET (SENSOR_ACC)
 
 #define GPS
-#define LED_STRIP
 #define TELEMETRY
-#define SOFT_SERIAL
 #define SERIAL_RX
 #define AUTOTUNE

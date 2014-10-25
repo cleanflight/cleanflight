@@ -22,6 +22,7 @@
 
 #include "common/color.h"
 #include "drivers/light_ws2811strip.h"
+#include "nvic.h"
 
 void ws2811LedStripHardwareInit(void)
 {
@@ -99,8 +100,8 @@ void ws2811LedStripHardwareInit(void)
     NVIC_InitTypeDef NVIC_InitStructure;
 
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream2_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = WS2811_DMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = WS2811_DMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 

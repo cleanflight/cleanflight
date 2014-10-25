@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define TARGET_BOARD_IDENTIFIER "MF3A"
+
 #define LED0_GPIO   GPIOE
 #define LED0_PIN    Pin_8|Pin_12 // Blue LEDs - PE8/PE12
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOE
@@ -56,7 +58,6 @@
 #define SENSORS_SET (SENSOR_ACC)
 
 #define GPS
-#define LED_STRIP
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE

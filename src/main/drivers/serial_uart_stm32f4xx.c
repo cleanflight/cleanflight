@@ -30,6 +30,7 @@
 
 #include "system.h"
 #include "gpio.h"
+#include "nvic.h"
 
 #include "serial.h"
 #include "serial_uart.h"
@@ -145,15 +146,15 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 4;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART1_TXDMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART1_TXDMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
 #ifndef USE_USART1_RX_DMA
     NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART1_RXDMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART1_RXDMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 #endif
@@ -222,8 +223,8 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
 
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART2_RXDMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART2_RXDMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
@@ -301,16 +302,16 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 4;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART3_TXDMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART3_TXDMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
 #ifndef USE_USART3_RX_DMA
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = SERIALUART3_RXDMA_IRQ_PRIORITY;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = SERIALUART3_RXDMA_IRQ_SUBPRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 #endif
