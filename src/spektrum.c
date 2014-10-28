@@ -3,7 +3,8 @@
 
 // driver for spektrum satellite receiver / sbus using UART2 (freeing up more motor outputs for stuff)
 
-#define SPEK_MAX_CHANNEL 7
+#define SPEK_2048_MAX_CHANNEL 8
+#define SPEK_1024_MAX_CHANNEL 7
 #define SPEK_FRAME_SIZE 16
 static uint8_t spek_chan_shift;
 static uint8_t spek_chan_mask;
@@ -37,7 +38,10 @@ void spektrumInit(rcReadRawDataPtr *callback)
     core.rcvrport = uartOpen(USART2, spektrumDataReceive, 115200, MODE_RX);
     if (callback)
         *callback = spektrumReadRawRC;
-    core.numRCChannels = SPEK_MAX_CHANNEL;
+    if (mcfg.serialrx_type == SERIALRX_SPEKTRUM2048)
+    	core.numRCChannels = SPEK_2048_MAX_CHANNEL;
+    else
+        core.numRCChannels = SPEK_1024_MAX_CHANNEL;
 }
 
 // Receive ISR callback
@@ -70,19 +74,23 @@ bool spektrumFrameComplete(void)
 static uint16_t spektrumReadRawRC(uint8_t chan)
 {
     uint16_t data;
-    static uint32_t spekChannelData[SPEK_MAX_CHANNEL];
+    static uint32_t spekChannelData[SPEK_2048_MAX_CHANNEL];
     uint8_t b;
+    uint8_t spekMaxChannel = SPEK_2048_MAX_CHANNEL;
+
+    if (mcfg.serialrx_type != SERIALRX_SPEKTRUM2048)
+    	spekMaxChannel = SPEK_1024_MAX_CHANNEL;
 
     if (rcFrameComplete) {
         for (b = 3; b < SPEK_FRAME_SIZE; b += 2) {
             uint8_t spekChannel = 0x0F & (spekFrame[b - 1] >> spek_chan_shift);
-            if (spekChannel < SPEK_MAX_CHANNEL)
+            if (spekChannel < spekMaxChannel)
                 spekChannelData[spekChannel] = ((uint32_t)(spekFrame[b - 1] & spek_chan_mask) << 8) + spekFrame[b];
         }
         rcFrameComplete = false;
     }
 
-    if (chan >= SPEK_MAX_CHANNEL || !spekDataIncoming) {
+    if (chan >= spekMaxChannel || !spekDataIncoming) {
         data = mcfg.midrc;
     } else {
         if (spekHiRes)

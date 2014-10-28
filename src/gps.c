@@ -132,6 +132,8 @@ void gpsInit(uint8_t baudrateIndex)
     gpsSetState(GPS_UNKNOWN);
     if (!feature(FEATURE_GPS))
         return;
+    if (feature(FEATURE_SERIALRX) && !feature(FEATURE_SOFTSERIAL))
+        return;
 
     gpsData.baudrateIndex = baudrateIndex;
     gpsData.lastMessage = millis();
@@ -141,8 +143,15 @@ void gpsInit(uint8_t baudrateIndex)
         mode = MODE_RX;
 
     gpsSetPIDs();
-    // Open GPS UART, no callback - buffer will be read out in gpsThread()
-    core.gpsport = uartOpen(USART2, NULL, gpsInitData[baudrateIndex].baudrate, mode);
+    
+    if (feature(FEATURE_SERIALRX) && feature(FEATURE_SOFTSERIAL)) {
+    // If SerialRX is in use then use soft serial ports for GPS (pin 5 & 6)
+    core.gpsport = &(softSerialPorts[0].port);
+    }
+    else {
+        // Open GPS UART, no callback - buffer will be read out in gpsThread()
+        core.gpsport = uartOpen(USART2, NULL, gpsInitData[baudrateIndex].baudrate, mode);
+    }
     // signal GPS "thread" to initialize when it gets to it
     gpsSetState(GPS_INITIALIZING);
 
