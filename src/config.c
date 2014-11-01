@@ -251,6 +251,7 @@ static void resetConf(void)
     mcfg.emf_avoidance = 0;
     mcfg.rssi_aux_channel = 0;
     mcfg.rssi_adc_max = 4095;
+    mcfg.spektrum_sat_bind = 0;
 
     cfg.pidController = 0;
     cfg.P8[ROLL] = 40;
