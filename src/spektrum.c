@@ -16,7 +16,9 @@ static uint8_t spek_chan_mask;
 static bool rcFrameComplete = false;
 static bool spekHiRes = false;
 static bool spekDataIncoming = false;
-static uint8_t spekMaxChannel = SPEK_2048_MAX_CHANNEL;
+static GPIO_TypeDef *spekBindPort = NULL;
+static USART_TypeDef *spekUart = NULL;
+static uint16_t spekBindPin = 0;
 
 volatile uint8_t spekFrame[SPEK_FRAME_SIZE];
 static void spektrumDataReceive(uint16_t c);
@@ -33,24 +35,22 @@ void spektrumInit(rcReadRawDataPtr *callback)
             spek_chan_shift = 3;
             spek_chan_mask = 0x07;
             spekHiRes = true;
-            spekMaxChannel = SPEK_2048_MAX_CHANNEL;
+            core.numRCChannels = SPEK_2048_MAX_CHANNEL;
             break;
         case SERIALRX_SPEKTRUM1024:
             // 10 bit frames
             spek_chan_shift = 2;
             spek_chan_mask = 0x03;
             spekHiRes = false;
-            spekMaxChannel = SPEK_1024_MAX_CHANNEL;
+            core.numRCChannels = SPEK_1024_MAX_CHANNEL;
             break;
     }
 
-    core.rcvrport = uartOpen(USART2, spektrumDataReceive, 115200, MODE_RX);
+    // spekUart is set by spektrumBind() which is called very early at startup
+    core.rcvrport = uartOpen(spekUart, spektrumDataReceive, 115200, MODE_RX);
+
     if (callback)
         *callback = spektrumReadRawRC;
-    if (mcfg.serialrx_type == SERIALRX_SPEKTRUM2048)
-        core.numRCChannels = SPEK_2048_MAX_CHANNEL;
-    else
-        core.numRCChannels = SPEK_1024_MAX_CHANNEL;
 }
 
 // Receive ISR callback
@@ -89,13 +89,13 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
     if (rcFrameComplete) {
         for (b = 3; b < SPEK_FRAME_SIZE; b += 2) {
             uint8_t spekChannel = 0x0F & (spekFrame[b - 1] >> spek_chan_shift);
-            if (spekChannel < spekMaxChannel)
+            if (spekChannel < core.numRCChannels)
                 spekChannelData[spekChannel] = ((uint32_t)(spekFrame[b - 1] & spek_chan_mask) << 8) + spekFrame[b];
         }
         rcFrameComplete = false;
     }
 
-    if (chan >= spekMaxChannel || !spekDataIncoming) {
+    if (chan >= core.numRCChannels || !spekDataIncoming) {
         data = mcfg.midrc;
     } else {
         if (spekHiRes)
@@ -113,29 +113,41 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
  * 9 = DSMX 11ms / DSMX 22ms
  * 5 = DSM2 11ms 2048 / DSM2 22ms 1024 
  */
-void spektrumBind(uint8_t bind)
+void spektrumBind(void)
 {
     int i;
     gpio_config_t gpio;
 
-    if (bind == 0 || bind > 10)
+    if (mcfg.spektrum_sat_bind == 0 || mcfg.spektrum_sat_bind > 10)
         return;
 
+    if (mcfg.spektrum_sat_on_flexport) {
+        // USART3, PB11
+        spekBindPort = GPIOB;
+        spekBindPin = Pin_11;
+        spekUart = USART3;
+    } else {
+        // USART2, PA3
+        spekBindPort = GPIOA;
+        spekBindPin = Pin_3;
+        spekUart = USART2;
+    }
+
     gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_3;
+    gpio.pin = spekBindPin;
     gpio.mode = Mode_Out_OD;
-    gpioInit(GPIOA, &gpio);
+    gpioInit(spekBindPort, &gpio);
     // RX line, set high
-    digitalHi(GPIOA, GPIO_Pin_3);
+    digitalHi(spekBindPort, spekBindPin);
     // Bind window is around 20-140ms after powerup
     delay(60);
 
-    for (i = 0; i < bind; i++) {
+    for (i = 0; i < mcfg.spektrum_sat_bind; i++) {
         // RX line, drive low for 120us
-        digitalLo(GPIOA, GPIO_Pin_3);
+        digitalLo(spekBindPort, spekBindPin);
         delayMicroseconds(120);
         // RX line, drive high for 120us
-        digitalHi(GPIOA, GPIO_Pin_3);
+        digitalHi(spekBindPort, spekBindPin);
         delayMicroseconds(120);
     }
 }

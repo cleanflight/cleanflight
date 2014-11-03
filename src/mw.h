@@ -277,6 +277,8 @@ typedef struct master_t {
     uint8_t rcmap[8];                       // mapping of radio channels to internal RPYTA+ order
     uint8_t serialrx_type;                  // type of UART-based receiver (0 = spek 10, 1 = spek 11, 2 = sbus). Must be enabled by FEATURE_SERIALRX first.
     uint16_t sbus_offset;                   // offset for SBUS/Futaba serial receivers (default 988)
+    uint8_t spektrum_sat_bind;              // Spektrum satellite bind. 0 - 10 (0 = disabled)
+    uint8_t spektrum_sat_on_flexport;       // Spektrum satellite on USART3 (flexport, available with rev5sp hardware)
     uint16_t midrc;                         // Some radios have not a neutral point centered on 1500. can be changed here
     uint16_t mincheck;                      // minimum rc end
     uint16_t maxcheck;                      // maximum rc end
@@ -310,8 +312,6 @@ typedef struct master_t {
 
     uint8_t magic_ef;                       // magic number, should be 0xEF
     uint8_t chk;                            // XOR checksum
-
-    uint8_t spektrum_sat_bind;              // Spektrum satellite bind. 0 - 10 (0 = disabled)
 } master_t;
 
 // Core runtime settings
@@ -484,7 +484,7 @@ uint32_t featureMask(void);
 // spektrum
 void spektrumInit(rcReadRawDataPtr *callback);
 bool spektrumFrameComplete(void);
-void spektrumBind(uint8_t bind);
+void spektrumBind(void);
 
 // sbus
 void sbusInit(rcReadRawDataPtr *callback);
