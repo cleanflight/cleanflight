@@ -112,14 +112,15 @@ void spektrumBind(uint8_t bind)
 {
     int i;
     
-    if (bind == 0 || bind > 10) return;
+    if (bind == 0 || bind > 10)
+        return;
 
     gpio_config_t gpio;
     gpio.speed = Speed_2MHz;
     gpio.pin = Pin_3;
     gpio.mode = Mode_Out_OD;
     gpioInit(GPIOA, &gpio);
-    /* RX line, set high */
+    // RX line, set high
     digitalHi(GPIOA, GPIO_Pin_3);
     // Bind window is around 20-140ms after powerup
     delay(60);
