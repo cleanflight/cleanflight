@@ -66,6 +66,21 @@ int main(void)
     init_printf(NULL, _putc);
 #endif
 
+    if (feature(FEATURE_SERIALRX)) {
+        switch (mcfg.serialrx_type) {
+            case SERIALRX_SPEKTRUM1024:
+            case SERIALRX_SPEKTRUM2048:
+                // Spektrum satellite binding if enabled on startup.
+                // Must be called before that 100ms sleep so that we don't lose satellite's binding window after startup.
+                // The rest of Spektrum initialization will happen later - via spektrumInit()
+                spektrumBind();
+                break;
+        }
+    }
+
+    // sleep for 100ms
+    delay(100);
+
     activateConfig();
 
 #ifndef CJMCU

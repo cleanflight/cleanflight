@@ -119,7 +119,9 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
     s->port.rxBufferSize = UART3_RX_BUFFER_SIZE;
     s->port.txBufferSize = UART3_TX_BUFFER_SIZE;
 
-    s->rxDMAChannel = DMA1_Channel3;
+    // if we're only receiving, fall back to IRQ reception - workaround for spektrum sat polling
+    if (mode != MODE_RX)
+        s->rxDMAChannel = DMA1_Channel3;
     s->txDMAChannel = DMA1_Channel2;
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
@@ -134,6 +136,15 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
     gpio.mode = Mode_IPU;
     if (mode & MODE_RX)
         gpioInit(GPIOB, &gpio);
+
+    if (mode == MODE_RX) {
+        // RX Interrupt
+        NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+        NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+        NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+        NVIC_Init(&NVIC_InitStructure);
+    }
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel2_IRQn;
@@ -405,6 +416,23 @@ void USART2_IRQHandler(void)
             s->port.txBufferTail = (s->port.txBufferTail + 1) % s->port.txBufferSize;
         } else {
             USART_ITConfig(s->USARTx, USART_IT_TXE, DISABLE);
+        }
+    }
+}
+
+// USART3 Rx IRQ Handler
+void USART3_IRQHandler(void)
+{
+    uartPort_t *s = &uartPort3;
+    uint16_t SR = s->USARTx->SR;
+
+    if (SR & USART_FLAG_RXNE) {
+        // If we registered a callback, pass crap there
+        if (s->port.callback) {
+            s->port.callback(s->USARTx->DR);
+        } else {
+            s->port.rxBuffer[s->port.rxBufferHead] = s->USARTx->DR;
+            s->port.rxBufferHead = (s->port.rxBufferHead + 1) % s->port.rxBufferSize;
         }
     }
 }
