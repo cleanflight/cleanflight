@@ -1,3 +1,8 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
+
 #include "board.h"
 #include "mw.h"
 
@@ -11,6 +16,8 @@ static uint8_t spek_chan_mask;
 static bool rcFrameComplete = false;
 static bool spekHiRes = false;
 static bool spekDataIncoming = false;
+static uint8_t spekMaxChannel = SPEK_2048_MAX_CHANNEL;
+
 volatile uint8_t spekFrame[SPEK_FRAME_SIZE];
 static void spektrumDataReceive(uint16_t c);
 static uint16_t spektrumReadRawRC(uint8_t chan);
@@ -26,12 +33,14 @@ void spektrumInit(rcReadRawDataPtr *callback)
             spek_chan_shift = 3;
             spek_chan_mask = 0x07;
             spekHiRes = true;
+            spekMaxChannel = SPEK_2048_MAX_CHANNEL;
             break;
         case SERIALRX_SPEKTRUM1024:
             // 10 bit frames
             spek_chan_shift = 2;
             spek_chan_mask = 0x03;
             spekHiRes = false;
+            spekMaxChannel = SPEK_1024_MAX_CHANNEL;
             break;
     }
 
@@ -39,7 +48,7 @@ void spektrumInit(rcReadRawDataPtr *callback)
     if (callback)
         *callback = spektrumReadRawRC;
     if (mcfg.serialrx_type == SERIALRX_SPEKTRUM2048)
-    	core.numRCChannels = SPEK_2048_MAX_CHANNEL;
+        core.numRCChannels = SPEK_2048_MAX_CHANNEL;
     else
         core.numRCChannels = SPEK_1024_MAX_CHANNEL;
 }
@@ -76,10 +85,6 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
     uint16_t data;
     static uint32_t spekChannelData[SPEK_2048_MAX_CHANNEL];
     uint8_t b;
-    uint8_t spekMaxChannel = SPEK_2048_MAX_CHANNEL;
-
-    if (mcfg.serialrx_type != SERIALRX_SPEKTRUM2048)
-    	spekMaxChannel = SPEK_1024_MAX_CHANNEL;
 
     if (rcFrameComplete) {
         for (b = 3; b < SPEK_FRAME_SIZE; b += 2) {
@@ -111,11 +116,11 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
 void spektrumBind(uint8_t bind)
 {
     int i;
-    
+    gpio_config_t gpio;
+
     if (bind == 0 || bind > 10)
         return;
 
-    gpio_config_t gpio;
     gpio.speed = Speed_2MHz;
     gpio.pin = Pin_3;
     gpio.mode = Mode_Out_OD;
@@ -125,7 +130,7 @@ void spektrumBind(uint8_t bind)
     // Bind window is around 20-140ms after powerup
     delay(60);
 
-    for (i = 0; i < bind ; i++) {
+    for (i = 0; i < bind; i++) {
         // RX line, drive low for 120us
         digitalLo(GPIOA, GPIO_Pin_3);
         delayMicroseconds(120);

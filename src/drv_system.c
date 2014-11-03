@@ -4,7 +4,6 @@
  */
 
 #include "board.h"
-#include "mw.h"
 
 // cycles per microsecond
 static volatile uint32_t usTicks = 0;
@@ -126,13 +125,6 @@ void systemInit(void)
 
     // SysTick
     SysTick_Config(SystemCoreClock / 1000);
-
-    // Spektrum satellite binding if enabled on startup.
-    // Must be called before that 100ms sleep so that we don't lose satellite's binding window after startup.
-    spektrumBind(mcfg.spektrum_sat_bind);
-
-    // sleep for 100ms
-    delay(100);
 }
 
 #if 1

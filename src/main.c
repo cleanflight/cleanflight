@@ -66,6 +66,13 @@ int main(void)
     init_printf(NULL, _putc);
 #endif
 
+    // Spektrum satellite binding if enabled on startup.
+    // Must be called before that 100ms sleep so that we don't lose satellite's binding window after startup.
+    spektrumBind(mcfg.spektrum_sat_bind);
+
+    // sleep for 100ms
+    delay(100);
+
     activateConfig();
 
 #ifndef CJMCU
