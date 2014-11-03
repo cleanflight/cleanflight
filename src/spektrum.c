@@ -101,3 +101,34 @@ static uint16_t spektrumReadRawRC(uint8_t chan)
 
     return data;
 }
+
+/* spektrumBind function. It's used to bind satellite receiver to TX.
+   Function must be called immediately after startup so that we don't miss satellite bind window.
+   Known parameters. Tested with DSMX satellite and DX8 radio. Framerate (11ms or 22ms) must be selected from TX.
+   9 = DSMX 11ms / DSMX 22ms
+   5 = DSM2 11ms 2048 / DSM2 22ms 1024 */
+void spektrumBind(uint8_t bind)
+{
+    int i;
+    if (bind == 0 || bind > 10)
+        return;
+	gpio_config_t gpio;
+    gpio.speed = Speed_2MHz;
+    gpio.pin = Pin_3;
+    gpio.mode = Mode_Out_OD;
+
+	gpioInit(GPIOA, &gpio);
+	/* RX line, set high */
+	digitalHi(GPIOA, GPIO_Pin_3);
+	// Bind window is around 20-140ms after powerup
+	delay(60);
+
+	for (i = 0; i < bind ; i++) {
+        // RX line, drive low for 120us
+        digitalLo(GPIOA, GPIO_Pin_3);
+        delayMicroseconds(120);
+        // RX line, drive high for 120us
+        digitalHi(GPIOA, GPIO_Pin_3);
+        delayMicroseconds(120);
+        }
+}
