@@ -310,8 +310,6 @@ typedef struct master_t {
 
     uint8_t magic_ef;                       // magic number, should be 0xEF
     uint8_t chk;                            // XOR checksum
-
-    uint8_t spektrum_sat_bind;              // Spektrum satellite bind. 0 - 10 (0 = disabled)
 } master_t;
 
 // Core runtime settings
@@ -484,7 +482,6 @@ uint32_t featureMask(void);
 // spektrum
 void spektrumInit(rcReadRawDataPtr *callback);
 bool spektrumFrameComplete(void);
-void spektrumBind(uint8_t bind);
 
 // sbus
 void sbusInit(rcReadRawDataPtr *callback);
