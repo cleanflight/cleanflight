@@ -118,9 +118,6 @@ void spektrumBind(void)
     int i;
     gpio_config_t gpio;
 
-    if (mcfg.spektrum_sat_bind == 0 || mcfg.spektrum_sat_bind > 10)
-        return;
-
     if (mcfg.spektrum_sat_on_flexport) {
         // USART3, PB11
         spekBindPort = GPIOB;
@@ -132,6 +129,9 @@ void spektrumBind(void)
         spekBindPin = Pin_3;
         spekUart = USART2;
     }
+
+    if (mcfg.spektrum_sat_bind == 0 || mcfg.spektrum_sat_bind > 10)
+        return;
 
     gpio.speed = Speed_2MHz;
     gpio.pin = spekBindPin;
