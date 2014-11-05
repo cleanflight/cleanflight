@@ -197,6 +197,9 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_RSSI_CONFIG                 50
 #define MSP_SET_RSSI_CONFIG             51
 
+#define MSP_ADJUSTMENT_RANGES           52
+#define MSP_SET_ADJUSTMENT_RANGE        53
+
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -799,13 +802,13 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_RC_TUNING:
         headSerialReply(7);
-        serialize8(currentProfile->controlRateConfig.rcRate8);
-        serialize8(currentProfile->controlRateConfig.rcExpo8);
-        serialize8(currentProfile->controlRateConfig.rollPitchRate);
-        serialize8(currentProfile->controlRateConfig.yawRate);
-        serialize8(currentProfile->dynThrPID);
-        serialize8(currentProfile->controlRateConfig.thrMid8);
-        serialize8(currentProfile->controlRateConfig.thrExpo8);
+        serialize8(currentControlRateProfile->rcRate8);
+        serialize8(currentControlRateProfile->rcExpo8);
+        serialize8(currentControlRateProfile->rollPitchRate);
+        serialize8(currentControlRateProfile->yawRate);
+        serialize8(currentControlRateProfile->dynThrPID);
+        serialize8(currentControlRateProfile->thrMid8);
+        serialize8(currentControlRateProfile->thrExpo8);
         break;
     case MSP_PID:
         headSerialReply(3 * PID_ITEM_COUNT);
@@ -849,8 +852,26 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize8(mac->range.endStep);
         }
         break;
+    case MSP_ADJUSTMENT_RANGES:
+        headSerialReply(MAX_ADJUSTMENT_RANGE_COUNT * (
+                1 + // adjustment index/slot
+                1 + // aux channel index
+                1 + // start step
+                1 + // end step
+                1 + // adjustment function
+                1   // aux switch channel index
+        ));
+        for (i = 0; i < MAX_ADJUSTMENT_RANGE_COUNT; i++) {
+            adjustmentRange_t *adjRange = &currentProfile->adjustmentRanges[i];
+            serialize8(adjRange->adjustmentIndex);
+            serialize8(adjRange->auxChannelIndex);
+            serialize8(adjRange->range.startStep);
+            serialize8(adjRange->range.endStep);
+            serialize8(adjRange->adjustmentFunction);
+            serialize8(adjRange->auxSwitchChannelIndex);
+        }
+        break;
     case MSP_BOXNAMES:
-        // headSerialReply(sizeof(boxnames) - 1);
         serializeBoxNamesReply();
         break;
     case MSP_BOXIDS:
@@ -1097,14 +1118,34 @@ static bool processInCommand(void)
             headSerialError(0);
         }
         break;
+    case MSP_SET_ADJUSTMENT_RANGE:
+        i = read8();
+        if (i < MAX_ADJUSTMENT_RANGE_COUNT) {
+            adjustmentRange_t *adjRange = &currentProfile->adjustmentRanges[i];
+            i = read8();
+            if (i < MAX_SIMULTANEOUS_ADJUSTMENT_COUNT) {
+                adjRange->adjustmentIndex = i;
+                adjRange->auxChannelIndex = read8();
+                adjRange->range.startStep = read8();
+                adjRange->range.endStep = read8();
+                adjRange->adjustmentFunction = read8();
+                adjRange->auxSwitchChannelIndex = read8();
+            } else {
+                headSerialError(0);
+            }
+        } else {
+            headSerialError(0);
+        }
+        break;
+
     case MSP_SET_RC_TUNING:
-        currentProfile->controlRateConfig.rcRate8 = read8();
-        currentProfile->controlRateConfig.rcExpo8 = read8();
-        currentProfile->controlRateConfig.rollPitchRate = read8();
-        currentProfile->controlRateConfig.yawRate = read8();
-        currentProfile->dynThrPID = read8();
-        currentProfile->controlRateConfig.thrMid8 = read8();
-        currentProfile->controlRateConfig.thrExpo8 = read8();
+        currentControlRateProfile->rcRate8 = read8();
+        currentControlRateProfile->rcExpo8 = read8();
+        currentControlRateProfile->rollPitchRate = read8();
+        currentControlRateProfile->yawRate = read8();
+        currentControlRateProfile->dynThrPID = read8();
+        currentControlRateProfile->thrMid8 = read8();
+        currentControlRateProfile->thrExpo8 = read8();
         break;
     case MSP_SET_MISC:
         read16(); // powerfailmeter

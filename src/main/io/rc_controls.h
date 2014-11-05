@@ -122,9 +122,18 @@ typedef struct controlRateConfig_s {
     uint8_t thrExpo8;
     uint8_t rollPitchRate;
     uint8_t yawRate;
+    uint8_t dynThrPID;
+    uint16_t tpa_breakpoint;                // Breakpoint where TPA is activated
 } controlRateConfig_t;
 
 extern int16_t rcCommand[4];
+
+typedef struct rcControlsConfig_s {
+    uint8_t deadband;                       // introduce a deadband around the stick center for pitch and roll axis. Must be greater than zero.
+    uint8_t yaw_deadband;                   // introduce a deadband around the stick center for yaw axis. Must be greater than zero.
+    uint8_t alt_hold_deadband;              // defines the neutral zone of throttle stick during altitude hold, default setting is +/-40
+    uint8_t alt_hold_fast_change;           // when disabled, turn off the althold when throttle stick is out of deadband defined with alt_hold_deadband; when enabled, altitude changes slowly proportional to stick movement
+} rcControlsConfig_t;
 
 bool areSticksInApModePosition(uint16_t ap_mode);
 throttleStatus_e calculateThrottleStatus(rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
@@ -146,13 +155,33 @@ typedef enum {
     ADJUSTMENT_YAW_P,
     ADJUSTMENT_YAW_I,
     ADJUSTMENT_YAW_D,
+    ADJUSTMENT_RATE_PROFILE
 } adjustmentFunction_e;
 
-#define ADJUSTMENT_FUNCTION_COUNT 12
+#define ADJUSTMENT_FUNCTION_COUNT 13
+
+typedef enum {
+    ADJUSTMENT_MODE_STEP,
+    ADJUSTMENT_MODE_SELECT
+} adjustmentMode_e;
+
+typedef struct adjustmentStepConfig_s {
+    uint8_t step;
+} adjustmentStepConfig_t;
+
+typedef struct adjustmentSelectConfig_s {
+    uint8_t switchPositions;
+} adjustmentSelectConfig_t;
+
+typedef union adjustmentConfig_u {
+    adjustmentStepConfig_t stepConfig;
+    adjustmentSelectConfig_t selectConfig;
+} adjustmentData_t;
 
 typedef struct adjustmentConfig_s {
     uint8_t adjustmentFunction;
-    uint8_t step;
+    uint8_t mode;
+    adjustmentData_t data;
 } adjustmentConfig_t;
 
 typedef struct adjustmentRange_s {
@@ -170,7 +199,14 @@ typedef struct adjustmentRange_s {
 
 #define ADJUSTMENT_INDEX_OFFSET 1
 
+typedef struct adjustmentState_s {
+    uint8_t auxChannelIndex;
+    const adjustmentConfig_t *config;
+    uint32_t timeoutAt;
+} adjustmentState_t;
+
 #define MAX_SIMULTANEOUS_ADJUSTMENT_COUNT 4 // enough for 4 x 3position switches / 4 aux channel
+
 #define MAX_ADJUSTMENT_RANGE_COUNT 12 // enough for 2 * 6pos switches.
 
 void configureAdjustment(uint8_t index, uint8_t auxChannelIndex, const adjustmentConfig_t *adjustmentConfig);

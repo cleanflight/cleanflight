@@ -103,10 +103,13 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 // use the last flash pages for storage
 #define CONFIG_START_FLASH_ADDRESS (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG))
 
-master_t masterConfig;      // master config struct with data independent from profiles
-profile_t *currentProfile;   // profile config struct
+master_t masterConfig;                 // master config struct with data independent from profiles
+profile_t *currentProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 83;
+static uint8_t currentControlRateProfileIndex = 0;
+controlRateConfig_t *currentControlRateProfile;
+
+static const uint8_t EEPROM_CONF_VERSION = 84;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -216,8 +219,13 @@ void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 
 void resetSerialConfig(serialConfig_t *serialConfig)
 {
+#ifdef SWAP_SERIAL_PORT_1_AND_2_DEFAULTS
+    serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_UNUSED);
+    serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
+#else
     serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
-    serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_GPS_ONLY);
+    serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_UNUSED);
+#endif
 #if (SERIAL_PORT_COUNT > 2)
     serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_UNUSED);
 #if (SERIAL_PORT_COUNT > 3)
@@ -236,10 +244,43 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->reboot_character = 'R';
 }
 
+static void resetControlRateConfig(controlRateConfig_t *controlRateConfig) {
+    controlRateConfig->rcRate8 = 90;
+    controlRateConfig->rcExpo8 = 65;
+    controlRateConfig->rollPitchRate = 0;
+    controlRateConfig->yawRate = 0;
+    controlRateConfig->thrMid8 = 50;
+    controlRateConfig->thrExpo8 = 0;
+    controlRateConfig->dynThrPID = 0;
+    controlRateConfig->tpa_breakpoint = 1500;
+}
+
+void resetRcControlsConfig(rcControlsConfig_t *rcControlsConfig) {
+    rcControlsConfig->deadband = 0;
+    rcControlsConfig->yaw_deadband = 0;
+    rcControlsConfig->alt_hold_deadband = 40;
+    rcControlsConfig->alt_hold_fast_change = 1;
+}
+
+uint8_t getCurrentProfile(void)
+{
+    return masterConfig.current_profile_index;
+}
 
 static void setProfile(uint8_t profileIndex)
 {
     currentProfile = &masterConfig.profile[profileIndex];
+}
+
+uint8_t getCurrentControlRateProfile(void)
+{
+    return currentControlRateProfileIndex;
+}
+
+static void setControlRateProfile(uint8_t profileIndex)
+{
+    currentControlRateProfileIndex = profileIndex;
+    currentControlRateProfile = &masterConfig.controlRateProfiles[profileIndex];
 }
 
 // Default settings
@@ -251,6 +292,7 @@ static void resetConf(void)
     // Clear all configuration
     memset(&masterConfig, 0, sizeof(master_t));
     setProfile(0);
+    setControlRateProfile(0);
 
     masterConfig.version = EEPROM_CONF_VERSION;
     masterConfig.mixerConfiguration = MULTITYPE_QUADX;
@@ -299,7 +341,7 @@ static void resetConf(void)
     masterConfig.small_angle = 25;
 
     masterConfig.airplaneConfig.flaps_speed = 0;
-    masterConfig.fixedwing_althold_dir = 1;
+    masterConfig.airplaneConfig.fixedwing_althold_dir = 1;
 
     // Motor/ESC/Servo
     resetEscAndServoConfig(&masterConfig.escAndServoConfig);
@@ -327,14 +369,7 @@ static void resetConf(void)
     currentProfile->pidController = 0;
     resetPidProfile(&currentProfile->pidProfile);
 
-    currentProfile->controlRateConfig.rcRate8 = 90;
-    currentProfile->controlRateConfig.rcExpo8 = 65;
-    currentProfile->controlRateConfig.rollPitchRate = 0;
-    currentProfile->controlRateConfig.yawRate = 0;
-    currentProfile->dynThrPID = 0;
-    currentProfile->tpa_breakpoint = 1500;
-    currentProfile->controlRateConfig.thrMid8 = 50;
-    currentProfile->controlRateConfig.thrExpo8 = 0;
+    resetControlRateConfig(&masterConfig.controlRateProfiles[0]);
 
     // for (i = 0; i < CHECKBOXITEMS; i++)
     //     cfg.activate[i] = 0;
@@ -353,10 +388,9 @@ static void resetConf(void)
 
     // Radio
     parseRcChannels("AETR1234", &masterConfig.rxConfig);
-    currentProfile->deadband = 0;
-    currentProfile->yaw_deadband = 0;
-    currentProfile->alt_hold_deadband = 40;
-    currentProfile->alt_hold_fast_change = 1;
+
+    resetRcControlsConfig(&currentProfile->rcControlsConfig);
+
     currentProfile->throttle_correction_value = 0;      // could 10 with althold or 40 for fpv
     currentProfile->throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
 
@@ -396,8 +430,18 @@ static void resetConf(void)
 #endif
 
     // copy first profile into remaining profile
-    for (i = 1; i < 3; i++)
+    for (i = 1; i < MAX_PROFILE_COUNT; i++) {
         memcpy(&masterConfig.profile[i], currentProfile, sizeof(profile_t));
+    }
+
+    // copy first control rate config into remaining profile
+    for (i = 1; i < MAX_CONTROL_RATE_PROFILE_COUNT; i++) {
+        memcpy(&masterConfig.controlRateProfiles[i], currentControlRateProfile, sizeof(controlRateConfig_t));
+    }
+
+    for (i = 1; i < MAX_PROFILE_COUNT; i++) {
+        masterConfig.profile[i].defaultRateProfileIndex = i % MAX_CONTROL_RATE_PROFILE_COUNT;
+    }
 }
 
 static uint8_t calculateChecksum(const uint8_t *data, uint32_t length)
@@ -432,12 +476,18 @@ static bool isEEPROMContentValid(void)
     return true;
 }
 
+void activateControlRateConfig(void)
+{
+    generatePitchRollCurve(currentControlRateProfile);
+    generateThrottleCurve(currentControlRateProfile, &masterConfig.escAndServoConfig);
+}
+
 void activateConfig(void)
 {
     static imuRuntimeConfig_t imuRuntimeConfig;
 
-    generatePitchRollCurve(&currentProfile->controlRateConfig);
-    generateThrottleCurve(&currentProfile->controlRateConfig, &masterConfig.escAndServoConfig);
+    activateControlRateConfig();
+
     useRcControlsConfig(currentProfile->modeActivationConditions, &masterConfig.escAndServoConfig, &currentProfile->pidProfile);
 
     useGyroConfig(&masterConfig.gyroConfig);
@@ -468,7 +518,7 @@ void activateConfig(void)
     imuRuntimeConfig.small_angle = masterConfig.small_angle;
 
     configureImu(&imuRuntimeConfig, &currentProfile->pidProfile, &currentProfile->accDeadband);
-    configureAltitudeHold(&currentProfile->pidProfile, &currentProfile->barometerConfig);
+    configureAltitudeHold(&currentProfile->pidProfile, &currentProfile->barometerConfig, &currentProfile->rcControlsConfig, &masterConfig.escAndServoConfig);
 
     calculateThrottleAngleScale(currentProfile->throttle_correction_angle);
     calculateAccZLowPassFilterRCTimeConstant(currentProfile->accz_lpf_cutoff);
@@ -570,11 +620,16 @@ void readEEPROM(void)
 
     // Read flash
     memcpy(&masterConfig, (char *) CONFIG_START_FLASH_ADDRESS, sizeof(master_t));
-    // Copy current profile
-    if (masterConfig.current_profile_index > 2) // sanity check
+
+    if (masterConfig.current_profile_index > MAX_PROFILE_COUNT - 1) // sanity check
         masterConfig.current_profile_index = 0;
 
     setProfile(masterConfig.current_profile_index);
+
+    if (currentProfile->defaultRateProfileIndex > MAX_CONTROL_RATE_PROFILE_COUNT - 1) // sanity check
+        currentProfile->defaultRateProfileIndex = 0;
+
+    setControlRateProfile(currentProfile->defaultRateProfileIndex);
 
     validateAndFixConfig();
     activateConfig();
@@ -670,6 +725,15 @@ void changeProfile(uint8_t profileIndex)
     writeEEPROM();
     readEEPROM();
     blinkLedAndSoundBeeper(2, 40, profileIndex + 1);
+}
+
+void changeControlRateProfile(uint8_t profileIndex)
+{
+    if (profileIndex > MAX_CONTROL_RATE_PROFILE_COUNT) {
+        profileIndex = MAX_CONTROL_RATE_PROFILE_COUNT - 1;
+    }
+    setControlRateProfile(profileIndex);
+    activateControlRateConfig();
 }
 
 bool feature(uint32_t mask)
