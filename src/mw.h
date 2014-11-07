@@ -276,7 +276,6 @@ typedef struct master_t {
     // Radio/ESC-related configuration
     uint8_t rcmap[8];                       // mapping of radio channels to internal RPYTA+ order
     uint8_t serialrx_type;                  // type of UART-based receiver (0 = spek 10, 1 = spek 11, 2 = sbus). Must be enabled by FEATURE_SERIALRX first.
-    uint16_t sbus_offset;                   // offset for SBUS/Futaba serial receivers (default 988)
     uint8_t spektrum_sat_bind;              // Spektrum satellite bind. 0 - 10 (0 = disabled)
     uint8_t spektrum_sat_on_flexport;       // Spektrum satellite on USART3 (flexport, available with rev5sp hardware)
     uint16_t midrc;                         // Some radios have not a neutral point centered on 1500. can be changed here

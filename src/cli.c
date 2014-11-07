@@ -155,7 +155,6 @@ const clivalue_t valueTable[] = {
     { "gps_baudrate", VAR_INT8, &mcfg.gps_baudrate, 0, GPS_BAUD_MAX },
     { "gps_ubx_sbas", VAR_UINT8, &mcfg.gps_ubx_sbas, 0, 4 },
     { "serialrx_type", VAR_UINT8, &mcfg.serialrx_type, 0, SERIALRX_PROVIDER_MAX },
-    { "sbus_offset", VAR_UINT16, &mcfg.sbus_offset, 900, 1200 },
     { "spektrum_sat_bind", VAR_UINT8, &mcfg.spektrum_sat_bind, 0, 10 },
     { "spektrum_sat_on_flexport", VAR_UINT8, &mcfg.spektrum_sat_on_flexport, 0, 1 },
     { "telemetry_provider", VAR_UINT8, &mcfg.telemetry_provider, 0, TELEMETRY_PROVIDER_MAX },
