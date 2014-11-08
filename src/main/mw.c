@@ -59,8 +59,9 @@
 #include "io/gimbal.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
-#include "io/serial_cli.h"
 #include "io/serial.h"
+#include "io/serial_cli.h"
+#include "io/serial_msp.h"
 #include "io/statusindicator.h"
 #include "rx/msp.h"
 #include "telemetry/telemetry.h"
@@ -158,7 +159,7 @@ bool isCalibrating()
 void annexCode(void)
 {
     int32_t tmp, tmp2;
-    int32_t axis, prop1, prop2;
+    int32_t axis, prop1 = 0, prop2;
 
     static uint8_t batteryWarningEnabled = false;
     static uint8_t vbatTimer = 0;
@@ -294,8 +295,19 @@ void annexCode(void)
 
 void mwDisarm(void)
 {
-    if (ARMING_FLAG(ARMED))
+    if (ARMING_FLAG(ARMED)) {
         DISABLE_ARMING_FLAG(ARMED);
+
+#ifdef TELEMETRY
+        if (feature(FEATURE_TELEMETRY)) {
+            // the telemetry state must be checked immediately so that shared serial ports are released.
+            checkTelemetryState();
+            if (isSerialPortFunctionShared(FUNCTION_TELEMETRY, FUNCTION_MSP)) {
+                mspReset(&masterConfig.serialConfig);
+            }
+        }
+#endif
+    }
 }
 
 void mwArm(void)
@@ -307,6 +319,15 @@ void mwArm(void)
         if (!ARMING_FLAG(PREVENT_ARMING)) {
             ENABLE_ARMING_FLAG(ARMED);
             headFreeModeHold = heading;
+
+#ifdef TELEMETRY
+            if (feature(FEATURE_TELEMETRY)) {
+                serialPort_t *sharedTelemetryAndMspPort = findSharedSerialPort(FUNCTION_TELEMETRY, FUNCTION_MSP);
+                if (sharedTelemetryAndMspPort) {
+                    mspReleasePortIfAllocated(sharedTelemetryAndMspPort);
+                }
+            }
+#endif
             return;
         }
     }

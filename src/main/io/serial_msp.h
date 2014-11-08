@@ -23,3 +23,5 @@
 void mspProcess(void);
 void sendMspTelemetry(void);
 void mspSetTelemetryPort(serialPort_t *mspTelemetryPort);
+void mspReset(serialConfig_t *serialConfig);
+void mspReleasePortIfAllocated(serialPort_t *serialPort);

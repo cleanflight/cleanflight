@@ -32,10 +32,10 @@
 #include "drivers/serial_uart.h"
 #include "drivers/serial_usb_vcp.h"
 
+#include "io/serial.h"
 #include "serial_cli.h"
 #include "serial_msp.h"
 
-#include "io/serial.h"
 #include "config/config.h"
 
 uint32_t getTelemetryProviderBaudRate(void);
@@ -233,12 +233,12 @@ static void sortSerialPortFunctions(serialPortFunction_t *serialPortFunctions, u
 
     int index1;
     int index2;
-    
+
     // bubble-sort array (TODO - port selection can be implemented as repeated minimum search with bitmask marking used elements)
     for (index1 = 0; index1 < (elements - 1); index1++) {
         for (index2 = 0; index2 < elements - index1 - 1; index2++) {
             if(serialPortFunctionMostSpecificFirstComparator(&serialPortFunctions[index2], &serialPortFunctions[index2 + 1]) > 0) {
-                swap=serialPortFunctions[index2];
+                swap = serialPortFunctions[index2];
                 serialPortFunctions[index2] = serialPortFunctions[index2 + 1];
                 serialPortFunctions[index2 + 1] = swap;
             }
@@ -385,7 +385,6 @@ void endSerialPortFunction(serialPort_t *port, serialPortFunction_e function)
     serialPortFunction_t *serialPortFunction = findSerialPortFunctionByPort(port);
 
     serialPortFunction->currentFunction = FUNCTION_NONE;
-    serialPortFunction->scenario = SCENARIO_UNUSED;
     serialPortFunction->port = NULL;
 }
 
@@ -525,6 +524,17 @@ bool isSerialPortFunctionShared(serialPortFunction_e functionToUse, uint16_t fun
     }
 
     return result->portFunction->scenario & functionMask;
+}
+
+serialPort_t *findSharedSerialPort(serialPortFunction_e functionToUse, uint16_t functionMask)
+{
+    functionConstraint_t *functionConstraint = getConfiguredFunctionConstraint(functionToUse);
+    serialPortSearchResult_t *result = findSerialPort(functionToUse, functionConstraint);
+
+    if (result->portFunction->scenario & functionMask) {
+        return result->portFunction->port;
+    }
+    return NULL;
 }
 
 void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)

@@ -348,12 +348,12 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             continue;
 #endif
 
-#ifdef SOFTSERIAL1_TIMER
-        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL1_TIMER)
+#ifdef SOFTSERIAL_1_TIMER
+        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_1_TIMER)
             continue;
 #endif
-#ifdef SOFTSERIAL2_TIMER
-        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL2_TIMER)
+#ifdef SOFTSERIAL_2_TIMER
+        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_2_TIMER)
             continue;
 #endif
 
@@ -411,6 +411,18 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             if (timerIndex >= PWM5 && timerIndex <= PWM8)
                 type = MAP_TO_SERVO_OUTPUT;
         }
+
+#ifdef CC3D
+        if (init->useParallelPWM) {
+            if ((type == MAP_TO_SERVO_OUTPUT || type == MAP_TO_MOTOR_OUTPUT) && (timerHardwarePtr->tim == TIM2 || timerHardwarePtr->tim == TIM3)) {
+                continue;
+            }
+            if (type == MAP_TO_PWM_INPUT && timerHardwarePtr->tim == TIM4) {
+                continue;
+            }
+
+        }
+#endif
 
         if (type == MAP_TO_PPM_INPUT) {
             ppmInConfig(timerHardwarePtr);
