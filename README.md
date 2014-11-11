@@ -4,7 +4,7 @@ Clean-code version of baseflight flight-controller - flight controllers are used
 
 This fork differs from baseflight in that it attempts to use modern software development practices which result in:
 
-1. greater reliability through code robustness. 
+1. greater reliability through code robustness and automated testing. 
 2. easier maintainance through code cleanliness.
 3. easier to develop new features. 
 4. easier to re-use code though code de-coupling and modularisation.
@@ -45,10 +45,13 @@ Please subscribe and '+1' the videos if you find them useful.
 
 ## Configuration Tool
 
-To configure Cleanflight you should use Cleanflight-specific the fork of baseflight-configurator, that can be found here:
+To configure Cleanflight you should use the Cleanlight-configurator GUI tool (Windows/OSX/Linux) that can be found here:
+
+https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb
+
+The source for it is here:
 
 https://github.com/hydra/cleanflight-configurator
-
 
 ## Contributing
 

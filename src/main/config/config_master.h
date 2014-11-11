@@ -57,24 +57,36 @@ typedef struct master_t {
     batteryConfig_t batteryConfig;
 
     rxConfig_t rxConfig;
+    inputFilteringMode_e inputFilteringMode;  // Use hardware input filtering, e.g. for OrangeRX PPM/PWM receivers.
 
-    uint8_t retarded_arm;                   // allow disarsm/arm on throttle down + roll left/right
+    uint8_t retarded_arm;                   // allow disarm/arm on throttle down + roll left/right
+    uint8_t disarm_kill_switch;             // allow disarm via AUX switch regardless of throttle value
+    uint8_t small_angle;
 
     airplaneConfig_t airplaneConfig;
-    int8_t fixedwing_althold_dir;           // +1 or -1 for pitch/althold gain. later check if need more than just sign
 
+#ifdef GPS
     gpsConfig_t gpsConfig;
+#endif
 
     serialConfig_t serialConfig;
 
     telemetryConfig_t telemetryConfig;
 
-    profile_t profile[3];                   // 3 separate profiles
-    uint8_t current_profile_index;          // currently loaded profile
+#ifdef LED_STRIP
+    ledConfig_t ledConfigs[MAX_LED_STRIP_LENGTH];
+    hsvColor_t colors[CONFIGURABLE_COLOR_COUNT];
+#endif
+
+    profile_t profile[MAX_PROFILE_COUNT];
+    uint8_t current_profile_index;
+    controlRateConfig_t controlRateProfiles[MAX_CONTROL_RATE_PROFILE_COUNT];
+
 
     uint8_t magic_ef;                       // magic number, should be 0xEF
     uint8_t chk;                            // XOR checksum
 } master_t;
 
 extern master_t masterConfig;
-extern profile_t currentProfile;
+extern profile_t *currentProfile;
+extern controlRateConfig_t *currentControlRateProfile;

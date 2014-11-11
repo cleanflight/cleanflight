@@ -38,7 +38,7 @@ typedef struct {
     volatile uint32_t *ccr;
 #endif
 
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
     volatile uint16_t *ccr;
 #endif
     uint16_t period;
@@ -139,7 +139,7 @@ static void pwmWriteStandard(uint8_t index, uint16_t value)
 void pwmWriteMotor(uint8_t index, uint16_t value)
 {
     if (motors[index] && index < MAX_MOTORS)
-    	motors[index]->pwmWritePtr(index, value);
+        motors[index]->pwmWritePtr(index, value);
 }
 
 void pwmWriteServo(uint8_t index, uint16_t value)

@@ -18,15 +18,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "platform.h"
 
 #include "common/axis.h"
+#include "common/color.h"
 
 #include "drivers/system.h"
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
-#include "drivers/light_ws2811strip.h"
 #include "drivers/sound_beeper.h"
 #include "drivers/timer.h"
 #include "drivers/serial.h"
@@ -34,19 +35,29 @@
 #include "drivers/serial_uart.h"
 #include "drivers/accgyro.h"
 #include "drivers/pwm_mapping.h"
+#include "drivers/pwm_rx.h"
 #include "drivers/adc.h"
+#include "drivers/bus_i2c.h"
+#include "drivers/bus_spi.h"
+#include "drivers/gpio.h"
+#include "drivers/light_led.h"
+#include "drivers/sound_beeper.h"
+#include "drivers/inverter.h"
 
 #include "flight/flight.h"
 #include "flight/mixer.h"
 
 #include "io/serial.h"
 #include "flight/failsafe.h"
+#include "flight/navigation.h"
 
 #include "rx/rx.h"
 #include "io/gps.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "io/gimbal.h"
+#include "io/ledstrip.h"
+#include "io/display.h"
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
 #include "sensors/barometer.h"
@@ -61,10 +72,15 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
+#ifdef NAZE
+#include "target/NAZE/hardware_revision.h"
+#endif
+
 #include "build_config.h"
 
-extern rcReadRawDataPtr rcReadRawFunc;
-
+#ifdef DEBUG_SECTION_TIMES
+uint32_t sectionTimes[2][4];
+#endif
 extern uint32_t previousTime;
 
 #ifdef SOFTSERIAL_LOOPBACK
@@ -79,35 +95,26 @@ void initTelemetry(void);
 void serialInit(serialConfig_t *initialSerialConfig);
 failsafe_t* failsafeInit(rxConfig_t *intialRxConfig);
 pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
-void mixerInit(MultiType mixerConfiguration, motorMixer_t *customMixers, pwmOutputConfiguration_t *pwmOutputConfiguration);
+void mixerInit(MultiType mixerConfiguration, motorMixer_t *customMixers);
+void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
 void rxInit(rxConfig_t *rxConfig, failsafe_t *failsafe);
-void buzzerInit(failsafe_t *initialFailsafe);
-void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig, gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
+void beepcodeInit(failsafe_t *initialFailsafe);
+void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
+void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int16_t magDeclinationFromConfig);
 void imuInit(void);
-
+void displayInit(rxConfig_t *intialRxConfig);
+void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
 void loop(void);
 
-// FIXME bad naming - this appears to be for some new board that hasn't been made available yet.
-#ifdef PROD_DEBUG
-void productionDebug(void)
-{
-    gpio_config_t gpio;
 
-    // remap PB6 to USART1_TX
-    gpio.pin = Pin_6;
-    gpio.mode = Mode_AF_PP;
-    gpio.speed = Speed_2MHz;
-    gpioInit(GPIOB, &gpio);
-    gpioPinRemapConfig(AFIO_MAPR_USART1_REMAP, true);
-    serialInit(mcfg.serial_baudrate);
-    delay(25);
-    serialPrint(core.mainport, "DBG ");
-    printf("%08x%08x%08x OK\n", U_ID_0, U_ID_1, U_ID_2);
-    serialPrint(core.mainport, "EOF");
-    delay(25);
-    gpioPinRemapConfig(AFIO_MAPR_USART1_REMAP, false);
-}
+#ifdef STM32F303xC
+// from system_stm32f30x.c
+void SetSysClock(void);
+#endif
+#ifdef STM32F10X
+// from system_stm32f10x.c
+void SetSysClock(bool overclock);
 #endif
 
 void init(void)
@@ -119,27 +126,104 @@ void init(void)
 
     initPrintfSupport();
 
+    initEEPROM();
+
     ensureEEPROMContainsValidData();
     readEEPROM();
 
-    systemInit(masterConfig.emf_avoidance);
+#ifdef STM32F303
+    // start fpu
+    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
+#endif
+
+#ifdef STM32F303xC
+    SetSysClock();
+#endif
+#ifdef STM32F10X
+    // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
+    // Configure the Flash Latency cycles and enable prefetch buffer
+    SetSysClock(masterConfig.emf_avoidance);
+#endif
+
+#ifdef NAZE
+    detectHardwareRevision();
+#endif
+
+    systemInit();
+
+    delay(100);
+
+    ledInit();
+
+#ifdef BEEPER
+    beeperConfig_t beeperConfig = {
+        .gpioMode = Mode_Out_OD,
+        .gpioPin = BEEP_PIN,
+        .gpioPort = BEEP_GPIO,
+        .gpioPeripheral = BEEP_PERIPHERAL,
+        .isInverted = false
+    };
+#ifdef NAZE
+    if (hardwareRevision >= NAZE32_REV5) {
+        // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
+        beeperConfig.gpioMode = Mode_Out_PP;
+        beeperConfig.isInverted = true;
+    }
+#endif
+
+    beeperInit(&beeperConfig);
+#endif
+
+#ifdef INVERTER
+    initInverter();
+#endif
+
+
+#ifdef USE_SPI
+    spiInit(SPI1);
+    spiInit(SPI2);
+#endif
+
+#ifdef NAZE
+    updateHardwareRevision();
+#endif
+
+#ifdef USE_I2C
+#ifdef NAZE
+    if (hardwareRevision != NAZE32_SP) {
+        i2cInit(I2C_DEVICE);
+    }
+#else
+    // Configure the rest of the stuff
+    i2cInit(I2C_DEVICE);
+#endif
+#endif
 
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
+    adc_params.enableExternal1 = false;
+#ifdef OLIMEXINO
+    adc_params.enableExternal1 = true;
+#endif
+#ifdef NAZE
+    // optional ADC5 input on rev.5 hardware
+    adc_params.enableExternal1 = (hardwareRevision >= NAZE32_REV5);
+#endif
 
     adcInit(&adc_params);
 
     initBoardAlignment(&masterConfig.boardAlignment);
 
+#ifdef DISPLAY
+    if (feature(FEATURE_DISPLAY)) {
+        displayInit(&masterConfig.rxConfig);
+    }
+#endif
+
     // We have these sensors; SENSORS_SET defined in board.h depending on hardware platform
     sensorsSet(SENSORS_SET);
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
-    sensorsOK = sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf, masterConfig.acc_hardware, currentProfile.mag_declination);
-
-    // production debug output
-#ifdef PROD_DEBUG
-    productionDebug();
-#endif
+    sensorsOK = sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf, masterConfig.acc_hardware, currentProfile->mag_declination);
 
     // if gyro was not detected due to whatever reason, we give up now.
     if (!sensorsOK)
@@ -159,6 +243,8 @@ void init(void)
     LED1_OFF;
 
     imuInit();
+    mixerInit(masterConfig.mixerConfiguration, masterConfig.customMixer);
+
 #ifdef MAG
     if (sensors(SENSOR_MAG))
         compassInit();
@@ -168,23 +254,24 @@ void init(void)
 
     serialInit(&masterConfig.serialConfig);
 
+    memset(&pwm_params, 0, sizeof(pwm_params));
     // when using airplane/wing mixer, servo/motor outputs are remapped
     if (masterConfig.mixerConfiguration == MULTITYPE_AIRPLANE || masterConfig.mixerConfiguration == MULTITYPE_FLYING_WING)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
-
-#ifdef STM32F10X_MD
-    pwm_params.useUART2 = doesConfigurationUsePort(&masterConfig.serialConfig, SERIAL_PORT_USART2);
+#ifdef STM32F10X
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
 #endif
-
+    pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
     pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
+    pwm_params.useCurrentMeterADC = feature(FEATURE_CURRENT_METER);
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
     pwm_params.useServos = isMixerUsingServos();
-    pwm_params.extraServos = currentProfile.gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
+    pwm_params.extraServos = currentProfile->gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
     pwm_params.servoPwmRate = masterConfig.servo_pwm_rate;
     pwm_params.idlePulse = PULSE_1MS; // standard PWM for brushless ESC (default, overridden below)
@@ -194,22 +281,28 @@ void init(void)
         pwm_params.idlePulse = 0; // brushed motors
     pwm_params.servoCenterPulse = masterConfig.rxConfig.midrc;
 
+    pwmRxInit(masterConfig.inputFilteringMode);
+
     pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
 
-    mixerInit(masterConfig.mixerConfiguration, masterConfig.customMixer, pwmOutputConfiguration);
+    mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
 
     failsafe = failsafeInit(&masterConfig.rxConfig);
-    buzzerInit(failsafe);
+    beepcodeInit(failsafe);
     rxInit(&masterConfig.rxConfig, failsafe);
 
+#ifdef GPS
     if (feature(FEATURE_GPS)) {
         gpsInit(
             &masterConfig.serialConfig,
-            &masterConfig.gpsConfig,
-            &currentProfile.gpsProfile,
-            &currentProfile.pidProfile
+            &masterConfig.gpsConfig
+        );
+        navigationInit(
+            &currentProfile->gpsProfile,
+            &currentProfile->pidProfile
         );
     }
+#endif
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
@@ -217,12 +310,18 @@ void init(void)
     }
 #endif
 
-    if (feature(FEATURE_LED_STRIP)) {
-        ws2811LedStripInit();
-    }
+#ifdef LED_STRIP
+    ledStripInit(masterConfig.ledConfigs, masterConfig.colors, failsafe);
 
+    if (feature(FEATURE_LED_STRIP)) {
+        ledStripEnable();
+    }
+#endif
+
+#ifdef TELEMETRY
     if (feature(FEATURE_TELEMETRY))
         initTelemetry();
+#endif
 
     previousTime = micros();
 
@@ -234,8 +333,8 @@ void init(void)
     baroSetCalibrationCycles(CALIBRATING_BARO_CYCLES);
 #endif
 
-    f.SMALL_ANGLE = 1;
-    f.PREVENT_ARMING = 0;
+    ENABLE_STATE(SMALL_ANGLE);
+    DISABLE_ARMING_FLAG(PREVENT_ARMING);
 
 #ifdef SOFTSERIAL_LOOPBACK
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
@@ -251,6 +350,12 @@ void init(void)
     // Check battery type/voltage
     if (feature(FEATURE_VBAT))
         batteryInit(&masterConfig.batteryConfig);
+
+#ifdef DISPLAY
+    if (feature(FEATURE_DISPLAY)) {
+        displayEnablePageCycling();
+    }
+#endif
 }
 
 #ifdef SOFTSERIAL_LOOPBACK

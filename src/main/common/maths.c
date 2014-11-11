@@ -20,6 +20,18 @@
 
 #include "maths.h"
 
+int32_t applyDeadband(int32_t value, int32_t deadband)
+{
+    if (abs(value) < deadband) {
+        value = 0;
+    } else if (value > 0) {
+        value -= deadband;
+    } else if (value < 0) {
+        value += deadband;
+    }
+    return value;
+}
+
 int constrain(int amt, int low, int high)
 {
     if (amt < low)
@@ -72,5 +84,11 @@ float devStandardDeviation(stdev_t *dev)
 float degreesToRadians(int16_t degrees)
 {
     return degrees * RAD;
+}
+
+int scaleRange(int x, int srcMin, int srcMax, int destMin, int destMax) {
+    long int a = ((long int) destMax - (long int) destMin) * ((long int) x - (long int) srcMin);
+    long int b = (long int) srcMax - (long int) srcMin;
+    return ((a / b) - (destMax - destMin)) + destMax;
 }
 

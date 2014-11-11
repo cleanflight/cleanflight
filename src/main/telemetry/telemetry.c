@@ -21,11 +21,16 @@
 
 #include "platform.h"
 
+#ifdef TELEMETRY
+
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/serial.h"
 #include "drivers/serial_softserial.h"
 #include "io/serial.h"
+
+#include "rx/rx.h"
+#include "io/rc_controls.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -101,9 +106,9 @@ bool determineNewTelemetryEnabledState(void)
 
     if (telemetryPortIsShared) {
         if (telemetryConfig->telemetry_switch)
-            enabled = rcOptions[BOXTELEMETRY];
+            enabled = IS_RC_MODE_ACTIVE(BOXTELEMETRY);
         else
-            enabled = f.ARMED;
+            enabled = ARMING_FLAG(ARMED);
     }
 
     return enabled;
@@ -123,6 +128,10 @@ uint32_t getTelemetryProviderBaudRate(void)
     if (isTelemetryProviderHoTT()) {
         return getHoTTTelemetryProviderBaudRate();
     }
+
+    if (isTelemetryProviderMSP()) {
+        return getMSPTelemetryProviderBaudRate();
+    }
     return 0;
 }
 
@@ -135,6 +144,10 @@ static void configureTelemetryPort(void)
     if (isTelemetryProviderHoTT()) {
         configureHoTTTelemetryPort();
     }
+
+    if (isTelemetryProviderMSP()) {
+        configureMSPTelemetryPort();
+    }
 }
 
 
@@ -146,6 +159,10 @@ void freeTelemetryPort(void)
 
     if (isTelemetryProviderHoTT()) {
         freeHoTTTelemetryPort();
+    }
+
+    if (isTelemetryProviderMSP()) {
+        freeMSPTelemetryPort();
     }
 }
 
@@ -174,6 +191,10 @@ void handleTelemetry(void)
     if (!isTelemetryConfigurationValid || !determineNewTelemetryEnabledState())
         return;
 
+    if (!telemetryEnabled) {
+        return;
+    }
+
     if (isTelemetryProviderFrSky()) {
         handleFrSkyTelemetry();
     }
@@ -186,3 +207,4 @@ void handleTelemetry(void)
         handleMSPTelemetry();
     }
 }
+#endif

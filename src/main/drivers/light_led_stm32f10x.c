@@ -29,6 +29,7 @@
 
 void ledInit(void)
 {
+#if defined(LED0) || defined(LED1) || defined(LED2)
     uint32_t i;
 
     struct {
@@ -62,9 +63,9 @@ void ledInit(void)
     LED1_OFF;
 
     for (i = 0; i < gpio_count; i++) {
-        if (hse_value == 12000000 && gpio_setup[i].cfg.mode == Mode_Out_OD)
-            gpio_setup[i].cfg.mode = Mode_Out_PP;
         gpioInit(gpio_setup[i].gpio, &gpio_setup[i].cfg);
     }
+
+#endif
 }
 

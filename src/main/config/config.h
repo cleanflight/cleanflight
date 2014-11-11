@@ -17,6 +17,10 @@
 
 #pragma once
 
+#define MAX_PROFILE_COUNT 3
+#define MAX_CONTROL_RATE_PROFILE_COUNT 3
+
+
 typedef enum {
     FEATURE_RX_PPM = 1 << 0,
     FEATURE_VBAT = 1 << 1,
@@ -34,8 +38,9 @@ typedef enum {
     FEATURE_RX_PARALLEL_PWM = 1 << 13,
     FEATURE_RX_MSP = 1 << 14,
     FEATURE_RSSI_ADC = 1 << 15,
-    FEATURE_LED_STRIP = 1 << 16
-} AvailableFeatures;
+    FEATURE_LED_STRIP = 1 << 16,
+    FEATURE_DISPLAY = 1 << 17
+} features_e;
 
 bool feature(uint32_t mask);
 void featureSet(uint32_t mask);
@@ -45,13 +50,19 @@ uint32_t featureMask(void);
 
 void copyCurrentProfileToProfileSlot(uint8_t profileSlotIndex);
 
+void initEEPROM(void);
 void resetEEPROM(void);
 void readEEPROM(void);
 void readEEPROMAndNotify(void);
 void writeEEPROM();
 void ensureEEPROMContainsValidData(void);
-void saveAndReloadCurrentProfileToCurrentProfileSlot(void);
+void saveConfigAndNotify(void);
+
+uint8_t getCurrentProfile(void);
 void changeProfile(uint8_t profileIndex);
+
+uint8_t getCurrentControlRateProfile(void);
+void changeControlRateProfile(uint8_t profileIndex);
 
 bool canSoftwareSerialBeUsed(void);
 

@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define TARGET_BOARD_IDENTIFIER "AFF3" // AFro F3
+
 #pragma once
 
 #define LED0_GPIO   GPIOB
@@ -24,10 +26,23 @@
 #define BEEP_PIN    Pin_10
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOB
 
-#define BUZZER
+#define BEEPER
 #define LED0
 
 #define GYRO
 #define ACC
 
+#define USE_VCP
+#define USE_USART1
+#define USE_USART2
+#define SERIAL_PORT_COUNT 3
+
+#define USE_I2C
+#define I2C_DEVICE (I2CDEV_1)
+
 #define SENSORS_SET (SENSOR_ACC)
+
+#define GPS
+#define TELEMETRY
+#define SERIAL_RX
+#define AUTOTUNE

@@ -20,20 +20,20 @@
 
 #include <platform.h>
 
+#include "build_config.h"
+
 #include "barometer.h"
 
 #include "gpio.h"
 #include "system.h"
 #include "bus_i2c.h"
+#include "nvic.h"
+
+#include "barometer_bmp085.h"
 
 // BMP085, Standard address 0x77
 static bool convDone = false;
 static uint16_t convOverrun = 0;
-
-#ifdef BARO_GPIO
-#define BARO_OFF                 digitalLo(BARO_GPIO, BARO_PIN);
-#define BARO_ON                  digitalHi(BARO_GPIO, BARO_PIN);
-#endif
 
 // EXTI14 for BMP085 End of Conversion Interrupt
 void EXTI15_10_IRQHandler(void)
@@ -75,7 +75,9 @@ typedef struct {
 #define E_SENSOR_NOT_DETECTED   (char) 0
 #define BMP085_PROM_START__ADDR 0xaa
 #define BMP085_PROM_DATA__LEN   22
-#define BMP085_T_MEASURE        0x2E                // temperature measurent#define BMP085_P_MEASURE        0x34                // pressure measurement#define BMP085_CTRL_MEAS_REG    0xF4
+#define BMP085_T_MEASURE        0x2E                // temperature measurent
+#define BMP085_P_MEASURE        0x34                // pressure measurement
+#define BMP085_CTRL_MEAS_REG    0xF4
 #define BMP085_ADC_OUT_MSB_REG  0xF6
 #define BMP085_ADC_OUT_LSB_REG  0xF7
 #define BMP085_CHIP_ID__POS     0
@@ -96,8 +98,11 @@ typedef struct {
 #define BMP085_GET_BITSLICE(regvar, bitname) (regvar & bitname##__MSK) >> bitname##__POS
 #define BMP085_SET_BITSLICE(regvar, bitname, val) (regvar & ~bitname##__MSK) | ((val<<bitname##__POS)&bitname##__MSK)
 
-#define SMD500_PARAM_MG      3038        //calibration parameter#define SMD500_PARAM_MH     -7357        //calibration parameter#define SMD500_PARAM_MI      3791        //calibration parameter
-static bmp085_t bmp085 = { { 0, } };
+#define SMD500_PARAM_MG      3038        //calibration parameter
+#define SMD500_PARAM_MH     -7357        //calibration parameter
+#define SMD500_PARAM_MI      3791        //calibration parameter
+
+static bmp085_t bmp085;
 static bool bmp085InitDone = false;
 static uint16_t bmp085_ut;  // static result of temperature measurement
 static uint32_t bmp085_up;  // static result of pressure measurement
@@ -111,51 +116,72 @@ static int32_t bmp085_get_temperature(uint32_t ut);
 static int32_t bmp085_get_pressure(uint32_t up);
 static void bmp085_calculate(int32_t *pressure, int32_t *temperature);
 
-bool bmp085Detect(baro_t *baro)
+#ifdef BARO_XCLR_PIN
+#define BMP085_OFF                  digitalLo(BARO_XCLR_GPIO, BARO_XCLR_PIN);
+#define BMP085_ON                   digitalHi(BARO_XCLR_GPIO, BARO_XCLR_PIN);
+#else
+#define BMP085_OFF
+#define BMP085_ON
+#endif
+
+void bmp085InitXCLRGpio(const bmp085Config_t *config) {
+    gpio_config_t gpio;
+
+    RCC_APB2PeriphClockCmd(config->gpioAPB2Peripherals, ENABLE);
+
+    // PC13, PC14 (Barometer XCLR reset output, EOC input)
+    gpio.pin = config->xclrGpioPin;
+    gpio.speed = Speed_2MHz;
+    gpio.mode = Mode_Out_PP;
+    gpioInit(config->xclrGpioPort, &gpio);
+}
+
+void bmp085Disable(const bmp085Config_t *config)
+{
+    bmp085InitXCLRGpio(config);
+    BMP085_OFF;
+}
+
+bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
 {
     uint8_t data;
-
-    // Not supported with this frequency
-    if (hse_value == 12000000)
-        return false;
 
     if (bmp085InitDone)
         return true;
 
-#if defined(BARO) && defined(BARO_GPIO)
-    EXTI_InitTypeDef EXTI_InitStructure;
-    NVIC_InitTypeDef NVIC_InitStructure;
-    gpio_config_t gpio;
+#if defined(BARO) && defined(BARO_XCLR_GPIO) && defined(BARO_EOC_GPIO)
+    if (config) {
+        EXTI_InitTypeDef EXTI_InitStructure;
+        NVIC_InitTypeDef NVIC_InitStructure;
+        gpio_config_t gpio;
 
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+        bmp085InitXCLRGpio(config);
 
-    // PC13, PC14 (Barometer XCLR reset output, EOC input)
-    gpio.pin = Pin_13;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_Out_PP;
-    gpioInit(GPIOC, &gpio);
-    gpio.pin = Pin_14;
-    gpio.mode = Mode_IN_FLOATING;
-    gpioInit(GPIOC, &gpio);
-    BARO_ON;
+        gpio.pin = config->eocGpioPin;
+        gpio.mode = Mode_IN_FLOATING;
+        gpioInit(config->eocGpioPort, &gpio);
+        BMP085_ON;
 
-    // EXTI interrupt for barometer EOC
-    gpioExtiLineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource14);
-    EXTI_InitStructure.EXTI_Line = EXTI_Line14;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&EXTI_InitStructure);
+        // EXTI interrupt for barometer EOC
+        gpioExtiLineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource14);
+        EXTI_InitStructure.EXTI_Line = EXTI_Line14;
+        EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+        EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+        EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+        EXTI_Init(&EXTI_InitStructure);
 
-    // Enable and set EXTI10-15 Interrupt to the lowest priority
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x0F;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-
-    delay(20); // datasheet says 10ms, we'll be careful and do 20. this is after ms5611 driver kills us, so longer the better.
+        // Enable and set EXTI10-15 Interrupt to the lowest priority
+        NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;
+        NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_BARO_EXT);
+        NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_BARO_EXT);
+        NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+        NVIC_Init(&NVIC_InitStructure);
+    }
+#else
+    UNUSED(config);
 #endif
+
+    delay(20); // datasheet says 10ms, we'll be careful and do 20.
 
     i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */
     bmp085.chip_id = BMP085_GET_BITSLICE(data, BMP085_CHIP_ID);
@@ -167,8 +193,8 @@ bool bmp085Detect(baro_t *baro)
         bmp085.al_version = BMP085_GET_BITSLICE(data, BMP085_AL_VERSION); /* get AL Version */
         bmp085_get_cal_param(); /* readout bmp085 calibparam structure */
         bmp085InitDone = true;
-        baro->ut_delay = 6000;
-        baro->up_delay = 27000;
+        baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T convetion time)
+        baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
         baro->start_ut = bmp085_start_ut;
         baro->get_ut = bmp085_get_ut;
         baro->start_up = bmp085_start_up;
@@ -177,9 +203,8 @@ bool bmp085Detect(baro_t *baro)
         return true;
     }
 
-#if defined(BARO) && defined(BARO_GPIO)
-    BARO_OFF;
-#endif
+    BMP085_OFF;
+
     return false;
 }
 
@@ -191,7 +216,7 @@ static int32_t bmp085_get_temperature(uint32_t ut)
     x1 = (((int32_t) ut - (int32_t) bmp085.cal_param.ac6) * (int32_t) bmp085.cal_param.ac5) >> 15;
     x2 = ((int32_t) bmp085.cal_param.mc << 11) / (x1 + bmp085.cal_param.md);
     bmp085.param_b5 = x1 + x2;
-    temperature = ((bmp085.param_b5 * 10 + 8) >> 4);  // temperature in 0.01°C (make same as MS5611)
+    temperature = ((bmp085.param_b5 * 10 + 8) >> 4);  // temperature in 0.01 C (make same as MS5611)
 
     return temperature;
 }

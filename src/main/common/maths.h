@@ -25,7 +25,8 @@
 #define M_PI       3.14159265358979323846f
 #endif /* M_PI */
 
-#define RADX10 (M_PI / 1800.0f)                  // 0.001745329252f#define RAD    (M_PI / 180.0f)
+#define RADX10 (M_PI / 1800.0f)                  // 0.001745329252f
+#define RAD    (M_PI / 180.0f)
 
 #define DEG2RAD(degrees) (degrees * RAD)
 
@@ -39,6 +40,8 @@ typedef struct stdev_t
     int m_n;
 } stdev_t;
 
+int32_t applyDeadband(int32_t value, int32_t deadband);
+
 int constrain(int amt, int low, int high);
 float constrainf(float amt, float low, float high);
 
@@ -47,3 +50,5 @@ void devPush(stdev_t *dev, float x);
 float devVariance(stdev_t *dev);
 float devStandardDeviation(stdev_t *dev);
 float degreesToRadians(int16_t degrees);
+
+int scaleRange(int x, int srcMin, int srcMax, int destMin, int destMax);

@@ -21,34 +21,36 @@
 
 #include <limits.h>
 
-#include "platform.h"
+extern "C" {
+    #include "platform.h"
 
-#include "common/axis.h"
+    #include "common/axis.h"
 
-#include "drivers/system.h"
+    #include "drivers/system.h"
 
-#include "drivers/serial.h"
-#include "io/serial.h"
+    #include "drivers/serial.h"
+    #include "io/serial.h"
 
-#include "config/runtime_config.h"
+    #include "config/runtime_config.h"
 
-#include "sensors/sensors.h"
+    #include "sensors/sensors.h"
 
-#include "flight/flight.h"
-#include "io/gps.h"
-#include "sensors/battery.h"
+    #include "flight/flight.h"
+    #include "io/gps.h"
+    #include "sensors/battery.h"
 
-#include "telemetry/telemetry.h"
-#include "telemetry/hott.h"
+    #include "telemetry/telemetry.h"
+    #include "telemetry/hott.h"
 
-#include "io/gps_conversion.h"
-
+    #include "flight/gps_conversion.h"
+}
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
-void addGPSCoordinates(HOTT_GPS_MSG_t *hottGPSMessage, int32_t latitude, int32_t longitude);
-
+extern "C" {
+    void addGPSCoordinates(HOTT_GPS_MSG_t *hottGPSMessage, int32_t latitude, int32_t longitude);
+}
 // See http://en.wikipedia.org/wiki/Geographic_coordinate_conversion
 
 HOTT_GPS_MSG_t hottGPSMessage;
@@ -88,8 +90,8 @@ TEST(TelemetryHottTest, UpdateGPSCoordinates2)
 
     // Hampstead Heath, London
     // 51.563886, -0.159960
-    int32_t longitude = GPS_coord_to_degrees("5156.3886");
-    int32_t latitude  = -GPS_coord_to_degrees("015.9960");
+    uint32_t longitude = GPS_coord_to_degrees("5156.3886");
+    uint32_t latitude  = -GPS_coord_to_degrees("015.9960");
 
     // when
     addGPSCoordinates(hottGPSMessage, longitude, latitude);
@@ -131,7 +133,7 @@ TEST(TelemetryHottTest, PrepareGPSMessage_Altitude1m)
     // given
     HOTT_GPS_MSG_t *hottGPSMessage = getGPSMessageForTest();
 
-    f.GPS_FIX = 1;
+    stateFlags = GPS_FIX;
     uint16_t altitudeInMeters = 1;
     GPS_altitude = altitudeInMeters * (1 / 0.1f); // 1 = 0.1m
 
@@ -145,16 +147,23 @@ TEST(TelemetryHottTest, PrepareGPSMessage_Altitude1m)
 
 // STUBS
 
+extern "C" {
+
 int16_t debug[4];
 
+uint8_t stateFlags;
+
+
 uint8_t GPS_numSat;
-flags_t f;
 int32_t GPS_coord[2];
 uint16_t GPS_speed;                 // speed in 0.1m/s
 uint16_t GPS_distanceToHome;        // distance to home point in meters
 uint16_t GPS_altitude;              // altitude in 0.1m
 uint8_t vbat;
 int16_t GPS_directionToHome;        // direction to home or hol point in degrees
+
+int32_t amperage;
+int32_t mAhDrawn;
 
 uint32_t micros(void) { return 0; }
 
@@ -213,8 +222,5 @@ bool sensors(uint32_t mask) {
     return false;
 }
 
-
-
-
-
+}
 

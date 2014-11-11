@@ -26,15 +26,22 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
+#include "gpio.h"
+#include "inverter.h"
+
 #include "serial.h"
 #include "serial_uart.h"
 
 uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode);
 uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode);
+uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode);
 
 static void uartReconfigure(uartPort_t *uartPort)
 {
     USART_InitTypeDef USART_InitStructure;
+    USART_Cmd(uartPort->USARTx, DISABLE);
 
     USART_InitStructure.USART_BaudRate = uartPort->port.baudRate;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -53,18 +60,32 @@ static void uartReconfigure(uartPort_t *uartPort)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
 
     USART_Init(uartPort->USARTx, &USART_InitStructure);
+    USART_Cmd(uartPort->USARTx, ENABLE);
 }
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
 {
-    DMA_InitTypeDef DMA_InitStructure;
+    UNUSED(inversion);
 
     uartPort_t *s = NULL;
 
+#ifdef INVERTER
+    if (inversion == SERIAL_INVERTED && USARTx == INVERTER_USART) {
+        // Enable hardware inverter if available.
+        INVERTER_ON;
+    }
+#endif
+
     if (USARTx == USART1) {
         s = serialUSART1(baudRate, mode);
+#ifdef USE_USART2
     } else if (USARTx == USART2) {
         s = serialUSART2(baudRate, mode);
+#endif
+#ifdef USE_USART3
+    } else if (USARTx == USART3) {
+        s = serialUSART3(baudRate, mode);
+#endif
     } else {
         return (serialPort_t *)s;
     }
@@ -86,18 +107,20 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
 
     uartReconfigure(s);
 
-    DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-
+ 
     // Receive DMA or IRQ
+    DMA_InitTypeDef DMA_InitStructure;
     if (mode & MODE_RX) {
         if (s->rxDMAChannel) {
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+
             DMA_InitStructure.DMA_BufferSize = s->port.rxBufferSize;
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
@@ -113,18 +136,18 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
         }
     }
 
-    DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-
     // Transmit DMA or IRQ
     if (mode & MODE_TX) {
         if (s->txDMAChannel) {
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+
             DMA_InitStructure.DMA_BufferSize = s->port.txBufferSize;
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
             DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
@@ -148,22 +171,14 @@ void uartSetBaudRate(serialPort_t *instance, uint32_t baudRate)
 {
     uartPort_t *uartPort = (uartPort_t *)instance;
     uartPort->port.baudRate = baudRate;
-#ifndef STM32F303xC // FIXME this doesnt seem to work, for now re-open the port from scratch, perhaps clearing some uart flags may help?
     uartReconfigure(uartPort);
-#else
-    uartOpen(uartPort->USARTx, uartPort->port.callback, uartPort->port.baudRate, uartPort->port.mode, uartPort->port.inversion);
-#endif
 }
 
 void uartSetMode(serialPort_t *instance, portMode_t mode)
 {
     uartPort_t *uartPort = (uartPort_t *)instance;
     uartPort->port.mode = mode;
-#ifndef STM32F303xC // FIXME this doesnt seem to work, for now re-open the port from scratch, perhaps clearing some uart flags may help?
     uartReconfigure(uartPort);
-#else
-    uartOpen(uartPort->USARTx, uartPort->port.callback, uartPort->port.baudRate, uartPort->port.mode, uartPort->port.inversion);
-#endif
 }
 
 void uartStartTxDMA(uartPort_t *s)

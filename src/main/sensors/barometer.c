@@ -21,6 +21,8 @@
 
 #include "platform.h"
 
+#include "common/maths.h"
+
 #include "drivers/barometer.h"
 #include "config/config.h"
 
@@ -30,13 +32,13 @@ baro_t baro;                        // barometer access functions
 uint16_t calibratingB = 0;      // baro calibration = get new ground pressure value
 int32_t baroPressure = 0;
 int32_t baroTemperature = 0;
-uint32_t baroPressureSum = 0;
 int32_t BaroAlt = 0;
 
 #ifdef BARO
 
 static int32_t baroGroundAltitude = 0;
 static int32_t baroGroundPressure = 0;
+static uint32_t baroPressureSum = 0;
 
 barometerConfig_t *barometerConfig;
 
@@ -55,6 +57,10 @@ void baroSetCalibrationCycles(uint16_t calibrationCyclesRequired)
     calibratingB = calibrationCyclesRequired;
 }
 
+static bool baroReady = false;
+
+#define PRESSURE_SAMPLE_COUNT (barometerConfig->baro_sample_count - 1)
+
 static uint32_t recalculateBarometerTotal(uint8_t baroSampleCount, uint32_t pressureTotal, int32_t newPressureReading)
 {
     static int32_t barometerSamples[BARO_SAMPLE_COUNT_MAX];
@@ -65,10 +71,12 @@ static uint32_t recalculateBarometerTotal(uint8_t baroSampleCount, uint32_t pres
     nextSampleIndex = (currentSampleIndex + 1);
     if (nextSampleIndex == baroSampleCount) {
         nextSampleIndex = 0;
+        baroReady = true;
     }
     barometerSamples[currentSampleIndex] = newPressureReading;
 
     // recalculate pressure total
+    // Note, the pressure total is made up of baroSampleCount - 1 samples - See PRESSURE_SAMPLE_COUNT
     pressureTotal += barometerSamples[currentSampleIndex];
     pressureTotal -= barometerSamples[nextSampleIndex];
 
@@ -79,36 +87,45 @@ static uint32_t recalculateBarometerTotal(uint8_t baroSampleCount, uint32_t pres
 
 typedef enum {
     BAROMETER_NEEDS_SAMPLES = 0,
-    BAROMETER_NEEDS_CALCULATION
+    BAROMETER_NEEDS_CALCULATION,
+    BAROMETER_NEEDS_PROCESSING
 } barometerState_e;
 
-barometerAction_e baroUpdate(uint32_t currentTime)
+
+bool isBaroReady(void) {
+	return baroReady;
+}
+
+void baroUpdate(uint32_t currentTime)
 {
     static uint32_t baroDeadline = 0;
     static barometerState_e state = BAROMETER_NEEDS_SAMPLES;
 
     if ((int32_t)(currentTime - baroDeadline) < 0)
-        return BAROMETER_ACTION_NOT_READY;
+        return;
 
     baroDeadline = currentTime;
 
     switch (state) {
+        case BAROMETER_NEEDS_SAMPLES:
+            baro.get_ut();
+            baro.start_up();
+            state = BAROMETER_NEEDS_CALCULATION;
+            baroDeadline += baro.up_delay;
+        break;
+
         case BAROMETER_NEEDS_CALCULATION:
             baro.get_up();
             baro.start_ut();
             baroDeadline += baro.ut_delay;
             baro.calculate(&baroPressure, &baroTemperature);
-            state = BAROMETER_NEEDS_SAMPLES;
-            return BAROMETER_ACTION_PERFORMED_CALCULATION;
+            state = BAROMETER_NEEDS_PROCESSING;
+        break;
 
-        case BAROMETER_NEEDS_SAMPLES:
-        default:
-            baro.get_ut();
-            baro.start_up();
+        case BAROMETER_NEEDS_PROCESSING:
+            state = BAROMETER_NEEDS_SAMPLES;
             baroPressureSum = recalculateBarometerTotal(barometerConfig->baro_sample_count, baroPressureSum, baroPressure);
-            state = BAROMETER_NEEDS_CALCULATION;
-            baroDeadline += baro.up_delay;
-            return BAROMETER_ACTION_OBTAINED_SAMPLES;
+        break;
     }
 }
 
@@ -118,7 +135,7 @@ int32_t baroCalculateAltitude(void)
 
     // calculates height from ground via baro readings
     // see: https://github.com/diydrones/ardupilot/blob/master/libraries/AP_Baro/AP_Baro.cpp#L140
-    BaroAlt_tmp = lrintf((1.0f - powf((float)(baroPressureSum / (barometerConfig->baro_sample_count - 1)) / 101325.0f, 0.190295f)) * 4433000.0f); // in cm
+    BaroAlt_tmp = lrintf((1.0f - powf((float)(baroPressureSum / PRESSURE_SAMPLE_COUNT) / 101325.0f, 0.190295f)) * 4433000.0f); // in cm
     BaroAlt_tmp -= baroGroundAltitude;
     BaroAlt = lrintf((float)BaroAlt * barometerConfig->baro_noise_lpf + (float)BaroAlt_tmp * (1.0f - barometerConfig->baro_noise_lpf)); // additional LPF to reduce baro noise
 
@@ -128,7 +145,7 @@ int32_t baroCalculateAltitude(void)
 void performBaroCalibrationCycle(void)
 {
     baroGroundPressure -= baroGroundPressure / 8;
-    baroGroundPressure += baroPressureSum / (barometerConfig->baro_sample_count - 1);
+    baroGroundPressure += baroPressureSum / PRESSURE_SAMPLE_COUNT;
     baroGroundAltitude = (1.0f - powf((baroGroundPressure / 8) / 101325.0f, 0.190295f)) * 4433000.0f;
 
     calibratingB--;

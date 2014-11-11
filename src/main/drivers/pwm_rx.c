@@ -21,7 +21,9 @@
 #include <stdlib.h>
 
 #include "platform.h"
+#include "build_config.h"
 
+#include "nvic.h"
 #include "gpio.h"
 #include "timer.h"
 
@@ -38,7 +40,12 @@
 #define PWM_PORTS_OR_PPM_CAPTURE_COUNT PWM_INPUT_PORT_COUNT
 #endif
 
-void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity); // from pwm_output.c
+// TODO - change to timer cloks ticks
+#define INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX 0x03
+
+static inputFilteringMode_e inputFilteringMode;
+
+void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity);
 
 typedef enum {
     INPUT_MODE_PPM,
@@ -54,6 +61,8 @@ typedef struct {
     captureCompare_t fall;
     captureCompare_t capture;
 
+    uint8_t missedEvents;
+
     const timerHardware_t *timerHardware;
 } pwmInputPort_t;
 
@@ -67,6 +76,32 @@ static uint16_t captures[PWM_PORTS_OR_PPM_CAPTURE_COUNT];
 static uint8_t ppmFrameCount = 0;
 static uint8_t lastPPMFrameCount = 0;
 
+typedef struct ppmDevice {
+    uint8_t  pulseIndex;
+    uint32_t previousTime;
+    uint32_t currentTime;
+    uint32_t deltaTime;
+    uint32_t captures[PWM_PORTS_OR_PPM_CAPTURE_COUNT];
+    uint32_t largeCounter;
+    int8_t   numChannels;
+    int8_t   numChannelsPrevFrame;
+    uint8_t  stableFramesSeenCount;
+
+    bool     tracking;
+} ppmDevice_t;
+
+ppmDevice_t ppmDev;
+
+
+#define PPM_IN_MIN_SYNC_PULSE_US    2700    // microseconds
+#define PPM_IN_MIN_CHANNEL_PULSE_US 750     // microseconds
+#define PPM_IN_MAX_CHANNEL_PULSE_US 2250    // microseconds
+#define PPM_STABLE_FRAMES_REQUIRED_COUNT    25
+#define PPM_IN_MIN_NUM_CHANNELS     4
+#define PPM_IN_MAX_NUM_CHANNELS     PWM_PORTS_OR_PPM_CAPTURE_COUNT
+#define PPM_RCVR_TIMEOUT            0
+
+
 bool isPPMDataBeingReceived(void)
 {
     return (ppmFrameCount != lastPPMFrameCount);
@@ -79,41 +114,132 @@ void resetPPMDataReceivedState(void)
 
 #define MIN_CHANNELS_BEFORE_PPM_FRAME_CONSIDERED_VALID 4
 
-static void ppmCallback(uint8_t port, captureCompare_t capture)
+void pwmRxInit(inputFilteringMode_e initialInputFilteringMode)
 {
-    uint16_t diff; // See PPM_TIMER_PERIOD
-    static captureCompare_t now;
-    static captureCompare_t last = 0;
-
-    static uint8_t chan = 0;
-
-    last = now;
-    now = capture;
-    diff = now - last;
-
-    if (diff > 2700) { // Per http://www.rcgroups.com/forums/showpost.php?p=21996147&postcount=3960 "So, if you use 2.5ms or higher as being the reset for the PPM stream start, you will be fine. I use 2.7ms just to be safe."
-        if (chan >= MIN_CHANNELS_BEFORE_PPM_FRAME_CONSIDERED_VALID) {
-            ppmFrameCount++;
-        }
-        chan = 0;
-    } else {
-        if (chan < PPM_CAPTURE_COUNT) {
-            captures[chan] = diff;
-        }
-        chan++;
-    }
-
+    inputFilteringMode = initialInputFilteringMode;
 }
 
-static void pwmCallback(uint8_t port, captureCompare_t capture)
+static void ppmInit(void)
+{
+    ppmDev.pulseIndex   = 0;
+    ppmDev.previousTime = 0;
+    ppmDev.currentTime  = 0;
+    ppmDev.deltaTime    = 0;
+    ppmDev.largeCounter = 0;
+    ppmDev.numChannels  = -1;
+    ppmDev.numChannelsPrevFrame = -1;
+    ppmDev.stableFramesSeenCount = 0;
+    ppmDev.tracking     = false;
+}
+
+static void ppmOverflowCallback(uint8_t port, captureCompare_t capture)
+{
+    UNUSED(port);
+    ppmDev.largeCounter += capture;
+}
+
+static void ppmEdgeCallback(uint8_t port, captureCompare_t capture)
+{
+    UNUSED(port);
+    int32_t i;
+
+    /* Shift the last measurement out */
+    ppmDev.previousTime = ppmDev.currentTime;
+
+    /* Grab the new count */
+    ppmDev.currentTime  = capture;
+
+    /* Convert to 32-bit timer result */
+    ppmDev.currentTime += ppmDev.largeCounter;
+
+    /* Capture computation */
+    ppmDev.deltaTime    = ppmDev.currentTime - ppmDev.previousTime;
+
+    ppmDev.previousTime = ppmDev.currentTime;
+
+#if 0
+    static uint32_t deltaTimes[20];
+    static uint8_t deltaIndex = 0;
+
+    deltaIndex = (deltaIndex + 1) % 20;
+    deltaTimes[deltaIndex] = ppmDev.deltaTime;
+#endif
+
+    /* Sync pulse detection */
+    if (ppmDev.deltaTime > PPM_IN_MIN_SYNC_PULSE_US) {
+        if (ppmDev.pulseIndex == ppmDev.numChannelsPrevFrame
+            && ppmDev.pulseIndex >= PPM_IN_MIN_NUM_CHANNELS
+            && ppmDev.pulseIndex <= PPM_IN_MAX_NUM_CHANNELS) {
+            /* If we see n simultaneous frames of the same
+               number of channels we save it as our frame size */
+            if (ppmDev.stableFramesSeenCount < PPM_STABLE_FRAMES_REQUIRED_COUNT) {
+                ppmDev.stableFramesSeenCount++;
+            } else {
+                ppmDev.numChannels = ppmDev.pulseIndex;
+            }
+        } else {
+            ppmDev.stableFramesSeenCount = 0;
+        }
+
+        /* Check if the last frame was well formed */
+        if (ppmDev.pulseIndex == ppmDev.numChannels && ppmDev.tracking) {
+            /* The last frame was well formed */
+            for (i = 0; i < ppmDev.numChannels; i++) {
+                captures[i] = ppmDev.captures[i];
+            }
+            for (i = ppmDev.numChannels; i < PPM_IN_MAX_NUM_CHANNELS; i++) {
+                captures[i] = PPM_RCVR_TIMEOUT;
+            }
+            ppmFrameCount++;
+        }
+
+        ppmDev.tracking   = true;
+        ppmDev.numChannelsPrevFrame = ppmDev.pulseIndex;
+        ppmDev.pulseIndex = 0;
+
+        /* We rely on the supervisor to set captureValue to invalid
+           if no valid frame is found otherwise we ride over it */
+    } else if (ppmDev.tracking) {
+        /* Valid pulse duration 0.75 to 2.5 ms*/
+        if (ppmDev.deltaTime > PPM_IN_MIN_CHANNEL_PULSE_US
+            && ppmDev.deltaTime < PPM_IN_MAX_CHANNEL_PULSE_US
+            && ppmDev.pulseIndex < PPM_IN_MAX_NUM_CHANNELS) {
+            ppmDev.captures[ppmDev.pulseIndex] = ppmDev.deltaTime;
+            ppmDev.pulseIndex++;
+        } else {
+            /* Not a valid pulse duration */
+            ppmDev.tracking = false;
+            for (i = 0; i < PWM_PORTS_OR_PPM_CAPTURE_COUNT; i++) {
+                ppmDev.captures[i] = PPM_RCVR_TIMEOUT;
+            }
+        }
+    }
+}
+
+#define MAX_MISSED_PWM_EVENTS 10
+
+static void pwmOverflowCallback(uint8_t port, captureCompare_t capture)
+{
+    UNUSED(capture);
+    pwmInputPort_t *pwmInputPort = &pwmInputPorts[port];
+
+    if (++pwmInputPort->missedEvents > MAX_MISSED_PWM_EVENTS) {
+        if (pwmInputPort->state == 0) {
+            captures[pwmInputPort->channel] = PPM_RCVR_TIMEOUT;
+        }
+        pwmInputPort->missedEvents = 0;
+    }
+}
+
+static void pwmEdgeCallback(uint8_t port, captureCompare_t capture)
 {
     pwmInputPort_t *pwmInputPort = &pwmInputPorts[port];
-    const timerHardware_t *timerHardware = pwmInputPort->timerHardware;
+    const timerHardware_t *timerHardwarePtr = pwmInputPort->timerHardware;
 
     if (pwmInputPort->state == 0) {
         pwmInputPort->rise = capture;
         pwmInputPort->state = 1;
-        pwmICConfig(timerHardware->tim, timerHardware->channel, TIM_ICPolarity_Falling);
+        pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Falling);
     } else {
         pwmInputPort->fall = capture;
 
@@ -123,7 +249,8 @@ static void pwmCallback(uint8_t port, captureCompare_t capture)
 
         // switch state
         pwmInputPort->state = 0;
-        pwmICConfig(timerHardware->tim, timerHardware->channel, TIM_ICPolarity_Rising);
+        pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+        pwmInputPort->missedEvents = 0;
     }
 }
 
@@ -137,8 +264,6 @@ static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
     gpioInit(gpio, &cfg);
 }
 
-#define INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX 0x03
-
 void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
 {
     TIM_ICInitTypeDef TIM_ICInitStructure;
@@ -148,17 +273,22 @@ void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
     TIM_ICInitStructure.TIM_ICPolarity = polarity;
     TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV1;
-    TIM_ICInitStructure.TIM_ICFilter = INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX;
+
+    if (inputFilteringMode == INPUT_FILTERING_ENABLED) {
+        TIM_ICInitStructure.TIM_ICFilter = INPUT_FILTER_TO_HELP_WITH_NOISE_FROM_OPENLRS_TELEMETRY_RX;
+    } else {
+        TIM_ICInitStructure.TIM_ICFilter = 0x00;
+    }
 
     TIM_ICInit(tim, &TIM_ICInitStructure);
 }
 
-void pwmInConfig(uint8_t timerIndex, uint8_t channel)
+void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
 {
     pwmInputPort_t *p = &pwmInputPorts[channel];
 
-    const timerHardware_t *timerHardwarePtr = &(timerHardware[timerIndex]);
-
+    p->state = 0;
+    p->missedEvents = 0;
     p->channel = channel;
     p->mode = INPUT_MODE_PWM;
     p->timerHardware = timerHardwarePtr;
@@ -167,17 +297,25 @@ void pwmInConfig(uint8_t timerIndex, uint8_t channel)
     pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
 
     timerConfigure(timerHardwarePtr, PWM_TIMER_PERIOD, PWM_TIMER_MHZ);
-    configureTimerCaptureCompareInterrupt(timerHardwarePtr, channel, pwmCallback);
+
+#ifdef STM32F303xC
+    // If overflow monitoring is enabled on STM32F3 then the IRQ handler TIM1_UP_TIM16_IRQHandler is continually called.
+    if (timerHardwarePtr->tim == TIM1) {
+        configureTimerCaptureCompareInterrupt(timerHardwarePtr, channel, pwmEdgeCallback, NULL);
+        return;
+    }
+#endif
+    configureTimerCaptureCompareInterrupt(timerHardwarePtr, channel, pwmEdgeCallback, pwmOverflowCallback);
 }
 
 #define UNUSED_PPM_TIMER_REFERENCE 0
 #define FIRST_PWM_PORT 0
 
-void ppmInConfig(uint8_t timerIndex)
+void ppmInConfig(const timerHardware_t *timerHardwarePtr)
 {
-    pwmInputPort_t *p = &pwmInputPorts[FIRST_PWM_PORT];
+    ppmInit();
 
-    const timerHardware_t *timerHardwarePtr = &(timerHardware[timerIndex]);
+    pwmInputPort_t *p = &pwmInputPorts[FIRST_PWM_PORT];
 
     p->mode = INPUT_MODE_PPM;
     p->timerHardware = timerHardwarePtr;
@@ -186,7 +324,7 @@ void ppmInConfig(uint8_t timerIndex)
     pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
 
     timerConfigure(timerHardwarePtr, PPM_TIMER_PERIOD, PWM_TIMER_MHZ);
-    configureTimerCaptureCompareInterrupt(timerHardwarePtr, UNUSED_PPM_TIMER_REFERENCE, ppmCallback);
+    configureTimerCaptureCompareInterrupt(timerHardwarePtr, UNUSED_PPM_TIMER_REFERENCE, ppmEdgeCallback, ppmOverflowCallback);
 }
 
 uint16_t pwmRead(uint8_t channel)

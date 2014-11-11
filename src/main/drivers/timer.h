@@ -19,14 +19,20 @@
 
 #ifdef CHEBUZZF3
 #define USABLE_TIMER_CHANNEL_COUNT 18
-#else
+#endif
+
+#ifdef CC3D
+#define USABLE_TIMER_CHANNEL_COUNT 12
+#endif
+
+#if !defined(USABLE_TIMER_CHANNEL_COUNT)
 #define USABLE_TIMER_CHANNEL_COUNT 14
 #endif
 
 #ifdef STM32F303xC
 typedef uint32_t captureCompare_t;
 #endif
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
 typedef uint16_t captureCompare_t;
 #endif
 
@@ -40,6 +46,10 @@ typedef struct {
     uint8_t irq;
     uint8_t outputEnable;
     GPIO_Mode gpioInputMode;
+#ifdef STM32F303
+    uint8_t gpioPinSource;
+    uint8_t alternateFunction;
+#endif
 } timerHardware_t;
 
 extern const timerHardware_t timerHardware[];
@@ -49,5 +59,6 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 void timerNVICConfigure(uint8_t irq);
 
 void configureTimerInputCaptureCompareChannel(TIM_TypeDef *tim, const uint8_t channel);
-void configureTimerCaptureCompareInterrupt(const timerHardware_t *timerHardwarePtr, uint8_t reference, timerCCCallbackPtr *callback);
-void configureTimerChannelCallback(TIM_TypeDef *tim, uint8_t channel, uint8_t reference, timerCCCallbackPtr *callback);
+void configureTimerCaptureCompareInterrupt(const timerHardware_t *timerHardwarePtr, uint8_t reference, timerCCCallbackPtr *edgeCallback, timerCCCallbackPtr *overflowCallback);
+void configureTimerChannelCallback(TIM_TypeDef *tim, uint8_t channel, uint8_t reference, timerCCCallbackPtr *edgeCallback);
+void configureTimerChannelCallbacks(TIM_TypeDef *tim, uint8_t channel, uint8_t reference, timerCCCallbackPtr *edgeCallback, timerCCCallbackPtr *overflowCallback);

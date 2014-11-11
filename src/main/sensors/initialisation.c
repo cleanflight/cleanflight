@@ -19,6 +19,9 @@
 #include <string.h>
 
 #include "platform.h"
+
+#include "build_config.h"
+
 #include "common/axis.h"
 
 #include "drivers/accgyro.h"
@@ -29,16 +32,19 @@
 #include "drivers/accgyro_mma845x.h"
 #include "drivers/accgyro_mpu3050.h"
 #include "drivers/accgyro_mpu6050.h"
-#ifdef STM32F3DISCOVERY
+
 #include "drivers/accgyro_l3gd20.h"
 #include "drivers/accgyro_lsm303dlhc.h"
-#endif
+
+#include "drivers/accgyro_spi_mpu6000.h"
+#include "drivers/accgyro_spi_mpu6500.h"
 
 #include "drivers/barometer.h"
 #include "drivers/barometer_bmp085.h"
 #include "drivers/barometer_ms5611.h"
 #include "drivers/compass_hmc5883l.h"
 #include "drivers/sonar_hcsr04.h"
+#include "drivers/gpio.h"
 #include "drivers/system.h"
 
 #include "flight/flight.h"
@@ -51,77 +57,53 @@
 #include "sensors/compass.h"
 #include "sensors/sonar.h"
 
-// Use these to help with porting to new boards
-//#define USE_FAKE_GYRO
-#define USE_GYRO_L3G4200D
-#define USE_GYRO_L3GD20
-#define USE_GYRO_MPU6050
-#define USE_GYRO_MPU3050
-//#define USE_FAKE_ACC
-#define USE_ACC_ADXL345
-#define USE_ACC_BMA280
-#define USE_ACC_MMA8452
-#define USE_ACC_LSM303DLHC
-#define USE_ACC_MPU6050
-#define USE_BARO_MS5611
-#define USE_BARO_BMP085
-
 #ifdef NAZE
-#undef USE_ACC_LSM303DLHC
-#undef USE_GYRO_L3GD20
+#include "hardware_revision.h"
 #endif
 
-#ifdef NAZE32PRO
-#define USE_FAKE_ACC
-#define USE_FAKE_GYRO
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MMA8452
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_MPU6050
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_MPU3050
-#undef USE_GYRO_MPU6050
-#endif
-
-#if defined(OLIMEXINO)
-#undef USE_GYRO_L3GD20
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU3050
-#undef USE_ACC_LSM303DLHC
-#undef USE_ACC_BMA280
-#undef USE_ACC_MMA8452
-#undef USE_ACC_ADXL345
-#undef USE_BARO_MS5611
-#endif
-
-#ifdef CHEBUZZF3
-#undef USE_GYRO_L3G4200D
-#undef USE_GYRO_MPU6050
-#undef USE_GYRO_MPU3050
-#undef USE_ACC_ADXL345
-#undef USE_ACC_BMA280
-#undef USE_ACC_MPU6050
-#undef USE_ACC_MMA8452
-#endif
-
-extern uint16_t batteryWarningVoltage;
-extern uint8_t batteryCellCount;
 extern float magneticDeclination;
 
 extern gyro_t gyro;
 extern baro_t baro;
 extern acc_t acc;
 
+const mpu6050Config_t *selectMPU6050Config(void)
+{
+#ifdef NAZE
+    // MPU_INT output on rev4/5 hardware (PB13, PC13)
+    static const mpu6050Config_t nazeRev4MPU6050Config = {
+            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
+            .gpioPort = GPIOB,
+            .gpioPin = Pin_13
+    };
+    static const mpu6050Config_t nazeRev5MPU6050Config = {
+            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
+            .gpioPort = GPIOC,
+            .gpioPin = Pin_13
+    };
+
+
+    if (hardwareRevision < NAZE32_REV5) {
+        return &nazeRev4MPU6050Config;
+    } else {
+        return &nazeRev5MPU6050Config;
+    }
+#endif
+    return NULL;
+}
+
 #ifdef USE_FAKE_GYRO
 static void fakeGyroInit(void) {}
-static void fakeGyroRead(int16_t *gyroData) {}
-static void fakeGyroReadTemp(int16_t *tempData) {}
+static void fakeGyroRead(int16_t *gyroData) {
+    UNUSED(gyroData);
+}
+static void fakeGyroReadTemp(int16_t *tempData) {
+    UNUSED(tempData);
+}
 
 bool fakeGyroDetect(gyro_t *gyro, uint16_t lpf)
 {
+    UNUSED(lpf);
     gyro->init = fakeGyroInit;
     gyro->read = fakeGyroRead;
     gyro->temperature = fakeGyroReadTemp;
@@ -131,7 +113,9 @@ bool fakeGyroDetect(gyro_t *gyro, uint16_t lpf)
 
 #ifdef USE_FAKE_ACC
 static void fakeAccInit(void) {}
-static void fakeAccRead(int16_t *accData) {}
+static void fakeAccRead(int16_t *accData) {
+    UNUSED(accData);
+}
 
 bool fakeAccDetect(acc_t *acc)
 {
@@ -145,14 +129,9 @@ bool fakeAccDetect(acc_t *acc)
 bool detectGyro(uint16_t gyroLpf)
 {
     gyroAlign = ALIGN_DEFAULT;
-#ifdef USE_FAKE_GYRO
-    if (fakeGyroDetect(&gyro, gyroLpf)) {
-        return true;
-    }
-#endif
 
 #ifdef USE_GYRO_MPU6050
-    if (mpu6050GyroDetect(&gyro, gyroLpf)) {
+    if (mpu6050GyroDetect(selectMPU6050Config(), &gyro, gyroLpf)) {
 #ifdef NAZE
         gyroAlign = CW0_DEG;
 #endif
@@ -180,6 +159,35 @@ bool detectGyro(uint16_t gyroLpf)
 
 #ifdef USE_GYRO_L3GD20
     if (l3gd20Detect(&gyro, gyroLpf)) {
+        return true;
+    }
+#endif
+
+#ifdef USE_GYRO_SPI_MPU6000
+    if (mpu6000SpiGyroDetect(&gyro, gyroLpf)) {
+#ifdef CC3D
+        gyroAlign = CW270_DEG;
+#endif
+        return true;
+    }
+#endif
+
+#ifdef USE_GYRO_SPI_MPU6500
+#ifdef NAZE
+    if (hardwareRevision == NAZE32_SP && mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
+        gyroAlign = CW0_DEG;
+        return true;
+    }
+#else
+    if (mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
+        gyroAlign = CW0_DEG;
+        return true;
+    }
+#endif
+#endif
+
+#ifdef USE_FAKE_GYRO
+    if (fakeGyroDetect(&gyro, gyroLpf)) {
         return true;
     }
 #endif
@@ -212,19 +220,22 @@ retry:
         case ACC_ADXL345: // ADXL345
             acc_params.useFifo = false;
             acc_params.dataRate = 800; // unused currently
-            if (adxl345Detect(&acc_params, &acc)) {
-                accHardware = ACC_ADXL345;
 #ifdef NAZE
+            if (hardwareRevision < NAZE32_REV5 && adxl345Detect(&acc_params, &acc)) {
                 accAlign = CW270_DEG;
+#else
+            if (adxl345Detect(&acc_params, &acc)) {
 #endif
+                accHardware = ACC_ADXL345;
+                accHardware = ACC_ADXL345;
+                if (accHardwareToUse == ACC_ADXL345)
+                    break;
             }
-            if (accHardwareToUse == ACC_ADXL345)
-                break;
             ; // fallthrough
 #endif
 #ifdef USE_ACC_MPU6050
         case ACC_MPU6050: // MPU6050
-            if (mpu6050AccDetect(&acc)) {
+            if (mpu6050AccDetect(selectMPU6050Config(), &acc)) {
                 accHardware = ACC_MPU6050;
 #ifdef NAZE
                 accAlign = CW0_DEG;
@@ -236,11 +247,14 @@ retry:
 #endif
 #ifdef USE_ACC_MMA8452
         case ACC_MMA8452: // MMA8452
-            if (mma8452Detect(&acc)) {
-                accHardware = ACC_MMA8452;
 #ifdef NAZE
+            // Not supported with this frequency
+            if (hardwareRevision < NAZE32_REV5 && mma8452Detect(&acc)) {
                 accAlign = CW90_DEG;
+#else
+            if (mma8452Detect(&acc)) {
 #endif
+                accHardware = ACC_MMA8452;
                 if (accHardwareToUse == ACC_MMA8452)
                     break;
             }
@@ -256,6 +270,7 @@ retry:
                 if (accHardwareToUse == ACC_BMA280)
                     break;
             }
+            ; // fallthrough
 #endif
 #ifdef USE_ACC_LSM303DLHC
         case ACC_LSM303DLHC:
@@ -264,14 +279,43 @@ retry:
                 if (accHardwareToUse == ACC_LSM303DLHC)
                     break;
             }
+            ; // fallthrough
 #endif
-            ;
+#ifdef USE_ACC_SPI_MPU6000
+        case ACC_SPI_MPU6000:
+            if (mpu6000SpiAccDetect(&acc)) {
+                accHardware = ACC_SPI_MPU6000;
+#ifdef CC3D
+                accAlign = CW270_DEG;
+#endif
+                if (accHardwareToUse == ACC_SPI_MPU6000)
+                    break;
+            }
+            ; // fallthrough
+#endif
+#ifdef USE_ACC_SPI_MPU6500
+        case ACC_SPI_MPU6500:
+#ifdef NAZE
+            if (hardwareRevision == NAZE32_SP && mpu6500SpiAccDetect(&acc)) {
+#else
+            if (mpu6500SpiAccDetect(&acc)) {
+#endif
+                accHardware = ACC_SPI_MPU6500;
+#ifdef NAZE
+                accAlign = CW0_DEG;
+#endif
+                if (accHardwareToUse == ACC_SPI_MPU6500)
+                    break;
+            }
+            ; // fallthrough
+#endif
+            ; // prevent compiler error
     }
 
-    // Found anything? Check if user fucked up or ACC is really missing.
+    // Found anything? Check if error or ACC is really missing.
     if (accHardware == ACC_DEFAULT) {
         if (accHardwareToUse > ACC_DEFAULT) {
-            // Nothing was found and we have a forced sensor type. Stupid user probably chose a sensor that isn't present.
+            // Nothing was found and we have a forced sensor that isn't present.
             accHardwareToUse = ACC_DEFAULT;
             goto retry;
         } else {
@@ -283,22 +327,45 @@ retry:
 
 static void detectBaro()
 {
-#ifdef BARO
-#ifdef USE_BARO_MS5611
     // Detect what pressure sensors are available. baro->update() is set to sensor-specific update function
+
+    #ifdef BARO
+#ifdef USE_BARO_BMP085
+
+    const bmp085Config_t *bmp085Config = NULL;
+
+#if defined(BARO_XCLR_GPIO) && defined(BARO_EOC_GPIO)
+    static const bmp085Config_t defaultBMP085Config = {
+            .gpioAPB2Peripherals = BARO_APB2_PERIPHERALS,
+            .xclrGpioPin = BARO_XCLR_PIN,
+            .xclrGpioPort = BARO_XCLR_GPIO,
+            .eocGpioPin = BARO_EOC_PIN,
+            .eocGpioPort = BARO_EOC_GPIO
+    };
+    bmp085Config = &defaultBMP085Config;
+#endif
+
+#ifdef NAZE
+    if (hardwareRevision == NAZE32) {
+        bmp085Disable(bmp085Config);
+    }
+#endif
+
+#endif
+
+#ifdef USE_BARO_MS5611
     if (ms5611Detect(&baro)) {
         return;
     }
 #endif
 
 #ifdef USE_BARO_BMP085
-    // ms5611 disables BMP085, and tries to initialize + check PROM crc. if this works, we have a baro
-    if (bmp085Detect(&baro)) {
+    if (bmp085Detect(bmp085Config, &baro)) {
         return;
     }
 #endif
-    sensorsClear(SENSOR_BARO);
 #endif
+    sensorsClear(SENSOR_BARO);
 }
 
 void reconfigureAlignment(sensorAlignmentConfig_t *sensorAlignmentConfig)
@@ -326,6 +393,16 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
     detectAcc(accHardwareToUse);
     detectBaro();
 
+#ifdef MAG
+    if (hmc5883lDetect()) {
+#ifdef NAZE
+        magAlign = CW180_DEG;
+#endif
+    } else {
+        sensorsClear(SENSOR_MAG);
+    }
+#endif
+
     reconfigureAlignment(sensorAlignmentConfig);
 
     // Now time to init things, acc first
@@ -333,14 +410,6 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
         acc.init();
     // this is safe because either mpu6050 or mpu3050 or lg3d20 sets it, and in case of fail, we never get here.
     gyro.init();
-
-#ifdef MAG
-    if (hmc5883lDetect()) {
-        magAlign = CW180_DEG; // default NAZE alignment
-    } else {
-        sensorsClear(SENSOR_MAG);
-    }
-#endif
 
     // FIXME extract to a method to reduce dependencies, maybe move to sensors_compass.c
     if (sensors(SENSOR_MAG)) {

@@ -20,6 +20,9 @@ TARGET		?= NAZE
 # Compile-time options
 OPTIONS		?=
 
+# compile for OpenPilot BootLoader support
+OPBL ?=no
+
 # Debugger optons, must be empty or GDB
 DEBUG ?=
 
@@ -32,20 +35,26 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 FORKNAME			 = cleanflight
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R
+
+# Valid targets for OP BootLoader support
+OPBL_VALID_TARGETS = CC3D
+
+REVISION = $(shell git log -1 --format="%h")
 
 # Working directories
-ROOT		 = $(dir $(lastword $(MAKEFILE_LIST)))
+ROOT		 := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 SRC_DIR		 = $(ROOT)/src/main
 OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
 INCLUDE_DIRS = $(SRC_DIR)
+LINKER_DIR   = $(ROOT)/src/main/target
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
 
-ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO))
+ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO MASSIVEF3))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
 USBFS_DIR		= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
@@ -73,16 +82,46 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F30x \
 		   $(ROOT)/src/main/vcp
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f303.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_256k.ld
 
-ARCH_FLAGS	 = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 
-DEVICE_FLAGS = -DSTM32F303xC
+ARCH_FLAGS	 = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
+DEVICE_FLAGS = -DSTM32F303xC -DSTM32F303
 TARGET_FLAGS = -D$(TARGET)
 ifeq ($(TARGET),CHEBUZZF3)
 # CHEBUZZ is a VARIANT of STM32F3DISCOVERY
 TARGET_FLAGS := $(TARGET_FLAGS) -DSTM32F3DISCOVERY
 endif
 
+ifeq ($(TARGET),MASSIVEF3)
+# MASSIVEF3 is a VARIANT of STM32F3DISCOVERY
+TARGET_FLAGS := $(TARGET_FLAGS) -DSTM32F3DISCOVERY
+endif
+
+
+else ifeq ($(TARGET),$(filter $(TARGET),EUSTM32F103RC PORT103R))
+
+
+STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F10x_StdPeriph_Driver
+
+STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
+
+# Search path and source files for the CMSIS sources
+VPATH		:= $(VPATH):$(CMSIS_DIR)/CM3/CoreSupport:$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x
+CMSIS_SRC	 = $(notdir $(wildcard $(CMSIS_DIR)/CM3/CoreSupport/*.c \
+			   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x/*.c))
+
+INCLUDE_DIRS := $(INCLUDE_DIRS) \
+		   $(STDPERIPH_DIR)/inc \
+		   $(CMSIS_DIR)/CM3/CoreSupport \
+		   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
+
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_256k.ld
+
+ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
+TARGET_FLAGS = -D$(TARGET) -pedantic
+DEVICE_FLAGS = -DSTM32F10X_HD -DSTM32F10X
+
+DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
 
 else
 
@@ -100,11 +139,11 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM3/CoreSupport \
 		   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
 
-LD_SCRIPT	 = $(ROOT)/stm32_flash_f103.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
-TARGET_FLAGS = -D$(TARGET)
-DEVICE_FLAGS = -DSTM32F10X_MD
+TARGET_FLAGS = -D$(TARGET) -pedantic
+DEVICE_FLAGS = -DSTM32F10X_MD -DSTM32F10X
 
 DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
 
@@ -119,6 +158,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 VPATH		:= $(VPATH):$(TARGET_DIR)
 
 COMMON_SRC	 = build_config.c \
+		   version.c \
 		   $(TARGET_SRC) \
 		   config/config.c \
 		   config/runtime_config.c \
@@ -127,7 +167,7 @@ COMMON_SRC	 = build_config.c \
 		   common/typeconversion.c \
 		   main.c \
 		   mw.c \
-		   flight/autotune.c \
+		   flight/altitudehold.c \
 		   flight/failsafe.c \
 		   flight/flight.c \
 		   flight/imu.c \
@@ -136,10 +176,7 @@ COMMON_SRC	 = build_config.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
 		   drivers/system.c \
-		   io/buzzer.c \
-		   io/gps.c \
-		   io/gps_conversion.c \
-		   io/ledstrip.c \
+		   io/beeper.c \
 		   io/rc_controls.c \
 		   io/rc_curves.c \
 		   io/serial.c \
@@ -147,25 +184,34 @@ COMMON_SRC	 = build_config.c \
 		   io/serial_msp.c \
 		   io/statusindicator.c \
 		   rx/rx.c \
-		   rx/msp.c \
 		   rx/pwm.c \
+		   rx/msp.c \
 		   rx/sbus.c \
 		   rx/sumd.c \
+		   rx/sumh.c \
 		   rx/spektrum.c \
+		   sensors/acceleration.c \
 		   sensors/battery.c \
 		   sensors/boardalignment.c \
-		   sensors/acceleration.c \
-		   sensors/barometer.c \
 		   sensors/compass.c \
 		   sensors/gyro.c \
 		   sensors/initialisation.c \
-		   sensors/sonar.c \
+		   $(CMSIS_SRC) \
+		   $(DEVICE_STDPERIPH_SRC)
+
+HIGHEND_SRC  = flight/autotune.c \
+		   flight/navigation.c \
+		   flight/gps_conversion.c \
+		   common/colorconversion.c \
+		   io/gps.c \
+		   io/ledstrip.c \
+		   io/display.c \
 		   telemetry/telemetry.c \
 		   telemetry/frsky.c \
 		   telemetry/hott.c \
 		   telemetry/msp.c \
-		   $(CMSIS_SRC) \
-		   $(DEVICE_STDPERIPH_SRC)
+		   sensors/sonar.c \
+		   sensors/barometer.c
 
 NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -174,6 +220,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_mma845x.c \
 		   drivers/accgyro_mpu3050.c \
 		   drivers/accgyro_mpu6050.c \
+		   drivers/accgyro_spi_mpu6500.c \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
@@ -181,7 +228,9 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/display_ug2864hsweg01.h \
 		   drivers/gpio_stm32f10x.c \
+		   drivers/inverter.c \
 		   drivers/light_led_stm32f10x.c \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f10x.c \
@@ -195,7 +244,46 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
+		   hardware_revision.c \
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
+
+EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
+		   drivers/accgyro_adxl345.c \
+		   drivers/accgyro_bma280.c \
+		   drivers/accgyro_l3g4200d.c \
+		   drivers/accgyro_mma845x.c \
+		   drivers/accgyro_mpu3050.c \
+		   drivers/accgyro_mpu6050.c \
+		   drivers/accgyro_spi_mpu6000.c \
+		   drivers/accgyro_spi_mpu6500.c \
+		   drivers/adc.c \
+		   drivers/adc_stm32f10x.c \
+		   drivers/barometer_bmp085.c \
+		   drivers/barometer_ms5611.c \
+		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/bus_spi.c \
+		   drivers/compass_hmc5883l.c \
+		   drivers/display_ug2864hsweg01.h \
+		   drivers/gpio_stm32f10x.c \
+		   drivers/inverter.c \
+		   drivers/light_led_stm32f10x.c \
+		   drivers/light_ws2811strip.c \
+		   drivers/light_ws2811strip_stm32f10x.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_softserial.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f10x.c \
+		   drivers/sonar_hcsr04.c \
+		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/system_stm32f10x.c \
+		   drivers/timer.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)
+
+PORT103R_SRC = $(EUSTM32F103RC_SRC)
 
 OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_mpu6050.c \
@@ -211,7 +299,60 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/light_ws2811strip_stm32f10x.c \
 		   drivers/pwm_mapping.c \
 		   drivers/pwm_output.c \
-		   drivers/pwm_rssi.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_softserial.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f10x.c \
+		   drivers/sonar_hcsr04.c \
+		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/system_stm32f10x.c \
+		   drivers/timer.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)
+
+ifeq ($(TARGET),CJMCU)
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_64k.ld
+endif
+
+ifeq ($(OPBL),yes)
+ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k_opbl.ld
+.DEFAULT_GOAL := binary
+else
+$(error OPBL specified with a unsupported target)
+endif
+endif
+
+CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
+		   drivers/adc.c \
+		   drivers/adc_stm32f10x.c \
+		   drivers/accgyro_mpu6050.c \
+		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/compass_hmc5883l.c \
+		   drivers/gpio_stm32f10x.c \
+		   drivers/light_led_stm32f10x.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f10x.c \
+		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/system_stm32f10x.c \
+		   drivers/timer.c \
+		   $(COMMON_SRC)
+
+CC3D_SRC	 = startup_stm32f10x_md_gcc.S \
+		   drivers/accgyro_spi_mpu6000.c \
+		   drivers/adc.c \
+		   drivers/adc_stm32f10x.c \
+		   drivers/bus_spi.c \
+		   drivers/gpio_stm32f10x.c \
+		   drivers/inverter.c \
+		   drivers/light_led_stm32f10x.c \
+		   drivers/light_ws2811strip.c \
+		   drivers/light_ws2811strip_stm32f10x.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
 		   drivers/pwm_rx.c \
 		   drivers/serial_softserial.c \
 		   drivers/serial_uart.c \
@@ -219,6 +360,7 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
 STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
@@ -232,11 +374,9 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   drivers/light_ws2811strip_stm32f30x.c \
 		   drivers/pwm_mapping.c \
 		   drivers/pwm_output.c \
-		   drivers/pwm_rssi.c \
 		   drivers/pwm_rx.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f30x.c \
-		   drivers/serial_softserial.c \
 		   drivers/serial_usb_vcp.c \
 		   drivers/sound_beeper_stm32f30x.c \
 		   drivers/system_stm32f30x.c \
@@ -250,6 +390,7 @@ STM32F30x_COMMON_SRC	 = startup_stm32f30x_md_gcc.S \
 		   vcp/usb_pwr.c
 
 NAZE32PRO_SRC	 = $(STM32F30x_COMMON_SRC) \
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
 STM32F3DISCOVERY_COMMON_SRC	 = $(STM32F30x_COMMON_SRC) \
@@ -264,15 +405,20 @@ STM32F3DISCOVERY_SRC	 = $(STM32F3DISCOVERY_COMMON_SRC) \
 		   drivers/accgyro_mpu3050.c \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/accgyro_l3g4200d.c \
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
 CHEBUZZF3_SRC	 = $(STM32F3DISCOVERY_SRC) \
+		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
+MASSIVEF3_SRC	 = $(STM32F3DISCOVERY_SRC) \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)
 
-# In some cases, %.s regarded as intermediate file, which is actually not.
-# This will prevent accidental deletion of startup code.
-.PRECIOUS: %.s
+ifeq ($(TARGET),MASSIVEF3)
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_128k.ld
+endif
 
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
@@ -284,29 +430,53 @@ VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
 # Tool names
 CC		 = arm-none-eabi-gcc
 OBJCOPY		 = arm-none-eabi-objcopy
+SIZE		 = arm-none-eabi-size
 
 #
 # Tool options.
 #
 
-BASE_CFLAGS	 = $(ARCH_FLAGS) \
+ifeq ($(DEBUG),GDB)
+OPTIMIZE	 = -O0
+LTO_FLAGS	 = $(OPTIMIZE)
+else
+OPTIMIZE	 = -Os
+LTO_FLAGS	 = -flto -fuse-linker-plugin $(OPTIMIZE)
+endif
+
+DEBUG_FLAGS	 = -ggdb3
+
+CFLAGS		 = $(ARCH_FLAGS) \
+		   $(LTO_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
-		   -Wall \
+		   $(DEBUG_FLAGS) \
+		   -std=gnu99 \
+		   -Wall -Wextra -Wunsafe-loop-optimizations \
 		   -ffunction-sections \
 		   -fdata-sections \
 		   $(DEVICE_FLAGS) \
 		   -DUSE_STDPERIPH_DRIVER \
 		   $(TARGET_FLAGS) \
-		   -D'__FORKNAME__="$(FORKNAME)"'
+		   -D'__FORKNAME__="$(FORKNAME)"' \
+		   -D'__TARGET__="$(TARGET)"' \
+		   -D'__REVISION__="$(REVISION)"' \
+		   -save-temps=obj \
+		   -MMD
 
 ASFLAGS		 = $(ARCH_FLAGS) \
 		   -x assembler-with-cpp \
-		   $(addprefix -I,$(INCLUDE_DIRS))
+		   $(addprefix -I,$(INCLUDE_DIRS)) \
+		  -MMD
 
-# XXX Map/crossref output?
 LDFLAGS		 = -lm \
+		   -nostartfiles \
+		   --specs=nano.specs \
+		   -lc \
+		   -lnosys \
 		   $(ARCH_FLAGS) \
+		   $(LTO_FLAGS) \
+		   $(DEBUG_FLAGS) \
 		   -static \
 		   -Wl,-gc-sections,-Map,$(TARGET_MAP) \
 		   -T$(LD_SCRIPT)
@@ -322,20 +492,12 @@ ifeq ($(filter $(TARGET),$(VALID_TARGETS)),)
 $(error Target '$(TARGET)' is not valid, must be one of $(VALID_TARGETS))
 endif
 
-ifeq ($(DEBUG),GDB)
-CFLAGS = $(BASE_CFLAGS) \
-	-ggdb \
-	-O0
-else
-CFLAGS = $(BASE_CFLAGS) \
-	-Os
-endif
-
-
+TARGET_BIN	 = $(BIN_DIR)/$(FORKNAME)_$(TARGET).bin
 TARGET_HEX	 = $(BIN_DIR)/$(FORKNAME)_$(TARGET).hex
 TARGET_ELF	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).elf
 TARGET_OBJS	 = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
-TARGET_MAP   = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
+TARGET_DEPS	 = $(addsuffix .d,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
+TARGET_MAP	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 
 # List of buildable ELF files and their object dependencies.
 # It would be nice to compute these lists, but that seems to be just beyond make.
@@ -343,8 +505,12 @@ TARGET_MAP   = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 $(TARGET_HEX): $(TARGET_ELF)
 	$(OBJCOPY) -O ihex --set-start 0x8000000 $< $@
 
+$(TARGET_BIN): $(TARGET_ELF)
+	$(OBJCOPY) -O binary $< $@
+
 $(TARGET_ELF):  $(TARGET_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
+	$(SIZE) $(TARGET_ELF) 
 
 # Compile
 $(OBJECT_DIR)/$(TARGET)/%.o: %.c
@@ -356,14 +522,15 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 $(OBJECT_DIR)/$(TARGET)/%.o: %.s
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
-	@$(CC) -c -o $@ $(ASFLAGS) $< 
-$(OBJECT_DIR)/$(TARGET)/%.o): %.S
+	@$(CC) -c -o $@ $(ASFLAGS) $<
+
+$(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $< 
 
 clean:
-	rm -f $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)
+	rm -f $(TARGET_BIN) $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)
 	rm -rf $(OBJECT_DIR)/$(TARGET)
 
 flash_$(TARGET): $(TARGET_HEX)
@@ -373,6 +540,7 @@ flash_$(TARGET): $(TARGET_HEX)
 
 flash: flash_$(TARGET)
 
+binary: $(TARGET_BIN)
 
 unbrick_$(TARGET): $(TARGET_HEX)
 	stty -F $(SERIAL_DEVICE) raw speed 115200 -crtscts cs8 -parenb -cstopb -ixon
@@ -389,3 +557,9 @@ help:
 	@echo ""
 	@echo "Valid TARGET values are: $(VALID_TARGETS)"
 	@echo ""
+
+# rebuild everything when makefile changes
+$(TARGET_OBJS) : Makefile
+
+# include auto-generated dependencies
+-include $(TARGET_DEPS)

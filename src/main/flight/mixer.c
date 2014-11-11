@@ -243,21 +243,28 @@ int servoDirection(int nr, int lr)
         return 1;
 }
 
-void mixerInit(MultiType mixerConfiguration, motorMixer_t *customMixers, pwmOutputConfiguration_t *pwmOutputConfiguration)
-{
-    int i;
+static motorMixer_t *customMixers;
 
+void mixerInit(MultiType mixerConfiguration, motorMixer_t *initialCustomMixers)
+{
     currentMixerConfiguration = mixerConfiguration;
 
-    servoCount = pwmOutputConfiguration->servoCount;
+    customMixers = initialCustomMixers;
 
     // enable servos for mixes that require them. note, this shifts motor counts.
-    useServo = mixers[mixerConfiguration].useServo;
+    useServo = mixers[currentMixerConfiguration].useServo;
     // if we want camstab/trig, that also enables servos, even if mixer doesn't
     if (feature(FEATURE_SERVO_TILT))
         useServo = 1;
+}
 
-    if (mixerConfiguration == MULTITYPE_CUSTOM) {
+void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration)
+{
+    int i;
+
+    servoCount = pwmOutputConfiguration->servoCount;
+
+    if (currentMixerConfiguration == MULTITYPE_CUSTOM) {
         // load custom mixer into currentMixer
         for (i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
             // check if done
@@ -267,11 +274,11 @@ void mixerInit(MultiType mixerConfiguration, motorMixer_t *customMixers, pwmOutp
             numberMotor++;
         }
     } else {
-        numberMotor = mixers[mixerConfiguration].numberMotor;
+        numberMotor = mixers[currentMixerConfiguration].numberMotor;
         // copy motor-based mixers
-        if (mixers[mixerConfiguration].motor) {
+        if (mixers[currentMixerConfiguration].motor) {
             for (i = 0; i < numberMotor; i++)
-                currentMixer[i] = mixers[mixerConfiguration].motor[i];
+                currentMixer[i] = mixers[currentMixerConfiguration].motor[i];
         }
     }
 
@@ -287,11 +294,11 @@ void mixerInit(MultiType mixerConfiguration, motorMixer_t *customMixers, pwmOutp
     }
 
     // set flag that we're on something with wings
-    if (mixerConfiguration == MULTITYPE_FLYING_WING ||
-        mixerConfiguration == MULTITYPE_AIRPLANE)
-        f.FIXED_WING = 1;
+    if (currentMixerConfiguration == MULTITYPE_FLYING_WING ||
+            currentMixerConfiguration == MULTITYPE_AIRPLANE)
+        ENABLE_STATE(FIXED_WING);
     else
-        f.FIXED_WING = 0;
+        DISABLE_STATE(FIXED_WING);
 
     mixerResetMotors();
 }
@@ -344,7 +351,7 @@ void writeServos(void)
                 pwmWriteServo(0, servo[5]);
             } else {
                 // otherwise, only move servo when copter is armed
-                if (f.ARMED)
+                if (ARMING_FLAG(ARMED))
                     pwmWriteServo(0, servo[5]);
                 else
                     pwmWriteServo(0, 0); // kill servo signal completely.
@@ -405,7 +412,7 @@ static void airplaneMixer(void)
     int16_t flapperons[2] = { 0, 0 };
     int i;
 
-    if (!f.ARMED)
+    if (!ARMING_FLAG(ARMED))
         servo[7] = escAndServoConfig->mincommand; // Kill throttle when disarmed
     else
         servo[7] = constrain(rcCommand[THROTTLE], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
@@ -428,7 +435,7 @@ static void airplaneMixer(void)
         servo[2] += rxConfig->midrc;
     }
 
-    if (f.PASSTHRU_MODE) {   // Direct passthru from RX
+    if (FLIGHT_MODE(PASSTHRU_MODE)) {   // Direct passthru from RX
         servo[3] = rcCommand[ROLL] + flapperons[0];     // Wing 1
         servo[4] = rcCommand[ROLL] + flapperons[1];     // Wing 2
         servo[5] = rcCommand[YAW];                      // Rudder
@@ -482,12 +489,12 @@ void mixTable(void)
             break;
 
         case MULTITYPE_FLYING_WING:
-            if (!f.ARMED)
+            if (!ARMING_FLAG(ARMED))
                 servo[7] = escAndServoConfig->mincommand;
             else
                 servo[7] = constrain(rcCommand[THROTTLE], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
             motor[0] = servo[7];
-            if (f.PASSTHRU_MODE) {
+            if (FLIGHT_MODE(PASSTHRU_MODE)) {
                 // do not use sensors for correction, simple 2 channel mixing
                 servo[3] = (servoDirection(3, 1) * rcCommand[PITCH]) + (servoDirection(3, 2) * rcCommand[ROLL]);
                 servo[4] = (servoDirection(4, 1) * rcCommand[PITCH]) + (servoDirection(4, 2) * rcCommand[ROLL]);
@@ -525,7 +532,7 @@ void mixTable(void)
         servo[0] = determineServoMiddleOrForwardFromChannel(0);
         servo[1] = determineServoMiddleOrForwardFromChannel(1);
 
-        if (rcOptions[BOXCAMSTAB]) {
+        if (IS_RC_MODE_ACTIVE(BOXCAMSTAB)) {
             if (gimbalConfig->gimbal_flags & GIMBAL_MIXTILT) {
                 servo[0] -= (-(int32_t)servoConf[0].rate) * inclination.values.pitchDeciDegrees / 50 - (int32_t)servoConf[1].rate * inclination.values.rollDeciDegrees / 50;
                 servo[1] += (-(int32_t)servoConf[0].rate) * inclination.values.pitchDeciDegrees / 50 + (int32_t)servoConf[1].rate * inclination.values.rollDeciDegrees / 50;
@@ -580,11 +587,12 @@ void mixTable(void)
                     motor[i] = escAndServoConfig->mincommand;
             }
         }
-        if (!f.ARMED) {
+        if (!ARMING_FLAG(ARMED)) {
             motor[i] = motor_disarmed[i];
         }
     }
 }
+
 
 bool isMixerUsingServos(void)
 {

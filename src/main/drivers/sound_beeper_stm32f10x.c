@@ -21,27 +21,26 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #include "system.h"
 #include "gpio.h"
 
 #include "sound_beeper.h"
 
-void initBeeperHardware(void)
+void initBeeperHardware(beeperConfig_t *config)
 {
-#ifdef BUZZER
-    struct {
-        GPIO_TypeDef *gpio;
-        gpio_config_t cfg;
-    } gpio_setup = {
-        .gpio = BEEP_GPIO,
-        .cfg = { BEEP_PIN, Mode_Out_OD, Speed_2MHz }
+#ifndef BEEPER
+    UNUSED(config);
+#else
+    gpio_config_t gpioConfig = {
+        config->gpioPin,
+        config->gpioMode,
+        Speed_2MHz
     };
 
-    RCC_APB2PeriphClockCmd(BEEP_PERIPHERAL, ENABLE);
+    RCC_APB2PeriphClockCmd(config->gpioPeripheral, ENABLE);
 
-    if (hse_value == 12000000 && gpio_setup.cfg.mode == Mode_Out_OD)
-        gpio_setup.cfg.mode = Mode_Out_PP;
-    gpioInit(gpio_setup.gpio, &gpio_setup.cfg);
-
+    gpioInit(config->gpioPort, &gpioConfig);
 #endif
 }

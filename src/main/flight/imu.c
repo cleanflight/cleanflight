@@ -36,11 +36,14 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/sonar.h"
 
 #include "config/runtime_config.h"
 
 #include "flight/mixer.h"
 #include "flight/imu.h"
+
+extern int16_t debug[4];
 
 int16_t gyroADC[XYZ_AXIS_COUNT], accADC[XYZ_AXIS_COUNT], accSmooth[XYZ_AXIS_COUNT];
 int32_t accSum[XYZ_AXIS_COUNT];
@@ -51,15 +54,8 @@ float accVelScale;
 
 int16_t smallAngle = 0;
 
-int32_t EstAlt;                // in cm
-int32_t AltHold;
-int32_t errorAltitudeI = 0;
-
-int32_t vario = 0;                      // variometer in cm/s
-
 float throttleAngleScale;
-
-int32_t BaroPID = 0;
+float fc_acc;
 
 float magneticDeclination = 0.0f;       // calculated at startup from config
 float gyroScaleRad;
@@ -75,9 +71,20 @@ float anglerad[2] = { 0.0f, 0.0f };    // absolute angle inclination in radians
 
 static void getEstimatedAttitude(void);
 
+imuRuntimeConfig_t *imuRuntimeConfig;
+pidProfile_t *pidProfile;
+accDeadband_t *accDeadband;
+
+void configureImu(imuRuntimeConfig_t *initialImuRuntimeConfig, pidProfile_t *initialPidProfile, accDeadband_t *initialAccDeadband)
+{
+    imuRuntimeConfig = initialImuRuntimeConfig;
+    pidProfile = initialPidProfile;
+    accDeadband = initialAccDeadband;
+}
+
 void imuInit()
 {
-    smallAngle = lrintf(acc_1G * cosf(RAD * 25.0f));
+    smallAngle = lrintf(acc_1G * cosf(RAD * imuRuntimeConfig->small_angle));
     accVelScale = 9.80665f / acc_1G / 10000.0f;
     gyroScaleRad = gyro.scale * (M_PI / 180.0f) * 0.000001f;
 }
@@ -87,22 +94,13 @@ void calculateThrottleAngleScale(uint16_t throttle_correction_angle)
     throttleAngleScale = (1800.0f / M_PI) * (900.0f / throttle_correction_angle);
 }
 
-imuRuntimeConfig_t *imuRuntimeConfig;
-pidProfile_t *pidProfile;
-barometerConfig_t *barometerConfig;
-accDeadband_t *accDeadband;
-
-void configureImu(imuRuntimeConfig_t *initialImuRuntimeConfig, pidProfile_t *initialPidProfile, barometerConfig_t *intialBarometerConfig, accDeadband_t *initialAccDeadband)
+void calculateAccZLowPassFilterRCTimeConstant(float accz_lpf_cutoff)
 {
-    imuRuntimeConfig = initialImuRuntimeConfig;
-    pidProfile = initialPidProfile;
-    barometerConfig = intialBarometerConfig;
-    accDeadband = initialAccDeadband;
+    fc_acc = 0.5f / (M_PI * accz_lpf_cutoff); // calculate RC time constant used in the accZ lpf
 }
 
 void computeIMU(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerConfiguration)
 {
-    uint32_t axis;
     static int16_t gyroYawSmooth = 0;
 
     gyroGetADC();
@@ -115,14 +113,14 @@ void computeIMU(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerConfigurat
         accADC[Z] = 0;
     }
 
+    gyroData[FD_ROLL] = gyroADC[FD_ROLL];
+    gyroData[FD_PITCH] = gyroADC[FD_PITCH];
+
     if (mixerConfiguration == MULTITYPE_TRI) {
         gyroData[FD_YAW] = (gyroYawSmooth * 2 + gyroADC[FD_YAW]) / 3;
         gyroYawSmooth = gyroData[FD_YAW];
-        gyroData[FD_ROLL] = gyroADC[FD_ROLL];
-        gyroData[FD_PITCH] = gyroADC[FD_PITCH];
     } else {
-        for (axis = 0; axis < 3; axis++)
-            gyroData[axis] = gyroADC[axis];
+        gyroData[FD_YAW] = gyroADC[FD_YAW];
     }
 }
 
@@ -164,7 +162,7 @@ void rotateV(struct fp_vector *v, fp_angles_t *delta)
     // This does a  "proper" matrix rotation using gyro deltas without small-angle approximation
     float mat[3][3];
     float cosx, sinx, cosy, siny, cosz, sinz;
-    float coszcosx, coszcosy, sinzcosx, coszsinx, sinzsinx;
+    float coszcosx, sinzcosx, coszsinx, sinzsinx;
 
     cosx = cosf(delta->angles.roll);
     sinx = sinf(delta->angles.roll);
@@ -174,12 +172,11 @@ void rotateV(struct fp_vector *v, fp_angles_t *delta)
     sinz = sinf(delta->angles.yaw);
 
     coszcosx = cosz * cosx;
-    coszcosy = cosz * cosy;
     sinzcosx = sinz * cosx;
     coszsinx = sinx * cosz;
     sinzsinx = sinx * sinz;
 
-    mat[0][0] = coszcosy;
+    mat[0][0] = cosz * cosy;
     mat[0][1] = -cosy * sinz;
     mat[0][2] = siny;
     mat[1][0] = sinzcosx + (coszsinx * siny);
@@ -194,28 +191,26 @@ void rotateV(struct fp_vector *v, fp_angles_t *delta)
     v->Z = v_tmp.X * mat[0][2] + v_tmp.Y * mat[1][2] + v_tmp.Z * mat[2][2];
 }
 
-int32_t applyDeadband(int32_t value, int32_t deadband)
+void accSum_reset(void)
 {
-    if (abs(value) < deadband) {
-        value = 0;
-    } else if (value > 0) {
-        value -= deadband;
-    } else if (value < 0) {
-        value += deadband;
-    }
-    return value;
+    accSum[0] = 0;
+    accSum[1] = 0;
+    accSum[2] = 0;
+    accSumCount = 0;
+    accTimeSum = 0;
 }
-
-#define F_CUT_ACCZ 10.0f // 10Hz should still be fast enough
-static const float fc_acc = 0.5f / (M_PI * F_CUT_ACCZ);
 
 // rotate acc into Earth frame and calculate acceleration in it
 void acc_calc(uint32_t deltaT)
 {
     static int32_t accZoffset = 0;
-    static float accz_smooth;
+    static float accz_smooth = 0;
+    float dT;
     fp_angles_t rpy;
     t_fp_vector accel_ned;
+
+    // deltaT is measured in us ticks
+    dT = (float)deltaT * 1e-6f;
 
     // the accel values have to be rotated into the earth frame
     rpy.angles.roll = -(float)anglerad[AI_ROLL];
@@ -229,7 +224,7 @@ void acc_calc(uint32_t deltaT)
     rotateV(&accel_ned.V, &rpy);
 
     if (imuRuntimeConfig->acc_unarmedcal == 1) {
-        if (!f.ARMED) {
+        if (!ARMING_FLAG(ARMED)) {
             accZoffset -= accZoffset / 64;
             accZoffset += accel_ned.V.Z;
         }
@@ -237,7 +232,7 @@ void acc_calc(uint32_t deltaT)
     } else
         accel_ned.V.Z -= acc_1G;
 
-    accz_smooth = accz_smooth + (deltaT / (fc_acc + deltaT)) * (accel_ned.V.Z - accz_smooth); // low pass filter
+    accz_smooth = accz_smooth + (dT / (fc_acc + dT)) * (accel_ned.V.Z - accz_smooth); // low pass filter
 
     // apply Deadband to reduce integration drift and vibration influence
     accSum[X] += applyDeadband(lrintf(accel_ned.V.X), accDeadband->xy);
@@ -247,15 +242,6 @@ void acc_calc(uint32_t deltaT)
     // sum up Values for later integration to get velocity and distance
     accTimeSum += deltaT;
     accSumCount++;
-}
-
-void accSum_reset(void)
-{
-    accSum[0] = 0;
-    accSum[1] = 0;
-    accSum[2] = 0;
-    accSumCount = 0;
-    accTimeSum = 0;
 }
 
 // baseflight calculation by Luggi09 originates from arducopter
@@ -307,12 +293,6 @@ static void getEstimatedAttitude(void)
     accMag = accMag * 100 / ((int32_t)acc_1G * acc_1G);
 
     rotateV(&EstG.V, &deltaGyroAngle);
-    if (sensors(SENSOR_MAG)) {
-        rotateV(&EstM.V, &deltaGyroAngle);
-    } else {
-        rotateV(&EstN.V, &deltaGyroAngle);
-        normalizeV(&EstN.V, &EstN.V);
-    }
 
     // Apply complimentary filter (Gyro drift correction)
     // If accel magnitude >1.15G or <0.85G and ACC vector outside of the limit range => we neutralize the effect of accelerometers in the angle estimation.
@@ -325,15 +305,11 @@ static void getEstimatedAttitude(void)
             EstG.A[axis] = (EstG.A[axis] * imuRuntimeConfig->gyro_cmpf_factor + accSmooth[axis]) * invGyroComplimentaryFilterFactor;
     }
 
-    // FIXME what does the _M_ mean?
-    float invGyroComplimentaryFilter_M_Factor = (1.0f / (imuRuntimeConfig->gyro_cmpfm_factor + 1.0f));
-
-    if (sensors(SENSOR_MAG)) {
-        for (axis = 0; axis < 3; axis++)
-            EstM.A[axis] = (EstM.A[axis] * imuRuntimeConfig->gyro_cmpfm_factor + magADC[axis]) * invGyroComplimentaryFilter_M_Factor;
+    if (EstG.A[Z] > smallAngle) {
+        ENABLE_STATE(SMALL_ANGLE);
+    } else {
+        DISABLE_STATE(SMALL_ANGLE);
     }
-
-    f.SMALL_ANGLE = (EstG.A[Z] > smallAngle);
 
     // Attitude of the estimated vector
     anglerad[AI_ROLL] = atan2f(EstG.V.Y, EstG.V.Z);
@@ -341,10 +317,19 @@ static void getEstimatedAttitude(void)
     inclination.values.rollDeciDegrees = lrintf(anglerad[AI_ROLL] * (1800.0f / M_PI));
     inclination.values.pitchDeciDegrees = lrintf(anglerad[AI_PITCH] * (1800.0f / M_PI));
 
-    if (sensors(SENSOR_MAG))
+    if (sensors(SENSOR_MAG)) {
+        rotateV(&EstM.V, &deltaGyroAngle);
+        // FIXME what does the _M_ mean?
+        float invGyroComplimentaryFilter_M_Factor = (1.0f / (imuRuntimeConfig->gyro_cmpfm_factor + 1.0f));
+        for (axis = 0; axis < 3; axis++) {
+            EstM.A[axis] = (EstM.A[axis] * imuRuntimeConfig->gyro_cmpfm_factor + magADC[axis]) * invGyroComplimentaryFilter_M_Factor;
+        }
         heading = calculateHeading(&EstM);
-    else
+    } else {
+        rotateV(&EstN.V, &deltaGyroAngle);
+        normalizeV(&EstN.V, &EstN.V);
         heading = calculateHeading(&EstN);
+    }
 
     acc_calc(deltaT); // rotate acc vector into earth frame
 }
@@ -362,116 +347,3 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
         angle = 900;
     return lrintf(throttle_correction_value * sinf(angle / (900.0f * M_PI / 2.0f)));
 }
-
-#ifdef BARO
-#define UPDATE_INTERVAL 25000   // 40hz update rate (20hz LPF on acc)
-
-
-#define DEGREES_80_IN_DECIDEGREES 800
-
-bool isThrustFacingDownwards(rollAndPitchInclination_t *inclination)
-{
-    return abs(inclination->values.rollDeciDegrees) < DEGREES_80_IN_DECIDEGREES && abs(inclination->values.pitchDeciDegrees) < DEGREES_80_IN_DECIDEGREES;
-}
-
-int32_t calculateBaroPid(int32_t vel_tmp, float accZ_tmp, float accZ_old)
-{
-    uint32_t baroPID = 0;
-    int32_t error;
-    int32_t setVel;
-
-    if (!isThrustFacingDownwards(&inclination)) {
-        return baroPID;
-    }
-
-    // Altitude P-Controller
-
-    error = constrain(AltHold - EstAlt, -500, 500);
-    error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
-    setVel = constrain((pidProfile->P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
-
-    // Velocity PID-Controller
-
-    // P
-    error = setVel - vel_tmp;
-    baroPID = constrain((pidProfile->P8[PIDVEL] * error / 32), -300, +300);
-
-    // I
-    errorAltitudeI += (pidProfile->I8[PIDVEL] * error) / 8;
-    errorAltitudeI = constrain(errorAltitudeI, -(1024 * 200), (1024 * 200));
-    baroPID += errorAltitudeI / 1024;     // I in range +/-200
-
-    // D
-    baroPID -= constrain(pidProfile->D8[PIDVEL] * (accZ_tmp + accZ_old) / 64, -150, 150);
-
-    return baroPID;
-}
-
-int getEstimatedAltitude(void)
-{
-    static uint32_t previousT;
-    uint32_t currentT = micros();
-    uint32_t dTime;
-    int32_t baroVel;
-    float dt;
-    float vel_acc;
-    int32_t vel_tmp;
-    float accZ_tmp;
-    static float accZ_old = 0.0f;
-    static float vel = 0.0f;
-    static float accAlt = 0.0f;
-    static int32_t lastBaroAlt;
-
-    dTime = currentT - previousT;
-    if (dTime < UPDATE_INTERVAL)
-        return 0;
-    previousT = currentT;
-
-    if (!isBaroCalibrationComplete()) {
-        performBaroCalibrationCycle();
-        vel = 0;
-        accAlt = 0;
-    }
-    BaroAlt = baroCalculateAltitude();
-
-    dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
-
-    // Integrator - velocity, cm/sec
-    accZ_tmp = (float)accSum[2] / (float)accSumCount;
-    vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
-
-    // Integrator - Altitude in cm
-    accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                         // integrate velocity to get distance (x= a/2 * t^2)
-    accAlt = accAlt * barometerConfig->baro_cf_alt + (float)BaroAlt * (1.0f - barometerConfig->baro_cf_alt);      // complementary filter for Altitude estimation (baro & acc)
-    EstAlt = accAlt;
-    vel += vel_acc;
-
-#if 0
-    debug[0] = accSum[2] / accSumCount; // acceleration
-    debug[1] = vel;                     // velocity
-    debug[2] = accAlt;                  // height
-#endif
-
-    accSum_reset();
-
-    baroVel = (BaroAlt - lastBaroAlt) * 1000000.0f / dTime;
-    lastBaroAlt = BaroAlt;
-
-    baroVel = constrain(baroVel, -300, 300);    // constrain baro velocity +/- 300cm/s
-    baroVel = applyDeadband(baroVel, 10);       // to reduce noise near zero
-
-    // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
-    // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
-    vel = vel * barometerConfig->baro_cf_vel + baroVel * (1 - barometerConfig->baro_cf_vel);
-    vel_tmp = lrintf(vel);
-
-    // set vario
-    vario = applyDeadband(vel_tmp, 5);
-
-    BaroPID = calculateBaroPid(vel_tmp, accZ_tmp, accZ_old);
-
-    accZ_old = accZ_tmp;
-
-    return 1;
-}
-#endif /* BARO */

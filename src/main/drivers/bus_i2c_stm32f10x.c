@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <platform.h>
 
@@ -26,17 +27,40 @@
 #include "system.h"
 
 #include "bus_i2c.h"
+#include "nvic.h"
 
 #ifndef SOFT_I2C
 
 // I2C2
 // SCL  PB10
 // SDA  PB11
+// I2C1
+// SCL  PB6
+// SDA  PB7
 
-static I2C_TypeDef *I2Cx;
 static void i2c_er_handler(void);
 static void i2c_ev_handler(void);
 static void i2cUnstick(void);
+
+typedef struct i2cDevice_t {
+    I2C_TypeDef *dev;
+    GPIO_TypeDef *gpio;
+    uint16_t scl;
+    uint16_t sda;
+    uint8_t ev_irq;
+    uint8_t er_irq;
+    uint32_t peripheral;
+} i2cDevice_t;
+
+static const i2cDevice_t i2cHardwareMap[] = {
+    { I2C1, GPIOB, Pin_6, Pin_7, I2C1_EV_IRQn, I2C1_ER_IRQn, RCC_APB1Periph_I2C1 },
+    { I2C2, GPIOB, Pin_10, Pin_11, I2C2_EV_IRQn, I2C2_ER_IRQn, RCC_APB1Periph_I2C2 },
+};
+
+// Copy of peripheral address for IRQ routines
+static I2C_TypeDef *I2Cx = NULL;
+// Copy of device index for reinit, etc purposes
+static I2CDevice I2Cx_index;
 
 void I2C1_ER_IRQHandler(void)
 {
@@ -76,7 +100,7 @@ static bool i2cHandleHardwareFailure(void)
 {
     i2cErrorCount++;
     // reinit peripheral + clock out garbage
-    i2cInit(I2Cx);
+    i2cInit(I2Cx_index);
     return false;
 }
 
@@ -94,11 +118,15 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
     busy = 1;
     error = false;
 
+    if (!I2Cx)
+        return false;
+
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
             while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
-            if (timeout == 0)
+            if (timeout == 0) {
                 return i2cHandleHardwareFailure();
+            }
             I2C_GenerateSTART(I2Cx, ENABLE);                            // send the start for the new job
         }
         I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, ENABLE);            // allow the interrupts to fire off again
@@ -106,8 +134,9 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
 
     timeout = I2C_DEFAULT_TIMEOUT;
     while (busy && --timeout > 0) { ; }
-    if (timeout == 0)
+    if (timeout == 0) {
         return i2cHandleHardwareFailure();
+    }
 
     return !error;
 }
@@ -131,6 +160,9 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
     busy = 1;
     error = false;
 
+    if (!I2Cx)
+        return false;
+
     if (!(I2Cx->CR2 & I2C_IT_EVT)) {                                    // if we are restarting the driver
         if (!(I2Cx->CR1 & 0x0100)) {                                    // ensure sending a start
             while (I2Cx->CR1 & 0x0200 && --timeout > 0) { ; }           // wait for any stop to finish sending
@@ -151,11 +183,12 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
 
 static void i2c_er_handler(void)
 {
-    // Read the I2C1 status register
+    // Read the I2Cx status register
     volatile uint32_t SR1Register = I2Cx->SR1;
 
-    if (SR1Register & 0x0F00)                                           // an error
+    if (SR1Register & 0x0F00) {                                         // an error
         error = true;
+    }
 
     // If AF, BERR or ARLO, abandon the current job and commence new if there are jobs
     if (SR1Register & 0x0700) {
@@ -163,10 +196,11 @@ static void i2c_er_handler(void)
         I2C_ITConfig(I2Cx, I2C_IT_BUF, DISABLE);                        // disable the RXNE/TXE interrupt - prevent the ISR tailchaining onto the ER (hopefully)
         if (!(SR1Register & 0x0200) && !(I2Cx->CR1 & 0x0200)) {         // if we dont have an ARLO error, ensure sending of a stop
             if (I2Cx->CR1 & 0x0100) {                                   // We are currently trying to send a start, this is very bad as start, stop will hang the peripheral
+                // TODO - busy waiting in highest priority IRQ. Maybe only set flag and handle it from main loop
                 while (I2Cx->CR1 & 0x0100) { ; }                        // wait for any start to finish sending
                 I2C_GenerateSTOP(I2Cx, ENABLE);                         // send stop to finalise bus transaction
                 while (I2Cx->CR1 & 0x0200) { ; }                        // wait for stop to finish sending
-                i2cInit(I2Cx);                                          // reset and configure the hardware
+                i2cInit(I2Cx_index);                                    // reset and configure the hardware
             } else {
                 I2C_GenerateSTOP(I2Cx, ENABLE);                         // stop to free up the bus
                 I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, DISABLE);   // Disable EVT and ERR interrupts while bus inactive
@@ -249,6 +283,7 @@ void i2c_ev_handler(void)
                 subaddress_sent = 1;                                    // this is set back to zero upon completion of the current task
             }
         }
+        // TODO - busy waiting in ISR
         // we must wait for the start to clear, otherwise we get constant BTF
         while (I2Cx->CR1 & 0x0100) { ; }
     } else if (SReg_1 & 0x0040) {                                       // Byte received - EV7
@@ -277,26 +312,24 @@ void i2c_ev_handler(void)
     }
 }
 
-void i2cInit(I2C_TypeDef *I2C)
+void i2cInit(I2CDevice index)
 {
     NVIC_InitTypeDef nvic;
     I2C_InitTypeDef i2c;
-    gpio_config_t gpio;
 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2 | RCC_APB2Periph_GPIOB, ENABLE);
+    if (index > I2CDEV_MAX)
+        index = I2CDEV_MAX;
 
-    // Init pins
-    gpio.pin = Pin_10 | Pin_11;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_AF_OD;
-    gpioInit(GPIOB, &gpio);
-
-    I2Cx = I2C;
+    // Turn on peripheral clock, save device and index
+    I2Cx = i2cHardwareMap[index].dev;
+    I2Cx_index = index;
+    RCC_APB1PeriphClockCmd(i2cHardwareMap[index].peripheral, ENABLE);
 
     // clock out stuff to make sure slaves arent stuck
+    // This will also configure GPIO as AF_OD at the end
     i2cUnstick();
 
-    // Init I2C
+    // Init I2C peripheral
     I2C_DeInit(I2Cx);
     I2C_StructInit(&i2c);
 
@@ -309,15 +342,16 @@ void i2cInit(I2C_TypeDef *I2C)
     I2C_Init(I2Cx, &i2c);
 
     // I2C ER Interrupt
-    nvic.NVIC_IRQChannel = I2C2_ER_IRQn;
-    nvic.NVIC_IRQChannelPreemptionPriority = 0;
-    nvic.NVIC_IRQChannelSubPriority = 0;
+    nvic.NVIC_IRQChannel = i2cHardwareMap[index].er_irq;
+    nvic.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_I2C_ER);
+    nvic.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_I2C_ER);
     nvic.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&nvic);
 
     // I2C EV Interrupt
-    nvic.NVIC_IRQChannel = I2C2_EV_IRQn;
-    nvic.NVIC_IRQChannelPreemptionPriority = 0;
+    nvic.NVIC_IRQChannel = i2cHardwareMap[index].ev_irq;
+    nvic.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_I2C_EV);
+    nvic.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_I2C_EV);
     NVIC_Init(&nvic);
 }
 
@@ -328,44 +362,52 @@ uint16_t i2cGetErrorCounter(void)
 
 static void i2cUnstick(void)
 {
-    gpio_config_t gpio;
-    uint8_t i;
+    GPIO_TypeDef *gpio;
+    gpio_config_t cfg;
+    uint16_t scl, sda;
+    int i;
 
-    gpio.pin = Pin_10 | Pin_11;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_Out_OD;
-    gpioInit(GPIOB, &gpio);
+    // prepare pins
+    gpio = i2cHardwareMap[I2Cx_index].gpio;
+    scl = i2cHardwareMap[I2Cx_index].scl;
+    sda = i2cHardwareMap[I2Cx_index].sda;
 
-    digitalHi(GPIOB, Pin_10 | Pin_11);
+    digitalHi(gpio, scl | sda);
+
+    cfg.pin = scl | sda;
+    cfg.speed = Speed_2MHz;
+    cfg.mode = Mode_Out_OD;
+    gpioInit(gpio, &cfg);
+
     for (i = 0; i < 8; i++) {
         // Wait for any clock stretching to finish
-        while (!digitalIn(GPIOB, Pin_10))
+        while (!digitalIn(gpio, scl))
             delayMicroseconds(10);
 
         // Pull low
-        digitalLo(GPIOB, Pin_10); // Set bus low
+        digitalLo(gpio, scl); // Set bus low
         delayMicroseconds(10);
         // Release high again
-        digitalHi(GPIOB, Pin_10); // Set bus high
+        digitalHi(gpio, scl); // Set bus high
         delayMicroseconds(10);
     }
 
     // Generate a start then stop condition
     // SCL  PB10
     // SDA  PB11
-    digitalLo(GPIOB, Pin_11); // Set bus data low
+    digitalLo(gpio, sda); // Set bus data low
     delayMicroseconds(10);
-    digitalLo(GPIOB, Pin_10); // Set bus scl low
+    digitalLo(gpio, scl); // Set bus scl low
     delayMicroseconds(10);
-    digitalHi(GPIOB, Pin_10); // Set bus scl high
+    digitalHi(gpio, scl); // Set bus scl high
     delayMicroseconds(10);
-    digitalHi(GPIOB, Pin_11); // Set bus sda high
+    digitalHi(gpio, sda); // Set bus sda high
 
     // Init pins
-    gpio.pin = Pin_10 | Pin_11;
-    gpio.speed = Speed_2MHz;
-    gpio.mode = Mode_AF_OD;
-    gpioInit(GPIOB, &gpio);
+    cfg.pin = scl | sda;
+    cfg.speed = Speed_2MHz;
+    cfg.mode = Mode_AF_OD;
+    gpioInit(gpio, &cfg);
 }
 
 #endif

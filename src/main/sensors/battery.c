@@ -25,7 +25,7 @@
 
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
-uint16_t batteryWarningVoltage;     // annoying buzzer after this one, battery ready to be dead
+uint16_t batteryWarningVoltage;     // annoying beeper after this one, battery ready to be dead
 
 uint8_t vbat = 0;                   // battery voltage in 0.1V steps
 
@@ -108,4 +108,9 @@ void updateCurrentMeter(int32_t lastUpdateAt)
 
 	mAhdrawnRaw += (amperage * lastUpdateAt) / 1000;
 	mAhDrawn = mAhdrawnRaw / (3600 * 100);
+}
+
+uint32_t calculateBatteryPercentage(void)
+{
+    return (((uint32_t)vbat - (batteryConfig->vbatmincellvoltage * batteryCellCount)) * 100) / ((batteryConfig->vbatmaxcellvoltage - batteryConfig->vbatmincellvoltage) * batteryCellCount);
 }

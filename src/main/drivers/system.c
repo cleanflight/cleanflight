@@ -21,11 +21,12 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #include "gpio.h"
 #include "light_led.h"
 #include "sound_beeper.h"
-#include "bus_i2c.h"
-#include "bus_spi.h"
+#include "nvic.h"
 
 #include "system.h"
 
@@ -33,15 +34,6 @@
 static volatile uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
-
-#ifdef STM32F303xC
-// from system_stm32f30x.c
-void SetSysClock(void);
-#endif
-#ifdef STM32F10X_MD
-// from system_stm32f10x.c
-void SetSysClock(bool overclock);
-#endif
 
 static void cycleCounterInit(void)
 {
@@ -73,27 +65,18 @@ uint32_t millis(void)
     return sysTickUptime;
 }
 
-void systemInit(bool overclock)
+void systemInit(void)
 {
+#ifdef CC3D
+    /* Accounts for OP Bootloader, set the Vector Table base address as specified in .ld file */
+    extern void *isr_vector_table_base;
 
-#ifdef STM32F303xC
-    // start fpu
-    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
+    NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);
 #endif
-
-#ifdef STM32F303xC
-    SetSysClock();
-#endif
-#ifdef STM32F10X_MD
-    // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
-    // Configure the Flash Latency cycles and enable prefetch buffer
-    SetSysClock(overclock);
-#endif
-
     // Configure NVIC preempt/priority groups
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+    NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);
 
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
     // Turn on clocks for stuff we use
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 #endif
@@ -104,27 +87,17 @@ void systemInit(bool overclock)
     enableGPIOPowerUsageAndNoiseReductions();
 
 
-#ifdef STM32F10X_MD
+#ifdef STM32F10X
     // Turn off JTAG port 'cause we're using the GPIO for leds
 #define AFIO_MAPR_SWJ_CFG_NO_JTAG_SW            (0x2 << 24)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;
 #endif
-
-    ledInit();
-    beeperInit();
 
     // Init cycle counter
     cycleCounterInit();
 
     // SysTick
     SysTick_Config(SystemCoreClock / 1000);
-
-    // Configure the rest of the stuff
-    i2cInit(I2C2);
-    spiInit();
-
-    // sleep for 100ms
-    delay(100);
 }
 
 #if 1
@@ -176,7 +149,7 @@ void failureMode(uint8_t mode)
         LED1_TOGGLE;
         LED0_TOGGLE;
         delay(475 * mode - 2);
-        BEEP_ON
+        BEEP_ON;
         delay(25);
         BEEP_OFF;
     }

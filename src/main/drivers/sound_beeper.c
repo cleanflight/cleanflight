@@ -21,13 +21,15 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #include "system.h"
 #include "gpio.h"
 
 #include "sound_beeper.h"
 
 
-#ifdef BUZZER
+#ifdef BEEPER
 
 void (*systemBeepPtr)(bool onoff) = NULL;
 
@@ -52,26 +54,20 @@ static void beepInverted(bool onoff)
 
 void systemBeep(bool onoff)
 {
-#ifdef BUZZER
+#ifndef BEEPER
+    UNUSED(onoff);
+#else
     systemBeepPtr(onoff);
 #endif
 }
 
-static inline bool isBuzzerOutputInverted(void)
+void beeperInit(beeperConfig_t *config)
 {
-#ifdef BUZZER_INVERTED
-    return true;
+#ifndef BEEPER
+    UNUSED(config);
 #else
-    // Naze rev5 needs inverted beeper.
-    return hse_value == 12000000;
-#endif
-}
-
-void beeperInit(void)
-{
-#ifdef BUZZER
-    initBeeperHardware();
-    if (isBuzzerOutputInverted())
+    initBeeperHardware(config);
+    if (config->isInverted)
         systemBeepPtr = beepInverted;
     else
         systemBeepPtr = beepNormal;

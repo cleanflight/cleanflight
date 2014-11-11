@@ -33,11 +33,14 @@
 
 #include "flight/failsafe.h"
 
+#include "drivers/gpio.h"
+#include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 #include "rx/pwm.h"
 #include "rx/sbus.h"
 #include "rx/spektrum.h"
 #include "rx/sumd.h"
+#include "rx/sumh.h"
 #include "rx/msp.h"
 
 #include "rx/rx.h"
@@ -49,6 +52,7 @@ void rxPwmInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 bool sbusInit(rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 bool spektrumInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 bool sumdInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
+bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
 bool rxMspInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
@@ -79,6 +83,7 @@ void useRxConfig(rxConfig_t *rxConfigToUse)
     rxConfig = rxConfigToUse;
 }
 
+#ifdef SERIAL_RX
 void updateSerialRxFunctionConstraint(functionConstraint_t *functionConstraintToUpdate)
 {
     switch (rxConfig->serialrx_provider) {
@@ -92,8 +97,14 @@ void updateSerialRxFunctionConstraint(functionConstraint_t *functionConstraintTo
         case SERIALRX_SUMD:
             sumdUpdateSerialRxFunctionConstraint(functionConstraintToUpdate);
             break;
+        case SERIALRX_SUMH:
+            sumhUpdateSerialRxFunctionConstraint(functionConstraintToUpdate);
+            break;
     }
 }
+#endif
+
+#define STICK_CHANNEL_COUNT 4
 
 void rxInit(rxConfig_t *rxConfig, failsafe_t *initialFailsafe)
 {
@@ -106,9 +117,11 @@ void rxInit(rxConfig_t *rxConfig, failsafe_t *initialFailsafe)
 
     failsafe = initialFailsafe;
 
+#ifdef SERIAL_RX
     if (feature(FEATURE_RX_SERIAL)) {
         serialRxInit(rxConfig);
     }
+#endif
 
     if (feature(FEATURE_RX_MSP)) {
         rxMspInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
@@ -117,8 +130,11 @@ void rxInit(rxConfig_t *rxConfig, failsafe_t *initialFailsafe)
     if (feature(FEATURE_RX_PPM) || feature(FEATURE_RX_PARALLEL_PWM)) {
         rxPwmInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
+
+    rxRuntimeConfig.auxChannelCount = rxRuntimeConfig.channelCount - STICK_CHANNEL_COUNT;
 }
 
+#ifdef SERIAL_RX
 void serialRxInit(rxConfig_t *rxConfig)
 {
     bool enabled = false;
@@ -132,6 +148,9 @@ void serialRxInit(rxConfig_t *rxConfig)
             break;
         case SERIALRX_SUMD:
             enabled = sumdInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
+            break;
+        case SERIALRX_SUMH:
+            enabled = sumhInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
     }
 
@@ -151,9 +170,12 @@ bool isSerialRxFrameComplete(rxConfig_t *rxConfig)
             return sbusFrameComplete();
         case SERIALRX_SUMD:
             return sumdFrameComplete();
+        case SERIALRX_SUMH:
+            return sumhFrameComplete();
     }
     return false;
 }
+#endif
 
 uint8_t calculateChannelRemapping(uint8_t *channelMap, uint8_t channelMapEntryCount, uint8_t channelToRemap)
 {
@@ -171,10 +193,12 @@ void updateRx(void)
 {
     rcDataReceived = false;
 
+#ifdef SERIAL_RX
     // calculate rc stuff from serial-based receivers (spek/sbus)
     if (feature(FEATURE_RX_SERIAL)) {
         rcDataReceived = isSerialRxFrameComplete(rxConfig);
     }
+#endif
 
     if (feature(FEATURE_RX_MSP)) {
         rcDataReceived = rxMspFrameComplete();
@@ -202,11 +226,21 @@ uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
 {
     static int16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
     static int16_t rcDataMean[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT];
+    static bool rxSamplesCollected = false;
 
     uint8_t currentSampleIndex = rcSampleIndex % PPM_AND_PWM_SAMPLE_COUNT;
 
     // update the recent samples and compute the average of them
     rcSamples[chan][currentSampleIndex] = sample;
+
+    // avoid returning an incorrect average which would otherwise occur before enough samples
+    if (!rxSamplesCollected) {
+        if (rcSampleIndex < PPM_AND_PWM_SAMPLE_COUNT) {
+            return sample;
+        }
+        rxSamplesCollected = true;
+    }
+
     rcDataMean[chan] = 0;
 
     uint8_t sampleIndex;
@@ -222,7 +256,7 @@ void processRxChannels(void)
 
     bool shouldCheckPulse = true;
 
-    if (feature(FEATURE_FAILSAFE | FEATURE_RX_PPM)) {
+    if (feature(FEATURE_FAILSAFE) && feature(FEATURE_RX_PPM)) {
         shouldCheckPulse = isPPMDataBeingReceived();
         resetPPMDataReceivedState();
     }
@@ -313,7 +347,7 @@ void updateRSSIPWM(void)
 }
 
 #define RSSI_ADC_SAMPLE_COUNT 16
-#define RSSI_SCALE (0xFFF / 100.0f)
+//#define RSSI_SCALE (0xFFF / 100.0f)
 
 void updateRSSIADC(uint32_t currentTime)
 {
@@ -328,7 +362,7 @@ void updateRSSIADC(uint32_t currentTime)
 
     int16_t adcRssiMean = 0;
     uint16_t adcRssiSample = adcGetChannel(ADC_RSSI);
-    uint8_t rssiPercentage = adcRssiSample / RSSI_SCALE;
+    uint8_t rssiPercentage = adcRssiSample / rxConfig->rssi_scale;
 
     adcRssiSampleIndex = (adcRssiSampleIndex + 1) % RSSI_ADC_SAMPLE_COUNT;
 

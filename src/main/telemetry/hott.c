@@ -58,6 +58,10 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
+#ifdef TELEMETRY
+
 #include "common/axis.h"
 
 #include "drivers/system.h"
@@ -71,6 +75,7 @@
 #include "sensors/battery.h"
 
 #include "flight/flight.h"
+#include "flight/navigation.h"
 #include "io/gps.h"
 
 #include "telemetry/telemetry.h"
@@ -105,12 +110,7 @@ static telemetryConfig_t *telemetryConfig;
 static HOTT_GPS_MSG_t hottGPSMessage;
 static HOTT_EAM_MSG_t hottEAMMessage;
 
-typedef enum {
-    GPS_FIX_CHAR_NONE = '-',
-    GPS_FIX_CHAR_2D = '2',
-    GPS_FIX_CHAR_3D = '3',
-    GPS_FIX_CHAR_DGPS = 'D',
-} gpsFixChar_e;
+static bool useSoftserialRxFailureWorkaround = false;
 
 static void initialiseEAMMessage(HOTT_EAM_MSG_t *msg, size_t size)
 {
@@ -121,6 +121,14 @@ static void initialiseEAMMessage(HOTT_EAM_MSG_t *msg, size_t size)
     msg->stop_byte = 0x7D;
 }
 
+#ifdef GPS
+typedef enum {
+    GPS_FIX_CHAR_NONE = '-',
+    GPS_FIX_CHAR_2D = '2',
+    GPS_FIX_CHAR_3D = '3',
+    GPS_FIX_CHAR_DGPS = 'D',
+} gpsFixChar_e;
+
 static void initialiseGPSMessage(HOTT_GPS_MSG_t *msg, size_t size)
 {
     memset(msg, 0, size);
@@ -129,17 +137,21 @@ static void initialiseGPSMessage(HOTT_GPS_MSG_t *msg, size_t size)
     msg->sensor_id = HOTT_GPS_SENSOR_TEXT_ID;
     msg->stop_byte = 0x7D;
 }
+#endif
 
 static void initialiseMessages(void)
 {
     initialiseEAMMessage(&hottEAMMessage, sizeof(hottEAMMessage));
+#ifdef GPS
     initialiseGPSMessage(&hottGPSMessage, sizeof(hottGPSMessage));
+#endif
 }
 
+#ifdef GPS
 void addGPSCoordinates(HOTT_GPS_MSG_t *hottGPSMessage, int32_t latitude, int32_t longitude)
 {
-    int16_t deg = latitude / 10000000L;
-    int32_t sec = (latitude - (deg * 10000000L)) * 6;
+    int16_t deg = latitude / GPS_DEGREES_DIVIDER;
+    int32_t sec = (latitude - (deg * GPS_DEGREES_DIVIDER)) * 6;
     int8_t min = sec / 1000000L;
     sec = (sec % 1000000L) / 100L;
     uint16_t degMin = (deg * 100L) + min;
@@ -150,8 +162,8 @@ void addGPSCoordinates(HOTT_GPS_MSG_t *hottGPSMessage, int32_t latitude, int32_t
     hottGPSMessage->pos_NS_sec_L = sec;
     hottGPSMessage->pos_NS_sec_H = sec >> 8;
 
-    deg = longitude / 10000000L;
-    sec = (longitude - (deg * 10000000L)) * 6;
+    deg = longitude / GPS_DEGREES_DIVIDER;
+    sec = (longitude - (deg * GPS_DEGREES_DIVIDER)) * 6;
     min = sec / 1000000L;
     sec = (sec % 1000000L) / 100L;
     degMin = (deg * 100L) + min;
@@ -167,7 +179,7 @@ void hottPrepareGPSResponse(HOTT_GPS_MSG_t *hottGPSMessage)
 {
     hottGPSMessage->gps_satelites = GPS_numSat;
 
-    if (!f.GPS_FIX) {
+    if (!STATE(GPS_FIX)) {
         hottGPSMessage->gps_fix_char = GPS_FIX_CHAR_NONE;
         return;
     }
@@ -195,6 +207,7 @@ void hottPrepareGPSResponse(HOTT_GPS_MSG_t *hottGPSMessage)
 
     hottGPSMessage->home_direction = GPS_directionToHome;
 }
+#endif
 
 static inline void hottEAMUpdateBattery(HOTT_EAM_MSG_t *hottEAMMessage)
 {
@@ -204,6 +217,20 @@ static inline void hottEAMUpdateBattery(HOTT_EAM_MSG_t *hottEAMMessage)
     hottEAMMessage->batt1_voltage_H = vbat >> 8;
 }
 
+static inline void hottEAMUpdateCurrentMeter(HOTT_EAM_MSG_t *hottEAMMessage)
+{
+	int32_t amp = amperage / 10;
+	hottEAMMessage->current_L = amp & 0xFF;
+    hottEAMMessage->current_H = amp >> 8;
+}
+
+static inline void hottEAMUpdateBatteryDrawnCapacity(HOTT_EAM_MSG_t *hottEAMMessage)
+{
+	int32_t mAh = mAhDrawn / 10;
+	hottEAMMessage->batt_cap_L = mAh & 0xFF;
+    hottEAMMessage->batt_cap_H = mAh >> 8;
+}
+
 void hottPrepareEAMResponse(HOTT_EAM_MSG_t *hottEAMMessage)
 {
     // Reset alarms
@@ -211,6 +238,8 @@ void hottPrepareEAMResponse(HOTT_EAM_MSG_t *hottEAMMessage)
     hottEAMMessage->alarm_invers1 = 0x0;
 
     hottEAMUpdateBattery(hottEAMMessage);
+    hottEAMUpdateCurrentMeter(hottEAMMessage);
+    hottEAMUpdateBatteryDrawnCapacity(hottEAMMessage);
 }
 
 static void hottSerialWrite(uint8_t c)
@@ -257,6 +286,16 @@ void configureHoTTTelemetryPort(void)
         // FIXME only need to do this if the port is shared
         previousPortMode = hottPort->mode;
         previousBaudRate = hottPort->baudRate;
+#ifdef USE_SOFTSERIAL1
+        if (hottPort->identifier == SERIAL_PORT_SOFTSERIAL1) {
+            useSoftserialRxFailureWorkaround = true;
+        }
+#endif
+#ifdef USE_SOFTSERIAL2
+        if (hottPort->identifier == SERIAL_PORT_SOFTSERIAL2) {
+            useSoftserialRxFailureWorkaround = true;
+        }
+#endif
     }
 }
 
@@ -282,7 +321,9 @@ static inline void hottSendEAMResponse(void)
 
 static void hottPrepareMessages(void) {
     hottPrepareEAMResponse(&hottEAMMessage);
+#ifdef GPS
     hottPrepareGPSResponse(&hottGPSMessage);
+#endif
 }
 
 static void processBinaryModeRequest(uint8_t address) {
@@ -294,6 +335,7 @@ static void processBinaryModeRequest(uint8_t address) {
 #endif
 
     switch (address) {
+#ifdef GPS
         case 0x8A:
 #ifdef HOTT_DEBUG
             hottGPSRequests++;
@@ -302,6 +344,7 @@ static void processBinaryModeRequest(uint8_t address) {
                 hottSendGPSResponse();
             }
             break;
+#endif
         case 0x8E:
 #ifdef HOTT_DEBUG
             hottEAMRequests++;
@@ -314,7 +357,9 @@ static void processBinaryModeRequest(uint8_t address) {
 #ifdef HOTT_DEBUG
     hottBinaryRequests++;
     debug[0] = hottBinaryRequests;
+#ifdef GPS
     debug[1] = hottGPSRequests;
+#endif
     debug[2] = hottEAMRequests;
 #endif
 
@@ -327,11 +372,23 @@ static void flushHottRxBuffer(void)
     }
 }
 
-static void hottCheckSerialData(uint32_t currentMicros) {
-
+static void hottCheckSerialData(uint32_t currentMicros)
+{
     static bool lookingForRequest = true;
 
     uint8_t bytesWaiting = serialTotalBytesWaiting(hottPort);
+
+    if (useSoftserialRxFailureWorkaround) {
+        // FIXME The 0x80 is being read as 0x00 - softserial timing/syncronisation problem somewhere.
+        if (!bytesWaiting) {
+            return;
+        }
+
+        uint8_t incomingByte = serialRead(hottPort);
+        processBinaryModeRequest(incomingByte);
+
+        return;
+    }
 
     if (bytesWaiting <= 1) {
         return;
@@ -434,3 +491,4 @@ void handleHoTTTelemetry(void)
 uint32_t getHoTTTelemetryProviderBaudRate(void) {
     return HOTT_BAUDRATE;
 }
+#endif

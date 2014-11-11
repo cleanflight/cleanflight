@@ -160,9 +160,10 @@ void i2cInitPort(I2C_TypeDef *I2Cx)
     }
 }
 
-void i2cInit(I2C_TypeDef *I2C)
+void i2cInit(I2CDevice index)
 {
-    i2cInitPort(I2C1); // hard coded to use I2C1 for now
+    UNUSED(index);
+    i2cInitPort(I2C1); // FIXME hard coded to use I2C1 for now
 }
 
 uint16_t i2cGetErrorCounter(void)

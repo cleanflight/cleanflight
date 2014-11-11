@@ -17,20 +17,25 @@
 
 #pragma once
 
-extern int32_t errorAltitudeI;
-extern int32_t BaroPID;
 extern int16_t throttleAngleCorrection;
+extern uint32_t accTimeSum;
+extern int accSumCount;
+extern float accVelScale;
 
 typedef struct imuRuntimeConfig_s {
     uint8_t acc_lpf_factor;
     uint8_t acc_unarmedcal;
     float gyro_cmpf_factor;
     float gyro_cmpfm_factor;
+    int8_t small_angle;
 } imuRuntimeConfig_t;
 
-void configureImu(imuRuntimeConfig_t *initialImuRuntimeConfig, pidProfile_t *initialPidProfile, barometerConfig_t *intialBarometerConfig, accDeadband_t *initialAccDeadband);
+void configureImu(imuRuntimeConfig_t *initialImuRuntimeConfig, pidProfile_t *initialPidProfile, accDeadband_t *initialAccDeadband);
 
-int getEstimatedAltitude(void);
+void calculateEstimatedAltitude(uint32_t currentTime);
 void computeIMU(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerConfiguration);
 void calculateThrottleAngleScale(uint16_t throttle_correction_angle);
 int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value);
+void calculateAccZLowPassFilterRCTimeConstant(float accz_lpf_cutoff);
+
+void accSum_reset(void);

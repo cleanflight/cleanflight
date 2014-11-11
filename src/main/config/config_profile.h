@@ -22,10 +22,7 @@ typedef struct profile_s {
 
     pidProfile_t pidProfile;
 
-    controlRateConfig_t controlRateConfig;
-
-    uint8_t dynThrPID;
-    uint16_t tpa_breakpoint;                // Breakpoint where TPA is activated
+    uint8_t defaultRateProfileIndex;
 
     int16_t mag_declination;                // Get your magnetic decliniation from here : http://magnetic-declination.com/
                                             // For example, -6deg 37min, = -637 Japan, format is [sign]dddmm (degreesminutes) default is zero.
@@ -34,20 +31,20 @@ typedef struct profile_s {
 
     // sensor-related stuff
     uint8_t acc_lpf_factor;                 // Set the Low Pass Filter factor for ACC. Increasing this value would reduce ACC noise (visible in GUI), but would increase ACC lag time. Zero = no filter
+    float accz_lpf_cutoff;                  // cutoff frequency for the low pass filter used on the acc z-axis for althold in Hz
     accDeadband_t accDeadband;
 
     barometerConfig_t barometerConfig;
 
-
     uint8_t acc_unarmedcal;                 // turn automatic acc compensation on/off
 
-    uint32_t activate[CHECKBOX_ITEM_COUNT]; // activate switches, bitmask, 3 bits per channel, lower 16 bits aux1-4, upper 16 bits aux 5-8
+    modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
+
+    adjustmentRange_t adjustmentRanges[MAX_ADJUSTMENT_RANGE_COUNT];
 
     // Radio/ESC-related configuration
-    uint8_t deadband;                       // introduce a deadband around the stick center for pitch and roll axis. Must be greater than zero.
-    uint8_t yaw_deadband;                    // introduce a deadband around the stick center for yaw axis. Must be greater than zero.
-    uint8_t alt_hold_throttle_neutral;      // defines the neutral zone of throttle stick during altitude hold, default setting is +/-40
-    uint8_t alt_hold_fast_change;           // when disabled, turn off the althold when throttle stick is out of deadband defined with alt_hold_throttle_neutral; when enabled, altitude changes slowly proportional to stick movement
+
+    rcControlsConfig_t rcControlsConfig;
 
     uint16_t throttle_correction_angle;     // the angle when the throttle correction is maximal. in 0.1 degres, ex 225 = 22.5 ,30.0, 450 = 45.0 deg
     uint8_t throttle_correction_value;      // the correction that will be applied at throttle_correction_angle.
@@ -64,5 +61,7 @@ typedef struct profile_s {
     // gimbal-related configuration
     gimbalConfig_t gimbalConfig;
 
+#ifdef GPS
     gpsProfile_t gpsProfile;
+#endif
 } profile_t;

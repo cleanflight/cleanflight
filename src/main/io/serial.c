@@ -22,6 +22,8 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #include "drivers/system.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
@@ -30,10 +32,10 @@
 #include "drivers/serial_uart.h"
 #include "drivers/serial_usb_vcp.h"
 
+#include "io/serial.h"
 #include "serial_cli.h"
 #include "serial_msp.h"
 
-#include "io/serial.h"
 #include "config/config.h"
 
 uint32_t getTelemetryProviderBaudRate(void);
@@ -67,34 +69,56 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USB_VCP,     NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_USART2,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
-    {SERIAL_PORT_SOFTSERIAL1, NULL, SCENARIO_UNUSED, FUNCTION_NONE},
-    {SERIAL_PORT_SOFTSERIAL2, NULL, SCENARIO_UNUSED, FUNCTION_NONE}
+#if (SERIAL_PORT_COUNT > 3)
+    {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+    {SERIAL_PORT_USART4,      NULL, SCENARIO_UNUSED, FUNCTION_NONE}
+#endif
 };
 
-const static serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USB_VCP,       9600,   115200,   SPF_NONE },
     {SERIAL_PORT_USART1,        9600,   115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
     {SERIAL_PORT_USART2,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE},
-    {SERIAL_PORT_SOFTSERIAL1,   9600,   19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE},
-    {SERIAL_PORT_SOFTSERIAL2,   9600,   19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
+#if (SERIAL_PORT_COUNT > 3)
+    {SERIAL_PORT_USART3,        9600,   19200,    SPF_SUPPORTS_CALLBACK},
+    {SERIAL_PORT_USART4,        9600,   19200,    SPF_SUPPORTS_CALLBACK}
+#endif
 };
 
+#else
+
+#ifdef CC3D
+static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
+    {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+    {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+    {SERIAL_PORT_SOFTSERIAL1, NULL, SCENARIO_UNUSED, FUNCTION_NONE}
+};
+
+static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+    {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
+    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE},
+    {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
+};
 #else
 
 static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_USART2,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+#if (SERIAL_PORT_COUNT > 2)
     {SERIAL_PORT_SOFTSERIAL1, NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_SOFTSERIAL2, NULL, SCENARIO_UNUSED, FUNCTION_NONE}
+#endif
 };
 
-const static serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
     {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE },
     {SERIAL_PORT_USART2,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE},
+#if (SERIAL_PORT_COUNT > 2)
     {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE},
     {SERIAL_PORT_SOFTSERIAL2,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
+#endif
 };
-
+#endif
 #endif
 
 const functionConstraint_t functionConstraints[] = {
@@ -149,15 +173,17 @@ static serialPortIndex_e lookupSerialPortIndexByIdentifier(serialPortIdentifier_
     return portIndex;
 }
 
+#define IDENTIFIER_NOT_FOUND 0xFF
+
 static uint8_t lookupSerialPortFunctionIndexByIdentifier(serialPortIdentifier_e identifier)
 {
     uint8_t index;
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
         if (serialPortFunctions[index].identifier == identifier) {
-            break;
+            return index;
         }
     }
-    return index;
+    return IDENTIFIER_NOT_FOUND;
 }
 
 static const functionConstraint_t *findFunctionConstraint(serialPortFunction_e function)
@@ -185,12 +211,26 @@ static int serialPortFunctionMostSpecificFirstComparator(const void *aPtr, const
     serialPortFunction_t *a = (serialPortFunction_t *)aPtr;
     serialPortFunction_t *b = (serialPortFunction_t *)bPtr;
 
-    return countBits_uint32(a->scenario) > countBits_uint32(b->scenario);
+    return countBits_uint32(a->scenario) - countBits_uint32(b->scenario);
 }
 
 static void sortSerialPortFunctions(serialPortFunction_t *serialPortFunctions, uint8_t elements)
 {
-    qsort(serialPortFunctions, elements, sizeof(serialPortFunction_t), serialPortFunctionMostSpecificFirstComparator);
+    serialPortFunction_t swap;
+
+    int index1;
+    int index2;
+
+    // bubble-sort array (TODO - port selection can be implemented as repeated minimum search with bitmask marking used elements)
+    for (index1 = 0; index1 < (elements - 1); index1++) {
+        for (index2 = 0; index2 < elements - index1 - 1; index2++) {
+            if(serialPortFunctionMostSpecificFirstComparator(&serialPortFunctions[index2], &serialPortFunctions[index2 + 1]) > 0) {
+                swap = serialPortFunctions[index2];
+                serialPortFunctions[index2] = serialPortFunctions[index2 + 1];
+                serialPortFunctions[index2 + 1] = swap;
+            }
+        }
+    }
 }
 
 serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, const functionConstraint_t *functionConstraint, serialPortSearchResult_t *resultBuffer)
@@ -207,12 +247,21 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         uint8_t serialPortIndex = lookupSerialPortIndexByIdentifier(serialPortFunction->identifier);
         const serialPortConstraint_t *serialPortConstraint = &serialPortConstraints[serialPortIndex];
 
+#if defined(USE_SOFTSERIAL1) ||(defined(USE_SOFTSERIAL2))
         if (!feature(FEATURE_SOFTSERIAL) && (
                 serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1 ||
                 serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2
         )) {
             continue;
         }
+
+#if (defined(NAZE) || defined(OLIMEXINO)) && defined(SONAR)
+        if (feature(FEATURE_SONAR) && !feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {
+            continue;
+        }
+#endif
+
+#endif
 
         if (functionConstraint->requiredSerialPortFeatures != SPF_NONE) {
             if (!(serialPortConstraint->feature & functionConstraint->requiredSerialPortFeatures)) {
@@ -319,9 +368,11 @@ void beginSerialPortFunction(serialPort_t *port, serialPortFunction_e function)
 
 void endSerialPortFunction(serialPort_t *port, serialPortFunction_e function)
 {
+    UNUSED(function);
     serialPortFunction_t *serialPortFunction = findSerialPortFunctionByPort(port);
 
     serialPortFunction->currentFunction = FUNCTION_NONE;
+    serialPortFunction->port = NULL;
 }
 
 functionConstraint_t *getConfiguredFunctionConstraint(serialPortFunction_e function)
@@ -350,13 +401,17 @@ functionConstraint_t *getConfiguredFunctionConstraint(serialPortFunction_e funct
             configuredFunctionConstraint.maxBaudRate = configuredFunctionConstraint.minBaudRate;
             break;
 
+#ifdef TELEMETRY
         case FUNCTION_TELEMETRY:
             configuredFunctionConstraint.minBaudRate = getTelemetryProviderBaudRate();
             configuredFunctionConstraint.maxBaudRate = configuredFunctionConstraint.minBaudRate;
             break;
+#endif
+#ifdef SERIAL_RX
         case FUNCTION_SERIAL_RX:
             updateSerialRxFunctionConstraint(&configuredFunctionConstraint);
             break;
+#endif
         case FUNCTION_GPS:
             configuredFunctionConstraint.maxBaudRate = serialConfig->gps_baudrate;
             break;
@@ -403,10 +458,25 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
         return false;
     }
 
+    uint8_t functionIndex;
+    uint8_t cliPortCount = 0;
+    uint8_t mspPortCount = 0;
+    for (functionIndex = 0; functionIndex < SERIAL_PORT_COUNT; functionIndex++) {
+        if (serialPortFunctions[functionIndex].scenario & FUNCTION_CLI) {
+            if (++cliPortCount > 1) {
+                return false;
+            }
+        }
+        if (serialPortFunctions[functionIndex].scenario & FUNCTION_MSP) {
+            if (++mspPortCount > MAX_MSP_PORT_COUNT) {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
-bool doesConfigurationUsePort(serialConfig_t *serialConfig, serialPortIdentifier_e portIdentifier)
+bool doesConfigurationUsePort(serialPortIdentifier_e portIdentifier)
 {
     serialPortSearchResult_t *searchResult;
     const functionConstraint_t *functionConstraint;
@@ -443,20 +513,28 @@ bool isSerialPortFunctionShared(serialPortFunction_e functionToUse, uint16_t fun
     return result->portFunction->scenario & functionMask;
 }
 
+serialPort_t *findSharedSerialPort(serialPortFunction_e functionToUse, uint16_t functionMask)
+{
+    functionConstraint_t *functionConstraint = getConfiguredFunctionConstraint(functionToUse);
+    serialPortSearchResult_t *result = findSerialPort(functionToUse, functionConstraint);
+
+    if (result->portFunction->scenario & functionMask) {
+        return result->portFunction->port;
+    }
+    return NULL;
+}
+
 void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)
 {
-#ifdef STM32F303xC
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_USB_VCP)].scenario = serialPortScenarios[serialConfig->serial_port_1_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_USART1)].scenario = serialPortScenarios[serialConfig->serial_port_2_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_USART2)].scenario = serialPortScenarios[serialConfig->serial_port_3_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_SOFTSERIAL1)].scenario = serialPortScenarios[serialConfig->serial_port_4_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_SOFTSERIAL2)].scenario = serialPortScenarios[serialConfig->serial_port_5_scenario];
-#else
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_USART1)].scenario = serialPortScenarios[serialConfig->serial_port_1_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_USART2)].scenario = serialPortScenarios[serialConfig->serial_port_2_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_SOFTSERIAL1)].scenario = serialPortScenarios[serialConfig->serial_port_3_scenario];
-    serialPortFunctions[lookupSerialPortFunctionIndexByIdentifier(SERIAL_PORT_SOFTSERIAL2)].scenario = serialPortScenarios[serialConfig->serial_port_4_scenario];
-#endif
+    uint32_t portIndex = 0, serialPortIdentifier;
+
+    for (serialPortIdentifier = 0; serialPortIdentifier < SERIAL_PORT_IDENTIFIER_COUNT && portIndex < SERIAL_PORT_COUNT; serialPortIdentifier++) {
+        uint32_t functionIndex = lookupSerialPortFunctionIndexByIdentifier(serialPortIdentifier);
+        if (functionIndex == IDENTIFIER_NOT_FOUND) {
+            continue;
+        }
+        serialPortFunctions[functionIndex].scenario = serialPortScenarios[serialConfig->serial_port_scenario[portIndex++]];
+    }
 }
 
 serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
@@ -490,24 +568,39 @@ serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbac
 
     serialPortIdentifier_e identifier = serialPortConstraint->identifier;
     switch(identifier) {
-#ifdef STM32F303xC
+#ifdef USE_VCP
         case SERIAL_PORT_USB_VCP:
             serialPort = usbVcpOpen();
             break;
 #endif
+#ifdef USE_USART1
         case SERIAL_PORT_USART1:
             serialPort = uartOpen(USART1, callback, baudRate, mode, inversion);
             break;
+#endif
+#ifdef USE_USART2
         case SERIAL_PORT_USART2:
             serialPort = uartOpen(USART2, callback, baudRate, mode, inversion);
             break;
+#endif
+#ifdef USE_USART3
+        case SERIAL_PORT_USART3:
+            serialPort = uartOpen(USART3, callback, baudRate, mode, inversion);
+            break;
+#endif
+#ifdef USE_SOFTSERIAL1
         case SERIAL_PORT_SOFTSERIAL1:
             serialPort = openSoftSerial(SOFTSERIAL1, callback, baudRate, inversion);
             serialSetMode(serialPort, mode);
             break;
+#endif
+#ifdef USE_SOFTSERIAL2
         case SERIAL_PORT_SOFTSERIAL2:
             serialPort = openSoftSerial(SOFTSERIAL2, callback, baudRate, inversion);
             serialSetMode(serialPort, mode);
+            break;
+#endif
+        default:
             break;
     }
 
@@ -562,6 +655,6 @@ void evaluateOtherData(uint8_t sr)
     if (sr == '#')
         cliProcess();
     else if (sr == serialConfig->reboot_character)
-        systemReset(true);      // reboot to bootloader
+        systemResetToBootloader();
 }
 
