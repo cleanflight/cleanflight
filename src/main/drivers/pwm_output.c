@@ -27,6 +27,8 @@
 
 #include "flight/failsafe.h" // FIXME dependency into the main code from a driver
 
+#include "config/config.h" // FIXME dependency into the main code from a driver
+
 #include "pwm_mapping.h"
 
 #include "pwm_output.h"
@@ -127,7 +129,18 @@ static void pwmWriteBrushed(uint8_t index, uint16_t value)
 
 static void pwmWriteStandard(uint8_t index, uint16_t value)
 {
-    *motors[index]->ccr = value;
+	if(feature(FEATURE_ONESHOT125) && (index == 0)){
+		TIM_Cmd(TIM1, DISABLE);
+		TIM_Cmd(TIM4, DISABLE);
+		*motors[index]->ccr = value;
+    	TIM_SetCounter(TIM1, 0xfffe);
+    	TIM_SetCounter(TIM4, 0xfffe);
+		TIM_Cmd(TIM1, ENABLE);
+		TIM_Cmd(TIM4, ENABLE);
+	} else {
+	    *motors[index]->ccr = value;
+	}
+
 }
 
 void pwmWriteMotor(uint8_t index, uint16_t value)
@@ -154,7 +167,11 @@ void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIn
 void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
 	uint32_t hz = PWM_TIMER_MHZ * 1000000;
-	motors[motorIndex] = pwmOutConfig(timerHardware, PWM_TIMER_MHZ, hz / motorPwmRate, idlePulse);
+	if(feature(FEATURE_ONESHOT125)){
+		motors[motorIndex] = pwmOutConfig(timerHardware, ONESHOT125_TIMER_MHZ, 0xFFFF, idlePulse);
+	} else {
+		motors[motorIndex] = pwmOutConfig(timerHardware, PWM_TIMER_MHZ, hz / motorPwmRate, idlePulse);
+	}
 	motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
