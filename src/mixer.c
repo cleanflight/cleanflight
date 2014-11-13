@@ -111,6 +111,13 @@ static const motorMixer_t mixerVtail4[] = {
     { 1.0f,  1.0f, -1.0f, -0.0f },          // FRONT_L
 };
 
+static const motorMixer_t mixerAtail4[] = {
+    { 1.0f,  0.0f,  1.0f,  1.0f },          // REAR_R
+    { 1.0f, -1.0f, -1.0f,  0.0f },          // FRONT_R
+    { 1.0f,  0.0f,  1.0f, -1.0f },          // REAR_L
+    { 1.0f,  1.0f, -1.0f, -0.0f },          // FRONT_L
+};
+
 static const motorMixer_t mixerHex6H[] = {
     { 1.0f, -1.0f,  1.0f, -1.0f },     // REAR_R
     { 1.0f, -1.0f, -1.0f,  1.0f },     // FRONT_R
@@ -151,6 +158,7 @@ const mixer_t mixers[] = {
     { 2, 1, mixerDualcopter  },    // MULTITYPE_DUALCOPTER
     { 1, 1, NULL },                // MULTITYPE_SINGLECOPTER
     { 0, 0, NULL },                // MULTITYPE_CUSTOM
+    { 4, 0, mixerAtail4 },         // MULTITYPE_ATAIL4
 };
 
 int16_t servoMiddle(int nr)
