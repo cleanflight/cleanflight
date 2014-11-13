@@ -50,7 +50,8 @@ typedef enum MultiType
     MULTITYPE_DUALCOPTER = 20,
     MULTITYPE_SINGLECOPTER = 21,
     MULTITYPE_CUSTOM = 22,          // no current GUI displays this
-    MULTITYPE_LAST = 23
+    MULTITYPE_ATAIL4 = 23,
+    MULTITYPE_LAST = 24
 } MultiType;
 
 typedef enum GimbalFlags {
