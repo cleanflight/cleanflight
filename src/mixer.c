@@ -157,8 +157,8 @@ const mixer_t mixers[] = {
     { 0, 1, NULL },                // * MULTITYPE_PPM_TO_SERVO
     { 2, 1, mixerDualcopter  },    // MULTITYPE_DUALCOPTER
     { 1, 1, NULL },                // MULTITYPE_SINGLECOPTER
-    { 0, 0, NULL },                // MULTITYPE_CUSTOM
     { 4, 0, mixerAtail4 },         // MULTITYPE_ATAIL4
+    { 0, 0, NULL },                // MULTITYPE_CUSTOM
 };
 
 int16_t servoMiddle(int nr)
