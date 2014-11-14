@@ -54,7 +54,7 @@ static const char * const mixerNames[] = {
     "FLYING_WING", "Y4", "HEX6X", "OCTOX8", "OCTOFLATP", "OCTOFLATX",
     "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4", 
     "HEX6H", "PPM_TO_SERVO", "DUALCOPTER", "SINGLECOPTER",
-    "CUSTOM", NULL
+    "ATAIL4", "CUSTOM", NULL
 };
 
 // sync this with AvailableFeatures enum from board.h
