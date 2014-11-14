@@ -49,8 +49,8 @@ typedef enum MultiType
     MULTITYPE_PPM_TO_SERVO = 19,    // PPM -> servo relay 
     MULTITYPE_DUALCOPTER = 20,
     MULTITYPE_SINGLECOPTER = 21,
-    MULTITYPE_CUSTOM = 22,          // no current GUI displays this
-    MULTITYPE_ATAIL4 = 23,
+    MULTITYPE_ATAIL4 = 22,
+    MULTITYPE_CUSTOM = 23,          // no current GUI displays this
     MULTITYPE_LAST = 24
 } MultiType;
 
