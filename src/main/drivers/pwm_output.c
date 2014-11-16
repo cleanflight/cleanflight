@@ -37,6 +37,7 @@ typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function poi
 
 typedef struct {
     volatile timCCR_t *ccr;
+    volatile timCNT_t *cnt;
     uint16_t period;
     pwmWriteFuncPtr pwmWritePtr;
 } pwmOutputPort_t;
@@ -45,6 +46,7 @@ static pwmOutputPort_t pwmOutputPorts[MAX_PWM_OUTPUT_PORTS];
 
 static pwmOutputPort_t *motors[MAX_PWM_MOTORS];
 static pwmOutputPort_t *servos[MAX_PWM_SERVOS];
+static volatile uint16_t* lastCounterPtr;
 
 #define PWM_BRUSHED_TIMER_MHZ 8
 
@@ -118,6 +120,7 @@ static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8
             break;
     }
     p->period = period;
+    p->cnt = &timerHardware->tim->CNT;
 
     return p;
 }
@@ -129,18 +132,19 @@ static void pwmWriteBrushed(uint8_t index, uint16_t value)
 
 static void pwmWriteStandard(uint8_t index, uint16_t value)
 {
-	if(feature(FEATURE_ONESHOT125) && (index == 0)){
-		TIM_Cmd(TIM1, DISABLE);
-		TIM_Cmd(TIM4, DISABLE);
-		*motors[index]->ccr = value;
-    	TIM_SetCounter(TIM1, 0xfffe);
-    	TIM_SetCounter(TIM4, 0xfffe);
-		TIM_Cmd(TIM1, ENABLE);
-		TIM_Cmd(TIM4, ENABLE);
-	} else {
-	    *motors[index]->ccr = value;
+	*motors[index]->ccr = value;
+}
+
+static void pwmWriteOneshot125(uint8_t index, uint16_t value)
+{
+	// Set the counter to overflow if it's the first motor to output, or if we change timers
+	if((index == 0) || (motors[index]->cnt != lastCounterPtr)){
+		lastCounterPtr = motors[index]->cnt;
+
+		*motors[index]->cnt = 0xfffe;
 	}
 
+	*motors[index]->ccr = value;
 }
 
 void pwmWriteMotor(uint8_t index, uint16_t value)
@@ -167,12 +171,14 @@ void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIn
 void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
 	uint32_t hz = PWM_TIMER_MHZ * 1000000;
+
 	if(feature(FEATURE_ONESHOT125)){
 		motors[motorIndex] = pwmOutConfig(timerHardware, ONESHOT125_TIMER_MHZ, 0xFFFF, idlePulse);
+		motors[motorIndex]->pwmWritePtr = pwmWriteOneshot125;
 	} else {
 		motors[motorIndex] = pwmOutConfig(timerHardware, PWM_TIMER_MHZ, hz / motorPwmRate, idlePulse);
+		motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 	}
-	motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
 void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse)
