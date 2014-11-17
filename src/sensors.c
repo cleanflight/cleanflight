@@ -106,7 +106,7 @@ retry:
 
     // Found anything? Check if user fucked up or ACC is really missing.
     if (accHardware == ACC_DEFAULT) {
-        if (mcfg.acc_hardware > ACC_DEFAULT) {
+        if (mcfg.acc_hardware > ACC_DEFAULT && mcfg.acc_hardware < ACC_NONE) {
             // Nothing was found and we have a forced sensor type. Stupid user probably chose a sensor that isn't present.
             mcfg.acc_hardware = ACC_DEFAULT;
             goto retry;
@@ -163,7 +163,7 @@ retry:
     
     // Found anything? Check if user fucked up or mag is really missing.
     if (magHardware == MAG_DEFAULT) {
-        if (mcfg.mag_hardware > MAG_DEFAULT) {
+        if (mcfg.mag_hardware > MAG_DEFAULT && mcfg.mag_hardware < MAG_NONE) {
             // Nothing was found and we have a forced sensor type. Stupid user probably chose a sensor that isn't present.
             mcfg.mag_hardware = MAG_DEFAULT;
             goto retryMag;
