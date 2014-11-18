@@ -62,6 +62,7 @@ static const char * const featureNames[] = {
     "PPM", "VBAT", "INFLIGHT_ACC_CAL", "SERIALRX", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "LED_RING", "GPS",
     "FAILSAFE", "SONAR", "TELEMETRY", "POWERMETER", "VARIO", "3D",
+    "FAILSAFE_RTH",
     NULL
 };
 
@@ -145,6 +146,11 @@ const clivalue_t valueTable[] = {
     { "retarded_arm", VAR_UINT8, &mcfg.retarded_arm, 0, 1 },
     { "disarm_kill_switch", VAR_UINT8, &mcfg.disarm_kill_switch, 0, 1 },
     { "flaps_speed", VAR_UINT8, &mcfg.flaps_speed, 0, 100 },
+    { "flaps", VAR_UINT8, &mcfg.flaps, 0, 1 },
+    { "flaperons_channel", VAR_UINT8, &mcfg.flaperons, 0, 16 },
+    { "flaperons_min", VAR_UINT16, &mcfg.flaperons_min, 1000, 2000 },
+    { "flaperons_max", VAR_UINT16, &mcfg.flaperons_max, 1000, 2000 },
+    { "flaperons_invert", VAR_UINT8, &cfg.flaperons_invert, 0, 3 },
     { "fixedwing_althold_dir", VAR_INT8, &mcfg.fixedwing_althold_dir, -1, 1 },
     { "reboot_character", VAR_UINT8, &mcfg.reboot_character, 48, 126 },
     { "serial_baudrate", VAR_UINT32, &mcfg.serial_baudrate, 1200, 115200 },
@@ -206,6 +212,9 @@ const clivalue_t valueTable[] = {
     { "rssi_adc_offset", VAR_INT16, &mcfg.rssi_adc_offset, 0, 4095 },
     { "yaw_direction", VAR_INT8, &cfg.yaw_direction, -1, 1 },
     { "tri_unarmed_servo", VAR_INT8, &cfg.tri_unarmed_servo, 0, 1 },
+    { "fixedwing_rollrate", VAR_FLOAT, &cfg.fixedwing_rollrate, 0, 1 },
+    { "fixedwing_pitchrate", VAR_FLOAT, &cfg.fixedwing_pitchrate, 0, 1 },
+    { "vector_trust", VAR_UINT8, &cfg.vector_trust, 0, 1},
     { "gimbal_flags", VAR_UINT8, &cfg.gimbal_flags, 0, 255},
     { "acc_lpf_factor", VAR_UINT8, &cfg.acc_lpf_factor, 0, 250 },
     { "accxy_deadband", VAR_UINT8, &cfg.accxy_deadband, 0, 100 },
@@ -252,6 +261,15 @@ const clivalue_t valueTable[] = {
     { "p_vel", VAR_UINT8, &cfg.P8[PIDVEL], 0, 200 },
     { "i_vel", VAR_UINT8, &cfg.I8[PIDVEL], 0, 200 },
     { "d_vel", VAR_UINT8, &cfg.D8[PIDVEL], 0, 200 },
+    { "gps_maxcorr", VAR_INT16, &cfg.gps_maxcorr, -45, 45 },
+    { "gps_rudder", VAR_INT16, &cfg.gps_rudder,  -45, 45 },
+    { "gps_maxclimb", VAR_INT16, &cfg.gps_maxclimb,  -45, 45 },
+    { "gps_maxdive", VAR_INT16, &cfg.gps_maxdive,  -45, 45 },
+    { "climb_throttle", VAR_UINT16, &cfg.climb_throttle, 1000, 2000 },
+    { "cruice_throttle", VAR_UINT16, &cfg.cruice_throttle, 1000, 2000 },
+    { "idle_throttle", VAR_UINT16, &cfg.idle_throttle, 1000, 2000 },
+    { "scaler_throttle", VAR_UINT16, &cfg.scaler_throttle, 0, 15 },
+    { "roll_comp", VAR_FLOAT, &cfg.roll_comp, 0, 2 },
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
@@ -799,6 +817,20 @@ static void cliMixer(char *cmdline)
         if (strncasecmp(cmdline, mixerNames[i], len) == 0) {
             mcfg.mixerConfiguration = i + 1;
             printf("Mixer set to %s\r\n", mixerNames[i]);
+
+            // Presets for planes. Not functional with current reset
+            // Really Ugly Hack
+            if (mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_AIRPLANE) {
+                cfg.dynThrPID = 50;
+                cfg.rcExpo8 = 0;
+                cfg.P8[PIDALT] = 30;
+                cfg.I8[PIDALT] = 20;
+                cfg.D8[PIDALT] = 45;
+                cfg.D8[PIDPOSR] = 50; // RTH Alt
+                cfg.P8[PIDNAVR] = 30;
+                cfg.I8[PIDNAVR] = 20;
+                cfg.D8[PIDNAVR] = 45;
+            }
             break;
         }
     }

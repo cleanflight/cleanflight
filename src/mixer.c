@@ -132,6 +132,11 @@ static const motorMixer_t mixerDualcopter[] = {
     { 1.0f,  0.0f,  0.0f,  1.0f },          // RIGHT
 };
 
+static const motorMixer_t mixerTrustVector[] = {
+    { 1.0f,  0.0f,  0.0f, -0.5f },          // LEFT
+    { 1.0f,  0.0f,  0.0f,  0.5f },          // RIGHT
+};
+
 // Keep this synced with MultiType struct in mw.h!
 const mixer_t mixers[] = {
 //    Mo Se Mixtable
@@ -143,7 +148,7 @@ const mixer_t mixers[] = {
     { 0, 1, NULL },                // * MULTITYPE_GIMBAL
     { 6, 0, mixerY6 },             // MULTITYPE_Y6
     { 6, 0, mixerHex6P },          // MULTITYPE_HEX6
-    { 1, 1, NULL },                // * MULTITYPE_FLYING_WING
+    { 2, 1, mixerTrustVector },     // * MULTITYPE_FLYING_WING
     { 4, 0, mixerY4 },             // MULTITYPE_Y4
     { 6, 0, mixerHex6X },          // MULTITYPE_HEX6X
     { 8, 0, mixerOctoX8 },         // MULTITYPE_OCTOX8
@@ -343,48 +348,65 @@ static void airplaneMixer(void)
         servo[7] = mcfg.mincommand; // Kill throttle when disarmed
     else
         servo[7] = constrain(rcCommand[THROTTLE], mcfg.minthrottle, mcfg.maxthrottle);
-    motor[0] = servo[7];
+        motor[0] = servo[7];
+        //motor[0] = rcCommand[THROTTLE]; // set motor_pwm_rate rate to 50 for servos
 
-#if 0
-    if (cfg.flaperons) {
-
-
+    if (mcfg.flaperons) {
+        static int16_t temp_Flprns;
+        int8_t flpDir = cfg.flaperons_invert;
+        int16_t flpInput = constrain(rcData[mcfg.flaperons-1], mcfg.flaperons_min, mcfg.flaperons_max);
+        flpInput = mcfg.midrc - flpInput;
+        
+        if (mcfg.flaps_speed == 0)
+            temp_Flprns = flpInput;
+        else if (temp_Flprns < flpInput)
+            temp_Flprns = constrain(temp_Flprns + mcfg.flaps_speed, temp_Flprns, flpInput);
+        else if (temp_Flprns > flpInput)
+            temp_Flprns = constrain(temp_Flprns - mcfg.flaps_speed, flpInput, temp_Flprns);
+        
+        flapperons[0] = temp_Flprns;
+        flapperons[1] = -temp_Flprns;
+        if(flpDir == 1 || flpDir == 3)
+            flapperons[0] *= -1;
+        if(flpDir >= 2)
+            flapperons[1] *= -1;
     }
-#endif
 
-    if (mcfg.flaps_speed) {
+    if (mcfg.flaps) {
         // configure SERVO3 middle point in GUI to using an AUX channel for FLAPS control
         // use servo min, servo max and servo rate for proper endpoints adjust
-        static int16_t slow_LFlaps;
-        int16_t lFlap = servoMiddle(2);
+        static int16_t temp_Flaps;
+        int16_t flaps_Input = constrain(servoMiddle(2), cfg.servoConf[2].min, cfg.servoConf[2].max);
+        flaps_Input = mcfg.midrc - flaps_Input;
+        if(mcfg.flaps_speed == 0)
+            temp_Flaps = flaps_Input;
+        else if(temp_Flaps < flaps_Input)
+            temp_Flaps = constrain(temp_Flaps + mcfg.flaps_speed,temp_Flaps , flaps_Input);
+        else if(temp_Flaps > flaps_Input)
+            temp_Flaps = constrain(temp_Flaps - mcfg.flaps_speed, flaps_Input, temp_Flaps);
 
-        lFlap = constrain(lFlap, cfg.servoConf[2].min, cfg.servoConf[2].max);
-        lFlap = mcfg.midrc - lFlap; // shouldn't this be servoConf[2].middle?
-        if (slow_LFlaps < lFlap)
-            slow_LFlaps += mcfg.flaps_speed;
-        else if (slow_LFlaps > lFlap)
-            slow_LFlaps -= mcfg.flaps_speed;
-
-        servo[2] = ((int32_t)cfg.servoConf[2].rate * slow_LFlaps) / 100L;
+        servo[2] = ((int32_t)cfg.servoConf[2].rate * temp_Flaps) / 100;
         servo[2] += mcfg.midrc;
     }
 
     if (f.PASSTHRU_MODE) {   // Direct passthru from RX
-        servo[3] = rcCommand[ROLL] + flapperons[0];     // Wing 1
-        servo[4] = rcCommand[ROLL] + flapperons[1];     // Wing 2
-        servo[5] = rcCommand[YAW];                      // Rudder
-        servo[6] = rcCommand[PITCH];                    // Elevator
+        servo[3] = rcCommand[ROLL];     // Wing 1
+        servo[4] = rcCommand[ROLL];     // Wing 2
+        servo[5] = rcCommand[YAW];      // Rudder
+        servo[6] = rcCommand[PITCH];    // Elevator
     } else {
         // Assisted modes (gyro only or gyro+acc according to AUX configuration in Gui
-        servo[3] = axisPID[ROLL] + flapperons[0];       // Wing 1
-        servo[4] = axisPID[ROLL] + flapperons[1];       // Wing 2
-        servo[5] = axisPID[YAW];                        // Rudder
-        servo[6] = axisPID[PITCH];                      // Elevator
+        servo[3] = axisPID[ROLL];        // Wing 1
+        servo[4] = axisPID[ROLL];        // Wing 2
+        servo[5] = axisPID[YAW];         // Rudder
+        servo[6] = axisPID[PITCH];       // Elevator
     }
     for (i = 3; i < 7; i++) {
         servo[i] = ((int32_t)cfg.servoConf[i].rate * servo[i]) / 100L; // servo rates
         servo[i] += servoMiddle(i);
     }
+		servo[3] += flapperons[0];
+		servo[4] += flapperons[1];
 }
 
 void mixTable(void)
@@ -423,19 +445,26 @@ void mixTable(void)
             break;
 
         case MULTITYPE_FLYING_WING:
-            if (!f.ARMED)
-                servo[7] = mcfg.mincommand;
-            else
-                servo[7] = constrain(rcCommand[THROTTLE], mcfg.minthrottle, mcfg.maxthrottle);
-            motor[0] = servo[7];
+            if (!cfg.vector_trust) {
+                motor[0] = rcCommand[THROTTLE]; // set motor_pwm_rate rate to 50 for servos
+                motor[1] = rcCommand[THROTTLE];
+            }
+				
+            servo[7] = motor[0];
+            servo[6] = motor[1];
+            if (!f.ARMED) {
+                servo[7] = mcfg.mincommand; // Kill throttle when disarmed
+                servo[6] = mcfg.mincommand; // Kill throttle when disarmed
+            }		   
+
             if (f.PASSTHRU_MODE) {
                 // do not use sensors for correction, simple 2 channel mixing
-                servo[3] = (servoDirection(3, 1) * rcCommand[PITCH]) + (servoDirection(3, 2) * rcCommand[ROLL]);
-                servo[4] = (servoDirection(4, 1) * rcCommand[PITCH]) + (servoDirection(4, 2) * rcCommand[ROLL]);
+                servo[3] = ((servoDirection(3, 1) * rcCommand[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(3, 2) * rcCommand[ROLL]) * cfg.fixedwing_rollrate);
+                servo[4] = ((servoDirection(4, 1) * rcCommand[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(4, 2) * rcCommand[ROLL]) * cfg.fixedwing_rollrate);
             } else {
                 // use sensors to correct (gyro only or gyro + acc)
-                servo[3] = (servoDirection(3, 1) * axisPID[PITCH]) + (servoDirection(3, 2) * axisPID[ROLL]);
-                servo[4] = (servoDirection(4, 1) * axisPID[PITCH]) + (servoDirection(4, 2) * axisPID[ROLL]);
+                servo[3] = ((servoDirection(3, 1) * axisPID[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(3, 2) * axisPID[ROLL]) * cfg.fixedwing_rollrate);
+                servo[4] = ((servoDirection(4, 1) * axisPID[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(4, 2) * axisPID[ROLL]) * cfg.fixedwing_rollrate);
             }
             servo[3] += servoMiddle(3);
             servo[4] += servoMiddle(4);
@@ -506,8 +535,12 @@ void mixTable(void)
             if ((rcData[THROTTLE]) < mcfg.mincheck) {
                 if (!feature(FEATURE_MOTOR_STOP))
                     motor[i] = mcfg.minthrottle;
-                else
+                else { 
                     motor[i] = mcfg.mincommand;
+                    f.MOTORS_STOPPED = 1;
+                }
+            } else {
+                f.MOTORS_STOPPED = 0;
             }
         }
         if (!f.ARMED) {
