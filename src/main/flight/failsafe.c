@@ -154,13 +154,13 @@ void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration)
 {
     static uint8_t goodChannelMask;
 
-    if (channel < 4 &&
+    if (channel < 6 &&
         pulseDuration > failsafeConfig->failsafe_min_usec &&
         pulseDuration < failsafeConfig->failsafe_max_usec
     )
         goodChannelMask |= (1 << channel);       // if signal is valid - mark channel as OK
 
-    if (goodChannelMask == 0x0F) {               // If first four channels have good pulses, clear FailSafe counter
+    if (goodChannelMask == 0x3F) {               // If first six channels have good pulses, clear FailSafe counter
         goodChannelMask = 0;
         onValidDataReceived();
     }
