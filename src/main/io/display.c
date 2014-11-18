@@ -42,12 +42,17 @@
 #include "sensors/compass.h"
 
 #include "rx/rx.h"
+#include "io/rc_controls.h"
 
 #include "config/runtime_config.h"
 
 #include "config/config.h"
 
 #include "display.h"
+
+controlRateConfig_t *getControlRateConfig(uint8_t profileIndex);
+
+//#define ENABLE_DEBUG_OLED_PAGE
 
 #define MILLISECONDS_IN_A_SECOND (1000 * 1000)
 
@@ -58,6 +63,8 @@ static uint32_t nextDisplayUpdateAt = 0;
 
 static rxConfig_t *rxConfig;
 
+#define PAGE_TITLE_LINE_COUNT 1
+
 static char lineBuffer[SCREEN_CHARACTER_COLUMN_COUNT + 1];
 
 typedef enum {
@@ -66,8 +73,11 @@ typedef enum {
     PAGE_BATTERY,
     PAGE_SENSORS,
     PAGE_RX,
-    PAGE_PROFILE,
+    PAGE_PROFILE
+#ifdef ENABLE_DEBUG_OLED_PAGE
+    ,
     PAGE_DEBUG
+#endif
 } pageId_e;
 
 const char* pageTitles[] = {
@@ -76,18 +86,24 @@ const char* pageTitles[] = {
     "BATTERY",
     "SENSORS",
     "RX",
-    "PROFILE",
+    "PROFILE"
+#ifdef ENABLE_DEBUG_OLED_PAGE
+    ,
     "DEBUG"
+#endif
 };
 
 #define PAGE_COUNT (PAGE_RX + 1)
 
 const uint8_t cyclePageIds[] = {
     PAGE_PROFILE,
-    PAGE_DEBUG,
+    PAGE_RX,
     PAGE_BATTERY,
-    PAGE_SENSORS,
-    PAGE_RX
+    PAGE_SENSORS
+#ifdef ENABLE_DEBUG_OLED_PAGE
+    ,
+    PAGE_DEBUG,
+#endif
 };
 
 #define CYCLE_PAGE_ID_COUNT (sizeof(cyclePageIds) / sizeof(cyclePageIds[0]))
@@ -111,6 +127,10 @@ typedef struct pageState_s {
 } pageState_t;
 
 static pageState_t pageState;
+
+void resetDisplay(void) {
+    ug2864hsweg01InitI2C();
+}
 
 void LCDprint(uint8_t i) {
    i2c_OLED_send_char(i);
@@ -172,6 +192,11 @@ void showTitle()
 
 void handlePageChange(void)
 {
+    // Some OLED displays do not respond on the first initialisation so refresh the display
+    // when the page changes in the hopes the hardware responds.  This also allows the
+    // user to power off/on the display or connect it while powered.
+    resetDisplay();
+
     i2c_OLED_clear_display_quick();
     showTitle();
 }
@@ -186,32 +211,38 @@ void drawRxChannel(uint8_t channelIndex, uint8_t width)
     drawHorizonalPercentageBar(width - 1, percentage);
 }
 
+#define HALF_SCREEN_CHARACTER_COLUMN_COUNT (SCREEN_CHARACTER_COLUMN_COUNT / 2)
+#define IS_SCREEN_CHARACTER_COLUMN_COUNT_ODD (SCREEN_CHARACTER_COLUMN_COUNT & 1)
+
+#define RX_CHANNELS_PER_PAGE_COUNT 14
 void showRxPage(void)
 {
 
-    for (uint8_t channelIndex = 0; channelIndex < 8; channelIndex += 2) {
-        i2c_OLED_set_line((channelIndex / 2) + 1);
+    for (uint8_t channelIndex = 0; channelIndex < rxRuntimeConfig.channelCount && channelIndex < RX_CHANNELS_PER_PAGE_COUNT; channelIndex += 2) {
+        i2c_OLED_set_line((channelIndex / 2) + PAGE_TITLE_LINE_COUNT);
 
-        uint8_t width = SCREEN_CHARACTER_COLUMN_COUNT / 2;
+        drawRxChannel(channelIndex, HALF_SCREEN_CHARACTER_COLUMN_COUNT);
 
-        drawRxChannel(channelIndex, width);
+        if (channelIndex >= rxRuntimeConfig.channelCount) {
+            continue;
+        }
 
-        if (width * 2 != SCREEN_CHARACTER_COLUMN_COUNT) {
+        if (IS_SCREEN_CHARACTER_COLUMN_COUNT_ODD) {
             LCDprint(' ');
         }
 
-        drawRxChannel(channelIndex + 1, width);
+        drawRxChannel(channelIndex + PAGE_TITLE_LINE_COUNT, HALF_SCREEN_CHARACTER_COLUMN_COUNT);
     }
 }
 
 void showWelcomePage(void)
 {
     tfp_sprintf(lineBuffer, "Rev: %s", shortGitRevision);
-    i2c_OLED_set_line(1);
+    i2c_OLED_set_line(PAGE_TITLE_LINE_COUNT + 0);
     i2c_OLED_send_string(lineBuffer);
 
     tfp_sprintf(lineBuffer, "Target: %s", targetName);
-    i2c_OLED_set_line(2);
+    i2c_OLED_set_line(PAGE_TITLE_LINE_COUNT + 1);
     i2c_OLED_send_string(lineBuffer);
 }
 
@@ -221,30 +252,71 @@ void showArmedPage(void)
 
 void showProfilePage(void)
 {
+    uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
+
     tfp_sprintf(lineBuffer, "Profile: %d", getCurrentProfile());
-    i2c_OLED_set_line(1);
+    i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
-    tfp_sprintf(lineBuffer, "Rate profile: %d", getCurrentControlRateProfile());
-    i2c_OLED_set_line(2);
+    uint8_t currentRateProfileIndex = getCurrentControlRateProfile();
+    tfp_sprintf(lineBuffer, "Rate profile: %d", currentRateProfileIndex);
+    i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
+
+    controlRateConfig_t *controlRateConfig = getControlRateConfig(currentRateProfileIndex);
+
+    tfp_sprintf(lineBuffer, "RC Expo: %d", controlRateConfig->rcExpo8);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
+    tfp_sprintf(lineBuffer, "RC Rate: %d", controlRateConfig->rcRate8);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
+    tfp_sprintf(lineBuffer, "R&P Rate: %d", controlRateConfig->rollPitchRate);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
+    tfp_sprintf(lineBuffer, "Yaw Rate: %d", controlRateConfig->yawRate);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
 }
 
 void showBatteryPage(void)
 {
-    tfp_sprintf(lineBuffer, "Volts: %d.%d, Cells: %d", vbat / 10, vbat % 10, batteryCellCount);
-    i2c_OLED_set_line(1);
-    i2c_OLED_send_string(lineBuffer);
-    padLineBuffer();
+    uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
 
-    uint32_t batteryPercentage = calculateBatteryPercentage();
-    i2c_OLED_set_line(2);
-    drawHorizonalPercentageBar(SCREEN_CHARACTER_COLUMN_COUNT, batteryPercentage);
+    if (feature(FEATURE_VBAT)) {
+        tfp_sprintf(lineBuffer, "Volts: %d.%1d Cells: %d", vbat / 10, vbat % 10, batteryCellCount);
+        padLineBuffer();
+        i2c_OLED_set_line(rowIndex++);
+        i2c_OLED_send_string(lineBuffer);
+
+        uint8_t batteryPercentage = calculateBatteryPercentage();
+        i2c_OLED_set_line(rowIndex++);
+        drawHorizonalPercentageBar(SCREEN_CHARACTER_COLUMN_COUNT, batteryPercentage);
+    }
+
+    if (feature(FEATURE_CURRENT_METER)) {
+        tfp_sprintf(lineBuffer, "Amps: %d.%2d mAh: %d", amperage / 100, amperage % 100, mAhDrawn);
+        padLineBuffer();
+        i2c_OLED_set_line(rowIndex++);
+        i2c_OLED_send_string(lineBuffer);
+
+        uint8_t capacityPercentage = calculateBatteryCapacityRemainingPercentage();
+        i2c_OLED_set_line(rowIndex++);
+        drawHorizonalPercentageBar(SCREEN_CHARACTER_COLUMN_COUNT, capacityPercentage);
+    }
 }
 
 void showSensorsPage(void)
 {
-    uint8_t rowIndex = 1;
+    uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
 
     i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string("        X     Y     Z");
@@ -270,7 +342,7 @@ void showSensorsPage(void)
 #endif
 }
 
-#define PAGE_TITLE_LINE_COUNT 1
+#ifdef ENABLE_DEBUG_OLED_PAGE
 
 void showDebugPage(void)
 {
@@ -283,6 +355,7 @@ void showDebugPage(void)
         i2c_OLED_send_string(lineBuffer);
     }
 }
+#endif
 
 void updateDisplay(void)
 {
@@ -315,7 +388,6 @@ void updateDisplay(void)
 
         pageState.pageChanging = (pageState.pageFlags & PAGE_STATE_FLAG_FORCE_PAGE_CHANGE) || ((int32_t)(now - pageState.nextPageAt) >= 0L);
         if (pageState.pageChanging && (pageState.pageFlags & PAGE_STATE_FLAG_CYCLE_ENABLED)) {
-            pageState.nextPageAt = now + PAGE_CYCLE_FREQUENCY;
             pageState.cycleIndex++;
             pageState.cycleIndex = pageState.cycleIndex % CYCLE_PAGE_ID_COUNT;
             pageState.pageId = cyclePageIds[pageState.cycleIndex];
@@ -325,6 +397,7 @@ void updateDisplay(void)
     if (pageState.pageChanging) {
         handlePageChange();
         pageState.pageFlags &= ~PAGE_STATE_FLAG_FORCE_PAGE_CHANGE;
+        pageState.nextPageAt = now + PAGE_CYCLE_FREQUENCY;
     }
 
     switch(pageState.pageId) {
@@ -346,9 +419,11 @@ void updateDisplay(void)
         case PAGE_PROFILE:
             showProfilePage();
             break;
+#ifdef ENABLE_DEBUG_OLED_PAGE
         case PAGE_DEBUG:
             showDebugPage();
             break;
+#endif
     }
     if (!armedState) {
         updateTicker();
@@ -357,8 +432,9 @@ void updateDisplay(void)
 
 void displayInit(rxConfig_t *rxConfigToUse)
 {
-    delay(20);
-    ug2864hsweg01InitI2C();
+    delay(200);
+    resetDisplay();
+    delay(200);
 
     rxConfig = rxConfigToUse;
 

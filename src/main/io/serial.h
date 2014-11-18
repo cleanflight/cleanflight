@@ -18,13 +18,14 @@
 #pragma once
 
 typedef enum {
-    FUNCTION_NONE               = 0,
-    FUNCTION_MSP                = (1 << 0),
-    FUNCTION_CLI                = (1 << 1),
-    FUNCTION_TELEMETRY          = (1 << 2),
-    FUNCTION_SERIAL_RX          = (1 << 3),
-    FUNCTION_GPS                = (1 << 4),
-    FUNCTION_GPS_PASSTHROUGH    = (1 << 5)
+    FUNCTION_NONE                = 0,
+    FUNCTION_MSP                 = (1 << 0),
+    FUNCTION_CLI                 = (1 << 1),
+    FUNCTION_TELEMETRY           = (1 << 2),
+    FUNCTION_SMARTPORT_TELEMETRY = (1 << 3),
+    FUNCTION_SERIAL_RX           = (1 << 4),
+    FUNCTION_GPS                 = (1 << 5),
+    FUNCTION_GPS_PASSTHROUGH     = (1 << 6)
 } serialPortFunction_e;
 
 typedef enum {
@@ -48,12 +49,13 @@ typedef enum {
     SCENARIO_GPS_PASSTHROUGH_ONLY               = FUNCTION_GPS_PASSTHROUGH,
     SCENARIO_MSP_ONLY                           = FUNCTION_MSP,
     SCENARIO_MSP_CLI_GPS_PASTHROUGH             = FUNCTION_CLI | FUNCTION_MSP | FUNCTION_GPS_PASSTHROUGH,
-    SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH   = FUNCTION_MSP | FUNCTION_CLI | FUNCTION_TELEMETRY | FUNCTION_GPS_PASSTHROUGH,
+    SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH   = FUNCTION_MSP | FUNCTION_CLI | FUNCTION_TELEMETRY | FUNCTION_SMARTPORT_TELEMETRY | FUNCTION_GPS_PASSTHROUGH,
     SCENARIO_SERIAL_RX_ONLY                     = FUNCTION_SERIAL_RX,
     SCENARIO_TELEMETRY_ONLY                     = FUNCTION_TELEMETRY,
+    SCENARIO_SMARTPORT_TELEMETRY_ONLY           = FUNCTION_SMARTPORT_TELEMETRY
 } serialPortFunctionScenario_e;
 
-#define SERIAL_PORT_SCENARIO_COUNT 9
+#define SERIAL_PORT_SCENARIO_COUNT 10
 #define SERIAL_PORT_SCENARIO_MAX (SERIAL_PORT_SCENARIO_COUNT - 1)
 extern const serialPortFunctionScenario_e serialPortScenarios[SERIAL_PORT_SCENARIO_COUNT];
 
@@ -114,7 +116,8 @@ typedef enum {
     SPF_NONE                   = 0,
     SPF_SUPPORTS_CALLBACK      = (1 << 0),
     SPF_SUPPORTS_SBUS_MODE     = (1 << 1),
-    SPF_IS_SOFTWARE_INVERTABLE = (1 << 2)
+    SPF_SUPPORTS_BIDIR_MODE    = (1 << 2),
+    SPF_IS_SOFTWARE_INVERTABLE = (1 << 3)
 } serialPortFeature_t;
 
 typedef struct serialPortConstraint_s {

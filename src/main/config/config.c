@@ -104,7 +104,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 84;
+static const uint8_t EEPROM_CONF_VERSION = 85;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -203,13 +203,23 @@ void resetFlight3DConfig(flight3DConfig_t *flight3DConfig)
 void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 {
     telemetryConfig->telemetry_provider = TELEMETRY_PROVIDER_FRSKY;
-    telemetryConfig->frsky_inversion = SERIAL_NOT_INVERTED;
+    telemetryConfig->telemetry_inversion = SERIAL_NOT_INVERTED;
     telemetryConfig->telemetry_switch = 0;
     telemetryConfig->gpsNoFixLatitude = 0;
     telemetryConfig->gpsNoFixLongitude = 0;
     telemetryConfig->frsky_coordinate_format = FRSKY_FORMAT_DMS;
     telemetryConfig->frsky_unit = FRSKY_UNIT_METRICS;
-    telemetryConfig->batterySize = 0;
+}
+
+void resetBatteryConfig(batteryConfig_t *batteryConfig)
+{
+    batteryConfig->vbatscale = VBAT_SCALE_DEFAULT;
+    batteryConfig->vbatmaxcellvoltage = 43;
+    batteryConfig->vbatmincellvoltage = 33;
+    batteryConfig->currentMeterOffset = 0;
+    batteryConfig->currentMeterScale = 400; // for Allegro ACS758LCB-100U (40mV/A)
+    batteryConfig->batteryCapacity = 0;
+
 }
 
 void resetSerialConfig(serialConfig_t *serialConfig)
@@ -272,6 +282,10 @@ uint8_t getCurrentControlRateProfile(void)
     return currentControlRateProfileIndex;
 }
 
+controlRateConfig_t *getControlRateConfig(uint8_t profileIndex) {
+    return &masterConfig.controlRateProfiles[profileIndex];
+}
+
 static void setControlRateProfile(uint8_t profileIndex)
 {
     currentControlRateProfileIndex = profileIndex;
@@ -315,11 +329,7 @@ static void resetConf(void)
     masterConfig.yaw_control_direction = 1;
     masterConfig.gyroConfig.gyroMovementCalibrationThreshold = 32;
 
-    masterConfig.batteryConfig.vbatscale = VBAT_SCALE_DEFAULT;
-    masterConfig.batteryConfig.vbatmaxcellvoltage = 43;
-    masterConfig.batteryConfig.vbatmincellvoltage = 33;
-    masterConfig.batteryConfig.currentMeterOffset = 0;
-    masterConfig.batteryConfig.currentMeterScale = 400; // for Allegro ACS758LCB-100U (40mV/A)
+    resetBatteryConfig(&masterConfig.batteryConfig);
 
     resetTelemetryConfig(&masterConfig.telemetryConfig);
 
