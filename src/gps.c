@@ -6,6 +6,7 @@
 #include "board.h"
 #include "mw.h"
 
+extern void fw_nav_reset(void);
 #ifdef GPS
 
 #ifndef sq
@@ -360,16 +361,10 @@ int32_t leadFilter_getPosition(LeadFilter_PARAM *param, int32_t pos, int16_t vel
 LeadFilter_PARAM xLeadFilter;
 LeadFilter_PARAM yLeadFilter;
 
-typedef struct {
-    float kP;
-    float kI;
-    float kD;
-    float Imax;
-} PID_PARAM;
-
 static PID_PARAM posholdPID_PARAM;
 static PID_PARAM poshold_ratePID_PARAM;
-static PID_PARAM navPID_PARAM;
+PID_PARAM navPID_PARAM;
+PID_PARAM altPID_PARAM;
 
 typedef struct {
     float integrator;          // integrator value
@@ -460,7 +455,7 @@ static int16_t crosstrack_error;
 // distance between plane and home in cm
 //static int32_t home_distance;
 // distance between plane and next_WP in cm
-static int32_t wp_distance;
+int32_t wp_distance;
 
 // used for slow speed wind up when start navigation;
 static int16_t waypoint_speed_gov;
@@ -480,7 +475,7 @@ static uint16_t fraction3[2];
 
 // This is the angle from the copter to the "next_WP" location
 // with the addition of Crosstrack error in degrees * 100
-static int32_t nav_bearing;
+int32_t nav_bearing;
 // saves the bearing at takeof (1deg = 1) used to rotate to takeoff direction when arrives at home
 static int16_t nav_takeoff_bearing;
 
@@ -502,7 +497,7 @@ static void gpsNewData(uint16_t c)
         else
             GPS_update = 1;
         if (f.GPS_FIX && GPS_numSat >= 5) {
-            if (!f.ARMED)
+            if (!f.ARMED && !f.FIXED_WING)
                 f.GPS_FIX_HOME = 0;
             if (!f.GPS_FIX_HOME && f.ARMED)
                 GPS_reset_home_position();
@@ -552,6 +547,9 @@ static void gpsNewData(uint16_t c)
                 GPS_distance_cm_bearing(&GPS_coord[LAT], &GPS_coord[LON], &GPS_WP[LAT], &GPS_WP[LON], &wp_distance, &target_bearing);
                 GPS_calc_location_error(&GPS_WP[LAT], &GPS_WP[LON], &GPS_coord[LAT], &GPS_coord[LON]);
 
+                if(f.FIXED_WING)
+                    nav_mode = NAV_MODE_WP; // Planes always navigate in Wp mode.
+
                 switch (nav_mode) {
                 case NAV_MODE_POSHOLD:
                     // Desired output is in nav_lat and nav_lon where 1deg inclination is 100
@@ -593,7 +591,8 @@ void GPS_reset_home_position(void)
         GPS_home[LON] = GPS_coord[LON];
         GPS_calc_longitude_scaling(GPS_coord[LAT]); // need an initial value for distance and bearing calc
         nav_takeoff_bearing = heading;              // save takeoff heading
-        // Set ground altitude
+        //Set ground altitude
+        GPS_home[ALT] = GPS_altitude;
         f.GPS_FIX_HOME = 1;
     }
 }
@@ -611,6 +610,10 @@ void GPS_reset_nav(void)
         reset_PID(&poshold_ratePID[i]);
         reset_PID(&navPID[i]);
     }
+
+    if (f.FIXED_WING)
+        fw_nav_reset();
+
 }
 
 // Get the relevant P I D values and set the PID controllers
@@ -629,6 +632,12 @@ void gpsSetPIDs(void)
     navPID_PARAM.kI = (float)cfg.I8[PIDNAVR] / 100.0f;
     navPID_PARAM.kD = (float)cfg.D8[PIDNAVR] / 1000.0f;
     navPID_PARAM.Imax = POSHOLD_RATE_IMAX * 100;
+
+    if (f.FIXED_WING) {
+      altPID_PARAM.kP   = (float)cfg.P8[PIDALT] / 10.0f;
+      altPID_PARAM.kI   = (float)cfg.I8[PIDALT] / 100.0f;
+      altPID_PARAM.kD   = (float)cfg.D8[PIDALT] / 1000.0f;
+    }
 }
 
 int8_t gpsSetPassthrough(void)
@@ -997,15 +1006,6 @@ static uint32_t grab_fields(char *src, uint8_t mult)
     return tmp;
 }
 
-static uint8_t hex_c(uint8_t n)
-{                               // convert '0'..'9','A'..'F' to 0..15
-    n -= '0';
-    if (n > 9)
-        n -= 7;
-    n &= 0x0F;
-    return n;
-}
-
 /* This is a light implementation of a GPS frame decoding
    This should work with most of modern GPS devices configured to output NMEA frames.
    It assumes there are some NMEA GGA frames to decode on the serial bus
@@ -1121,6 +1121,8 @@ static bool gpsNewFrameNMEA(char c)
                                 GPS_coord[LON] = gps_msg.longitude;
                                 GPS_numSat = gps_msg.numSat;
                                 GPS_altitude = gps_msg.altitude;
+                                if (!sensors(SENSOR_BARO) && f.FIXED_WING)
+                                    EstAlt = (GPS_altitude - GPS_home[ALT]) * 100;    // Use values Based on GPS
                             }
                             break;
 
@@ -1368,6 +1370,8 @@ static bool UBLOX_parse_gps(void)
         GPS_altitude = _buffer.posllh.altitude_msl / 10 / 100;  //alt in m
         f.GPS_FIX = next_fix;
         _new_position = true;
+        if (!sensors(SENSOR_BARO) && f.FIXED_WING)
+            EstAlt = (GPS_altitude - GPS_home[ALT]) * 100;    // Use values Based on GPS
         break;
     case MSG_STATUS:
         next_fix = (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.status.fix_type == FIX_3D);
@@ -1386,6 +1390,13 @@ static bool UBLOX_parse_gps(void)
         GPS_speed = _buffer.velned.speed_2d;    // cm/s
         GPS_ground_course = (uint16_t) (_buffer.velned.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
         _new_speed = true;
+        if (!sensors(SENSOR_MAG) && f.FIXED_WING && GPS_speed > 100) {
+            heading = GPS_ground_course / 10;    // Use values Based on GPS if we are moving.
+            if (heading <= - 180)
+                heading += 360;
+            if (heading >=  180)
+                heading -= 360;
+        }
         break;
     case MSG_SVINFO:
         GPS_numCh = _buffer.svinfo.numCh;

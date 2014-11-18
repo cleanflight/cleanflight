@@ -415,7 +415,7 @@ static void evaluateCommand(void)
         serialize8(VERSION);                // multiwii version
         serialize8(mcfg.mixerConfiguration); // type of multicopter
         serialize8(MSP_VERSION);            // MultiWii Serial Protocol Version
-        serialize32(CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | (mcfg.flaps_speed ? CAP_FLAPS : 0));        // "capability"
+        serialize32(CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | (mcfg.flaps ? CAP_FLAPS : 0));        // "capability"
         break;
     case MSP_STATUS:
         headSerialReply(11);
