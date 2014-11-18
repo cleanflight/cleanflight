@@ -25,6 +25,7 @@ typedef struct failsafeConfig_s {
     uint16_t failsafe_throttle;             // Throttle level used for landing - specify value between 1000..2000 (pwm pulse width for slightly below hover). center throttle = 1500.
     uint16_t failsafe_min_usec;
     uint16_t failsafe_max_usec;
+    uint8_t failsafe_abortable;
 } failsafeConfig_t;
 
 
