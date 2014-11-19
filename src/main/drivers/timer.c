@@ -28,6 +28,7 @@
 
 #include "gpio.h"
 #include "system.h"
+#include "pin_debug.h"
 
 #include "timer.h"
 #include "timer_impl.h"
@@ -687,14 +688,18 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 #define _TIM_IRQ_HANDLER2(name, i, j)                                   \
     void name(void)                                                     \
     {                                                                   \
+        pinDbgHi(DBP_TIMER);                                            \
         timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);          \
         timCCxHandler(TIM ## j, &timerConfig[TIMER_INDEX(j)]);          \
+        pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 
 #define _TIM_IRQ_HANDLER(name, i)                                       \
     void name(void)                                                     \
     {                                                                   \
+        pinDbgHi(DBP_TIMER);                                            \
         timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);          \
+        pinDbgLo(DBP_TIMER);                                            \
     } struct dummy
 
 #if USED_TIMERS & TIM_N(1)
@@ -767,10 +772,21 @@ void timerInit(void)
 // initialize timer channel structures
     for(int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
         timerChannelInfo[i].type = TYPE_FREE;
+        timerChannelInfo[i].resourcesUsed = 0;
     }
     for(int i = 0; i < USED_TIMER_COUNT; i++) {
         timerInfo[i].priority = ~0;
     }
+#ifdef PINDEBUG
+// allocate debug pins here
+    for(int i=0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+        if(pinDebugIsPinUsed(timerHardware[i].gpio, timerHardware[i].pin)) {
+            // true pin allocation should be used when implemented
+            timerChannelInfo[i].type = TYPE_PINDEBUG;
+            timerChannelInfo[i].resourcesUsed = RESOURCE_OUTPUT;
+        }
+    }
+#endif
 }
 
 // finish configuring timers after allocation phase

@@ -44,6 +44,7 @@
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
+#include "drivers/pin_debug.h"
 
 #include "flight/flight.h"
 #include "flight/mixer.h"
@@ -169,6 +170,8 @@ void init(void)
 #endif
 
     delay(100);
+
+    pinDebugInit();
 
     timerInit();  // timer must be initialized before any channel is allocated
 

@@ -95,6 +95,7 @@ typedef enum {
     TYPE_SERIAL_RX,
     TYPE_SERIAL_TX,
     TYPE_SERIAL_RXTX,
+    TYPE_PINDEBUG,
     TYPE_TIMER
 } channelType_t;
 
