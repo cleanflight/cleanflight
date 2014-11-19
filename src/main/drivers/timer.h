@@ -123,6 +123,7 @@ void timerChICPolarity(const timerHardware_t *timHw, bool polarityRising);
 volatile timCCR_t* timerChCCR(const timerHardware_t* timHw);
 volatile timCCR_t* timerChCCRLo(const timerHardware_t* timHw);
 volatile timCCR_t* timerChCCRHi(const timerHardware_t* timHw);
+volatile timCNT_t* timerChCNT(const timerHardware_t* timHw);
 void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool stateHigh);
 void timerChConfigGPIO(const timerHardware_t* timHw, GPIO_Mode mode);
 

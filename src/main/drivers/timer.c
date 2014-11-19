@@ -596,10 +596,14 @@ volatile timCCR_t* timerChCCRLo(const timerHardware_t *timHw)
 }
 
 
-
 volatile timCCR_t* timerChCCR(const timerHardware_t *timHw)
 {
     return (volatile timCCR_t*)((volatile char*)&timHw->tim->CCR1 + timHw->channel);
+}
+
+volatile timCCR_t* timerChCNT(const timerHardware_t *timHw)
+{
+    return &timHw->tim->CNT;
 }
 
 void timerChConfigOC(const timerHardware_t *timHw, bool outEnable, bool activeHigh)
