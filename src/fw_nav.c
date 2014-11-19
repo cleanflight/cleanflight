@@ -115,7 +115,7 @@ void fw_nav(void)
         }
 
         // Always DISARM when Home is within 10 meters if FC is in failsafe.
-        if (f.FW_FW_FAILSAFE_RTH_ENABLE && (GPS_distanceToHome < 10)) {
+        if (f.FW_FAILSAFE_RTH_ENABLE && (GPS_distanceToHome < 10)) {
             f.ARMED = 0;
             f.CLIMBOUT_FW = 0;                  // Abort Climbout
             GPS_hold[ALT] = GPS_home[ALT] + 5;  // Come down
@@ -224,7 +224,7 @@ void fw_nav(void)
     // End of NavTimer
 
     // PassThru for throttle In AcroMode
-    if ((!f.ANGLE_MODE && !f.HORIZON_MODE) || (f.PASSTHRU_MODE && !f.FW_FW_FAILSAFE_RTH_ENABLE)) {
+    if ((!f.ANGLE_MODE && !f.HORIZON_MODE) || (f.PASSTHRU_MODE && !f.FW_FAILSAFE_RTH_ENABLE)) {
         NAV_Thro = TX_Thro;
         GPS_angle[PITCH] = 0;
         GPS_angle[ROLL] = 0;
