@@ -494,12 +494,12 @@ void loop(void)
         rssi = RSSI_getValue();
 
         // Failsafe routine
-        if (feature(FEATURE_FAILSAFE) || feature(FEATURE_FAILSAFE_RTH)) {
+        if (feature(FEATURE_FAILSAFE) || feature(FEATURE_FW_FAILSAFE_RTH)) {
             if (failsafeCnt > (5 * cfg.failsafe_delay) && f.ARMED) { // Stabilize, and set Throttle to specified level
                 for (i = 0; i < 3; i++)
                     rcData[i] = mcfg.midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
                 rcData[THROTTLE] = cfg.failsafe_throttle;
-                if ((failsafeCnt > 5 * (cfg.failsafe_delay + cfg.failsafe_off_delay)) && !f.FAILSAFE_RTH_ENABLE) {  // Turn OFF motors after specified Time (in 0.1sec)
+                if ((failsafeCnt > 5 * (cfg.failsafe_delay + cfg.failsafe_off_delay)) && !f.FW_FAILSAFE_RTH_ENABLE) {  // Turn OFF motors after specified Time (in 0.1sec)
                     mwDisarm();             // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
                     f.OK_TO_ARM = 0;        // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
                 }
@@ -669,14 +669,14 @@ void loop(void)
                 errorAngleI[PITCH] = 0;
                 f.ANGLE_MODE = 1;
             }
-            if (feature(FEATURE_FAILSAFE_RTH)) {
+            if (feature(FEATURE_FW_FAILSAFE_RTH)) {
                 if ((failsafeCnt > 5 * cfg.failsafe_delay) && sensors(SENSOR_GPS)) {
-                    f.FAILSAFE_RTH_ENABLE = 1;
+                    f.FW_FAILSAFE_RTH_ENABLE = 1;
                 }
             }
         } else {
             f.ANGLE_MODE = 0;   // failsafe support
-            f.FAILSAFE_RTH_ENABLE = 0;
+            f.FW_FAILSAFE_RTH_ENABLE = 0;
           }
 
         if (rcOptions[BOXHORIZON]) {
@@ -752,7 +752,7 @@ void loop(void)
         if (sensors(SENSOR_GPS)) {
             if (f.GPS_FIX && GPS_numSat >= 5) {
                 // if both GPS_HOME & GPS_HOLD are checked => GPS_HOME is the priority
-                if (rcOptions[BOXGPSHOME] || f.FAILSAFE_RTH_ENABLE ) {
+                if (rcOptions[BOXGPSHOME] || f.FW_FAILSAFE_RTH_ENABLE ) {
                     if (!f.GPS_HOME_MODE) {
                         f.GPS_HOME_MODE = 1;
                         f.GPS_HOLD_MODE = 0;
@@ -793,7 +793,7 @@ void loop(void)
         }
 #endif
 
-        if (rcOptions[BOXPASSTHRU] && !f.FAILSAFE_RTH_ENABLE) {
+        if (rcOptions[BOXPASSTHRU] && !f.FW_FAILSAFE_RTH_ENABLE) {
             f.PASSTHRU_MODE = 1;
         } else {
             f.PASSTHRU_MODE = 0;
@@ -809,7 +809,7 @@ void loop(void)
                 rcData[THROTTLE] = cfg.failsafe_throttle;
                 // No GPS?  Force a soft left turn.
                 if (!f.GPS_FIX && GPS_numSat <= 5) {
-                    f.FAILSAFE_RTH_ENABLE = 0;
+                    f.FW_FAILSAFE_RTH_ENABLE = 0;
                     rcData[ROLL] = mcfg.midrc - 50;
                 }
             }
@@ -924,7 +924,7 @@ void loop(void)
                     // handle fixedwing-related althold. UNTESTED! and probably wrong
                     // most likely need to check changes on pitch channel and 'reset' althold similar to
                     // how throttle does it on multirotor
-                    rcCommand[PITCH] += BaroPID * mcfg.fixedwing_althold_dir;
+                    rcCommand[PITCH] += BaroPID * mcfg.fw_althold_dir;
                 }
             }
         }

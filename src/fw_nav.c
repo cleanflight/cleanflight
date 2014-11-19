@@ -92,10 +92,10 @@ void fw_nav(void)
         // Throttle control
         // Deadpan for throttle at correct Alt.
         if (abs(GPS_AltErr) < 1) // Just cruise along in deadpan.
-            NAV_Thro = cfg.cruice_throttle;
+            NAV_Thro = cfg.fw_cruise_throttle;
         else 
             // Add AltitudeError  and scale up with a factor to throttle
-            NAV_Thro = constrain(cfg.cruice_throttle - (GPS_AltErr * cfg.scaler_throttle), cfg.idle_throttle, cfg.climb_throttle);
+            NAV_Thro = constrain(cfg.fw_cruise_throttle - (GPS_AltErr * cfg.fw_scaler_throttle), cfg.fw_idle_throttle, cfg.fw_climb_throttle);
 
         // Reset Climbout Flag when Alt have been reached
         if (f.CLIMBOUT_FW && GPS_AltErr >= 0)
@@ -104,8 +104,8 @@ void fw_nav(void)
         // Climb out before RTH
         if (f.GPS_HOME_MODE) {
             if (f.CLIMBOUT_FW) {
-                GPS_AltErr = -(cfg.gps_maxclimb * 10);  // Max climbAngle
-                NAV_Thro = cfg.climb_throttle;          // Max Allowed Throttle
+                GPS_AltErr = -(cfg.fw_gps_maxclimb * 10);  // Max climbAngle
+                NAV_Thro = cfg.fw_climb_throttle;          // Max Allowed Throttle
                 if (currAlt < SAFE_NAV_ALT)
                     navDiff = 0;                        // Force climb with Level Wings below safe Alt
             }
@@ -115,7 +115,7 @@ void fw_nav(void)
         }
 
         // Always DISARM when Home is within 10 meters if FC is in failsafe.
-        if (f.FAILSAFE_RTH_ENABLE && (GPS_distanceToHome < 10)) {
+        if (f.FW_FW_FAILSAFE_RTH_ENABLE && (GPS_distanceToHome < 10)) {
             f.ARMED = 0;
             f.CLIMBOUT_FW = 0;                  // Abort Climbout
             GPS_hold[ALT] = GPS_home[ALT] + 5;  // Come down
@@ -194,14 +194,14 @@ void fw_nav(void)
         // End of NavPID 
 
         // Limit outputs
-        GPS_angle[PITCH] = constrain(altDiff / 10, -cfg.gps_maxclimb * 10, cfg.gps_maxdive * 10) + ALT_deltaSum;
-        GPS_angle[ROLL] = constrain(navDiff / 10, -cfg.gps_maxcorr * 10, cfg.gps_maxcorr * 10) + NAV_deltaSum;
-        GPS_angle[YAW] = constrain(navDiff / 10, -cfg.gps_rudder * 10, cfg.gps_rudder * 10) + NAV_deltaSum;
+        GPS_angle[PITCH] = constrain(altDiff / 10, -cfg.fw_gps_maxclimb * 10, cfg.fw_gps_maxdive * 10) + ALT_deltaSum;
+        GPS_angle[ROLL] = constrain(navDiff / 10, -cfg.fw_gps_maxcorr * 10, cfg.fw_gps_maxcorr * 10) + NAV_deltaSum;
+        GPS_angle[YAW] = constrain(navDiff / 10, -cfg.fw_gps_rudder * 10, cfg.fw_gps_rudder * 10) + NAV_deltaSum;
 
         // Elevator compensation depending on behaviour.
         // Prevent stall with Disarmed motor
         if (!f.CLIMBOUT_FW)
-            GPS_angle[PITCH] -= (abs(angle[ROLL]) *cfg.roll_comp);
+            GPS_angle[PITCH] -= (abs(angle[ROLL]) *cfg.fw_roll_comp);
 
         // Add elevator compared with rollAngle
         GPS_angle[PITCH] -= abs(angle[ROLL]);
@@ -209,7 +209,7 @@ void fw_nav(void)
         // Throttle compensation depending on behaviour.
         // Compensate throttle with pitch Angle
         NAV_Thro -= constrain(angle[PITCH] * PITCH_COMP, 0, 450);
-        NAV_Thro = constrain(NAV_Thro, cfg.idle_throttle, cfg.climb_throttle);
+        NAV_Thro = constrain(NAV_Thro, cfg.fw_idle_throttle, cfg.fw_climb_throttle);
 
         // Force the Plane move forward in headwind with speedBoost
         groundSpeed = GPS_speed;
@@ -224,7 +224,7 @@ void fw_nav(void)
     // End of NavTimer
 
     // PassThru for throttle In AcroMode
-    if ((!f.ANGLE_MODE && !f.HORIZON_MODE) || (f.PASSTHRU_MODE && !f.FAILSAFE_RTH_ENABLE)) {
+    if ((!f.ANGLE_MODE && !f.HORIZON_MODE) || (f.PASSTHRU_MODE && !f.FW_FW_FAILSAFE_RTH_ENABLE)) {
         NAV_Thro = TX_Thro;
         GPS_angle[PITCH] = 0;
         GPS_angle[ROLL] = 0;
