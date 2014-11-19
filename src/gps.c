@@ -1269,7 +1269,6 @@ static uint16_t _payload_length;
 static uint16_t _payload_counter;
 
 static bool next_fix;
-static uint8_t _class;
 
 // do we have new position information?
 static bool _new_position;
@@ -1313,7 +1312,6 @@ static bool gpsNewFrameUBLOX(uint8_t data)
             break;
         case 2:
             _step++;
-            _class = data;
             _ck_b = _ck_a = data;   // reset the checksum accumulators
             break;
         case 3:

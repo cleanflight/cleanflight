@@ -52,7 +52,6 @@
 #define MMA8452_CTRL_REG1_ACTIVE        0x01
 
 extern uint16_t acc_1G;
-static uint8_t device_id;
 static sensor_align_e accAlign = CW90_DEG;
 
 static void mma8452Init(sensor_align_e align);
@@ -73,7 +72,6 @@ bool mma8452Detect(sensor_t *acc)
 
     acc->init = mma8452Init;
     acc->read = mma8452Read;
-    device_id = sig;
     return true;
 }
 
