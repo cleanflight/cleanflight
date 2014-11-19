@@ -130,7 +130,7 @@ const uint16_t frSkyDataIdTable[] = {
 
 #define __USE_C99_MATH // for roundf()
 #define SMARTPORT_BAUD 57600
-#define SMARTPORT_UART_MODE MODE_BIDIR
+#define SMARTPORT_UART_MODE (MODE_RXTX | MODE_SINGLEWIRE)
 #define SMARTPORT_SERVICE_DELAY_MS 5 // telemetry requests comes in at roughly 12 ms intervals, keep this under that
 #define SMARTPORT_NOT_CONNECTED_TIMEOUT_MS 7000
 

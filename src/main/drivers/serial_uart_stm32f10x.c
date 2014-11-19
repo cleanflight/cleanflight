@@ -110,18 +110,22 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     // USART1_TX    PA9
     // USART1_RX    PA10
     gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_9;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if(mode & MODE_SINGLEWIRE) {
+        gpio.pin = Pin_9;
+        gpio.mode = Mode_AF_OD;
         gpioInit(GPIOA, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(GPIOA, &gpio);
-    gpio.pin = Pin_10;
-    gpio.mode = Mode_IPU;
-    if (mode & MODE_RX)
-        gpioInit(GPIOA, &gpio);
-
+    } else {
+        if (mode & MODE_TX) {
+            gpio.pin = Pin_9;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(GPIOA, &gpio);
+        }
+        if (mode & MODE_RX) {
+            gpio.pin = Pin_10;
+            gpio.mode = Mode_IPU;
+            gpioInit(GPIOA, &gpio);
+        }
+    }
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_SERIALUART1_TXDMA);
@@ -195,17 +199,22 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
     // USART2_TX    PA2
     // USART2_RX    PA3
     gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_2;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if(mode & MODE_SINGLEWIRE) {
+        gpio.pin = Pin_2;
+        gpio.mode = Mode_AF_OD;
         gpioInit(GPIOA, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(GPIOA, &gpio);
-    gpio.pin = Pin_3;
-    gpio.mode = Mode_IPU;
-    if (mode & MODE_RX)
-        gpioInit(GPIOA, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.pin = Pin_2;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(GPIOA, &gpio);
+        }
+        if (mode & MODE_RX) {
+            gpio.pin = Pin_3;
+            gpio.mode = Mode_IPU;
+            gpioInit(GPIOA, &gpio);
+        }
+    }
 
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
@@ -260,17 +269,22 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 #endif
 
     gpio.speed = Speed_2MHz;
-    gpio.pin = USART3_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
-        gpioInit(USART3_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART3_GPIO, &gpio);
-    gpio.pin = USART3_RX_PIN;
-    gpio.mode = Mode_IPU;
-    if (mode & MODE_RX)
-        gpioInit(USART3_GPIO, &gpio);
+    if(mode & MODE_SINGLEWIRE) {
+        gpio.pin = USART3_TX_PIN;
+        gpio.mode = Mode_AF_OD;
+        gpioInit(GPIOA, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.pin = USART3_TX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(GPIOA, &gpio);
+        }
+        if (mode & MODE_RX) {
+            gpio.pin = USART3_RX_PIN;
+            gpio.mode = Mode_IPU;
+            gpioInit(GPIOA, &gpio);
+        }
+    }
 
     // RX/TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;
