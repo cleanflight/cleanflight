@@ -309,6 +309,8 @@ void writeServos(void)
             pwmWriteServo(1, servo[4]);
             pwmWriteServo(2, servo[5]);
             pwmWriteServo(3, servo[6]);
+            if(mcfg.fw_flaps)
+                pwmWriteServo(4, servo[2]);
             break;
 
         default:
