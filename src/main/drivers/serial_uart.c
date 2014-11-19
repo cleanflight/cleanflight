@@ -92,7 +92,7 @@ static void uartReconfigure(uartPort_t *uartPort)
     USART_Cmd(uartPort->USARTx, ENABLE);
 }
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
+serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallback *callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
 {
     uartPort_t *s = NULL;
 
@@ -115,7 +115,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     s->port.rxBufferHead = s->port.rxBufferTail = 0;
     s->port.txBufferHead = s->port.txBufferTail = 0;
     // callback works for IRQ-based RX ONLY
-    s->port.callback = callback;
+    s->port.rxCallback = callback;
     s->port.mode = mode;
     s->port.baudRate = baudRate;
     s->port.inversion = inversion;

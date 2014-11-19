@@ -560,7 +560,7 @@ void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)
     }
 }
 
-serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
+serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallback *callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
 {
     serialPort_t *serialPort = NULL;
 

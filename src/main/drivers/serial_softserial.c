@@ -145,7 +145,7 @@ static void resetBuffers(softSerial_t *softSerial)
     softSerial->port.txBufferHead = 0;
 }
 
-serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallbackPtr callback, uint32_t baud, serialInversion_e inversion)
+serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallback *callback, uint32_t baud, serialInversion_e inversion)
 {
     softSerial_t *softSerial = &(softSerialPorts[portIndex]);
 

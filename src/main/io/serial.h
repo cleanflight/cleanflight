@@ -131,7 +131,7 @@ typedef struct serialConfig_s {
 uint8_t lookupScenarioIndex(serialPortFunctionScenario_e scenario);
 
 serialPort_t *findOpenSerialPort(uint16_t functionMask);
-serialPort_t *openSerialPort(serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion);
+serialPort_t *openSerialPort(serialPortFunction_e functionMask, serialReceiveCallback *callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion);
 
 bool canOpenSerialPort(serialPortFunction_e function);
 void beginSerialPortFunction(serialPort_t *port, serialPortFunction_e function);

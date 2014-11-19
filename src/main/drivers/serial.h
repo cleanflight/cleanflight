@@ -30,10 +30,10 @@ typedef enum portMode_t {
     MODE_SINGLEWIRE = 1 << 3,
 } portMode_t;
 
-typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial drivers to return frames to app
 
 typedef struct serialPort {
 
+typedef void serialReceiveCallback(uint16_t data);   // used by serial drivers to return frames to app
     const struct serialPortVTable *vTable;
 
     uint8_t identifier;
@@ -50,8 +50,7 @@ typedef struct serialPort {
     uint32_t txBufferHead;
     uint32_t txBufferTail;
 
-    // FIXME rename member to rxCallback
-    serialReceiveCallbackPtr callback;
+    serialReceiveCallback *rxCallback;
 } serialPort_t;
 
 struct serialPortVTable {
