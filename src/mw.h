@@ -230,19 +230,19 @@ typedef struct config_t {
     uint16_t nav_speed_max;                 // cm/sec
     uint16_t ap_mode;                       // Temporarily Disables GPS_HOLD_MODE to be able to make it possible to adjust the Hold-position when moving the sticks, creating a deadspan for GPS
 
-    float fixedwing_rollrate;
-    float fixedwing_pitchrate;
-    uint8_t vector_trust;
-    uint8_t flaperons_invert;
-    int16_t gps_maxcorr;                    // Degrees banking Allowed by GPS.
-    int16_t gps_rudder;                     // Maximum Rudder
-    int16_t gps_maxclimb;                   // Degrees climbing . To much can stall the plane.
-    int16_t gps_maxdive;                    // Degrees Diving . To much can overspeed the plane.
-    uint16_t climb_throttle;                // Max allowed throttle in GPS modes.
-    uint16_t cruice_throttle;               // Throttle to set for cruisespeed.
-    uint16_t idle_throttle;                 // Lowest throttleValue during Descend
-    uint16_t scaler_throttle;               // Adjust to Match Power/Weight ratio of your model
-    float roll_comp;
+    float fw_rollrate;
+    float fw_pitchrate;
+    uint8_t fw_vector_trust;
+    uint8_t fw_flaperons_invert;
+    int16_t fw_gps_maxcorr;                    // Degrees banking Allowed by GPS.
+    int16_t fw_gps_rudder;                     // Maximum Rudder
+    int16_t fw_gps_maxclimb;                   // Degrees climbing . To much can stall the plane.
+    int16_t fw_gps_maxdive;                    // Degrees Diving . To much can overspeed the plane.
+    uint16_t fw_climb_throttle;                // Max allowed throttle in GPS modes.
+    uint16_t fw_cruise_throttle;               // Throttle to set for cruisespeed.
+    uint16_t fw_idle_throttle;                 // Lowest throttleValue during Descend
+    uint16_t fw_scaler_throttle;               // Adjust to Match Power/Weight ratio of your model
+    float fw_roll_comp;
 
 } config_t;
 
@@ -307,12 +307,12 @@ typedef struct master_t {
     uint16_t maxcheck;                      // maximum rc end
     uint8_t retarded_arm;                   // allow disarsm/arm on throttle down + roll left/right
     uint8_t disarm_kill_switch;             // AUX disarm independently of throttle value
-    uint8_t flaps_speed;                    // airplane mode flaps, 0 = no flaps, > 0 = flap speed, larger = faster
-    int8_t fixedwing_althold_dir;           // +1 or -1 for pitch/althold gain. later check if need more than just sign
+    uint8_t fw_flaps_speed;                 // airplane mode fw_flaps, 0 = no fw_flaps, > 0 = flap speed, larger = faster
+    int8_t fw_althold_dir;                  // +1 or -1 for pitch/althold gain. later check if need more than just sign
     uint8_t flaperons;                      // Enable/disable channel selection 0 - 16
-    uint8_t flaps;                          // Flaps activation
-    uint16_t flaperons_min;                 // Endpoint for Flaperons
-    uint16_t flaperons_max;                 // Endpoint for Flaperons
+    uint8_t fw_flaps;                       // fw_flaps activation
+    uint16_t fw_flaperons_min;              // Endpoint for Flaperons
+    uint16_t fw_flaperons_max;              // Endpoint for Flaperons
 		
     uint8_t rssi_aux_channel;               // Read rssi from channel. 1+ = AUX1+, 0 to disable.
     uint8_t rssi_adc_channel;               // Read analog-rssi from RC-filter (RSSI-PWM to RSSI-Analog), RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9), 0 to disable (disabled if rssi_aux_channel > 0 or rssi_adc_channel == power_adc_channel)
@@ -373,7 +373,7 @@ typedef struct flags_t {
     uint8_t VARIO_MODE;
     uint8_t FIXED_WING;                     // set when in flying_wing or airplane mode. currently used by althold selection code
     uint8_t MOTORS_STOPPED;
-    uint8_t FAILSAFE_RTH_ENABLE;
+    uint8_t FW_FAILSAFE_RTH_ENABLE;
     uint8_t CLIMBOUT_FW;
 } flags_t;
 

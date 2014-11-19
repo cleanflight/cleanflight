@@ -353,16 +353,16 @@ static void airplaneMixer(void)
 
     if (mcfg.flaperons) {
         static int16_t temp_Flprns;
-        int8_t flpDir = cfg.flaperons_invert;
-        int16_t flpInput = constrain(rcData[mcfg.flaperons-1], mcfg.flaperons_min, mcfg.flaperons_max);
+        int8_t flpDir = cfg.fw_flaperons_invert;
+        int16_t flpInput = constrain(rcData[mcfg.flaperons-1], mcfg.fw_flaperons_min, mcfg.fw_flaperons_max);
         flpInput = mcfg.midrc - flpInput;
         
-        if (mcfg.flaps_speed == 0)
+        if (mcfg.fw_flaps_speed == 0)
             temp_Flprns = flpInput;
         else if (temp_Flprns < flpInput)
-            temp_Flprns = constrain(temp_Flprns + mcfg.flaps_speed, temp_Flprns, flpInput);
+            temp_Flprns = constrain(temp_Flprns + mcfg.fw_flaps_speed, temp_Flprns, flpInput);
         else if (temp_Flprns > flpInput)
-            temp_Flprns = constrain(temp_Flprns - mcfg.flaps_speed, flpInput, temp_Flprns);
+            temp_Flprns = constrain(temp_Flprns - mcfg.fw_flaps_speed, flpInput, temp_Flprns);
         
         flapperons[0] = temp_Flprns;
         flapperons[1] = -temp_Flprns;
@@ -372,20 +372,20 @@ static void airplaneMixer(void)
             flapperons[1] *= -1;
     }
 
-    if (mcfg.flaps) {
-        // configure SERVO3 middle point in GUI to using an AUX channel for FLAPS control
+    if (mcfg.fw_flaps) {
+        // configure SERVO3 middle point in GUI to using an AUX channel for fw_flaps control
         // use servo min, servo max and servo rate for proper endpoints adjust
-        static int16_t temp_Flaps;
-        int16_t flaps_Input = constrain(servoMiddle(2), cfg.servoConf[2].min, cfg.servoConf[2].max);
-        flaps_Input = mcfg.midrc - flaps_Input;
-        if(mcfg.flaps_speed == 0)
-            temp_Flaps = flaps_Input;
-        else if(temp_Flaps < flaps_Input)
-            temp_Flaps = constrain(temp_Flaps + mcfg.flaps_speed,temp_Flaps , flaps_Input);
-        else if(temp_Flaps > flaps_Input)
-            temp_Flaps = constrain(temp_Flaps - mcfg.flaps_speed, flaps_Input, temp_Flaps);
+        static int16_t temp_fw_flaps;
+        int16_t fw_flaps_Input = constrain(servoMiddle(2), cfg.servoConf[2].min, cfg.servoConf[2].max);
+        fw_flaps_Input = mcfg.midrc - fw_flaps_Input;
+        if(mcfg.fw_flaps_speed == 0)
+            temp_fw_flaps = fw_flaps_Input;
+        else if(temp_fw_flaps < fw_flaps_Input)
+            temp_fw_flaps = constrain(temp_fw_flaps + mcfg.fw_flaps_speed,temp_fw_flaps , fw_flaps_Input);
+        else if(temp_fw_flaps > fw_flaps_Input)
+            temp_fw_flaps = constrain(temp_fw_flaps - mcfg.fw_flaps_speed, fw_flaps_Input, temp_fw_flaps);
 
-        servo[2] = ((int32_t)cfg.servoConf[2].rate * temp_Flaps) / 100;
+        servo[2] = ((int32_t)cfg.servoConf[2].rate * temp_fw_flaps) / 100;
         servo[2] += mcfg.midrc;
     }
 
@@ -445,7 +445,7 @@ void mixTable(void)
             break;
 
         case MULTITYPE_FLYING_WING:
-            if (!cfg.vector_trust) {
+            if (!cfg.fw_vector_trust) {
                 motor[0] = rcCommand[THROTTLE]; // set motor_pwm_rate rate to 50 for servos
                 motor[1] = rcCommand[THROTTLE];
             }
@@ -459,12 +459,12 @@ void mixTable(void)
 
             if (f.PASSTHRU_MODE) {
                 // do not use sensors for correction, simple 2 channel mixing
-                servo[3] = ((servoDirection(3, 1) * rcCommand[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(3, 2) * rcCommand[ROLL]) * cfg.fixedwing_rollrate);
-                servo[4] = ((servoDirection(4, 1) * rcCommand[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(4, 2) * rcCommand[ROLL]) * cfg.fixedwing_rollrate);
+                servo[3] = ((servoDirection(3, 1) * rcCommand[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(3, 2) * rcCommand[ROLL]) * cfg.fw_rollrate);
+                servo[4] = ((servoDirection(4, 1) * rcCommand[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(4, 2) * rcCommand[ROLL]) * cfg.fw_rollrate);
             } else {
                 // use sensors to correct (gyro only or gyro + acc)
-                servo[3] = ((servoDirection(3, 1) * axisPID[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(3, 2) * axisPID[ROLL]) * cfg.fixedwing_rollrate);
-                servo[4] = ((servoDirection(4, 1) * axisPID[PITCH]) * cfg.fixedwing_pitchrate) + ((servoDirection(4, 2) * axisPID[ROLL]) * cfg.fixedwing_rollrate);
+                servo[3] = ((servoDirection(3, 1) * axisPID[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(3, 2) * axisPID[ROLL]) * cfg.fw_rollrate);
+                servo[4] = ((servoDirection(4, 1) * axisPID[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(4, 2) * axisPID[ROLL]) * cfg.fw_rollrate);
             }
             servo[3] += servoMiddle(3);
             servo[4] += servoMiddle(4);
