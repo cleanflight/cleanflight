@@ -610,6 +610,9 @@ void timerChConfigOC(const timerHardware_t *timHw, bool outEnable, bool activeHi
 {
     TIM_OCInitTypeDef  TIM_OCInitStructure;
 
+// StdPeriph_Driver is so confusing - when switching mode, some bits are left from input mode
+// it's probably best to rewrite this code to use direct register access
+
     TIM_OCStructInit(&TIM_OCInitStructure);
     if(outEnable) {
         TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Inactive;
@@ -623,18 +626,22 @@ void timerChConfigOC(const timerHardware_t *timHw, bool outEnable, bool activeHi
     case TIM_Channel_1:
         TIM_OC1Init(timHw->tim, &TIM_OCInitStructure);
         TIM_OC1PreloadConfig(timHw->tim, TIM_OCPreload_Disable);
+        TIM_ClearOC1Ref(timHw->tim, TIM_OCClear_Disable);
         break;
     case TIM_Channel_2:
         TIM_OC2Init(timHw->tim, &TIM_OCInitStructure);
         TIM_OC2PreloadConfig(timHw->tim, TIM_OCPreload_Disable);
+        TIM_ClearOC2Ref(timHw->tim, TIM_OCClear_Disable);
         break;
     case TIM_Channel_3:
         TIM_OC3Init(timHw->tim, &TIM_OCInitStructure);
         TIM_OC3PreloadConfig(timHw->tim, TIM_OCPreload_Disable);
+        TIM_ClearOC3Ref(timHw->tim, TIM_OCClear_Disable);
         break;
     case TIM_Channel_4:
         TIM_OC4Init(timHw->tim, &TIM_OCInitStructure);
         TIM_OC4PreloadConfig(timHw->tim, TIM_OCPreload_Disable);
+        TIM_ClearOC4Ref(timHw->tim, TIM_OCClear_Disable);
         break;
     }
 }
