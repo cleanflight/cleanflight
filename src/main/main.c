@@ -32,6 +32,7 @@
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
 #include "drivers/sound_beeper.h"
+#include "drivers/callback.h"
 #include "drivers/timer.h"
 #include "drivers/serial.h"
 #include "drivers/serial_softserial.h"
@@ -274,6 +275,10 @@ void init(void)
     if (sensors(SENSOR_MAG))
         compassInit();
 #endif
+
+    callbackInit();
+
+    timerQueue_Init();
 
     serialInit(&masterConfig.serialConfig);
 

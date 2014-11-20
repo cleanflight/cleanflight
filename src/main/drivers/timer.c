@@ -28,6 +28,7 @@
 
 #include "gpio.h"
 #include "system.h"
+#include "callback.h"
 #include "pin_debug.h"
 
 #include "timer.h"
@@ -59,6 +60,8 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM4, GPIOB, Pin_7, TIM_Channel_2, TIM4_IRQn, 0, Mode_IPD},          // PWM12 - OUT4
     { TIM4, GPIOB, Pin_8, TIM_Channel_3, TIM4_IRQn, 0, Mode_IPD},          // PWM13 - OUT5
     { TIM4, GPIOB, Pin_9, TIM_Channel_4, TIM4_IRQn, 0, Mode_IPD}           // PWM14 - OUT6
+
+    { TIM1, GPIOA, Pin_10,  TIM_Channel_3, TIM1_CC_IRQn, 0, 0},            // TIMER
 };
 
 #define USED_TIMERS         (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4))
@@ -81,7 +84,9 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM4, GPIOB, Pin_7, TIM_Channel_2, TIM4_IRQn, 1, GPIO_Mode_AF_PP},    // S3_OUT
     { TIM1, GPIOA, Pin_8, TIM_Channel_1, TIM1_CC_IRQn, 1, GPIO_Mode_AF_PP}, // S4_OUT
     { TIM3, GPIOB, Pin_4, TIM_Channel_1, TIM3_IRQn, 1, GPIO_Mode_AF_PP},    // S5_OUT - GPIO_PartialRemap_TIM3 - LED Strip
-    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF_PP}     // S6_OUT
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF_PP},    // S6_OUT
+
+    { TIM1, GPIOA, Pin_10, TIM_Channel_3, TIM1_CC_IRQn, 0, 0},                  // TIMER
 };
 
 #define USED_TIMERS         (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4))
@@ -105,7 +110,9 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM4, GPIOD, Pin_14, TIM_Channel_3, TIM4_IRQn, 0, Mode_AF_PP, GPIO_PinSource14, GPIO_AF_2},                  // PWM11 - PD14
     { TIM4, GPIOD, Pin_15, TIM_Channel_4, TIM4_IRQn, 0, Mode_AF_PP, GPIO_PinSource15, GPIO_AF_2},                  // PWM12 - PD15
     { TIM2, GPIOA, Pin_1, TIM_Channel_2, TIM2_IRQn, 0, Mode_AF_PP, GPIO_PinSource1, GPIO_AF_1},                   // PWM13 - PA1
-    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 0, Mode_AF_PP, GPIO_PinSource2, GPIO_AF_1}                    // PWM14 - PA2
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 0, Mode_AF_PP, GPIO_PinSource2, GPIO_AF_1},                   // PWM14 - PA2
+
+    { TIM1,  GPIOA, Pin_10,  TIM_Channel_3, TIM1_CC_IRQn, 0, 0, ~0, ~0},                                          // TIMER
 };
 
 #define USED_TIMERS  (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(16) | TIM_N(17))
@@ -138,7 +145,9 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM2,  GPIOA, Pin_3,  TIM_Channel_4, TIM2_IRQn,               0, Mode_AF_PP, GPIO_PinSource3, GPIO_AF_1},    // PWM15 - PA3
     { TIM3,  GPIOB, Pin_0,  TIM_Channel_3, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource0, GPIO_AF_2},    // PWM16 - PB0
     { TIM3,  GPIOB, Pin_1,  TIM_Channel_4, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource1, GPIO_AF_2},    // PWM17 - PB1
-    { TIM3,  GPIOA, Pin_4,  TIM_Channel_2, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource4, GPIO_AF_2}     // PWM18 - PA4
+    { TIM3,  GPIOA, Pin_4,  TIM_Channel_2, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource4, GPIO_AF_2},    // PWM18 - PA4
+
+    { TIM1,  GPIOA, Pin_10, TIM_Channel_3, TIM1_CC_IRQn,            0, 0,          ~0,              ~0},           // TIMER
 };
 
 #define USED_TIMERS  (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(15) | TIM_N(16) | TIM_N(17))
@@ -165,7 +174,9 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM15, GPIOA, Pin_2,  TIM_Channel_1, TIM1_BRK_TIM15_IRQn,     1, Mode_AF_PP, GPIO_PinSource2, GPIO_AF_9}, // PA2 - untested
     { TIM15, GPIOA, Pin_3,  TIM_Channel_2, TIM1_BRK_TIM15_IRQn,     1, Mode_AF_PP, GPIO_PinSource3, GPIO_AF_9}, // PA3 - untested
     { TIM16, GPIOA, Pin_6,  TIM_Channel_1, TIM1_UP_TIM16_IRQn,      1, Mode_AF_PP, GPIO_PinSource6, GPIO_AF_1}, // PA6 - untested
-    { TIM17, GPIOA, Pin_7,  TIM_Channel_1, TIM1_TRG_COM_TIM17_IRQn, 1, Mode_AF_PP, GPIO_PinSource7, GPIO_AF_1} // PA7 - untested
+    { TIM17, GPIOA, Pin_7,  TIM_Channel_1, TIM1_TRG_COM_TIM17_IRQn, 1, Mode_AF_PP, GPIO_PinSource7, GPIO_AF_1}, // PA7 - untested
+
+    { TIM1,  GPIOA, Pin_11, TIM_Channel_4, TIM1_CC_IRQn,            0, 0,          ~0,              ~0},        // TIMER
 };
 
 #define USED_TIMERS  (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(15) | TIM_N(16) | TIM_N(17))
@@ -236,6 +247,7 @@ timerConfig_t timerConfig[USED_TIMER_COUNT];
 
 typedef struct {
     channelType_t type;
+    channelResources_t resourcesUsed;
 } timerChannelInfo_t;
 timerChannelInfo_t timerChannelInfo[USABLE_TIMER_CHANNEL_COUNT];
 
@@ -356,13 +368,26 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 }
 
 // allocate and configure timer channel. Timer priority is set to highest priority of its channels
-void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority)
+// caller must check if channel is free
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency)
 {
+    // TODO - handle timerFrequency (not used right now)
     unsigned channel = timHw - timerHardware;
     if(channel >= USABLE_TIMER_CHANNEL_COUNT)
         return;
 
-    timerChannelInfo[channel].type = type;
+    if(type != TYPE_FREE)   // pass TYPE_FREE to keep old owner
+        timerChannelInfo[channel].type = type;
+
+    timerChannelInfo[channel].resourcesUsed |= resources;
+
+    if(resources & RESOURCE_TIMER_DUAL) {
+        // we must mark other channel too
+        unsigned dualChannel = timerChFindDualChannel(timHw) - timerHardware;
+        if(dualChannel < USABLE_TIMER_CHANNEL_COUNT)
+            timerChannelInfo[dualChannel].resourcesUsed |= RESOURCE_TIMER;
+    }
+
     unsigned timer = lookupTimerIndex(timHw->tim);
     if(timer >= USED_TIMER_COUNT)
         return;
@@ -610,7 +635,22 @@ void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool stateHig
     }
 }
 
+const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw)
+{
+    for(unsigned i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++)
+        if(timerHardware[i].tim == timHw->tim
+           && timerHardware[i].channel == (timHw->channel ^ TIM_Channel_2))
+            return &timerHardware[i];
+    return NULL;
+}
 
+channelResources_t timerChGetUsedResources(const timerHardware_t *timHw)
+{
+    unsigned channel = timHw - timerHardware;
+    if(channel < USABLE_TIMER_CHANNEL_COUNT)
+        return timerChannelInfo[channel].resourcesUsed;
+    return 0;
+}
 
 static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 {

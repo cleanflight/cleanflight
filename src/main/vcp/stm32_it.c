@@ -127,10 +127,12 @@ void DebugMon_Handler(void)
  * Output         : None
  * Return         : None
  *******************************************************************************/
+#if 0
+// Handled by cleanflight
 void PendSV_Handler(void)
 {
 }
-
+#endif
 
 /*******************************************************************************
  * Function Name  : USB_IRQHandler

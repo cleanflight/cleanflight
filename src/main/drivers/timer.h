@@ -17,21 +17,25 @@
 
 #pragma once
 
+#include "gpio.h"
+
 #ifdef SPARKY
 #define USABLE_TIMER_CHANNEL_COUNT 11
 #endif
 
 #ifdef CHEBUZZF3
-#define USABLE_TIMER_CHANNEL_COUNT 18
+#define USABLE_TIMER_CHANNEL_COUNT (18 + 1)
 #endif
 
 #ifdef CC3D
-#define USABLE_TIMER_CHANNEL_COUNT 12
+#define USABLE_TIMER_CHANNEL_COUNT (12 + 1)
 #endif
 
 #if !defined(USABLE_TIMER_CHANNEL_COUNT)
-#define USABLE_TIMER_CHANNEL_COUNT 14
+#define USABLE_TIMER_CHANNEL_COUNT (14 + 1)
 #endif
+
+#define TIMER_QUEUE_CHANNEL (USABLE_TIMER_CHANNEL_COUNT - 1)
 
 typedef uint16_t captureCompare_t;        // 16 bit on both 103 and 303, just register access must be 32bit sometimes (use timCCR_t)
 
@@ -99,6 +103,18 @@ typedef enum {
     TYPE_TIMER
 } channelType_t;
 
+// Currently TIMER should be shared resource (softserial dualtimer and timerqueue needs to allocate timer channel, but pin can be used for other function)
+// with mode switching (shared serial ports, ...) this will need some improvement
+typedef enum {
+    RESOURCE_INPUT = 1 << 0,
+    RESOURCE_OUTPUT = 1<< 1,
+    RESOURCE_IO = RESOURCE_INPUT | RESOURCE_OUTPUT,
+    RESOURCE_TIMER = 1 << 2,
+    RESOURCE_TIMER_DUAL = 1 << 3, // channel used in dual-capture, other channel will be allocated too
+    RESOURCE_USART = 1 << 4,
+    RESOURCE_ADC = 1 << 5
+} channelResources_t;
+
 void timerConfigure(const timerHardware_t *timHw, uint16_t period, uint8_t mhz);  // This interface should be replaced.
 
 void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);
@@ -118,7 +134,10 @@ void timerChITConfigDualLo(const timerHardware_t* timHw, FunctionalState newStat
 void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
 void timerChClearCCFlag(const timerHardware_t* timHw);
 
-void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority);
+void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResources_t resources, int irqPriority, int timerFrequency);
+
+const timerHardware_t* timerChFindDualChannel(const timerHardware_t *timHw);
+channelResources_t timerChGetUsedResources(const timerHardware_t *timHw);
 
 void timerInit(void);
 void timerStart(void);
