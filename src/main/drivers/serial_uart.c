@@ -96,8 +96,11 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallback *callback, u
 {
     uartPort_t *s = NULL;
 
-    if (USARTx == USART1) {
+    if(0) {
+#ifdef USE_USART1
+    } else if (USARTx == USART1) {
         s = serialUSART1(baudRate, mode);
+#endif
 #ifdef USE_USART2
     } else if (USARTx == USART2) {
         s = serialUSART2(baudRate, mode);
