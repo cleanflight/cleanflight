@@ -55,6 +55,9 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
+// MIGRATION
+#include "drivers/serial_softserial.h"
+
 enum
 {
     SPSTATE_UNINITIALIZED,
@@ -200,6 +203,19 @@ static void smartPortSendPackage(uint16_t id, uint32_t val)
     smartPortSendByte(u8p[2], &crc);
     smartPortSendByte(u8p[3], &crc);
     smartPortSendByte(0xFF - (uint8_t)crc, NULL);
+
+    // MIGRATION
+    // softserial needs explicit direction change (it's automatic in USART)
+    // all data are prepared in tx buffer; set TX state and request return to RX when softsirial is done with transmitting
+    if(0
+#ifdef USE_SOFTSERIAL1
+       || smartPortSerialPort->identifier == SERIAL_PORT_SOFTSERIAL1
+#endif
+#ifdef USE_SOFTSERIAL2
+       || smartPortSerialPort->identifier == SERIAL_PORT_SOFTSERIAL2
+#endif
+        )
+        softSerialUpdateState(smartPortSerialPort, ~STATE_RX, STATE_TX | STATE_RX_WHENTXDONE);
 
     smartPortLastServiceTime = millis();
 }
