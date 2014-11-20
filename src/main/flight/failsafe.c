@@ -38,15 +38,17 @@
  * enable() should be called after system initialisation.
  */
 
-static failsafeState_t failsafeState;
+static failsafe_t failsafe;
 
 static failsafeConfig_t *failsafeConfig;
 
 static rxConfig_t *rxConfig;
 
-void failsafeReset(void)
+const failsafeVTable_t failsafeVTable[];
+
+void reset(void)
 {
-    failsafeState.counter = 0;
+    failsafe.counter = 0;
 }
 
 /*
@@ -55,118 +57,148 @@ void failsafeReset(void)
 void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse)
 {
     failsafeConfig = failsafeConfigToUse;
-    failsafeReset();
+    reset();
 }
 
-failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig)
+failsafe_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 
-    failsafeState.events = 0;
-    failsafeState.enabled = false;
+    failsafe.vTable = failsafeVTable;
+    failsafe.events = 0;
+    failsafe.state = FAILSAFE_FSM_DISABLED;
 
-    return &failsafeState;
+    return &failsafe;
 }
 
-bool failsafeIsIdle(void)
+bool isIdle(void)
 {
-    return failsafeState.counter == 0;
+    return failsafe.counter == 0;
 }
 
-bool failsafeIsEnabled(void)
+bool isEnabled(void)
 {
-    return failsafeState.enabled;
+    return failsafe.state > FAILSAFE_FSM_DISABLED;
 }
 
-void failsafeEnable(void)
+void enable(void)
 {
-    failsafeState.enabled = true;
+    failsafe.state = FAILSAFE_FSM_ENABLED;
 }
 
-bool failsafeHasTimerElapsed(void)
+bool hasTimerElapsed(void)
 {
-    return failsafeState.counter > (5 * failsafeConfig->failsafe_delay);
+    return failsafe.counter > (5 * failsafeConfig->failsafe_delay);
 }
 
-bool failsafeShouldForceLanding(bool armed)
+bool forcedLandingInProgress(void)
 {
-    return failsafeHasTimerElapsed() && armed;
+    return failsafe.state == FAILSAFE_FSM_LANDING;
 }
 
-bool failsafeShouldHaveCausedLandingByNow(void)
+bool forcedLandingFinished(void)
 {
-    return failsafeState.counter > 5 * (failsafeConfig->failsafe_delay + failsafeConfig->failsafe_off_delay);
+    return failsafe.state == FAILSAFE_FSM_FINISHED;
 }
 
-static void failsafeAvoidRearm(void)
+void failsafeAvoidRearm(void)
 {
     // This will prevent the automatic rearm if failsafe shuts it down and prevents
     // to restart accidently by just reconnect to the tx - you will have to switch off first to rearm
     ENABLE_ARMING_FLAG(PREVENT_ARMING);
 }
 
-static void failsafeOnValidDataReceived(void)
+void onValidDataReceived(void)
 {
-    if (failsafeState.counter > 20)
-        failsafeState.counter -= 20;
+    if (failsafe.counter > 20)
+        failsafe.counter -= 20;
     else
-        failsafeState.counter = 0;
+        failsafe.counter = 0;
 }
 
-void failsafeUpdateState(void)
+void updateState(void)
 {
     uint8_t i;
+    static uint32_t downCounter = 0;
 
-    if (!failsafeHasTimerElapsed()) {
-        return;
+    if (downCounter) {
+        downCounter--;
     }
 
-    if (!failsafeIsEnabled()) {
-        failsafeReset();
-        return;
-    }
+    // Failsafe system state machine
+    switch(failsafe.state) {
+    case FAILSAFE_FSM_DISABLED:
+        reset();
+        break;
 
-    if (failsafeShouldForceLanding(ARMING_FLAG(ARMED))) { // Stabilize, and set Throttle to specified level
-        failsafeAvoidRearm();
+    case FAILSAFE_FSM_ENABLED:
+        if (ARMING_FLAG(ARMED) && hasTimerElapsed()) {
+            // RC signal is lost for more then the specified guard time (in 0.1sec)
+            failsafe.events++;
+            downCounter = 5 * failsafeConfig->failsafe_off_delay;
+            failsafe.state = FAILSAFE_FSM_LANDING;
+        }
+        break;
 
+    case FAILSAFE_FSM_LANDING:
+        // Center stick positions and set Throttle to specified level
         for (i = 0; i < 3; i++) {
-            rcData[i] = rxConfig->midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
+            rcData[i] = rxConfig->midrc;
         }
         rcData[THROTTLE] = failsafeConfig->failsafe_throttle;
-        failsafeState.events++;
-    }
 
-    if (failsafeShouldHaveCausedLandingByNow() || !ARMING_FLAG(ARMED)) {
-        mwDisarm();
+        if (isIdle() && failsafeConfig->failsafe_abortable) {
+            failsafe.state = FAILSAFE_FSM_ENABLED;
+        }
+
+        if (!ARMING_FLAG(ARMED) || !downCounter) {
+            failsafeAvoidRearm();
+            mwDisarm();
+            failsafe.state = FAILSAFE_FSM_FINISHED;
+        }
+        break;
+
+    case FAILSAFE_FSM_FINISHED:
+        break;
     }
 }
 
-/**
- * Should be called once each time RX data is processed by the system.
- */
-void failsafeOnRxCycle(void)
+void incrementCounter(void)
 {
-    failsafeState.counter++;
+    failsafe.counter++;
 }
-
-#define REQUIRED_CHANNEL_MASK 0x0F // first 4 channels
 
 // pulse duration is in micro secons (usec)
-void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration)
+void checkPulse(uint8_t channel, uint16_t pulseDuration)
 {
-    static uint8_t goodChannelMask = 0;
+    static uint8_t goodChannelMask;
 
     if (channel < 6 &&
         pulseDuration > failsafeConfig->failsafe_min_usec &&
         pulseDuration < failsafeConfig->failsafe_max_usec
-    ) {
-        // if signal is valid - mark channel as OK
-        goodChannelMask |= (1 << channel);
-    }
+    )
+        goodChannelMask |= (1 << channel);       // if signal is valid - mark channel as OK
 
-    if (goodChannelMask == REQUIRED_CHANNEL_MASK) {
+    if (goodChannelMask == 0x3F) {               // If first six channels have good pulses, clear FailSafe counter
         goodChannelMask = 0;
-        failsafeOnValidDataReceived();
+        onValidDataReceived();
     }
 }
+
+
+const failsafeVTable_t failsafeVTable[] = {
+    {
+        reset,
+        forcedLandingInProgress,
+        hasTimerElapsed,
+        forcedLandingFinished,
+        incrementCounter,
+        updateState,
+        isIdle,
+        checkPulse,
+        isEnabled,
+        enable,
+    }
+};
+
 
