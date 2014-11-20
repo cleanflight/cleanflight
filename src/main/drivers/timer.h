@@ -35,7 +35,13 @@
 #define USABLE_TIMER_CHANNEL_COUNT (14 + 1)
 #endif
 
-#define TIMER_QUEUE_CHANNEL (USABLE_TIMER_CHANNEL_COUNT - 1)
+#ifdef NAZE
+# define TIMER_QUEUE_CHANNEL 3  // PWM4, T2Ch4
+#endif
+
+#ifndef TIMER_QUEUE_CHANNEL
+# define TIMER_QUEUE_CHANNEL (USABLE_TIMER_CHANNEL_COUNT - 1)
+#endif
 
 typedef uint16_t captureCompare_t;        // 16 bit on both 103 and 303, just register access must be 32bit sometimes (use timCCR_t)
 
