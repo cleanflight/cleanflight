@@ -135,22 +135,27 @@ static void pwmWriteStandard(uint8_t index, uint16_t value)
 	*motors[index]->ccr = value;
 }
 
-static void pwmWriteOneshot125(uint8_t index, uint16_t value)
-{
-	// Set the counter to overflow if it's the first motor to output, or if we change timers
-	if((index == 0) || (motors[index]->cnt != lastCounterPtr)){
-		lastCounterPtr = motors[index]->cnt;
-
-		*motors[index]->cnt = 0xfffe;
-	}
-
-	*motors[index]->ccr = value;
-}
-
 void pwmWriteMotor(uint8_t index, uint16_t value)
 {
     if (motors[index] && index < MAX_MOTORS)
         motors[index]->pwmWritePtr(index, value);
+}
+
+void pwmFinishedWritingMotors(uint8_t numberMotors)
+{
+	uint8_t index;
+
+	if(feature(FEATURE_ONESHOT125)){
+
+		for(index = 0; index < numberMotors; index++){
+			// Set the counter to overflow if it's the first motor to output, or if we change timers
+			if((index == 0) || (motors[index]->cnt != lastCounterPtr)){
+				lastCounterPtr = motors[index]->cnt;
+
+				*motors[index]->cnt = 0xfffe;
+			}
+		}
+	}
 }
 
 void pwmWriteServo(uint8_t index, uint16_t value)
@@ -174,11 +179,11 @@ void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motor
 
 	if(feature(FEATURE_ONESHOT125)){
 		motors[motorIndex] = pwmOutConfig(timerHardware, ONESHOT125_TIMER_MHZ, 0xFFFF, idlePulse);
-		motors[motorIndex]->pwmWritePtr = pwmWriteOneshot125;
 	} else {
 		motors[motorIndex] = pwmOutConfig(timerHardware, PWM_TIMER_MHZ, hz / motorPwmRate, idlePulse);
-		motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 	}
+
+	motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
 void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse)
