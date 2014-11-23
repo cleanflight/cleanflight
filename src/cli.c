@@ -212,8 +212,8 @@ const clivalue_t valueTable[] = {
     { "rssi_adc_offset", VAR_INT16, &mcfg.rssi_adc_offset, 0, 4095 },
     { "yaw_direction", VAR_INT8, &cfg.yaw_direction, -1, 1 },
     { "tri_unarmed_servo", VAR_INT8, &cfg.tri_unarmed_servo, 0, 1 },
-    { "fw_rollrate", VAR_FLOAT, &cfg.fw_rollrate, 0, 1 },
-    { "fw_pitchrate", VAR_FLOAT, &cfg.fw_pitchrate, 0, 1 },
+    { "fw_roll_throw", VAR_FLOAT, &cfg.fw_roll_throw, 0, 1 },
+    { "fw_pitch_throw", VAR_FLOAT, &cfg.fw_pitch_throw, 0, 1 },
     { "fw_vector_trust", VAR_UINT8, &cfg.fw_vector_trust, 0, 1},
     { "gimbal_flags", VAR_UINT8, &cfg.gimbal_flags, 0, 255},
     { "acc_lpf_factor", VAR_UINT8, &cfg.acc_lpf_factor, 0, 250 },
@@ -270,6 +270,7 @@ const clivalue_t valueTable[] = {
     { "fw_idle_throttle", VAR_UINT16, &cfg.fw_idle_throttle, 1000, 2000 },
     { "fw_scaler_throttle", VAR_UINT16, &cfg.fw_scaler_throttle, 0, 15 },
     { "fw_roll_comp", VAR_FLOAT, &cfg.fw_roll_comp, 0, 2 },
+    { "fw_rth_alt", VAR_UINT8, &cfg.D8[PIDPOSR], 0, 200 },
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
