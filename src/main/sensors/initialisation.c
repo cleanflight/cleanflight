@@ -396,6 +396,7 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
     if (!detectGyro(gyroLpf)) {
         return false;
     }
+    sensorsSet(SENSOR_GYRO);
     detectAcc(accHardwareToUse);
     detectBaro();
 

@@ -24,6 +24,8 @@
 
 #include "common/axis.h"
 #include "common/color.h"
+#include "common/atomic.h"
+#include "drivers/nvic.h"
 
 #include "drivers/system.h"
 #include "drivers/gpio.h"
@@ -121,28 +123,6 @@ void SetSysClock(bool overclock);
 void SetSysClock(void);
 #endif
 
-// FIXME bad naming - this appears to be for some new board that hasn't been made available yet.
-#ifdef PROD_DEBUG
-void productionDebug(void)
-{
-    gpio_config_t gpio;
-
-    // remap PB6 to USART1_TX
-    gpio.pin = Pin_6;
-    gpio.mode = Mode_AF_PP;
-    gpio.speed = Speed_2MHz;
-    gpioInit(GPIOB, &gpio);
-    gpioPinRemapConfig(AFIO_MAPR_USART1_REMAP, true);
-    serialInit(mcfg.serial_baudrate);
-    delay(25);
-    serialPrint(core.mainport, "DBG ");
-    printf("%08x%08x%08x OK\n", U_ID_0, U_ID_1, U_ID_2);
-    serialPrint(core.mainport, "EOF");
-    delay(25);
-    gpioPinRemapConfig(AFIO_MAPR_USART1_REMAP, false);
-}
-#endif
-
 void init(void)
 {
     uint8_t i;
@@ -181,6 +161,8 @@ void init(void)
     systemInit();
 
     delay(100);
+
+    timerInit();  // timer must be initialized before any channel is allocated
 
     ledInit();
 
@@ -254,11 +236,6 @@ void init(void)
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
     sensorsOK = sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf, masterConfig.acc_hardware, currentProfile->mag_declination);
 
-    // production debug output
-#ifdef PROD_DEBUG
-    productionDebug();
-#endif
-
     // if gyro was not detected due to whatever reason, we give up now.
     if (!sensorsOK)
         failureMode(3);
@@ -283,8 +260,6 @@ void init(void)
     if (sensors(SENSOR_MAG))
         compassInit();
 #endif
-
-    timerInit();
 
     serialInit(&masterConfig.serialConfig);
 
@@ -366,6 +341,10 @@ void init(void)
 #ifdef BARO
     baroSetCalibrationCycles(CALIBRATING_BARO_CYCLES);
 #endif
+
+    // start all timers
+    // TODO - not implemented yet
+    timerStart();
 
     ENABLE_STATE(SMALL_ANGLE);
     DISABLE_ARMING_FLAG(PREVENT_ARMING);

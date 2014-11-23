@@ -39,6 +39,7 @@
 #include "telemetry/frsky.h"
 #include "telemetry/hott.h"
 #include "telemetry/msp.h"
+#include "telemetry/smartport.h"
 
 
 static bool isTelemetryConfigurationValid = false; // flag used to avoid repeated configuration checks
@@ -67,13 +68,27 @@ bool isTelemetryProviderMSP(void)
     return telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_MSP;
 }
 
+bool isTelemetryProviderSmartPort(void)
+{
+    return telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT;
+}
+
+bool isTelemetryPortShared(void)
+{
+    return telemetryPortIsShared;
+}
+
 bool canUseTelemetryWithCurrentConfiguration(void)
 {
     if (!feature(FEATURE_TELEMETRY)) {
         return false;
     }
 
-    if (!canOpenSerialPort(FUNCTION_TELEMETRY)) {
+    if (telemetryConfig->telemetry_provider != TELEMETRY_PROVIDER_SMARTPORT && !canOpenSerialPort(FUNCTION_TELEMETRY)) {
+        return false;
+    }
+
+    if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT && !canOpenSerialPort(FUNCTION_SMARTPORT_TELEMETRY)) {
         return false;
     }
 
@@ -82,7 +97,11 @@ bool canUseTelemetryWithCurrentConfiguration(void)
 
 void initTelemetry()
 {
-    telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_TELEMETRY, FUNCTION_MSP);
+    if (isTelemetryProviderSmartPort()) {
+        telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_SMARTPORT_TELEMETRY, FUNCTION_MSP);
+    } else {
+        telemetryPortIsShared = isSerialPortFunctionShared(FUNCTION_TELEMETRY, FUNCTION_MSP);
+    }
     isTelemetryConfigurationValid = canUseTelemetryWithCurrentConfiguration();
 
     if (isTelemetryProviderFrSky()) {
@@ -97,6 +116,10 @@ void initTelemetry()
         initMSPTelemetry(telemetryConfig);
     }
 
+    if (isTelemetryProviderSmartPort()) {
+        initSmartPortTelemetry(telemetryConfig);
+    }
+
     checkTelemetryState();
 }
 
@@ -105,10 +128,16 @@ bool determineNewTelemetryEnabledState(void)
     bool enabled = true;
 
     if (telemetryPortIsShared) {
-        if (telemetryConfig->telemetry_switch)
-            enabled = IS_RC_MODE_ACTIVE(BOXTELEMETRY);
-        else
-            enabled = ARMING_FLAG(ARMED);
+        if (telemetryConfig->telemetry_provider == TELEMETRY_PROVIDER_SMARTPORT) {
+            if (isSmartPortTimedOut()) {
+                enabled = false;
+            }
+        } else {
+            if (telemetryConfig->telemetry_switch)
+                enabled = IS_RC_MODE_ACTIVE(BOXTELEMETRY);
+            else
+                enabled = ARMING_FLAG(ARMED);
+        }
     }
 
     return enabled;
@@ -132,6 +161,11 @@ uint32_t getTelemetryProviderBaudRate(void)
     if (isTelemetryProviderMSP()) {
         return getMSPTelemetryProviderBaudRate();
     }
+
+    if (isTelemetryProviderSmartPort()) {
+        return getSmartPortTelemetryProviderBaudRate();
+    }
+
     return 0;
 }
 
@@ -148,6 +182,10 @@ static void configureTelemetryPort(void)
     if (isTelemetryProviderMSP()) {
         configureMSPTelemetryPort();
     }
+
+    if (isTelemetryProviderSmartPort()) {
+        configureSmartPortTelemetryPort();
+    }
 }
 
 
@@ -163,6 +201,10 @@ void freeTelemetryPort(void)
 
     if (isTelemetryProviderMSP()) {
         freeMSPTelemetryPort();
+    }
+
+    if (isTelemetryProviderSmartPort()) {
+        freeSmartPortTelemetryPort();
     }
 }
 
@@ -206,5 +248,23 @@ void handleTelemetry(void)
     if (isTelemetryProviderMSP()) {
         handleMSPTelemetry();
     }
+
+    if (isTelemetryProviderSmartPort()) {
+        handleSmartPortTelemetry();
+    }
 }
+
+bool telemetryAllowsOtherSerial(int serialPortFunction)
+{
+    if (!feature(FEATURE_TELEMETRY)) {
+        return true;
+    }
+
+    if (isTelemetryProviderSmartPort() && isSerialPortFunctionShared(FUNCTION_SMARTPORT_TELEMETRY, (serialPortFunction_e)serialPortFunction)) {
+        return canSmartPortAllowOtherSerial();
+    }
+
+    return true;
+}
+
 #endif

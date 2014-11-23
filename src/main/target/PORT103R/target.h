@@ -17,33 +17,40 @@
 
 #pragma once
 
-#define TARGET_BOARD_IDENTIFIER "OLI1" // Olimexino
+#define TARGET_BOARD_IDENTIFIER "103R"
 
-//#define OLIMEXINO_UNCUT_LED1_E_JUMPER
-//#define OLIMEXINO_UNCUT_LED2_E_JUMPER
+#define LED0_GPIO   GPIOD
+#define LED0_PIN    Pin_2 // PD2 (LED)
+#define LED0_PERIPHERAL RCC_APB2Periph_GPIOD
 
-#ifdef OLIMEXINO_UNCUT_LED1_E_JUMPER
-#define LED0_GPIO   GPIOA
-#define LED0_PIN    Pin_5 // D13, PA5/SPI1_SCK/ADC5 - "LED1" on silkscreen, Green
-#define LED0_PERIPHERAL RCC_APB2Periph_GPIOA
-#define LED0
-#endif
+#define BEEP_GPIO   GPIOA
+#define BEEP_PIN    Pin_12 // PA12 (Beeper)
+#define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
-#ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
-// "LED2" is using one of the PWM pins (CH2/PWM2), so we must not use PWM2 unless the jumper is cut.  @See pwmInit()
-#define LED1_GPIO   GPIOA
-#define LED1_PIN    Pin_1 // D3, PA1/USART2_RTS/ADC1/TIM2_CH3 - "LED2" on silkscreen, Yellow
-#define LED1_PERIPHERAL RCC_APB2Periph_GPIOA
-#define LED1
-#endif
+#define BARO_XCLR_GPIO   GPIOC
+#define BARO_XCLR_PIN    Pin_13
+#define BARO_EOC_GPIO    GPIOC
+#define BARO_EOC_PIN     Pin_14
+#define BARO_APB2_PERIPHERALS RCC_APB2Periph_GPIOC
 
+#define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
+#define INVERTER_GPIO GPIOB
+#define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
+#define INVERTER_USART USART2
+
+#define MPU6000_CS_GPIO       GPIOB
+#define MPU6000_CS_PIN        GPIO_Pin_12
+#define MPU6000_SPI_INSTANCE  SPI2
+
+#define MPU6500_CS_GPIO       GPIOB
+#define MPU6500_CS_PIN        GPIO_Pin_12
+#define MPU6500_SPI_INSTANCE  SPI2
 
 #define ACC
 #define USE_FAKE_ACC
 //#define USE_ACC_ADXL345
 //#define USE_ACC_BMA280
 //#define USE_ACC_MMA8452
-//#define USE_ACC_LSM303DLHC
 //#define USE_ACC_MPU3050
 #define USE_ACC_MPU6050
 //#define USE_ACC_SPI_MPU6000
@@ -59,11 +66,15 @@
 //#define USE_GYRO_SPI_MPU6500
 
 #define BARO
-//#define USE_BARO_MS5611
-#define USE_BARO_BMP085
+#define USE_BARO_MS5611
+//#define USE_BARO_BMP085
 
 #define MAG
 #define SONAR
+#define BEEPER
+#define LED0
+#define INVERTER
+#define DISPLAY
 
 #define USE_USART1
 #define USE_USART2
@@ -87,6 +98,7 @@
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
 
+#define LED0
 #define GPS
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
