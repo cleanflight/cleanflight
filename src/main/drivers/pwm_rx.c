@@ -345,3 +345,9 @@ uint16_t pwmRead(uint8_t channel)
     return captures[channel];
 }
 
+int8_t ppmGetDetectedNumberOfChannels(void)
+{
+    return ppmDev.numChannels;
+}
+
+
