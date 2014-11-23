@@ -5,15 +5,15 @@ auto-piloting.  It only has one sensor, the MPU6000 SPI based Accelerometer/Gyro
 It also features a 16mbit SPI based EEPROM chip.  It has 6 ports labelled as inputs (one pin each)
 and 6 ports labelled as motor/servo outputs (3 pins each).
 
-If issues are found with this board please report via the github issue tracker.
+If issues are found with this board please report via the [github issue tracker](https://github.com/cleanflight/cleanflight/issues).
 
 The board has a USB port directly connected to the processor.  Other boards like the Naze and Flip32
 have an on-board USB to uart adapter which connect to the processor's serial port instead.
 
 Currently there is no support for virtual com port functionality on the CC3D which means that cleanflight
-does not currently use the USB socket at all.
+does not currently use the USB socket at all. So the communication with the board is achieved through a USB-UART adaptater connected to the Main port.
 
-The board cannot current be used for hexacopters/octocopters.
+The board cannot currently be used for hexacopters/octocopters.
 
 Tricopter & Airplane support is untested, please report success failure if you try it. 
 
@@ -26,11 +26,11 @@ The 8 pin RC_Input connector has the following pinouts when used in RX_PPM/RX_SE
 | 1   | Ground    |                                  |
 | 2   | +5V       |                                  |
 | 3   | PPM Input | Enable `feature RX_PPM`          | 
-| 4   | Unused    |                                  |
+| 4   | Softserial1 TX | Enable `feature SOFTSERIAL` |
 | 5   | Softserial1 RX | Enable `feature SOFTSERIAL` |
-| 6   | Softserial1 TX | Enable `feature SOFTSERIAL` |
+| 6   | Current   | Enable `feature CURRENT_METER`.  Connect to the output of a current sensor, 0v-3.3v input |
 | 7   | Battery Voltage sensor | Enable `feature VBAT`. Connect to main battery using a voltage divider, 0v-3.3v input |
-| 8   | Current | Enable `feature CURRENT_METER`.  Connect to the output of a current sensor, 0v-3.3v input |
+| 8   | RSSI      | Enable `feature RSSI_ADC`.  Connect to the output of a PPM-RSSI conditioner, 0v-3.3v input |
 
 The 6 pin RC_Output connector has the following pinouts when used in RX_PPM/RX_SERIAL mode
 
