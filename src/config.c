@@ -343,8 +343,8 @@ static void resetConf(void)
     cfg.nav_speed_max = 300;
     cfg.ap_mode = 40;
     // fw stuff
-    cfg.fw_rollrate = 0.5f;
-    cfg.fw_pitchrate = 0.5f;
+    cfg.fw_roll_throw = 0.5f;
+    cfg.fw_pitch_throw = 0.5f;
     cfg.fw_gps_maxcorr = 20;
     cfg.fw_gps_rudder = 15;
     cfg.fw_gps_maxclimb = 15;

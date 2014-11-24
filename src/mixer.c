@@ -459,12 +459,12 @@ void mixTable(void)
 
             if (f.PASSTHRU_MODE) {
                 // do not use sensors for correction, simple 2 channel mixing
-                servo[3] = ((servoDirection(3, 1) * rcCommand[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(3, 2) * rcCommand[ROLL]) * cfg.fw_rollrate);
-                servo[4] = ((servoDirection(4, 1) * rcCommand[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(4, 2) * rcCommand[ROLL]) * cfg.fw_rollrate);
+                servo[3] = ((servoDirection(3, 1) * rcCommand[PITCH]) * cfg.fw_pitch_throw) + ((servoDirection(3, 2) * rcCommand[ROLL]) * cfg.fw_roll_throw);
+                servo[4] = ((servoDirection(4, 1) * rcCommand[PITCH]) * cfg.fw_pitch_throw) + ((servoDirection(4, 2) * rcCommand[ROLL]) * cfg.fw_roll_throw);
             } else {
                 // use sensors to correct (gyro only or gyro + acc)
-                servo[3] = ((servoDirection(3, 1) * axisPID[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(3, 2) * axisPID[ROLL]) * cfg.fw_rollrate);
-                servo[4] = ((servoDirection(4, 1) * axisPID[PITCH]) * cfg.fw_pitchrate) + ((servoDirection(4, 2) * axisPID[ROLL]) * cfg.fw_rollrate);
+                servo[3] = ((servoDirection(3, 1) * axisPID[PITCH]) * cfg.fw_pitch_throw) + ((servoDirection(3, 2) * axisPID[ROLL]) * cfg.fw_roll_throw);
+                servo[4] = ((servoDirection(4, 1) * axisPID[PITCH]) * cfg.fw_pitch_throw) + ((servoDirection(4, 2) * axisPID[ROLL]) * cfg.fw_roll_throw);
             }
             servo[3] += servoMiddle(3);
             servo[4] += servoMiddle(4);
