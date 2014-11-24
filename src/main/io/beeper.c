@@ -77,19 +77,19 @@ void beepcodeUpdateState(batteryState_e batteryState)
     }
     //===================== Beeps for failsafe =====================
     if (feature(FEATURE_FAILSAFE)) {
-        if (failsafe->vTable->forcedLandingInProgress() && ARMING_FLAG(ARMED)) {
+        if (failsafeIsForcedLandingInProgress() && ARMING_FLAG(ARMED)) {
             warn_failsafe = FAILSAFE_LANDING;
 
-            if (failsafe->vTable->forcedLandingFinished()) {
+            if (failsafeIsForcedLandingCompleted()) {
                 warn_failsafe = FAILSAFE_FIND_ME;
             }
         }
 
-        if (failsafe->vTable->hasTimerElapsed() && !ARMING_FLAG(ARMED)) {
+        if (failsafeHasTimerElapsed() && !ARMING_FLAG(ARMED)) {
             warn_failsafe = FAILSAFE_FIND_ME;
         }
 
-        if (failsafe->vTable->isIdle()) {
+        if (failsafeIsIdle()) {
             warn_failsafe = FAILSAFE_IDLE;      // turn off alarm if TX is okay
         }
     }

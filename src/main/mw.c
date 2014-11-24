@@ -330,6 +330,10 @@ void mwArm(void)
         if (ARMING_FLAG(ARMED)) {
             return;
         }
+        if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+            // safety: prevent arming whith failsafe active
+            return;
+        }
         if (!ARMING_FLAG(PREVENT_ARMING)) {
             ENABLE_ARMING_FLAG(ARMED);
             headFreeModeHold = heading;
@@ -510,17 +514,11 @@ void processRx(void)
     updateRSSI(currentTime);
 
     if (feature(FEATURE_FAILSAFE)) {
-        if (currentTime > FAILSAFE_POWER_ON_DELAY_US) {
-            failsafe->vTable->enable();
-
-            if ((IS_RC_MODE_ACTIVE(BOXFAILSAFE)) || failsafe->vTable->forcedLandingInProgress()) {
-                ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
-            } else {
-                DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
-            }
+        if ((currentTime > FAILSAFE_POWER_ON_DELAY_US) && (!failsafeIsEnabled())) {
+            failsafeEnable();
         }
 
-        failsafe->vTable->updateState();
+        failsafeUpdateState();
     }
 
     throttleStatus_e throttleStatus = calculateThrottleStatus(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
@@ -558,7 +556,7 @@ void processRx(void)
 
     bool canUseHorizonMode = true;
 
-    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafe->vTable->forcedLandingInProgress())) && (sensors(SENSOR_ACC))) {
+    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && FLIGHT_MODE(FAILSAFE_MODE))) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
     	canUseHorizonMode = false;
 

@@ -79,6 +79,8 @@ static rxConfig_t *rxConfig;
 
 void serialRxInit(rxConfig_t *rxConfig);
 
+static failsafe_t *failsafe;
+
 void useRxConfig(rxConfig_t *rxConfigToUse)
 {
     rxConfig = rxConfigToUse;
@@ -86,7 +88,7 @@ void useRxConfig(rxConfig_t *rxConfigToUse)
 
 #define STICK_CHANNEL_COUNT 4
 
-void rxInit(rxConfig_t *rxConfig)
+void rxInit(rxConfig_t *rxConfig, failsafe_t *initialFailsafe)
 {
     uint8_t i;
 
@@ -95,6 +97,8 @@ void rxInit(rxConfig_t *rxConfig)
     for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
         rcData[i] = rxConfig->midrc;
     }
+
+    failsafe = initialFailsafe;
 
 #ifdef SERIAL_RX
     if (feature(FEATURE_RX_SERIAL)) {
@@ -252,6 +256,7 @@ static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
 static void processRxChannels(void)
 {
     uint8_t chan;
+    int8_t channelCount;
 
     if (feature(FEATURE_RX_MSP)) {
         return; // rcData will have already been updated by MSP_SET_RAW_RC
@@ -281,7 +286,12 @@ static void processRxChannels(void)
         uint16_t sample = rcReadRawFunc(&rxRuntimeConfig, rawChannel);
 
         if (feature(FEATURE_FAILSAFE) && shouldCheckPulse) {
-            failsafeCheckPulse(chan, sample);
+            if (feature(FEATURE_RX_PPM)) {
+                channelCount = ppmGetDetectedNumberOfChannels();
+            } else {
+                channelCount = 4;
+            }
+            failsafeCheckPulse(rawChannel, sample, channelCount);
         }
 
         // validate the range
@@ -313,7 +323,7 @@ void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
     rxUpdateAt = currentTime + DELAY_50_HZ;
 
     if (feature(FEATURE_FAILSAFE)) {
-        failsafeOnRxCycle();
+        failsafeIncrementCounter();
     }
 
     if (isRxDataDriven()) {

@@ -19,11 +19,12 @@
 
 #define FAILSAFE_POWER_ON_DELAY_US (1000 * 1000 * 5)
 
-typedef enum {
+typedef enum failsafeState {
     FAILSAFE_FSM_DISABLED = 0,              // failsafe system is: disabled
     FAILSAFE_FSM_ENABLED,                   // enabled and waiting for failsafe event
-    FAILSAFE_FSM_LANDING,              // failsafe event occured, landing attempt in progress
-    FAILSAFE_FSM_FINISHED                   // failsafe landing procedure completed
+    FAILSAFE_FSM_LANDING,                   // failsafe landing attempt in progress, caused by RC signal lost / RC switch request
+    FAILSAFE_FSM_DISARMING,                 // failsafe landing time expired, disarming, locking re-arm
+    FAILSAFE_FSM_COMPLETED                  // failsafe landing procedure completed
 } failsafeState_e;
 
 typedef struct failsafeConfig_s {
@@ -35,28 +36,22 @@ typedef struct failsafeConfig_s {
     uint8_t failsafe_abortable;             // 0: failsafe action cannot be aborted, 1: can be aborted
 } failsafeConfig_t;
 
-typedef struct failsafeVTable_s {
-    void (*reset)(void);
-    bool (*forcedLandingInProgress)(void);
-    bool (*hasTimerElapsed)(void);
-    bool (*forcedLandingFinished)(void);
-    void (*incrementCounter)(void);
-    void (*updateState)(void);
-    bool (*isIdle)(void);
-    void (*checkPulse)(uint8_t channel, uint16_t pulseDuration);
-    bool (*isEnabled)(void);
-    void (*enable)(void);
-
-} failsafeVTable_t;
-
 typedef struct failsafe_s {
-    const failsafeVTable_t *vTable;
-
     int16_t counter;
-    int16_t events;
-    bool enabled;
+    bool requestByRcSwitch;
     failsafeState_e state;
 } failsafe_t;
 
-void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse);
+void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse);
+void failsafeReset(void);
+bool failsafeIsForcedLandingInProgress(void);
+bool failsafeHasTimerElapsed(void);
+bool failsafeIsForcedLandingCompleted(void);
+void failsafeIncrementCounter(void);
+void failsafeUpdateState(void);
+bool failsafeIsIdle(void);
+void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration, int8_t channelCount);
+bool failsafeIsEnabled(void);
+void failsafeEnable(void);
+
 

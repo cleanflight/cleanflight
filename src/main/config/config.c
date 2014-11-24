@@ -666,10 +666,8 @@ void activateConfig(void)
     gpsUseProfile(&currentProfile->gpsProfile);
     gpsUsePIDs(&currentProfile->pidProfile);
 #endif
-
-    useFailsafeConfig(&currentProfile->failsafeConfig);
+    failsafeUseConfig(&currentProfile->failsafeConfig);
     setAccelerationTrims(&masterConfig.accZero);
-
     mixerUseConfigs(
 #ifdef USE_SERVOS
         currentProfile->servoConf,

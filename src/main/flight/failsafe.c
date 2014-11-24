@@ -27,15 +27,21 @@
 
 #include "flight/failsafe.h"
 
+#define ENABLE_DEBUG_FAILSAFE   (1)
+
+#if ENABLE_DEBUG_FAILSAFE > 0
+extern int16_t debug[4];
+#endif
+
 /*
  * Usage:
  *
- * failsafeInit() and useFailsafeConfig() must be called before the other methods are used.
+ * failsafeInit() and failsafeUseConfig() must be called before the other methods are used.
  *
- * failsafeInit() and useFailsafeConfig() can be called in any order.
+ * failsafeInit() and failsafeUseConfig() can be called in any order.
  * failsafeInit() should only be called once.
  *
- * enable() should be called after system initialisation.
+ * failsafeEnable() should be called after system initialisation.
  */
 
 static failsafe_t failsafe;
@@ -44,61 +50,62 @@ static failsafeConfig_t *failsafeConfig;
 
 static rxConfig_t *rxConfig;
 
-const failsafeVTable_t failsafeVTable[];
-
-void reset(void)
+void failsafeReset(void)
 {
     failsafe.counter = 0;
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[0] = 0;
+#endif
 }
 
 /*
  * Should called when the failsafe config needs to be changed - e.g. a different profile has been selected.
  */
-void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse)
+void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse)
 {
     failsafeConfig = failsafeConfigToUse;
-    reset();
+    failsafeReset();
 }
 
 failsafe_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 
-    failsafe.vTable = failsafeVTable;
-    failsafe.events = 0;
     failsafe.state = FAILSAFE_FSM_DISABLED;
-
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[1] = FAILSAFE_FSM_DISABLED;
+#endif
     return &failsafe;
 }
 
-bool isIdle(void)
+bool failsafeIsIdle(void)
 {
     return failsafe.counter == 0;
 }
 
-bool isEnabled(void)
+bool failsafeIsEnabled(void)
 {
-    return failsafe.state > FAILSAFE_FSM_DISABLED;
+    return (FAILSAFE_FSM_DISABLED != failsafe.state);
 }
 
-void enable(void)
+void failsafeEnable(void)
 {
     failsafe.state = FAILSAFE_FSM_ENABLED;
 }
 
-bool hasTimerElapsed(void)
+bool failsafeHasTimerElapsed(void)
 {
     return failsafe.counter > (5 * failsafeConfig->failsafe_delay);
 }
 
-bool forcedLandingInProgress(void)
+bool failsafeIsForcedLandingInProgress(void)
 {
-    return failsafe.state == FAILSAFE_FSM_LANDING;
+    return ((FAILSAFE_FSM_ENABLED < failsafe.state) && (FAILSAFE_FSM_COMPLETED > failsafe.state));
 }
 
-bool forcedLandingFinished(void)
+bool failsafeIsForcedLandingCompleted(void)
 {
-    return failsafe.state == FAILSAFE_FSM_FINISHED;
+    return (FAILSAFE_FSM_COMPLETED == failsafe.state);
 }
 
 void failsafeAvoidRearm(void)
@@ -108,35 +115,64 @@ void failsafeAvoidRearm(void)
     ENABLE_ARMING_FLAG(PREVENT_ARMING);
 }
 
-void onValidDataReceived(void)
+void failsafeOnValidDataReceived(void)
 {
-    if (failsafe.counter > 20)
+    if (failsafe.counter > 20) {
         failsafe.counter -= 20;
-    else
+    } else {
         failsafe.counter = 0;
+    }
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[0] = failsafe.counter;
+#endif
 }
 
-void updateState(void)
+void failsafeUpdateState(void)
 {
     uint8_t i;
-    static uint32_t downCounter = 0;
+    static int16_t downCounter = 0;
 
-    if (downCounter) {
+    if (downCounter > 0) {
         downCounter--;
     }
+
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[1] = failsafe.state;
+    debug[2] = downCounter;
+#endif
 
     // Failsafe system state machine
     switch(failsafe.state) {
     case FAILSAFE_FSM_DISABLED:
-        reset();
+        failsafeReset();
         break;
 
     case FAILSAFE_FSM_ENABLED:
-        if (ARMING_FLAG(ARMED) && hasTimerElapsed()) {
-            // RC signal is lost for more then the specified guard time (in 0.1sec)
-            failsafe.events++;
-            downCounter = 5 * failsafeConfig->failsafe_off_delay;
-            failsafe.state = FAILSAFE_FSM_LANDING;
+        if (ARMING_FLAG(ARMED)) {
+            if (failsafeHasTimerElapsed()) {
+                // RC signal is lost for more then the specified guard time (in 0.1sec)
+                failsafe.requestByRcSwitch = false;
+                ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                downCounter = 5 * failsafeConfig->failsafe_off_delay;
+                failsafe.state = FAILSAFE_FSM_LANDING;
+            } else {
+                if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                    // RC switch for failsafe request is ON
+                    failsafe.requestByRcSwitch = true;
+                    ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                    downCounter = 5 * failsafeConfig->failsafe_off_delay;
+                    failsafe.state = FAILSAFE_FSM_LANDING;
+                }
+            }
+        } else {
+            // to present failsafe switch is working in GUI
+            if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+            } else {
+                DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+            }
+            // to prevent failsafe triggering when arming with a positive count.
+            failsafeReset();
         }
         break;
 
@@ -147,58 +183,69 @@ void updateState(void)
         }
         rcData[THROTTLE] = failsafeConfig->failsafe_throttle;
 
-        if (isIdle() && failsafeConfig->failsafe_abortable) {
-            failsafe.state = FAILSAFE_FSM_ENABLED;
+        // Check abort conditions
+        if (failsafeConfig->failsafe_abortable) {
+            if (failsafe.requestByRcSwitch) {
+                if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                    DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                    failsafe.state = FAILSAFE_FSM_ENABLED;
+                }
+            } else {
+                if (failsafeIsIdle()) {
+                    DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                    failsafe.state = FAILSAFE_FSM_ENABLED;
+                }
+            }
         }
 
+        // Check for time-out condition
         if (!ARMING_FLAG(ARMED) || !downCounter) {
-            failsafeAvoidRearm();
-            mwDisarm();
-            failsafe.state = FAILSAFE_FSM_FINISHED;
+            failsafe.state = FAILSAFE_FSM_DISARMING;
         }
         break;
 
-    case FAILSAFE_FSM_FINISHED:
+    case FAILSAFE_FSM_DISARMING:
+        failsafeAvoidRearm();
+        mwDisarm();
+        DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+        failsafe.state = FAILSAFE_FSM_COMPLETED;
+        break;
+
+    case FAILSAFE_FSM_COMPLETED:
         break;
     }
 }
 
-void incrementCounter(void)
+void failsafeIncrementCounter(void)
 {
-    failsafe.counter++;
+    if (failsafe.counter < 650) {               // clip counter to limit recovery time
+        failsafe.counter++;
+    }
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[0] = failsafe.counter;
+#endif
 }
 
 // pulse duration is in micro secons (usec)
-void checkPulse(uint8_t channel, uint16_t pulseDuration)
+void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration, int8_t channelCount)
 {
-    static uint8_t goodChannelMask;
+    static uint8_t goodChannelCount;
 
-    if (channel < 6 &&
+    if (channel < channelCount &&
         pulseDuration > failsafeConfig->failsafe_min_usec &&
         pulseDuration < failsafeConfig->failsafe_max_usec
     )
-        goodChannelMask |= (1 << channel);       // if signal is valid - mark channel as OK
+        goodChannelCount++;                      // if signal is valid - count channel as OK
 
-    if (goodChannelMask == 0x3F) {               // If first six channels have good pulses, clear FailSafe counter
-        goodChannelMask = 0;
-        onValidDataReceived();
+    if (++channel == channelCount) {
+        if (goodChannelCount == channelCount) {  // If all channels have good pulses, clear FailSafe counter
+            failsafeOnValidDataReceived();
+        }
+#if ENABLE_DEBUG_FAILSAFE > 0
+        debug[3] = channelCount * 1000 + goodChannelCount;
+#endif
+        goodChannelCount = 0;
     }
 }
-
-
-const failsafeVTable_t failsafeVTable[] = {
-    {
-        reset,
-        forcedLandingInProgress,
-        hasTimerElapsed,
-        forcedLandingFinished,
-        incrementCounter,
-        updateState,
-        isIdle,
-        checkPulse,
-        isEnabled,
-        enable,
-    }
-};
 
 
