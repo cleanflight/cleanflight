@@ -59,7 +59,7 @@ void failsafeReset(void)
 }
 
 /*
- * Should called when the failsafe config needs to be changed - e.g. a different profile has been selected.
+ * Should be called when the failsafe config needs to be changed - e.g. a different profile has been selected.
  */
 void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse)
 {
@@ -71,9 +71,9 @@ failsafe_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 
-    failsafe.state = FAILSAFE_FSM_DISABLED;
+    failsafe.state = FAILSAFE_IS_DISABLED;
 #if ENABLE_DEBUG_FAILSAFE > 0
-    debug[1] = FAILSAFE_FSM_DISABLED;
+    debug[1] = FAILSAFE_IS_DISABLED;
 #endif
     return &failsafe;
 }
@@ -85,12 +85,12 @@ bool failsafeIsIdle(void)
 
 bool failsafeIsEnabled(void)
 {
-    return (FAILSAFE_FSM_DISABLED != failsafe.state);
+    return (FAILSAFE_IS_DISABLED != failsafe.state);
 }
 
 void failsafeEnable(void)
 {
-    failsafe.state = FAILSAFE_FSM_ENABLED;
+    failsafe.state = FAILSAFE_IS_ENABLED;
 }
 
 bool failsafeHasTimerElapsed(void)
@@ -100,12 +100,12 @@ bool failsafeHasTimerElapsed(void)
 
 bool failsafeIsForcedLandingInProgress(void)
 {
-    return ((FAILSAFE_FSM_ENABLED < failsafe.state) && (FAILSAFE_FSM_COMPLETED > failsafe.state));
+    return ((FAILSAFE_IS_ENABLED < failsafe.state) && (FAILSAFE_IS_DONE > failsafe.state));
 }
 
 bool failsafeIsForcedLandingCompleted(void)
 {
-    return (FAILSAFE_FSM_COMPLETED == failsafe.state);
+    return (FAILSAFE_IS_DONE == failsafe.state);
 }
 
 void failsafeAvoidRearm(void)
@@ -130,38 +130,37 @@ void failsafeOnValidDataReceived(void)
 void failsafeUpdateState(void)
 {
     uint8_t i;
-    static int16_t downCounter = 0;
+    static int16_t countDownTimer = 0;
 
-    if (downCounter > 0) {
-        downCounter--;
+    if (countDownTimer > 0) {
+        countDownTimer--;
     }
 
 #if ENABLE_DEBUG_FAILSAFE > 0
     debug[1] = failsafe.state;
-    debug[2] = downCounter;
+    debug[2] = countDownTimer;
 #endif
 
-    // Failsafe system state machine
     switch(failsafe.state) {
-    case FAILSAFE_FSM_DISABLED:
+    case FAILSAFE_IS_DISABLED:
         failsafeReset();
         break;
 
-    case FAILSAFE_FSM_ENABLED:
+    case FAILSAFE_IS_ENABLED:
         if (ARMING_FLAG(ARMED)) {
             if (failsafeHasTimerElapsed()) {
                 // RC signal is lost for more then the specified guard time (in 0.1sec)
                 failsafe.requestByRcSwitch = false;
                 ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                downCounter = 5 * failsafeConfig->failsafe_off_delay;
-                failsafe.state = FAILSAFE_FSM_LANDING;
+                countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                failsafe.state = FAILSAFE_IS_LANDING;
             } else {
                 if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
                     // RC switch for failsafe request is ON
                     failsafe.requestByRcSwitch = true;
                     ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                    downCounter = 5 * failsafeConfig->failsafe_off_delay;
-                    failsafe.state = FAILSAFE_FSM_LANDING;
+                    countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                    failsafe.state = FAILSAFE_IS_LANDING;
                 }
             }
         } else {
@@ -176,7 +175,7 @@ void failsafeUpdateState(void)
         }
         break;
 
-    case FAILSAFE_FSM_LANDING:
+    case FAILSAFE_IS_LANDING:
         // Center stick positions and set Throttle to specified level
         for (i = 0; i < 3; i++) {
             rcData[i] = rxConfig->midrc;
@@ -188,30 +187,30 @@ void failsafeUpdateState(void)
             if (failsafe.requestByRcSwitch) {
                 if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
                     DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                    failsafe.state = FAILSAFE_FSM_ENABLED;
+                    failsafe.state = FAILSAFE_IS_ENABLED;
                 }
             } else {
                 if (failsafeIsIdle()) {
                     DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                    failsafe.state = FAILSAFE_FSM_ENABLED;
+                    failsafe.state = FAILSAFE_IS_ENABLED;
                 }
             }
         }
 
         // Check for time-out condition
-        if (!ARMING_FLAG(ARMED) || !downCounter) {
-            failsafe.state = FAILSAFE_FSM_DISARMING;
+        if (!ARMING_FLAG(ARMED) || !countDownTimer) {
+            failsafe.state = FAILSAFE_IS_DISARMING;
         }
         break;
 
-    case FAILSAFE_FSM_DISARMING:
+    case FAILSAFE_IS_DISARMING:
         failsafeAvoidRearm();
         mwDisarm();
         DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
-        failsafe.state = FAILSAFE_FSM_COMPLETED;
+        failsafe.state = FAILSAFE_IS_DONE;
         break;
 
-    case FAILSAFE_FSM_COMPLETED:
+    case FAILSAFE_IS_DONE:
         break;
     }
 }

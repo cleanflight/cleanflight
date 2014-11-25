@@ -20,11 +20,11 @@
 #define FAILSAFE_POWER_ON_DELAY_US (1000 * 1000 * 5)
 
 typedef enum failsafeState {
-    FAILSAFE_FSM_DISABLED = 0,              // failsafe system is: disabled
-    FAILSAFE_FSM_ENABLED,                   // enabled and waiting for failsafe event
-    FAILSAFE_FSM_LANDING,                   // failsafe landing attempt in progress, caused by RC signal lost / RC switch request
-    FAILSAFE_FSM_DISARMING,                 // failsafe landing time expired, disarming, locking re-arm
-    FAILSAFE_FSM_COMPLETED                  // failsafe landing procedure completed
+    FAILSAFE_IS_DISABLED = 0,              // failsafe system is: disabled
+    FAILSAFE_IS_ENABLED,                   // enabled and waiting for failsafe event
+    FAILSAFE_IS_LANDING,                   // failsafe landing attempt in progress, caused by RC signal lost / RC switch request
+    FAILSAFE_IS_DISARMING,                 // failsafe landing time expired, disarming, locking re-arm
+    FAILSAFE_IS_DONE                       // failsafe landing procedure completed
 } failsafeState_e;
 
 typedef struct failsafeConfig_s {
