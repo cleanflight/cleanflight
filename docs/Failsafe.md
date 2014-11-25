@@ -16,8 +16,6 @@ It is possible to use both types at the same time, which may be desirable.  Flig
 
 The failsafe system is not activated until 5 seconds after the flight controller boots up.  This is to prevent failsafe from activating, as in the case of TX/RX gear with long bind procedures, before the RX sends out valid data. Note that you need to activate the 'FAILSAFE' feature in order to activate failsafe on flight controller.
 
-After the failsafe has forced a landing, the flight controller cannot be armed and has to be reset.
- 
 The failsafe system attempts to detect when your receiver loses signal.  It then attempts to prevent your aircraft from flying away uncontrollably by enabling an auto-level mode and setting the throttle that should allow the craft to come to a safer landing.
 
 The failsafe is activated when:
@@ -25,12 +23,18 @@ The failsafe is activated when:
 Either:
 
 a) no valid channel data from the RX is received via Serial RX.
-
 b) the first 4 Parallel PWM/PPM channels do not have valid signals.
+c) using PPM and one of the channels in the PPM stream do not have valid signals.
+d) activating manually with a transmitter switch that is configured to control the failsafe mode.
 
-And when:
+Failsafe descend may be aborted when `failsafe_abortable` is set to 1 (default) and failsafe intervention was due to:
 
-c) the failsafe guard time specified by `failsafe_delay` has elapsed.
+a) RC signal loss and RC signal has recovered.
+b) a transmitter switch and the switch is set to off.
+
+NOTE:
+At the end of a failsafe intervention, the flight controller will be disarmed and re-arming will be locked.
+From that moment on it is no longer possible to abort or re-arm and the flight controller has to be reset. 
 
 Note that:
 
@@ -75,8 +79,6 @@ If craft descends too quickly then increase failsafe throttle setting.
 
 Ensure that the duration is long enough for your craft to land at the altitudes you normally fly at.
 
-
-
 ## Configuration
 
 When configuring the flight controller failsafe, use the following steps:
@@ -118,7 +120,11 @@ Delay after failsafe activates before motors finally turn off.  This is the amou
 
 Throttle level used for landing.  Specify a value that causes the aircraft to descend at about 1M/sec. Default is set to 1000 which should correspond to throttle off.
 
-Use standard RX usec values.  See RX documentation.
+### `failsafe_abortable`
+
+To configure if a failsafe intervention can be aborted (set to 1) or not (set to 0). Also see above.
+
+Use standard RX usec values.  See Rx documentation.
 
 ### `failsafe_min_usec`
 

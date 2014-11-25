@@ -27,7 +27,7 @@
 
 #include "flight/failsafe.h"
 
-#define ENABLE_DEBUG_FAILSAFE   (1)
+#define ENABLE_DEBUG_FAILSAFE   (0)
 
 #if ENABLE_DEBUG_FAILSAFE > 0
 extern int16_t debug[4];
