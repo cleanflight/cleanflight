@@ -130,7 +130,8 @@ void spektrumBind(void)
         spekUart = USART2;
     }
 
-    if (mcfg.spektrum_sat_bind == 0 || mcfg.spektrum_sat_bind > 10)
+    // don't try to bind if: here after soft reset or bind flag is out of range
+    if (rccReadBkpDr() == BKP_SOFTRESET || mcfg.spektrum_sat_bind == 0 || mcfg.spektrum_sat_bind > 10)
         return;
 
     gpio.speed = Speed_2MHz;
@@ -149,5 +150,11 @@ void spektrumBind(void)
         // RX line, drive high for 120us
         digitalHi(spekBindPort, spekBindPin);
         delayMicroseconds(120);
+    }
+
+    // If we came here as a result of hard  reset (power up, with mcfg.spektrum_sat_bind set), then reset it back to zero and write config
+    if (rccReadBkpDr() != BKP_SOFTRESET) {
+        mcfg.spektrum_sat_bind = 0;
+        writeEEPROM(1, true);
     }
 }

@@ -181,6 +181,20 @@ void failureMode(uint8_t mode)
     }
 }
 
+uint32_t rccReadBkpDr(void)
+{
+    return *((uint16_t *)BKP_BASE + 0x04) | *((uint16_t *)BKP_BASE + 0x08) << 16;
+}
+
+void rccWriteBkpDr(uint32_t value)
+{
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+    PWR->CR |= PWR_CR_DBP;
+
+    *((uint16_t *)BKP_BASE + 0x04) = value & 0xffff;
+    *((uint16_t *)BKP_BASE + 0x08) = (value & 0xffff0000) >> 16;
+}
+
 #define AIRCR_VECTKEY_MASK    ((uint32_t)0x05FA0000)
 
 void systemReset(bool toBootloader)
@@ -190,6 +204,9 @@ void systemReset(bool toBootloader)
         // 1FFFF004 -> 1FFFF021 -> PC
         *((uint32_t *)0x20004FF0) = 0xDEADBEEF; // 20KB STM32F103
     }
+
+    // write magic value that we're doing a soft reset
+    rccWriteBkpDr(BKP_SOFTRESET);
 
     // Generate system reset
     SCB->AIRCR = AIRCR_VECTKEY_MASK | (uint32_t)0x04;
