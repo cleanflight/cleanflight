@@ -23,7 +23,7 @@ The failsafe is activated when:
 Either:
 
 a) no valid channel data from the RX is received via Serial RX.
-b) the first 4 Parallel PWM/PPM channels do not have valid signals.
+b) not using PPM and one of the first 4 channels do not have valid signals.
 c) using PPM and one of the channels in the PPM stream do not have valid signals.
 d) activating manually with a transmitter switch that is configured to control the failsafe mode.
 
@@ -105,7 +105,6 @@ These are the basic steps for flight controller failsafe configuration; see Fail
 Failsafe delays are configured in 0.1 second steps.
 
 1 step = 0.1sec
-
 1 second = 10 steps
 
 ### `failsafe_delay`
