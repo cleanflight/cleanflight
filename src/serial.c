@@ -107,6 +107,9 @@ static const box_t boxes[] = {
     { BOXGOV, "GOVERNOR;", 18 },
     { BOXOSD, "OSD SW;", 19 },
     { BOXTELEMETRY, "TELEMETRY;", 20 },
+    { BOXSERVO1, "SERVO1;", 21 },
+    { BOXSERVO2, "SERVO2;", 22 },
+    { BOXSERVO3, "SERVO3;", 23 },
     { CHECKBOXITEMS, NULL, 0xFF }
 };
 
@@ -302,7 +305,7 @@ void serialInit(uint32_t baudrate)
         availableBoxes[idx++] = BOXGPSHOME;
         availableBoxes[idx++] = BOXGPSHOLD;
     }
-    if (mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_AIRPLANE)
+    if (mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE)
         availableBoxes[idx++] = BOXPASSTHRU;
     availableBoxes[idx++] = BOXBEEPERON;
     if (feature(FEATURE_INFLIGHT_ACC_CAL))
@@ -310,7 +313,111 @@ void serialInit(uint32_t baudrate)
     availableBoxes[idx++] = BOXOSD;
     if (feature(FEATURE_TELEMETRY && mcfg.telemetry_switch))
         availableBoxes[idx++] = BOXTELEMETRY;
+    if (mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE) {
+        availableBoxes[idx++] = BOXSERVO1;
+        availableBoxes[idx++] = BOXSERVO2;
+        availableBoxes[idx++] = BOXSERVO3;
+    }
+        
     numberBoxItems = idx;
+}
+
+static uint8_t getOldServoConfig(uint8_t servoIndex)
+{
+    uint8_t tmpRate = cfg.servoConf[servoIndex].rate;
+    
+    switch (mcfg.mixerConfiguration) {
+        case MULTITYPE_BI:
+            if (servoIndex == 4) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 2;
+            }
+            
+            if (servoIndex == 5) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 2;
+            }
+            
+            break;
+        case MULTITYPE_TRI:
+            if (servoIndex == 5)
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 1;
+            
+            break;
+        case MULTITYPE_FLYING_WING:
+            if (servoIndex == 3) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_ROLL))
+                    tmpRate |= 2;
+            }
+            
+            if (servoIndex == 4) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_ROLL))
+                    tmpRate |= 2;
+            }
+
+            break;
+        case MULTITYPE_DUALCOPTER:
+            if (servoIndex == 4)
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+            
+            if (servoIndex == 5)
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_ROLL))
+                    tmpRate |= 1;
+            
+            
+            break;
+        case MULTITYPE_SINGLECOPTER:
+            if (servoIndex == 3) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 2;
+            }
+            
+            if (servoIndex == 4) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_PITCH))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 2;
+            }
+            
+            if (servoIndex == 5) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_ROLL))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 2;
+            }
+            
+            if (servoIndex == 6) {
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_ROLL))
+                    tmpRate |= 1;
+                if (cfg.servoConf[servoIndex].direction & (1 << INPUT_YAW))
+                    tmpRate |= 2;
+            }
+            
+            break;
+    }
+    return tmpRate;
+}
+
+static void storeOldServoConfig(uint8_t i, uint8_t rate, uint8_t servoIndex, uint8_t oldChannel, uint8_t newChannel)
+{
+    if (i == servoIndex) {
+        if (rate & oldChannel)
+            cfg.servoConf[servoIndex].direction |= 1 << newChannel;
+        else
+            cfg.servoConf[servoIndex].direction &= ~(1 << newChannel);
+    }
 }
 
 static void evaluateCommand(void)
@@ -415,7 +522,7 @@ static void evaluateCommand(void)
         serialize8(VERSION);                    // multiwii version
         serialize8(mcfg.mixerConfiguration);    // type of multicopter
         serialize8(MSP_VERSION);                // MultiWii Serial Protocol Version
-        serialize32(CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | (mcfg.fw_flaps ? CAP_FW_FLAPS : 0));  // "capability"
+        serialize32(CAP_PLATFORM_32BIT | CAP_BASEFLIGHT_CONFIG | CAP_DYNBALANCE | CAP_FW_FLAPS); // "capability"
         break;
     case MSP_STATUS:
         headSerialReply(11);
@@ -439,6 +546,9 @@ static void evaluateCommand(void)
                     rcOptions[BOXGOV] << BOXGOV |
                     rcOptions[BOXOSD] << BOXOSD |
                     rcOptions[BOXTELEMETRY] << BOXTELEMETRY |
+                    rcOptions[BOXSERVO1] << BOXSERVO1 |
+                    rcOptions[BOXSERVO2] << BOXSERVO2 |
+                    rcOptions[BOXSERVO3] << BOXSERVO3 |
                     f.ARMED << BOXARM;
         for (i = 0; i < numberBoxItems; i++) {
             int flag = (tmp & (1 << availableBoxes[i]));
@@ -472,7 +582,7 @@ static void evaluateCommand(void)
             serialize16(cfg.servoConf[i].min);
             serialize16(cfg.servoConf[i].max);
             serialize16(cfg.servoConf[i].middle);
-            serialize8(cfg.servoConf[i].rate);
+            serialize8(getOldServoConfig(i));
         }
         break;
     case MSP_SET_SERVO_CONF:
@@ -481,7 +591,50 @@ static void evaluateCommand(void)
             cfg.servoConf[i].min = read16();
             cfg.servoConf[i].max = read16();
             cfg.servoConf[i].middle = read16();
-            cfg.servoConf[i].rate = read8();
+            tmp = read8();
+            // trash old servo direction
+            cfg.servoConf[i].rate = tmp & 0xfc;
+            
+            // store old style servo direction depending on current mixer configuration
+            switch (mcfg.mixerConfiguration) {
+                case MULTITYPE_BI:
+                    storeOldServoConfig(i, tmp, 4, 1, INPUT_PITCH);
+                    storeOldServoConfig(i, tmp, 5, 1, INPUT_PITCH);
+                    
+                    storeOldServoConfig(i, tmp, 4, 2, INPUT_YAW);
+                    storeOldServoConfig(i, tmp, 5, 2, INPUT_YAW);
+                    
+                    break;
+                case MULTITYPE_TRI:
+                    storeOldServoConfig(i, tmp, 5, 1, INPUT_YAW);
+                    
+                    break;
+                case MULTITYPE_FLYING_WING:
+                    storeOldServoConfig(i, tmp, 3, 1, INPUT_PITCH);
+                    storeOldServoConfig(i, tmp, 4, 1, INPUT_PITCH);
+                    
+                    storeOldServoConfig(i, tmp, 3, 2, INPUT_ROLL);
+                    storeOldServoConfig(i, tmp, 4, 2, INPUT_ROLL);
+
+                    break;
+                case MULTITYPE_DUALCOPTER:
+                    storeOldServoConfig(i, tmp, 4, 1, INPUT_PITCH);
+                    storeOldServoConfig(i, tmp, 5, 1, INPUT_ROLL);
+                    
+                    break;
+                case MULTITYPE_SINGLECOPTER:
+                    storeOldServoConfig(i, tmp, 3, 1, INPUT_PITCH);
+                    storeOldServoConfig(i, tmp, 4, 1, INPUT_PITCH);
+                    storeOldServoConfig(i, tmp, 5, 1, INPUT_ROLL);
+                    storeOldServoConfig(i, tmp, 6, 1, INPUT_ROLL);
+                    
+                    storeOldServoConfig(i, tmp, 3, 2, INPUT_YAW);
+                    storeOldServoConfig(i, tmp, 4, 2, INPUT_YAW);
+                    storeOldServoConfig(i, tmp, 5, 2, INPUT_YAW);
+                    storeOldServoConfig(i, tmp, 6, 2, INPUT_YAW);
+                    
+                    break;
+            }
         }
         break;
     case MSP_MOTOR:

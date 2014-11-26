@@ -24,7 +24,7 @@ master_t mcfg;  // master config struct with data independent from profiles
 config_t cfg;   // profile config struct
 const char rcChannelLetters[] = "AERT1234";
 
-static const uint8_t EEPROM_CONF_VERSION = 71;
+static const uint8_t EEPROM_CONF_VERSION = 72;
 static uint32_t enabledSensors = 0;
 static void resetConf(void);
 static const uint32_t FLASH_WRITE_ADDR = 0x08000000 + (FLASH_PAGE_SIZE * (FLASH_PAGE_COUNT - (CONFIG_SIZE / 1024)));
@@ -226,8 +226,6 @@ static void resetConf(void)
     mcfg.maxcheck = 1900;
     mcfg.retarded_arm = 0;       // disable arm/disarm on roll left/right
     mcfg.disarm_kill_switch = 1; // AUX disarm independently of throttle value
-    mcfg.fw_flaperons_min = 1000;
-    mcfg.fw_flaperons_max = 2000;
     mcfg.fw_althold_dir = 1;
     // Motor/ESC/Servo
     mcfg.minthrottle = 1150;

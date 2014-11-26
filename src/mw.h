@@ -52,7 +52,8 @@ typedef enum MultiType
     MULTITYPE_SINGLECOPTER = 21,
     MULTITYPE_ATAIL4 = 22,
     MULTITYPE_CUSTOM = 23,          // no current GUI displays this
-    MULTITYPE_LAST = 24
+    MULTITYPE_CUSTOM_PLANE = 24,
+    MULTITYPE_LAST = 25
 } MultiType;
 
 typedef enum GimbalFlags {
@@ -60,6 +61,16 @@ typedef enum GimbalFlags {
     GIMBAL_MIXTILT = 1 << 1,
     GIMBAL_FORWARDAUX = 1 << 2,
 } GimbalFlags;
+
+typedef enum FlapsType {
+    FLAPS_DISABLED = 0,
+    FLAPS_ENABLED,
+    FLAPERONS_ENABLED,
+    FLAPERONS_INVERTED_ENABLED,
+    FLAPS_FLAPERONS_ENVABLED,
+    FLAPS_FLAPERONS_INVERTED_ENABLED,
+    FLAPS_TYPE_MAX = FLAPS_FLAPERONS_INVERTED_ENABLED
+} FlapsType;
 
 /*********** RC alias *****************/
 enum {
@@ -109,6 +120,9 @@ enum {
     BOXGOV,
     BOXOSD,
     BOXTELEMETRY,
+    BOXSERVO1,
+    BOXSERVO2,
+    BOXSERVO3,
     CHECKBOXITEMS
 };
 
@@ -145,6 +159,7 @@ typedef struct servoParam_t {
     int16_t max;                            // servo max
     int16_t middle;                         // servo middle
     int8_t rate;                            // range [-100;+100] ; can be used to ajust a rate 0-100% and a direction
+    uint16_t direction;                     // the direction of servo movement for each input channel of the servo mixer, bit set=inverted
 } servoParam_t;
 
 typedef struct {
@@ -153,6 +168,43 @@ typedef struct {
     float kD;
     float Imax;
 } PID_PARAM;
+
+enum {
+    INPUT_ROLL = 0,
+    INPUT_PITCH,
+    INPUT_YAW,
+    INPUT_THROTTLE,
+    INPUT_AUX1,
+    INPUT_AUX2,
+    INPUT_AUX3,
+    INPUT_AUX4,
+    INPUT_RC_ROLL,
+    INPUT_RC_PITCH,
+    INPUT_RC_YAW,
+    INPUT_RC_THROTTLE,
+    INPUT_ITEMS
+};
+
+typedef struct servoMixer_t {
+    uint8_t targetChannel;                  // servo that receives the output of the rule
+    uint8_t fromChannel;                    // input channel for this rule
+    int8_t rate;                            // range [-100;+100] ; can be used to ajust a rate 0-100% and a direction
+    uint8_t speed;                          // reduces the speed of the rule, 0=unlimited speed
+    int8_t min;                             // lower bound of rule range [0;100]% of servo max-min
+    int8_t max;                             // lower bound of rule range [0;100]% of servo max-min
+    uint8_t box;                            // active rule if box is enabled, range [0;3], 0=no box, 1=BOXSERVO1, 2=BOXSERVO2, 3=BOXSERVO3
+} servoMixer_t;
+
+// Custom mixer configuration
+typedef struct mixerRules_t {
+    uint8_t numberRules;
+    const servoMixer_t *rule;
+} mixerRules_t;
+
+#define MAX_SERVO_RULES (2 * MAX_SERVOS)
+#define MAX_SERVOS      8
+#define MAX_SERVO_SPEED UINT8_MAX
+#define MAX_SERVO_BOXES 3
 
 enum {
     ALIGN_GYRO = 0,
@@ -206,7 +258,7 @@ typedef struct config_t {
     uint8_t throttle_correction_value;      // the correction that will be applied at throttle_correction_angle.
 
     // Servo-related stuff
-    servoParam_t servoConf[8];              // servo configuration
+    servoParam_t servoConf[MAX_SERVOS];     // servo configuration
 
     // Failsafe related configuration
     uint8_t failsafe_delay;                 // Guard time for failsafe activation after signal lost. 1 step = 0.1sec - 1sec in example (10)
@@ -257,6 +309,7 @@ typedef struct master_t {
     uint16_t looptime;                      // imu loop time in us
     uint8_t emf_avoidance;                  // change pll settings to avoid noise in the uhf band
     motorMixer_t customMixer[MAX_MOTORS];   // custom mixtable
+    servoMixer_t customServoMixer[MAX_SERVO_RULES]; // custom servo mixtable
 
     // motor/esc/servo related stuff
     uint16_t minthrottle;                   // Set the minimum throttle command sent to the ESC (Electronic Speed Controller). This is the minimum value that allow motors to run at a idle speed.
@@ -307,13 +360,7 @@ typedef struct master_t {
     uint16_t maxcheck;                      // maximum rc end
     uint8_t retarded_arm;                   // allow disarsm/arm on throttle down + roll left/right
     uint8_t disarm_kill_switch;             // AUX disarm independently of throttle value
-    uint8_t fw_flaps_speed;                 // airplane mode fw_flaps, 0 = no fw_flaps, > 0 = flap speed, larger = faster
     int8_t fw_althold_dir;                  // +1 or -1 for pitch/althold gain. later check if need more than just sign
-    uint8_t flaperons;                      // Enable/disable channel selection 0 - 16
-    uint8_t fw_flaps;                       // fw_flaps activation
-    uint16_t fw_flaperons_min;              // Endpoint for Flaperons
-    uint16_t fw_flaperons_max;              // Endpoint for Flaperons
-		
     uint8_t rssi_aux_channel;               // Read rssi from channel. 1+ = AUX1+, 0 to disable.
     uint8_t rssi_adc_channel;               // Read analog-rssi from RC-filter (RSSI-PWM to RSSI-Analog), RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9), 0 to disable (disabled if rssi_aux_channel > 0 or rssi_adc_channel == power_adc_channel)
     uint16_t rssi_adc_max;                  // max input voltage defined by RC-filter (is RSSI never 100% reduce the value) (1...4095)
@@ -483,6 +530,7 @@ uint16_t RSSI_getValue(void);
 void mixerInit(void);
 void mixerResetMotors(void);
 void mixerLoadMix(int index);
+void servoMixerLoadMix(int index);
 void writeServos(void);
 void writeMotors(void);
 void writeAllMotors(int16_t mc);
