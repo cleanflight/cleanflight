@@ -34,11 +34,14 @@ typedef struct failsafeConfig_s {
     uint16_t failsafe_min_usec;
     uint16_t failsafe_max_usec;
     uint8_t failsafe_abortable;             // 0: failsafe action cannot be aborted, 1: can be aborted
+    uint8_t failsafe_use_altitude;          // 0: failsafe does not use altitude info, > 0: failsafe disarms at 'failsafe_use_altitude' cm above groundlevel
 } failsafeConfig_t;
 
 typedef struct failsafe_s {
     int16_t counter;
     bool requestByRcSwitch;
+    bool isAltitudeValid;                   // true if estimated altitude measurement is valid
+    int32_t groundLevel;                    // ground level (estimated altitude in cm) when arming
     failsafeState_e state;
 } failsafe_t;
 

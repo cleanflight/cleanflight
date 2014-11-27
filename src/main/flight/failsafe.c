@@ -18,12 +18,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "platform.h"
+
 #include "common/axis.h"
 
 #include "rx/rx.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "config/runtime_config.h"
+
+#include "flight/flight.h"
+#include "sensors/sensors.h"
+#include "sensors/barometer.h"
 
 #include "flight/failsafe.h"
 
@@ -65,16 +71,18 @@ void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse)
 {
     failsafeConfig = failsafeConfigToUse;
     failsafeReset();
+    failsafe.state = FAILSAFE_IS_DISABLED;
+    failsafe.isAltitudeValid = false;
+
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[1] = FAILSAFE_IS_DISABLED;
+#endif
 }
 
 failsafe_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 
-    failsafe.state = FAILSAFE_IS_DISABLED;
-#if ENABLE_DEBUG_FAILSAFE > 0
-    debug[1] = FAILSAFE_IS_DISABLED;
-#endif
     return &failsafe;
 }
 
@@ -90,6 +98,21 @@ bool failsafeIsEnabled(void)
 
 void failsafeEnable(void)
 {
+    // Check and register validity of estimated altitude measurement
+#if defined(BARO) || defined(SONAR)
+#if defined(BARO) && !defined(SONAR)
+    if (sensors(SENSOR_BARO) && isBaroReady()) {
+#endif
+#if defined(BARO) && defined(SONAR)
+    if ((sensors(SENSOR_BARO) && isBaroReady()) || sensors(SENSOR_SONAR)) {
+#endif
+#if !defined(BARO) && defined(SONAR)
+    if (sensors(SENSOR_SONAR)) {
+#endif
+        // register validity
+        failsafe.isAltitudeValid = true;
+    }
+#endif
     failsafe.state = FAILSAFE_IS_ENABLED;
 }
 
@@ -144,6 +167,7 @@ void failsafeUpdateState(void)
     switch(failsafe.state) {
     case FAILSAFE_IS_DISABLED:
         failsafeReset();
+        failsafe.groundLevel = EstAlt;      // track groundlevel untill arming
         break;
 
     case FAILSAFE_IS_ENABLED:
@@ -172,6 +196,7 @@ void failsafeUpdateState(void)
             }
             // to prevent failsafe triggering when arming with a positive count.
             failsafeReset();
+            failsafe.groundLevel = EstAlt;      // track groundlevel untill arming
         }
         break;
 
@@ -199,6 +224,11 @@ void failsafeUpdateState(void)
 
         // Check for time-out condition
         if (!ARMING_FLAG(ARMED) || !countDownTimer) {
+            failsafe.state = FAILSAFE_IS_DISARMING;
+        }
+
+        // When enabled and estimated altitude measurement is valid, use it to disarm 'failsafe_use_altitude' cm above groundlevel
+        if ((failsafeConfig->failsafe_use_altitude) && (failsafe.isAltitudeValid) && (EstAlt < failsafe.groundLevel + failsafeConfig->failsafe_use_altitude)) {
             failsafe.state = FAILSAFE_IS_DISARMING;
         }
         break;
