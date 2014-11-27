@@ -295,7 +295,7 @@ typedef struct master_t {
     uint8_t vbatscale;                      // adjust this to match battery voltage to reported value
     uint8_t vbatmaxcellvoltage;             // maximum voltage per cell, used for auto-detecting battery voltage in 0.1V units, default is 43 (4.3V)
     uint8_t vbatmincellvoltage;             // minimum voltage per cell, this triggers battery out alarms, in 0.1V units, default is 33 (3.3V)
-    uint8_t power_adc_channel;              // which channel is used for current sensor. Right now, only 2 places are supported: RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9)
+    uint8_t power_adc_channel;              // which channel is used for current sensor. Right now, only 3 places are supported: RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9), ADC_EXTERNAL_PAD (Rev5 only, = 5), 0 to disable
 
     // Radio/ESC-related configuration
     uint8_t rcmap[8];                       // mapping of radio channels to internal RPYTA+ order
@@ -315,7 +315,7 @@ typedef struct master_t {
     uint16_t fw_flaperons_max;              // Endpoint for Flaperons
 		
     uint8_t rssi_aux_channel;               // Read rssi from channel. 1+ = AUX1+, 0 to disable.
-    uint8_t rssi_adc_channel;               // Read analog-rssi from RC-filter (RSSI-PWM to RSSI-Analog), RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9), 0 to disable (disabled if rssi_aux_channel > 0 or rssi_adc_channel == power_adc_channel)
+    uint8_t rssi_adc_channel;               // Read analog-rssi from RC-filter (RSSI-PWM to RSSI-Analog), RC_CH2 (unused when in CPPM mode, = 1), RC_CH8 (last channel in PWM mode, = 9), ADC_EXTERNAL_PAD (Rev5 only, = 5), 0 to disable (disabled if rssi_aux_channel > 0 or rssi_adc_channel == power_adc_channel)
     uint16_t rssi_adc_max;                  // max input voltage defined by RC-filter (is RSSI never 100% reduce the value) (1...4095)
     uint16_t rssi_adc_offset;               // input offset defined by RC-filter (0...4095)
 
