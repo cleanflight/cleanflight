@@ -53,6 +53,7 @@ static const uint8_t ubloxInit[] = {
 static uint8_t ubloxSbasInit[] = {
     0xB5, 0x62, 0x06, 0x16, 0x08, 0x00, 0x03, 0x07, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x31, 0xE5
     //                                                          ^ from here will be overwritten by below config
+    //                                  ^ from here it will be overwritten by disabled config
 };
 
 static const uint8_t ubloxSbasMode[] = {
@@ -63,7 +64,12 @@ static const uint8_t ubloxSbasMode[] = {
     0x80, 0x01, 0x00, 0x00, 0xB2, 0xE8, // GAGAN
 };
 
+static const uint8_t ubloxSbasDisabled[] = {
+    0x02, 0x07, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0xDD
+};
+
 enum {
+    SBAS_DISABLED = -1,
     SBAS_AUTO,
     SBAS_EGNOS,
     SBAS_WAAS,
@@ -150,7 +156,10 @@ void gpsInit(uint8_t baudrateIndex)
     // copy ubx sbas config string to use
     if (mcfg.gps_ubx_sbas >= SBAS_LAST)
         mcfg.gps_ubx_sbas = SBAS_AUTO;
-    memcpy(ubloxSbasInit + 10, ubloxSbasMode + (mcfg.gps_ubx_sbas * 6), 6);
+    if (mcfg.gps_ubx_sbas != SBAS_DISABLED)
+        memcpy(ubloxSbasInit + 10, ubloxSbasMode + (mcfg.gps_ubx_sbas * 6), 6);
+    else
+        memcpy(ubloxSbasInit + 6, ubloxSbasDisabled, sizeof(ubloxSbasDisabled));
 }
 
 static void gpsInitNmea(void)
