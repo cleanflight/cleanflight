@@ -39,7 +39,6 @@ int fputc(int c, FILE *f)
 int main(void)
 {
     uint8_t i;
-    int id;
     drv_pwm_config_t pwm_params;
     drv_adc_config_t adc_params;
     bool sensorsOK = false;
@@ -84,8 +83,7 @@ int main(void)
     activateConfig();
 
 #ifndef CJMCU
-    id = spiInit();
-    if (id == SPI_DEVICE_MPU && hw_revision == NAZE32_REV5)
+    if (spiInit() == SPI_DEVICE_MPU && hw_revision == NAZE32_REV5)
         hw_revision = NAZE32_SP;
 #endif
 
@@ -147,7 +145,7 @@ int main(void)
     serialInit(mcfg.serial_baudrate);
 
     // when using airplane/wing mixer, servo/motor outputs are remapped
-    if (mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_FLYING_WING)
+    if (mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;

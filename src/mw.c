@@ -799,7 +799,7 @@ void loop(void)
             f.PASSTHRU_MODE = 0;
         }
 
-        if (mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_AIRPLANE) {
+        if (mcfg.mixerConfiguration == MULTITYPE_FLYING_WING || mcfg.mixerConfiguration == MULTITYPE_AIRPLANE || mcfg.mixerConfiguration == MULTITYPE_CUSTOM_PLANE) {
             f.HEADFREE_MODE = 0;
             if (feature(FEATURE_FAILSAFE) && failsafeCnt > (6 * cfg.failsafe_delay)) {
                 f.PASSTHRU_MODE = 0;
