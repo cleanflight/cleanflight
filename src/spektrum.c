@@ -118,6 +118,21 @@ void spektrumBind(void)
     int i;
     gpio_config_t gpio;
 
+#ifdef HARDWARE_BIND_PLUG
+    // Check status of bind plug and exit if not active
+    GPIO_TypeDef *hwBindPort = NULL;
+    uint16_t hwBindPin = 0;
+
+    hwBindPort = GPIOB;
+    hwBindPin = Pin_5;
+    gpio.speed = Speed_2MHz;
+    gpio.pin = hwBindPin;
+    gpio.mode = Mode_IPU;
+    gpioInit(hwBindPort, &gpio);
+    if (digitalIn(hwBindPort, hwBindPin))
+        return;
+#endif
+
     if (mcfg.spektrum_sat_on_flexport) {
         // USART3, PB11
         spekBindPort = GPIOB;
@@ -152,9 +167,13 @@ void spektrumBind(void)
         delayMicroseconds(120);
     }
 
+#ifndef HARDWARE_BIND_PLUG
     // If we came here as a result of hard  reset (power up, with mcfg.spektrum_sat_bind set), then reset it back to zero and write config
+    // Don't reset if hardware bind plug is present
     if (rccReadBkpDr() != BKP_SOFTRESET) {
         mcfg.spektrum_sat_bind = 0;
         writeEEPROM(1, true);
     }
+#endif
+
 }

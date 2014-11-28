@@ -229,6 +229,7 @@ typedef struct baro_t {
 #define MOTOR_PWM_RATE 400
 #else
 #define MOTOR_PWM_RATE 32000
+#define HARDWARE_BIND_PLUG
 #endif
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
