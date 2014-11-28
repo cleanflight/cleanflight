@@ -14,7 +14,7 @@
 # Things that the user might override on the commandline
 #
 
-# The target to build, must be one of NAZE OR OLIMEXINO
+# The target to build, must be one of NAZE or CJMCU
 TARGET		?= NAZE
 
 # Compile-time options
@@ -30,7 +30,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 # Things that need to be maintained as the source changes
 #
 
-VALID_TARGETS	 = NAZE OLIMEXINO CJMCU
+VALID_TARGETS = NAZE CJMCU
 
 # Working directories
 ROOT		 = $(dir $(lastword $(MAKEFILE_LIST)))
@@ -91,18 +91,6 @@ NAZE_SRC	 = drv_adc.c \
 		   drv_l3g4200d.c \
 		   drv_pwm.c \
 		   drv_spi.c \
-		   drv_timer.c \
-		   $(HIGHEND_SRC) \
-		   $(COMMON_SRC)
-
-# Source files for the OLIMEXINO target
-OLIMEXINO_SRC	 = drv_spi.c \
-		   drv_adc.c \
-		   drv_adxl345.c \
-		   drv_mpu3050.c \
-		   drv_mpu6050.c \
-		   drv_l3g4200d.c \
-		   drv_pwm.c \
 		   drv_timer.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)

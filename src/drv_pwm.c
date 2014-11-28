@@ -366,12 +366,6 @@ bool pwmInit(drv_pwm_config_t *init)
         if (setup[i] == 0xFF) // terminator
             break;
 
-#ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
-        // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
-        if (port == PWM2)
-            continue;
-#endif
-
         // skip UART ports for GPS
         if (init->useUART && (port == PWM3 || port == PWM4))
             continue;
@@ -385,7 +379,7 @@ bool pwmInit(drv_pwm_config_t *init)
             continue;
 
         // hacks to allow current functionality
-        if (mask & (TYPE_IP | TYPE_IW) && !init->enableInput)
+        if ((mask & (TYPE_IP | TYPE_IW)) && !init->enableInput)
             mask = 0;
 
         if (init->useServos && !init->airplane) {
