@@ -223,7 +223,13 @@ typedef struct baro_t {
 #define LED0
 #define LED1
 #define INVERTER
+
+// alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
+#ifndef ALIENWII32
 #define MOTOR_PWM_RATE 400
+#else
+#define MOTOR_PWM_RATE 32000
+#endif
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
 #define I2C_DEVICE (I2CDEV_2)
