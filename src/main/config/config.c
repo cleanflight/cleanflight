@@ -439,6 +439,7 @@ static void resetConf(void)
 #ifdef ALIENWII32
     featureSet(FEATURE_RX_MSP);
     featureSet(FEATURE_MOTOR_STOP);
+    masterConfig.serialConfig.serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
     masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
