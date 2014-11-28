@@ -80,7 +80,6 @@ static void mma8452Init(sensor_align_e align)
     gpio_config_t gpio;
 
     // PA5 - ACC_INT2 output on rev3/4 hardware
-    // OLIMEXINO - The PA5 pin is wired up to LED1, if you need to use an mma8452 on an Olimexino use a different pin and provide support in code.
     gpio.pin = Pin_5;
     gpio.speed = Speed_2MHz;
     gpio.mode = Mode_IN_FLOATING;
