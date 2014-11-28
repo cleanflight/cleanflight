@@ -91,14 +91,15 @@ int main(void)
         i2cInit(I2C_DEVICE);
 
     // configure power ADC
-    if (mcfg.power_adc_channel > 0 && (mcfg.power_adc_channel == 1 || mcfg.power_adc_channel == 9))
+    if (mcfg.power_adc_channel > 0 && (mcfg.power_adc_channel == 1 || mcfg.power_adc_channel == 9 || mcfg.power_adc_channel == 5))
         adc_params.powerAdcChannel = mcfg.power_adc_channel;
     else {
         adc_params.powerAdcChannel = 0;
         mcfg.power_adc_channel = 0;
     }
 
-    if (mcfg.rssi_adc_channel > 0 && (mcfg.rssi_adc_channel == 1 || mcfg.rssi_adc_channel == 9) && mcfg.rssi_adc_channel != mcfg.power_adc_channel)
+    // configure rssi ADC
+    if (mcfg.rssi_adc_channel > 0 && (mcfg.rssi_adc_channel == 1 || mcfg.rssi_adc_channel == 9 || mcfg.rssi_adc_channel == 5) && mcfg.rssi_adc_channel != mcfg.power_adc_channel)
         adc_params.rssiAdcChannel = mcfg.rssi_adc_channel;
     else {
         adc_params.rssiAdcChannel = 0;
@@ -203,11 +204,9 @@ int main(void)
         }
     }
 #ifndef CJMCU
-    else { // spektrum and GPS are mutually exclusive
-        // Optional GPS - available in both PPM and PWM input mode, in PWM input, reduces number of available channels by 2.
-        // gpsInit will return if FEATURE_GPS is not enabled.
-        gpsInit(mcfg.gps_baudrate);
-    }
+    // Optional GPS - available in both PPM, PWM and serialRX input mode, in PWM input, reduces number of available channels by 2.
+    // gpsInit will return if FEATURE_GPS is not enabled.
+    gpsInit(mcfg.gps_baudrate);
 #endif
 #ifdef SONAR
     // sonar stuff only works with PPM
