@@ -111,3 +111,7 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+
+#define SPEKTRUM_BIND
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3
