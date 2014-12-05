@@ -8,9 +8,10 @@
 #include "cli.h"
 #include "telemetry_common.h"
 
+#include "buzzer.h"
+
 flags_t f;
 int16_t debug[4];
-uint8_t toggleBeep = 0;
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
@@ -70,7 +71,8 @@ uint16_t InflightcalibratingA = 0;
 
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
-uint16_t batteryWarningVoltage;     // annoying buzzer after this one, battery ready to be dead
+uint16_t batteryWarningVoltage;     // slow buzzer after this one, recommended 80% of battery used. Time to land.
+uint16_t batteryCriticalVoltage;    // annoying buzzer after this one, battery is going to be dead.
 
 void blinkLED(uint8_t num, uint8_t wait, uint8_t repeat)
 {
@@ -92,7 +94,6 @@ void annexCode(void)
     static uint32_t calibratedAccTime;
     int32_t tmp, tmp2;
     int32_t axis, prop1, prop2;
-    static uint8_t buzzerFreq;  // delay between buzzer ring
 
     // vbat shit
     static uint8_t vbatTimer = 0;
@@ -176,13 +177,14 @@ void annexCode(void)
             }
             
         }
-        if ((vbat > batteryWarningVoltage) || (vbat < mcfg.vbatmincellvoltage)) { // VBAT ok, buzzer off
-            buzzerFreq = 0;
-        } else
-            buzzerFreq = 4;     // low battery
+        // Buzzers for low and critical battery levels
+        if (vbat <= batteryCriticalVoltage)
+            buzzer(BUZZER_BAT_CRIT_LOW);     // Critically low battery
+        else if (vbat <= batteryWarningVoltage)
+            buzzer(BUZZER_BAT_LOW);     // low battery
     }
-
-    buzzer(buzzerFreq);         // external buzzer routine that handles buzzer events globally now
+    // update buzzer handler
+    buzzerUpdate();
 
     if ((calibratingA > 0 && sensors(SENSOR_ACC)) || (calibratingG > 0)) {      // Calibration phasis
         LED0_TOGGLE;
@@ -283,6 +285,15 @@ static void mwArm(void)
         if (!f.ARMED) {         // arm now!
             f.ARMED = 1;
             headFreeModeHold = heading;
+            // Beep for inform about arming
+#ifdef GPS
+            if (feature(FEATURE_GPS) && f.GPS_FIX && GPS_numSat >= 5)
+                buzzer(BUZZER_ARMING_GPS_FIX);
+            else
+                buzzer(BUZZER_ARMING);
+#else
+            buzzer(BUZZER_ARMING);
+#endif
         }
     } else if (!f.ARMED) {
         blinkLED(2, 255, 1);
@@ -291,8 +302,11 @@ static void mwArm(void)
 
 static void mwDisarm(void)
 {
-    if (f.ARMED)
+    if (f.ARMED) {
         f.ARMED = 0;
+        // Beep for inform about disarming
+        buzzer(BUZZER_DISARMING);
+    }
 }
 
 static void mwVario(void)
@@ -499,15 +513,18 @@ void loop(void)
                 for (i = 0; i < 3; i++)
                     rcData[i] = mcfg.midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
                 rcData[THROTTLE] = cfg.failsafe_throttle;
+                buzzer(BUZZER_TX_LOST_ARMED);
                 if ((failsafeCnt > 5 * (cfg.failsafe_delay + cfg.failsafe_off_delay)) && !f.FW_FAILSAFE_RTH_ENABLE) {  // Turn OFF motors after specified Time (in 0.1sec)
                     mwDisarm();             // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
                     f.OK_TO_ARM = 0;        // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
+                    buzzer(BUZZER_TX_LOST);
                 }
                 failsafeEvents++;
             }
             if (failsafeCnt > (5 * cfg.failsafe_delay) && !f.ARMED) {  // Turn off "Ok To arm to prevent the motors from spinning after repowering the RX with low throttle and aux to arm
                 mwDisarm();         // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
                 f.OK_TO_ARM = 0;    // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
+                buzzer(BUZZER_TX_LOST);
             }
             failsafeCnt++;
         }
@@ -585,9 +602,9 @@ void loop(void)
                     } else {
                         AccInflightCalibrationArmed = !AccInflightCalibrationArmed;
                         if (AccInflightCalibrationArmed) {
-                            toggleBeep = 2;
+                            buzzer(BUZZER_ACC_CALIBRATION);
                         } else {
-                            toggleBeep = 3;
+                            buzzer(BUZZER_ACC_CALIBRATION_FAIL);
                         }
                     }
                 }
@@ -785,6 +802,8 @@ void loop(void)
                         }
                     }
                 }
+                // Beep for indication that GPS has found satellites and naze32 is ready to fly
+                buzzer(BUZZER_READY_BEEP);
             } else {
                 f.GPS_HOME_MODE = 0;
                 f.GPS_HOLD_MODE = 0;
@@ -870,7 +889,10 @@ void loop(void)
         cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
         // non IMU critical, temeperatur, serialcom
-         annexCode();
+        annexCode();
+        // When armed and motors aren't spinning. Make warning beeps so that accidentally won't lose fingers...
+        if (isThrottleLow && feature(FEATURE_MOTOR_STOP) && f.ARMED)
+            buzzer(BUZZER_ARMED);
 #ifdef MAG
         if (sensors(SENSOR_MAG)) {
             if (abs(rcCommand[YAW]) < 70 && f.MAG_MODE) {

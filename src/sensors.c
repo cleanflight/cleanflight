@@ -5,6 +5,7 @@
 
 #include "board.h"
 #include "mw.h"
+#include "buzzer.h"
 
 uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
 uint16_t calibratingB = 0;      // baro calibration = get new ground pressure value
@@ -17,6 +18,7 @@ extern bool AccInflightCalibrationMeasurementDone;
 extern bool AccInflightCalibrationSavetoEEProm;
 extern bool AccInflightCalibrationActive;
 extern uint16_t batteryWarningVoltage;
+extern uint16_t batteryCriticalVoltage;
 extern uint8_t batteryCellCount;
 extern float magneticDeclination;
 
@@ -240,7 +242,8 @@ void batteryInit(void)
             break;
     }
     batteryCellCount = i;
-    batteryWarningVoltage = i * mcfg.vbatmincellvoltage; // 3.3V per cell minimum, configurable in CLI
+    batteryWarningVoltage = i * mcfg.vbatalertcellvoltage; // 3.5V per cell minimum, configurable in CLI
+    batteryCriticalVoltage = i * mcfg.vbatmincellvoltage; // 3.3V per cell minimum, configurable in CLI
 }
 
 static void ACC_Common(void)
@@ -298,7 +301,7 @@ static void ACC_Common(void)
             if (InflightcalibratingA == 1) {
                 AccInflightCalibrationActive = false;
                 AccInflightCalibrationMeasurementDone = true;
-                toggleBeep = 2;      // buzzer for indicatiing the end of calibration
+                buzzer(BUZZER_ACC_CALIBRATION);      // buzzer for indicatiing the end of calibration
                 // recover saved values to maintain current flight behavior until new values are transferred
                 mcfg.accZero[ROLL] = accZero_saved[ROLL];
                 mcfg.accZero[PITCH] = accZero_saved[PITCH];

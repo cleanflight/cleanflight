@@ -216,6 +216,7 @@ static void resetConf(void)
     mcfg.vbatscale = 110;
     mcfg.vbatmaxcellvoltage = 43;
     mcfg.vbatmincellvoltage = 33;
+    mcfg.vbatalertcellvoltage = 35;
     mcfg.power_adc_channel = 0;
     mcfg.serialrx_type = 0;
     mcfg.spektrum_sat_bind = 0;
