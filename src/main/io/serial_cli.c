@@ -113,7 +113,7 @@ static const char * const mixerNames[] = {
     "TRI", "QUADP", "QUADX", "BI",
     "GIMBAL", "Y6", "HEX6",
     "FLYING_WING", "Y4", "HEX6X", "OCTOX8", "OCTOFLATP", "OCTOFLATX",
-    "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4", 
+    "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4",
     "HEX6H", "PPM_TO_SERVO", "DUALCOPTER", "SINGLECOPTER",
     "CUSTOM", NULL
 };
@@ -123,7 +123,7 @@ static const char * const featureNames[] = {
     "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
-    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", NULL
+    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125", NULL
 };
 
 // sync this with sensors_e
@@ -250,7 +250,7 @@ const clivalue_t valueTable[] = {
 
     { "gps_provider",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
     { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
-	{ "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.gpsAutoConfig, 0, GPS_AUTOCONFIG_OFF },
+    { "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.gpsAutoConfig, 0, GPS_AUTOCONFIG_OFF },
 
 
     { "gps_pos_p",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOS], 0, 200 },

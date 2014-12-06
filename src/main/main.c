@@ -41,9 +41,6 @@
 #include "drivers/adc.h"
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
-#include "drivers/gpio.h"
-#include "drivers/light_led.h"
-#include "drivers/sound_beeper.h"
 #include "drivers/inverter.h"
 
 #include "flight/flight.h"
@@ -279,6 +276,7 @@ void init(void)
     pwm_params.useCurrentMeterADC = feature(FEATURE_CURRENT_METER);
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
+    pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
     pwm_params.useServos = isMixerUsingServos();
     pwm_params.extraServos = currentProfile->gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;

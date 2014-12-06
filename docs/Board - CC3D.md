@@ -30,7 +30,7 @@ The 8 pin RC_Input connector has the following pinouts when used in RX_PPM/RX_SE
 | 5   | Softserial1 RX | Enable `feature SOFTSERIAL` |
 | 6   | Current   | Enable `feature CURRENT_METER`.  Connect to the output of a current sensor, 0v-3.3v input |
 | 7   | Battery Voltage sensor | Enable `feature VBAT`. Connect to main battery using a voltage divider, 0v-3.3v input |
-| 8   | RSSI      | Enable `feature RSSI_ADC`.  Connect to the output of a PPM-RSSI conditioner, 0v-3.3v input |
+| 8   | RSSI      | Enable `feature RSSI_ADC`.  Connect to the output of a PWM-RSSI conditioner, 0v-3.3v input |
 
 The 6 pin RC_Output connector has the following pinouts when used in RX_PPM/RX_SERIAL mode
 
@@ -53,8 +53,8 @@ The 8 pin RC_Input connector has the following pinouts when used in RX_PARALLEL_
 | 4   | CH1      |       |
 | 5   | CH2      |       |
 | 6   | CH3      |       |
-| 7   | CH4      |       |
-| 3   | Unused   |       |
+| 7   | CH4/Battery Voltage sensor      | CH4 if battery voltage sensor is disabled |
+| 8   | CH5/CH4  | CH4 if battery voltage monitor is enabled|
 
 The 6 pin RC_Output connector has the following pinouts when used in RX_PARALLEL_PWM mode
 
@@ -73,7 +73,7 @@ The 6 pin RC_Output connector has the following pinouts when used in RX_PARALLEL
 | ----- | ------------ | -------------- | -----------------------------------------|
 | 1     | USART1       | MAIN PORT      | Has a hardware inverter for SBUS         |
 | 2     | USART3       | FLEX PORT      |                                          |
-| 3     | SoftSerial   | RC connector   | Pins 5 and 6 (Rx and Tx respectively)    |
+| 3     | SoftSerial   | RC connector   | Pins 4 and 5 (Tx and Rx respectively)    |
 
 The Softserial port is not available when RX_PARALLEL_PWM is used. The transmission data rate is limited to 19200 baud.
 

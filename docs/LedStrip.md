@@ -33,6 +33,14 @@ Not all WS2812 ICs use the same timings, some batches use different timings.
 
 It could be possible to be able to specify the timings required via CLI if users request it.
 
+### Tested Hardware
+
+* [Adafruit NeoPixel Jewel 7](https://www.adafruit.com/products/2226) (preliminary testing)
+  * Measured current consumption in all white mode ~ 350 mA.
+  * Fits well under motors on mini 250 quads.
+* [Adafruit NeoPixel Stick](https://www.adafruit.com/products/1426) (works well)
+  * Measured current consumption in all white mode ~ 350 mA.
+
 ## Connections
 
 WS2812 LED strips generally require a single data line, 5V and GND.
@@ -54,6 +62,14 @@ Since RC5 is also used for SoftSerial on the Naze/Olimexino it means that you ca
 Additionally, since RC5 is also used for Parallel PWM RC input on both the Naze, Chebuzz and STM32F3Discovery targets, led strips
 can not be used at the same time at Parallel PWM.
 
+Ensure that your 5V supply is not too high, if the voltage at the input to the LED strip is to high then the LEDs may not light; The
+problem occurs because of the difference in voltage between the data signal and the power signal.
+
+If you are using an BEC from an ESC to for the 5v supply check the output is as close to 5v as possible.
+
+It was observed that a 5.4v supply from a BEC was fine for powering the FC and other devices but the LED strip would not light until
+the voltage was reduced, this was acheived by placing an IN4007 diode between the BEC 5v output and the 5V input pin of the LED strip.
+  
 
 ## Configuration
 

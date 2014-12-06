@@ -66,10 +66,10 @@ extern int16_t debug[4];
  * In the BradWii software, it alternates between doing the P and D step and doing the I step so you can quit whenever you
  * want without having to tell it specifically to do the I term. The sequence is actually P&D, P&D, I, P&D, P&D, I...
  *
- * Note: The 4 degrees mentioned above is the value of AUTOTUNE_MAX_OSCILLATION.  In the BradWii code at the time of writing
+ * Note: The 4 degrees mentioned above is the value of AUTOTUNE_MAX_OSCILLATION_ANGLE.  In the BradWii code at the time of writing
  * the default value was 1.0f instead of 4.0f.
  *
- * To adjust how aggressive the tuning is, adjust the AUTOTUNEMAXOSCILLATION value.  A larger value will result in more
+ * To adjust how aggressive the tuning is, adjust the AUTOTUNE_MAX_OSCILLATION_ANGLE value.  A larger value will result in more
  * aggressive tuning. A lower value will result in softer tuning. It will rock back and forth between -AUTOTUNE_TARGET_ANGLE
  * and AUTOTUNE_TARGET_ANGLE degrees
  * AUTOTUNE_D_MULTIPLIER is a multiplier that puts in a little extra D when autotuning is done. This helps damp  the wobbles
@@ -178,9 +178,9 @@ float autotune(angle_index_t angleIndex, const rollAndPitchInclination_t *inclin
         return errorAngle;
     }
 
-    debug[0] = 0;
 
-#if 0
+#ifdef DEBUG_AUTOTUNE
+    debug[0] = 0;
     debug[1] = inclination->rawAngles[angleIndex];
 #endif
 
@@ -193,7 +193,7 @@ float autotune(angle_index_t angleIndex, const rollAndPitchInclination_t *inclin
         currentAngle = DECIDEGREES_TO_DEGREES(-inclination->raw[angleIndex]);
     }
 
-#if 1
+#ifdef DEBUG_AUTOTUNE
     debug[1] = DEGREES_TO_DECIDEGREES(currentAngle);
     debug[2] = DEGREES_TO_DECIDEGREES(targetAngle);
 #endif
@@ -249,11 +249,13 @@ float autotune(angle_index_t angleIndex, const rollAndPitchInclination_t *inclin
         // stop looking for the 2nd peak if we time out or if we change direction again after moving by more than half the maximum oscillation
         if (timedOut || (oscillationAmplitude > AUTOTUNE_MAX_OSCILLATION_ANGLE / 2 && currentAngle > firstPeakAngle)) {
             // analyze the data
-            // Our goal is to have zero overshoot and to have AUTOTUNEMAXOSCILLATION amplitude
+            // Our goal is to have zero overshoot and to have AUTOTUNE_MAX_OSCILLATION_ANGLE amplitude
 
             if (secondPeakAngle > targetAngleAtPeak) {
                 // overshot
+#ifdef DEBUG_AUTOTUNE
                 debug[0] = 1;
+#endif
 
 #ifdef PREFER_HIGH_GAIN_SOLUTION
                 if (oscillationAmplitude > AUTOTUNE_MAX_OSCILLATION_ANGLE) {
@@ -269,8 +271,9 @@ float autotune(angle_index_t angleIndex, const rollAndPitchInclination_t *inclin
 #endif
             } else {
                 // undershot
+#ifdef DEBUG_AUTOTUNE
                 debug[0] = 2;
-
+#endif
                 if (oscillationAmplitude > AUTOTUNE_MAX_OSCILLATION_ANGLE) {
                     // we have too much oscillation
                     pid.d *= AUTOTUNE_DECREASE_MULTIPLIER;

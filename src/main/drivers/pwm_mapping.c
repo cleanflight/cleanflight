@@ -430,12 +430,19 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
 
         if (type == MAP_TO_PPM_INPUT) {
+#ifdef CC3D
+            if (init->useOneshot) {
+                ppmAvoidPWMTimerClash(timerHardwarePtr, TIM4);
+            }
+#endif
             ppmInConfig(timerHardwarePtr);
         } else if (type == MAP_TO_PWM_INPUT) {
             pwmInConfig(timerHardwarePtr, channelIndex);
             channelIndex++;
         } else if (type == MAP_TO_MOTOR_OUTPUT) {
-            if (init->motorPwmRate > 500) {
+            if (init->useOneshot) {
+                pwmOneshotMotorConfig(timerHardwarePtr, pwmOutputConfiguration.motorCount, init->idlePulse);
+            } else if (init->motorPwmRate > 500) {
                 pwmBrushedMotorConfig(timerHardwarePtr, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
             } else {
                 pwmBrushlessMotorConfig(timerHardwarePtr, pwmOutputConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
