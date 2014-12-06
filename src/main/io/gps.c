@@ -982,11 +982,6 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
     LED0_OFF;
     LED1_OFF;
 
-#ifdef DISPLAY
-    if (feature(FEATURE_DISPLAY)) {
-        displayShowFixedPage(PAGE_GPS);
-    }
-#endif
     char c;
     while(1) {
         if (serialTotalBytesWaiting(gpsPort)) {
@@ -1006,7 +1001,6 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
             updateDisplay();
         }
 #endif
-
     }
     return GPS_PASSTHROUGH_ENABLED;
 }

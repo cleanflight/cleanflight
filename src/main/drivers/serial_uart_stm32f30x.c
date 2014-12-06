@@ -327,6 +327,7 @@ static void handleUsartTxDma(uartPort_t *s)
         s->txDMAEmpty = true;
 }
 
+#ifdef USE_USART1
 // USART1 Tx DMA Handler
 void DMA1_Channel4_IRQHandler(void)
 {
@@ -335,6 +336,7 @@ void DMA1_Channel4_IRQHandler(void)
     DMA_Cmd(DMA1_Channel4, DISABLE);
     handleUsartTxDma(s);
 }
+#endif
 
 #ifdef USE_USART2_TX_DMA
 // USART2 Tx DMA Handler
@@ -347,6 +349,7 @@ void DMA1_Channel7_IRQHandler(void)
 }
 #endif
 
+#ifdef USE_USART3
 // USART3 Tx DMA Handler
 void DMA1_Channel2_IRQHandler(void)
 {
@@ -355,6 +358,7 @@ void DMA1_Channel2_IRQHandler(void)
     DMA_Cmd(DMA1_Channel2, DISABLE);
     handleUsartTxDma(s);
 }
+#endif
 
 void usartIrqHandler(uartPort_t *s)
 {
@@ -388,24 +392,30 @@ void usartIrqHandler(uartPort_t *s)
     }
 }
 
+#ifdef USE_USART1
 void USART1_IRQHandler(void)
 {
     uartPort_t *s = &uartPort1;
 
     usartIrqHandler(s);
 }
+#endif
 
+#ifdef USE_USART2
 void USART2_IRQHandler(void)
 {
     uartPort_t *s = &uartPort2;
 
     usartIrqHandler(s);
 }
+#endif
 
+#ifdef USE_USART3
 void USART3_IRQHandler(void)
 {
     uartPort_t *s = &uartPort3;
 
     usartIrqHandler(s);
 }
+#endif
 
