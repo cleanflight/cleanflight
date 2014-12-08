@@ -139,11 +139,11 @@ void buzzer(uint8_t mode)
             if (feature(FEATURE_GPS) && f.GPS_FIX && GPS_numSat >= 5) {
                 do {
                     buzz_countSats[i] = 5;
-                    buzz_countSats[i+1] = 15;
-                    i+=2;
-                } while (i < 20 && GPS_numSat > i/2);
-                buzz_countSats[i+1] = 100;
-                buzz_countSats[i+2] = 0xFF;
+                    buzz_countSats[i + 1] = 15;
+                    i += 2;
+                } while (i < 20 && GPS_numSat > i / 2);
+                buzz_countSats[i + 1] = 100;
+                buzz_countSats[i + 2] = 0xFF;
                 buzzerPtr = buzz_countSats;
                 buzzerMode = mode;
                 break;

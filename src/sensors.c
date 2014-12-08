@@ -242,7 +242,7 @@ void batteryInit(void)
             break;
     }
     batteryCellCount = i;
-    batteryWarningVoltage = i * mcfg.vbatalertcellvoltage; // 3.5V per cell minimum, configurable in CLI
+    batteryWarningVoltage = i * mcfg.vbatwarningcellvoltage; // 3.5V per cell minimum, configurable in CLI
     batteryCriticalVoltage = i * mcfg.vbatmincellvoltage; // 3.3V per cell minimum, configurable in CLI
 }
 
