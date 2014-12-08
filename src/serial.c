@@ -495,7 +495,7 @@ static void evaluateCommand(void)
         mcfg.vbatscale = read8();           // actual vbatscale as intended
         mcfg.vbatmincellvoltage = read8();  // vbatlevel_warn1 in MWC2.3 GUI
         mcfg.vbatmaxcellvoltage = read8();  // vbatlevel_warn2 in MWC2.3 GUI
-        read8();                            // vbatlevel_crit (unused)
+        mcfg.vbatwarningcellvoltage = read8(); // vbatlevel when buzzer starts to alert
         headSerialReply(0);
         break;
     case MSP_SET_MOTOR:
@@ -741,7 +741,7 @@ static void evaluateCommand(void)
         serialize8(mcfg.vbatscale);
         serialize8(mcfg.vbatmincellvoltage);
         serialize8(mcfg.vbatmaxcellvoltage);
-        serialize8(0);
+        serialize8(mcfg.vbatwarningcellvoltage);
         break;
     case MSP_MOTOR_PINS:
         headSerialReply(8);

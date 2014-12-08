@@ -1,128 +1,207 @@
+/*
+ * This file is part of baseflight
+ * Licensed under GPL V3 or modified DCL - see https://github.com/multiwii/baseflight/blob/master/README.md
+ */
 #include "board.h"
 #include "mw.h"
+#include "buzzer.h"
 
-static uint8_t buzzerIsOn = 0, beepDone = 0;
-static uint32_t buzzerLastToggleTime;
-static void beep(uint16_t pulse);
-static void beep_code(char first, char second, char third, char pause);
+/* Buzzer Sound Sequences: (Square wave generation)
+ * Sequence must end with 0xFF or 0xFE. 0xFE repeats the sequence from
+ * start when 0xFF stops the sound when it's completed.
+ * If repeat is used then BUZZER_STOP call must be used for stopping the sound.
+ *
+ * "Sound" Sequences are made so that 1st, 3rd, 5th.. are the delays how
+ * long the buzzer is on and 2nd, 4th, 6th.. are the delays how long buzzer
+ * is off.
+ */
+// fast beep:
+static const uint8_t buzz_shortBeep[] = {
+    5,5, 0xFF
+};
+// fast beep:
+static const uint8_t buzz_BatteryBeep[] = {
+    10,5, 0xFF
+};
+// medium beep
+static const uint8_t buzz_mediumBeepFast[] = {
+    35, 30, 0xFF
+};
+// medium beep and pause after that
+static const uint8_t buzz_mediumBeep[] = {
+    35, 150, 0xFF
+};
+// Long beep and pause after that
+static const uint8_t buzz_longBeep[] = {
+    70, 200, 0xFF
+};
+// SOS morse code:
+static const uint8_t buzz_sos[] = {
+    10,10, 10,10, 10,40, 40,10, 40,10, 40,40, 10,10, 10,10, 10,70, 0xFF
+};
+// Arming when GPS is fixed
+static const uint8_t buzz_armed[] = {
+    5,5, 15,5, 5,5, 15,30, 0xFF
+};
+// Ready beeps. When gps has fix and copter is ready to fly.
+static const uint8_t buzz_readyBeep[] = {
+    4,5, 4,5, 8,5, 15,5, 8,5, 4,5, 4,5, 0xFF
+};
+// 2 fast short beeps
+static const uint8_t buzz_2shortBeeps[] = {
+    5,5, 5,5, 0xFF
+};
+// 3 fast short beeps
+static const uint8_t buzz_3shortBeeps[] = {
+    5,5, 5,5, 5,5, 0xFF
+};
+// Array used for beeps when reporting GPS satellite count (up to 10 satellites)
+static uint8_t buzz_countSats[22];
 
-void buzzer(uint8_t warn_vbat)
+// Current Buzzer mode
+static uint8_t buzzerMode = BUZZER_STOPPED;
+// Buzzer off = 0 Buzzer on = 1
+static uint8_t buzzerIsOn = 0;
+// Pointer to current sequence
+static const uint8_t* buzzerPtr = NULL;
+// Place in current sequence
+static uint16_t buzzerPos = 0;
+// Time when buzzer routine must act next time
+static uint32_t buzzerNextToggleTime = 0;
+// Variable for checking if ready beep has been done
+static uint8_t readyBeepDone = 0;
+
+static void buzzerCalculations(void);
+
+/* Buzzer -function is used to activate/deactive buzzer.
+ * Parameter defines the used sequence.
+ */
+void buzzer(uint8_t mode)
 {
-    static uint8_t beeperOnBox;
-    static uint8_t warn_noGPSfix = 0;
-    static uint8_t warn_failsafe = 0;
-    static uint8_t warn_runtime = 0;
+    uint8_t i = 0;
 
-    //=====================  BeeperOn via rcOptions =====================
-    if (rcOptions[BOXBEEPERON]) {       // unconditional beeper on via AUXn switch
-        beeperOnBox = 1;
-    } else {
-        beeperOnBox = 0;
-    }
-    //===================== Beeps for failsafe =====================
-    if (feature(FEATURE_FAILSAFE)) {
-        if (failsafeCnt > (5 * cfg.failsafe_delay) && f.ARMED) {
-            warn_failsafe = 1;      //set failsafe warning level to 1 while landing
-            if (failsafeCnt > 5 * (cfg.failsafe_delay + cfg.failsafe_off_delay))
-                warn_failsafe = 2;  //start "find me" signal after landing
-        }
-        if (failsafeCnt > (5 * cfg.failsafe_delay) && !f.ARMED)
-            warn_failsafe = 2;      // tx turned off while motors are off: start "find me" signal
-        if (failsafeCnt == 0)
-            warn_failsafe = 0;      // turn off alarm if TX is okay
-    }
-
-    //===================== GPS fix notification handling =====================
-    if (sensors(SENSOR_GPS)) {
-        if ((rcOptions[BOXGPSHOME] || rcOptions[BOXGPSHOLD]) && !f.GPS_FIX) {     // if no fix and gps funtion is activated: do warning beeps
-            warn_noGPSfix = 1;
-        } else {
-            warn_noGPSfix = 0;
-        }
-    }
-
-    //===================== Priority driven Handling =====================
-    // beepcode(length1,length2,length3,pause)
-    // D: Double, L: Long, M: Middle, S: Short, N: None
-    if (warn_failsafe == 2)
-        beep_code('L','N','N','D');                 // failsafe "find me" signal
-    else if (warn_failsafe == 1)
-        beep_code('S','M','L','M');                 // failsafe landing active
-    else if (warn_noGPSfix == 1)
-        beep_code('S','S','N','M');
-    else if (beeperOnBox == 1)
-        beep_code('S','S','S','M');                 // beeperon
-    else if (warn_vbat == 4)
-        beep_code('S','M','M','D');
-    else if (warn_vbat == 2)
-        beep_code('S','S','M','D');
-    else if (warn_vbat == 1)
-        beep_code('S','M','N','D');
-    else if (warn_runtime == 1 && f.ARMED)
-        beep_code('S','S','M','N');                 // Runtime warning
-    else if (toggleBeep > 0)
-        beep(50);                                   // fast confirmation beep
-    else {
-        buzzerIsOn = 0;
-        BEEP_OFF;
-    }
-}
-
-void beep_code(char first, char second, char third, char pause)
-{
-    char patternChar[4];
-    uint16_t Duration;
-    static uint8_t icnt = 0;
-
-    patternChar[0] = first;
-    patternChar[1] = second;
-    patternChar[2] = third;
-    patternChar[3] = pause;
-    switch (patternChar[icnt]) {
-        case 'M':
-            Duration = 100;
+    // Just return if same or higher priority sound is active.
+    if (buzzerMode <= mode)
+        return;
+    switch (mode) {
+        case BUZZER_STOP:
+            buzzerMode = BUZZER_STOPPED;
+            buzzerNextToggleTime = millis();
+            BEEP_OFF;
+            buzzerIsOn = 0;
+            buzzerPtr = NULL;
             break;
-        case 'L':
-            Duration = 200;
+        case BUZZER_READY_BEEP:
+            if (readyBeepDone)
+                return;
+            buzzerPtr = buzz_readyBeep;
+            buzzerMode = mode;
+            readyBeepDone = 1;
             break;
-        case 'D':
-            Duration = 2000;
+        case BUZZER_ARMING:
+        case BUZZER_DISARMING:
+            buzzerPtr = buzz_mediumBeepFast;
+            buzzerMode = mode;
+            buzzerNextToggleTime = 0;
             break;
-        case 'N':
-            Duration = 0;
+        case BUZZER_ACC_CALIBRATION:
+            buzzerPtr = buzz_2shortBeeps;
+            buzzerMode = mode;
+            break;
+        case BUZZER_ACC_CALIBRATION_FAIL:
+            buzzerPtr = buzz_3shortBeeps;
+            buzzerMode = mode;
+            break;
+        case BUZZER_TX_LOST_ARMED:
+            buzzerPtr = buzz_sos;
+            buzzerMode = mode;
+            break;
+        case BUZZER_BAT_LOW:
+            buzzerPtr = buzz_longBeep;
+            buzzerMode = mode;
+            break;
+        case BUZZER_BAT_CRIT_LOW:
+            buzzerPtr = buzz_BatteryBeep;
+            buzzerMode = mode;
+            break;
+        case BUZZER_ARMED:
+        case BUZZER_TX_LOST:
+            buzzerPtr = buzz_mediumBeep;
+            buzzerMode = mode;
+            break;
+        case BUZZER_ARMING_GPS_FIX:
+            buzzerPtr = buzz_armed;
+            buzzerMode = mode;
+            buzzerNextToggleTime = 0;
+            break;
+        case BUZZER_TX_SET:
+#ifdef GPS
+            if (feature(FEATURE_GPS) && f.GPS_FIX && GPS_numSat >= 5) {
+                do {
+                    buzz_countSats[i] = 5;
+                    buzz_countSats[i + 1] = 15;
+                    i += 2;
+                } while (i < 20 && GPS_numSat > i / 2);
+                buzz_countSats[i + 1] = 100;
+                buzz_countSats[i + 2] = 0xFF;
+                buzzerPtr = buzz_countSats;
+                buzzerMode = mode;
+                break;
+            }
+#endif
+            buzzerPtr = buzz_shortBeep;
+            buzzerMode = mode;
             break;
         default:
-            Duration = 50;
+            return;
             break;
     }
+    buzzerPos = 0;
+}
 
-    if (icnt < 3 && Duration != 0)
-        beep(Duration);
-    if (icnt >= 3 && (buzzerLastToggleTime < millis() - Duration)) {
-        icnt = 0;
-        toggleBeep = 0;
-    }
-    if (beepDone == 1 || Duration == 0) {
-        if (icnt < 3)
-            icnt++;
-        beepDone = 0;
+/* buzzerUpdate -function is used in loop. It will update buzzer state
+ * when the time is correct.
+ */
+void buzzerUpdate(void)
+{
+    // If beeper option from AUX switch has been selected
+    if (rcOptions[BOXBEEPERON])
+        if (buzzerMode > BUZZER_TX_SET)
+            buzzer(BUZZER_TX_SET);
+
+    // Buzzer routine doesn't need to update if there aren't any sounds ongoing
+    if (buzzerMode == BUZZER_STOPPED || buzzerPtr == NULL)
+        return;
+
+    if (!buzzerIsOn && buzzerNextToggleTime <= millis()) {
+        buzzerIsOn = 1;
+        if (buzzerPtr[buzzerPos] != 0)
+            BEEP_ON;
+        buzzerCalculations();
+    } else if (buzzerIsOn && buzzerNextToggleTime <= millis()) {
         buzzerIsOn = 0;
-        BEEP_OFF;
+        if (buzzerPtr[buzzerPos] != 0)
+            BEEP_OFF;
+        buzzerCalculations();
     }
 }
 
-static void beep(uint16_t pulse)
+/* buzzerCalculation -function calculates position when is the next time
+ * to change buzzer state
+ */
+void buzzerCalculations(void)
 {
-    if (!buzzerIsOn && (millis() >= (buzzerLastToggleTime + 50))) {         // Buzzer is off and long pause time is up -> turn it on
-        buzzerIsOn = 1;
-        BEEP_ON;
-        buzzerLastToggleTime = millis();      // save the time the buzer turned on
-    } else if (buzzerIsOn && (millis() >= buzzerLastToggleTime + pulse)) {         // Buzzer is on and time is up -> turn it off
-        buzzerIsOn = 0;
+    // If sequence is 0xFE then repeat from start
+    if (buzzerPtr[buzzerPos] == 0xFE)
+        buzzerPos = 0;
+    // If sequence is 0xFF then stop
+    else if (buzzerPtr[buzzerPos] == 0xFF) {
+        buzzerMode = BUZZER_STOPPED;
         BEEP_OFF;
-        buzzerLastToggleTime = millis();
-        if (toggleBeep > 0)
-            toggleBeep--;
-        beepDone = 1;
+        buzzerIsOn = 0;
+    // Otherwise advance the sequence and calculate next toggle time
+    } else {
+        buzzerNextToggleTime = millis() + 10 * buzzerPtr[buzzerPos];
+        buzzerPos++;
     }
 }
