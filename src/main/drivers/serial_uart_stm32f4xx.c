@@ -39,6 +39,7 @@
 //#define USE_USART1_RX_DMA
 //#define USE_USART2_RX_DMA
 //#define USE_USART3_RX_DMA
+//#define USE_USART6_RX_DMA
 
 
 #ifdef USE_USART1
@@ -51,6 +52,10 @@ static uartPort_t uartPort2;
 
 #ifdef USE_USART3
 static uartPort_t uartPort3;
+#endif
+
+#ifdef USE_USART6
+static uartPort_t uartPort6;
 #endif
 
 void uartStartTxDMA(uartPort_t *s);
@@ -170,8 +175,24 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
 void DMA2_Stream7_IRQHandler(void)
 {
     uartPort_t *s = &uartPort1;
-    DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TCIF7);
-    handleUsartTxDma(s);
+    if(DMA_GetITStatus(s->txDMAStream,DMA_IT_TCIF7))
+    {
+    	DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TCIF7);
+    	DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_HTIF7);
+		if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_FEIF7)==SET)
+		{
+			DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_FEIF7);
+		}
+		handleUsartTxDma(s);
+    }
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_TEIF7)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TEIF7);
+	}
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_DMEIF7)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_DMEIF7);
+	}
 }
 
 // USART1 Rx/Tx IRQ Handler
@@ -331,8 +352,24 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 void DMA1_Stream3_IRQHandler(void)
 {
     uartPort_t *s = &uartPort3;
-    DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TCIF3);
-    handleUsartTxDma(s);
+    if(DMA_GetITStatus(s->txDMAStream,DMA_IT_TCIF3))
+    {
+    	DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TCIF3);
+    	DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_HTIF3);
+		if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_FEIF3)==SET)
+		{
+			DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_FEIF3);
+		}
+		handleUsartTxDma(s);
+    }
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_TEIF3)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TEIF3);
+	}
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_DMEIF3)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_DMEIF3);
+	}
 }
 
 void USART3_IRQHandler(void)
@@ -342,3 +379,116 @@ void USART3_IRQHandler(void)
     usartIrqHandler(s);
 }
 #endif
+
+#ifdef USE_USART6
+// USART6
+uartPort_t *serialUSART6(uint32_t baudRate, portMode_t mode)
+{
+    uartPort_t *s;
+    static volatile uint8_t rx6Buffer[UART6_RX_BUFFER_SIZE];
+    static volatile uint8_t tx6Buffer[UART6_TX_BUFFER_SIZE];
+    gpio_config_t gpio;
+    NVIC_InitTypeDef NVIC_InitStructure;
+
+    s = &uartPort6;
+    s->port.vTable = uartVTable;
+
+    s->port.baudRate = baudRate;
+
+    s->port.rxBuffer = rx6Buffer;
+    s->port.txBuffer = tx6Buffer;
+    s->port.rxBufferSize = UART6_RX_BUFFER_SIZE;
+    s->port.txBufferSize = UART6_TX_BUFFER_SIZE;
+
+    s->USARTx = USART6;
+
+    s->txDMAPeripheralBaseAddr = (uint32_t)&s->USARTx->DR;
+    s->rxDMAPeripheralBaseAddr = (uint32_t)&s->USARTx->DR;
+
+
+#ifdef USE_USART6_RX_DMA
+    s->rxDMAChannel = DMA_Channel_5;
+    s->rxDMAStream = DMA2_Stream1;
+#endif
+    s->txDMAChannel = DMA_Channel_5;
+    s->txDMAStream = DMA2_Stream6;
+
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
+
+#ifdef USART6_APB1_PERIPHERALS
+    RCC_APB1PeriphClockCmd(USART6_APB1_PERIPHERALS, ENABLE);
+#endif
+#ifdef USART6_APB2_PERIPHERALS
+    RCC_APB2PeriphClockCmd(USART6_APB2_PERIPHERALS, ENABLE);
+#endif
+#ifdef USART6_AHB1_PERIPHERALS
+    RCC_AHB1PeriphClockCmd(USART6_AHB1_PERIPHERALS, ENABLE);
+#endif
+
+    gpio.speed = Speed_2MHz;
+    gpio.pin = USART6_TX_PIN;
+    gpio.mode = Mode_AF_PP;
+    if (mode & MODE_TX)
+        gpioInit(USART6_GPIO, &gpio);
+    gpio.mode = Mode_AF_OD;
+    if (mode & MODE_BIDIR)
+        gpioInit(USART6_GPIO, &gpio);
+    gpio.pin = USART6_RX_PIN;
+    gpio.mode = Mode_AF_PP;
+    if (mode & MODE_RX)
+        gpioInit(USART6_GPIO, &gpio);
+
+    GPIO_PinAFConfig(USART6_GPIO, GPIO_PinSource6, GPIO_AF_USART6);
+    GPIO_PinAFConfig(USART6_GPIO, GPIO_PinSource7, GPIO_AF_USART6);
+
+    // DMA TX Interrupt
+    NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream6_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_SERIALUART6_TXDMA);;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_SERIALUART6_TXDMA);
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+
+#ifndef USE_USART6_RX_DMA
+    // RX/TX Interrupt
+    NVIC_InitStructure.NVIC_IRQChannel = USART6_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_SERIALUART6);
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_SERIALUART6);
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+#endif
+
+    return s;
+}
+// USART6 Tx DMA Handler
+void DMA2_Stream6_IRQHandler(void)
+{
+    uartPort_t *s = &uartPort6;
+    if(DMA_GetITStatus(s->txDMAStream,DMA_IT_TCIF6))
+    {
+    	DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TCIF6);
+    	DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_HTIF6);
+		if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_FEIF6)==SET)
+		{
+			DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_FEIF6);
+		}
+		handleUsartTxDma(s);
+    }
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_TEIF6)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TEIF6);
+	}
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_DMEIF6)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_DMEIF6);
+	}
+}
+
+void USART6_IRQHandler(void)
+{
+    uartPort_t *s = &uartPort6;
+
+    usartIrqHandler(s);
+}
+#endif
+
+

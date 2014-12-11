@@ -38,6 +38,7 @@
 uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode);
 uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode);
 uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode);
+uartPort_t *serialUSART6(uint32_t baudRate, portMode_t mode);
 
 static void uartReconfigure(uartPort_t *uartPort)
 {
@@ -88,6 +89,10 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
 #ifdef USE_USART3
     } else if (USARTx == USART3) {
         s = serialUSART3(baudRate, mode);
+#endif
+#ifdef USE_USART6
+    } else if (USARTx == USART6) {
+        s = serialUSART6(baudRate, mode);
 #endif
     } else {
         return (serialPort_t *)s;
@@ -192,7 +197,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
             DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
             DMA_DeInit(s->txDMAStream);
             DMA_Init(s->txDMAStream, &DMA_InitStructure);
-            DMA_ITConfig(s->txDMAStream, DMA_IT_TC, ENABLE);
+            DMA_ITConfig(s->txDMAStream, DMA_IT_TC|DMA_IT_FE|DMA_IT_TE|DMA_IT_DME, ENABLE);
             DMA_SetCurrDataCounter(s->txDMAStream, 0);
 #else
             DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;

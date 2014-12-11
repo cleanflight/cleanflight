@@ -165,7 +165,7 @@ bool mpu6000SpiDetect(void)
     mpu6000WriteRegister(MPU6000_PWR_MGMT_1, BIT_H_RESET);
 
     do {
-        delay(150);
+        delay(300);
 
         mpu6000ReadRegister(MPU6000_WHOAMI, &in, 1);
         if (in == MPU6000_WHO_AM_I_CONST) {

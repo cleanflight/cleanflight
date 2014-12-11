@@ -347,6 +347,11 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         if (init->useUART2 && (timerIndex == PWM3 || timerIndex == PWM4))
             continue;
 #endif
+#ifdef STM32F40_41xxx
+        // skip UART6 ports
+        if (init->useUART6 && (timerIndex == PWM3 || timerIndex == PWM4))
+            continue;
+#endif
 
 #ifdef SOFTSERIAL_1_TIMER
         if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_1_TIMER)

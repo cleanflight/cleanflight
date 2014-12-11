@@ -25,6 +25,8 @@
 #define UART2_TX_BUFFER_SIZE    192
 #define UART3_RX_BUFFER_SIZE    192
 #define UART3_TX_BUFFER_SIZE    192
+#define UART6_RX_BUFFER_SIZE    192
+#define UART6_TX_BUFFER_SIZE    192
 
 typedef struct {
     serialPort_t port;

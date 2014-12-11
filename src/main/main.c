@@ -203,7 +203,8 @@ void init(void)
     }
 #else
     // Configure the rest of the stuff
-    i2cInit(I2C_DEVICE);
+    i2cInit(I2C_DEVICE_INT);
+    i2cInit(I2C_DEVICE_EXT);
 #endif
 #endif
 
@@ -268,6 +269,9 @@ void init(void)
         pwm_params.airplane = false;
 #if defined(SERIAL_PORT_USART2) && defined(STM32F10X)
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#endif
+#if defined(SERIAL_PORT_USART6) && defined(STM32F40_41xxx)
+    pwm_params.useUART6 = doesConfigurationUsePort(SERIAL_PORT_USART6);
 #endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
