@@ -119,7 +119,7 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
 //    {SERIAL_PORT_USART3,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_BIDIR_MODE},
     {SERIAL_PORT_USART1,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_USART6,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_BIDIR_MODE}
+    {SERIAL_PORT_USART6,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_BIDIR_MODE}
 };
 #else
 
@@ -619,6 +619,11 @@ serialPort_t *openSerialPort(serialPortFunction_e function, serialReceiveCallbac
 #ifdef USE_USART3
         case SERIAL_PORT_USART3:
             serialPort = uartOpen(USART3, callback, baudRate, mode, inversion);
+            break;
+#endif
+#ifdef USE_USART6
+        case SERIAL_PORT_USART6:
+            serialPort = uartOpen(USART6, callback, baudRate, mode, inversion);
             break;
 #endif
 #ifdef USE_SOFTSERIAL1
