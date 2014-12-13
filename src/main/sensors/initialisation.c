@@ -32,6 +32,7 @@
 #include "drivers/accgyro_mma845x.h"
 #include "drivers/accgyro_mpu3050.h"
 #include "drivers/accgyro_mpu6050.h"
+#include "drivers/accgyro_mpu9150.h"
 
 #include "drivers/accgyro_l3gd20.h"
 #include "drivers/accgyro_lsm303dlhc.h"
@@ -135,6 +136,12 @@ bool detectGyro(uint16_t gyroLpf)
 #ifdef NAZE
         gyroAlign = CW0_DEG;
 #endif
+        return true;
+    }
+#endif
+
+#ifdef USE_GYRO_MPU9150
+    if (mpu9150GyroDetect(NULL, &gyro, gyroLpf)) {
         return true;
     }
 #endif
@@ -244,6 +251,15 @@ retry:
                 accAlign = CW0_DEG;
 #endif
                 if (accHardwareToUse == ACC_MPU6050)
+                    break;
+            }
+            ; // fallthrough
+#endif
+#ifdef USE_ACC_MPU9150
+        case ACC_MPU9150: // MPU9150
+            if (mpu9150AccDetect(NULL, &acc)) {
+                accHardware = ACC_MPU9150;
+                if (accHardwareToUse == ACC_MPU9150)
                     break;
             }
             ; // fallthrough

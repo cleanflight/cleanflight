@@ -15,24 +15,15 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-typedef enum {
-    PAGE_WELCOME,
-    PAGE_ARMED,
-    PAGE_BATTERY,
-    PAGE_SENSORS,
-    PAGE_RX,
-    PAGE_PROFILE,
-    PAGE_GPS
-#ifdef ENABLE_DEBUG_OLED_PAGE
-    ,
-    PAGE_DEBUG
-#endif
-} pageId_e;
+#pragma once
 
-void updateDisplay(void);
+typedef struct mpu9150Config_s {
+    uint32_t gpioAPB2Peripherals;
+    uint16_t gpioPin;
+    GPIO_TypeDef *gpioPort;
+} mpu9150Config_t;
 
-void displayShowFixedPage(pageId_e pageId);
-
-void displayEnablePageCycling(void);
-void displayDisablePageCycling(void);
-void displaySetNextPageChangeAt(uint32_t futureMicros);
+bool mpu9150AccDetect(const mpu9150Config_t *config,acc_t *acc);
+bool mpu9150GyroDetect(const mpu9150Config_t *config, gyro_t *gyro, uint16_t lpf);
+void mpu9150DmpLoop(void);
+void mpu9150DmpResetFifo(void);
