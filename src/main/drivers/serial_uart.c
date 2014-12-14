@@ -269,29 +269,26 @@ void uartStartTxDMA(uartPort_t *s)
 
 uint8_t uartTotalBytesWaiting(serialPort_t *instance)
 {
+    uartPort_t *s = (uartPort_t*)instance;
 #ifdef STM32F40_41xxx
-    uartPort_t *s = (uartPort_t*)instance;
-    if (s->rxDMAStream)
-        return (s->rxDMAStream->NDTR - s->rxDMAPos) & (s->port.rxBufferSize - 1);
-    else {
-        return (s->port.rxBufferHead - s->port.rxBufferTail) & (s->port.rxBufferSize - 1);
-    }
+    if (s->rxDMAStream) {
+        uint32_t rxDMAHead = s->rxDMAStream->NDTR;
 #else
-    uartPort_t *s = (uartPort_t*)instance;
     if (s->rxDMAChannel) {
-        if (s->rxDMAChannel->CNDTR > s->rxDMAPos) {
-            return s->rxDMAChannel->CNDTR - s->rxDMAPos;
+        uint32_t rxDMAHead = s->rxDMAChannel->CNDTR;
+#endif
+        if (rxDMAHead >= s->rxDMAPos) {
+            return rxDMAHead - s->rxDMAPos;
         } else {
-            return s->rxDMAPos - s->rxDMAChannel->CNDTR;
+            return s->port.rxBufferSize + rxDMAHead - s->rxDMAPos;
         }
     }
 
-    if (s->port.rxBufferHead > s->port.rxBufferTail) {
+    if (s->port.rxBufferHead >= s->port.rxBufferTail) {
         return s->port.rxBufferHead - s->port.rxBufferTail;
     } else {
-        return s->port.rxBufferTail - s->port.rxBufferHead;
+        return s->port.rxBufferSize + s->port.rxBufferHead - s->port.rxBufferTail;
     }
-#endif
 }
 
 bool isUartTransmitBufferEmpty(serialPort_t *instance)
@@ -321,9 +318,11 @@ uint8_t uartRead(serialPort_t *instance)
         if (--s->rxDMAPos == 0)
             s->rxDMAPos = s->port.rxBufferSize;
     } else {
-        ch = s->port.rxBuffer[s->port.rxBufferTail++];
-        if (s->port.rxBufferTail >= s->port.rxBufferSize) {
+        ch = s->port.rxBuffer[s->port.rxBufferTail];
+        if (s->port.rxBufferTail + 1 >= s->port.rxBufferSize) {
             s->port.rxBufferTail = 0;
+        } else {
+            s->port.rxBufferTail++;
         }
     }
 
@@ -332,31 +331,25 @@ uint8_t uartRead(serialPort_t *instance)
 
 void uartWrite(serialPort_t *instance, uint8_t ch)
 {
-#ifdef STM32F40_41xxx
     uartPort_t *s = (uartPort_t *)instance;
     s->port.txBuffer[s->port.txBufferHead] = ch;
-    s->port.txBufferHead = (s->port.txBufferHead + 1) % s->port.txBufferSize;
+    if (s->port.txBufferHead + 1 >= s->port.txBufferSize) {
+        s->port.txBufferHead = 0;
+    } else {
+        s->port.txBufferHead++;
+    }
 
+#ifdef STM32F40_41xxx
     if (s->txDMAStream) {
         if (!(s->txDMAStream->CR & 1))
-            uartStartTxDMA(s);
-    } else {
-        USART_ITConfig(s->USARTx, USART_IT_TXE, ENABLE);
-    }
 #else
-    uartPort_t *s = (uartPort_t *)instance;
-    s->port.txBuffer[s->port.txBufferHead++] = ch;
-    if (s->port.txBufferHead >= s->port.txBufferSize) {
-        s->port.txBufferHead = 0;
-    }
-
     if (s->txDMAChannel) {
         if (!(s->txDMAChannel->CCR & 1))
+#endif
             uartStartTxDMA(s);
     } else {
         USART_ITConfig(s->USARTx, USART_IT_TXE, ENABLE);
     }
-#endif
 }
 
 const struct serialPortVTable uartVTable[] = {

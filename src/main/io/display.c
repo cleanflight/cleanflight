@@ -41,8 +41,10 @@
 #include "sensors/sensors.h"
 #include "sensors/compass.h"
 
+#ifdef GPS
 #include "io/gps.h"
 #include "flight/navigation.h"
+#endif
 
 #include "rx/rx.h"
 #include "io/rc_controls.h"
@@ -76,11 +78,12 @@ const char* pageTitles[] = {
     "BATTERY",
     "SENSORS",
     "RX",
-    "PROFILE",
-    "GPS"
+    "PROFILE"
+#ifdef GPS
+    ,"GPS"
+#endif
 #ifdef ENABLE_DEBUG_OLED_PAGE
-    ,
-    "DEBUG"
+    ,"DEBUG"
 #endif
 };
 
@@ -88,13 +91,14 @@ const char* pageTitles[] = {
 
 const uint8_t cyclePageIds[] = {
     PAGE_PROFILE,
+#ifdef GPS
     PAGE_GPS,
+#endif
     PAGE_RX,
     PAGE_BATTERY,
     PAGE_SENSORS
 #ifdef ENABLE_DEBUG_OLED_PAGE
-    ,
-    PAGE_DEBUG,
+    ,PAGE_DEBUG,
 #endif
 };
 
@@ -278,9 +282,21 @@ void showProfilePage(void)
     i2c_OLED_send_string(lineBuffer);
 
 }
+#define SATELLITE_COUNT (sizeof(GPS_svinfo_cno) / sizeof(GPS_svinfo_cno[0]))
+#define SATELLITE_GRAPH_LEFT_OFFSET ((SCREEN_CHARACTER_COLUMN_COUNT - SATELLITE_COUNT) / 2)
 
+#ifdef GPS
 void showGpsPage() {
     uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
+
+    i2c_OLED_set_xy(max(0, SATELLITE_GRAPH_LEFT_OFFSET), rowIndex++);
+
+    uint32_t index;
+    for (index = 0; index < SATELLITE_COUNT && index < SCREEN_CHARACTER_COLUMN_COUNT; index++) {
+        uint8_t bargraphValue = ((uint16_t) GPS_svinfo_cno[index] * VERTICAL_BARGRAPH_CHARACTER_COUNT) / (GPS_DBHZ_MAX - 1);
+        bargraphValue = min(bargraphValue, VERTICAL_BARGRAPH_CHARACTER_COUNT - 1);
+        i2c_OLED_send_char(VERTICAL_BARGRAPH_ZERO_CHARACTER + bargraphValue);
+    }
 
     char fixChar = STATE(GPS_FIX) ? 'Y' : 'N';
     tfp_sprintf(lineBuffer, "Satellites: %d Fix: %c", GPS_numSat, fixChar);
@@ -327,6 +343,7 @@ void showGpsPage() {
     i2c_OLED_send_string(lineBuffer);
 #endif
 }
+#endif
 
 void showBatteryPage(void)
 {
@@ -461,9 +478,15 @@ void updateDisplay(void)
         case PAGE_PROFILE:
             showProfilePage();
             break;
+#ifdef GPS
         case PAGE_GPS:
-            showGpsPage();
+            if (feature(FEATURE_GPS)) {
+                showGpsPage();
+            } else {
+                pageState.pageFlags |= PAGE_STATE_FLAG_FORCE_PAGE_CHANGE;
+            }
             break;
+#endif
 #ifdef ENABLE_DEBUG_OLED_PAGE
         case PAGE_DEBUG:
             showDebugPage();
