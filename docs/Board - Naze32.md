@@ -27,7 +27,7 @@ The 10 pin Input connector has the following pinouts when used in RX_PPM/RX_SERI
 | 3   | 1          | PPM Input      | Enable `feature RX_PPM`          | 
 | 4   | 2          | RSSI_ADC       | Enable `feature RSSI_ADC`.  Connect to the output of a PWM-RSSI conditioner, 0v-3.3v input | 
 | 5   | 3          | Uart 2 TX      |                                  | 
-| 6   | 3          | Uart 2 RX      |                                  | 
+| 6   | 4          | Uart 2 RX      |                                  | 
 | 7   | 5          | Softserial1 TX | Enable `feature SOFTSERIAL`      |
 |     |            | Led Strip      | Enable `feature LED_STRIP`.      |
 | 8   | 6          | Softserial1 RX | Enable `feature SOFTSERIAL`      |
