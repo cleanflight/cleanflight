@@ -241,7 +241,10 @@ typedef struct timerConfig_s {
     timerCCHandlerRec_t *edgeCallback[CC_CHANNELS_PER_TIMER];
     timerOvrHandlerRec_t *overflowCallback[CC_CHANNELS_PER_TIMER];
     timerOvrHandlerRec_t *overflowCallbackActive; // null-terminated linkded list of active overflow callbacks
-	uint32_t forcedOverflowTimerValue;
+    uint32_t runningTime;   // accumulated time on last overflow
+    uint16_t forcedTimerOverflowSkipped;
+    uint8_t priority;
+    uint8_t runningTimeEnabled;
 } timerConfig_t;
 timerConfig_t timerConfig[USED_TIMER_COUNT];
 
@@ -251,10 +254,8 @@ typedef struct {
 } timerChannelInfo_t;
 timerChannelInfo_t timerChannelInfo[USABLE_TIMER_CHANNEL_COUNT];
 
-typedef struct {
-    uint8_t priority;
-} timerInfo_t;
-timerInfo_t timerInfo[USED_TIMER_COUNT];
+
+static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef *tim);
 
 // return index of timer in timer table. Lowest timer has index 0
 #define TIMER_INDEX(i) BITCOUNT((TIM_N(i) - 1) & USED_TIMERS)
@@ -327,6 +328,42 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #undef _DEF
 };
 
+struct {
+    uint8_t irq;
+} timerInfoConst[USED_TIMER_COUNT] = {
+#define _DEF(i, irqCC, irqUPD) {irqCC}
+
+#if USED_TIMERS & TIM_N(1)
+    _DEF(1, TIM1_CC_IRQn, TIM1_UP_IRQn),
+#endif
+#if USED_TIMERS & TIM_N(2)
+    _DEF(2, TIM2_IRQn, TIM2_IRQn),
+#endif
+#if USED_TIMERS & TIM_N(3)
+    _DEF(3, TIM3_IRQn, TIM3_IRQn),
+#endif
+#if USED_TIMERS & TIM_N(4)
+    _DEF(4, TIM4_IRQn, TIM4_IRQn),
+#endif
+#if USED_TIMERS & TIM_N(8)
+# if defined(STM32F10X_XL)
+    _DEF(8, TIM8_CC_IRQn, TIM8_UP_TIM13_IRQn),
+# else // f10x_hd, f30x
+    _DEF(8, TIM8_CC_IRQn, TIM8_UP_IRQn),
+# endif
+#endif
+#if USED_TIMERS & TIM_N(15)
+    _DEF(15, TIM1_BRK_TIM15_IRQn, TIM1_BRK_TIM15_IRQn),
+#endif
+#if USED_TIMERS & TIM_N(16)
+    _DEF(16, TIM1_UP_TIM16_IRQn, TIM1_UP_TIM16_IRQn),
+#endif
+#if USED_TIMERS & TIM_N(17)
+    _DEF(17, TIM1_TRG_COM_TIM17_IRQn, TIM1_TRG_COM_TIM17_IRQn),
+#endif
+#undef _DEF
+};
+
 static inline uint8_t lookupChannelIndex(const uint16_t channel)
 {
     return channel >> 2;
@@ -357,6 +394,61 @@ void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz)
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_TimeBaseInit(tim, &TIM_TimeBaseStructure);
+}
+
+void timerCountRunningTime(TIM_TypeDef *tim, bool enable, uint8_t irqPriority)
+{
+    int timIdx = lookupTimerIndex(tim);
+//    timerConfigureIRQ(tim, irqPriority);
+    timerConfig[timIdx].runningTimeEnabled = enable;
+    // enable/disable overflow IRQ as necessary
+    timerChConfig_UpdateOverflow(&timerConfig[timIdx], tim);
+}
+
+uint32_t timerGetRunningTimeBase(TIM_TypeDef *tim)
+{
+    int timIdx = lookupTimerIndex(tim);
+    return timerConfig[timIdx].runningTime;
+}
+
+uint32_t timerGetRunningTimeCNT(TIM_TypeDef *tim)
+{
+    int timIdx = lookupTimerIndex(tim);
+    uint32_t cnt;
+    ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
+        cnt = tim->CNT;
+        if(tim->SR & TIM_IT_Update) {
+            // there is unhandled update event pending. Read CNT again to be sure that cnt is value after overflow
+            cnt = tim->CNT;
+            // and add overflow value manually
+            cnt += timerConfig[timIdx].runningTime + tim ->ARR + 1 - timerConfig[timIdx].forcedTimerOverflowSkipped;
+        } else {
+            // runningTime does match CNT captured
+            cnt += timerConfig[timIdx].runningTime;
+        }
+    }
+    return cnt;
+}
+
+// same as above, but assumes that timer has ARR=0xffff and no skip is performed
+// TODO - f303 timer allows reading overflow bit with count, so ATOMIC_BLOCK can be shorter
+uint32_t timerGetRunningTimeCNTfast(TIM_TypeDef *tim)
+{
+    int timIdx = lookupTimerIndex(tim);
+    uint32_t cnt;
+    ATOMIC_BLOCK_NB(NVIC_PRIO_TIMER) {
+        cnt = tim->CNT;
+        if(tim->SR & TIM_IT_Update) {
+            // there is unhandled update event pending. Read CNT again to be sure that value was read after overflow
+            cnt = tim->CNT;
+            // and add overflow value manually
+            cnt += timerConfig[timIdx].runningTime + 0x10000;
+        } else {
+            // runningTime does match CNT captured
+            cnt += timerConfig[timIdx].runningTime;
+        }
+    }
+    return cnt;
 }
 
 // old interface for PWM inputs. It should be replaced
@@ -391,7 +483,7 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResour
     unsigned timer = lookupTimerIndex(timHw->tim);
     if(timer >= USED_TIMER_COUNT)
         return;
-    if(irqPriority < timerInfo[timer].priority) {
+    if(irqPriority < timerConfig[timer].priority) {
         // it would be better to set priority in the end, but current startup sequence is not ready
         configTimeBase(usedTimers[timer], 0, 1);
         TIM_Cmd(usedTimers[timer],  ENABLE);
@@ -404,7 +496,7 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, channelResour
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
 
-        timerInfo[timer].priority = irqPriority;
+        timerConfig[timer].priority = irqPriority;
     }
 }
 
@@ -432,7 +524,7 @@ static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef *tim) {
         *chain = NULL;
     }
     // enable or disable IRQ
-    TIM_ITConfig(tim, TIM_IT_Update, cfg->overflowCallbackActive ? ENABLE : DISABLE);
+    TIM_ITConfig(tim, TIM_IT_Update, (cfg->overflowCallbackActive || cfg->runningTimeEnabled) ? ENABLE : DISABLE);
 }
 
 // config edge and overflow callback for channel. Try to avoid overflowCallback, it is a bit expensive
@@ -665,7 +757,6 @@ channelResources_t timerChGetUsedResources(const timerHardware_t *timHw)
 
 static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 {
-    uint16_t capture;
     unsigned tim_status;
     tim_status = tim->SR & tim->DIER;
 #if 1
@@ -677,21 +768,21 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
         tim->SR = mask;
         tim_status &= mask;
         switch(bit) {
-        case __builtin_clz(TIM_IT_Update):
-
-        	if(timerConfig->forcedOverflowTimerValue != 0){
-        		capture = timerConfig->forcedOverflowTimerValue - 1;
-        		timerConfig->forcedOverflowTimerValue = 0;
-        	} else {
-        		capture = tim->ARR;
-        	}
-
+        case __builtin_clz(TIM_IT_Update): {
+            uint16_t capture;
+            capture = tim->ARR;
+            // compensate skipped value if overflow was forced
+            capture -= timerConfig->forcedTimerOverflowSkipped;
+            timerConfig->forcedTimerOverflowSkipped = 0;
+            // accumulate total time timer is running
+            timerConfig->runningTime += capture + 1;
             timerOvrHandlerRec_t *cb = timerConfig->overflowCallbackActive;
             while(cb) {
                 cb->fn(cb, capture);
                 cb = cb->next;
             }
             break;
+        }
         case __builtin_clz(TIM_IT_CC1):
             timerConfig->edgeCallback[0]->fn(timerConfig->edgeCallback[0], tim->CCR1);
             break;
@@ -709,7 +800,12 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 #else
     if (tim_status & (int)TIM_IT_Update) {
         tim->SR = ~TIM_IT_Update;
-        capture = tim->ARR;
+        uint16_t capture = tim->ARR;
+        // compensate skipped value if overflow was forced
+        capture -= timerConfig->forcedTimerOverflowSkipped;
+        timerConfig->forcedTimerOverflowSkipped = 0;
+        // accumulate total time timer is running
+        timerConfig->runningTime += capture + 1;
         timerOvrHandlerRec_t *cb = timerConfig->overflowCallbackActive;
         while(cb) {
             cb->fn(cb, capture);
@@ -827,7 +923,7 @@ void timerInit(void)
         timerChannelInfo[i].resourcesUsed = 0;
     }
     for(int i = 0; i < USED_TIMER_COUNT; i++) {
-        timerInfo[i].priority = ~0;
+        timerConfig[i].priority = ~0;
     }
 #ifdef PINDEBUG
 // allocate debug pins here
@@ -838,6 +934,13 @@ void timerInit(void)
             timerChannelInfo[i].resourcesUsed = RESOURCE_OUTPUT;
         }
     }
+#endif
+#ifdef TIME_USE_TIMER
+    // initialize timer used for timing functions
+    configTimeBase(TIME_TIMER,  0, 1);
+    timerNVICConfigure(timerInfoConst[lookupTimerIndex(TIME_TIMER)].irq);
+    TIM_Cmd(TIME_TIMER, ENABLE);
+    timerCountRunningTime(TIME_TIMER, true, NVIC_PRIO_TIME_TIMER);
 #endif
 }
 
@@ -883,9 +986,64 @@ void timerForceOverflow(TIM_TypeDef *tim)
 
     ATOMIC_BLOCK(NVIC_PRIO_TIMER) {
         // Save the current count so that PPM reading will work on the same timer that was forced to overflow
-        timerConfig[timerIndex].forcedOverflowTimerValue = tim->CNT + 1;
-
-        // Force an overflow by setting the UG bit
-        tim->EGR |= TIM_EGR_UG;
+        uint16_t cnt=tim->CNT;
+        // restart only if previous overflow was already handled
+        // also don't modify forcedTimerOverflowSkipped
+        if(!(tim->SR & TIM_IT_Update)) {
+            timerConfig[timerIndex].forcedTimerOverflowSkipped = tim->ARR - cnt;
+            // Force an overflow by setting the UG bit
+            tim->EGR |= TIM_EGR_UG;
+        }
     }
 }
+
+#ifdef TIME_USE_TIMER
+
+uint32_t micros(void)
+{
+    return timerGetRunningTimeCNTfast(TIME_TIMER);
+}
+
+uint32_t millis(void)
+{
+    static uint32_t millisCounter = 0;
+    static uint32_t microsLast = 0;
+
+    uint32_t microsNow = micros();
+    uint32_t delta = microsNow - microsLast;
+
+    if(delta>1000) {
+        delta /= 1000;
+        millisCounter += delta;
+        microsLast += delta * 1000;
+    }
+    return millisCounter;
+}
+
+static int32_t cmp32(uint32_t a, uint32_t b)
+{
+    return a-b;
+}
+
+void delayMicroseconds(uint32_t us)
+{
+    uint32_t end = micros() + us;
+    while(cmp32(micros(), end) <  0);
+}
+
+void delay(uint32_t ms) {
+#if 0
+    // corect implementation, wait 60 seconds each time
+    while(ms > 60000) {
+        delayMicroseconds(60000 * 1000);
+        ms -= 60000 * 1000;
+    }
+#else
+    // something is terribly broken if delay is longer than 15s. Maybe we should even trigger alarm
+    if(ms > 15000)
+        ms = 15000;
+#endif
+    delayMicroseconds(ms * 1000);
+}
+
+#endif

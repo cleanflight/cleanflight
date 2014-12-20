@@ -36,7 +36,7 @@
 #endif
 
 #ifdef NAZE
-# define TIMER_QUEUE_CHANNEL 3  // PWM4, T2Ch4
+# define TIME_TIMER TIM2
 #endif
 
 #ifndef TIMER_QUEUE_CHANNEL

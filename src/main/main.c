@@ -154,9 +154,15 @@ void init(void)
 
     systemInit();
 
+    // timer must be initialized before any channel is allocated
+    // delay functions are dependent on timer (if not based on systick)
+    timerInit();
+
+    pinDebugInit();
+
     ledInit();
 
-    #ifdef SPEKTRUM_BIND
+#ifdef SPEKTRUM_BIND
     if (feature(FEATURE_RX_SERIAL)) {
         switch (masterConfig.rxConfig.serialrx_provider) {
             case SERIALRX_SPEKTRUM1024:
@@ -172,9 +178,6 @@ void init(void)
 
     delay(100);
 
-    pinDebugInit();
-
-    timerInit();  // timer must be initialized before any channel is allocated
 
 #ifdef BEEPER
     beeperConfig_t beeperConfig = {

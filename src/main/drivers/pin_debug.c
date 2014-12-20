@@ -1,3 +1,4 @@
+#include <stdbool.h>
 
 #include "platform.h"
 #include "common/utils.h"

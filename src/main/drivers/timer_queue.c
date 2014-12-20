@@ -19,18 +19,35 @@
 
 #define TIMERQUEUE_TIMER_FREQ 1000000
 
+#define TIMERQUEUE_EVENT_SOURCE_TIMCCR     1
+#define TIMERQUEUE_EVENT_SOURCE_SYSTICK    2
+
+#ifdef TIME_USE_TIMER
+# define TIMERQUEUE_EVENT_SOURCE TIMERQUEUE_EVENT_SOURCE_SYSTICK
+#else
+# define TIMERQUEUE_EVENT_SOURCE TIMERQUEUE_EVENT_SOURCE_TIMCCR
+#endif
+
 struct {
     timerQueueRec_t* heap[TIMERQUEUE_QUEUE_LEN];
     unsigned heapLen;
     timerQueueRec_t* isr[TIMERQUEUE_ISRQUEUE_LEN];
     unsigned isrHead, isrTail;
-    volatile timCCR_t *timCCR;
     volatile timCNT_t *timCNT;
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
+    volatile timCCR_t *timCCR;
     timerCCHandlerRec_t compareCb;
+#endif
     callbackRec_t callback;
 } timerQueue;
 
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
+unsigned sysTicksPerUs;
+#endif
+
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
 void timerQueue_TimerCompareEvent(timerCCHandlerRec_t* self_, uint16_t compare);
+#endif
 void timerQueue_CallbackEvent(callbackRec_t *cb);
 static void timerQueue_Run(void);
 static void timerQueue_EnqueuePending(void);
@@ -40,16 +57,26 @@ static void timerQueue_QueueDeleteIdx(unsigned parent);
 
 void timerQueue_Init(void)
 {
-    const timerHardware_t * timHw = &timerHardware[TIMER_QUEUE_CHANNEL];
     timerQueue.heapLen = 0;
     timerQueue.isrHead = timerQueue.isrTail = 0;
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
+    const timerHardware_t * timHw = &timerHardware[TIMER_QUEUE_CHANNEL];
     timerQueue.timCCR = timerChCCR(timHw);
     timerQueue.timCNT = timerChCNT(timHw);
     timerChInit(timHw, TYPE_TIMER, RESOURCE_TIMER, NVIC_PRIO_TIMER, TIMERQUEUE_TIMER_FREQ);
     timerChConfigOC(timHw, false, false);
     timerChCCHandlerInit(&timerQueue.compareCb, timerQueue_TimerCompareEvent);
-    callbackRegister(&timerQueue.callback, timerQueue_CallbackEvent);
     timerChConfigCallbacks(timHw, &timerQueue.compareCb, NULL);
+#elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
+    timerQueue.timCNT = &TIME_TIMER->CNT;
+    NVIC_SetPriority (SysTick_IRQn, NVIC_PRIO_SYSTICK >> (8 - __NVIC_PRIO_BITS));  /* set Priority for Systick Interrupt */
+    SysTick->LOAD  = 0xffffff;
+    SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;                    /* Enable SysTick IRQ and SysTick Timer */
+    sysTicksPerUs = SystemCoreClock / 1000000;
+#else
+# error "Unknown time source"
+#endif
+    callbackRegister(&timerQueue.callback, timerQueue_CallbackEvent);
 }
 
 // compare circular timestamps.
@@ -84,6 +111,7 @@ void timerQueue_Release(timerQueueRec_t *self)
 }
 
 // this will mark timer to be inserted into queue. Insertion will be done from callback
+// TODO - implemenet absolute time variant
 // this function can be safely called from interrupt
 void timerQueue_Start(timerQueueRec_t *self, int16_t timeout)
 {
@@ -150,6 +178,8 @@ static void timerQueue_QueueDeleteIdx(unsigned position)
     timerQueue.heap[parent - 1]->queuePos = parent;
 }
 
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
+
 void timerQueue_TimerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
 {
     UNUSED(self_);
@@ -157,6 +187,19 @@ void timerQueue_TimerCompareEvent(timerCCHandlerRec_t *self_, uint16_t compare)
     // Only trigger callback here. Queue operations may be slow
     callbackTrigger(&timerQueue.callback);
 }
+#endif
+
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
+// handle systick here
+// SysTick has same priority as callback, so we can invoke processing directly, avoiding callback trampoline
+void SysTick_Handler(void)
+{
+    timerQueue_EnqueuePending();
+    timerQueue_Run();
+}
+#else
+#error !
+#endif
 
 // callback function for timer queue
 // - enqueue new handlers
@@ -199,16 +242,33 @@ check_again:
         rec->callbackFn(rec);                                      // call regitered function
     }
     // replan timer
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR
     if(timerQueue.heapLen) {
         timerChClearCCFlag(&timerHardware[TIMER_QUEUE_CHANNEL]);   // honour compare match flag from here if interrupt is enabled later
         *timerQueue.timCCR = timerQueue.heap[0]->time;
         if(tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT) < 0) {
             // it is possible that we filled CCR too late. Run callbacks again immediately
-            // TODO - what happens when we write CNT into CCR regsiter?
             goto check_again;
         }
         timerChITConfig(&timerHardware[TIMER_QUEUE_CHANNEL], ENABLE);
     } else {
         timerChITConfig(&timerHardware[TIMER_QUEUE_CHANNEL], DISABLE);
     }
+#elif TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK
+    if(timerQueue.heapLen) {
+        int delta = tq_cmp_val(timerQueue.heap[0]->time, *timerQueue.timCNT);
+        if(delta <= 0)
+            goto check_again;
+        delta *= sysTicksPerUs;
+        if(delta > 0xffffff)          // bound to maximum reload value
+            delta = 0xffffff;
+        SysTick->LOAD = delta;
+        SysTick->VAL = 0;             // force reload
+        SysTick->LOAD = 0xffffff;     // reload big value after trigger so systick will trigger only once
+    } else {
+        SysTick->LOAD = 0xffffff;
+        SysTick->VAL = 0;             // systick after ~230ms
+    }
+#endif
+
 }
