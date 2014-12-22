@@ -48,10 +48,9 @@
 #include "flight/gps_conversion.h"
 #include "flight/navigation.h"
 
+#include "io/display.h"
 #include "io/gps.h"
 
-// FIXME quick hack to allow usage of the display in gps passthough mode.
-void updateDisplay(void);
 
 
 #ifdef GPS
@@ -984,6 +983,11 @@ gpsEnablePassthroughResult_e gpsEnablePassthrough(void)
     LED0_OFF;
     LED1_OFF;
 
+#ifdef DISPLAY
+    if (feature(FEATURE_DISPLAY)) {
+        displayShowFixedPage(PAGE_GPS);
+    }
+#endif
     char c;
     while(1) {
         if (serialTotalBytesWaiting(gpsPort)) {

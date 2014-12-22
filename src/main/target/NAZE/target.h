@@ -74,6 +74,8 @@
 #define USE_BARO_BMP085
 
 #define MAG
+#define USE_MAG_HMC5883
+
 #define SONAR
 #define BEEPER
 #define LED0
@@ -112,3 +114,8 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+
+#define SPEKTRUM_BIND
+// USART2, PA3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3

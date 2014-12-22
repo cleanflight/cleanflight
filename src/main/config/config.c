@@ -27,7 +27,10 @@
 #include "common/axis.h"
 #include "flight/flight.h"
 
+#include "drivers/sensor.h"
 #include "drivers/accgyro.h"
+#include "drivers/compass.h"
+
 #include "drivers/system.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
@@ -35,6 +38,7 @@
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
+#include "sensors/compass.h"
 
 #include "io/statusindicator.h"
 #include "sensors/acceleration.h"
@@ -109,7 +113,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 86;
+static const uint8_t EEPROM_CONF_VERSION = 88;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -132,15 +136,15 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->P8[PIDALT] = 50;
     pidProfile->I8[PIDALT] = 0;
     pidProfile->D8[PIDALT] = 0;
-    pidProfile->P8[PIDPOS] = 11; // POSHOLD_P * 100;
+    pidProfile->P8[PIDPOS] = 15; // POSHOLD_P * 100;
     pidProfile->I8[PIDPOS] = 0; // POSHOLD_I * 100;
     pidProfile->D8[PIDPOS] = 0;
-    pidProfile->P8[PIDPOSR] = 20; // POSHOLD_RATE_P * 10;
-    pidProfile->I8[PIDPOSR] = 8; // POSHOLD_RATE_I * 100;
-    pidProfile->D8[PIDPOSR] = 45; // POSHOLD_RATE_D * 1000;
-    pidProfile->P8[PIDNAVR] = 14; // NAV_P * 10;
-    pidProfile->I8[PIDNAVR] = 20; // NAV_I * 100;
-    pidProfile->D8[PIDNAVR] = 80; // NAV_D * 1000;
+    pidProfile->P8[PIDPOSR] = 34; // POSHOLD_RATE_P * 10;
+    pidProfile->I8[PIDPOSR] = 14; // POSHOLD_RATE_I * 100;
+    pidProfile->D8[PIDPOSR] = 53; // POSHOLD_RATE_D * 1000;
+    pidProfile->P8[PIDNAVR] = 25; // NAV_P * 10;
+    pidProfile->I8[PIDNAVR] = 33; // NAV_I * 100;
+    pidProfile->D8[PIDNAVR] = 83; // NAV_D * 1000;
     pidProfile->P8[PIDLEVEL] = 90;
     pidProfile->I8[PIDLEVEL] = 10;
     pidProfile->D8[PIDLEVEL] = 100;
@@ -221,6 +225,7 @@ void resetBatteryConfig(batteryConfig_t *batteryConfig)
     batteryConfig->vbatscale = VBAT_SCALE_DEFAULT;
     batteryConfig->vbatmaxcellvoltage = 43;
     batteryConfig->vbatmincellvoltage = 33;
+    batteryConfig->vbatwarningcellvoltage = 35;
     batteryConfig->currentMeterOffset = 0;
     batteryConfig->currentMeterScale = 400; // for Allegro ACS758LCB-100U (40mV/A)
     batteryConfig->batteryCapacity = 0;
@@ -334,11 +339,14 @@ static void resetConf(void)
     masterConfig.yaw_control_direction = 1;
     masterConfig.gyroConfig.gyroMovementCalibrationThreshold = 32;
 
+    masterConfig.mag_hardware = MAG_DEFAULT;     // default/autodetect
+
     resetBatteryConfig(&masterConfig.batteryConfig);
 
     resetTelemetryConfig(&masterConfig.telemetryConfig);
 
     masterConfig.rxConfig.serialrx_provider = 0;
+    masterConfig.rxConfig.spektrum_sat_bind = 0;
     masterConfig.rxConfig.midrc = 1500;
     masterConfig.rxConfig.mincheck = 1100;
     masterConfig.rxConfig.maxcheck = 1900;

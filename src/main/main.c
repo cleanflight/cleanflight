@@ -27,6 +27,7 @@
 #include "common/atomic.h"
 #include "drivers/nvic.h"
 
+#include "drivers/sensor.h"
 #include "drivers/system.h"
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
@@ -36,6 +37,7 @@
 #include "drivers/serial_softserial.h"
 #include "drivers/serial_uart.h"
 #include "drivers/accgyro.h"
+#include "drivers/compass.h"
 #include "drivers/pwm_mapping.h"
 #include "drivers/pwm_rx.h"
 #include "drivers/adc.h"
@@ -100,12 +102,12 @@ void rxInit(rxConfig_t *rxConfig, failsafe_t *failsafe);
 void beepcodeInit(failsafe_t *initialFailsafe);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
-bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int16_t magDeclinationFromConfig);
+bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
 void imuInit(void);
 void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
 void loop(void);
-
+void spektrumBind(rxConfig_t *rxConfig);
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c
@@ -124,7 +126,6 @@ void init(void)
 {
     uint8_t i;
     drv_pwm_config_t pwm_params;
-    drv_adc_config_t adc_params;
     bool sensorsOK = false;
 
     initPrintfSupport();
@@ -156,6 +157,20 @@ void init(void)
 #endif
 
     systemInit();
+
+#ifdef SPEKTRUM_BIND
+    if (feature(FEATURE_RX_SERIAL)) {
+        switch (masterConfig.rxConfig.serialrx_provider) {
+            case SERIALRX_SPEKTRUM1024:
+            case SERIALRX_SPEKTRUM2048:
+                // Spektrum satellite binding if enabled on startup.
+                // Must be called before that 100ms sleep so that we don't lose satellite's binding window after startup.
+                // The rest of Spektrum initialization will happen later - via spektrumInit()
+                spektrumBind(&masterConfig.rxConfig);
+                break;
+        }
+    }
+#endif
 
     delay(100);
 
@@ -209,6 +224,8 @@ void init(void)
 #endif
 
 #if !defined(SPARKY)
+    drv_adc_config_t adc_params;
+
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
     adc_params.enableExternal1 = false;
@@ -235,7 +252,7 @@ void init(void)
     // We have these sensors; SENSORS_SET defined in board.h depending on hardware platform
     sensorsSet(SENSORS_SET);
     // drop out any sensors that don't seem to work, init all the others. halt if gyro is dead.
-    sensorsOK = sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf, masterConfig.acc_hardware, currentProfile->mag_declination);
+    sensorsOK = sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf, masterConfig.acc_hardware, masterConfig.mag_hardware, currentProfile->mag_declination);
 
     // if gyro was not detected due to whatever reason, we give up now.
     if (!sensorsOK)

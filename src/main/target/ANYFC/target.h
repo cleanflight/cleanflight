@@ -52,6 +52,7 @@
 #define USE_GYRO_SPI_MPU6000
 
 #define MAG
+#define USE_MAG_HMC5883
 #define HMC5883_BUS I2C_DEVICE_INT
 #define BARO
 #define USE_BARO_MS5611

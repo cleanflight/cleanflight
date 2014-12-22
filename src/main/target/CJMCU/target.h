@@ -43,6 +43,7 @@
 #define USE_GYRO_MPU6050
 
 #define MAG
+#define USE_MAG_HMC5883
 
 #define BRUSHED_MOTORS
 
@@ -61,3 +62,8 @@
 #define SENSORS_SET (SENSOR_ACC | SENSOR_MAG)
 
 #define SERIAL_RX
+
+#define SPEKTRUM_BIND
+// USART2, PA3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3
