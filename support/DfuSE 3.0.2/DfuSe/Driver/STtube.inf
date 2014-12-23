@@ -1,0 +1,132 @@
+; STtube.inf
+
+[Version]
+Signature="$CHICAGO$"
+Class=USB
+ClassGUID={36FC9E60-C465-11CF-8056-444553540000}
+Provider=%ProviderName%
+DriverVer=11/09/2009,3.0.1.0
+CatalogFile=sttube.cat
+
+[ControlFlags]
+ExcludeFromSelect = *
+
+[Manufacturer]
+%MfgName%=Mfg0,NTx86,NTamd64
+
+[Mfg0]
+%USB\VID_0483&PID_DF11_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF11
+%USB\VID_0483&PID_DF12_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF12&MI_01
+%USB\VID_0483&PID_DF13_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF13&MI_01
+%USB\VID_0483&PID_FF03_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_FF03&MI_01
+%USB\VID_0483&PID_5722_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_5722
+%USB\VID_0483&PID_5721_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_5721
+
+[Mfg0.NTx86]
+%USB\VID_0483&PID_DF11_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF11
+%USB\VID_0483&PID_DF12_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF12&MI_01
+%USB\VID_0483&PID_DF13_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF13&MI_01
+%USB\VID_0483&PID_FF03_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_FF03&MI_01
+%USB\VID_0483&PID_5722_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_5722
+%USB\VID_0483&PID_5721_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_5721
+
+[Mfg0.NTamd64]
+%USB\VID_0483&PID_DF11_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF11
+%USB\VID_0483&PID_DF12_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF12&MI_01
+%USB\VID_0483&PID_DF13_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_DF13&MI_01
+%USB\VID_0483&PID_FF03_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_FF03&MI_01
+%USB\VID_0483&PID_5722_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_5722
+%USB\VID_0483&PID_5721_DeviceDesc%=STTub30.Device, USB\VID_0483&PID_5721
+
+[PreCopySection]
+HKR,,NoSetupUI,,1
+
+[DestinationDirs]
+STTub30.Files.Ext.NT      = 10,System32\Drivers
+;STTub30.Files.Ext.NTx86 = 10,System32\Drivers
+;STTub30.Files.Ext.amd64 = 10,System32\Drivers
+
+[SourceDisksNames]
+1="ST Tube Driver 3.0 disk",,,\x86
+
+[SourceDisksFiles]
+STTub30.sys=1,
+
+[SourceDisksNames.x86]
+1="ST Tube Driver 3.0 disk",,,\x86
+
+[SourceDisksFiles.x86]
+STTub30.sys=1,
+
+[SourceDisksNames.amd64]
+1="ST Tube Driver 3.0 disk",,,\x64
+
+[SourceDisksFiles.amd64]
+STTub30.sys=1,
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; WINDOWS 98
+
+[STTub30.Device]
+CopyFiles=STTub30.Files.Ext
+AddReg=STTub30.AddReg, STTub30.AddLicences
+
+[STTub30.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,STTub30.sys
+HKR, "Parameters", "BreakOnEntry", FLG_ADDREG_TYPE_DWORD, 1
+
+[STTub30.Files.Ext]
+STTub30.sys
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; WINDOWS 2000
+
+[STTub30.Device.NT]
+CopyFiles=STTub30.Files.Ext.NT
+
+[STTub30.Files.Ext.NT]
+STTub30.sys
+
+[STTub30.Device.NT.Services]
+Addservice = STTub30, 0x00000002, STTub30.AddService
+
+[STTub30.AddService]
+DisplayName    = %SvcDesc%
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %10%\System32\Drivers\STTub30.sys
+;LoadOrderGroup = Base
+AddReg=STTub30.AddLicences
+
+[STTub30.AddLicences]
+; LICENCE INFO 
+; 0483_XXXX
+; HKR,38d2eab3dd072a1c,"{3fe809ab-fb91-4cb5-a643-69670d52366e}",, "" 
+; 0483_DF11
+HKR,6f72a98be4e1edad,"{3fe809ab-fb91-4cb5-a643-69670d52366e}",, "" 
+; 0483_DF12
+HKR,80ed17d4d44886bb,"{3fe809ab-fb91-4cb5-a643-69670d52366e}",, ""
+; 0483_DF13
+HKR,62b6f533f0031981,"{3fe809ab-fb91-4cb5-a643-69670d52366e}",, ""
+; 0483_FF03
+HKR,d083fc290a34aa18,"{CB979912-5029-420a-AEB1-34FC0A7D5726}",, ""
+; 0483_5722
+HKR,8a9924f713390cca,"{03DFD020-2828-11d5-95D7-0050041B1E9F}",, ""
+; 0483_5721
+HKR,dee8f141f107f6d3,"{03DFD020-2828-11d5-95D7-0050041B1E9F}",, ""
+;---------------------------------------------------------------;
+
+[Strings]
+ProviderName="STMicroelectronics"
+MfgName="STMicroelectronics"
+
+USB\VID_0483&PID_DF11_DeviceDesc="STM Device in DFU Mode"
+USB\VID_0483&PID_DF12_DeviceDesc="µPSD - DFU STMicroelectronics Extension Application Demo"
+USB\VID_0483&PID_DF13_DeviceDesc="STR7 - DFU STMicroelectronics Extension Application Demo"
+USB\VID_0483&PID_FF03_DeviceDesc="ST7 USB Low Speed - DFU STMicroelectronics Extension Application Demo"
+USB\VID_0483&PID_5722_DeviceDesc="STMicroelectronics Bulk Demo"
+USB\VID_0483&PID_5721_DeviceDesc="STMicroelectronics Interrupt Demo"
+
+SvcDesc="USB Driver for Tube device v3.0.1.0"

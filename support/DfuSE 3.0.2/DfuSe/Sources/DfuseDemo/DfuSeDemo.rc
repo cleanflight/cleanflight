@@ -1,0 +1,423 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 24
+//
+
+1 24 MOVEABLE PURE 
+BEGIN
+    0x3f3c, 0x6d78, 0x206c, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3122, 0x302e, 
+    0x2022, 0x6e65, 0x6f63, 0x6964, 0x676e, 0x223d, 0x5455, 0x2d46, 0x2238, 
+    0x7320, 0x6174, 0x646e, 0x6c61, 0x6e6f, 0x3d65, 0x7922, 0x7365, 0x3f22, 
+    0x0d3e, 0x0d0a, 0x3c0a, 0x7361, 0x6573, 0x626d, 0x796c, 0x7820, 0x6c6d, 
+    0x736e, 0x223d, 0x7275, 0x3a6e, 0x6373, 0x6568, 0x616d, 0x2d73, 0x696d, 
+    0x7263, 0x736f, 0x666f, 0x2d74, 0x6f63, 0x3a6d, 0x7361, 0x2e6d, 0x3176, 
+    0x2022, 0x616d, 0x696e, 0x6566, 0x7473, 0x6556, 0x7372, 0x6f69, 0x3d6e, 
+    0x3122, 0x302e, 0x3e22, 0x0a0d, 0x2020, 0x613c, 0x7373, 0x6d65, 0x6c62, 
+    0x4979, 0x6564, 0x746e, 0x7469, 0x0d79, 0x200a, 0x0920, 0x7974, 0x6570, 
+    0x223d, 0x6977, 0x336e, 0x2232, 0x0a0d, 0x2020, 0x2020, 0x616e, 0x656d, 
+    0x223d, 0x6544, 0x706c, 0x6968, 0x7041, 0x6c70, 0x6369, 0x7461, 0x6f69, 
+    0x226e, 0x0a0d, 0x2020, 0x2020, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3122, 
+    0x302e, 0x302e, 0x302e, 0x2022, 0x0a0d, 0x2020, 0x7009, 0x6f72, 0x6563, 
+    0x7373, 0x726f, 0x7241, 0x6863, 0x7469, 0x6365, 0x7574, 0x6572, 0x223d, 
+    0x222a, 0x3e2f, 0x0a0d, 0x2020, 0x643c, 0x7065, 0x6e65, 0x6564, 0x636e, 
+    0x3e79, 0x0a0d, 0x2020, 0x2020, 0x643c, 0x7065, 0x6e65, 0x6564, 0x746e, 
+    0x7341, 0x6573, 0x626d, 0x796c, 0x0d3e, 0x200a, 0x2020, 0x2020, 0x3c20, 
+    0x7361, 0x6573, 0x626d, 0x796c, 0x6449, 0x6e65, 0x6974, 0x7974, 0x0a0d, 
+    0x2020, 0x2020, 0x2020, 0x2020, 0x7974, 0x6570, 0x223d, 0x6977, 0x336e, 
+    0x2232, 0x0a0d, 0x2020, 0x2020, 0x2020, 0x2020, 0x616e, 0x656d, 0x223d, 
+    0x694d, 0x7263, 0x736f, 0x666f, 0x2e74, 0x6957, 0x646e, 0x776f, 0x2e73, 
+    0x6f43, 0x6d6d, 0x6e6f, 0x432d, 0x6e6f, 0x7274, 0x6c6f, 0x2273, 0x0a0d, 
+    0x2020, 0x2020, 0x2020, 0x2020, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3622, 
+    0x302e, 0x302e, 0x302e, 0x0d22, 0x200a, 0x2020, 0x2020, 0x2020, 0x7020, 
+    0x6275, 0x696c, 0x4b63, 0x7965, 0x6f54, 0x656b, 0x3d6e, 0x3622, 0x3935, 
+    0x6235, 0x3436, 0x3431, 0x6334, 0x6663, 0x6431, 0x2266, 0x0a0d, 0x2020, 
+    0x2020, 0x2020, 0x2020, 0x616c, 0x676e, 0x6175, 0x6567, 0x223d, 0x222a, 
+    0x0a0d, 0x2020, 0x2020, 0x2020, 0x2020, 0x7270, 0x636f, 0x7365, 0x6f73, 
+    0x4172, 0x6372, 0x6968, 0x6574, 0x7463, 0x7275, 0x3d65, 0x2a22, 0x2f22, 
+    0x0d3e, 0x200a, 0x2020, 0x3c20, 0x642f, 0x7065, 0x6e65, 0x6564, 0x746e, 
+    0x7341, 0x6573, 0x626d, 0x796c, 0x0d3e, 0x200a, 0x3c20, 0x642f, 0x7065, 
+    0x6e65, 0x6564, 0x636e, 0x3e79, 0x0a0d, 0x2f3c, 0x7361, 0x6573, 0x626d, 
+    0x796c, 0x0d3e
+END
+
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DfuSeDemo_DIALOG DIALOGEX 0, 0, 375, 309
+STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_VISIBLE | 
+    WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT | WS_EX_APPWINDOW
+CAPTION "DfuSe Demo (v3.0.2)"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "Available DFU and compatible HID Devices",IDC_STATIC,5,
+                    6,365,73
+    COMBOBOX        IDC_COMBODEVICES,11,16,187,71,CBS_DROPDOWNLIST | 
+                    CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Enter &DFU mode/HID detach",IDC_BUTTONENTERDFU,11,63,
+                    102,14,WS_DISABLED
+    PUSHBUTTON      "&Leave DFU mode",IDC_BUTTONENTERAPP,117,63,82,14,
+                    WS_DISABLED
+    EDITTEXT        IDC_EDITDEVVID2,247,24,29,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDITDEVPID2,247,40,29,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDITDEVBCD2,247,56,29,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDITDEVVID,327,25,29,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDITDEVPID,327,40,29,14,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_EDITDEVBCD,327,56,29,14,ES_AUTOHSCROLL | ES_READONLY
+    GROUPBOX        "Actions",IDC_STATIC,5,82,365,192
+    CONTROL         "List1",IDC_LISTTARGETS,"SysListView32",LVS_REPORT | 
+                    LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | WS_BORDER | 
+                    WS_TABSTOP,73,93,291,56
+    GROUPBOX        "Upload Action",IDC_STATIC,11,154,137,50
+    PUSHBUTTON      "&Choose...",IDC_BUTTONUPCHOOSE,33,186,50,14
+    PUSHBUTTON      "&Upload",IDC_BUTTONUPLOAD,93,186,50,14,WS_DISABLED
+    GROUPBOX        "Upgrade or Verify Action",IDC_STATIC,153,154,213,115
+    PUSHBUTTON      "Ch&oose...",IDC_BUTTONDOWNCHOOSE,162,251,50,14
+    PUSHBUTTON      "Up&grade",IDC_BUTTONUPGRADE,237,251,50,14,WS_DISABLED
+    PUSHBUTTON      "&Verify",IDC_BUTTONVERIFY,309,251,50,14,WS_DISABLED
+    EDITTEXT        IDC_EDITFILEVID,199,175,35,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDITFILEPID,199,190,35,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDITFILEBCD,199,205,35,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    LISTBOX         IDC_LISTFILETARGETS,236,184,127,35,LBS_USETABSTOPS | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "&Abort",IDC_BUTTONABORT,5,294,50,14,WS_DISABLED
+    PUSHBUTTON      "&Quit",IDCANCEL,320,294,50,14
+    LTEXT           "Vendor ID:",IDC_STATIC,207,27,38,8
+    LTEXT           "Procuct ID:",IDC_STATIC,207,43,38,8
+    LTEXT           "Version:",IDC_STATIC,215,57,28,8
+    LTEXT           "Select &Target(s):",IDC_STATIC,13,93,55,8
+    LTEXT           "File:",IDC_STATIC,21,166,14,8
+    LTEXT           "File:",IDC_STATIC,160,165,16,8
+    LTEXT           "Vendor ID:",IDC_STATIC,161,178,38,8
+    LTEXT           "Procuct ID:",IDC_STATIC,159,193,38,8
+    LTEXT           "Version:",IDC_STATIC,168,208,27,8
+    LTEXT           "Targets in file:",IDC_STATIC,242,175,45,8
+    LTEXT           "",IDC_STATICUPFILE,37,166,103,19
+    LISTBOX         IDC_LISTDFUDEVS,13,104,8,40,LBS_NOINTEGRALHEIGHT | NOT 
+                    WS_VISIBLE | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "",IDC_STATICDOWNFILE,203,165,155,8
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",PBS_SMOOTH | 
+                    WS_BORDER,5,278,365,14,WS_EX_DLGMODALFRAME
+    GROUPBOX        "DFU Mode:",IDC_STATIC,285,15,77,61
+    LTEXT           "Vendor ID:",IDC_STATIC,289,27,35,8
+    LTEXT           "Procuct ID:",IDC_STATIC,289,43,36,8
+    LTEXT           "Version:",IDC_STATIC,295,57,29,8
+    GROUPBOX        "Application Mode:",IDC_STATIC,203,15,76,61
+    CHECKBOX        "",IDC_CHECKUPLOAD,12,32,12,10,BS_FLAT | WS_DISABLED | 
+                    NOT WS_TABSTOP
+    CHECKBOX        "",IDC_CHECKDNLOAD,12,42,12,10,BS_FLAT | WS_DISABLED | 
+                    NOT WS_TABSTOP
+    CHECKBOX        "",IDC_CHECKCANDETACH,12,52,12,10,BS_FLAT | WS_DISABLED | 
+                    NOT WS_TABSTOP
+    CHECKBOX        "",IDC_CHECKMANIFTOL,107,32,11,10,BS_FLAT | WS_DISABLED | 
+                    NOT WS_TABSTOP
+    CHECKBOX        "",IDC_CHECKUPLOADACC,107,42,11,10,BS_FLAT | WS_DISABLED | 
+                    NOT WS_TABSTOP
+    CONTROL         "Optimize Upgrade duration (Remove some FFs)",
+                    IDC_CHECKUPGRADEOPTIMIZE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,161,236,164,10
+    GROUPBOX        "Transferred data size",IDC_STATIC,11,205,137,38
+    LTEXT           "00:00:00",IDC_TIME_DURATION,68,255,35,9
+    CONTROL         "Verify after download",IDC_VERIFY,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,161,225,82,10
+    LTEXT           "0 KB",IDC_DATA_SIZE,18,219,122,20
+    GROUPBOX        "Operation duration",IDC_STATIC,11,244,137,25
+    LTEXT           "Supports Upload",IDC_STATIC,25,33,54,8
+    LTEXT           "Supports Download",IDC_STATIC,25,43,63,8
+    LTEXT           "Can Detach",IDC_STATIC,25,53,39,8
+    LTEXT           "Manifestation tolerant",IDC_STATIC,120,33,68,8
+    LTEXT           "Accelerated Upload (ST)",IDC_STATIC,120,43,79,8
+END
+
+IDD_DfuSeMapping_DIALOG DIALOG DISCARDABLE  0, 0, 378, 142
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Mapping"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDCANCEL,321,121,50,14
+    CONTROL         "List1",IDC_LISTMAPPING,"SysListView32",LVS_REPORT | 
+                    LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | WS_BORDER | 
+                    WS_TABSTOP,7,7,364,109
+    LTEXT           "Note for Type: (R)eadable, (W)riteable, (E)rasable",
+                    IDC_STATIC,7,127,156,8
+END
+
+IDD_OPTION_BYTE_DIALOG DIALOG DISCARDABLE  0, 0, 278, 185
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Edit option bytes - STM32F1 series"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "Apply",ID_APPLY,163,164,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,221,164,50,14
+    GROUPBOX        "Read Protection option byte",IDC_STATIC,7,7,264,32
+    LTEXT           "RDP",IDC_STATIC,15,21,16,8
+    LTEXT           "(h)",IDC_STATIC,42,21,9,8
+    EDITTEXT        IDC_RDP_EDIT,53,18,28,14,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    ES_READONLY
+    CONTROL         "Read out protection enabled",
+                    IDC_READ_OUT_PROTECTION_ENABLED_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,87,20,106,10
+    GROUPBOX        "User option byte",IDC_STATIC,7,41,264,32
+    LTEXT           "USER",IDC_STATIC,15,55,21,8
+    LTEXT           "(h)",IDC_STATIC,42,55,9,8
+    EDITTEXT        IDC_USER_EDIT,53,52,28,14,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    ES_READONLY
+    CONTROL         "nRST_STDBY",IDC_NRST_STDBY_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,87,55,63,10
+    CONTROL         "nRST_STOP",IDC_NRST_STOP_CHECK2,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,151,55,58,10
+    CONTROL         "WDG_SW",IDC_WDG_SW,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,217,55,50,10
+    GROUPBOX        "Bytes for user data storage",IDC_STATIC,7,76,264,32
+    LTEXT           "Data 0",IDC_STATIC,15,90,22,8
+    LTEXT           "(h)",IDC_STATIC,42,90,9,8
+    EDITTEXT        IDC_DATA0_EDIT,53,88,28,14,ES_UPPERCASE | ES_AUTOHSCROLL
+    LTEXT           "Data 1",IDC_STATIC,87,90,22,8
+    LTEXT           "(h)",IDC_STATIC,114,90,9,8
+    EDITTEXT        IDC_DATA1_EDIT,125,88,28,14,ES_UPPERCASE | 
+                    ES_AUTOHSCROLL
+    GROUPBOX        "Flash memory write protection option byte",IDC_STATIC,7,
+                    111,264,50
+    LTEXT           "WRP0",IDC_STATIC,15,125,22,8
+    LTEXT           "(h)",IDC_STATIC,42,125,9,8
+    EDITTEXT        IDC_WRP0_EDIT,53,123,28,14,ES_UPPERCASE | ES_AUTOHSCROLL
+    LTEXT           "WRP1",IDC_STATIC,87,125,22,8
+    LTEXT           "(h)",IDC_STATIC,114,125,9,8
+    EDITTEXT        IDC_WRP1_EDIT,125,123,28,14,ES_UPPERCASE | 
+                    ES_AUTOHSCROLL
+    LTEXT           "WRP2",IDC_STATIC,15,142,22,8
+    LTEXT           "(h)",IDC_STATIC,42,142,9,8
+    EDITTEXT        IDC_WRP2_EDIT,53,140,28,14,ES_UPPERCASE | ES_AUTOHSCROLL
+    LTEXT           "WRP3",IDC_STATIC,87,142,22,8
+    LTEXT           "(h)",IDC_STATIC,114,142,9,8
+    EDITTEXT        IDC_WRP3_EDIT,125,140,28,14,ES_UPPERCASE | 
+                    ES_AUTOHSCROLL
+END
+
+IDD_OPTION_BYTE_F2_DIALOG DIALOG DISCARDABLE  0, 0, 278, 185
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Edit option bytes - STM32F2 series"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "Apply",ID_APPLY,163,164,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,221,164,50,14
+    GROUPBOX        "Read Protection option byte",IDC_STATIC,7,7,264,44
+    LTEXT           "RDP",IDC_STATIC,15,21,16,8
+    LTEXT           "(h)",IDC_STATIC,40,21,9,8
+    EDITTEXT        IDC_RDP_EDIT,53,20,28,14,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    ES_READONLY
+    CONTROL         "Level 0 : No protection",
+                    IDC_READ_OUT_PROTECTION_ENABLED_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,87,17,88,10
+    CONTROL         "Level 1 : Memories protection",
+                    IDC_READ_OUT_PROTECTION_ENABLED_CHECK2,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,87,27,109,10
+    CONTROL         "Level 2 : Device protection",
+                    IDC_READ_OUT_PROTECTION_ENABLED_CHECK3,"Button",
+                    BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED | 
+                    WS_TABSTOP,87,37,101,10
+    GROUPBOX        "User option byte",IDC_STATIC,7,52,264,70
+    LTEXT           "USER",IDC_STATIC,15,69,21,8
+    LTEXT           "(h)",IDC_STATIC,42,69,9,8
+    EDITTEXT        IDC_USER_EDIT,53,66,28,14,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    ES_READONLY
+    CONTROL         "nRST_STDBY",IDC_NRST_STDBY_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,87,69,63,10
+    CONTROL         "nRST_STOP",IDC_NRST_STOP_CHECK2,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,151,69,58,10
+    CONTROL         "WDG_SW",IDC_WDG_SW,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,217,69,50,10
+    CONTROL         "",IDC_BOR_LEV1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,87,
+                    82,11,10
+    CONTROL         "",IDC_BOR_LEV0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,99,
+                    82,14,10
+    LTEXT           "00 : BOR Level3 - 2.7V to 3.6V",IDC_STATIC,117,83,135,9
+    LTEXT           "01 : BOR Level2 - 2.4V to 2.7V",IDC_STATIC,117,92,135,9
+    LTEXT           "10 : BOR Level1 - 2.1V to 2.4V",IDC_STATIC,117,101,135,
+                    9
+    LTEXT           "11 : BOR OFF     - 1.8V to 2.1V",IDC_STATIC,117,110,135,
+                    9
+    GROUPBOX        "Flash memory write protection option bytes",IDC_STATIC,
+                    7,127,264,33
+    LTEXT           "nWRP",IDC_STATIC,15,143,22,8
+    LTEXT           "(h)",IDC_STATIC,42,143,9,8
+    EDITTEXT        IDC_WRP_EDIT,53,141,28,14,ES_UPPERCASE | ES_AUTOHSCROLL
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 3,0,2,0
+ PRODUCTVERSION 3,0,2,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "STMicroelectronics\0"
+            VALUE "FileDescription", "DfuSe Demo\0"
+            VALUE "FileVersion", "3, 0, 2, 0\0"
+            VALUE "InternalName", "DfuSeDemo\0"
+            VALUE "LegalCopyright", "Copyright © 2011\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "DfuSeDemo.exe\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "DfuSeDemo Application\0"
+            VALUE "ProductVersion", "3, 0, 2, 0\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "DfuSe Demo.ico"
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// French (France) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
+#ifdef _WIN32
+LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\DfuSeDemo.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // French (France) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\DfuSeDemo.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

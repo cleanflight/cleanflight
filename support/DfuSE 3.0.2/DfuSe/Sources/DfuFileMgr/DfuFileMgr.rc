@@ -1,0 +1,336 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RT_MANIFEST
+//
+
+1 RT_MANIFEST 
+BEGIN
+    0x3f3c, 0x6d78, 0x206c, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3122, 0x302e, 
+    0x2022, 0x6e65, 0x6f63, 0x6964, 0x676e, 0x223d, 0x5455, 0x2d46, 0x2238, 
+    0x7320, 0x6174, 0x646e, 0x6c61, 0x6e6f, 0x3d65, 0x7922, 0x7365, 0x3f22, 
+    0x0d3e, 0x0d0a, 0x3c0a, 0x7361, 0x6573, 0x626d, 0x796c, 0x7820, 0x6c6d, 
+    0x736e, 0x223d, 0x7275, 0x3a6e, 0x6373, 0x6568, 0x616d, 0x2d73, 0x696d, 
+    0x7263, 0x736f, 0x666f, 0x2d74, 0x6f63, 0x3a6d, 0x7361, 0x2e6d, 0x3176, 
+    0x2022, 0x616d, 0x696e, 0x6566, 0x7473, 0x6556, 0x7372, 0x6f69, 0x3d6e, 
+    0x3122, 0x302e, 0x3e22, 0x0a0d, 0x2020, 0x613c, 0x7373, 0x6d65, 0x6c62, 
+    0x4979, 0x6564, 0x746e, 0x7469, 0x0d79, 0x200a, 0x0920, 0x7974, 0x6570, 
+    0x223d, 0x6977, 0x336e, 0x2232, 0x0a0d, 0x2020, 0x2020, 0x616e, 0x656d, 
+    0x223d, 0x6544, 0x706c, 0x6968, 0x7041, 0x6c70, 0x6369, 0x7461, 0x6f69, 
+    0x226e, 0x0a0d, 0x2020, 0x2020, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3122, 
+    0x302e, 0x302e, 0x302e, 0x2022, 0x0a0d, 0x2020, 0x7009, 0x6f72, 0x6563, 
+    0x7373, 0x726f, 0x7241, 0x6863, 0x7469, 0x6365, 0x7574, 0x6572, 0x223d, 
+    0x222a, 0x3e2f, 0x0a0d, 0x2020, 0x643c, 0x7065, 0x6e65, 0x6564, 0x636e, 
+    0x3e79, 0x0a0d, 0x2020, 0x2020, 0x643c, 0x7065, 0x6e65, 0x6564, 0x746e, 
+    0x7341, 0x6573, 0x626d, 0x796c, 0x0d3e, 0x200a, 0x2020, 0x2020, 0x3c20, 
+    0x7361, 0x6573, 0x626d, 0x796c, 0x6449, 0x6e65, 0x6974, 0x7974, 0x0a0d, 
+    0x2020, 0x2020, 0x2020, 0x2020, 0x7974, 0x6570, 0x223d, 0x6977, 0x336e, 
+    0x2232, 0x0a0d, 0x2020, 0x2020, 0x2020, 0x2020, 0x616e, 0x656d, 0x223d, 
+    0x694d, 0x7263, 0x736f, 0x666f, 0x2e74, 0x6957, 0x646e, 0x776f, 0x2e73, 
+    0x6f43, 0x6d6d, 0x6e6f, 0x432d, 0x6e6f, 0x7274, 0x6c6f, 0x2273, 0x0a0d, 
+    0x2020, 0x2020, 0x2020, 0x2020, 0x6576, 0x7372, 0x6f69, 0x3d6e, 0x3622, 
+    0x302e, 0x302e, 0x302e, 0x0d22, 0x200a, 0x2020, 0x2020, 0x2020, 0x7020, 
+    0x6275, 0x696c, 0x4b63, 0x7965, 0x6f54, 0x656b, 0x3d6e, 0x3622, 0x3935, 
+    0x6235, 0x3436, 0x3431, 0x6334, 0x6663, 0x6431, 0x2266, 0x0a0d, 0x2020, 
+    0x2020, 0x2020, 0x2020, 0x616c, 0x676e, 0x6175, 0x6567, 0x223d, 0x222a, 
+    0x0a0d, 0x2020, 0x2020, 0x2020, 0x2020, 0x7270, 0x636f, 0x7365, 0x6f73, 
+    0x4172, 0x6372, 0x6968, 0x6574, 0x7463, 0x7275, 0x3d65, 0x2a22, 0x2f22, 
+    0x0d3e, 0x200a, 0x2020, 0x3c20, 0x642f, 0x7065, 0x6e65, 0x6564, 0x746e, 
+    0x7341, 0x6573, 0x626d, 0x796c, 0x0d3e, 0x200a, 0x3c20, 0x642f, 0x7065, 
+    0x6e65, 0x6564, 0x636e, 0x3e79, 0x0a0d, 0x2f3c, 0x7361, 0x6573, 0x626d, 
+    0x796c, 0x0d3e
+END
+
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DfuFileMgrGenerate_DIALOG DIALOGEX 0, 0, 357, 137
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT | WS_EX_APPWINDOW
+CAPTION "DFU File Manager (v3.0.2) - Generation"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_EDITVID,63,28,35,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDITPID,63,48,35,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDITVERSION,63,68,35,14,ES_AUTOHSCROLL
+    LISTBOX         IDC_LISTFILES,117,13,231,32,LBS_USETABSTOPS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDITALTSET,181,56,29,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "&S19 or Hex...",IDC_BUTTONADDS19HEX,221,56,58,14
+    PUSHBUTTON      "&Multi BIN...",IDC_BUTTONADDBIN,281,56,61,14
+    PUSHBUTTON      "&Delete selected Image",IDC_BUTTONDELETEIMAGE,242,98,102,14
+    DEFPUSHBUTTON   "&Generate...",IDC_BUTTONGENERATE,245,120,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,302,120,50,14
+    GROUPBOX        "Device",IDC_STATIC,5,2,103,115
+    LTEXT           "Vendor ID 0x",IDC_STATIC,18,31,42,8
+    LTEXT           "Product ID 0x",IDC_STATIC,16,51,44,8
+    LTEXT           "Version 0x",IDC_STATIC,26,71,34,8
+    GROUPBOX        "Images",IDC_STATIC,113,2,240,116
+    LTEXT           "Target ID:",IDC_STATIC,144,60,33,8
+    GROUPBOX        "Injection",IDC_STATIC,117,48,231,43
+    GROUPBOX        "Deletion",IDC_STATIC,117,93,231,21
+    LTEXT           "Target Name:",IDC_STATIC,132,75,44,8
+    EDITTEXT        IDC_EDITTRGTNAME,181,73,161,14,ES_AUTOHSCROLL
+END
+
+IDD_DfuFileMgrExtract_DIALOG DIALOGEX 0, 0, 347, 116
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT
+CAPTION "DFU File Manager (v3.0.2) - Extract"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_EDITVID,58,26,32,14,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDITPID,58,45,32,14,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDITVERSION,58,64,32,14,ES_AUTOHSCROLL | WS_DISABLED
+    LISTBOX         IDC_LISTFILES,103,30,237,44,LBS_USETABSTOPS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+    CONTROL         "s19",IDC_RADIOS19,"Button",BS_AUTORADIOBUTTON | WS_GROUP,111,84,27,10
+    CONTROL         "Hex",IDC_RADIOHEX,"Button",BS_AUTORADIOBUTTON,145,84,29,10
+    CONTROL         "Multiple Bin",IDC_RADIOMULTIBIN,"Button",BS_AUTORADIOBUTTON,178,84,52,10
+    PUSHBUTTON      "&Extract",IDC_BUTTONEXTRACT,240,100,50,14
+    DEFPUSHBUTTON   "...",IDC_BUTTONOPEN,321,12,20,15
+    PUSHBUTTON      "&Cancel",IDCANCEL,295,100,50,14
+    GROUPBOX        "Device",IDC_STATIC,2,2,93,97
+    LTEXT           "Vendor ID 0x",IDC_STATIC,11,28,42,8
+    LTEXT           "Product ID 0x",IDC_STATIC,9,47,44,8
+    LTEXT           "Version 0x",IDC_STATIC,19,66,34,8
+    GROUPBOX        "Images",IDC_STATIC,98,2,247,98
+    GROUPBOX        "Extraction",IDC_STATIC,103,75,237,22
+    EDITTEXT        IDC_DFU_FILE,103,12,217,15,ES_AUTOHSCROLL | ES_READONLY
+END
+
+IDD_DfuFileMgrMultiBin_DIALOG DIALOGEX 0, 0, 247, 116
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT
+CAPTION "Multi Bin injection..."
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "&OK",IDOK,138,100,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,193,100,50,14
+    LTEXT           "File:",IDC_STATIC,5,8,14,8
+    EDITTEXT        IDC_EDITFILE,43,6,179,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "...",IDC_BUTTONFILE,224,6,19,14
+    DEFPUSHBUTTON   "&Add to list >>",IDC_BUTTONADD,138,25,50,14,BS_MULTILINE
+    PUSHBUTTON      "&Delete",IDC_BUTTONDELETE,193,25,50,14
+    LISTBOX         IDC_LISTBIN,3,43,240,55,LBS_SORT | LBS_USETABSTOPS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+    LTEXT           "Address 0x",IDC_STATIC,5,28,36,8
+    EDITTEXT        IDC_EDITSTARTADDR,43,25,57,14,ES_AUTOHSCROLL
+END
+
+IDD_DfuFileMgrWhatToDo_DIALOG DIALOGEX 0, 0, 223, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CLIENTEDGE | WS_EX_CONTROLPARENT
+CAPTION "DFU File Manager - Want to do (v3.0.2)"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "&OK",IDOK,171,45,50,14
+    CONTROL         "I want to GENERATE a DFU file from S19, HEX or BIN files",IDC_RADIOCHOICE,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,9,13,203,10
+    CONTROL         "I want to EXTRACT S19, HEX or BIN files from a DFU one.",IDC_RADIOCHOICE2,
+                    "Button",BS_AUTORADIOBUTTON,9,26,202,10
+    GROUPBOX        "Choose your action:",IDC_STATIC,2,2,219,41
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 3,0,1,0
+ PRODUCTVERSION 3,0,1,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "STMicroelectronics"
+            VALUE "FileDescription", "DFU File Manager"
+            VALUE "FileVersion", "3, 0, 1, 0"
+            VALUE "InternalName", "DFUFileMgr"
+            VALUE "LegalCopyright", "Copyright © 2010"
+            VALUE "OriginalFilename", "DFUFileMgr.exe"
+            VALUE "ProductName", "DFUFileMgr Application"
+            VALUE "ProductVersion", "3, 0, 1, 0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_DfuFileMgrGenerate_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 350
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 130
+    END
+
+    IDD_DfuFileMgrExtract_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 340
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 109
+    END
+
+    IDD_DfuFileMgrMultiBin_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 240
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 109
+    END
+
+    IDD_DfuFileMgrWhatToDo_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 216
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "DFU File Manager.ico"
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// French (France) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_FRA)
+#ifdef _WIN32
+LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\DfuFileMgr.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // French (France) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\DfuFileMgr.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

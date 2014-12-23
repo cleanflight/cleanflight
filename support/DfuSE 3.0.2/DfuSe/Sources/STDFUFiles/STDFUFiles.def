@@ -1,0 +1,26 @@
+; STDFUFILES.def : Declares the module parameters for the DLL.
+
+LIBRARY      "STDFUFILES"
+DESCRIPTION  'STDFUFILES Windows Dynamic Link Library'
+
+EXPORTS
+  STDFUFILES_OpenExistingDFUFile
+  STDFUFILES_CreateNewDFUFile
+  STDFUFILES_CloseDFUFile
+  STDFUFILES_AppendImageToDFUFile
+  STDFUFILES_ReadImageFromDFUFile
+  STDFUFILES_CreateImage
+  STDFUFILES_CreateImageFromMapping
+  STDFUFILES_DuplicateImage
+  STDFUFILES_FilterImageForOperation
+  STDFUFILES_DestroyImageElement
+  STDFUFILES_DestroyImage
+  STDFUFILES_GetImageNbElement
+  STDFUFILES_SetImageElement
+  STDFUFILES_GetImageElement
+  STDFUFILES_ImageFromFile
+  STDFUFILES_ImageToFile
+  STDFUFILES_GetImageAlternate
+  STDFUFILES_GetImageName
+  STDFUFILES_SetImageName
+  STDFUFILES_GetImageSize

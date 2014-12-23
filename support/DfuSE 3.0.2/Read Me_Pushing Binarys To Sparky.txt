@@ -1,0 +1,6 @@
+The latest version of Dufse 3.0.4 does not convert .hex files to .dfu. You need to use 3.0.2 (the version offered here) or 3.0.3.
+In the DfuSe>BIN folder you will fine DfuFileMgr (used to convert a .hex to dfu), and DfuSeDemo used to push the .dfu to your STM32 processor in this case the Sparky board.
+
+For a complete walk through on how to push binary's to a STM32 bootloader using native STM tools (Dfuse), visit http://youtu.be/BFv6FrkXf0E
+
+

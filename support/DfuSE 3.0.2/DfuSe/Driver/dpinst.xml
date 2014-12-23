@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<dpInst>
+        <language code="0x0409">
+        <dpinstTitle>STMicroelectronics Device in DFU Mode Drivers Update</dpinstTitle>
+    
+        <welcomeTitle>Setup Finished installing STMicroelectronics DfuSe v3.0.2 !</welcomeTitle>
+        <welcomeIntro>This wizard will walk you through updating the drivers for your STMicroelectronics Device in DFU Mode.</welcomeIntro>
+    
+        <installHeaderTitle>Installing the software drivers for your Device in DFU Mode...</installHeaderTitle>
+
+        <finishTitle>Congratulations! You have finished installing your Device in DFU Mode.</finishTitle>
+        <finishText>Enjoy using STMicroelectronics Device in DFU Mode.</finishText>
+     </language>
+     <enableNotListedLanguages/>
+     <quietInstall/>
+     <legacyMode/>
+</dpInst>
+

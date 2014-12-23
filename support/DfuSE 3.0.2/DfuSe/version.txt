@@ -1,0 +1,105 @@
+/******************** (C) COPYRIGHT 2011 STMicroelectronics ********************
+* File Name          : version.txt
+* Author             : MCD Application Team
+* Version            : V3.0.2
+* Date               : 09-May-2011
+* Description        : Version file for DfuSe Demonstrator
+********************************************************************************
+* THE PRESENT SOFTWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE TIME.
+* AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY DIRECT,
+* INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING FROM THE
+* CONTENT OF SUCH SOFTWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
+* INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+*******************************************************************************/
+
+
+
+* V3.0.2 - 09-May-2011
+======================
+
+New Features
+************
+        + Adding Support of STM32F2 devices for DFU factory programmed bootloader
+
+Enhancements
+************
+        + Only DfuSeDemo.exe is upgraded to V3.0.2 all others items remain the same
+        
+  
+
+
+* V3.0.1 - 06/18/2010
+=====================
+
+New Features
+************
+       + WHQL Certified with and published at WindowsUpdate (English only)  web site :
+         - Microsoft Windows 2000 family, 
+         - Microsoft Windows XP family, x86
+         - Microsoft Windows XP family, x64 
+         - Microsoft Windows Vista family, x86
+         - Microsoft Windows Vista family, x64 
+         - Microsoft Windows 7
+
+       + Add Pre-compiled Libraries for x64 machines under \Binary\x64\Release
+
+Enhancements
+************
+        + Fix DfuSeDemo.exe application crash while enumerating many HID devices
+
+
+* V3.0.0 - 03/07/2009
+=====================
+
+New Features
+************
+        + Adding Support of STM32 Connectivity Line devices  for DFU factory programmed bootloader :
+           - Adding Option bytes dialog for STM32 Connectivity Line devices,
+           - Adding Remove read out protection specific command for Connectivity Line devices
+           
+        + New STTub30.sys driver version (3.0.0) compatible with all 32 and 64-bit Windows distributions :
+           - See version.txt file under "Driver" sub-directory.
+
+Enhancements
+************
+        + Fix a minor issue with read-only DFU files
+
+* V2.2.1 - 11/11/2008
+=====================
+     
+        + Removing license file from the install directory
+
+
+* V2.2.0 - 14/12/2007
+=====================
+
+New Features
+************
+       + Enumeration of Compatible HID devices(see UM0412 document).
+       + Adding HID detach command for HID devices (Combined with "Enter DFU Mode" command)
+       + Verify after upgrade option added to upgrade operation
+       + Transfered data size and duration time are displayed on the fly
+
+Enhancements
+************
+       + UM0412 "DfuSe Getting Started" document is updated; "Step-by-step procedures" section is added  
+
+
+* V2.1.0 - 30/03/2007
+=====================
+
+Enhancements
+************
+       + Resolving binary dependencies (problem with MFC42D.dll)
+       + Resolving memory access problem in the DfuSe Tester application
+       + Adding "DfuSe Getting Started" document 
+       
+       
+* V2.0.0 - 16/02/2007
+=====================
+
+       + Adding source files and documentation to the initial release.
+
+
+******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE******
