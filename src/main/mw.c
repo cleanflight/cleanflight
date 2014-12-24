@@ -496,15 +496,13 @@ void processRx(void)
         resetErrorAngle();
         resetErrorGyro();
     }
-    // When armed and motors aren't spinning. Make warning beeps so that accidentally won't lose fingers...
-    // Also disarm board after 5 sec so users without buzzer won't lose fingers.
+    // Disarm board after configured time so users without buzzer won't endanger fingers.
     if (feature(FEATURE_MOTOR_STOP) && (ARMING_FLAG(ARMED)) && !(STATE(FIXED_WING))) {
         if (throttleStatus == THROTTLE_LOW) {
             if (disarmTime == 0)
                 disarmTime = millis() + 1000 * masterConfig.auto_disarm_board;
             else if (disarmTime < millis() && masterConfig.auto_disarm_board != 0)
                 mwDisarm();
-            //buzzer(BUZZER_ARMED);
         } else if (disarmTime != 0)
             disarmTime = 0;
     }
