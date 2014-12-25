@@ -40,6 +40,7 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/sonar.h"
 
 #include "config/runtime_config.h"

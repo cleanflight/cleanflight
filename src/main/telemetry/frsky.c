@@ -46,6 +46,7 @@
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/battery.h"
 #include "flight/flight.h"
 #include "io/gps.h"

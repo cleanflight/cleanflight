@@ -63,6 +63,7 @@
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "telemetry/telemetry.h"
 
 #include "config/runtime_config.h"
@@ -359,6 +360,10 @@ const clivalue_t valueTable[] = {
     { "baro_noise_lpf",             VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_noise_lpf, 0, 1 },
     { "baro_cf_vel",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_vel, 0, 1 },
     { "baro_cf_alt",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_alt, 0, 1 },
+
+    { "pitot_tab_size",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_sample_count, 0, PITOT_SAMPLE_COUNT_MAX },
+    { "pitot_noise_lpf",            VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_noise_lpf, 0, 1 },
+    { "pitot_scale",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_scale, 0, 100 },
 
     { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_NONE },
     { "mag_declination",            VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mag_declination, -18000, 18000 },

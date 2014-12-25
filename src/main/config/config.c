@@ -43,6 +43,7 @@
 #include "io/statusindicator.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "drivers/serial.h"
 #include "io/serial.h"
 #include "telemetry/telemetry.h"
@@ -185,6 +186,13 @@ void resetBarometerConfig(barometerConfig_t *barometerConfig)
     barometerConfig->baro_noise_lpf = 0.6f;
     barometerConfig->baro_cf_vel = 0.985f;
     barometerConfig->baro_cf_alt = 0.965f;
+}
+
+void resetPitotmeterConfig(pitotmeterConfig_t *pitotmeterConfig)
+{
+	pitotmeterConfig->pitot_sample_count = 21;
+	pitotmeterConfig->pitot_noise_lpf = 0.6f;
+	pitotmeterConfig->pitot_scale = 1.00f;
 }
 
 void resetSensorAlignment(sensorAlignmentConfig_t *sensorAlignmentConfig)
@@ -403,6 +411,7 @@ static void resetConf(void)
     currentProfile->accDeadband.z = 40;
 
     resetBarometerConfig(&currentProfile->barometerConfig);
+    resetPitotmeterConfig(&currentProfile->pitotmeterConfig);
 
     currentProfile->acc_unarmedcal = 1;
 
@@ -545,6 +554,9 @@ void activateConfig(void)
 
 #ifdef BARO
     useBarometerConfig(&currentProfile->barometerConfig);
+#endif
+#ifdef PITOT
+    usePitotmeterConfig(&currentProfile->pitotmeterConfig);
 #endif
 }
 

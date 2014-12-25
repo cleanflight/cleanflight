@@ -45,6 +45,9 @@
 #include "drivers/barometer_bmp085.h"
 #include "drivers/barometer_ms5611.h"
 
+#include "drivers/pitotmeter.h"
+#include "drivers/pitotmeter_ms4525.h"
+
 #include "drivers/compass.h"
 #include "drivers/compass_hmc5883l.h"
 #include "drivers/compass_ak8975.h"
@@ -60,6 +63,7 @@
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/sonar.h"
@@ -73,6 +77,7 @@ extern float magneticDeclination;
 extern gyro_t gyro;
 extern baro_t baro;
 extern acc_t acc;
+extern pitot_t pitot;
 
 const mpu6050Config_t *selectMPU6050Config(void)
 {
@@ -396,6 +401,21 @@ static void detectBaro()
     sensorsClear(SENSOR_BARO);
 }
 
+
+static void detectPitot()
+{
+    // Detect what pressure sensors are available. baro->update() is set to sensor-specific update function
+#ifdef PITOT
+#ifdef USE_PITOT_MS4525
+    if (ms4525Detect(&pitot)) {
+    	return;
+    }
+#endif
+#endif
+    sensorsClear(SENSOR_PITOT);
+}
+
+
 static void detectMag(uint8_t magHardwareToUse)
 {
 #ifdef USE_MAG_HMC5883
@@ -503,6 +523,7 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
     detectAcc(accHardwareToUse);
     detectBaro();
     detectMag(magHardwareToUse);
+    detectPitot();
 
     reconfigureAlignment(sensorAlignmentConfig);
 

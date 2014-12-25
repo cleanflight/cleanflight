@@ -44,6 +44,7 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
 #include "io/beeper.h"
@@ -396,11 +397,17 @@ typedef enum {
 #ifdef BARO
     UPDATE_BARO_TASK,
 #endif
+#ifdef PITOT
+    UPDATE_PITOT_TASK,
+#endif
 #ifdef SONAR
     UPDATE_SONAR_TASK,
 #endif
 #if defined(BARO) || defined(SONAR)
     CALCULATE_ALTITUDE_TASK,
+#endif
+#if defined(PITOT)
+    CALCULATE_AIRSPEED_TASK,
 #endif
     UPDATE_DISPLAY_TASK
 } periodicTasks;
@@ -428,7 +435,20 @@ void executePeriodicTasks(void)
         }
         break;
 #endif
-
+#ifdef PITOT
+    case UPDATE_PITOT_TASK:
+        if (sensors(SENSOR_PITOT)) {
+            pitotUpdate(currentTime);
+        }
+        break;
+#endif
+#if defined(PITOT)
+    case CALCULATE_AIRSPEED_TASK:
+        if (sensors(SENSOR_PITOT)) {
+            calculateAirspeed(currentTime);
+        }
+        break;
+#endif
 #if defined(BARO) || defined(SONAR)
     case CALCULATE_ALTITUDE_TASK:
 
