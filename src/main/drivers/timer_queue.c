@@ -28,6 +28,14 @@
 # define TIMERQUEUE_EVENT_SOURCE TIMERQUEUE_EVENT_SOURCE_TIMCCR
 #endif
 
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_SYSTICK && !defined(TIME_TIMER)
+# error "TIME_TIMER must be defined when using systick for timing"
+#endif
+
+#if TIMERQUEUE_EVENT_SOURCE == TIMERQUEUE_EVENT_SOURCE_TIMCCR && !defined(TIMER_QUEUE_CHANNEL)
+# error "TIMER_QUEUE_CHANNEL must be defined when using timer CCR for timing"
+#endif
+
 struct {
     timerQueueRec_t* heap[TIMERQUEUE_QUEUE_LEN];
     unsigned heapLen;
