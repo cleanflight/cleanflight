@@ -157,3 +157,7 @@ void adcInit(drv_adc_config_t *init)
     ADC_StartConversion(ADC1);
 }
 
+// dummy implementation, stm32f303 ADC clock and sampling time results in 116Hz conversion rate
+void adcTriggerConversion(void)
+{
+}
