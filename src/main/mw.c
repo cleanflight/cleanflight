@@ -91,6 +91,7 @@ uint16_t cycleTime = 0;         // this is the number in micro second to achieve
 int16_t headFreeModeHold;
 
 int16_t telemTemperature1;      // gyro sensor temperature
+static uint32_t disarmTime = 0; // Time of automatic disarm when "Don't spin the motors when armed" is enabled.
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern failsafe_t *failsafe;
@@ -295,6 +296,10 @@ void mwDisarm(void)
 {
     if (ARMING_FLAG(ARMED)) {
         DISABLE_ARMING_FLAG(ARMED);
+        // Reset disarm time so that it works next time we arm the board.
+        if (disarmTime != 0) {
+            disarmTime = 0;
+        }
 
 #ifdef TELEMETRY
         if (feature(FEATURE_TELEMETRY)) {
@@ -492,6 +497,16 @@ void processRx(void)
     if (throttleStatus == THROTTLE_LOW) {
         resetErrorAngle();
         resetErrorGyro();
+    }
+    // Disarm board after configured time so users without buzzer won't endanger fingers.
+    if (feature(FEATURE_MOTOR_STOP) && (ARMING_FLAG(ARMED)) && !(STATE(FIXED_WING))) {
+        if (throttleStatus == THROTTLE_LOW) {
+            if (disarmTime == 0)
+                disarmTime = millis() + 1000 * masterConfig.auto_disarm_board;
+            else if (disarmTime < millis() && masterConfig.auto_disarm_board != 0)
+                mwDisarm();
+        } else if (disarmTime != 0)
+            disarmTime = 0;
     }
 
     processRcStickPositions(&masterConfig.rxConfig, throttleStatus, masterConfig.retarded_arm, masterConfig.disarm_kill_switch);
