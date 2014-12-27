@@ -33,8 +33,6 @@
 #include "drivers/accgyro_mma845x.h"
 #include "drivers/accgyro_mpu3050.h"
 #include "drivers/accgyro_mpu6050.h"
-#include "drivers/accgyro_mpu9150.h"
-
 #include "drivers/accgyro_l3gd20.h"
 #include "drivers/accgyro_lsm303dlhc.h"
 
@@ -144,23 +142,17 @@ bool detectGyro(uint16_t gyroLpf)
 
 #ifdef USE_GYRO_MPU6050
     if (mpu6050GyroDetect(selectMPU6050Config(), &gyro, gyroLpf)) {
-#ifdef NAZE
-        gyroAlign = CW0_DEG;
+#ifdef GYRO_MPU6050_ALIGN
+        gyroAlign = GYRO_MPU6050_ALIGN;
 #endif
-        return true;
-    }
-#endif
-
-#ifdef USE_GYRO_MPU9150
-    if (mpu9150GyroDetect(NULL, &gyro, gyroLpf)) {
         return true;
     }
 #endif
 
 #ifdef USE_GYRO_L3G4200D
     if (l3g4200dDetect(&gyro, gyroLpf)) {
-#ifdef NAZE
-        gyroAlign = CW0_DEG;
+#ifdef GYRO_L3G4200D_ALIGN
+        gyroAlign = GYRO_L3G4200D_ALIGN;
 #endif
         return true;
     }
@@ -168,8 +160,8 @@ bool detectGyro(uint16_t gyroLpf)
 
 #ifdef USE_GYRO_MPU3050
     if (mpu3050Detect(&gyro, gyroLpf)) {
-#ifdef NAZE
-        gyroAlign = CW0_DEG;
+#ifdef GYRO_MPU3050_ALIGN
+        gyroAlign = GYRO_MPU3050_ALIGN;
 #endif
         return true;
     }
@@ -177,17 +169,17 @@ bool detectGyro(uint16_t gyroLpf)
 
 #ifdef USE_GYRO_L3GD20
     if (l3gd20Detect(&gyro, gyroLpf)) {
+#ifdef GYRO_GYRO_L3GD20_ALIGN
+        gyroAlign = GYRO_GYRO_L3GD20_ALIGN;
+#endif
         return true;
     }
 #endif
 
 #ifdef USE_GYRO_SPI_MPU6000
     if (mpu6000SpiGyroDetect(&gyro, gyroLpf)) {
-#ifdef CC3D
-        gyroAlign = CW270_DEG;
-#endif
-#ifdef ANYFC
-        gyroAlign = CW270_DEG;
+#ifdef GYRO_SPI_MPU6000_ALIGN
+        gyroAlign = GYRO_SPI_MPU6000_ALIGN;
 #endif
         return true;
     }
@@ -196,12 +188,16 @@ bool detectGyro(uint16_t gyroLpf)
 #ifdef USE_GYRO_SPI_MPU6500
 #ifdef NAZE
     if (hardwareRevision == NAZE32_SP && mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
-        gyroAlign = CW0_DEG;
+#ifdef GYRO_SPI_MPU6500_ALIGN
+        gyroAlign = GYRO_SPI_MPU6500_ALIGN;
+#endif
         return true;
     }
 #else
     if (mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
-        gyroAlign = CW0_DEG;
+#ifdef GYRO_SPI_MPU6500_ALIGN
+        gyroAlign = GYRO_SPI_MPU6500_ALIGN;
+#endif
         return true;
     }
 #endif
@@ -243,13 +239,26 @@ retry:
             acc_params.dataRate = 800; // unused currently
 #ifdef NAZE
             if (hardwareRevision < NAZE32_REV5 && adxl345Detect(&acc_params, &acc)) {
-                accAlign = CW270_DEG;
 #else
             if (adxl345Detect(&acc_params, &acc)) {
 #endif
-                accHardware = ACC_ADXL345;
+#ifdef ACC_ADXL345_ALIGN
+                accAlign = ACC_ADXL345_ALIGN;
+#endif
                 accHardware = ACC_ADXL345;
                 if (accHardwareToUse == ACC_ADXL345)
+                    break;
+            }
+            ; // fallthrough
+#endif
+#ifdef USE_ACC_LSM303DLHC
+        case ACC_LSM303DLHC:
+            if (lsm303dlhcAccDetect(&acc)) {
+#ifdef ACC_LSM303DLHC_ALIGN
+                accAlign = ACC_LSM303DLHC_ALIGN;
+#endif
+                accHardware = ACC_LSM303DLHC;
+                if (accHardwareToUse == ACC_LSM303DLHC)
                     break;
             }
             ; // fallthrough
@@ -257,20 +266,11 @@ retry:
 #ifdef USE_ACC_MPU6050
         case ACC_MPU6050: // MPU6050
             if (mpu6050AccDetect(selectMPU6050Config(), &acc)) {
+#ifdef ACC_MPU6050_ALIGN
+                accAlign = ACC_MPU6050_ALIGN;
+#endif
                 accHardware = ACC_MPU6050;
-#ifdef NAZE
-                accAlign = CW0_DEG;
-#endif
                 if (accHardwareToUse == ACC_MPU6050)
-                    break;
-            }
-            ; // fallthrough
-#endif
-#ifdef USE_ACC_MPU9150
-        case ACC_MPU9150: // MPU9150
-            if (mpu9150AccDetect(NULL, &acc)) {
-                accHardware = ACC_MPU9150;
-                if (accHardwareToUse == ACC_MPU9150)
                     break;
             }
             ; // fallthrough
@@ -280,9 +280,11 @@ retry:
 #ifdef NAZE
             // Not supported with this frequency
             if (hardwareRevision < NAZE32_REV5 && mma8452Detect(&acc)) {
-                accAlign = CW90_DEG;
 #else
             if (mma8452Detect(&acc)) {
+#endif
+#ifdef ACC_MMA8452_ALIGN
+                accAlign = ACC_MMA8452_ALIGN;
 #endif
                 accHardware = ACC_MMA8452;
                 if (accHardwareToUse == ACC_MMA8452)
@@ -293,20 +295,11 @@ retry:
 #ifdef USE_ACC_BMA280
         case ACC_BMA280: // BMA280
             if (bma280Detect(&acc)) {
+#ifdef ACC_BMA280_ALIGN
+                accAlign = ACC_BMA280_ALIGN;
+#endif
                 accHardware = ACC_BMA280;
-#ifdef NAZE
-                accAlign = CW0_DEG;
-#endif
                 if (accHardwareToUse == ACC_BMA280)
-                    break;
-            }
-            ; // fallthrough
-#endif
-#ifdef USE_ACC_LSM303DLHC
-        case ACC_LSM303DLHC:
-            if (lsm303dlhcAccDetect(&acc)) {
-                accHardware = ACC_LSM303DLHC;
-                if (accHardwareToUse == ACC_LSM303DLHC)
                     break;
             }
             ; // fallthrough
@@ -314,13 +307,10 @@ retry:
 #ifdef USE_ACC_SPI_MPU6000
         case ACC_SPI_MPU6000:
             if (mpu6000SpiAccDetect(&acc)) {
+#ifdef ACC_SPI_MPU6000_ALIGN
+                accAlign = ACC_SPI_MPU6000_ALIGN;
+#endif
                 accHardware = ACC_SPI_MPU6000;
-#ifdef CC3D
-                accAlign = CW270_DEG;
-#endif
-#ifdef ANYFC
-                accAlign = CW270_DEG;
-#endif
                 if (accHardwareToUse == ACC_SPI_MPU6000)
                     break;
             }
@@ -333,10 +323,10 @@ retry:
 #else
             if (mpu6500SpiAccDetect(&acc)) {
 #endif
-                accHardware = ACC_SPI_MPU6500;
-#ifdef NAZE
-                accAlign = CW0_DEG;
+#ifdef ACC_SPI_MPU6500_ALIGN
+                accAlign = ACC_SPI_MPU6500_ALIGN;
 #endif
+                accHardware = ACC_SPI_MPU6500;
                 if (accHardwareToUse == ACC_SPI_MPU6500)
                     break;
             }
@@ -458,11 +448,8 @@ retry:
 #ifdef USE_MAG_HMC5883
         case MAG_HMC5883:
             if (hmc5883lDetect(&mag, hmc5883Config)) {
-#ifdef NAZE
-                magAlign = CW180_DEG;
-#endif
-#ifdef ANYFC
-                magAlign = CW90_DEG;
+#ifdef MAG_HMC5883_ALIGN
+                magAlign = MAG_HMC5883_ALIGN;
 #endif
                 magHardware = MAG_HMC5883;
                 if (magHardwareToUse == MAG_HMC5883)
@@ -475,6 +462,10 @@ retry:
 #ifdef USE_MAG_AK8975
         case MAG_AK8975:
             if (ak8975detect(&mag)) {
+
+#ifdef MAG_AK8975_ALIGN
+                magAlign = MAG_AK8975_ALIGN;
+#endif
                 magHardware = MAG_AK8975;
                 if (magHardwareToUse == MAG_AK8975)
                     break;
@@ -522,16 +513,18 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
     sensorsSet(SENSOR_GYRO);
     detectAcc(accHardwareToUse);
     detectBaro();
-    detectMag(magHardwareToUse);
     detectPitot();
 
-    reconfigureAlignment(sensorAlignmentConfig);
 
     // Now time to init things, acc first
     if (sensors(SENSOR_ACC))
         acc.init();
     // this is safe because either mpu6050 or mpu3050 or lg3d20 sets it, and in case of fail, we never get here.
     gyro.init();
+
+    detectMag(magHardwareToUse);
+
+    reconfigureAlignment(sensorAlignmentConfig);
 
     // FIXME extract to a method to reduce dependencies, maybe move to sensors_compass.c
     if (sensors(SENSOR_MAG)) {

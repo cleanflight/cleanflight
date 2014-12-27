@@ -92,6 +92,7 @@ uint16_t cycleTime = 0;         // this is the number in micro second to achieve
 int16_t headFreeModeHold;
 
 int16_t telemTemperature1;      // gyro sensor temperature
+static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern failsafe_t *failsafe;
@@ -327,6 +328,8 @@ void mwArm(void)
                 }
             }
 #endif
+            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
+
             return;
         }
     }
@@ -513,6 +516,21 @@ void processRx(void)
         resetErrorAngle();
         resetErrorGyro();
     }
+    // When armed and motors aren't spinning, disarm board after delay so users without buzzer won't lose fingers.
+    // mixTable constrains motor commands, so checking  throttleStatus is enough
+    if (
+        ARMING_FLAG(ARMED)
+        && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)
+        && masterConfig.auto_disarm_delay != 0
+        && isUsingSticksForArming()
+    ) {
+        if (throttleStatus == THROTTLE_LOW) {
+            if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
+                mwDisarm();
+        } else {
+            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // extend delay
+        }
+    }
 
     processRcStickPositions(&masterConfig.rxConfig, throttleStatus, masterConfig.retarded_arm, masterConfig.disarm_kill_switch);
 
@@ -594,7 +612,7 @@ void processRx(void)
         DISABLE_FLIGHT_MODE(PASSTHRU_MODE);
     }
 
-    if (masterConfig.mixerConfiguration == MULTITYPE_FLYING_WING || masterConfig.mixerConfiguration == MULTITYPE_AIRPLANE) {
+    if (masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_AIRPLANE) {
         DISABLE_FLIGHT_MODE(HEADFREE_MODE);
     }
 }
@@ -647,7 +665,7 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        computeIMU(&currentProfile->accelerometerTrims, masterConfig.mixerConfiguration);
+        computeIMU(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();

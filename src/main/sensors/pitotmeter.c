@@ -38,8 +38,6 @@ float CalibratedAirspeed = 0;
 
 #ifdef PITOT
 
-static int32_t baroGroundAltitude = 0;
-static int32_t baroGroundPressure = 0;
 static float pitotPressureSum = 0;
 
 pitotmeterConfig_t *pitotmeterConfig;
