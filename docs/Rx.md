@@ -22,6 +22,13 @@ Allows you to use MSP commands as the RC input.  Only 8 channel support to maint
 
 16 channels via serial currently supported.
 
+Tested hardware: TARANIS X9D Plus + X8R with Sparky V1.0
+With the current CLI configuration:
+`set serial_port_3_scenario = 3`
+`set serialrx_provider = 2`
+`Feature RX_SERIAL`
+
+
 ## XBus
 
 The firmware currently supports the MODE B version of the XBus protocol.
@@ -57,8 +64,8 @@ without the fix you are limited to 8 channels regardless of the CH1-16/D16 setti
  
 ### Configuration
 
-See the Configuration document some some RX configuration examples.
-
+See the Serial document some some RX configuration examples. 
+[Link to Serial.md doc] (https://github.com/cleanflight/cleanflight/blob/master/docs/Serial.md)
 For Serial RX enable `RX_SERIAL` and set the `serialrx_provider` cli setting as follows.
 
 | Serial RX Provider | Value |
