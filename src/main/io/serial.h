@@ -93,6 +93,14 @@ typedef enum {
 } serialPortIdentifier_e;
 
 #define SERIAL_PORT_IDENTIFIER_COUNT 2
+
+#elif defined(REVO)
+typedef enum {
+    SERIAL_PORT_USART3 = 0,
+    SERIAL_PORT_USART1,
+} serialPortIdentifier_e;
+
+#define SERIAL_PORT_IDENTIFIER_COUNT 2
 #else
 
 #ifdef CC3D

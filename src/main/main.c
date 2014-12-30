@@ -220,7 +220,9 @@ void init(void)
 #else
     // Configure the rest of the stuff
     i2cInit(I2C_DEVICE_INT);
+#ifdef ANYFC
     i2cInit(I2C_DEVICE_EXT);
+#endif
 #endif
 #endif
 

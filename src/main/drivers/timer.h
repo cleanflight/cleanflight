@@ -33,6 +33,10 @@
 #define USABLE_TIMER_CHANNEL_COUNT 12
 #endif
 
+#ifdef REVO
+#define USABLE_TIMER_CHANNEL_COUNT 12
+#endif
+
 #if !defined(USABLE_TIMER_CHANNEL_COUNT)
 #define USABLE_TIMER_CHANNEL_COUNT 14
 #endif

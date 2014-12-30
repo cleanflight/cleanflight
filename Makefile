@@ -33,10 +33,10 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 # Things that need to be maintained as the source changes
 #
 
-FORKNAME			 = cleanflight
+FORKNAME			 = cleanflightF4
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R SPARKY
-VALID_TARGETS	 += ANYFC
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R SPARKY ALIENWIIF1
+VALID_TARGETS	 += ANYFC REVO
 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
@@ -98,7 +98,7 @@ ifeq ($(TARGET),MASSIVEF3)
 TARGET_FLAGS := $(TARGET_FLAGS) -DSTM32F3DISCOVERY
 endif
 
-else ifeq ($(TARGET),$(filter $(TARGET),ANYFC))
+else ifeq ($(TARGET),$(filter $(TARGET),ANYFC REVO))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F4xx_StdPeriph_Driver
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
@@ -181,6 +181,12 @@ endif
 
 TARGET_DIR = $(ROOT)/src/main/target/$(TARGET)
 TARGET_SRC = $(notdir $(wildcard $(TARGET_DIR)/*.c))
+
+ifeq ($(TARGET),ALIENWIIF1)
+# ALIENWIIF1 is a VARIANT of NAZE
+TARGET_FLAGS := $(TARGET_FLAGS) -DNAZE -DALIENWII32
+TARGET_DIR = $(ROOT)/src/main/target/NAZE
+endif
 
 INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		    $(TARGET_DIR)
@@ -281,6 +287,8 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   hardware_revision.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
+
+ALIENWIIF1_SRC	= $(NAZE_SRC)
 
 EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -407,6 +415,30 @@ ANYFC_SRC	 = startup_stm32f40xx.s \
 		   drivers/barometer_ms5611.c \
 		   drivers/pitotmeter_ms4525.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/adc.c \
+		   drivers/adc_stm32f4xx.c \
+		   drivers/bus_i2c_stm32f4xx.c \
+		   drivers/bus_spi.c \
+		   drivers/gpio_stm32f4xx.c \
+		   drivers/inverter.c \
+		   drivers/light_led_stm32f4xx.c \
+		   drivers/light_ws2811strip.c \
+		   drivers/light_ws2811strip_stm32f4xx.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_softserial.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f4xx.c \
+		   drivers/sound_beeper_stm32f4xx.c \
+		   drivers/system_stm32f4xx.c \
+		   drivers/timer.c \
+		   drivers/timer_stm32f4xx.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)
+
+REVO_SRC	 = startup_stm32f40xx.s \
+		   drivers/accgyro_spi_mpu6000.c \
 		   drivers/adc.c \
 		   drivers/adc_stm32f4xx.c \
 		   drivers/bus_i2c_stm32f4xx.c \
