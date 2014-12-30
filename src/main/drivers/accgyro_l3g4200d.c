@@ -65,7 +65,7 @@ bool l3g4200dDetect(gyro_t *gyro, uint16_t lpf)
 
     delay(25);
 
-    i2cRead(L3G4200D_ADDRESS, L3G4200D_WHO_AM_I, 1, &deviceid);
+    i2cRead(L3G4200D_ADDRESS, L3G4200D_WHO_AM_I, 1, &deviceid, L3G4200D_BUS);
     if (deviceid != L3G4200D_ID)
         return false;
 
@@ -101,12 +101,12 @@ static void l3g4200dInit(void)
 
     delay(100);
 
-    ack = i2cWrite(L3G4200D_ADDRESS, L3G4200D_CTRL_REG4, L3G4200D_FS_SEL_2000DPS);
+    ack = i2cWrite(L3G4200D_ADDRESS, L3G4200D_CTRL_REG4, L3G4200D_FS_SEL_2000DPS, L3G4200D_BUS);
     if (!ack)
         failureMode(3);
 
     delay(5);
-    i2cWrite(L3G4200D_ADDRESS, L3G4200D_CTRL_REG1, L3G4200D_POWER_ON | mpuLowPassFilter);
+    i2cWrite(L3G4200D_ADDRESS, L3G4200D_CTRL_REG1, L3G4200D_POWER_ON | mpuLowPassFilter, L3G4200D_BUS);
 }
 
 // Read 3 gyro values into user-provided buffer. No overrun checking is done.
@@ -114,7 +114,7 @@ static void l3g4200dRead(int16_t *gyroData)
 {
     uint8_t buf[6];
 
-    i2cRead(L3G4200D_ADDRESS, L3G4200D_AUTOINCR | L3G4200D_GYRO_OUT, 6, buf);
+    i2cRead(L3G4200D_ADDRESS, L3G4200D_AUTOINCR | L3G4200D_GYRO_OUT, 6, buf, L3G4200D_BUS);
 
     gyroData[X] = (int16_t)((buf[0] << 8) | buf[1]);
     gyroData[Y] = (int16_t)((buf[2] << 8) | buf[3]);

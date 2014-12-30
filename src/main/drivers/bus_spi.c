@@ -63,11 +63,11 @@ void initSpi1(void)
     gpio.mode = Mode_Out_PP;
     gpioInit(GPIOA, &gpio);
 
-    //GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_USART1);
+#ifdef STM32F40_41xxx
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_SPI1);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_SPI1);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_SPI1);
-
+#endif
 
     // Init SPI2 hardware
     SPI_I2S_DeInit(SPI1);

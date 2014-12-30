@@ -63,7 +63,7 @@
 #define MS5611_BUS I2C_DEVICE_INT
 
 #define PITOT
-#define USE_PITOT_MS4525
+//#define USE_PITOT_MS4525
 #define MS4525_BUS I2C_DEVICE_EXT
 
 

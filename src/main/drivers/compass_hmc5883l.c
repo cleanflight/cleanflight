@@ -145,9 +145,11 @@ void hmc5883lInit(void)
         if (hmc5883Config->gpioAPB2Peripherals) {
             RCC_APB2PeriphClockCmd(hmc5883Config->gpioAPB2Peripherals, ENABLE);
         }
+#ifdef STM32F40_41xxx
         if (hmc5883Config->gpioAHB1Peripherals) {
             RCC_AHB1PeriphClockCmd(hmc5883Config->gpioAHB1Peripherals, ENABLE);
         }
+#endif
 
         gpio.pin = hmc5883Config->gpioPin;
         gpio.speed = Speed_2MHz;

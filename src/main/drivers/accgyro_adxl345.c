@@ -66,7 +66,7 @@ bool adxl345Detect(drv_adxl345_config_t *init, acc_t *acc)
     bool ack = false;
     uint8_t sig = 0;
 
-    ack = i2cRead(ADXL345_ADDRESS, 0x00, 1, &sig);
+    ack = i2cRead(ADXL345_ADDRESS, 0x00, 1, &sig, ADXL345_BUS);
     if (!ack || sig != 0xE5)
         return false;
 
@@ -82,14 +82,14 @@ static void adxl345Init(void)
 {
     if (useFifo) {
         uint8_t fifoDepth = 16;
-        i2cWrite(ADXL345_ADDRESS, ADXL345_POWER_CTL, ADXL345_POWER_MEAS);
-        i2cWrite(ADXL345_ADDRESS, ADXL345_DATA_FORMAT, ADXL345_FULL_RANGE | ADXL345_RANGE_8G);
-        i2cWrite(ADXL345_ADDRESS, ADXL345_BW_RATE, ADXL345_RATE_400);
-        i2cWrite(ADXL345_ADDRESS, ADXL345_FIFO_CTL, (fifoDepth & 0x1F) | ADXL345_FIFO_STREAM);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_POWER_CTL, ADXL345_POWER_MEAS, ADXL345_BUS);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_DATA_FORMAT, ADXL345_FULL_RANGE | ADXL345_RANGE_8G, ADXL345_BUS);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_BW_RATE, ADXL345_RATE_400, ADXL345_BUS);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_FIFO_CTL, (fifoDepth & 0x1F) | ADXL345_FIFO_STREAM, ADXL345_BUS);
     } else {
-        i2cWrite(ADXL345_ADDRESS, ADXL345_POWER_CTL, ADXL345_POWER_MEAS);
-        i2cWrite(ADXL345_ADDRESS, ADXL345_DATA_FORMAT, ADXL345_FULL_RANGE | ADXL345_RANGE_8G);
-        i2cWrite(ADXL345_ADDRESS, ADXL345_BW_RATE, ADXL345_RATE_100);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_POWER_CTL, ADXL345_POWER_MEAS, ADXL345_BUS);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_DATA_FORMAT, ADXL345_FULL_RANGE | ADXL345_RANGE_8G, ADXL345_BUS);
+        i2cWrite(ADXL345_ADDRESS, ADXL345_BW_RATE, ADXL345_RATE_100, ADXL345_BUS);
     }
     acc_1G = 265; // 3.3V operation // FIXME verify this is supposed to be 265, not 256. Typo?
 }
@@ -109,7 +109,7 @@ static void adxl345Read(int16_t *accelData)
 
         do {
             i++;
-            i2cRead(ADXL345_ADDRESS, ADXL345_DATA_OUT, 8, buf);
+            i2cRead(ADXL345_ADDRESS, ADXL345_DATA_OUT, 8, buf, ADXL345_BUS);
             x += (int16_t)(buf[0] + (buf[1] << 8));
             y += (int16_t)(buf[2] + (buf[3] << 8));
             z += (int16_t)(buf[4] + (buf[5] << 8));
@@ -120,7 +120,7 @@ static void adxl345Read(int16_t *accelData)
         accelData[2] = z / i;
         acc_samples = i;
     } else {
-        i2cRead(ADXL345_ADDRESS, ADXL345_DATA_OUT, 6, buf);
+        i2cRead(ADXL345_ADDRESS, ADXL345_DATA_OUT, 6, buf, ADXL345_BUS);
         accelData[0] = buf[0] + (buf[1] << 8);
         accelData[1] = buf[2] + (buf[3] << 8);
         accelData[2] = buf[4] + (buf[5] << 8);

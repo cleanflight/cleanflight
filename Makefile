@@ -24,7 +24,7 @@ OPTIONS		?=
 OPBL ?=no
 
 # Debugger optons, must be empty or GDB
-DEBUG ?= GDB
+DEBUG ?=
 
 # Serial port/Device for flashing
 SERIAL_DEVICE	?= /dev/ttyUSB0

@@ -171,12 +171,12 @@ static const uint8_t const multiWiiFont[][5] = { // Refer to "Times New Roman" F
 #define OLED_address   0x3C     // OLED at address 0x3C in 7bit
 void i2c_OLED_send_cmd(uint8_t command)
 {
-    i2cWrite(OLED_address, 0x80, command);
+    i2cWrite(OLED_address, 0x80, command, UG2864_BUS);
 }
 
 static void i2c_OLED_send_byte(uint8_t val)
 {
-    i2cWrite(OLED_address, 0x40, val);
+    i2cWrite(OLED_address, 0x40, val, UG2864_BUS);
 }
 
 void i2c_OLED_clear_display(void)
