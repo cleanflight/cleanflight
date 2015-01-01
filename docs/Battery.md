@@ -46,6 +46,8 @@ Configure min/max cell voltages using the following CLI setting:
 
 `vbat_max_cell_voltage` - maximum voltage per cell, used for auto-detecting battery voltage in 0.1V units, i.e. 43 = 4.3V
 
+`set vbat_warning_cell_voltage` - warning voltage per cell, this triggers battery out alarms, in 0.1V units, i.e. 34 = 3.4V
+
 `vbat_min_cell_voltage` - minimum voltage per cell, this triggers battery out alarms, in 0.1V units, i.e. 33 = 3.3V
 
 e.g.
