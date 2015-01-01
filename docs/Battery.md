@@ -53,6 +53,7 @@ e.g.
 ```
 set vbat_scale = 110
 set vbat_max_cell_voltage = 43
+set vbat_warning_cell_voltage = 34
 set vbat_min_cell_voltage = 33
 ```
 
