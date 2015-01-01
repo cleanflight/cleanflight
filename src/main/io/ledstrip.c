@@ -804,6 +804,7 @@ bool parseColor(uint8_t index, char *colorConfig)
                 if (val > HSV_HUE_MAX) {
                     ok = false;
                     continue;
+
                 }
                 colors[index].h = val;
                 break;
