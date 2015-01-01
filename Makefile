@@ -439,6 +439,8 @@ ANYFC_SRC	 = startup_stm32f40xx.s \
 
 REVO_SRC	 = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
+		   drivers/barometer_ms5611.c \
+		   drivers/compass_hmc5883l.c \
 		   drivers/adc.c \
 		   drivers/adc_stm32f4xx.c \
 		   drivers/bus_i2c_stm32f4xx.c \

@@ -42,6 +42,15 @@
 #define USE_GYRO_SPI_MPU6000
 #define GYRO_SPI_MPU6000_ALIGN CW270_DEG
 
+#define MAG
+#define USE_MAG_HMC5883
+#define HMC5883_BUS I2C_DEVICE_INT
+#define MAG_HMC5883_ALIGN CW90_DEG
+
+#define BARO
+#define USE_BARO_MS5611
+#define MS5611_BUS I2C_DEVICE_INT
+
 #define INVERTER
 #define LED0
 #define LED1
@@ -66,7 +75,5 @@
 
 #define SENSORS_SET (SENSOR_ACC)
 
-#define LED_STRIP
-#define LED_STRIP_TIMER TIM5
 #define SERIAL_RX
 #define AUTOTUNE

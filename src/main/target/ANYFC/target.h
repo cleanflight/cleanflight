@@ -19,16 +19,16 @@
 #define TARGET_BOARD_IDENTIFIER "ANYFC"
 
 #define LED0_GPIO   GPIOB
-#define LED0_PIN    Pin_5 // Blue LEDs - PE8/PE12
+#define LED0_PIN    Pin_5 // Blue LEDs
 #define LED0_PERIPHERAL RCC_AHB1Periph_GPIOB
-//#define LED0_INVERTED
+
 #define LED1_GPIO   GPIOB
-#define LED1_PIN    Pin_4  // Orange LEDs - PE10/PE14
+#define LED1_PIN    Pin_4  // Orange LEDs
 #define LED1_PERIPHERAL RCC_AHB1Periph_GPIOB
-//#define LED1_INVERTED
+
 
 #define BEEP_GPIO   GPIOB
-#define BEEP_PIN    Pin_6 // Red LEDs - PE9/PE13
+#define BEEP_PIN    Pin_6 // Red LEDs
 #define BEEP_PERIPHERAL RCC_AHB1Periph_GPIOB
 #define BEEPER_INVERTED
 
@@ -44,7 +44,6 @@
 
 #define BEEPER_INVERTED
 
-
 #define ACC
 #define USE_ACC_SPI_MPU6000
 #define ACC_SPI_MPU6000_ALIGN CW270_DEG
@@ -55,8 +54,8 @@
 
 #define MAG
 #define USE_MAG_HMC5883
-#define HMC5883_BUS I2C_DEVICE_INT
-#define MAG_HMC5883_ALIGN CW90_DEG
+#define HMC5883_BUS I2C_DEVICE_EXT
+#define MAG_HMC5883_ALIGN CW270_DEG_FLIP
 
 #define BARO
 #define USE_BARO_MS5611
@@ -104,6 +103,5 @@
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM5
 #define TELEMETRY
-//#define SOFT_SERIAL
 #define SERIAL_RX
 #define AUTOTUNE
