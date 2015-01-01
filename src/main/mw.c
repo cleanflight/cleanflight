@@ -708,7 +708,11 @@ void loop(void)
 
 #ifdef LED_STRIP
     if (feature(FEATURE_LED_STRIP)) {
+#ifdef LED_FUNCTION_THRUST_RING
+    	updateLedRing();
+#else
         updateLedStrip();
+#endif
     }
 #endif
 }

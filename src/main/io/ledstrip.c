@@ -788,6 +788,61 @@ void updateLedStrip(void)
     ws2811UpdateStrip();
 }
 
+void updateLedRing(void)
+{
+    static uint8_t switchRotationNumber = 0;
+    hsvColor_t color;
+	uint8_t ledIndex;
+
+	if (!(ledStripInitialised && isWS2811LedStripReady())) {
+        return;
+    }
+
+    uint32_t now = micros();
+
+    bool RotationUpdateNow = (int32_t)(now - nextAnimationUpdateAt) >= 0L;
+
+    if(RotationUpdateNow) {
+
+		// Set the color
+		for (ledIndex = 0; ledIndex < ledCount; ledIndex++) {
+
+	        getLedHsv(ledIndex, &color);
+
+			if (switchRotationNumber == ((ledCount>>1) - 1)) {
+				if ((switchRotationNumber == ledIndex) || ((switchRotationNumber +1) == ledIndex)
+						||((switchRotationNumber + (ledCount>>1)) == ledIndex)||(ledIndex == 0)) {
+					setLedHsv(ledIndex, &hsv_black);
+				}
+				else {
+					setLedHsv(ledIndex, &hsv_blue);			// TODO modified to have a selected color with cli
+				}
+			}
+			else if ((switchRotationNumber == ledIndex)||((switchRotationNumber + (ledCount>>1)) == ledIndex)
+					|| ((switchRotationNumber +1) == ledIndex)||((switchRotationNumber + (ledCount>>1) + 1) == ledIndex)) {
+				setLedHsv(ledIndex, &hsv_black);
+			}
+			else {
+				setLedHsv(ledIndex, &hsv_blue);				// TODO modified to have a selected color with cli
+			}
+
+    	}
+
+		if (switchRotationNumber >= ((ledCount>>1) - 1)) {
+			switchRotationNumber = 0;
+		}
+		else {
+			switchRotationNumber++;
+		}
+
+		int throttleScaled = scaleRange(rcData[THROTTLE], PWM_RANGE_MIN, PWM_RANGE_MAX, 1, 10);
+
+		nextAnimationUpdateAt = now + LED_STRIP_5HZ/throttleScaled;			// TODO will be changed with more specifics animation
+    }
+    ws2811UpdateStrip();
+
+}
+
 bool parseColor(uint8_t index, char *colorConfig)
 {
     char *remainingCharacters = colorConfig;
