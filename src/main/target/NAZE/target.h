@@ -122,7 +122,6 @@
 #define GPS
 
 #define LED_STRIP
-#define LED_FUNCTION_THRUST_RING
 #define LED_STRIP_TIMER TIM3
 
 #define TELEMETRY

@@ -44,7 +44,8 @@ typedef enum {
     LED_FUNCTION_WARNING     = (1 << 7),
     LED_FUNCTION_FLIGHT_MODE = (1 << 8),
     LED_FUNCTION_ARM_STATE   = (1 << 9),
-    LED_FUNCTION_THROTTLE    = (1 << 10)
+    LED_FUNCTION_THROTTLE    = (1 << 10),
+    LED_FUNCTION_THRUST_RING = (1 << 11)
 } ledFlag_e;
 
 #define LED_DIRECTION_BIT_OFFSET 0
