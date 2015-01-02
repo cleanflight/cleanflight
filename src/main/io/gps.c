@@ -82,6 +82,7 @@ uint32_t GPS_packetCount = 0;
 uint8_t GPS_update = 0;             // it's a binary toggle to distinct a GPS position update
 
 uint16_t GPS_altitude;              // altitude in 0.1m
+int32_t GPS_VELNE[2];
 uint16_t GPS_speed;                 // speed in 0.1m/s
 uint16_t GPS_ground_course = 0;     // degrees * 10
 
@@ -848,6 +849,8 @@ static bool UBLOX_parse_gps(void)
     case MSG_VELNED:
         *gpsPacketLogChar = LOG_UBLOX_VELNED;
         // speed_3d                        = _buffer.velned.speed_3d;  // cm/s
+        GPS_VELNE[0]=_buffer.velned.ned_north;
+        GPS_VELNE[1]=_buffer.velned.ned_east;
         GPS_speed = _buffer.velned.speed_2d;    // cm/s
         GPS_ground_course = (uint16_t) (_buffer.velned.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
         _new_speed = true;

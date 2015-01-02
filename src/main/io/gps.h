@@ -110,6 +110,7 @@ extern uint16_t GPS_hdop;                  // GPS signal quality
 extern uint8_t GPS_update;                 // it's a binary toogle to distinct a GPS position update
 extern uint32_t GPS_packetCount;
 extern uint16_t GPS_altitude;              // altitude in 0.1m
+extern int32_t GPS_VELNE[2];
 extern uint16_t GPS_speed;                 // speed in 0.1m/s
 extern uint16_t GPS_ground_course;         // degrees * 10
 extern uint8_t GPS_numCh;                  // Number of channels
