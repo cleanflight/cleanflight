@@ -486,9 +486,13 @@ static void GPS_calc_velocity(void)
 
     if (init) {
         float tmp = 1.0f / dTnav;
-        actual_speed[GPS_X] = (float)(GPS_coord[LON] - last_coord[LON]) * GPS_scaleLonDown * tmp;
-        actual_speed[GPS_Y] = (float)(GPS_coord[LAT] - last_coord[LAT]) * tmp;
+        //actual_speed[GPS_X] = (float)(GPS_coord[LON] - last_coord[LON]) * GPS_scaleLonDown * tmp;
+        //actual_speed[GPS_Y] = (float)(GPS_coord[LAT] - last_coord[LAT]) * tmp;
 
+        actual_speed[GPS_X] = (float)(GPS_VELNED[1]); //mm/s
+        actual_speed[GPS_Y] = (float)(GPS_VELNED[0]); //mm/s
+
+        // average with previous sample
         actual_speed[GPS_X] = (actual_speed[GPS_X] + speed_old[GPS_X]) / 2;
         actual_speed[GPS_Y] = (actual_speed[GPS_Y] + speed_old[GPS_Y]) / 2;
 

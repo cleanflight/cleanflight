@@ -68,6 +68,7 @@ extern int16_t debug[4];
 #define LOG_UBLOX_SVINFO 'I'
 #define LOG_UBLOX_POSLLH 'P'
 #define LOG_UBLOX_VELNED 'V'
+#define LOG_UBLOX_PVT    'X'
 
 char gpsPacketLog[GPS_PACKET_LOG_ENTRY_COUNT];
 static char *gpsPacketLogChar = gpsPacketLog;
@@ -82,7 +83,7 @@ uint32_t GPS_packetCount = 0;
 uint8_t GPS_update = 0;             // it's a binary toggle to distinct a GPS position update
 
 uint16_t GPS_altitude;              // altitude in 0.1m
-int32_t GPS_VELNE[2];
+int32_t GPS_VELNED[3];              // mm/s
 uint16_t GPS_speed;                 // speed in 0.1m/s
 uint16_t GPS_ground_course = 0;     // degrees * 10
 
@@ -723,6 +724,39 @@ typedef struct {
     ubx_nav_svinfo_channel channel[16];         // 16 satellites * 12 byte
 } ubx_nav_svinfo;
 
+typedef struct {
+    uint32_t time; // GPS msToW
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t min;
+    uint8_t sec;
+    uint8_t valid;
+    uint32_t tAcc;
+    int32_t nano;
+    uint8_t fix_type;
+    uint8_t fix_status;
+    uint8_t reserved1;
+    uint8_t satellites;
+    int32_t longitude;
+    int32_t latitude;
+    int32_t altitude_ellipsoid;
+    int32_t altitude_msl;
+    uint32_t horizontal_accuracy;
+    uint32_t vertical_accuracy;
+    int32_t ned_north;
+    int32_t ned_east;
+    int32_t ned_down;
+    int32_t speed_2d;
+    int32_t heading_2d;
+    uint32_t speed_accuracy;
+    uint32_t heading_accuracy;
+    uint16_t position_DOP;
+    uint16_t reserved2;
+    uint16_t reserved3;
+} ubx_nav_pvt;
+
 enum {
     PREAMBLE1 = 0xb5,
     PREAMBLE2 = 0x62,
@@ -734,6 +768,7 @@ enum {
     MSG_POSLLH = 0x2,
     MSG_STATUS = 0x3,
     MSG_SOL = 0x6,
+    MSG_PVT = 0x7,
     MSG_VELNED = 0x12,
     MSG_SVINFO = 0x30,
     MSG_CFG_PRT = 0x00,
@@ -798,6 +833,7 @@ static union {
     ubx_nav_status status;
     ubx_nav_solution solution;
     ubx_nav_velned velned;
+    ubx_nav_pvt pvt;
     ubx_nav_svinfo svinfo;
     uint8_t bytes[UBLOX_PAYLOAD_SIZE];
 } _buffer;
@@ -849,10 +885,32 @@ static bool UBLOX_parse_gps(void)
     case MSG_VELNED:
         *gpsPacketLogChar = LOG_UBLOX_VELNED;
         // speed_3d                        = _buffer.velned.speed_3d;  // cm/s
-        GPS_VELNE[0]=_buffer.velned.ned_north;
-        GPS_VELNE[1]=_buffer.velned.ned_east;
+        GPS_VELNED[0]=_buffer.velned.ned_north*10;  // cm/s
+        GPS_VELNED[1]=_buffer.velned.ned_east*10;   // cm/s
+        GPS_VELNED[2]=_buffer.velned.ned_down*10;   // cm/s
         GPS_speed = _buffer.velned.speed_2d;    // cm/s
         GPS_ground_course = (uint16_t) (_buffer.velned.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
+        _new_speed = true;
+        break;
+    case MSG_PVT:
+        *gpsPacketLogChar = LOG_UBLOX_PVT;
+        GPS_coord[LON] = _buffer.pvt.longitude;
+        GPS_coord[LAT] = _buffer.pvt.latitude;
+        GPS_altitude = _buffer.pvt.altitude_msl / 10 / 100;  //alt in m
+        next_fix = (_buffer.pvt.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.pvt.fix_type == FIX_3D);
+        if (next_fix) {
+            ENABLE_STATE(GPS_FIX);
+        } else {
+            DISABLE_STATE(GPS_FIX);
+        }
+        GPS_VELNED[0]=_buffer.pvt.ned_north;  // mm/s
+        GPS_VELNED[1]=_buffer.pvt.ned_east;   // mm/s
+        GPS_VELNED[2]=_buffer.pvt.ned_down;   // mm/s
+        GPS_speed = _buffer.pvt.speed_2d/10;    // mm/s
+        GPS_ground_course = (uint16_t) (_buffer.pvt.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
+        GPS_numSat = _buffer.pvt.satellites;
+        GPS_hdop = _buffer.pvt.position_DOP;
+        _new_position = true;
         _new_speed = true;
         break;
     case MSG_SVINFO:
