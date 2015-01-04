@@ -211,22 +211,8 @@ uint8_t ledsInRingCount;
 
 ledConfig_t *ledConfigs;
 
-/*
-const ledConfig_t defaultLedStripConfig[] = {
-    { CALCULATE_LED_XY( 2,  2), LED_DIRECTION_SOUTH | LED_DIRECTION_EAST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
-    { CALCULATE_LED_XY( 2,  1), LED_DIRECTION_EAST | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-    { CALCULATE_LED_XY( 2,  0), LED_DIRECTION_NORTH | LED_DIRECTION_EAST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
-    { CALCULATE_LED_XY( 1,  0), LED_DIRECTION_NORTH | LED_FUNCTION_FLIGHT_MODE },
-    { CALCULATE_LED_XY( 0,  0), LED_DIRECTION_NORTH | LED_DIRECTION_WEST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
-    { CALCULATE_LED_XY( 0,  1), LED_DIRECTION_WEST | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-    { CALCULATE_LED_XY( 0,  2), LED_DIRECTION_SOUTH | LED_DIRECTION_WEST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
-    { CALCULATE_LED_XY( 1,  2), LED_DIRECTION_SOUTH | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_UP | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_UP | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_DOWN | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_DOWN | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
-};
-*/
+
+#ifdef USE_LED_RING_DEFAULT_CONFIG
 const ledConfig_t defaultLedStripConfig[] = {
     { CALCULATE_LED_XY( 2,  2), LED_FUNCTION_THRUST_RING  },
     { CALCULATE_LED_XY( 2,  1), LED_FUNCTION_THRUST_RING  },
@@ -241,7 +227,22 @@ const ledConfig_t defaultLedStripConfig[] = {
     { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING  },
     { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING },
 };
-
+#else
+const ledConfig_t defaultLedStripConfig[] = {
+    { CALCULATE_LED_XY( 2,  2), LED_DIRECTION_SOUTH | LED_DIRECTION_EAST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
+    { CALCULATE_LED_XY( 2,  1), LED_DIRECTION_EAST | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+    { CALCULATE_LED_XY( 2,  0), LED_DIRECTION_NORTH | LED_DIRECTION_EAST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
+    { CALCULATE_LED_XY( 1,  0), LED_DIRECTION_NORTH | LED_FUNCTION_FLIGHT_MODE },
+    { CALCULATE_LED_XY( 0,  0), LED_DIRECTION_NORTH | LED_DIRECTION_WEST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
+    { CALCULATE_LED_XY( 0,  1), LED_DIRECTION_WEST | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+    { CALCULATE_LED_XY( 0,  2), LED_DIRECTION_SOUTH | LED_DIRECTION_WEST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
+    { CALCULATE_LED_XY( 1,  2), LED_DIRECTION_SOUTH | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_UP | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_UP | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_DOWN | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+    { CALCULATE_LED_XY( 1,  1), LED_DIRECTION_DOWN | LED_FUNCTION_FLIGHT_MODE | LED_FUNCTION_WARNING },
+};
+#endif
 
 
 
@@ -259,12 +260,13 @@ typedef enum {
     X_COORDINATE,
     Y_COORDINATE,
     DIRECTIONS,
-    FUNCTIONS
+    FUNCTIONS,
+    RING_COLORS
 } parseState_e;
 
-#define PARSE_STATE_COUNT 4
+#define PARSE_STATE_COUNT 5
 
-static const char chunkSeparators[PARSE_STATE_COUNT] = {',', ':', ':', '\0' };
+static const char chunkSeparators[PARSE_STATE_COUNT] = {',', ':', ':',':', '\0' };
 
 static const char directionCodes[] = { 'N', 'E', 'S', 'W', 'U', 'D' };
 #define DIRECTION_COUNT (sizeof(directionCodes) / sizeof(directionCodes[0]))
@@ -286,6 +288,15 @@ static const uint16_t functionMappings[FUNCTION_COUNT] = {
     LED_FUNCTION_ARM_STATE,
     LED_FUNCTION_THROTTLE,
 	LED_FUNCTION_THRUST_RING
+};
+
+static const char ringColorCodes[] = { 'R', 'B', 'G', 'W' };
+#define RING_COLOR_COUNT (sizeof(ringColorCodes) / sizeof(ringColorCodes[0]))
+static const uint16_t ringColorMappings[RING_COLOR_COUNT] = {
+    LED_RING_COLOR_RED,
+    LED_RING_COLOR_BLUE,
+    LED_RING_COLOR_GREEN,
+    LED_RING_COLOR_WHITE
 };
 
 // grid offsets
@@ -335,6 +346,7 @@ void updateLedCount(void)
     ledsInRingCount = 0;
 
     for (ledIndex = 0; ledIndex < MAX_LED_STRIP_LENGTH; ledIndex++) {
+
         ledConfig = &ledConfigs[ledIndex];
 
         if (ledConfigs[ledIndex].flags == 0 && ledConfigs[ledIndex].xy == 0) {
@@ -422,6 +434,18 @@ bool parseLedStripConfig(uint8_t ledIndex, const char *config)
                     }
                 }
                 break;
+            case RING_COLORS:
+                for (chunkIndex = 0; chunk[chunkIndex] && chunkIndex < CHUNK_BUFFER_SIZE; chunkIndex++) {
+                    for (uint8_t mappingIndex = 0; mappingIndex < RING_COLOR_COUNT; mappingIndex++) {
+                        if (ringColorCodes[mappingIndex] == chunk[chunkIndex]) {
+                            ledConfig->flags |= ringColorMappings[mappingIndex];
+                            break;
+                        }
+                    }
+                }
+                break;
+            default :
+                break;
         }
 
         parseState++;
@@ -443,6 +467,7 @@ void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSiz
 {
     char functions[FUNCTION_COUNT];
     char directions[DIRECTION_COUNT];
+    char ringColors[RING_COLOR_COUNT];
     uint8_t index;
     uint8_t mappingIndex;
     ledConfig_t *ledConfig = &ledConfigs[ledIndex];
@@ -450,6 +475,7 @@ void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSiz
     memset(ledConfigBuffer, 0, bufferSize);
     memset(&functions, 0, sizeof(functions));
     memset(&directions, 0, sizeof(directions));
+    memset(&ringColors, 0, sizeof(ringColors));
 
     for (mappingIndex = 0, index = 0; mappingIndex < FUNCTION_COUNT; mappingIndex++) {
         if (ledConfig->flags & functionMappings[mappingIndex]) {
@@ -463,7 +489,13 @@ void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSiz
         }
     }
 
-    sprintf(ledConfigBuffer, "%u,%u:%s:%s", GET_LED_X(ledConfig), GET_LED_Y(ledConfig), directions, functions);
+    for (mappingIndex = 0, index = 0; mappingIndex < RING_COLOR_COUNT; mappingIndex++) {
+        if (ledConfig->flags & ringColorMappings[mappingIndex]) {
+            ringColors[index++] = ringColorCodes[mappingIndex];
+        }
+    }
+
+    sprintf(ledConfigBuffer, "%u,%u:%s:%s:%s", GET_LED_X(ledConfig), GET_LED_Y(ledConfig), directions, functions, ringColors);
 }
 
 // timers
@@ -551,7 +583,7 @@ void applyLedModeLayer(void)
 
         ledConfig = &ledConfigs[ledIndex];
 
-        if(!(ledConfig->flags & LED_FUNCTION_THRUST_RING)) {
+        if (!(ledConfig->flags & LED_FUNCTION_THRUST_RING)) {
             setLedHsv(ledIndex, &hsv_black);
         }
 
@@ -706,7 +738,7 @@ void applyLedThrottleLayer()
     uint8_t ledIndex;
     for (ledIndex = 0; ledIndex < ledCount; ledIndex++) {
         ledConfig = &ledConfigs[ledIndex];
-        if(!(ledConfig->flags & LED_FUNCTION_THROTTLE)) {
+        if (!(ledConfig->flags & LED_FUNCTION_THROTTLE)) {
             continue;
         }
 
@@ -719,14 +751,87 @@ void applyLedThrottleLayer()
     }
 }
 
-static uint8_t frameCounter = 0;
-
-static uint8_t previousRow;
-static uint8_t currentRow;
-static uint8_t nextRow;
-
-static void updateLedAnimationState(void)
+int applyLedThrustRingLayer(void)
 {
+    uint8_t oppositeLedIndex = ledsInRingCount >> 1;
+    uint8_t ledIndex;
+    int returnedValue = 1;
+    int throttleScaled = scaleRange(rcData[THROTTLE], PWM_RANGE_MIN, PWM_RANGE_MAX, 1, 10);
+    static uint8_t rotationPhase = 0;
+    static bool nextLedOn = false;
+    hsvColor_t ringColor;
+    const ledConfig_t *ledConfig;
+
+
+    for (ledIndex = 0; ledIndex < ledCount; ledIndex++) {
+
+        ledConfig = &ledConfigs[ledIndex];
+
+        if ((ledConfig->flags & LED_RING_COLOR_RED)) {
+            ringColor = hsv_red;
+        }
+        else if ((ledConfig->flags & LED_RING_COLOR_BLUE)) {
+            ringColor = hsv_blue;
+        }
+        else if ((ledConfig->flags & LED_RING_COLOR_GREEN)) {
+            ringColor = hsv_green;
+        }
+        else {
+            ringColor = hsv_white;
+        }
+
+        if ((ledConfig->flags & LED_FUNCTION_THRUST_RING)) {
+
+            if (!ARMING_FLAG(ARMED)) {
+
+                if (nextLedOn == false) {
+                    nextLedOn = true;
+                }
+                else {
+                    nextLedOn = false;
+                    ringColor = hsv_black;
+                }
+
+                returnedValue = 1;
+            }
+            else {
+                if (rotationPhase == ((oppositeLedIndex) - 1)) {
+                    if (!((ledIndex == rotationPhase) || (ledIndex == (rotationPhase + oppositeLedIndex))
+                                  || (ledIndex == (rotationPhase +1)) || (ledIndex == 0))) {
+                        ringColor = hsv_black;
+                    }
+                }
+                else if (!((ledIndex == rotationPhase) || (ledIndex == (rotationPhase + oppositeLedIndex))
+                            || (ledIndex == (rotationPhase +1)) || (ledIndex == (rotationPhase + oppositeLedIndex +1 )))) {
+                        ringColor = hsv_black;
+                }
+                else {
+                        // Led stay on
+                }
+
+                returnedValue = throttleScaled;
+            }
+            setLedHsv(ledIndex, &ringColor);
+        }
+    }
+
+    if (rotationPhase >= (oppositeLedIndex - 1)) {
+        rotationPhase = 0;
+    }
+    else {
+        rotationPhase++;
+    }
+
+    return returnedValue;
+}
+
+void updateLedAnimationState(void)
+{
+    static uint8_t frameCounter = 0;
+
+    static uint8_t previousRow;
+    static uint8_t currentRow;
+    static uint8_t nextRow;
     uint8_t animationFrames = ledGridHeight;
 
     previousRow = (frameCounter + animationFrames - 1) % animationFrames;
@@ -737,7 +842,7 @@ static void updateLedAnimationState(void)
 }
 
 #ifdef USE_LED_ANIMATION
-static void applyLedAnimationLayer(void)
+void applyLedAnimationLayer(void)
 {
     const ledConfig_t *ledConfig;
 
@@ -765,9 +870,6 @@ static void applyLedAnimationLayer(void)
 
 void updateLedStrip(void)
 {
-    static uint8_t rotationPhase = 0;
-	uint8_t ledIndex;
-    const ledConfig_t *ledConfig;
 
 	if (!(ledStripInitialised && isWS2811LedStripReady())) {
         return;
@@ -820,46 +922,12 @@ void updateLedStrip(void)
         updateLedAnimationState();
     }
 
-    if(rotationUpdateNow) {
+    if (rotationUpdateNow) {
 
-        uint8_t oppositeLedIndex = ledsInRingCount >> 1;
-        ledConfig = &ledConfigs[ledIndex];
+        int animationSpeedScaled = 1 ;
 
-        // Set the color
-        for (ledIndex = 0; ledIndex < ledCount; ledIndex++) {
-
-            ledConfig = &ledConfigs[ledIndex];
-
-            if ((ledConfig->flags & LED_FUNCTION_THRUST_RING)) {
-                if (rotationPhase == ((oppositeLedIndex) - 1)) {
-                    if ((ledIndex == rotationPhase) || (ledIndex == (rotationPhase + oppositeLedIndex))
-                                  || (ledIndex == (rotationPhase +1)) || (ledIndex == 0)) {
-                        setLedHsv(ledIndex, &hsv_black);
-                    }
-                    else {
-                        setLedHsv(ledIndex, &hsv_blue);         // TODO modified to have a selected color with cli
-                    }
-                }
-                else if ((ledIndex == rotationPhase) || (ledIndex == (rotationPhase + oppositeLedIndex))
-                   || (ledIndex == (rotationPhase +1)) || (ledIndex == (rotationPhase + oppositeLedIndex +1 ))) {
-                    setLedHsv(ledIndex, &hsv_black);
-                }
-                else {
-                    setLedHsv(ledIndex, &hsv_blue);             // TODO modified to have a selected color with cli
-                }
-            }
-        }
-
-        if (rotationPhase >= (oppositeLedIndex - 1)) {
-            rotationPhase = 0;
-        }
-        else {
-            rotationPhase++;
-        }
-
-        int throttleScaled = scaleRange(rcData[THROTTLE], PWM_RANGE_MIN, PWM_RANGE_MAX, 1, 10);
-
-        nextRotationUpdateAt = now + LED_STRIP_5HZ/throttleScaled;           // TODO will be changed with more specifics animation
+        animationSpeedScaled = applyLedThrustRingLayer();
+        nextRotationUpdateAt = now + LED_STRIP_5HZ/animationSpeedScaled;           // TODO will be changed with more specifics animation
     }
 
 #ifdef USE_LED_ANIMATION
