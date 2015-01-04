@@ -21,7 +21,7 @@ void adcInit(drv_adc_config_t *init)
     int numChannels = 1, i, rank = 1;
 
     // configure always-present battery index (ADC4)
-    adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_4;
+    adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_10;
     adcConfig[ADC_BATTERY].dmaIndex = numChannels - 1;
 
     // optional ADC5 input on rev.5 hardware
@@ -69,7 +69,7 @@ void adcInit(drv_adc_config_t *init)
 
     // Configure ADC channels. Skip if channel is zero, means can't use PA0, but OK for this situation.
     for (i = 0; i < ADC_CHANNEL_MAX; i++)
-        if (adcConfig[i].adcChannel > 0)
+        if (adcConfig[i].adcChannel >= 0)
             ADC_RegularChannelConfig(ADC1, adcConfig[i].adcChannel, rank++, ADC_SampleTime_239Cycles5);
     ADC_DMACmd(ADC1, ENABLE);
 

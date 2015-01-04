@@ -248,6 +248,11 @@ uint16_t pwmReadRawRC(uint8_t chan)
     return pwmRead(mcfg.rcmap[chan]);
 }
 
+uint16_t GetNRF_RC_DAT(uint8_t chan) //tsw_tsw
+{
+    return RC_DAT[chan];
+}
+
 void computeRC(void)
 {
     uint16_t capture;
@@ -503,7 +508,7 @@ void loop(void)
             if (!rcOptions[BOXARM])
                 mwDisarm();
         }
-
+/*
         // Read rssi value
         rssi = RSSI_getValue();
 
@@ -529,7 +534,7 @@ void loop(void)
             failsafeCnt++;
         }
         // end of failsafe routine - next change is made with RcOptions setting
-
+*/
         // ------------------ STICKS COMMAND HANDLER --------------------
         // checking sticks positions
         for (i = 0; i < 4; i++) {

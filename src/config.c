@@ -209,13 +209,13 @@ static void resetConf(void)
     mcfg.board_align_yaw = 0;
     mcfg.acc_hardware = ACC_DEFAULT;     // default/autodetect
     mcfg.mag_hardware = MAG_DEFAULT;
-    mcfg.max_angle_inclination = 500;    // 50 degrees
+    mcfg.max_angle_inclination = 300;    // 30 degrees
     mcfg.yaw_control_direction = 1;
     mcfg.moron_threshold = 32;
     mcfg.currentscale = 400; // for Allegro ACS758LCB-100U (40mV/A)
-    mcfg.vbatscale = 110;
-    mcfg.vbatmaxcellvoltage = 43;
-    mcfg.vbatmincellvoltage = 33;
+    mcfg.vbatscale = 110;	//11 * (val/1024)*3.3
+    mcfg.vbatmaxcellvoltage = 43;	//4.3V min
+    mcfg.vbatmincellvoltage = 33;	//3.3V max
     mcfg.vbatwarningcellvoltage = 35;
     mcfg.power_adc_channel = 0;
     mcfg.serialrx_type = 0;
@@ -230,7 +230,7 @@ static void resetConf(void)
     mcfg.disarm_kill_switch = 1; // AUX disarm independently of throttle value
     mcfg.fw_althold_dir = 1;
     // Motor/ESC/Servo
-    mcfg.minthrottle = 1150;
+    mcfg.minthrottle = 1060;
     mcfg.maxthrottle = 1850;
     mcfg.mincommand = 1000;
     mcfg.deadband3d_low = 1406;
@@ -253,30 +253,30 @@ static void resetConf(void)
     mcfg.rssi_adc_max = 4095;
 
     cfg.pidController = 0;
-    cfg.P8[ROLL] = 40;
-    cfg.I8[ROLL] = 30;
-    cfg.D8[ROLL] = 23;
-    cfg.P8[PITCH] = 40;
-    cfg.I8[PITCH] = 30;
-    cfg.D8[PITCH] = 23;
+    cfg.P8[ROLL] = 55;
+    cfg.I8[ROLL] = 15;
+    cfg.D8[ROLL] = 30;
+    cfg.P8[PITCH] = 55;
+    cfg.I8[PITCH] = 15;
+    cfg.D8[PITCH] = 30;
     cfg.P8[YAW] = 85;
     cfg.I8[YAW] = 45;
     cfg.D8[YAW] = 0;
     cfg.P8[PIDALT] = 50;
-    cfg.I8[PIDALT] = 0;
-    cfg.D8[PIDALT] = 0;
+    cfg.I8[PIDALT] = 10;
+    cfg.D8[PIDALT] = 10;
     cfg.P8[PIDPOS] = 11; // POSHOLD_P * 100;
     cfg.I8[PIDPOS] = 0; // POSHOLD_I * 100;
     cfg.D8[PIDPOS] = 0;
-    cfg.P8[PIDPOSR] = 20; // POSHOLD_RATE_P * 10;
+    cfg.P8[PIDPOSR] = 50; // POSHOLD_RATE_P * 10;
     cfg.I8[PIDPOSR] = 8; // POSHOLD_RATE_I * 100;
     cfg.D8[PIDPOSR] = 45; // POSHOLD_RATE_D * 1000;
     cfg.P8[PIDNAVR] = 14; // NAV_P * 10;
     cfg.I8[PIDNAVR] = 20; // NAV_I * 100;
     cfg.D8[PIDNAVR] = 80; // NAV_D * 1000;
-    cfg.P8[PIDLEVEL] = 90;
+    cfg.P8[PIDLEVEL] = 80;
     cfg.I8[PIDLEVEL] = 10;
-    cfg.D8[PIDLEVEL] = 100;
+    cfg.D8[PIDLEVEL] = 80;
     cfg.P8[PIDMAG] = 40;
     cfg.P8[PIDVEL] = 120;
     cfg.I8[PIDVEL] = 45;
@@ -294,7 +294,7 @@ static void resetConf(void)
     cfg.angleTrim[0] = 0;
     cfg.angleTrim[1] = 0;
     cfg.mag_declination = 0;    // For example, -6deg 37min, = -637 Japan, format is [sign]dddmm (degreesminutes) default is zero.
-    cfg.acc_lpf_factor = 4;
+    cfg.acc_lpf_factor = 10;
     cfg.accz_deadband = 40;
     cfg.accxy_deadband = 40;
     cfg.baro_tab_size = 21;
@@ -306,11 +306,11 @@ static void resetConf(void)
     cfg.small_angle = 25;
 
     // Radio
-    parseRcChannels("AETR1234");
+    parseRcChannels("AETR1234");//TERA1234
     cfg.deadband = 0;
     cfg.yawdeadband = 0;
     cfg.alt_hold_throttle_neutral = 40;
-    cfg.alt_hold_fast_change = 1;
+    cfg.alt_hold_fast_change = 0; //slow alt change
     cfg.throttle_correction_value = 0;      // could 10 with althold or 40 for fpv
     cfg.throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
 

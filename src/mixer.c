@@ -616,7 +616,7 @@ void mixTable(void)
             }
         }
         if (!f.ARMED) {
-            motor[i] = motor_disarmed[i];
+            motor[i] = 1000;
         }
     }
 }

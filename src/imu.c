@@ -422,7 +422,7 @@ int getEstimatedAltitude(void)
         if (!velocityControl) {
             error = constrain(AltHold - EstAlt, -500, 500);
             error = applyDeadband(error, 10);       // remove small P parametr to reduce noise near zero position
-            setVel = constrain((cfg.P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
+            setVel = constrain((cfg.P8[PIDPOSR] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
         } else {
             setVel = setVelocity;
         }
@@ -430,15 +430,15 @@ int getEstimatedAltitude(void)
         // Velocity PID-Controller
         // P
         error = setVel - vel_tmp;
-        BaroPID = constrain((cfg.P8[PIDVEL] * error / 32), -300, +300);
+        BaroPID = constrain((cfg.P8[PIDALT] * error / 32), -300, +300);
 
         // I
-        errorVelocityI += (cfg.I8[PIDVEL] * error);
+        errorVelocityI += (cfg.I8[PIDALT] * error);
         errorVelocityI = constrain(errorVelocityI, -(8196 * 200), (8196 * 200));
         BaroPID += errorVelocityI / 8196;     // I in the range of +/-200
 
         // D
-        BaroPID -= constrain(cfg.D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
+        BaroPID -= constrain(cfg.D8[PIDALT] * (accZ_tmp + accZ_old) / 512, -150, 150);
 
     } else {
         BaroPID = 0;

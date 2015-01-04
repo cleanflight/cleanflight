@@ -111,20 +111,14 @@ static const uint8_t multiPPM[] = {
 };
 
 static const uint8_t multiPWM[] = {
-    PWM1 | TYPE_IW,     // input #1
-    PWM2 | TYPE_IW,
-    PWM3 | TYPE_IW,
-    PWM4 | TYPE_IW,
-    PWM5 | TYPE_IW,
-    PWM6 | TYPE_IW,
-    PWM7 | TYPE_IW,
-    PWM8 | TYPE_IW,     // input #8
-    PWM9 | TYPE_M,      // motor #1 or servo #1 (swap to servo if needed)
-    PWM10 | TYPE_M,     // motor #2 or servo #2 (swap to servo if needed)
-    PWM11 | TYPE_M,     // motor #1 or #3
-    PWM12 | TYPE_M,
-    PWM13 | TYPE_M,
-    PWM14 | TYPE_M,     // motor #4 or #6
+	//PWM13 | TYPE_M,
+	//PWM12 | TYPE_M,
+	//PWM14 | TYPE_M,
+	//PWM11 | TYPE_M,
+	PWM11 | TYPE_M,
+	PWM12 | TYPE_M,
+	PWM13 | TYPE_M,
+	PWM14 | TYPE_M,
     0xFF
 };
 #endif

@@ -15,6 +15,10 @@ extern rcReadRawDataPtr rcReadRawFunc;
 // receiver read function
 extern uint16_t pwmReadRawRC(uint8_t chan);
 
+//my nRF function
+extern uint16_t GetNRF_RC_DAT(uint8_t chan);
+u32 nRF_cnt=0;
+u16 RC_timeout=0;
 // from system_stm32f10x.c
 void SetSysClock(bool overclock);
 
@@ -83,8 +87,8 @@ int main(void)
     activateConfig();
 
 #ifndef CJMCU
-    if (spiInit() == SPI_DEVICE_MPU && hw_revision == NAZE32_REV5)
-        hw_revision = NAZE32_SP;
+    //if (spiInit() == SPI_DEVICE_MPU && hw_revision == NAZE32_REV5)
+    //    hw_revision = NAZE32_SP;
 #endif
 
     if (hw_revision != NAZE32_SP)
@@ -151,7 +155,7 @@ int main(void)
         pwm_params.airplane = false;
     pwm_params.useUART = feature(FEATURE_GPS) || feature(FEATURE_SERIALRX); // spektrum/sbus support uses UART too
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
-    pwm_params.usePPM = feature(FEATURE_PPM);
+    pwm_params.usePPM = 0;//feature(FEATURE_PPM); //multiPWM
     pwm_params.enableInput = !feature(FEATURE_SERIALRX); // disable inputs if using spektrum
     pwm_params.useServos = core.useServo;
     pwm_params.extraServos = cfg.gimbal_flags & GIMBAL_FORWARDAUX;
@@ -183,7 +187,7 @@ int main(void)
     // configure PWM/CPPM read function and max number of channels. spektrum or sbus below will override both of these, if enabled
     for (i = 0; i < RC_CHANS; i++)
         rcData[i] = 1502;
-    rcReadRawFunc = pwmReadRawRC;
+    rcReadRawFunc = GetNRF_RC_DAT;;
     core.numRCChannels = MAX_INPUTS;
 
     if (feature(FEATURE_SERIALRX)) {
@@ -244,9 +248,26 @@ int main(void)
     calibratingB = CALIBRATING_BARO_CYCLES;             // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
     f.SMALL_ANGLE = 1;
 
+		spi2_init();
+		nRF_init(MODEL_TX2,40);
+
     // loopy
     while (1) {
         loop();
+
+				if(micros()-nRF_cnt>=2000) { //2ms
+				nRF_cnt=micros();
+				if(RC_timeout>100) { //200ms timeout
+					if(f.ARMED)
+					{
+						for (i = 0; i < 3; i++)
+						rcData[i] = mcfg.midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
+						rcData[THROTTLE] = cfg.failsafe_throttle;
+					}
+				} else RC_timeout++;
+				data_exchange();
+		}
+
 #ifdef SOFTSERIAL_LOOPBACK
         if (loopbackPort1) {
             while (serialTotalBytesWaiting(loopbackPort1)) {
