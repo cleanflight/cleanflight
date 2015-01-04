@@ -504,7 +504,7 @@ static void airplaneMixer(void)
 
 void mixTable(void)
 {
-    int16_t maxMotor;
+    int16_t maxMotorOutput;
     uint32_t i;
 
     if (motorCount > 3) {
@@ -620,13 +620,17 @@ void mixTable(void)
         }
     }
 
-    maxMotor = motor[0];
+    // Find the maximum motor output.
+    maxMotorOutput = motor[0];
     for (i = 1; i < motorCount; i++)
-        if (motor[i] > maxMotor)
-            maxMotor = motor[i];
+        if (motor[i] > maxMotorOutput)
+            maxMotorOutput = motor[i];
     for (i = 0; i < motorCount; i++) {
-        if (maxMotor > escAndServoConfig->maxthrottle)     // this is a way to still have good gyro corrections if at least one motor reaches its max.
-            motor[i] -= maxMotor - escAndServoConfig->maxthrottle;
+        // If one motor is above the maxthrottle threshold, we reduce the value
+        // of all motors by the amount of overshoot.  That way, only one motor
+        // is at max and the relative power of each motor is preserved.
+        if (maxMotorOutput > escAndServoConfig->maxthrottle)
+            motor[i] -= maxMotorOutput - escAndServoConfig->maxthrottle;
         if (feature(FEATURE_3D)) {
             if ((rcData[THROTTLE]) > rxConfig->midrc) {
                 motor[i] = constrain(motor[i], flight3DConfig->deadband3d_high, escAndServoConfig->maxthrottle);
@@ -635,12 +639,10 @@ void mixTable(void)
             }
         } else {
             motor[i] = constrain(motor[i], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
-            if ((rcData[THROTTLE]) < rxConfig->mincheck) {
-                if (!feature(FEATURE_MOTOR_STOP))
-                    motor[i] = escAndServoConfig->minthrottle;
-                else
-                    motor[i] = escAndServoConfig->mincommand;
-            }
+            // Don't spin the motors if FEATURE_MOTOR_STOP is enabled and we're
+            // at minimum throttle.
+            if (feature(FEATURE_MOTOR_STOP) && (rcData[THROTTLE]) < rxConfig->mincheck)
+				motor[i] = escAndServoConfig->mincommand;
         }
         if (!ARMING_FLAG(ARMED)) {
             motor[i] = motor_disarmed[i];

@@ -51,15 +51,15 @@
 static escAndServoConfig_t *escAndServoConfig;
 static pidProfile_t *pidProfile;
 
-static bool isUsingSticksToArm = true;
+static bool useSticksToArm = true;
 
 int16_t rcCommand[4];           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 
 uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
 
-bool isUsingSticksForArming(void)
+bool areUsingSticksToArm(void)
 {
-    return isUsingSticksToArm;
+    return useSticksToArm;
 }
 
 bool areSticksInApModePosition(uint16_t ap_mode)
@@ -103,7 +103,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     rcSticks = stTmp;
 
     // perform actions
-    if (!isUsingSticksToArm) {
+    if (!useSticksToArm) {
 
         if (IS_RC_MODE_ACTIVE(BOXARM)) {
             // Arming via ARM BOX
@@ -131,7 +131,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     if (ARMING_FLAG(ARMED)) {
         // actions during armed
 
-        if (isUsingSticksToArm) {
+        if (useSticksToArm) {
             // Disarm on throttle down + yaw
             if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE)
                 mwDisarm();
@@ -189,7 +189,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         saveConfigAndNotify();
     }
 
-    if (isUsingSticksToArm) {
+    if (useSticksToArm) {
 
         if (rcSticks == THR_LO + YAW_HI + PIT_CE + ROL_CE) {
             // Arm via YAW
@@ -524,12 +524,12 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
     escAndServoConfig = escAndServoConfigToUse;
     pidProfile = pidProfileToUse;
 
-    isUsingSticksToArm = true;
+    useSticksToArm = true;
 
     for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
         modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
         if (modeActivationCondition->modeId == BOXARM && IS_RANGE_USABLE(&modeActivationCondition->range)) {
-            isUsingSticksToArm = false;
+            useSticksToArm = false;
             break;
         }
     }
