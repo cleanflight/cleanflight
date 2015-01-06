@@ -453,7 +453,7 @@ static void resetConf(void)
     masterConfig.blackbox_rate_denom = 1;
 #endif
 
-    // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
+    // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE or SPARKY target)
 #ifdef ALIENWII32
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);

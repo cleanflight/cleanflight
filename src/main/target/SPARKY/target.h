@@ -133,3 +133,12 @@
 // USART2, PA3
 #define BIND_PORT GPIOA
 #define BIND_PIN Pin_3
+
+// alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for SPARKY target)
+#ifdef ALIENWII32
+#define BRUSHED_MOTORS
+#define HARDWARE_BIND_PLUG
+// Hardware bind plug at PB12 (Pin 25)
+#define BINDPLUG_PORT  GPIOB
+#define BINDPLUG_PIN   Pin_12
+#endif
