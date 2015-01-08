@@ -135,6 +135,12 @@ STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F10x_StdPeriph_Driver
 
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
 
+EXCLUDES	= stm32f10x_crc.c \
+		stm32f10x_cec.c \
+		stm32f10x_can.c
+
+STDPERIPH_SRC := $(filter-out ${EXCLUDES}, $(STDPERIPH_SRC))
+
 # Search path and source files for the CMSIS sources
 VPATH		:= $(VPATH):$(CMSIS_DIR)/CM3/CoreSupport:$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x
 CMSIS_SRC	 = $(notdir $(wildcard $(CMSIS_DIR)/CM3/CoreSupport/*.c \
@@ -158,6 +164,12 @@ else
 STDPERIPH_DIR	 = $(ROOT)/lib/main/STM32F10x_StdPeriph_Driver
 
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
+
+EXCLUDES	= stm32f10x_crc.c \
+		stm32f10x_cec.c \
+		stm32f10x_can.c
+
+STDPERIPH_SRC := $(filter-out ${EXCLUDES}, $(STDPERIPH_SRC))
 
 # Search path and source files for the CMSIS sources
 VPATH		:= $(VPATH):$(CMSIS_DIR)/CM3/CoreSupport:$(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x
@@ -250,7 +262,8 @@ HIGHEND_SRC  = flight/autotune.c \
            telemetry/smartport.c \
 		   sensors/sonar.c \
 		   sensors/barometer.c \
-		   sensors/pitotmeter.c
+		   sensors/pitotmeter.c \
+		   blackbox/blackbox.c
 
 NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -385,6 +398,8 @@ CJMCU_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
+		   blackbox/blackbox.c \
+		   hardware_revision.c \
 		   $(COMMON_SRC)
 
 CC3D_SRC	 = startup_stm32f10x_md_gcc.S \

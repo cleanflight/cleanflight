@@ -102,6 +102,8 @@
 #define GPS
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM5
+
+#define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
