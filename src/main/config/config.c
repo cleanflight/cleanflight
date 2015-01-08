@@ -453,12 +453,16 @@ static void resetConf(void)
     masterConfig.blackbox_rate_denom = 1;
 #endif
 
-    // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE or SPARKY target)
+    // alternative defaults settings for ALIENWIIF1 and ALIENWIIF3 targets
 #ifdef ALIENWII32
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
     featureSet(FEATURE_FAILSAFE);
+#ifdef ALIENWIIF3
+    masterConfig.serialConfig.serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
+#else
     masterConfig.serialConfig.serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
+#endif
     masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
     masterConfig.escAndServoConfig.minthrottle = 1000;
