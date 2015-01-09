@@ -169,6 +169,12 @@ static void timerQueue_QueueDelete(timerQueueRec_t *rec)
 static void timerQueue_QueueDeleteIdx(unsigned position)
 {
     if(timerQueue.heapLen == 0) return;
+    if(timerQueue.heapLen == position) {
+        // special-case deleting of last element (seting entry position is different when deleting *last)
+        --timerQueue.heapLen;
+        timerQueue.heap[position - 1]->queuePos = 0;
+        return;
+    }
     unsigned child, parent = position;
     timerQueueRec_t *last = timerQueue.heap[--timerQueue.heapLen];
     timerQueue.heap[parent - 1]->queuePos = 0;
