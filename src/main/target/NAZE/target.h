@@ -143,5 +143,3 @@
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5
 #endif
-
-#define TIME_USE_TIMER    // base timming on timer instead of systick

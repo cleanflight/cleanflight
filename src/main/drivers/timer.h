@@ -22,31 +22,37 @@
 #if defined(CJMCU) || defined(EUSTM32F103RC) || defined(NAZE) || defined(OLIMEXINO) || defined(PORT103R)
 # define USABLE_TIMER_CHANNEL_COUNT 14
 # define TIME_TIMER TIM2
+# define TIME_USE_TIMER    // base timming on timer instead of systick
 #endif
 
 #if defined(CC3D)
 #define USABLE_TIMER_CHANNEL_COUNT 12
 # define TIME_TIMER TIM3                  // used for softserial, but may have output allocated in PPM mode
+# define TIME_USE_TIMER
 #endif
 
 #if defined(STM32F3DISCOVERY) && !(defined(CHEBUZZF3))
 # define USABLE_TIMER_CHANNEL_COUNT 14
 # define TIME_TIMER TIM2
+# define TIME_USE_TIMER
 #endif
 
-#ifdef CHEBUZZF3
+#if defined(CHEBUZZF3)
 # define USABLE_TIMER_CHANNEL_COUNT 18
 # define TIME_TIMER TIM2
+# define TIME_USE_TIMER
 #endif
 
 #if defined(NAZE32PRO)
 # define USABLE_TIMER_CHANNEL_COUNT 14
 # define TIME_TIMER TIM2
+# define TIME_USE_TIMER
 #endif
 
-#ifdef SPARKY
+#if defined(SPARKY)
 # define USABLE_TIMER_CHANNEL_COUNT 11
 # define TIME_TIMER TIM2
+# define TIME_USE_TIMER
 #endif
 
 typedef uint16_t captureCompare_t;        // 16 bit on both 103 and 303, just register access must be 32bit sometimes (use timCCR_t)
