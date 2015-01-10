@@ -20,6 +20,7 @@
 #define USE_LED_RING_DEFAULT_CONFIG     // if you want to have the 12 first led with the ring by default
 
 #define MAX_LED_STRIP_LENGTH 32
+#define CONFIGURABLE_COLOR_COUNT 16
 
 #define LED_X_BIT_OFFSET 4
 #define LED_Y_BIT_OFFSET 0
@@ -31,6 +32,7 @@
 
 #define CALCULATE_LED_X(x) ((x & LED_XY_MASK) << LED_X_BIT_OFFSET)
 #define CALCULATE_LED_Y(y) ((y & LED_XY_MASK) << LED_Y_BIT_OFFSET)
+
 
 #define CALCULATE_LED_XY(x,y) (CALCULATE_LED_X(x) | CALCULATE_LED_Y(y))
 
@@ -48,10 +50,6 @@ typedef enum {
     LED_FUNCTION_ARM_STATE   = (1 << 9),
     LED_FUNCTION_THROTTLE    = (1 << 10),
     LED_FUNCTION_THRUST_RING = (1 << 11),
-    LED_RING_COLOR_RED       = (1 << 12),
-    LED_RING_COLOR_BLUE      = (1 << 13),
-    LED_RING_COLOR_GREEN     = (1 << 14),
-    LED_RING_COLOR_WHITE     = (1 << 15),
 } ledFlag_e;
 
 #define LED_DIRECTION_BIT_OFFSET 0
@@ -61,13 +59,13 @@ typedef enum {
 
 
 typedef struct ledConfig_s {
-    uint8_t xy; // see LED_X/Y_MASK defines
+    uint8_t xy;     // see LED_X/Y_MASK defines
     uint16_t flags; // see ledFlag_e
+    uint8_t color;  // see colors (config_master)
 } ledConfig_t;
 
 extern uint8_t ledCount;
 
-#define CONFIGURABLE_COLOR_COUNT 16
 
 
 bool parseLedStripConfig(uint8_t ledIndex, const char *config);

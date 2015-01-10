@@ -27,25 +27,54 @@
 
 #ifdef LED_STRIP
 
+#include <common/axis.h>
 #include <common/color.h>
 
 #include "drivers/light_ws2811strip.h"
 #include "drivers/system.h"
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
 #include "drivers/serial.h"
+#include "drivers/gpio.h"
+#include "drivers/timer.h"
+#include "drivers/pwm_rx.h"
 
 #include <common/maths.h>
 #include <common/printf.h>
 #include <common/typeconversion.h>
 
+#include "flight/flight.h"
+#include "flight/failsafe.h"
+#include "flight/mixer.h"
+#include "flight/navigation.h"
+
 #include "sensors/battery.h"
+#include "sensors/sensors.h"
+#include "sensors/acceleration.h"
+#include "sensors/barometer.h"
+#include "sensors/boardalignment.h"
+#include "sensors/gyro.h"
+
+#include "rx/rx.h"
+#include "io/rc_controls.h"
+#include "io/escservo.h"
+#include "io/gps.h"
+#include "io/gimbal.h"
+#include "io/serial.h"
+
 
 #include "config/runtime_config.h"
 #include "config/config.h"
-#include "rx/rx.h"
-#include "io/rc_controls.h"
-#include "flight/failsafe.h"
+#include "config/config_profile.h"
+
+#include "telemetry/telemetry.h"
+
+
+
 
 #include "io/ledstrip.h"
+
+#include "config/config_master.h"
 
 static bool ledStripInitialised = false;
 static failsafe_t* failsafe;
@@ -53,8 +82,6 @@ static failsafe_t* failsafe;
 #if MAX_LED_STRIP_LENGTH > WS2811_LED_STRIP_LENGTH
 #error "Led strip length must match driver"
 #endif
-
-hsvColor_t *colors;
 
 //#define USE_LED_ANIMATION
 
@@ -210,22 +237,23 @@ uint8_t ledCount;
 uint8_t ledsInRingCount;
 
 ledConfig_t *ledConfigs;
+hsvColor_t *colors;
 
 
 #ifdef USE_LED_RING_DEFAULT_CONFIG
 const ledConfig_t defaultLedStripConfig[] = {
-    { CALCULATE_LED_XY( 2,  2), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 2,  1), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 2,  0), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 1,  0), LED_FUNCTION_THRUST_RING },
-    { CALCULATE_LED_XY( 0,  0), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 0,  1), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 0,  2), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 1,  2), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING  },
-    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING },
+    { CALCULATE_LED_XY( 2,  2), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 2,  1), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 2,  0), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 1,  0), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 0,  0), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 0,  1), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 0,  2), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 1,  2), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING, 3 },
+    { CALCULATE_LED_XY( 1,  1), LED_FUNCTION_THRUST_RING, 3 },
 };
 #else
 const ledConfig_t defaultLedStripConfig[] = {
@@ -288,15 +316,6 @@ static const uint16_t functionMappings[FUNCTION_COUNT] = {
     LED_FUNCTION_ARM_STATE,
     LED_FUNCTION_THROTTLE,
 	LED_FUNCTION_THRUST_RING
-};
-
-static const char ringColorCodes[] = { 'R', 'B', 'G', 'W' };
-#define RING_COLOR_COUNT (sizeof(ringColorCodes) / sizeof(ringColorCodes[0]))
-static const uint16_t ringColorMappings[RING_COLOR_COUNT] = {
-    LED_RING_COLOR_RED,
-    LED_RING_COLOR_BLUE,
-    LED_RING_COLOR_GREEN,
-    LED_RING_COLOR_WHITE
 };
 
 // grid offsets
@@ -435,13 +454,12 @@ bool parseLedStripConfig(uint8_t ledIndex, const char *config)
                 }
                 break;
             case RING_COLORS:
-                for (chunkIndex = 0; chunk[chunkIndex] && chunkIndex < CHUNK_BUFFER_SIZE; chunkIndex++) {
-                    for (uint8_t mappingIndex = 0; mappingIndex < RING_COLOR_COUNT; mappingIndex++) {
-                        if (ringColorCodes[mappingIndex] == chunk[chunkIndex]) {
-                            ledConfig->flags |= ringColorMappings[mappingIndex];
-                            break;
-                        }
-                    }
+                if (atoi(chunk) < CONFIGURABLE_COLOR_COUNT) {
+                    ledConfig->color = atoi(chunk);
+                }
+                else
+                {
+                    ledConfig->color = 1;
                 }
                 break;
             default :
@@ -467,15 +485,16 @@ void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSiz
 {
     char functions[FUNCTION_COUNT];
     char directions[DIRECTION_COUNT];
-    char ringColors[RING_COLOR_COUNT];
+    uint8_t ringColors;
     uint8_t index;
     uint8_t mappingIndex;
+    uint8_t colorIndex;
     ledConfig_t *ledConfig = &ledConfigs[ledIndex];
 
     memset(ledConfigBuffer, 0, bufferSize);
     memset(&functions, 0, sizeof(functions));
     memset(&directions, 0, sizeof(directions));
-    memset(&ringColors, 0, sizeof(ringColors));
+    //memset(&ringColors, 0 ,sizeof(ringColors));
 
     for (mappingIndex = 0, index = 0; mappingIndex < FUNCTION_COUNT; mappingIndex++) {
         if (ledConfig->flags & functionMappings[mappingIndex]) {
@@ -489,13 +508,13 @@ void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSiz
         }
     }
 
-    for (mappingIndex = 0, index = 0; mappingIndex < RING_COLOR_COUNT; mappingIndex++) {
-        if (ledConfig->flags & ringColorMappings[mappingIndex]) {
-            ringColors[index++] = ringColorCodes[mappingIndex];
+    for (colorIndex = 0, index = 0; colorIndex < CONFIGURABLE_COLOR_COUNT; colorIndex++) {
+        if (ledConfig->color == colorIndex) {
+            ringColors = colorIndex;
         }
     }
 
-    sprintf(ledConfigBuffer, "%u,%u:%s:%s:%s", GET_LED_X(ledConfig), GET_LED_Y(ledConfig), directions, functions, ringColors);
+    sprintf(ledConfigBuffer, "%u,%u:%s:%s:%u", GET_LED_X(ledConfig), GET_LED_Y(ledConfig), directions, functions, ringColors);
 }
 
 // timers
@@ -767,18 +786,7 @@ int applyLedThrustRingLayer(void)
 
         ledConfig = &ledConfigs[ledIndex];
 
-        if ((ledConfig->flags & LED_RING_COLOR_RED)) {
-            ringColor = hsv_red;
-        }
-        else if ((ledConfig->flags & LED_RING_COLOR_BLUE)) {
-            ringColor = hsv_blue;
-        }
-        else if ((ledConfig->flags & LED_RING_COLOR_GREEN)) {
-            ringColor = hsv_green;
-        }
-        else {
-            ringColor = hsv_white;
-        }
+        ringColor = masterConfig.colors[ledConfig->color];
 
         if ((ledConfig->flags & LED_FUNCTION_THRUST_RING)) {
 

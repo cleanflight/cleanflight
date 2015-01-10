@@ -176,15 +176,11 @@ This mode is dedicated to the 12, 16 or 24 leds ring (e.g. NeoPixel ring) used a
 
 In order to get a better display, it is adviced to not gather another function with the ring thrust state.
 
-Each led of the ring has an additionnal option on the color:
-* `R` - `R`ed.
-* `B` - `B`lue.
-* `G` - `G`reen.
-* `W` - `W`hite is the default color.
+Each led of the ring has an additionnal option on the color. It can be selected between the 15 colors availables (see cli : colors).
 
-For exemple, led 0 is set as a `R`ing thrust state led in `B`lue as follow. Di
+For exemple, led 0 is set as a `R`ing thrust state led in color 13 as follow. 
 
-led 0 2,2::R:B
+led 0 2,2::R:13
 
 Note: Direction does not applied on the ring leds.
 
