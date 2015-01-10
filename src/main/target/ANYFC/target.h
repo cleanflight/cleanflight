@@ -16,7 +16,7 @@
  */
 
 #pragma once
-#define TARGET_BOARD_IDENTIFIER "ANYFC"
+#define TARGET_BOARD_IDENTIFIER "ANYF"
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_5 // Blue LEDs
