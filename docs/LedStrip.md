@@ -110,6 +110,7 @@ Note: It is perfectly possible to configure an LED to have all directions `NESWU
 * `I` - `I`ndicator.
 * `A` - `A`rmed state.
 * `T` - `T`hrust state.
+* `R` - `R`ing thrust state.
 
 Example:
 
@@ -169,6 +170,19 @@ Note: Armed State cannot be used with Flight Mode.
 This mode fades the LED current LED color to the previous/next color in the HSB color space depending on throttle stick position.  When the
 throttle is in the middle position the color is unaffected, thus it can be mixed with orientation colors to indicate orientation and throttle at
 the same time.
+
+#### Ring thrust state
+This mode is dedicated to the 12, 16 or 24 leds ring (e.g. NeoPixel ring) used as an afterburner. One led on two are displayed when disarmed. Once it is armed, the leds are displaying with the following sequences : 2 On, 4 Off, 2 On, 4 Off, for the 12 leds rings, and the sequence is turning clock wise as a function of the throttles. 
+
+In order to get a better display, it is adviced to not gather another function with the ring thrust state.
+
+Each led of the ring has an additionnal option on the color. It can be selected between the 15 colors availables (see cli : colors).
+
+For exemple, led 0 is set as a `R`ing thrust state led in color 13 as follow. 
+
+led 0 2,2::R:13
+
+Note: Direction does not applied on the ring leds.
 
 ## Positioning
 
