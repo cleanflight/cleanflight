@@ -75,7 +75,6 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
-#include "blackbox_fielddefs.h"
 #include "blackbox.h"
 
 #define BLACKBOX_BAUDRATE 115200
@@ -83,6 +82,9 @@
 #define BLACKBOX_I_INTERVAL 32
 
 #define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
+
+#define STATIC_ASSERT(condition, name ) \
+    typedef char assert_failed_ ## name [(condition) ? 1 : -1 ]
 
 // Some macros to make writing FLIGHT_LOG_FIELD_* constants shorter:
 #define STR_HELPER(x) #x
@@ -236,7 +238,8 @@ typedef enum BlackboxState {
     BLACKBOX_STATE_SEND_GPS_G_HEADERS,
     BLACKBOX_STATE_SEND_SYSINFO,
     BLACKBOX_STATE_PRERUN,
-    BLACKBOX_STATE_RUNNING
+    BLACKBOX_STATE_RUNNING,
+    BLACKBOX_STATE_SHUTTING_DOWN
 } BlackboxState;
 
 typedef struct gpsState_t {
@@ -268,7 +271,10 @@ static struct {
     } u;
 } xmitState;
 
+// Cache for FLIGHT_LOG_FIELD_CONDITION_* test results:
 static uint32_t blackboxConditionCache;
+
+STATIC_ASSERT((sizeof(blackboxConditionCache) * 8) >= FLIGHT_LOG_FIELD_CONDITION_NEVER, too_many_flight_log_conditions);
 
 static uint32_t blackboxIteration;
 static uint32_t blackboxPFrameIndex, blackboxIFrameIndex;
@@ -672,6 +678,9 @@ static void blackboxSetState(BlackboxState newState)
             blackboxPFrameIndex = 0;
             blackboxIFrameIndex = 0;
         break;
+        case BLACKBOX_STATE_SHUTTING_DOWN:
+            xmitState.u.startTime = millis();
+        break;
         default:
             ;
     }
@@ -895,6 +904,14 @@ static void releaseBlackboxPort(void)
     serialSetBaudRate(blackboxPort, previousBaudRate);
 
     endSerialPortFunction(blackboxPort, FUNCTION_BLACKBOX);
+
+    /*
+     * Normally this would be handled by mw.c, but since we take an unknown amount
+     * of time to shut down asynchronously, we're the only ones that know when to call it.
+     */
+    if (isSerialPortFunctionShared(FUNCTION_BLACKBOX, FUNCTION_MSP)) {
+        mspAllocateSerialPorts(&masterConfig.serialConfig);
+    }
 }
 
 void startBlackbox(void)
@@ -932,10 +949,18 @@ void startBlackbox(void)
 
 void finishBlackbox(void)
 {
-    if (blackboxState != BLACKBOX_STATE_DISABLED && blackboxState != BLACKBOX_STATE_STOPPED) {
-        blackboxSetState(BLACKBOX_STATE_STOPPED);
-        
+    if (blackboxState == BLACKBOX_STATE_RUNNING) {
+        blackboxLogEvent(FLIGHT_LOG_EVENT_LOG_END, NULL);
+
+        blackboxSetState(BLACKBOX_STATE_SHUTTING_DOWN);
+    } else if (blackboxState != BLACKBOX_STATE_DISABLED && blackboxState != BLACKBOX_STATE_STOPPED
+            && blackboxState != BLACKBOX_STATE_SHUTTING_DOWN) {
+        /*
+         * We're shutting down in the middle of transmitting headers, so we can't log a "log completed" event.
+         * Just give the port back and stop immediately.
+         */
         releaseBlackboxPort();
+        blackboxSetState(BLACKBOX_STATE_STOPPED);
     }
 }
 
@@ -1142,7 +1167,6 @@ static bool blackboxWriteSysinfo()
             blackboxPrintf("H P interval:%d/%d\n", masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
 
             xmitState.u.serialBudget -= strlen("H P interval:%d/%d\n");
-
         break;
         case 5:
             blackboxPrintf("H rcRate:%d\n", masterConfig.controlRateProfiles[masterConfig.current_profile_index].rcRate8);
@@ -1164,10 +1188,10 @@ static bool blackboxWriteSysinfo()
             blackboxPrintf("H gyro.scale:0x%x\n", floatConvert.u);
 
             xmitState.u.serialBudget -= strlen("H gyro.scale:0x%x\n") + 6;
-           break;
+        break;
         case 9:
             blackboxPrintf("H acc_1G:%u\n", acc_1G);
-
+            
             xmitState.u.serialBudget -= strlen("H acc_1G:%u\n");
         break;
         case 10:
@@ -1194,10 +1218,49 @@ static bool blackboxWriteSysinfo()
     return false;
 }
 
+/**
+ * Write the given event to the log immediately
+ */
+void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
+{
+    if (blackboxState != BLACKBOX_STATE_RUNNING)
+        return;
+
+    //Shared header for event frames
+    blackboxWrite('E');
+    blackboxWrite(event);
+
+    //Now serialize the data for this specific frame type
+    switch (event) {
+        case FLIGHT_LOG_EVENT_SYNC_BEEP:
+            writeUnsignedVB(data->syncBeep.time);
+        break;
+        case FLIGHT_LOG_EVENT_AUTOTUNE_CYCLE_START:
+            blackboxWrite(data->autotuneCycleStart.phase);
+            blackboxWrite(data->autotuneCycleStart.cycle);
+            blackboxWrite(data->autotuneCycleStart.p);
+            blackboxWrite(data->autotuneCycleStart.i);
+            blackboxWrite(data->autotuneCycleStart.d);
+        break;
+        case FLIGHT_LOG_EVENT_AUTOTUNE_CYCLE_RESULT:
+            blackboxWrite(data->autotuneCycleResult.overshot);
+            blackboxWrite(data->autotuneCycleStart.p);
+            blackboxWrite(data->autotuneCycleStart.i);
+            blackboxWrite(data->autotuneCycleStart.d);
+        break;
+        case FLIGHT_LOG_EVENT_LOG_END:
+            blackboxPrint("End of log");
+            blackboxWrite(0);
+        break;
+    }
+}
+
 // Beep the buzzer and write the current time to the log as a synchronization point
 static void blackboxPlaySyncBeep()
 {
-    uint32_t now = micros();
+    flightLogEvent_syncBeep_t eventData;
+
+    eventData.time = micros();
 
     /*
      * The regular beep routines aren't going to work for us, because they queue up the beep to be executed later.
@@ -1208,10 +1271,7 @@ static void blackboxPlaySyncBeep()
     // Have the regular beeper code turn off the beep for us eventually, since that's not timing-sensitive
     queueConfirmationBeep(1);
 
-    blackboxWrite('E');
-    blackboxWrite(FLIGHT_LOG_EVENT_SYNC_BEEP);
-
-    writeUnsignedVB(now);
+    blackboxLogEvent(FLIGHT_LOG_EVENT_SYNC_BEEP, (flightLogEventData_t *) &eventData);
 }
 
 void handleBlackbox(void)
@@ -1270,9 +1330,9 @@ void handleBlackbox(void)
                 blackboxSetState(BLACKBOX_STATE_PRERUN);
         break;
         case BLACKBOX_STATE_PRERUN:
-            blackboxPlaySyncBeep();
-
             blackboxSetState(BLACKBOX_STATE_RUNNING);
+
+            blackboxPlaySyncBeep();
         break;
         case BLACKBOX_STATE_RUNNING:
             // On entry to this state, blackboxIteration, blackboxPFrameIndex and blackboxIFrameIndex are reset to 0
@@ -1316,6 +1376,20 @@ void handleBlackbox(void)
             if (blackboxPFrameIndex == BLACKBOX_I_INTERVAL) {
                 blackboxPFrameIndex = 0;
                 blackboxIFrameIndex++;
+            }
+        break;
+        case BLACKBOX_STATE_SHUTTING_DOWN:
+            //On entry of this state, startTime is set
+
+            /*
+             * Wait for the log we've transmitted to make its way to the logger before we release the serial port,
+             * since releasing the port clears the Tx buffer.
+             *
+             * Don't wait longer than it could possibly take if something funky happens.
+             */
+            if (millis() > xmitState.u.startTime + 200 || isSerialTransmitBufferEmpty(blackboxPort)) {
+                releaseBlackboxPort();
+                blackboxSetState(BLACKBOX_STATE_STOPPED);
             }
         break;
         default:
