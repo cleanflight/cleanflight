@@ -236,9 +236,8 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
 #ifdef SONAR
     int16_t tiltAngle;
+    int32_t sonarAlt;
 #endif
-
-
 
     dTime = currentTime - previousTime;
     if (dTime < BARO_UPDATE_FREQUENCY_40HZ)

@@ -63,6 +63,7 @@
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/barometer.h"
+#include "sensors/sonar.h"
 #include "telemetry/telemetry.h"
 
 #include "config/runtime_config.h"
@@ -109,6 +110,10 @@ static void cliColor(char *cmdline);
 
 #ifndef USE_QUAD_MIXER_ONLY
 static void cliMixer(char *cmdline);
+#endif
+
+#ifdef SONAR
+static void cliSonar(char *cmdline);
 #endif
 
 // signal that we're in cli mode
@@ -183,6 +188,9 @@ const clicmd_t cmdTable[] = {
     { "rateprofile", "index (0 to 2)", cliRateProfile },
     { "save", "save and reboot", cliSave },
     { "set", "name=value or blank or * for list", cliSet },
+#ifdef SONAR
+    { "sonar", "get altitude", cliSonar },
+#endif
     { "status", "show system status", cliStatus },
     { "version", "", cliVersion },
 };
@@ -1385,6 +1393,20 @@ static void cliVersion(char *cmdline)
 
     printf("Cleanflight/%s %s / %s (%s)", targetName, buildDate, buildTime, shortGitRevision);
 }
+
+#ifdef SONAR
+static void cliSonar(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    if(!sensors(SENSOR_SONAR)) {
+        printf("Sonar is not enabled");
+        return;
+    }
+
+    printf("sonar: %d cm", sonarGetLatestAltitude());
+}
+#endif
 
 void cliProcess(void)
 {
