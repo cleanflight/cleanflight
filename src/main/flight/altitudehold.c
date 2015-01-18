@@ -226,6 +226,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     float vel_acc;
     int32_t vel_tmp;
     float accZ_tmp;
+    int32_t sonarAlt = -1;
     static float accZ_old = 0.0f;
     static float vel = 0.0f;
     static float accAlt = 0.0f;
@@ -236,7 +237,6 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
 #ifdef SONAR
     int16_t tiltAngle;
-    int32_t sonarAlt;
 #endif
 
     dTime = currentTime - previousTime;
