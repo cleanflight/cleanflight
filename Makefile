@@ -35,11 +35,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 FORKNAME			 = cleanflight
 
-<<<<<<< Upstream, based on origin/master
 VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC SPRACINGF3 PORT103R SPARKY ALIENWIIF1
-=======
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC MASSIVEF3 PORT103R SPARKY ALIENWIIF1 ALIENWIIF3
->>>>>>> c9bdce5 Intitial support for ALIENWIIF3 target
 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
@@ -60,11 +56,7 @@ VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
 USBFS_DIR	= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
 USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
 
-<<<<<<< Upstream, based on origin/master
 ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO SPRACINGF3 SPARKY))
-=======
-ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO MASSIVEF3 SPARKY ALIENWIIF3))
->>>>>>> c9bdce5 Intitial support for ALIENWIIF3 target
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
 
@@ -505,6 +497,8 @@ SPARKY_SRC	 = \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
 
+ALIENWIIF3_SRC	 = $(SPARKY_SRC)
+
 SPRACINGF3_SRC	 = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/accgyro_mpu6050.c \
@@ -514,12 +508,6 @@ SPRACINGF3_SRC	 = \
 		   $(COMMON_SRC)
 
 ifeq ($(TARGET),SPRACINGF3)
-LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_128k.ld
-endif
-
-ALIENWIIF3_SRC	 = $(SPARKY_SRC)
-
-ifeq ($(TARGET),MASSIVEF3)
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f303_128k.ld
 endif
 
