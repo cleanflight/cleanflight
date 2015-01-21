@@ -468,9 +468,16 @@ static void resetConf(void)
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
     masterConfig.motor_pwm_rate = 32000;
+//    currentProfile->pidController = 3;
+    currentProfile->pidProfile.P8[ROLL] = 36;
+    currentProfile->pidProfile.P8[PITCH] = 36;
+    currentProfile->failsafeConfig.failsafe_delay = 2;
+    currentProfile->failsafeConfig.failsafe_off_delay = 0;
+    currentProfile->failsafeConfig.failsafe_throttle = 1000;
     currentControlRateProfile->rcRate8 = 130;
     currentControlRateProfile->rollPitchRate = 20;
     currentControlRateProfile->yawRate = 60;
+    currentControlRateProfile->yawRate = 100;
     parseRcChannels("TAER1234", &masterConfig.rxConfig);
 
     //  { 1.0f, -0.5f,  1.0f, -1.0f },          // REAR_R
