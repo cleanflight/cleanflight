@@ -67,6 +67,7 @@
 #include "io/statusindicator.h"
 #include "rx/msp.h"
 #include "telemetry/telemetry.h"
+#include "blackbox/blackbox.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -96,7 +97,8 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern failsafe_t *failsafe;
 
-typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination, rollAndPitchTrims_t *accelerometerTrims);
+typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
 
 extern pidControllerFuncPtr pid_controller;
 
@@ -306,6 +308,12 @@ void mwDisarm(void)
             }
         }
 #endif
+
+#ifdef BLACKBOX
+        if (feature(FEATURE_BLACKBOX)) {
+            finishBlackbox();
+        }
+#endif
     }
 }
 
@@ -325,6 +333,16 @@ void mwArm(void)
                 if (sharedTelemetryAndMspPort) {
                     mspReleasePortIfAllocated(sharedTelemetryAndMspPort);
                 }
+            }
+#endif
+
+#ifdef BLACKBOX
+            if (feature(FEATURE_BLACKBOX)) {
+                serialPort_t *sharedBlackboxAndMspPort = findSharedSerialPort(FUNCTION_BLACKBOX, FUNCTION_MSP);
+                if (sharedBlackboxAndMspPort) {
+                    mspReleasePortIfAllocated(sharedBlackboxAndMspPort);
+                }
+                startBlackbox();
             }
 #endif
             disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
@@ -539,17 +557,17 @@ void processRx(void)
         DISABLE_FLIGHT_MODE(ANGLE_MODE); // failsafe support
     }
 
-	if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
+    if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
 
-		DISABLE_FLIGHT_MODE(ANGLE_MODE);
+        DISABLE_FLIGHT_MODE(ANGLE_MODE);
 
-		if (!FLIGHT_MODE(HORIZON_MODE)) {
-			resetErrorAngle();
-			ENABLE_FLIGHT_MODE(HORIZON_MODE);
-		}
-	} else {
-		DISABLE_FLIGHT_MODE(HORIZON_MODE);
-	}
+        if (!FLIGHT_MODE(HORIZON_MODE)) {
+            resetErrorAngle();
+            ENABLE_FLIGHT_MODE(HORIZON_MODE);
+        }
+    } else {
+        DISABLE_FLIGHT_MODE(HORIZON_MODE);
+    }
 
     if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
         LED1_ON;
@@ -692,12 +710,19 @@ void loop(void)
             &currentProfile->pidProfile,
             currentControlRateProfile,
             masterConfig.max_angle_inclination,
-            &currentProfile->accelerometerTrims
+            &currentProfile->accelerometerTrims,
+            &masterConfig.rxConfig
         );
 
         mixTable();
         writeServos();
         writeMotors();
+
+#ifdef BLACKBOX
+        if (!cliMode && feature(FEATURE_BLACKBOX)) {
+            handleBlackbox();
+        }
+#endif
     }
 
 #ifdef TELEMETRY

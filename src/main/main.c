@@ -66,6 +66,7 @@
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "telemetry/telemetry.h"
+#include "blackbox/blackbox.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "config/runtime_config.h"
@@ -73,8 +74,8 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
-#ifdef NAZE
-#include "target/NAZE/hardware_revision.h"
+#ifdef USE_HARDWARE_REVISION_DETECTION
+#include "hardware_revision.h"
 #endif
 
 #include "build_config.h"
@@ -103,7 +104,7 @@ void beepcodeInit(failsafe_t *initialFailsafe);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
-void imuInit(void);
+void initIMU(void);
 void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
 void loop(void);
@@ -145,13 +146,15 @@ void init(void)
     SetSysClock(masterConfig.emf_avoidance);
 #endif
 
-#ifdef NAZE
+#ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();
 #endif
 
     systemInit();
 
-#ifdef SPEKTRUM_BIND
+    ledInit();
+
+    #ifdef SPEKTRUM_BIND
     if (feature(FEATURE_RX_SERIAL)) {
         switch (masterConfig.rxConfig.serialrx_provider) {
             case SERIALRX_SPEKTRUM1024:
@@ -168,8 +171,6 @@ void init(void)
     delay(100);
 
     timerInit();  // timer must be initialized before any channel is allocated
-
-    ledInit();
 
 #ifdef BEEPER
     beeperConfig_t beeperConfig = {
@@ -200,22 +201,25 @@ void init(void)
     spiInit(SPI2);
 #endif
 
-#ifdef NAZE
+#ifdef USE_HARDWARE_REVISION_DETECTION
     updateHardwareRevision();
 #endif
 
 #ifdef USE_I2C
-#ifdef NAZE
+#if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);
     }
+#elif defined(CC3D)
+    if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+        i2cInit(I2C_DEVICE);
+    }
 #else
-    // Configure the rest of the stuff
     i2cInit(I2C_DEVICE);
 #endif
 #endif
 
-#if !defined(SPARKY)
+#ifdef USE_ADC
     drv_adc_config_t adc_params;
 
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
@@ -263,7 +267,7 @@ void init(void)
     LED0_OFF;
     LED1_OFF;
 
-    imuInit();
+    initIMU();
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
 #ifdef MAG
@@ -344,6 +348,10 @@ void init(void)
         initTelemetry();
 #endif
 
+#ifdef BLACKBOX
+    initBlackbox();
+#endif
+
     previousTime = micros();
 
     if (masterConfig.mixerMode == MIXER_GIMBAL) {
@@ -384,6 +392,10 @@ void init(void)
         displayEnablePageCycling();
 #endif
     }
+#endif
+
+#ifdef CJMCU
+    LED2_ON;
 #endif
 }
 

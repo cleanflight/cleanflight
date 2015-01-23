@@ -79,11 +79,11 @@ https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgein
 
 The source for it is here:
 
-https://github.com/hydra/cleanflight-configurator
+https://github.com/cleanflight/cleanflight-configurator
 
 ## Contributing
 
-Contributions are welcome and encouraged.  You can contibute in many ways:
+Contributions are welcome and encouraged.  You can contribute in many ways:
 
 * Documentation updates and corrections.
 * How-To guides - received help?  help others!

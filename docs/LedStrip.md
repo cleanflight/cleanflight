@@ -1,4 +1,4 @@
-# Led Strip
+# LED Strip
 
 Cleanflight supports the use of addressable LED strips.  Addressable LED strips allow each LED in the strip to
 be programmed with a unique and independant color.  This is far more advanced than the normal RGB strips which
@@ -12,6 +12,7 @@ supports the following:
 * Heading/Orientation lights.
 * Flight mode specific color schemes.
 * Low battery warning.
+* AUX operated on/off switch
 
 The function and orientation configuration is fixed for now but later it should be able to be set via the UI or CLI..
 
@@ -22,7 +23,7 @@ Likewise, support for more than 32 LEDs is possible, it just requires additional
 
 ## Supported hardware
 
-Only strips of 32 WS2812 LEDs are supported currently.  If the strip is longer than 32 leds it does not matter,
+Only strips of 32 WS2812 LEDs are supported currently.  If the strip is longer than 32 LEDs it does not matter,
 but only the first 32 are used.
 
 WS2812 LEDs require an 800khz signal and precise timings and thus requires the use of a dedicated hardware timer.
@@ -51,14 +52,14 @@ uses.  e.g. ESC1/BEC1 -> FC, ESC2/BEC2 -> LED strip.   It's also possible to pow
 from another BEC.  Just ensure that the GROUND is the same for all BEC outputs and LEDs.
 
 
-| Target                | Pin | Led Strip | Signal |
-| --------------------- | --- | --------- | -------|
-| Naze/Olimexino        | RC5 | Data In   | PA6    |
-| CC3D                  | ??? | Data In   | PB4    |
-| ChebuzzF3/F3Discovery | PB8 | Data In   | PB8    |
+| Target                | Pin  | LED Strip | Signal |
+| --------------------- | ---- | --------- | -------|
+| Naze/Olimexino        | RC5  | Data In   | PA6    |
+| CC3D                  | RCO5 | Data In   | PB4    |
+| ChebuzzF3/F3Discovery | PB8  | Data In   | PB8    |
+| Sparky                | PWM5 | Data In   | PA6    |
 
-
-Since RC5 is also used for SoftSerial on the Naze/Olimexino it means that you cannot use softserial and led strips at the same time.
+Since RC5 is also used for SoftSerial on the Naze/Olimexino it means that you cannot use SoftSerial and led strips at the same time.
 Additionally, since RC5 is also used for Parallel PWM RC input on both the Naze, Chebuzz and STM32F3Discovery targets, led strips
 can not be used at the same time at Parallel PWM.
 
@@ -110,6 +111,7 @@ Note: It is perfectly possible to configure an LED to have all directions `NESWU
 * `I` - `I`ndicator.
 * `A` - `A`rmed state.
 * `T` - `T`hrust state.
+* `R` - `R`ing thrust state.
 
 Example:
 
@@ -131,9 +133,9 @@ led 4 0,0::
 
 #### Warning
 
-This mode simply uses the leds to flash when warnings occur.
+This mode simply uses the LEDs to flash when warnings occur.
 
-| Warning | Led Pattern | Notes |
+| Warning | LED Pattern | Notes |
 |---------|-------------|-------|
 | Arm-lock enabled | flash between green and off | occurs calibration or when unarmed and the aircraft is tilted too much |
 | Low Battery | flash red and off | battery monitoring must be enabled.  May trigger temporarily under high-throttle due to voltage drop |
@@ -145,14 +147,14 @@ Flash patterns appear in order, so that it's clear which warnings are enabled.
 
 This mode shows the flight mode and orientation.
 
-When flight modes are active then the leds are updated to show different colors depending on the mode, placement on the grid and direction.
+When flight modes are active then the LEDs are updated to show different colors depending on the mode, placement on the grid and direction.
 
-Leds are set in a specific order:
- * Leds that marked as facing up or down.
- * Leds that marked as facing west or east AND are on the west or east side of the grid.
- * Leds that marked as facing north or south AND are on the north or south side of the grid.
+LEDs are set in a specific order:
+ * LEDs that marked as facing up or down.
+ * LEDs that marked as facing west or east AND are on the west or east side of the grid.
+ * LEDs that marked as facing north or south AND are on the north or south side of the grid.
 
-That is, south facing leds have priority.
+That is, south facing LEDs have priority.
 
 #### Indicator
 
@@ -169,6 +171,24 @@ Note: Armed State cannot be used with Flight Mode.
 This mode fades the LED current LED color to the previous/next color in the HSB color space depending on throttle stick position.  When the
 throttle is in the middle position the color is unaffected, thus it can be mixed with orientation colors to indicate orientation and throttle at
 the same time.
+
+#### Thrust ring state
+
+This mode is allows you to use a 12, 16 or 24 leds ring (e.g. NeoPixel ring) for an afterburner effect. When armed the leds use the following sequences: 2 On, 4 Off, 2 On, 4 Off, and so on.  The light pattern rotates clockwise as throttle increases. 
+
+A better effect is acheived when LEDs configured for thrust ring have no other functions.
+
+LED direction and X/Y positions are irrelevant for thrust ring LED state.  The order of the LEDs that have the state determines how the LED behaves.
+
+Each LED of the ring can be a different color. The color can be selected between the 15 colors availables.
+
+For example, led 0 is set as a `R`ing thrust state led in color 13 as follow. 
+
+```
+led 0 2,2::R:13
+```
+
+LED strips and rings can be combined.
 
 ## Positioning
 
@@ -214,7 +234,7 @@ LEDs 2, 4, 6 and 8 should be positioned so the face east/north/west/south, respe
 LEDs 9-10 should be placed facing down, in the middle
 LEDs 11-12 should be placed facing up, in the middle
 
-This is the default so that if you don't want to place LEDs top and bottom in the middle just connect the first 8 leds.
+This is the default so that if you don't want to place LEDs top and bottom in the middle just connect the first 8 LEDs.
 
 ### Example 16 LED config
 
@@ -314,8 +334,8 @@ This configuration is specifically designed for the [Alien Spider AQ50D PRO 250m
 ## Troubleshooting
 
 On initial power up the LEDs on the strip will be set to WHITE.  This means you can attach a current meter to verify
-the current draw if your measurement equipment is fast enough.  This also means that you can make sure that each R,G and B LED
-in each LED module on the strip is also functioning.
+the current draw if your measurement equipment is fast enough.  Most 5050 LEDs will draw 0.3 Watts a piece.
+This also means that you can make sure that each R,G and B LED in each LED module on the strip is also functioning.
 
 After a short delay the LEDs will show the unarmed color sequence and or low-battery warning sequence.
 
