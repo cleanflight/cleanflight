@@ -770,7 +770,7 @@ void applyLedThrustRingLayer(void)
             }
         } else {
             if (nextLedOn == false) {
-                applyColor = true;
+                applyColor = false;
             }
             nextLedOn = !nextLedOn;
         }
