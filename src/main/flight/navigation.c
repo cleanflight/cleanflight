@@ -163,7 +163,7 @@ static int32_t get_D(int32_t input, float *dt, PID *pid, PID_PARAM *pid_param)
 
     // Low pass filter cut frequency for derivative calculation
     // Set to  "1 / ( 2 * PI * gps_lpf )
-    float pidFilter = (1.0f / (2.0f * M_PI * (float)gpsProfile->gps_lpf));
+    float pidFilter = (1.0f / (2.0f * M_PIf * (float)gpsProfile->gps_lpf));
     // discrete low pass filter, cuts out the
     // high frequency noise that can drive the controller crazy
     pid->derivative = pid->last_derivative + (*dt / (pidFilter + *dt)) * (pid->derivative - pid->last_derivative);
@@ -479,30 +479,16 @@ static void GPS_distance_cm_bearing(int32_t *currentLat1, int32_t *currentLon1, 
 static void GPS_calc_velocity(void)
 {
     static int16_t speed_old[2] = { 0, 0 };
-    static int32_t last_coord[2] = { 0, 0 };
-    static uint8_t init = 0;
-    // y_GPS_speed positive = Up
-    // x_GPS_speed positive = Right
 
-    if (init) {
-        float tmp = 1.0f / dTnav;
-        //actual_speed[GPS_X] = (float)(GPS_coord[LON] - last_coord[LON]) * GPS_scaleLonDown * tmp;
-        //actual_speed[GPS_Y] = (float)(GPS_coord[LAT] - last_coord[LAT]) * tmp;
+	actual_speed[GPS_X] = (float)(GPS_VELNED[1]); //mm/s
+	actual_speed[GPS_Y] = (float)(GPS_VELNED[0]); //mm/s
 
-        actual_speed[GPS_X] = (float)(GPS_VELNED[1]); //mm/s
-        actual_speed[GPS_Y] = (float)(GPS_VELNED[0]); //mm/s
+	// average with previous sample
+	actual_speed[GPS_X] = (actual_speed[GPS_X] + speed_old[GPS_X]) / 2;
+	actual_speed[GPS_Y] = (actual_speed[GPS_Y] + speed_old[GPS_Y]) / 2;
 
-        // average with previous sample
-        actual_speed[GPS_X] = (actual_speed[GPS_X] + speed_old[GPS_X]) / 2;
-        actual_speed[GPS_Y] = (actual_speed[GPS_Y] + speed_old[GPS_Y]) / 2;
-
-        speed_old[GPS_X] = actual_speed[GPS_X];
-        speed_old[GPS_Y] = actual_speed[GPS_Y];
-    }
-    init = 1;
-
-    last_coord[LON] = GPS_coord[LON];
-    last_coord[LAT] = GPS_coord[LAT];
+	speed_old[GPS_X] = actual_speed[GPS_X];
+	speed_old[GPS_Y] = actual_speed[GPS_Y];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

@@ -99,6 +99,15 @@ const mpu6050Config_t *selectMPU6050Config(void)
         return &nazeRev5MPU6050Config;
     }
 #endif
+
+#ifdef SPRACINGF3
+    static const mpu6050Config_t spRacingF3MPU6050Config = {
+            .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
+            .gpioPort = GPIOC,
+            .gpioPin = Pin_13
+    };
+    return &spRacingF3MPU6050Config;
+#endif
     return NULL;
 }
 
@@ -169,8 +178,8 @@ bool detectGyro(uint16_t gyroLpf)
 
 #ifdef USE_GYRO_L3GD20
     if (l3gd20Detect(&gyro, gyroLpf)) {
-#ifdef GYRO_GYRO_L3GD20_ALIGN
-        gyroAlign = GYRO_GYRO_L3GD20_ALIGN;
+#ifdef GYRO_L3GD20_ALIGN
+        gyroAlign = GYRO_L3GD20_ALIGN;
 #endif
         return true;
     }
@@ -432,6 +441,15 @@ static void detectMag(uint8_t magHardwareToUse)
     anyfcHmc5883Config.gpioPin = Pin_7;
     anyfcHmc5883Config.gpioPort = GPIOB;
     hmc5883Config = &anyfcHmc5883Config;
+#endif
+#ifdef SPRACINGF3
+    hmc5883Config_t spRacingF3Hmc5883Config = {
+        .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
+        .gpioPin = Pin_14,
+        .gpioPort = GPIOC
+    };
+
+    hmc5883Config = &spRacingF3Hmc5883Config;
 #endif
 #endif
 

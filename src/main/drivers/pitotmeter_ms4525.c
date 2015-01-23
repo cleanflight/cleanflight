@@ -20,6 +20,8 @@
 
 #include <platform.h>
 
+#include "build_config.h"
+
 #include "pitotmeter.h"
 
 #include "gpio.h"
@@ -60,8 +62,7 @@ bool ms4525Detect(pitot_t *pitot)
 static void ms4525_start(void)
 {
     uint8_t sig;
-    bool ack = false;
-    ack = i2cRead(MS4525_ADDR, 0xFF, 1, &sig, MS4525_BUS);
+    i2cRead(MS4525_ADDR, 0xFF, 1, &sig, MS4525_BUS);
 }
 
 static void ms4525_read(void)
@@ -75,7 +76,8 @@ static void ms4525_read(void)
 
 void voltage_correction(float *pressure, float *temperature)
 {
-;
+    UNUSED(pressure);
+    UNUSED(temperature);
 }
 
 static void ms4525_calculate(float *pressure, float *temperature)
