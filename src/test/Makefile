@@ -153,8 +153,6 @@ flight_imu_unittest : \
 
 	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
 
-
-
 $(OBJECT_DIR)/flight/altitudehold.o : \
 	$(USER_DIR)/flight/altitudehold.c \
 	$(USER_DIR)/flight/altitudehold.h \
@@ -258,7 +256,7 @@ $(OBJECT_DIR)/io/ledstrip.o : \
 	$(USER_DIR)/io/ledstrip.c \
 	$(USER_DIR)/io/ledstrip.h \
 	$(GTEST_HEADERS)
-	
+
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/ledstrip.c -o $@
 
