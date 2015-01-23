@@ -227,7 +227,6 @@ telemetry_hott_unittest : \
 	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
 
 
-
 $(OBJECT_DIR)/io/rc_controls.o : \
 	$(USER_DIR)/io/rc_controls.c \
 	$(USER_DIR)/io/rc_controls.h \
