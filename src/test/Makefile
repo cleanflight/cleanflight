@@ -300,4 +300,8 @@ ws2811_unittest : \
 
 	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
 
+test: $(TESTS)
+	for a in $(TESTS) ; do \
+		$(OBJECT_DIR)/$$a; \
+	done
 
