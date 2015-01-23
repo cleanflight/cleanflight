@@ -174,7 +174,7 @@ the same time.
 
 #### Thrust ring state
 
-This mode is allows you to use a 12, 16 or 24 leds ring (e.g. NeoPixel ring) for an afterburner effect. When armed the leds use the following sequences: 2 On, 4 Off, 2 On, 4 Off, and so on.  The light pattern rotates clockwise as throttle increases. 
+This mode is allows you to use a even leds ring (e.g. NeoPixel ring) for an afterburner effect. When armed the leds use the following sequences: 2 On, half other leds Off , 2 On, half other leds Off, and so on.  The light pattern rotates clockwise as throttle increases. 
 
 A better effect is acheived when LEDs configured for thrust ring have no other functions.
 

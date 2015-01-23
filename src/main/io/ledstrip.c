@@ -228,6 +228,7 @@ uint8_t ledGridWidth;
 uint8_t ledGridHeight;
 uint8_t ledCount;
 uint8_t ledsInRingCount;
+uint32_t maskRotationPhase;
 
 ledConfig_t *ledConfigs;
 hsvColor_t *colors;
@@ -743,16 +744,36 @@ void applyLedThrottleLayer()
     }
 }
 
-#define ROTATION_SEQUENCE_LED_COUNT 6 // 2 on, 4 off
-#define ROTATION_SEQUENCE_LED_WIDTH 2
+
+uint32_t circularLeftMaskShift(uint32_t maskToShift, uint8_t lengthOfMask)
+{
+    uint8_t indexShift;
+    uint32_t maskShiftFunction = 0;
+    uint8_t numberOfBitShifted = 1;
+
+
+    maskToShift = ((maskToShift << numberOfBitShifted) | (maskToShift >> (lengthOfMask - numberOfBitShifted)));
+
+    for(indexShift = 0; indexShift < lengthOfMask; indexShift++)
+    {
+        maskShiftFunction |= (1 << indexShift);
+    }
+
+    return (maskToShift &= maskShiftFunction);
+
+}
+
+
 
 void applyLedThrustRingLayer(void)
 {
     uint8_t ledIndex;
-    static uint8_t rotationPhase = ROTATION_SEQUENCE_LED_COUNT;
     bool nextLedOn = false;
     hsvColor_t ringColor;
     const ledConfig_t *ledConfig;
+
+
+    maskRotationPhase = circularLeftMaskShift(maskRotationPhase, ledsInRingCount);
 
     uint8_t ledRingIndex = 0;
     for (ledIndex = 0; ledIndex < ledCount; ledIndex++) {
@@ -765,12 +786,12 @@ void applyLedThrustRingLayer(void)
 
         bool applyColor = false;
         if (ARMING_FLAG(ARMED)) {
-            if ((ledRingIndex + rotationPhase) % ROTATION_SEQUENCE_LED_COUNT < ROTATION_SEQUENCE_LED_WIDTH) {
+            if ((1<<ledRingIndex) & maskRotationPhase) {
                 applyColor = true;
             }
         } else {
             if (nextLedOn == false) {
-                applyColor = false;
+                applyColor = true;
             }
             nextLedOn = !nextLedOn;
         }
@@ -784,11 +805,6 @@ void applyLedThrustRingLayer(void)
         setLedHsv(ledIndex, &ringColor);
 
         ledRingIndex++;
-    }
-
-    rotationPhase--;
-    if (rotationPhase == 0) {
-        rotationPhase = ROTATION_SEQUENCE_LED_COUNT;
     }
 }
 
@@ -1006,11 +1022,13 @@ void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsaf
     ledStripInitialised = false;
 }
 
+#define ROTATION_SEQUENCE_LED_WIDTH 0x03       // 0x03 = 2 leds ON ; 0x05 = 3 leds ON
+
 void ledStripEnable(void)
 {
     reevalulateLedConfig();
     ledStripInitialised = true;
-
+    maskRotationPhase = ROTATION_SEQUENCE_LED_WIDTH | (ROTATION_SEQUENCE_LED_WIDTH << (ledsInRingCount>>1));
     ws2811LedStripInit();
 }
 
