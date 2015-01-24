@@ -46,7 +46,6 @@ CXX_FLAGS = $(COMMON_FLAGS) \
 TESTS = \
 	battery_unittest \
 	flight_imu_unittest \
-	altitude_hold_unittest \
 	gps_conversion_unittest \
 	telemetry_hott_unittest \
 	rc_controls_unittest \
@@ -154,8 +153,6 @@ flight_imu_unittest : \
 
 	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
 
-
-
 $(OBJECT_DIR)/flight/altitudehold.o : \
 	$(USER_DIR)/flight/altitudehold.c \
 	$(USER_DIR)/flight/altitudehold.h \
@@ -230,7 +227,6 @@ telemetry_hott_unittest : \
 	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
 
 
-
 $(OBJECT_DIR)/io/rc_controls.o : \
 	$(USER_DIR)/io/rc_controls.c \
 	$(USER_DIR)/io/rc_controls.h \
@@ -259,7 +255,7 @@ $(OBJECT_DIR)/io/ledstrip.o : \
 	$(USER_DIR)/io/ledstrip.c \
 	$(USER_DIR)/io/ledstrip.h \
 	$(GTEST_HEADERS)
-	
+
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/ledstrip.c -o $@
 
@@ -303,4 +299,8 @@ ws2811_unittest : \
 
 	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
 
+test: $(TESTS)
+	for a in $(TESTS) ; do \
+		$(OBJECT_DIR)/$$a; \
+	done
 
