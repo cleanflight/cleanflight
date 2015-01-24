@@ -458,6 +458,7 @@ static void resetConf(void)
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
     featureSet(FEATURE_FAILSAFE);
+    featureClear(FEATURE_VBAT);
 #ifdef ALIENWIIF3
     masterConfig.serialConfig.serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
 #else
@@ -468,6 +469,7 @@ static void resetConf(void)
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
     masterConfig.motor_pwm_rate = 32000;
+    masterConfig.looptime = 2000;
 //    currentProfile->pidController = 3;
     currentProfile->pidProfile.P8[ROLL] = 36;
     currentProfile->pidProfile.P8[PITCH] = 36;
