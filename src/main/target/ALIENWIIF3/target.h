@@ -17,7 +17,7 @@
 
 #pragma once
 
-#define TARGET_BOARD_IDENTIFIER "SPKY" // SParKY
+#define TARGET_BOARD_IDENTIFIER "AWF3" // AlienWii32 F3.
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_4 // Blue LEDs - PB4
@@ -133,3 +133,12 @@
 // USART2, PA3
 #define BIND_PORT GPIOA
 #define BIND_PIN Pin_3
+
+// Hardware bind plug at PB12 (Pin 25)
+#define BINDPLUG_PORT  GPIOB
+#define BINDPLUG_PIN   Pin_12
+
+// alternative defaults for AlienWii32 F3 target
+#define ALIENWII32
+#define BRUSHED_MOTORS
+#define HARDWARE_BIND_PLUG
