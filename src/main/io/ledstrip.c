@@ -747,17 +747,12 @@ void applyLedThrottleLayer()
 
 uint32_t circularLeftMaskShift(uint32_t maskToShift, uint8_t lengthOfMask)
 {
-    uint8_t indexShift;
     uint32_t maskShiftFunction = 0;
     uint8_t numberOfBitShifted = 1;
 
 
     maskToShift = ((maskToShift << numberOfBitShifted) | (maskToShift >> (lengthOfMask - numberOfBitShifted)));
-
-    for(indexShift = 0; indexShift < lengthOfMask; indexShift++)
-    {
-        maskShiftFunction |= (1 << indexShift);
-    }
+    maskShiftFunction = (1 << lengthOfMask) - 1;
 
     return (maskToShift &= maskShiftFunction);
 
@@ -1022,13 +1017,19 @@ void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsaf
     ledStripInitialised = false;
 }
 
-#define ROTATION_SEQUENCE_LED_WIDTH 0x03       // 0x03 = 2 leds ON ; 0x05 = 3 leds ON
+#define ROTATION_SEQUENCE_LED_MASK 0x03       // 0x03 = 2 leds ON ; 0x05 = 3 leds ON
 
 void ledStripEnable(void)
 {
     reevalulateLedConfig();
     ledStripInitialised = true;
-    maskRotationPhase = ROTATION_SEQUENCE_LED_WIDTH | (ROTATION_SEQUENCE_LED_WIDTH << (ledsInRingCount>>1));
+
+    maskRotationPhase = ROTATION_SEQUENCE_LED_MASK;
+    if(ledsInRingCount > 6) {
+      maskRotationPhase |= ROTATION_SEQUENCE_LED_MASK << (ledsInRingCount / 2);
+    }
+    maskRotationPhase &= (1 << ledsInRingCount) - 1;  // mask to sequence length
+
     ws2811LedStripInit();
 }
 
