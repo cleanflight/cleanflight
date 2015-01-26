@@ -48,6 +48,10 @@ and earlier.
 One of the quirks with this controller is that if you increase the P value for an axis, the maximum rotation rates for
 that axis are lowered. Hence you need to crank up the pitch or roll rates if you have higher and higher P values.
 
+The Roll/Pitch and Yaw rate settings do not work like TX stick scaling. Instead they cause a proportional reduction in PID values with increased YPR (Yaw Pitch Roll) axis stick deflections. eg) A Pitch/Roll Rate setting of 0.5 will reduce the three PID terms for Pitch & Roll to 50% at full stick deflection. Warning! A Pitch/Roll Rate or Yaw Rate setting of 1.0 will reduce all of the PID terms to zero at full stick deflection!
+
+This PID controller incorporates a Throttle PID Attenuation (TPA) feature which scales down the PID values for all three axis once the throttle is raised above the TPA Breakpoint. eg) with TPA breakpoint set at 1500, and TPA is set to 0.50, the PIDs will be reduced linearly by a factor of 0% to 50% as throttle moves from 1500 to 2000 (full throttle).
+
 In Horizon and Angle modes, this controller uses both the LEVEL "P" and "I" settings in order to tune the 
 auto-leveling corrections in a similar way to the way that P and I settings are applied to roll and yaw axes in the acro
 flight modes. The LEVEL "D" term is used as a limiter to constrain the maximum correction applied by the LEVEL "P" term.
@@ -58,9 +62,7 @@ PID Controller 1 is a newer PID controller that is derived from the one in Multi
 all accounts, and fixes some inherent problems in the way the old one worked. From reports, tuning is apparently easier
 on controller 1, and it tolerates a wider range of PID values well.
 
-Unlike controller 0, controller 1 allows the user to manipulate PID values to tune reaction and stability without
-affecting yaw, roll or pitch rotation rates (which are tuned by the dedicated roll & pitch and yaw rate
-settings).
+Unlike controller 0, controller 1 allows the user to manipulate PID values to tune reaction and stability without affecting yaw, roll or pitch rotation rates. The rotation rates are tuned by the Roll/Pitch and the Yaw rate settings which work similar to stick scaling on the TX.
 
 In Angle mode, this controller uses the LEVEL "P" PID setting to decide how strong the auto-level correction should
 be.  
@@ -70,6 +72,9 @@ applied. The default Cleanflight setting for "I" will result in virtually no aut
 need to be increased in order to perform like PID controller 0.
 
 The LEVEL "D" setting is not used by this controller.
+
+NOTE: There is no proportional reduction in PID values with increased YPR stick deflection like there is on PID Controller 0.
+Also the Throttle PID Attenuation (TPA) feature is not used in PID controller 1.
 
 ### PID controller 2, "Baseflight"
 
