@@ -35,7 +35,7 @@ SERIAL_DEVICE	?= /dev/ttyUSB0
 
 FORKNAME			 = cleanflightF4
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC SPRACINGF3 PORT103R SPARKY ALIENWIIF1
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC SPRACINGF3 PORT103R SPARKY ALIENWIIF1 ALIENWIIF3
 VALID_TARGETS	 += ANYFC REVO
 
 # Valid targets for OP BootLoader support
@@ -54,13 +54,13 @@ LINKER_DIR	 = $(ROOT)/src/main/target
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
+USBFS_DIR	= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
+USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
 
-ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO SPRACINGF3 SPARKY))
+ifeq ($(TARGET),$(filter $(TARGET),STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO SPRACINGF3 SPARKY ALIENWIIF3))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
-USBFS_DIR	= $(ROOT)/lib/main/STM32_USB-FS-Device_Driver
 
-USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
 
 EXCLUDES	= stm32f30x_crc.c \
@@ -191,13 +191,25 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM3/CoreSupport \
 		   $(CMSIS_DIR)/CM3/DeviceSupport/ST/STM32F10x \
 
+DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
+
+ifeq ($(TARGET),CC3D)
+INCLUDE_DIRS := $(INCLUDE_DIRS) \
+		   $(USBFS_DIR)/inc \
+		   $(ROOT)/src/main/vcp
+
+VPATH := $(VPATH):$(USBFS_DIR)/src
+
+DEVICE_STDPERIPH_SRC := $(DEVICE_STDPERIPH_SRC) \
+		   $(USBPERIPH_SRC) 
+
+endif
+
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
 TARGET_FLAGS = -D$(TARGET) -pedantic
 DEVICE_FLAGS = -DSTM32F10X_MD -DSTM32F10X
-
-DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
 
 endif
 
@@ -269,11 +281,22 @@ HIGHEND_SRC  = flight/autotune.c \
 		   telemetry/frsky.c \
 		   telemetry/hott.c \
 		   telemetry/msp.c \
-           telemetry/smartport.c \
+		   telemetry/smartport.c \
 		   sensors/sonar.c \
 		   sensors/barometer.c \
 		   sensors/pitotmeter.c \
-		   blackbox/blackbox.c
+		   blackbox/blackbox.c \
+		   blackbox/blackbox_io.c
+
+VCP_SRC	 = \
+		   vcp/hw_config.c \
+		   vcp/stm32_it.c \
+		   vcp/usb_desc.c \
+		   vcp/usb_endp.c \
+		   vcp/usb_istr.c \
+		   vcp/usb_prop.c \
+		   vcp/usb_pwr.c \
+		   drivers/serial_usb_vcp.c
 
 NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -311,7 +334,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
-ALIENWIIF1_SRC	= $(NAZE_SRC)
+ALIENWIIF1_SRC	 = $(NAZE_SRC)
 
 EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/accgyro_adxl345.c \
@@ -410,6 +433,7 @@ CJMCU_SRC	 = \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
 		   blackbox/blackbox.c \
+		   blackbox/blackbox_io.c \
 		   hardware_revision.c \
 		   $(COMMON_SRC)
 
@@ -440,7 +464,8 @@ CC3D_SRC	 = \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
 		   $(HIGHEND_SRC) \
-		   $(COMMON_SRC)
+		   $(COMMON_SRC) \
+		   $(VCP_SRC)
 		   
 ANYFC_SRC	 = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
@@ -515,16 +540,6 @@ STM32F30x_COMMON_SRC	 = \
 		   drivers/timer.c \
 		   drivers/timer_stm32f30x.c
 
-VCP_SRC	 = \
-		   vcp/hw_config.c \
-		   vcp/stm32_it.c \
-		   vcp/usb_desc.c \
-		   vcp/usb_endp.c \
-		   vcp/usb_istr.c \
-		   vcp/usb_prop.c \
-		   vcp/usb_pwr.c \
-		   drivers/serial_usb_vcp.c
-
 NAZE32PRO_SRC	 = \
 		   $(STM32F30x_COMMON_SRC) \
 		   $(HIGHEND_SRC) \
@@ -567,6 +582,8 @@ SPARKY_SRC	 = \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
+
+ALIENWIIF3_SRC	 = $(SPARKY_SRC)
 
 SPRACINGF3_SRC	 = \
 		   $(STM32F30x_COMMON_SRC) \

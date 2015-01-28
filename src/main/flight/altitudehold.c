@@ -92,7 +92,7 @@ static void applyMultirotorAltHold(void)
     // multirotor alt hold
     if (rcControlsConfig->alt_hold_fast_change) {
         // rapid alt changes
-        if (abs(rcCommand[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
+        if (ABS(rcCommand[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
             errorVelocityI = 0;
             isAltHoldChanged = 1;
             rcCommand[THROTTLE] += (rcCommand[THROTTLE] > initialThrottleHold) ? -rcControlsConfig->alt_hold_deadband : rcControlsConfig->alt_hold_deadband;
@@ -105,7 +105,7 @@ static void applyMultirotorAltHold(void)
         }
     } else {
         // slow alt changes, mostly used for aerial photography
-        if (abs(rcCommand[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
+        if (ABS(rcCommand[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
             // set velocity proportional to stick movement +100 throttle gives ~ +50 cm/s
             setVelocity = (rcCommand[THROTTLE] - initialThrottleHold) / 2;
             velocityControl = 1;
@@ -173,14 +173,18 @@ void updateSonarAltHoldState(void)
 
 bool isThrustFacingDownwards(rollAndPitchInclination_t *inclination)
 {
-    return abs(inclination->values.rollDeciDegrees) < DEGREES_80_IN_DECIDEGREES && abs(inclination->values.pitchDeciDegrees) < DEGREES_80_IN_DECIDEGREES;
+    return ABS(inclination->values.rollDeciDegrees) < DEGREES_80_IN_DECIDEGREES && ABS(inclination->values.pitchDeciDegrees) < DEGREES_80_IN_DECIDEGREES;
 }
 
+/*
+* This (poorly named) function merely returns whichever is higher, roll inclination or pitch inclination.
+* //TODO: Fix this up. We could either actually return the angle between 'down' and the normal of the craft
+* (my best interpretation of scalar 'tiltAngle') or rename the function.
+*/
 int16_t calculateTiltAngle(rollAndPitchInclination_t *inclination)
 {
-    return max(abs(inclination->values.rollDeciDegrees), abs(inclination->values.pitchDeciDegrees));
+    return MAX(ABS(inclination->values.rollDeciDegrees), ABS(inclination->values.pitchDeciDegrees));
 }
-
 
 int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, float accZ_old)
 {

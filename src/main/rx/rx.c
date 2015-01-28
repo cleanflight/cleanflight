@@ -102,6 +102,7 @@ void updateSerialRxFunctionConstraint(functionConstraint_t *functionConstraintTo
             sumhUpdateSerialRxFunctionConstraint(functionConstraintToUpdate);
             break;
         case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_XBUS_MODE_B_RJ01:
             xBusUpdateSerialRxFunctionConstraint(functionConstraintToUpdate);
             break;
     }
@@ -158,6 +159,7 @@ void serialRxInit(rxConfig_t *rxConfig)
             enabled = sumhInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_XBUS_MODE_B_RJ01:
             enabled = xBusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
     }
@@ -170,7 +172,15 @@ void serialRxInit(rxConfig_t *rxConfig)
 
 bool isSerialRxFrameComplete(rxConfig_t *rxConfig)
 {
-
+    /**
+     * FIXME: Each of the xxxxFrameComplete() methods MUST be able to survive being called without the
+     * corresponding xxxInit() method having been called first.
+     *
+     * This situation arises when the cli or the msp changes the value of rxConfig->serialrx_provider
+     *
+     * A solution is for the ___Init() to configure the serialRxFrameComplete function pointer which
+     * should be used instead of the switch statement below.
+     */
     switch (rxConfig->serialrx_provider) {
         case SERIALRX_SPEKTRUM1024:
         case SERIALRX_SPEKTRUM2048:
@@ -182,6 +192,7 @@ bool isSerialRxFrameComplete(rxConfig_t *rxConfig)
         case SERIALRX_SUMH:
             return sumhFrameComplete();
         case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_XBUS_MODE_B_RJ01:
             return xBusFrameComplete();
     }
     return false;
