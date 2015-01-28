@@ -53,7 +53,6 @@ uint8_t velocityControl = 0;
 int32_t errorVelocityI = 0;
 int32_t altHoldThrottleAdjustment = 0;
 int32_t AltHold;
-static int32_t EstAlt;                // in cm
 int32_t vario = 0;                      // variometer in cm/s
 
 
@@ -78,7 +77,7 @@ void configureAltitudeHold(
 #if defined(BARO) || defined(SONAR)
 
 static int16_t initialThrottleHold;
-
+static int32_t EstAlt;                // in cm
 
 // 40hz update rate (20hz LPF on acc)
 #define BARO_UPDATE_FREQUENCY_40HZ (1000 * 25)

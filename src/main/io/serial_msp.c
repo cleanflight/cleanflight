@@ -825,12 +825,20 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_ALTITUDE:
         headSerialReply(6);
+#if defined(BARO) || defined(SONAR)
         serialize32(altitudeHoldGetEstimatedAltitude());
+#else
+        serialize32(0);
+#endif
         serialize16(vario);
         break;
     case MSP_SONAR_ALTITUDE:
         headSerialReply(4);
+#if defined(SONAR)
         serialize32(sonarGetLatestAltitude());
+#else
+        serialize32(0);
+#endif
         break;
     case MSP_ANALOG:
         headSerialReply(7);

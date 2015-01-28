@@ -57,11 +57,11 @@ void sonarInit(void)
         .exti_irqn = EXTI1_IRQn
     };
     // If we are using parallel PWM for our receiver, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
-    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+    //if (feature(FEATURE_RX_PARALLEL_PWM)) {
         hcsr04_init(&sonarPWM56);
-    } else {
-        hcsr04_init(&sonarRC78);
-    }
+    //} else {
+    //    hcsr04_init(&sonarRC78);
+    //}
 #elif defined(OLIMEXINO)
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
