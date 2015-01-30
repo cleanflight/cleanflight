@@ -71,7 +71,7 @@ need to be increased in order to perform like PID controller 0.
 
 The LEVEL "D" setting is not used by this controller.
 
-### PID controller 2, "Lux's"
+### PID controller 2, "LuxFloat"
 
 PID Controller 2 is Lux's new floating point PID controller. Both controller 0 and 1 use integer arithmetic, which was
 faster in the days of the slower 8-bit MultiWii controllers, but is less precise.
@@ -81,6 +81,8 @@ don't have to be retuned when the looptime setting changes.
 
 There were initially some problems with horizon mode, and sluggishness in acro mode, that were recently fixed by
 nebbian in v1.6.0. The autotune feature does not work on this controller, so don't try to autotune it.
+
+It is the first PID Controller designed for 32-bit processors and not derived from MultiWii.
 
 The strength of the auto-leveling correction applied during Angle mode is set by the parameter "level_angle" which
 is labeled "LEVEL Integral" in the GUI. This can be used to tune the auto-leveling strength in Angle mode compared to
@@ -129,6 +131,5 @@ The algorithm is leveraging more floating point math. This PID controller also c
 The PID controller is flight tested and running well with the default PID settings. If you want do acrobatics start slowly.
 
 Yaw authority is also quite good.
-
 
 
