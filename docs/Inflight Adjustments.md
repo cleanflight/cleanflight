@@ -111,6 +111,8 @@ this reason ensure that you define enough ranges to cover the range channel's us
 | 11    | YAW_D |
 | 12    | RATE_PROFILE | Switch between 3 rate profiles using a 3 position switch. |
 
+Note: Adjustment functions which change PIDs are not available if you are using PID controller 2.
+
 ## Examples
 
 ### Example 1 - 3 Position switch used to adjust pitch/roll rate
