@@ -133,4 +133,3 @@ The PID controller is flight tested and running well with the default PID settin
 Yaw authority is also quite good.
 
 
-
