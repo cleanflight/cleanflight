@@ -54,7 +54,6 @@ uint8_t velocityControl = 0;
 int32_t errorVelocityI = 0;
 int32_t altHoldThrottleAdjustment = 0;
 int32_t AltHold;
-int32_t EstAlt;                // in cm
 int32_t vario = 0;                      // variometer in cm/s
 
 
@@ -79,7 +78,7 @@ void configureAltitudeHold(
 #if defined(BARO) || defined(SONAR)
 
 static int16_t initialThrottleHold;
-
+static int32_t EstAlt;                // in cm
 
 // 40hz update rate (20hz LPF on acc)
 #define BARO_UPDATE_FREQUENCY_40HZ (1000 * 25)
@@ -231,6 +230,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     float vel_acc;
     int32_t vel_tmp;
     float accZ_tmp;
+    int32_t sonarAlt = -1;
     static float accZ_old = 0.0f;
     static float vel = 0.0f;
     static float accAlt = 0.0f;
@@ -242,8 +242,6 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 #ifdef SONAR
     int16_t tiltAngle;
 #endif
-
-
 
     dTime = currentTime - previousTime;
     if (dTime < BARO_UPDATE_FREQUENCY_40HZ)
@@ -330,6 +328,12 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
     accZ_old = accZ_tmp;
 }
+
+int32_t altitudeHoldGetEstimatedAltitude(void)
+{
+    return EstAlt;
+}
+
 
 
 void calculateAirspeed(uint32_t currentTime)

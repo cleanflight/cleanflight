@@ -50,15 +50,19 @@
 // External I2C BARO
 #define BARO
 #define USE_BARO_MS5611
+#define MS5611_BUS I2C_DEVICE_EXT
 #define USE_BARO_BMP085
+#define BMP085_BUS I2C_DEVICE_EXT
 
 // External I2C MAG
 #define MAG
 #define USE_MAG_HMC5883
+#define HMC5883_BUS I2C_DEVICE_EXT
 
 #define INVERTER
 #define BEEPER
 #define DISPLAY
+#define UG2864_BUS I2C_DEVICE_EXT
 
 #define USE_VCP
 #define USE_USART1
@@ -82,6 +86,7 @@
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
+#define I2C_DEVICE_EXT (I2CDEV_2)
 
 #define USE_ADC
 

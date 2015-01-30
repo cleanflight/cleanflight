@@ -45,6 +45,8 @@
 #include "flight/mixer.h"
 #include "flight/failsafe.h"
 #include "flight/navigation.h"
+#include "flight/altitudehold.h"
+
 #include "rx/rx.h"
 #include "rx/msp.h"
 #include "io/escservo.h"
@@ -54,9 +56,11 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "telemetry/telemetry.h"
+
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
+#include "sensors/sonar.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
 #include "sensors/pitotmeter.h"
@@ -122,7 +126,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   4 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   5 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -204,6 +208,10 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_VOLTAGE_METER_CONFIG        56
 #define MSP_SET_VOLTAGE_METER_CONFIG    57
 
+#define MSP_SONAR_ALTITUDE              58 //out message get sonar altitude [cm]
+
+#define MSP_PID_CONTROLLER              59
+#define MSP_SET_PID_CONTROLLER          60
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -369,7 +377,7 @@ static mspPort_t mspPorts[MAX_MSP_PORT_COUNT];
 
 static mspPort_t *currentPort;
 
-void serialize32(uint32_t a)
+static void serialize32(uint32_t a)
 {
     static uint8_t t;
     t = a;
@@ -386,7 +394,7 @@ void serialize32(uint32_t a)
     currentPort->checksum ^= t;
 }
 
-void serialize16(int16_t a)
+static void serialize16(int16_t a)
 {
     static uint8_t t;
     t = a;
@@ -397,32 +405,32 @@ void serialize16(int16_t a)
     currentPort->checksum ^= t;
 }
 
-void serialize8(uint8_t a)
+static void serialize8(uint8_t a)
 {
     serialWrite(mspSerialPort, a);
     currentPort->checksum ^= a;
 }
 
-uint8_t read8(void)
+static uint8_t read8(void)
 {
     return currentPort->inBuf[currentPort->indRX++] & 0xff;
 }
 
-uint16_t read16(void)
+static uint16_t read16(void)
 {
     uint16_t t = read8();
     t += (uint16_t)read8() << 8;
     return t;
 }
 
-uint32_t read32(void)
+static uint32_t read32(void)
 {
     uint32_t t = read16();
     t += (uint32_t)read16() << 16;
     return t;
 }
 
-void headSerialResponse(uint8_t err, uint8_t s)
+static void headSerialResponse(uint8_t err, uint8_t s)
 {
     serialize8('$');
     serialize8('M');
@@ -432,36 +440,36 @@ void headSerialResponse(uint8_t err, uint8_t s)
     serialize8(currentPort->cmdMSP);
 }
 
-void headSerialReply(uint8_t s)
+static void headSerialReply(uint8_t s)
 {
     headSerialResponse(0, s);
 }
 
-void headSerialError(uint8_t s)
+static void headSerialError(uint8_t s)
 {
     headSerialResponse(1, s);
 }
 
-void tailSerialReply(void)
+static void tailSerialReply(void)
 {
     serialize8(currentPort->checksum);
 }
 
-void s_struct(uint8_t *cb, uint8_t siz)
+static void s_struct(uint8_t *cb, uint8_t siz)
 {
     headSerialReply(siz);
     while (siz--)
         serialize8(*cb++);
 }
 
-void serializeNames(const char *s)
+static void serializeNames(const char *s)
 {
     const char *c;
     for (c = s; *c; c++)
         serialize8(*c);
 }
 
-const box_t *findBoxByActiveBoxId(uint8_t activeBoxId)
+static const box_t *findBoxByActiveBoxId(uint8_t activeBoxId)
 {
     uint8_t boxIndex;
     const box_t *candidate;
@@ -474,7 +482,7 @@ const box_t *findBoxByActiveBoxId(uint8_t activeBoxId)
     return NULL;
 }
 
-const box_t *findBoxByPermenantId(uint8_t permenantId)
+static const box_t *findBoxByPermenantId(uint8_t permenantId)
 {
     uint8_t boxIndex;
     const box_t *candidate;
@@ -487,7 +495,7 @@ const box_t *findBoxByPermenantId(uint8_t permenantId)
     return NULL;
 }
 
-void serializeBoxNamesReply(void)
+static void serializeBoxNamesReply(void)
 {
     int i, activeBoxId, j, flag = 1, count = 0, len;
     const box_t *box;
@@ -626,7 +634,7 @@ void mspInit(serialConfig_t *serialConfig)
         activeBoxIds[activeBoxIdCount++] = BOXLEDLOW;
     }
 #endif
-    
+
     if (feature(FEATURE_INFLIGHT_ACC_CAL))
         activeBoxIds[activeBoxIdCount++] = BOXCALIB;
 
@@ -652,7 +660,6 @@ void mspInit(serialConfig_t *serialConfig)
 static bool processOutCommand(uint8_t cmdMSP)
 {
     uint32_t i, tmp, junk;
-
 
 #ifdef GPS
     uint8_t wp_no;
@@ -822,8 +829,20 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_ALTITUDE:
         headSerialReply(6);
-        serialize32(EstAlt);
+#if defined(BARO) || defined(SONAR)
+        serialize32(altitudeHoldGetEstimatedAltitude());
+#else
+        serialize32(0);
+#endif
         serialize16(vario);
+        break;
+    case MSP_SONAR_ALTITUDE:
+        headSerialReply(4);
+#if defined(SONAR)
+        serialize32(sonarGetLatestAltitude());
+#else
+        serialize32(0);
+#endif
         break;
     case MSP_ANALOG:
         headSerialReply(7);
@@ -831,9 +850,9 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16((uint16_t)constrain(mAhDrawn, 0, 0xFFFF)); // milliamphours drawn from battery
         serialize16(rssi);
         if(masterConfig.batteryConfig.multiwiiCurrentMeterOutput) {
-            serialize16((uint16_t)constrain((ABS(amperage) * 10), 0, 0xFFFF)); // send amperage in 0.001 A steps
+            serialize16((uint16_t)constrain(amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
         } else
-            serialize16((uint16_t)constrain(ABS(amperage), 0, 0xFFFF)); // send amperage in 0.01 A steps
+            serialize16((int16_t)constrain(amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
         break;
     case MSP_RC_TUNING:
         headSerialReply(7);
@@ -875,6 +894,10 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_PIDNAMES:
         headSerialReply(sizeof(pidnames) - 1);
         serializeNames(pidnames);
+        break;
+    case MSP_PID_CONTROLLER:
+        headSerialReply(1);
+        serialize8(currentProfile->pidController);
         break;
     case MSP_MODE_RANGES:
         headSerialReply(4 * MAX_MODE_ACTIVATION_CONDITION_COUNT);
@@ -1181,6 +1204,10 @@ static bool processInCommand(void)
     case MSP_SET_ACC_TRIM:
         currentProfile->accelerometerTrims.values.pitch = read16();
         currentProfile->accelerometerTrims.values.roll  = read16();
+        break;
+    case MSP_SET_PID_CONTROLLER:
+        currentProfile->pidController = read8();
+        setPIDController(currentProfile->pidController);
         break;
     case MSP_SET_PID:
         if (currentProfile->pidController == 2) {
