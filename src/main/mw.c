@@ -125,7 +125,7 @@ void updateAutotuneState(void)
                     autotuneReset();
                     landedAfterAutoTuning = false;
                 }
-                autotuneBeginNextPhase(&currentProfile->pidProfile, currentProfile->pidController);
+                autotuneBeginNextPhase(&currentProfile->pidProfile);
                 ENABLE_FLIGHT_MODE(AUTOTUNE_MODE);
                 autoTuneWasUsed = true;
             } else {

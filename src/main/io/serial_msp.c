@@ -866,7 +866,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_PID:
         headSerialReply(3 * PID_ITEM_COUNT);
-        if (currentProfile->pidController == 2) { // convert float stuff into uint8_t to keep backwards compatability with all 8-bit shit with new pid
+        if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) { // convert float stuff into uint8_t to keep backwards compatability with all 8-bit shit with new pid
             for (i = 0; i < 3; i++) {
                 serialize8(constrain(lrintf(currentProfile->pidProfile.P_f[i] * 10.0f), 0, 250));
                 serialize8(constrain(lrintf(currentProfile->pidProfile.I_f[i] * 100.0f), 0, 250));
@@ -897,7 +897,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_PID_CONTROLLER:
         headSerialReply(1);
-        serialize8(currentProfile->pidController);
+        serialize8(currentProfile->pidProfile.pidController);
         break;
     case MSP_MODE_RANGES:
         headSerialReply(4 * MAX_MODE_ACTIVATION_CONDITION_COUNT);
@@ -1206,11 +1206,11 @@ static bool processInCommand(void)
         currentProfile->accelerometerTrims.values.roll  = read16();
         break;
     case MSP_SET_PID_CONTROLLER:
-        currentProfile->pidController = read8();
-        setPIDController(currentProfile->pidController);
+        currentProfile->pidProfile.pidController = read8();
+        setPIDController(currentProfile->pidProfile.pidController);
         break;
     case MSP_SET_PID:
-        if (currentProfile->pidController == 2) {
+        if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
             for (i = 0; i < 3; i++) {
                 currentProfile->pidProfile.P_f[i] = (float)read8() / 10.0f;
                 currentProfile->pidProfile.I_f[i] = (float)read8() / 100.0f;

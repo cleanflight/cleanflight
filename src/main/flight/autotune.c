@@ -226,8 +226,8 @@ float autotune(angle_index_t angleIndex, const rollAndPitchInclination_t *inclin
         return errorAngle;
     }
 
-    if (pidController == 2) {
-        // TODO support new baseflight pid controller
+    if (IS_PID_CONTROLLER_FP_BASED(pidController)) {
+        // TODO support floating point based pid controllers
         return errorAngle;
     }
 
@@ -415,7 +415,7 @@ void restorePids(pidProfile_t *pidProfileToTune)
     memcpy(pidProfileToTune, &pidBackup, sizeof(pidBackup));
 }
 
-void autotuneBeginNextPhase(pidProfile_t *pidProfileToTune, uint8_t pidControllerInUse)
+void autotuneBeginNextPhase(pidProfile_t *pidProfileToTune)
 {
     phase = nextPhase;
 
@@ -439,7 +439,7 @@ void autotuneBeginNextPhase(pidProfile_t *pidProfileToTune, uint8_t pidControlle
     firstPeakAngle = secondPeakAngle = 0;
 
     pidProfile = pidProfileToTune;
-    pidController = pidControllerInUse;
+    pidController = pidProfile->pidController;
 
     updatePidIndex();
     updateTargetAngle();
