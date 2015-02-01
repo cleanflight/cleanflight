@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "drivers/accgyro.h"
+
 // Type of accelerometer used/detected
 typedef enum AccelSensors {
     ACC_DEFAULT = 0,
