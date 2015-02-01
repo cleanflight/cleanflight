@@ -30,20 +30,20 @@
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 
-#include "flight/flight.h"
-
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
 #include "sensors/pitotmeter.h"
 #include "sensors/sonar.h"
 
-#include "flight/mixer.h"
-#include "flight/imu.h"
-
 #include "rx/rx.h"
+
 #include "io/rc_controls.h"
 #include "io/escservo.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
 
 #include "config/runtime_config.h"
 
@@ -295,7 +295,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     debug[3] = accAlt;                  // height
 #endif
 
-    accSum_reset();
+    imuResetAccelerationSum();
 
 #ifdef BARO
     if (!isBaroCalibrationComplete()) {

@@ -25,6 +25,8 @@
 #include "common/axis.h"
 #include "common/color.h"
 #include "common/atomic.h"
+#include "common/maths.h"
+
 #include "drivers/nvic.h"
 
 #include "drivers/sensor.h"
@@ -45,20 +47,16 @@
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 
-#include "flight/flight.h"
-#include "flight/mixer.h"
+#include "rx/rx.h"
 
 #include "io/serial.h"
-#include "flight/failsafe.h"
-#include "flight/navigation.h"
-
-#include "rx/rx.h"
 #include "io/gps.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "io/gimbal.h"
 #include "io/ledstrip.h"
 #include "io/display.h"
+
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
 #include "sensors/barometer.h"
@@ -66,10 +64,18 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
-#include "telemetry/telemetry.h"
-#include "blackbox/blackbox.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
+
+#include "telemetry/telemetry.h"
+#include "blackbox/blackbox.h"
+
+#include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/mixer.h"
+#include "flight/failsafe.h"
+#include "flight/navigation.h"
+
 #include "config/runtime_config.h"
 #include "config/config.h"
 #include "config/config_profile.h"
@@ -92,9 +98,9 @@ serialPort_t *loopbackPort;
 
 failsafe_t *failsafe;
 
-void initPrintfSupport(void);
+void printfSupportInit(void);
 void timerInit(void);
-void initTelemetry(void);
+void telemetryInit(void);
 void serialInit(serialConfig_t *initialSerialConfig);
 failsafe_t* failsafeInit(rxConfig_t *intialRxConfig);
 pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
@@ -105,7 +111,7 @@ void beepcodeInit(failsafe_t *initialFailsafe);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
-void initIMU(void);
+void imuInit(void);
 void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, failsafe_t* failsafeToUse);
 void loop(void);
@@ -130,7 +136,7 @@ void init(void)
     drv_pwm_config_t pwm_params;
     bool sensorsOK = false;
 
-    initPrintfSupport();
+    printfSupportInit();
 
     initEEPROM();
 
@@ -282,7 +288,7 @@ void init(void)
     LED0_OFF;
     LED1_OFF;
 
-    initIMU();
+    imuInit();
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
 #ifdef MAG
@@ -364,7 +370,7 @@ void init(void)
 
 #ifdef TELEMETRY
     if (feature(FEATURE_TELEMETRY))
-        initTelemetry();
+        telemetryInit();
 #endif
 
 #ifdef BLACKBOX

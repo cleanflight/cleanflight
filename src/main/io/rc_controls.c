@@ -30,10 +30,6 @@
 #include "config/runtime_config.h"
 
 #include "drivers/system.h"
-
-#include "flight/flight.h"
-#include "flight/navigation.h"
-
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 
@@ -43,14 +39,19 @@
 #include "sensors/gyro.h"
 #include "sensors/acceleration.h"
 
+#include "rx/rx.h"
+
 #include "io/gps.h"
 #include "io/beeper.h"
-#include "mw.h"
-
-#include "rx/rx.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
+
+#include "flight/pid.h"
+#include "flight/navigation.h"
+
+#include "mw.h"
+
 
 static escAndServoConfig_t *escAndServoConfig;
 static pidProfile_t *pidProfile;

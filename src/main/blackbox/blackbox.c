@@ -36,7 +36,6 @@
 #include "drivers/light_led.h"
 #include "drivers/sound_beeper.h"
 
-#include "flight/flight.h"
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sonar.h"
@@ -46,17 +45,11 @@
 #include "sensors/pitotmeter.h"
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
+
 #include "io/beeper.h"
 #include "io/display.h"
 #include "io/escservo.h"
-#include "rx/rx.h"
 #include "io/rc_controls.h"
-#include "flight/mixer.h"
-#include "flight/altitudehold.h"
-#include "flight/failsafe.h"
-#include "flight/imu.h"
-#include "flight/autotune.h"
-#include "flight/navigation.h"
 #include "io/gimbal.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
@@ -64,8 +57,17 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+
+#include "rx/rx.h"
 #include "rx/msp.h"
+
 #include "telemetry/telemetry.h"
+
+#include "flight/mixer.h"
+#include "flight/altitudehold.h"
+#include "flight/failsafe.h"
+#include "flight/imu.h"
+#include "flight/navigation.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"

@@ -49,76 +49,13 @@ typedef struct pidProfile_s {
     uint8_t H_sensitivity;
 } pidProfile_t;
 
-typedef enum {
-    AI_ROLL = 0,
-    AI_PITCH,
-} angle_index_t;
-
-#define ANGLE_INDEX_COUNT 2
-
-// See http://en.wikipedia.org/wiki/Flight_dynamics
-typedef enum {
-    FD_ROLL = 0,
-    FD_PITCH,
-    FD_YAW
-} flight_dynamics_index_t;
-
-#define FLIGHT_DYNAMICS_INDEX_COUNT 3
-
-typedef struct int16_flightDynamicsTrims_s {
-    int16_t roll;
-    int16_t pitch;
-    int16_t yaw;
-} flightDynamicsTrims_def_t;
-
-typedef union {
-    int16_t raw[3];
-    flightDynamicsTrims_def_t values;
-} flightDynamicsTrims_t;
-
-typedef struct rollAndPitchTrims_s {
-    int16_t roll;
-    int16_t pitch;
-} rollAndPitchTrims_t_def;
-
-typedef union {
-    int16_t raw[2];
-    rollAndPitchTrims_t_def values;
-} rollAndPitchTrims_t;
-
-typedef struct rollAndPitchInclination_s {
-    // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
-    int16_t rollDeciDegrees;
-    int16_t pitchDeciDegrees;
-} rollAndPitchInclination_t_def;
-
-typedef union {
-    int16_t raw[ANGLE_INDEX_COUNT];
-    rollAndPitchInclination_t_def values;
-} rollAndPitchInclination_t;
-
-
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)
 
-extern rollAndPitchInclination_t inclination;
-
-extern int16_t gyroData[FLIGHT_DYNAMICS_INDEX_COUNT];
-extern int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT];
-
-extern int16_t gyroADC[XYZ_AXIS_COUNT], accADC[XYZ_AXIS_COUNT], accSmooth[XYZ_AXIS_COUNT];
-extern int32_t accSum[XYZ_AXIS_COUNT];
 extern int16_t axisPID[XYZ_AXIS_COUNT];
-
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 
-extern int16_t heading, magHold;
-
-extern int32_t AltHold;
-extern int32_t vario;
-
 void setPIDController(int type);
-void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims);
 void resetErrorAngle(void);
 void resetErrorGyro(void);
 

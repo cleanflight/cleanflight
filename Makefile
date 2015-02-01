@@ -114,7 +114,8 @@ STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F4xx_StdPeriph_Driver
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
 EXCLUDES = stm32f4xx_crc.c \
 		stm32f4xx_can.c \
-		stm32f4xx_fmc.c
+		stm32f4xx_fmc.c \
+		stm32f4xx_sai.c
 STDPERIPH_SRC := $(filter-out ${EXCLUDES}, $(STDPERIPH_SRC))
 
 USBCORE_DIR	= $(ROOT)/lib/main/STM32_USB_Device_Library/Core
@@ -261,7 +262,7 @@ COMMON_SRC	 = build_config.c \
 		   mw.c \
 		   flight/altitudehold.c \
 		   flight/failsafe.c \
-		   flight/flight.c \
+		   flight/pid.c \
 		   flight/imu.c \
 		   flight/mixer.c \
 		   drivers/bus_i2c_soft.c \

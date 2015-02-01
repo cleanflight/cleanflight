@@ -37,7 +37,6 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 
-#include "flight/flight.h"
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sonar.h"
@@ -47,18 +46,12 @@
 #include "sensors/pitotmeter.h"
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
+
 #include "io/beeper.h"
 #include "io/display.h"
 #include "io/escservo.h"
-#include "rx/rx.h"
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
-#include "flight/mixer.h"
-#include "flight/altitudehold.h"
-#include "flight/failsafe.h"
-#include "flight/imu.h"
-#include "flight/autotune.h"
-#include "flight/navigation.h"
 #include "io/gimbal.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
@@ -66,9 +59,21 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+
+#include "rx/rx.h"
 #include "rx/msp.h"
+
 #include "telemetry/telemetry.h"
 #include "blackbox/blackbox.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/altitudehold.h"
+#include "flight/failsafe.h"
+#include "flight/autotune.h"
+#include "flight/navigation.h"
+
 
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -90,6 +95,8 @@ int16_t debug[4];
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
+
+int16_t magHold;
 int16_t headFreeModeHold;
 
 int16_t telemTemperature1;      // gyro sensor temperature
@@ -683,7 +690,7 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        computeIMU(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
+        imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();

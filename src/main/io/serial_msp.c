@@ -41,20 +41,16 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 
-#include "flight/flight.h"
-#include "flight/mixer.h"
-#include "flight/failsafe.h"
-#include "flight/navigation.h"
-#include "flight/altitudehold.h"
-
 #include "rx/rx.h"
 #include "rx/msp.h"
+
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "io/gps.h"
 #include "io/gimbal.h"
 #include "io/serial.h"
 #include "io/ledstrip.h"
+
 #include "telemetry/telemetry.h"
 
 #include "sensors/boardalignment.h"
@@ -66,6 +62,15 @@
 #include "sensors/pitotmeter.h"
 #include "sensors/compass.h"
 #include "sensors/gyro.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/failsafe.h"
+#include "flight/navigation.h"
+#include "flight/altitudehold.h"
+
+#include "mw.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
