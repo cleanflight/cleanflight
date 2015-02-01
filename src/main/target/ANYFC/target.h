@@ -73,6 +73,8 @@
 #define LED0
 #define LED1
 
+#define USE_VCP
+
 #define USE_USART1
 
 #define USE_USART3
@@ -89,7 +91,7 @@
 #define USART6_APB2_PERIPHERALS RCC_APB2Periph_USART6
 #define USART6_AHB1_PERIPHERALS RCC_AHB1Periph_GPIOC
 
-#define SERIAL_PORT_COUNT 3
+#define SERIAL_PORT_COUNT 4
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1

@@ -112,14 +112,34 @@ else ifeq ($(TARGET),$(filter $(TARGET),ANYFC REVO))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F4xx_StdPeriph_Driver
 STDPERIPH_SRC = $(notdir $(wildcard $(STDPERIPH_DIR)/src/*.c))
-
 EXCLUDES = stm32f4xx_crc.c \
 		stm32f4xx_can.c \
 		stm32f4xx_fmc.c
-
 STDPERIPH_SRC := $(filter-out ${EXCLUDES}, $(STDPERIPH_SRC))
 
-DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
+USBCORE_DIR	= $(ROOT)/lib/main/STM32_USB_Device_Library/Core
+USBCORE_SRC = $(notdir $(wildcard $(USBCORE_DIR)/src/*.c))
+
+USBOTG_DIR	= $(ROOT)/lib/main/STM32_USB_OTG_Driver
+USBOTG_SRC = $(notdir $(wildcard $(USBOTG_DIR)/src/*.c))
+EXCLUDES	= usb_bsp_template.c \
+		usb_hcd_int.c \
+		usb_hcd.c \
+		usb_otg.c
+		
+USBOTG_SRC := $(filter-out ${EXCLUDES}, $(USBOTG_SRC))
+
+USBCDC_DIR	= $(ROOT)/lib/main/STM32_USB_Device_Library/Class/cdc
+USBCDC_SRC = $(notdir $(wildcard $(USBCDC_DIR)/src/*.c))
+EXCLUDES	= usbd_cdc_if_template.c
+USBCDC_SRC := $(filter-out ${EXCLUDES}, $(USBCDC_SRC))
+
+VPATH := $(VPATH):$(USBOTG_DIR)/src:$(USBCORE_DIR)/src:$(USBCDC_DIR)/src
+
+DEVICE_STDPERIPH_SRC := $(STDPERIPH_SRC) \
+		   $(USBOTG_SRC) \
+		   $(USBCORE_SRC) \
+		   $(USBCDC_SRC) 
 
 VPATH		:= $(VPATH):$(CMSIS_DIR)/CM1/CoreSupport:$(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F4xx
 CMSIS_SRC	 = $(notdir $(wildcard $(CMSIS_DIR)/CM1/CoreSupport/*.c \
@@ -127,10 +147,12 @@ CMSIS_SRC	 = $(notdir $(wildcard $(CMSIS_DIR)/CM1/CoreSupport/*.c \
 
 INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(STDPERIPH_DIR)/inc \
-		   $(USBFS_DIR)/inc \
+		   $(USBOTG_DIR)/inc \
+		   $(USBCORE_DIR)/inc \
+		   $(USBCDC_DIR)/inc \
 		   $(CMSIS_DIR)/CM1/CoreSupport \
 		   $(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F4xx \
-		   $(ROOT)/src/main/vcp
+		   $(ROOT)/src/main/vcpf4
 
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
 
@@ -296,6 +318,14 @@ VCP_SRC	 = \
 		   vcp/usb_istr.c \
 		   vcp/usb_prop.c \
 		   vcp/usb_pwr.c \
+		   drivers/serial_usb_vcp.c
+
+VCPF4_SRC	 = \
+		   vcpf4/stm32f4xx_it.c \
+		   vcpf4/usb_bsp.c \
+		   vcpf4/usbd_desc.c \
+		   vcpf4/usbd_usr.c \
+		   vcpf4/usbd_cdc_vcp.c \
 		   drivers/serial_usb_vcp.c
 
 NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
@@ -490,7 +520,8 @@ ANYFC_SRC	 = startup_stm32f40xx.s \
 		   drivers/timer.c \
 		   drivers/timer_stm32f4xx.c \
 		   $(HIGHEND_SRC) \
-		   $(COMMON_SRC)
+		   $(COMMON_SRC) \
+		   $(VCPF4_SRC)
 
 REVO_SRC	 = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
