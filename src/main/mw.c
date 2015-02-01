@@ -104,8 +104,6 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern failsafe_t *failsafe;
 
-extern pidControllerFuncPtr pid_controller;
-
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)
 {
     currentProfile->accelerometerTrims.values.roll += rollAndPitchTrimsDelta->values.roll;

@@ -725,7 +725,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     }
 }
 
-void setPIDController(int type)
+void pidSetController(int type)
 {
     switch (type) {
         case 0:
