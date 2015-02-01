@@ -21,6 +21,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "platform.h"
 
@@ -90,6 +93,7 @@ uint8_t GPS_svinfo_quality[16];     // Bitfield Qualtity
 uint8_t GPS_svinfo_cno[16];         // Carrier to Noise Ratio (Signal Strength)
 
 static gpsConfig_t *gpsConfig;
+uint32_t hwVersion = 0;
 
 // GPS timeout for wrong baud rate/disconnection/etc in milliseconds (default 2.5second)
 #define GPS_TIMEOUT (2500)
@@ -172,6 +176,9 @@ static const uint8_t ubloxInit[] = {
     0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12,	// set rate to 10Hz (measurement period: 100ms, navigation rate: 1 cycle)
 };
 
+static const uint8_t ubloxVerPoll[] = {
+    0xB5, 0x62, 0x0A, 0x04, 0x00, 0x00, 0x0E, 0x34,          // MON-VER - Poll version info
+};
 
 // UBlox 6 Protocol documentation - GPS.G6-SW-10018-F
 // SBAS Configuration Settings Desciption, Page 4/210
@@ -201,6 +208,7 @@ enum {
     GPS_UNKNOWN,
     GPS_INITIALIZING,
     GPS_CHANGE_BAUD,
+    GPS_CHECK_VERSION,
     GPS_CONFIGURE,
     GPS_RECEIVING_DATA,
     GPS_LOST_COMMUNICATION,
@@ -322,7 +330,31 @@ void gpsInitUblox(void)
             break;
         case GPS_CHANGE_BAUD:
             serialSetBaudRate(gpsPort, gpsInitData[gpsData.baudrateIndex].baudrate);
-            gpsSetState(GPS_CONFIGURE);
+            gpsSetState(GPS_CHECK_VERSION);
+            break;
+        case GPS_CHECK_VERSION:
+            if (gpsData.messageState == GPS_MESSAGE_STATE_IDLE) {
+                gpsData.messageState++;
+            }
+            if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
+
+                if (gpsData.state_position < sizeof(ubloxVerPoll)) {
+                    serialWrite(gpsPort, ubloxVerPoll[gpsData.state_position]);
+                    gpsData.state_position++;
+                } else {
+                    gpsData.state_position = 0;
+                    gpsData.messageState = GPS_MESSAGE_STATE_ENTRY_COUNT;
+                }
+            }
+            if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
+                // Wait until version found
+                if(hwVersion != 0)
+                {
+                    //proceed
+                    gpsData.messageState = GPS_MESSAGE_STATE_IDLE;
+                    gpsSetState(GPS_CONFIGURE);
+                }
+            }
             break;
         case GPS_CONFIGURE:
 
@@ -338,12 +370,22 @@ void gpsInitUblox(void)
 
             if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
 
-                if (gpsData.state_position < sizeof(ubloxInit)) {
-                    serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
-                    gpsData.state_position++;
+                if(hwVersion<70000) {
+                    if (gpsData.state_position < sizeof(ubloxInit6)) {
+                        serialWrite(gpsPort, ubloxInit6[gpsData.state_position]);
+                        gpsData.state_position++;
+                    } else {
+                        gpsData.state_position = 0;
+                        gpsData.messageState++;
+                    }
                 } else {
-                    gpsData.state_position = 0;
-                    gpsData.messageState++;
+                    if (gpsData.state_position < sizeof(ubloxInit)) {
+                        serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
+                        gpsData.state_position++;
+                    } else {
+                        gpsData.state_position = 0;
+                        gpsData.messageState++;
+                    }
                 }
             }
 
@@ -391,6 +433,7 @@ void gpsThread(void)
 
         case GPS_INITIALIZING:
         case GPS_CHANGE_BAUD:
+        case GPS_CHECK_VERSION:
         case GPS_CONFIGURE:
             gpsInitHardware();
             break;
@@ -676,6 +719,11 @@ typedef struct {
 } ubx_header;
 
 typedef struct {
+    char swVersion[30];      // Zero-terminated Software Version String
+    char hwVersion[10];      // Zero-terminated Hardware Version String
+} ubx_mon_ver;
+
+typedef struct {
     uint32_t time;              // GPS msToW
     int32_t longitude;
     int32_t latitude;
@@ -785,6 +833,8 @@ enum {
     CLASS_NAV = 0x01,
     CLASS_ACK = 0x05,
     CLASS_CFG = 0x06,
+    CLASS_MON = 0x0A,
+    MSG_VER = 0x04,
     MSG_ACK_NACK = 0x00,
     MSG_ACK_ACK = 0x01,
     MSG_POSLLH = 0x2,
@@ -857,6 +907,7 @@ static union {
     ubx_nav_velned velned;
     ubx_nav_pvt pvt;
     ubx_nav_svinfo svinfo;
+    ubx_mon_ver ver;
     uint8_t bytes[UBLOX_PAYLOAD_SIZE];
 } _buffer;
 
@@ -934,6 +985,13 @@ static bool UBLOX_parse_gps(void)
         GPS_hdop = _buffer.pvt.position_DOP;
         _new_position = true;
         _new_speed = true;
+        break;
+    case MSG_VER:
+        if(_class == CLASS_MON)
+        {
+            //uint32_t swver = _buffer.ver.swVersion;
+            hwVersion = atoi(_buffer.ver.hwVersion);
+        }
         break;
     case MSG_SVINFO:
         *gpsPacketLogChar = LOG_UBLOX_SVINFO;
