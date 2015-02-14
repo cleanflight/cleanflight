@@ -89,7 +89,7 @@
 
 
 //#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO)
+#define SENSORS_SET (SENSOR_ACC)
 
 #define BLACKBOX
 #define SERIAL_RX
@@ -100,14 +100,14 @@
 
 #define SPEKTRUM_BIND
 // USART2, PA3
-#define BIND_PORT GPIOA
-#define BIND_PIN Pin_3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3
+
+// alternative defaults for AlienWii32 F3 target
+#define ALIENWII32
+#define HARDWARE_BIND_PLUG
 
 // Hardware bind plug at PB12 (Pin 25)
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_12
 
-// alternative defaults for AlienWii32 F3 target
-#define ALIENWII32
-#define BRUSHED_MOTORS
-#define HARDWARE_BIND_PLUG
