@@ -174,11 +174,12 @@ static void ms5607_calculate(int32_t *pressure, int32_t *temperature)
     int64_t off = ((int64_t)ms5607_c[2] << 17) + (((int64_t)ms5607_c[4] * dT) >> 6);
     int64_t sens = ((int64_t)ms5607_c[1] << 16) + (((int64_t)ms5607_c[3] * dT) >> 7);
     int32_t T2 = 0;
+    temp = 2000 + ((dT * (int64_t)ms5607_c[6]) >> 23);
 
     if (temp < 2000) { // temperature lower than 20degC
         delt = temp - 2000;
         delt = delt * delt;
-        T2 = (dT * dT) >> 31;
+        temp -= (dT * dT) >> 31;
         off -= (61 * delt) >> 4;
         sens -= 2 * delt;
         if (temp < -1500) { // temperature lower than -15degC
@@ -188,7 +189,6 @@ static void ms5607_calculate(int32_t *pressure, int32_t *temperature)
             sens -= 8 * delt;
         }
     }
-    temp = 2000 + ((dT * (int64_t)ms5607_c[6]) >> 23) - T2;
     press = ((((int64_t)ms5607_up * sens) >> 21) - off) >> 15;
 
     if (pressure)

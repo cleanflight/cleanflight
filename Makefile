@@ -273,6 +273,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
 		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms5607.c \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
