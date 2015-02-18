@@ -560,13 +560,13 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 
         if (!FLIGHT_MODE(ANGLE_MODE)) {
             if (ABS((int16_t)gyroData[axis]) > 2560) {
-                errorGyroI[axis] = 0.0f;
+                errorGyroIf[axis] = 0.0f;
             } else {
                 error = (rcCommandAxis * 320.0f / (float)pidProfile->P8[axis]) - gyroData[axis];
-                errorGyroI[axis] = constrain(errorGyroI[axis] + error * ACCDeltaTimeINS, -192.0f, +192.0f);
+                errorGyroIf[axis] = constrainf(errorGyroIf[axis] + error * ACCDeltaTimeINS, -192.0f, +192.0f);
             }
 
-            ITermGYRO = errorGyroI[axis] * (float)pidProfile->I8[axis] * 0.01f;
+            ITermGYRO = errorGyroIf[axis] * (float)pidProfile->I8[axis] * 0.01f;
 
             if (FLIGHT_MODE(HORIZON_MODE)) {
                 PTerm = PTermACC + prop * (rcCommandAxis - PTermACC);
@@ -615,12 +615,12 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
         error = tmp0 - lrintf(gyroData[FD_YAW] * 0.25f);                       // Less Gyrojitter works actually better
 
         if (ABS(tmp0) > 50) {
-            errorGyroI[FD_YAW] = 0;
+            errorGyroIf[FD_YAW] = 0;
         } else {
-            errorGyroI[FD_YAW] = constrain(errorGyroI[FD_YAW] + (int32_t)(error * (float)pidProfile->I8[FD_YAW] * tmp0flt), -268435454, +268435454);
+            errorGyroIf[FD_YAW] = constrainf(errorGyroIf[FD_YAW] + (error * (float)pidProfile->I8[FD_YAW] * tmp0flt), -268435454, +268435454);
         }
 
-        ITerm = constrain(errorGyroI[FD_YAW] >> 13, -GYRO_I_MAX, +GYRO_I_MAX);
+        ITerm = constrainf(errorGyroIf[FD_YAW] / 8192, -GYRO_I_MAX, +GYRO_I_MAX);
         PTerm = ((int32_t)error * (int32_t)pidProfile->P8[FD_YAW]) >> 6;
 
         if (motorCount >= 4) { // Constrain FD_YAW by D value if not servo driven in that case servolimits apply
