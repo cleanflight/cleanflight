@@ -457,6 +457,7 @@ retry:
 #ifdef USE_MAG_AK8975
         case MAG_AK8975:
             if (ak8975detect(&mag)) {
+
                 sensorsSet(SENSOR_MAG);
 #ifdef MAG_AK8975_ALIGN
                 magAlign = MAG_AK8975_ALIGN;
