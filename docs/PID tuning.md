@@ -1,16 +1,18 @@
 # PID tuning
 
-Every aspect of flight dynamics is controlled by the selected "PID controller". This is an algorithm which is
-responsible for reacting to your stick inputs and keeping the craft stable in the air by using the gyroscopes and/or
-accelerometers (depending on your flight mode).
+Every aspect of flight dynamics is controlled by the Proportional-Integral-Derivative (PID controller, http://en.wikipedia.org/wiki/PID_controller). This is an algorithm which is responsible for reacting to your stick inputs and keeping the craft stable in the air by using the gyroscopes and/or accelerometers (depending on your flight mode).
 
 The "PIDs" are a set of tuning parameters which control the operation of the PID controller. The optimal PID settings
 to use are different on every craft, so if you can't find someone with your exact setup who will share their settings
 with you, some trial and error is required to find the best performing PID settings.
 
-A video on how to recognise and correct different flight problems caused by PID settings is available here:
+This video on how to recognise and correct different flight problems caused by PID settings is available here:
 
 https://www.youtube.com/watch?v=YNzqTGEl2xQ
+
+And his video explains the reason for using auto tune and show a good practical example:
+
+https://www.youtube.com/watch?v=NXzy9Jq4OSQ
 
 Basically, the goal of the PID controller is to bring the craft's rotation rate in all three axes to the rate that
 you're commanding with your sticks. An error is computed which is the difference between your target rotation rate and
@@ -39,7 +41,18 @@ You can change between PID controllers by running `set pid_controller=n` on the 
 Configurator, where `n` is the number of the controller you want to use. Please read these notes first before trying one
 out.
 
-### PID controller 0, "MultiWii" (default)
+### Quick guide
+PID controller|Based on|Looptme compensation|Yaw authority|Auto tune|Special note
+:-:|---|:-:|:-:|:-:|:--
+0|MultiWii 2.2|No|Normal|Yes|Default controller in Cleanflight.|
+1|MultiWii 2.3|No|Normal|Yes|The LEVEL "D" setting is not used by this controller.|
+2|LuxFloat|Yes|Normal|No|Lux's new floating point PID controller, designed for 32-bit processors.|
+3|MultiWii 2.3|No|Strong|Yes|This will provide best performance on very small multicopters with brushed motors.|
+4|MultiWii 2.2 (pitch and roll)<br>MultiWii 2.3 (yaw)|No|Strong|Yes|This will provide best performance on very small multicopters with brushed motors.|
+5|Harakiri|Yes|Strong|Yes|If you want do acrobatics start slowly.|
+
+### Controller details
+#### PID controller 0, "MultiWii" (default)
 
 PID Controller 0 is the default controller in Cleanflight, and Cleanflight's default PID settings are tuned to be
 middle-of-the-road settings for this controller. It originates from the old MultiWii PID controller from MultiWii 2.2
@@ -51,8 +64,9 @@ that axis are lowered. Hence you need to crank up the pitch or roll rates if you
 In Horizon and Angle modes, this controller uses both the LEVEL "P" and "I" settings in order to tune the 
 auto-leveling corrections in a similar way to the way that P and I settings are applied to roll and yaw axes in the acro
 flight modes. The LEVEL "D" term is used as a limiter to constrain the maximum correction applied by the LEVEL "P" term.
+***
 
-### PID controller 1, "Rewrite"
+#### PID controller 1, "Rewrite"
 
 PID Controller 1 is a newer PID controller that is derived from the one in MultiWii 2.3 and later. It works better from
 all accounts, and fixes some inherent problems in the way the old one worked. From reports, tuning is apparently easier
@@ -70,8 +84,8 @@ applied. The default Cleanflight setting for "I" will result in virtually no aut
 need to be increased in order to perform like PID controller 0.
 
 The LEVEL "D" setting is not used by this controller.
-
-### PID controller 2, "LuxFloat"
+***
+#### PID controller 2, "LuxFloat"
 
 PID Controller 2 is Lux's new floating point PID controller. Both controller 0 and 1 use integer arithmetic, which was
 faster in the days of the slower 8-bit MultiWii controllers, but is less precise.
@@ -84,11 +98,11 @@ nebbian in v1.6.0. The autotune feature does not work on this controller, so don
 
 It is the first PID Controller designed for 32-bit processors and not derived from MultiWii.
 
-The strength of the auto-leveling correction applied during Angle mode is set by the parameter "level_angle" which
+In Angle mode, the strength of the auto-leveling correction applied during Angle mode is set by the parameter "level_angle" which
 is labeled "LEVEL Proportional" in the GUI. This can be used to tune the auto-leveling strength in Angle mode compared to
 Horizon mode. The default is 5.0.
 
-The strength of the auto-leveling correction applied during Horizon mode is set by the parameter "level_horizon" which
+In Horizon mode, the strength of the auto-leveling correction applied during Horizon mode is set by the parameter "level_horizon" which
 is labeled "LEVEL Integral" in the GUI. The default is 3.0, which makes the Horizon mode apply weaker self-leveling than
 the Angle mode. Note: There is currently a bug in the Configurator which shows this parameter divided by 100 (so it
 shows as 0.03 rather than 3.0).
@@ -98,28 +112,30 @@ parameter which is labeled "LEVEL Derivative" in the Cleanflight Configurator GU
 stick travel that should have self-leveling applied to it, so smaller values cause more of the stick area to fly using
 only the gyros. The default is 75% 
 
-For example, at a setting of "100" for "sensitivity_horizon", 100% self-leveling strength will be applied at center
-stick, 50% self-leveling will be applied at 50% stick, and no self-leveling will be applied at 100% stick. If
-sensitivity is decreased to 75, 100% self-leveling will be applied at center stick, 50% will be applied at 63%
-stick, and no self-leveling will be applied at 75% stick and onwards.
+For example:
 
-### PID controller 3, "MultiWii23" (default for the ALIENWIIF1 and ALIENWIIF3 targets)
+sensitivity_horizon|centre stick|50% stick|75% stick|100% stick
+:-:|:-:|:-:|:-:|:-:
+100|100%|50%|25%|zero
+75|100%|50%|63%|zero|zero
+***
+#### PID controller 3, "MultiWii23" (default for the ALIENWIIF1 and ALIENWIIF3 targets)
 
 PID Controller 3 is an direct port of the PID controller from MultiWii 2.3 and later.
 
 The algorithm is handling roll and pitch differently to yaw. Users with problems on yaw authority should try this one.
 
 For the ALIENWII32 targets the gyroscale is removed for even more yaw authority. This will provide best performance on very small multicopters with brushed motors.
-
-### PID controller 4, "MultiWiiHybrid"
+***
+#### PID controller 4, "MultiWiiHybrid"
 
 PID Controller 4 is an hybrid version of two MultiWii PID controllers. Roll and pitch is using the MultiWii 2.2 algorithm and yaw is using the 2.3 algorithm. 
 
 This PID controller was initialy implemented for testing purposes but is also performing quite well.
 
 For the ALIENWII32 targets the gyroscale is removed for more yaw authority. This will provide best performance on very small multicopters with brushed motors.
-
-### PID controller 5, "Harakiri"
+***
+#### PID controller 5, "Harakiri"
 
 PID Controller 5 is an port of the PID controller from the Harakiri firmware.
 
