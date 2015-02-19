@@ -24,23 +24,26 @@
 
 extern "C" {
     #include "common/axis.h"
-    #include "flight/flight.h"
+    #include "common/maths.h"
+
+    #include "drivers/sensor.h"
+    #include "drivers/accgyro.h"
 
     #include "sensors/sensors.h"
-    #include "drivers/accgyro.h"
     #include "sensors/acceleration.h"
     #include "sensors/barometer.h"
 
-    #include "flight/mixer.h"
-    #include "flight/mixer.h"
-
     #include "io/escservo.h"
-    #include "rx/rx.h"
     #include "io/rc_controls.h"
 
-    #include "config/runtime_config.h"
+    #include "rx/rx.h"
 
+    #include "flight/mixer.h"
+    #include "flight/pid.h"
+    #include "flight/imu.h"
     #include "flight/altitudehold.h"
+
+    #include "config/runtime_config.h"
 
 }
 
@@ -53,6 +56,7 @@ extern "C" {
 
 extern "C" {
     bool isThrustFacingDownwards(rollAndPitchInclination_t *inclinations);
+    uint16_t calculateTiltAngle(rollAndPitchInclination_t *inclinations);
 }
 
 typedef struct inclinationExpectation_s {
@@ -89,6 +93,36 @@ TEST(AltitudeHoldTest, IsThrustFacingDownwards)
     }
 }
 
+typedef struct inclinationAngleExpectations_s {
+    rollAndPitchInclination_t inclination;
+    uint16_t expected_angle;
+} inclinationAngleExpectations_t;
+
+TEST(AltitudeHoldTest, TestCalculateTiltAngle)
+{
+    inclinationAngleExpectations_t inclinationAngleExpectations[] = {
+        { {0, 0}, 0},
+        { {1, 0}, 1},
+        { {0, 1}, 1},
+        { {0, -1}, 1},
+        { {-1, 0}, 1},
+        { {-1, -2}, 2},
+        { {-2, -1}, 2},
+        { {1, 2}, 2},
+        { {2, 1}, 2}
+    };
+
+    rollAndPitchInclination_t inclination = {0, 0};
+    uint16_t tilt_angle = calculateTiltAngle(&inclination);
+    EXPECT_EQ(tilt_angle, 0);
+
+    for (uint8_t i = 0; i < 9; i++) {
+        inclinationAngleExpectations_t *expectation = &inclinationAngleExpectations[i];
+        uint16_t result = calculateTiltAngle(&expectation->inclination);
+        EXPECT_EQ(expectation->expected_angle, result);
+    }
+}
+
 // STUBS
 
 extern "C" {
@@ -116,7 +150,7 @@ uint8_t armingFlags;
 int32_t sonarAlt;
 
 
-void gyroGetADC(void) {};
+void gyroUpdate(void) {};
 bool sensors(uint32_t mask)
 {
     UNUSED(mask);
@@ -127,7 +161,7 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     UNUSED(rollAndPitchTrims);
 }
 
-void accSum_reset(void) {};
+void imuResetAccelerationSum(void) {};
 
 int32_t applyDeadband(int32_t, int32_t) { return 0; }
 uint32_t micros(void) { return 0; }

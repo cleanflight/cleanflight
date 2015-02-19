@@ -17,6 +17,28 @@
 
 #pragma once
 
+typedef enum {
+    SENSOR_INDEX_GYRO = 0,
+    SENSOR_INDEX_ACC,
+    SENSOR_INDEX_BARO,
+    SENSOR_INDEX_MAG
+} sensorIndex_e;
+
+#define MAX_SENSORS_TO_DETECT (SENSOR_INDEX_MAG + 1)
+
+extern uint8_t detectedSensors[MAX_SENSORS_TO_DETECT];
+
+typedef struct int16_flightDynamicsTrims_s {
+    int16_t roll;
+    int16_t pitch;
+    int16_t yaw;
+} flightDynamicsTrims_def_t;
+
+typedef union {
+    int16_t raw[3];
+    flightDynamicsTrims_def_t values;
+} flightDynamicsTrims_t;
+
 #define CALIBRATING_GYRO_CYCLES             1000
 #define CALIBRATING_ACC_CYCLES              400
 #define CALIBRATING_BARO_CYCLES             200 // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles

@@ -26,6 +26,8 @@
 #define LED1_PIN    Pin_5  // Green LEDs - PB5
 #define LED1_PERIPHERAL RCC_AHBPeriph_GPIOB
 
+#define USABLE_TIMER_CHANNEL_COUNT 11
+
 // MPU 9150 INT connected to PA15, pulled up to VCC by 10K Resistor, contains MPU6050 and AK8975 in single component.
 #define GYRO
 #define USE_GYRO_MPU6050
@@ -37,8 +39,8 @@
 
 #define ACC_MPU6050_ALIGN CW270_DEG
 
-//#define BARO
-//#define USE_BARO_MS5611
+#define BARO
+#define USE_BARO_MS5611
 
 #define MAG
 #define USE_MAG_AK8975
@@ -84,9 +86,6 @@
 #define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
 #define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
 
-
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
-
 #define BLACKBOX
 #define SERIAL_RX
 #define GPS
@@ -97,9 +96,11 @@
 // LED strip configuration using PWM motor output pin 5.
 #define LED_STRIP_TIMER TIM16
 
+#define USE_LED_STRIP_ON_DMA1_CHANNEL3
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
-#define WS2811_PIN                      Pin_6 // TIM16_CH1
+#define WS2811_GPIO_AF                  GPIO_AF_1
+#define WS2811_PIN                      GPIO_Pin_6 // TIM16_CH1
 #define WS2811_PIN_SOURCE               GPIO_PinSource6
 #define WS2811_TIMER                    TIM16
 #define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM16
@@ -108,12 +109,15 @@
 #endif
 
 #if 0
-// Alternate LED strip pin - FIXME for some reason the DMA IRQ Transfer Complete is never called.
+// Alternate LED strip pin
+// FIXME DMA IRQ Transfer Complete is never called because the  TIM17_DMA_RMP needs to be set in SYSCFG_CFGR1
 #define LED_STRIP_TIMER TIM17
 
+#define USE_LED_STRIP_ON_DMA1_CHANNEL7
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
-#define WS2811_PIN                      Pin_7 // TIM17_CH1
+#define WS2811_GPIO_AF                  GPIO_AF_1
+#define WS2811_PIN                      GPIO_Pin_7 // TIM17_CH1
 #define WS2811_PIN_SOURCE               GPIO_PinSource7
 #define WS2811_TIMER                    TIM17
 #define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM17

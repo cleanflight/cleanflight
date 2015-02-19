@@ -25,45 +25,48 @@
 
 #include "common/color.h"
 #include "common/axis.h"
-#include "flight/flight.h"
+#include "common/maths.h"
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
-
 #include "drivers/system.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
+#include "drivers/serial.h"
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
-
-#include "io/statusindicator.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
-#include "drivers/serial.h"
-#include "io/serial.h"
-#include "telemetry/telemetry.h"
-
-#include "flight/mixer.h"
 #include "sensors/boardalignment.h"
 #include "sensors/battery.h"
+
+#include "io/statusindicator.h"
+#include "io/serial.h"
 #include "io/gimbal.h"
 #include "io/escservo.h"
-#include "rx/rx.h"
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
 #include "io/ledstrip.h"
 #include "io/gps.h"
+
+#include "rx/rx.h"
+
+#include "telemetry/telemetry.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
 #include "flight/failsafe.h"
 #include "flight/altitudehold.h"
-#include "flight/imu.h"
 #include "flight/navigation.h"
 
 #include "config/runtime_config.h"
 #include "config/config.h"
+
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
@@ -108,7 +111,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 88;
+static const uint8_t EEPROM_CONF_VERSION = 91;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -119,6 +122,8 @@ static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 
 static void resetPidProfile(pidProfile_t *pidProfile)
 {
+    pidProfile->pidController = 0;
+
     pidProfile->P8[ROLL] = 40;
     pidProfile->I8[ROLL] = 30;
     pidProfile->D8[ROLL] = 23;
@@ -159,6 +164,7 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->D_f[YAW] = 0.05f;
     pidProfile->A_level = 5.0f;
     pidProfile->H_level = 3.0f;
+    pidProfile->H_sensitivity = 75;
 }
 
 #ifdef GPS
@@ -194,6 +200,7 @@ void resetEscAndServoConfig(escAndServoConfig_t *escAndServoConfig)
     escAndServoConfig->minthrottle = 1150;
     escAndServoConfig->maxthrottle = 1850;
     escAndServoConfig->mincommand = 1000;
+    escAndServoConfig->servoCenterPulse = 1500;
 }
 
 void resetFlight3DConfig(flight3DConfig_t *flight3DConfig)
@@ -224,18 +231,29 @@ void resetBatteryConfig(batteryConfig_t *batteryConfig)
     batteryConfig->currentMeterOffset = 0;
     batteryConfig->currentMeterScale = 400; // for Allegro ACS758LCB-100U (40mV/A)
     batteryConfig->batteryCapacity = 0;
-
+    batteryConfig->currentMeterType = CURRENT_SENSOR_ADC;
 }
+
+#ifdef SWAP_SERIAL_PORT_0_AND_1_DEFAULTS
+#define FIRST_PORT_INDEX 1
+#define SECOND_PORT_INDEX 0
+#else
+#define FIRST_PORT_INDEX 0
+#define SECOND_PORT_INDEX 1
+#endif
 
 void resetSerialConfig(serialConfig_t *serialConfig)
 {
-#ifdef SWAP_SERIAL_PORT_1_AND_2_DEFAULTS
-    serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_UNUSED);
-    serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
+    serialConfig->serial_port_scenario[FIRST_PORT_INDEX] = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
+
+#ifdef CC3D
+    // Temporary workaround for CC3D non-functional VCP when using OpenPilot bootloader.
+    // This allows MSP connection via USART so the board can be reconfigured.
+    serialConfig->serial_port_scenario[SECOND_PORT_INDEX] = lookupScenarioIndex(SCENARIO_MSP_ONLY);
 #else
-    serialConfig->serial_port_scenario[0] = lookupScenarioIndex(SCENARIO_MSP_CLI_TELEMETRY_GPS_PASTHROUGH);
-    serialConfig->serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_UNUSED);
+    serialConfig->serial_port_scenario[SECOND_PORT_INDEX] = lookupScenarioIndex(SCENARIO_UNUSED);
 #endif
+
 #if (SERIAL_PORT_COUNT > 2)
     serialConfig->serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_UNUSED);
 #if (SERIAL_PORT_COUNT > 3)
@@ -382,7 +400,6 @@ static void resetConf(void)
     masterConfig.looptime = 3500;
     masterConfig.emf_avoidance = 0;
 
-    currentProfile->pidController = 0;
     resetPidProfile(&currentProfile->pidProfile);
 
     resetControlRateConfig(&masterConfig.controlRateProfiles[0]);
@@ -450,20 +467,33 @@ static void resetConf(void)
     masterConfig.blackbox_rate_denom = 1;
 #endif
 
-    // alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
+    // alternative defaults settings for ALIENWIIF1 and ALIENWIIF3 targets
 #ifdef ALIENWII32
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
     featureSet(FEATURE_FAILSAFE);
+    featureClear(FEATURE_VBAT);
+#ifdef ALIENWIIF3
+    masterConfig.serialConfig.serial_port_scenario[2] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
+#else
     masterConfig.serialConfig.serial_port_scenario[1] = lookupScenarioIndex(SCENARIO_SERIAL_RX_ONLY);
+#endif
     masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
     masterConfig.motor_pwm_rate = 32000;
+    masterConfig.looptime = 2000;
+    currentProfile->pidProfile.pidController = 3;
+    currentProfile->pidProfile.P8[ROLL] = 36;
+    currentProfile->pidProfile.P8[PITCH] = 36;
+    currentProfile->failsafeConfig.failsafe_delay = 2;
+    currentProfile->failsafeConfig.failsafe_off_delay = 0;
+    currentProfile->failsafeConfig.failsafe_throttle = 1000;
     currentControlRateProfile->rcRate8 = 130;
     currentControlRateProfile->rollPitchRate = 20;
     currentControlRateProfile->yawRate = 60;
+    currentControlRateProfile->yawRate = 100;
     parseRcChannels("TAER1234", &masterConfig.rxConfig);
 
     //  { 1.0f, -0.5f,  1.0f, -1.0f },          // REAR_R
@@ -586,7 +616,7 @@ void activateConfig(void)
     useTelemetryConfig(&masterConfig.telemetryConfig);
 #endif
 
-    setPIDController(currentProfile->pidController);
+    setPIDController(currentProfile->pidProfile.pidController);
 
 #ifdef GPS
     gpsUseProfile(&currentProfile->gpsProfile);
@@ -612,10 +642,12 @@ void activateConfig(void)
     imuRuntimeConfig.acc_unarmedcal = currentProfile->acc_unarmedcal;;
     imuRuntimeConfig.small_angle = masterConfig.small_angle;
 
-    configureImu(
+    imuConfigure(
         &imuRuntimeConfig,
         &currentProfile->pidProfile,
-        &currentProfile->accDeadband
+        &currentProfile->accDeadband,
+        currentProfile->accz_lpf_cutoff,
+        currentProfile->throttle_correction_angle
     );
 
     configureAltitudeHold(
@@ -624,9 +656,6 @@ void activateConfig(void)
         &currentProfile->rcControlsConfig,
         &masterConfig.escAndServoConfig
     );
-
-    calculateThrottleAngleScale(currentProfile->throttle_correction_angle);
-    calculateAccZLowPassFilterRCTimeConstant(currentProfile->accz_lpf_cutoff);
 
 #ifdef BARO
     useBarometerConfig(&currentProfile->barometerConfig);
@@ -659,7 +688,9 @@ void validateAndFixConfig(void)
         // rssi adc needs the same ports
         featureClear(FEATURE_RSSI_ADC);
         // current meter needs the same ports
-        featureClear(FEATURE_CURRENT_METER);
+        if (masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
+            featureClear(FEATURE_CURRENT_METER);
+        }
 #endif
 
 #if defined(STM32F10X) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
@@ -692,14 +723,20 @@ void validateAndFixConfig(void)
 #endif
 
 #if defined(NAZE) && defined(SONAR)
-    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER)) {
+    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
         featureClear(FEATURE_CURRENT_METER);
     }
 #endif
 
 #if defined(OLIMEXINO) && defined(SONAR)
-    if (feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER)) {
+    if (feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
         featureClear(FEATURE_CURRENT_METER);
+    }
+#endif
+
+#if defined(CC3D) && defined(DISPLAY) && defined(USE_USART3)
+    if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
+        featureClear(FEATURE_DISPLAY);
     }
 #endif
 

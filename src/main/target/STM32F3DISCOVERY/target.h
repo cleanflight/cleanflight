@@ -39,8 +39,13 @@
 #define GYRO
 #define USE_GYRO_L3GD20
 
+#define GYRO_L3GD20_ALIGN CW90_DEG
+
 #define ACC
 #define USE_ACC_LSM303DLHC
+
+#define MAG
+#define USE_MAG_HMC5883
 
 #define BEEPER
 #define LED0
@@ -54,7 +59,27 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
-#define SENSORS_SET (SENSOR_ACC)
+#define USE_ADC
+
+#define ADC_INSTANCE                ADC1
+#define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA1
+#define ADC_DMA_CHANNEL             DMA1_Channel1
+
+#define VBAT_ADC_GPIO               GPIOC
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
+#define VBAT_ADC_CHANNEL            ADC_Channel_6
+
+#define CURRENT_METER_ADC_GPIO      GPIOC
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_7
+
+#define RSSI_ADC_GPIO               GPIOC
+#define RSSI_ADC_GPIO_PIN           GPIO_Pin_2
+#define RSSI_ADC_CHANNEL            ADC_Channel_8
+
+#define EXTERNAL1_ADC_GPIO          GPIOC
+#define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_3
+#define EXTERNAL1_ADC_CHANNEL       ADC_Channel_9
 
 #define BLACKBOX
 #define GPS

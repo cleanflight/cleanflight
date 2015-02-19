@@ -26,31 +26,36 @@
 #include "build_config.h"
 
 #include "drivers/serial.h"
+#include "drivers/system.h"
+#include "drivers/display_ug2864hsweg01.h"
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
+#include "drivers/compass.h"
+
 #include "common/printf.h"
 #include "common/maths.h"
+#include "common/axis.h"
+#include "common/typeconversion.h"
 
 #ifdef DISPLAY
 
-#include "drivers/system.h"
-#include "drivers/display_ug2864hsweg01.h"
-
-#include "drivers/sensor.h"
-#include "drivers/compass.h"
-
 #include "sensors/battery.h"
-
-#include "common/axis.h"
-#include "flight/flight.h"
 #include "sensors/sensors.h"
 #include "sensors/compass.h"
+#include "sensors/acceleration.h"
+#include "sensors/gyro.h"
+
+#include "rx/rx.h"
+
+#include "io/rc_controls.h"
+
+#include "flight/pid.h"
+#include "flight/imu.h"
 
 #ifdef GPS
 #include "io/gps.h"
 #include "flight/navigation.h"
 #endif
-
-#include "rx/rx.h"
-#include "io/rc_controls.h"
 
 #include "config/runtime_config.h"
 
@@ -236,12 +241,14 @@ void showRxPage(void)
 
 void showWelcomePage(void)
 {
-    tfp_sprintf(lineBuffer, "Rev: %s", shortGitRevision);
-    i2c_OLED_set_line(PAGE_TITLE_LINE_COUNT + 0);
+    uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
+
+    tfp_sprintf(lineBuffer, "v%s (%s)", FC_VERSION_STRING, shortGitRevision);
+    i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
     tfp_sprintf(lineBuffer, "Target: %s", targetName);
-    i2c_OLED_set_line(PAGE_TITLE_LINE_COUNT + 1);
+    i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 }
 
@@ -292,12 +299,12 @@ void showProfilePage(void)
 void showGpsPage() {
     uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
 
-    i2c_OLED_set_xy(max(0, SATELLITE_GRAPH_LEFT_OFFSET), rowIndex++);
+    i2c_OLED_set_xy(MAX(0, SATELLITE_GRAPH_LEFT_OFFSET), rowIndex++);
 
     uint32_t index;
     for (index = 0; index < SATELLITE_COUNT && index < SCREEN_CHARACTER_COLUMN_COUNT; index++) {
         uint8_t bargraphValue = ((uint16_t) GPS_svinfo_cno[index] * VERTICAL_BARGRAPH_CHARACTER_COUNT) / (GPS_DBHZ_MAX - 1);
-        bargraphValue = min(bargraphValue, VERTICAL_BARGRAPH_CHARACTER_COUNT - 1);
+        bargraphValue = MIN(bargraphValue, VERTICAL_BARGRAPH_CHARACTER_COUNT - 1);
         i2c_OLED_send_char(VERTICAL_BARGRAPH_ZERO_CHARACTER + bargraphValue);
     }
 
@@ -378,29 +385,63 @@ void showBatteryPage(void)
 void showSensorsPage(void)
 {
     uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;
+    static const char *format = "%s %5d %5d %5d";
 
     i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string("        X     Y     Z");
+
     if (sensors(SENSOR_ACC)) {
-        tfp_sprintf(lineBuffer, "A = %5d %5d %5d", accSmooth[X], accSmooth[Y], accSmooth[Z]);
+        tfp_sprintf(lineBuffer, format, "ACC", accSmooth[X], accSmooth[Y], accSmooth[Z]);
         padLineBuffer();
         i2c_OLED_set_line(rowIndex++);
         i2c_OLED_send_string(lineBuffer);
     }
+
     if (sensors(SENSOR_GYRO)) {
-        tfp_sprintf(lineBuffer, "G = %5d %5d %5d", gyroADC[X], gyroADC[Y], gyroADC[Z]);
+        tfp_sprintf(lineBuffer, format, "GYR", gyroADC[X], gyroADC[Y], gyroADC[Z]);
         padLineBuffer();
         i2c_OLED_set_line(rowIndex++);
         i2c_OLED_send_string(lineBuffer);
     }
+
 #ifdef MAG
     if (sensors(SENSOR_MAG)) {
-        tfp_sprintf(lineBuffer, "M = %5d %5d %5d", magADC[X], magADC[Y], magADC[Z]);
+        tfp_sprintf(lineBuffer, format, "MAG", magADC[X], magADC[Y], magADC[Z]);
         padLineBuffer();
         i2c_OLED_set_line(rowIndex++);
         i2c_OLED_send_string(lineBuffer);
     }
 #endif
+
+    tfp_sprintf(lineBuffer, format, "I&H", inclination.values.rollDeciDegrees, inclination.values.pitchDeciDegrees, heading);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
+    uint8_t length;
+
+    ftoa(EstG.A[X], lineBuffer);
+    length = strlen(lineBuffer);
+    while (length < HALF_SCREEN_CHARACTER_COLUMN_COUNT) {
+        lineBuffer[length++] = ' ';
+        lineBuffer[length+1] = 0;
+    }
+    ftoa(EstG.A[Y], lineBuffer + length);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
+    ftoa(EstG.A[Z], lineBuffer);
+    length = strlen(lineBuffer);
+    while (length < HALF_SCREEN_CHARACTER_COLUMN_COUNT) {
+        lineBuffer[length++] = ' ';
+        lineBuffer[length+1] = 0;
+    }
+    ftoa(smallAngle, lineBuffer + length);
+    padLineBuffer();
+    i2c_OLED_set_line(rowIndex++);
+    i2c_OLED_send_string(lineBuffer);
+
 }
 
 #ifdef ENABLE_DEBUG_OLED_PAGE
