@@ -105,6 +105,7 @@ static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
+static void cliRxCalibration(char *cmdline);
 
 #ifdef GPS
 static void cliGpsPassthrough(char *cmdline);
@@ -212,6 +213,7 @@ const clicmd_t cmdTable[] = {
     { "motor", "get/set motor output value", cliMotor },
     { "profile", "index (0 to 2)", cliProfile },
     { "rateprofile", "index (0 to 2)", cliRateProfile },
+    { "rccal", "configure rc calibration", cliRxCalibration },
     { "save", "save and reboot", cliSave },
 #ifdef USE_SERVOS
     { "servo", "servo config", cliServo },
@@ -737,6 +739,38 @@ static void cliCMix(char *cmdline)
 #endif
 }
 
+static void cliRxCalibration(char *cmdline)
+{
+    int i, check = 0;
+    char *ptr;
+
+    if (isEmpty(cmdline)) {
+        for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
+            printf("rccal %u %u %u\r\n", i, masterConfig.rxConfig.calibration[i].minrc, masterConfig.rxConfig.calibration[i].maxrc);
+        }
+    } else {
+        ptr = cmdline;
+        i = atoi(ptr);
+        if (i < MAX_SUPPORTED_RC_CHANNEL_COUNT) {
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                masterConfig.rxConfig.calibration[i].minrc = atoi(++ptr);
+                check++;
+            }
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                masterConfig.rxConfig.calibration[i].maxrc = atoi(++ptr);
+                check++;
+            }
+            if (check != 2) {
+            printf("Wrong number of arguments, needs idx min max\r\n");
+            }
+        } else {
+            printf("Invalid R/C calibration index: must be < %u\r\n", MAX_LED_STRIP_LENGTH);
+        }
+    }
+}
+
 #ifdef LED_STRIP
 static void cliLed(char *cmdline)
 {
@@ -1076,6 +1110,10 @@ static void cliDump(char *cmdline)
 
         cliAdjustmentRange("");
 
+        printf("\r\n# rccal\r\n");
+
+        cliRxCalibration("");
+        
         cliPrint("\r\n# servo\r\n");
 
         cliServo("");

@@ -87,6 +87,7 @@ Re-apply any new defaults as desired.
 | motor          | get/set motor output value                     |
 | profile        | index (0 to 2)                                 |
 | rateprofile    | index (0 to 2)                                 |
+| rccal          | Set R/C channel calibration (stick end points) |
 | save           | save and reboot                                |
 | set            | name=value or blank or * for list              |
 | status         | show system status                             |

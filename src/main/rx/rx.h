@@ -64,6 +64,11 @@ extern int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];       // interval [1000;2
 #define RSSI_SCALE_MAX 255
 #define RSSI_SCALE_DEFAULT 30
 
+typedef struct rxCalibration_s {
+    uint16_t minrc;
+    uint16_t maxrc;
+} rxCalibration_t;
+
 typedef struct rxConfig_s {
     uint8_t rcmap[MAX_MAPPABLE_RX_INPUTS];  // mapping of radio channels to internal RPYTA+ order
     uint8_t serialrx_provider;              // type of UART-based receiver (0 = spek 10, 1 = spek 11, 2 = sbus). Must be enabled by FEATURE_RX_SERIAL first.
@@ -73,6 +78,7 @@ typedef struct rxConfig_s {
     uint16_t midrc;                         // Some radios have not a neutral point centered on 1500. can be changed here
     uint16_t mincheck;                      // minimum rc end
     uint16_t maxcheck;                      // maximum rc end
+    rxCalibration_t calibration[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 } rxConfig_t;
 
 #define REMAPPABLE_CHANNEL_COUNT (sizeof(((rxConfig_t *)0)->rcmap) / sizeof(((rxConfig_t *)0)->rcmap[0]))
