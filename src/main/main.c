@@ -185,6 +185,7 @@ void init(void)
     delay(100);
 
     timerInit();  // timer must be initialized before any channel is allocated
+
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
     memset(&pwm_params, 0, sizeof(pwm_params));
@@ -333,13 +334,12 @@ void init(void)
     LED0_OFF;
     LED1_OFF;
 
-
-    imuInit();
-
 #ifdef MAG
     if (sensors(SENSOR_MAG))
         compassInit();
 #endif
+
+    imuInit();
 
     serialInit(&masterConfig.serialConfig);
 
