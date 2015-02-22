@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include "rx/rx.h"
+#include "io/rc_controls.h"
+#include "sensors/acceleration.h"
 
 typedef enum {
     PIDROLL,
@@ -49,13 +52,17 @@ typedef struct pidProfile_s {
     uint8_t H_sensitivity;
 } pidProfile_t;
 
+typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
+
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)
 
+extern pidControllerFuncPtr pid_controller;
 extern int16_t axisPID[XYZ_AXIS_COUNT];
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 
-void setPIDController(int type);
+void pidSetController(int type);
 void resetErrorAngle(void);
 void resetErrorGyro(void);
 

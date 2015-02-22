@@ -73,7 +73,6 @@
 #define BRUSHED_MOTORS_PWM_RATE 16000
 #define BRUSHLESS_MOTORS_PWM_RATE 400
 
-void setPIDController(int type); // FIXME PID code needs to be in flight_pid.c/h
 void mixerUseConfigs(servoParam_t *servoConfToUse, flight3DConfig_t *flight3DConfigToUse,
         escAndServoConfig_t *escAndServoConfigToUse, mixerConfig_t *mixerConfigToUse,
         airplaneConfig_t *airplaneConfigToUse, rxConfig_t *rxConfig, gimbalConfig_t *gimbalConfigToUse);
@@ -616,7 +615,7 @@ void activateConfig(void)
     useTelemetryConfig(&masterConfig.telemetryConfig);
 #endif
 
-    setPIDController(currentProfile->pidProfile.pidController);
+    pidSetController(currentProfile->pidProfile.pidController);
 
 #ifdef GPS
     gpsUseProfile(&currentProfile->gpsProfile);
