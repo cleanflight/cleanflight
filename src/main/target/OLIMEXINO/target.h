@@ -37,18 +37,6 @@
 #define LED1
 #endif
 
-
-#define ACC
-#define USE_FAKE_ACC
-//#define USE_ACC_ADXL345
-//#define USE_ACC_BMA280
-//#define USE_ACC_MMA8452
-//#define USE_ACC_LSM303DLHC
-//#define USE_ACC_MPU3050
-#define USE_ACC_MPU6050
-//#define USE_ACC_SPI_MPU6000
-//#define USE_ACC_SPI_MPU6500
-
 #define GYRO
 #define USE_FAKE_GYRO
 //#define USE_GYRO_L3G4200D
@@ -58,11 +46,23 @@
 //#define USE_GYRO_SPI_MPU6000
 //#define USE_GYRO_SPI_MPU6500
 
+#define ACC
+#define USE_FAKE_ACC
+//#define USE_ACC_ADXL345
+//#define USE_ACC_BMA280
+//#define USE_ACC_MMA8452
+//#define USE_ACC_LSM303DLHC
+#define USE_ACC_MPU6050
+//#define USE_ACC_SPI_MPU6000
+//#define USE_ACC_SPI_MPU6500
+
 #define BARO
 //#define USE_BARO_MS5611
 #define USE_BARO_BMP085
 
 #define MAG
+#define USE_MAG_HMC5883
+
 #define SONAR
 
 #define USE_USART1
@@ -85,7 +85,23 @@
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
 // #define SOFT_I2C_PB67
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
+#define USE_ADC
+
+#define CURRENT_METER_ADC_GPIO      GPIOB
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
+
+#define VBAT_ADC_GPIO               GPIOA
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
+#define VBAT_ADC_CHANNEL            ADC_Channel_4
+
+#define RSSI_ADC_GPIO               GPIOA
+#define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
+#define RSSI_ADC_CHANNEL            ADC_Channel_1
+
+#define EXTERNAL1_ADC_GPIO          GPIOA
+#define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
+#define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
 #define GPS
 #define LED_STRIP
@@ -94,4 +110,5 @@
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
-
+#define BLACKBOX
+#define USE_SERVOS

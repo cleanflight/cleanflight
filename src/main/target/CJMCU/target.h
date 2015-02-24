@@ -18,16 +18,17 @@
 #pragma once
 
 #define TARGET_BOARD_IDENTIFIER "CJM1" // CJMCU
+#define USE_HARDWARE_REVISION_DETECTION
 
 #define FLASH_PAGE_COUNT 64
 #define FLASH_PAGE_SIZE ((uint16_t)0x400)
 
 #define LED0_GPIO GPIOC
-#define LED0_PIN Pin_13 // PC13 (LED)
+#define LED0_PIN Pin_14 // PC14 (LED)
 #define LED0
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOC
 #define LED1_GPIO GPIOC
-#define LED1_PIN Pin_14 // PC14 (LED)
+#define LED1_PIN Pin_13 // PC13 (LED)
 #define LED1
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOC
 #define LED2_GPIO GPIOC
@@ -43,6 +44,7 @@
 #define USE_GYRO_MPU6050
 
 #define MAG
+#define USE_MAG_HMC5883
 
 #define BRUSHED_MOTORS
 
@@ -58,6 +60,14 @@
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
 // #define SOFT_I2C_PB67
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_MAG)
-
 #define SERIAL_RX
+//#define BLACKBOX
+//#define USE_SERVOS
+
+#define SPEKTRUM_BIND
+// USART2, PA3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3
+
+// Since the CJMCU PCB has holes for 4 motors in each corner we can save same flash space by disabling support for other mixers.
+#define USE_QUAD_MIXER_ONLY

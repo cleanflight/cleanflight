@@ -2,12 +2,11 @@
 
 Cleanflight supports displays to provide information to you about your aircraft and cleanflight state.
 
-When the aircraft is armed the display does not update so flight is not affected.  When disarmed the display
-cycles between various pages.
+When the aircraft is armed the display does not update so flight is not affected.  When disarmed the display cycles between various pages.
 
 There is currently no way to change the information on the pages, the list of pages or the time between pages - Code submissions via pull-requests are welcomed!
 
-##Supported Hardware
+## Supported Hardware
 
 At this time no other displays are supported other than the SSD1306 / UG-2864HSWEG01.
 
@@ -28,18 +27,18 @@ This makes it ideal for aircraft use.
 There are various models of SSD1306 boards out there, they are not all equal and some require addtional modifications
 before they work.  Choose wisely!
 
-Links to screens:
+Links to displays:
 
-http://www.banggood.com/0_96-Inch-I2C-IIC-SPI-Serial-128-X-64-OLED-LCD-LED-Display-Module-p-922246.html
-http://www.wide.hk/products.php?product=I2C-0.96%22-OLED-display-module-%28-compatible-Arduino-%29
-http://witespyquad.gostorego.com/accessories/readytofly-1-oled-128x64-pid-tuning-display-i2c.html
-http://www.multiwiicopter.com/products/1-oled
+ * [banggood.com](http://www.banggood.com/0_96-Inch-I2C-IIC-SPI-Serial-128-X-64-OLED-LCD-LED-Display-Module-p-922246.html) 0.96 Inch I2C IIC Serial 128 x 64 OLED LCD 
+ * [wide.hk](http://www.wide.hk/products.php?product=I2C-0.96%22-OLED-display-module-%28-compatible-Arduino-%29) I2C 0.96" OLED display module
+ * [witespyquad.gostorego.com](http://witespyquad.gostorego.com/accessories/readytofly-1-oled-128x64-pid-tuning-display-i2c.html) ReadyToFlyQuads 1" OLED Display
+ * [multiwiicopter.com](http://www.multiwiicopter.com/products/1-oled) PARIS 1" OLED 128x64 PID tuning screen AIR
 
-The banggood.com screen is the cheapest at the time fo writing and will correctly send I2C ACK signals.
+The banggood.com display is the cheapest at the time fo writing and will correctly send I2C ACK signals.
 
 #### Crius CO-16
 
-This screen is best avoided but will work if you modify it.
+This display is best avoided but will work if you modify it.
 
 Step 1
 
@@ -67,6 +66,6 @@ More can be read about this procedure here: http://www.multiwii.com/forum/viewto
 
 Connect +5v, Ground, I2C SDA and I2C SCL from the flight controller to the display.
 
-On Naze32 rev 5 boards the SDA and SCL pins are underneath the board.
+On Naze32 rev 5 boards the SDA and SCL pads are underneath the board.
 
 

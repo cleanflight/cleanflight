@@ -34,29 +34,43 @@
 #include "common/typeconversion.h"
 
 #include "drivers/system.h"
+
+#include "drivers/sensor.h"
 #include "drivers/accgyro.h"
+#include "drivers/compass.h"
+
 #include "drivers/serial.h"
 #include "drivers/bus_i2c.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
-#include "flight/flight.h"
-#include "flight/mixer.h"
-#include "flight/navigation.h"
-#include "flight/failsafe.h"
-#include "rx/rx.h"
+
+
 #include "io/escservo.h"
 #include "io/gps.h"
 #include "io/gimbal.h"
 #include "io/rc_controls.h"
 #include "io/serial.h"
 #include "io/ledstrip.h"
+#include "io/flashfs.h"
+
+#include "rx/rx.h"
+#include "rx/spektrum.h"
+
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
+#include "sensors/compass.h"
 #include "sensors/barometer.h"
+
+#include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/mixer.h"
+#include "flight/navigation.h"
+#include "flight/failsafe.h"
+
 #include "telemetry/telemetry.h"
 
 #include "config/runtime_config.h"
@@ -68,8 +82,10 @@
 
 #include "serial_cli.h"
 
-// we unset this on 'exit'
-extern uint8_t cliMode;
+extern uint16_t cycleTime; // FIXME dependency on mw.c
+
+static serialPort_t *cliPort;
+
 static void cliAux(char *cmdline);
 static void cliAdjustmentRange(char *cmdline);
 static void cliCMix(char *cmdline);
@@ -77,29 +93,39 @@ static void cliDefaults(char *cmdline);
 static void cliDump(char *cmdLine);
 static void cliExit(char *cmdline);
 static void cliFeature(char *cmdline);
-#ifdef GPS
-static void cliGpsPassthrough(char *cmdline);
-#endif
-static void cliHelp(char *cmdline);
-static void cliMap(char *cmdline);
-#ifdef LED_STRIP
-static void cliLed(char *cmdline);
-static void cliColor(char *cmdline);
-#endif
-static void cliMixer(char *cmdline);
 static void cliMotor(char *cmdline);
 static void cliProfile(char *cmdline);
 static void cliRateProfile(char *cmdline);
 static void cliReboot(void);
 static void cliSave(char *cmdline);
+static void cliServo(char *cmdline);
 static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
 
-extern uint16_t cycleTime; // FIXME dependency on mw.c
+#ifdef GPS
+static void cliGpsPassthrough(char *cmdline);
+#endif
 
-static serialPort_t *cliPort;
+static void cliHelp(char *cmdline);
+static void cliMap(char *cmdline);
+
+#ifdef LED_STRIP
+static void cliLed(char *cmdline);
+static void cliColor(char *cmdline);
+#endif
+
+#ifndef USE_QUAD_MIXER_ONLY
+static void cliMixer(char *cmdline);
+#endif
+
+#ifdef USE_FLASHFS
+static void cliFlashInfo(char *cmdline);
+static void cliFlashErase(char *cmdline);
+static void cliFlashWrite(char *cmdline);
+static void cliFlashRead(char *cmdline);
+#endif
 
 // signal that we're in cli mode
 uint8_t cliMode = 0;
@@ -108,32 +134,44 @@ uint8_t cliMode = 0;
 static char cliBuffer[48];
 static uint32_t bufferIndex = 0;
 
-// sync this with mutiType_e
+#ifndef USE_QUAD_MIXER_ONLY
+// sync this with mixerMode_e
 static const char * const mixerNames[] = {
     "TRI", "QUADP", "QUADX", "BI",
     "GIMBAL", "Y6", "HEX6",
     "FLYING_WING", "Y4", "HEX6X", "OCTOX8", "OCTOFLATP", "OCTOFLATX",
-    "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4", 
+    "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4",
     "HEX6H", "PPM_TO_SERVO", "DUALCOPTER", "SINGLECOPTER",
-    "CUSTOM", NULL
+    "ATAIL4", "CUSTOM", NULL
 };
+#endif
 
 // sync this with features_e
 static const char * const featureNames[] = {
     "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
-    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", NULL
+    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
+    "BLACKBOX", NULL
 };
 
+#ifndef CJMCU
 // sync this with sensors_e
-static const char * const sensorNames[] = {
+static const char * const sensorTypeNames[] = {
     "GYRO", "ACC", "BARO", "MAG", "SONAR", "GPS", "GPS+MAG", NULL
 };
 
-static const char * const accNames[] = {
-    "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "LSM303DLHC", "MPU6000", "MPU6500", "FAKE", "None", NULL
+// FIXME the next time the EEPROM is bumped change the order of acc and gyro names so that "None" is second.
+
+#define SENSOR_NAMES_MASK (SENSOR_GYRO | SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
+
+static const char * const sensorHardwareNames[4][11] = {
+    { "", "None", "MPU6050", "L3G4200D", "MPU3050", "L3GD20", "MPU6000", "MPU6500", "FAKE", NULL },
+    { "", "ADXL345", "MPU6050", "MMA845x", "BMA280", "LSM303DLHC", "MPU6000", "MPU6500", "FAKE", "None", NULL },
+    { "", "None", "BMP085", "MS5611", NULL },
+    { "", "None", "HMC5883", "AK8975", NULL }
 };
+#endif
 
 typedef struct {
     const char *name;
@@ -150,9 +188,15 @@ const clicmd_t cmdTable[] = {
     { "color", "configure colors", cliColor },
 #endif
     { "defaults", "reset to defaults and reboot", cliDefaults },
-    { "dump", "print configurable settings in a pastable form", cliDump },
+    { "dump", "dump configuration", cliDump },
     { "exit", "", cliExit },
     { "feature", "list or -val or val", cliFeature },
+#ifdef USE_FLASHFS
+    { "flash_erase", "erase flash chip", cliFlashErase },
+    { "flash_info", "get flash chip details", cliFlashInfo },
+    { "flash_read", "read text from the given address", cliFlashRead },
+    { "flash_write", "write text to the given address", cliFlashWrite },
+#endif
     { "get", "get variable value", cliGet },
 #ifdef GPS
     { "gpspassthrough", "passthrough gps to serial", cliGpsPassthrough },
@@ -162,11 +206,16 @@ const clicmd_t cmdTable[] = {
     { "led", "configure leds", cliLed },
 #endif
     { "map", "mapping of rc channel order", cliMap },
+#ifndef USE_QUAD_MIXER_ONLY
     { "mixer", "mixer name or list", cliMixer },
+#endif
     { "motor", "get/set motor output value", cliMotor },
     { "profile", "index (0 to 2)", cliProfile },
     { "rateprofile", "index (0 to 2)", cliRateProfile },
     { "save", "save and reboot", cliSave },
+#ifdef USE_SERVOS
+    { "servo", "servo config", cliServo },
+#endif
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
     { "version", "", cliVersion },
@@ -205,12 +254,13 @@ const clivalue_t valueTable[] = {
     { "min_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.mincheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "max_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.maxcheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "rssi_channel",               VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_channel, 0, MAX_SUPPORTED_RC_CHANNEL_COUNT },
-    { "rssi_scale",                 VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
+    { "rssi_scale",                 VAR_UINT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
     { "input_filtering_mode",       VAR_INT8   | MASTER_VALUE,  &masterConfig.inputFilteringMode, 0, 1 },
 
     { "min_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.minthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "max_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.maxthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "min_command",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.mincommand, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { "servo_center_pulse",         VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.servoCenterPulse, PWM_RANGE_ZERO, PWM_RANGE_MAX },
 
     { "3d_deadband_low",            VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_low, PWM_RANGE_ZERO, PWM_RANGE_MAX }, // FIXME upper limit should match code in the mixer, 1500 currently
     { "3d_deadband_high",           VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_high, PWM_RANGE_ZERO, PWM_RANGE_MAX }, // FIXME lower limit should match code in the mixer, 1500 currently,
@@ -222,6 +272,7 @@ const clivalue_t valueTable[] = {
 
     { "retarded_arm",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.retarded_arm, 0, 1 },
     { "disarm_kill_switch",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.disarm_kill_switch, 0, 1 },
+    { "auto_disarm_delay",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.auto_disarm_delay, 0, 60 },
     { "small_angle",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.small_angle, 0, 180 },
 
     { "flaps_speed",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.airplaneConfig.flaps_speed, 0, 100 },
@@ -232,7 +283,7 @@ const clivalue_t valueTable[] = {
     { "serial_port_2_scenario",     VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.serial_port_scenario[1], 0, SERIAL_PORT_SCENARIO_MAX },
 #if (SERIAL_PORT_COUNT > 2)
     { "serial_port_3_scenario",     VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.serial_port_scenario[2], 0, SERIAL_PORT_SCENARIO_MAX },
-#if !defined(CC3D)
+#if (SERIAL_PORT_COUNT > 3)
     { "serial_port_4_scenario",     VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.serial_port_scenario[3], 0, SERIAL_PORT_SCENARIO_MAX },
 #if (SERIAL_PORT_COUNT > 4)
     { "serial_port_5_scenario",     VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.serial_port_scenario[4], 0, SERIAL_PORT_SCENARIO_MAX },
@@ -250,7 +301,8 @@ const clivalue_t valueTable[] = {
 
     { "gps_provider",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
     { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
-	{ "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.gpsAutoConfig, 0, GPS_AUTOCONFIG_OFF },
+    { "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoConfig, GPS_AUTOCONFIG_OFF, GPS_AUTOCONFIG_ON },
+    { "gps_auto_baud",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoBaud, GPS_AUTOBAUD_OFF, GPS_AUTOBAUD_ON },
 
 
     { "gps_pos_p",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOS], 0, 200 },
@@ -270,6 +322,7 @@ const clivalue_t valueTable[] = {
 #endif
 
     { "serialrx_provider",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.serialrx_provider, 0, SERIALRX_PROVIDER_MAX },
+    { "spektrum_sat_bind",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.spektrum_sat_bind, SPEKTRUM_SAT_BIND_DISABLED, SPEKTRUM_SAT_BIND_MAX},
 
     { "telemetry_provider",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_provider, 0, TELEMETRY_PROVIDER_MAX },
     { "telemetry_switch",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_switch, 0, 1 },
@@ -283,10 +336,11 @@ const clivalue_t valueTable[] = {
     { "vbat_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatscale, VBAT_SCALE_MIN, VBAT_SCALE_MAX },
     { "vbat_max_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmaxcellvoltage, 10, 50 },
     { "vbat_min_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmincellvoltage, 10, 50 },
-    { "current_meter_scale",        VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterScale, 1, 10000 },
-    { "current_meter_offset",       VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterOffset, 0, 1650 },
+    { "vbat_warning_cell_voltage",  VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatwarningcellvoltage, 10, 50 },
+    { "current_meter_scale",        VAR_INT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterScale, -10000, 10000 },
+    { "current_meter_offset",       VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterOffset, 0, 3300 },
     { "multiwii_current_meter_output", VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.multiwiiCurrentMeterOutput, 0, 1 },
-
+    { "current_meter_type",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterType, 0, CURRENT_SENSOR_MAX },
 
     { "align_gyro",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.gyro_align, 0, 8 },
     { "align_acc",                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.acc_align, 0, 8 },
@@ -313,8 +367,11 @@ const clivalue_t valueTable[] = {
 
     { "yaw_control_direction",      VAR_INT8   | MASTER_VALUE,  &masterConfig.yaw_control_direction, -1, 1 },
     { "yaw_direction",              VAR_INT8   | PROFILE_VALUE, &masterConfig.profile[0].mixerConfig.yaw_direction, -1, 1 },
+#ifdef USE_SERVOS
     { "tri_unarmed_servo",          VAR_INT8   | PROFILE_VALUE, &masterConfig.profile[0].mixerConfig.tri_unarmed_servo, 0, 1 },
-
+    { "servo_lowpass_freq",         VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mixerConfig.servo_lowpass_freq, 10, 400},
+    { "servo_lowpass_enable",       VAR_INT8   | PROFILE_VALUE, &masterConfig.profile[0].mixerConfig.servo_lowpass_enable, 0, 1 },
+#endif
     { "default_rate_profile",       VAR_UINT8  | PROFILE_VALUE , &masterConfig.profile[0].defaultRateProfileIndex, 0, MAX_CONTROL_RATE_PROFILE_COUNT - 1 },
     { "rc_rate",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcRate8, 0, 250 },
     { "rc_expo",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcExpo8, 0, 100 },
@@ -331,7 +388,9 @@ const clivalue_t valueTable[] = {
     { "failsafe_min_usec",          VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_min_usec, 100, PWM_RANGE_MAX },
     { "failsafe_max_usec",          VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_max_usec, 100, PWM_RANGE_MAX + (PWM_RANGE_MAX - PWM_RANGE_MIN) },
 
+#ifdef USE_SERVOS
     { "gimbal_flags",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gimbalConfig.gimbal_flags, 0, 255},
+#endif
 
     { "acc_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.acc_hardware, 0, ACC_NONE },
     { "acc_lpf_factor",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].acc_lpf_factor, 0, 250 },
@@ -347,9 +406,10 @@ const clivalue_t valueTable[] = {
     { "baro_cf_vel",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_vel, 0, 1 },
     { "baro_cf_alt",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_alt, 0, 1 },
 
+    { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_NONE },
     { "mag_declination",            VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mag_declination, -18000, 18000 },
 
-    { "pid_controller",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidController, 0, 2 },
+    { "pid_controller",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pidController, 0, 5 },
 
     { "p_pitch",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PITCH], 0, 200 },
     { "i_pitch",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PITCH], 0, 200 },
@@ -373,6 +433,7 @@ const clivalue_t valueTable[] = {
 
     { "level_horizon",              VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_level, 0, 10 },
     { "level_angle",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.A_level, 0, 10 },
+    { "sensitivity_horizon",        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_sensitivity, 0, 250 },
 
     { "p_alt",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDALT], 0, 200 },
     { "i_alt",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDALT], 0, 200 },
@@ -385,6 +446,12 @@ const clivalue_t valueTable[] = {
     { "p_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDVEL], 0, 200 },
     { "i_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDVEL], 0, 200 },
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
+
+#ifdef BLACKBOX
+    { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
+    { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
+    { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, 1 },
+#endif
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
@@ -434,14 +501,18 @@ static char *processChannelRangeArgs(char *ptr, channelRange_t *range, uint8_t *
     return ptr;
 }
 
+// Check if a string's length is zero
+static bool isEmpty(const char *string)
+{
+    return *string == '\0';
+}
+
 static void cliAux(char *cmdline)
 {
     int i, val = 0;
-    uint8_t len;
     char *ptr;
 
-    len = strlen(cmdline);
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         // print out aux channel settings
         for (i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
             modeActivationCondition_t *mac = &currentProfile->modeActivationConditions[i];
@@ -490,11 +561,9 @@ static void cliAux(char *cmdline)
 static void cliAdjustmentRange(char *cmdline)
 {
     int i, val = 0;
-    uint8_t len;
     char *ptr;
 
-    len = strlen(cmdline);
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         // print out adjustment ranges channel settings
         for (i = 0; i < MAX_ADJUSTMENT_RANGE_COUNT; i++) {
             adjustmentRange_t *ar = &currentProfile->adjustmentRanges[i];
@@ -559,6 +628,9 @@ static void cliAdjustmentRange(char *cmdline)
 
 static void cliCMix(char *cmdline)
 {
+#ifdef USE_QUAD_MIXER_ONLY
+    UNUSED(cmdline);
+#else
     int i, check = 0;
     int num_motors = 0;
     uint8_t len;
@@ -566,9 +638,7 @@ static void cliCMix(char *cmdline)
     float mixsum[3];
     char *ptr;
 
-    len = strlen(cmdline);
-
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         cliPrint("Custom mixer: \r\nMotor\tThr\tRoll\tPitch\tYaw\r\n");
         for (i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
             if (masterConfig.customMixer[i].throttle == 0.0f)
@@ -645,18 +715,17 @@ static void cliCMix(char *cmdline)
             printf("Motor number must be between 1 and %d\r\n", MAX_SUPPORTED_MOTORS);
         }
     }
+#endif
 }
 
 #ifdef LED_STRIP
 static void cliLed(char *cmdline)
 {
     int i;
-    uint8_t len;
     char *ptr;
     char ledConfigBuffer[20];
 
-    len = strlen(cmdline);
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         for (i = 0; i < MAX_LED_STRIP_LENGTH; i++) {
             generateLedConfig(i, ledConfigBuffer, sizeof(ledConfigBuffer));
             printf("led %u %s\r\n", i, ledConfigBuffer);
@@ -667,7 +736,7 @@ static void cliLed(char *cmdline)
         if (i < MAX_LED_STRIP_LENGTH) {
             ptr = strchr(cmdline, ' ');
             if (!parseLedStripConfig(i, ++ptr)) {
-                printf("Parse error\r\n", MAX_LED_STRIP_LENGTH);
+                cliPrint("Parse error\r\n");
             }
         } else {
             printf("Invalid led index: must be < %u\r\n", MAX_LED_STRIP_LENGTH);
@@ -678,11 +747,9 @@ static void cliLed(char *cmdline)
 static void cliColor(char *cmdline)
 {
     int i;
-    uint8_t len;
     char *ptr;
 
-    len = strlen(cmdline);
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
             printf("color %u %d,%u,%u\r\n", i, masterConfig.colors[i].h, masterConfig.colors[i].s, masterConfig.colors[i].v);
         }
@@ -692,13 +759,167 @@ static void cliColor(char *cmdline)
         if (i < CONFIGURABLE_COLOR_COUNT) {
             ptr = strchr(cmdline, ' ');
             if (!parseColor(i, ++ptr)) {
-                printf("Parse error\r\n", CONFIGURABLE_COLOR_COUNT);
+                cliPrint("Parse error\r\n");
             }
         } else {
             printf("Invalid color index: must be < %u\r\n", CONFIGURABLE_COLOR_COUNT);
         }
     }
 }
+#endif
+
+static void cliServo(char *cmdline)
+{
+#ifndef USE_SERVOS
+    UNUSED(cmdline);
+#else
+    enum { SERVO_ARGUMENT_COUNT = 6 };
+    int16_t arguments[SERVO_ARGUMENT_COUNT];
+
+    servoParam_t *servo;
+
+    int i;
+    char *ptr;
+
+    if (isEmpty(cmdline)) {
+        // print out servo settings
+        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            servo = &currentProfile->servoConf[i];
+
+            printf("servo %u %d %d %d %d %d\r\n",
+                i,
+                servo->min,
+                servo->max,
+                servo->middle,
+                servo->rate,
+                servo->forwardFromChannel
+            );
+        }
+    } else {
+        int validArgumentCount = 0;
+
+        ptr = cmdline;
+
+        // Command line is integers (possibly negative) separated by spaces, no other characters allowed.
+
+        // If command line doesn't fit the format, don't modify the config
+        while (*ptr) {
+            if (*ptr == '-' || (*ptr >= '0' && *ptr <= '9')) {
+                if (validArgumentCount >= SERVO_ARGUMENT_COUNT) {
+                    cliPrint("Parse error\r\n");
+                    return;
+                }
+
+                arguments[validArgumentCount++] = atoi(ptr);
+
+                do {
+                    ptr++;
+                } while (*ptr >= '0' && *ptr <= '9');
+            } else if (*ptr == ' ') {
+                ptr++;
+            } else {
+                cliPrint("Parse error\r\n");
+                return;
+            }
+        }
+
+        // Check we got the right number of args and the servo index is correct (don't validate the other values)
+        if (validArgumentCount != SERVO_ARGUMENT_COUNT || arguments[0] < 0 || arguments[0] >= MAX_SUPPORTED_SERVOS) {
+            cliPrint("Parse error\r\n");
+            return;
+        }
+
+        servo = &currentProfile->servoConf[arguments[0]];
+
+        servo->min = arguments[1];
+        servo->max = arguments[2];
+        servo->middle = arguments[3];
+        servo->rate = arguments[4];
+        servo->forwardFromChannel = arguments[5];
+    }
+#endif
+}
+
+#ifdef USE_FLASHFS
+
+static void cliFlashInfo(char *cmdline)
+{
+    const flashGeometry_t *layout = flashfsGetGeometry();
+
+    UNUSED(cmdline);
+
+    printf("Flash sectors=%u, sectorSize=%u, pagesPerSector=%u, pageSize=%u, totalSize=%u, usedSize=%u\r\n",
+            layout->sectors, layout->sectorSize, layout->pagesPerSector, layout->pageSize, layout->totalSize, flashfsGetOffset());
+}
+
+static void cliFlashErase(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    printf("Erasing, please wait...\r\n");
+    flashfsEraseCompletely();
+
+    while (!flashfsIsReady()) {
+        delay(100);
+    }
+
+    printf("Done.\r\n");
+}
+
+static void cliFlashWrite(char *cmdline)
+{
+    uint32_t address = atoi(cmdline);
+    char *text = strchr(cmdline, ' ');
+
+    if (!text) {
+        printf("Missing text to write.\r\n");
+    } else {
+        flashfsSeekAbs(address);
+        flashfsWrite((uint8_t*)text, strlen(text), true);
+        flashfsFlushSync();
+
+        printf("Wrote %u bytes at %u.\r\n", strlen(text), address);
+    }
+}
+
+static void cliFlashRead(char *cmdline)
+{
+    uint32_t address = atoi(cmdline);
+    uint32_t length;
+    int i;
+
+    uint8_t buffer[32];
+
+    char *nextArg = strchr(cmdline, ' ');
+
+    if (!nextArg) {
+        printf("Missing length argument.\r\n");
+    } else {
+        length = atoi(nextArg);
+
+        printf("Reading %u bytes at %u:\r\n", length, address);
+
+        while (length > 0) {
+            int bytesRead;
+
+            bytesRead = flashfsReadAbs(address, buffer, length < sizeof(buffer) ? length : sizeof(buffer));
+
+            for (i = 0; i < bytesRead; i++) {
+                cliWrite(buffer[i]);
+            }
+
+            length -= bytesRead;
+            address += bytesRead;
+
+            if (bytesRead == 0) {
+                //Assume we reached the end of the volume or something fatal happened
+                break;
+            }
+        }
+        printf("\r\n");
+    }
+}
+
 #endif
 
 static void dumpValues(uint16_t mask)
@@ -735,8 +956,11 @@ static void cliDump(char *cmdline)
 {
     unsigned int i;
     char buf[16];
-    float thr, roll, pitch, yaw;
     uint32_t mask;
+
+#ifndef USE_QUAD_MIXER_ONLY
+    float thr, roll, pitch, yaw;
+#endif
 
     uint8_t dumpMask = DUMP_ALL;
     if (strcasecmp(cmdline, "master") == 0) {
@@ -751,13 +975,14 @@ static void cliDump(char *cmdline)
 
     if (dumpMask & DUMP_MASTER) {
 
-        printf("\r\n# version\r\n");
+        cliPrint("\r\n# version\r\n");
         cliVersion(NULL);
 
-        printf("\r\n# dump master\r\n");
-        printf("\r\n# mixer\r\n");
+        cliPrint("\r\n# dump master\r\n");
+        cliPrint("\r\n# mixer\r\n");
 
-        printf("mixer %s\r\n", mixerNames[masterConfig.mixerConfiguration - 1]);
+#ifndef USE_QUAD_MIXER_ONLY
+        printf("mixer %s\r\n", mixerNames[masterConfig.mixerMode - 1]);
 
         if (masterConfig.customMixer[0].throttle != 0.0f) {
             for (i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
@@ -769,22 +994,23 @@ static void cliDump(char *cmdline)
                 yaw = masterConfig.customMixer[i].yaw;
                 printf("cmix %d", i + 1);
                 if (thr < 0)
-                    printf(" ");
+                    cliWrite(' ');
                 printf("%s", ftoa(thr, buf));
                 if (roll < 0)
-                    printf(" ");
+                    cliWrite(' ');
                 printf("%s", ftoa(roll, buf));
                 if (pitch < 0)
-                    printf(" ");
+                    cliWrite(' ');
                 printf("%s", ftoa(pitch, buf));
                 if (yaw < 0)
-                    printf(" ");
+                    cliWrite(' ');
                 printf("%s\r\n", ftoa(yaw, buf));
             }
             printf("cmix %d 0 0 0 0\r\n", i + 1);
         }
+#endif
 
-        printf("\r\n\r\n# feature\r\n");
+        cliPrint("\r\n\r\n# feature\r\n");
 
         mask = featureMask();
         for (i = 0; ; i++) { // disable all feature first
@@ -799,7 +1025,7 @@ static void cliDump(char *cmdline)
                 printf("feature %s\r\n", featureNames[i]);
         }
 
-        printf("\r\n\r\n# map\r\n");
+        cliPrint("\r\n\r\n# map\r\n");
 
         for (i = 0; i < 8; i++)
             buf[masterConfig.rxConfig.rcmap[i]] = rcChannelLetters[i];
@@ -807,10 +1033,10 @@ static void cliDump(char *cmdline)
         printf("map %s\r\n", buf);
 
 #ifdef LED_STRIP
-        printf("\r\n\r\n# led\r\n");
+        cliPrint("\r\n\r\n# led\r\n");
         cliLed("");
 
-        printf("\r\n\r\n# color\r\n");
+        cliPrint("\r\n\r\n# color\r\n");
         cliColor("");
 #endif
         printSectionBreak();
@@ -818,18 +1044,22 @@ static void cliDump(char *cmdline)
     }
 
     if (dumpMask & DUMP_PROFILE) {
-        printf("\r\n# dump profile\r\n");
+        cliPrint("\r\n# dump profile\r\n");
 
-        printf("\r\n# profile\r\n");
+        cliPrint("\r\n# profile\r\n");
         cliProfile("");
 
-        printf("\r\n# aux\r\n");
+        cliPrint("\r\n# aux\r\n");
 
         cliAux("");
 
-        printf("\r\n# adjrange\r\n");
+        cliPrint("\r\n# adjrange\r\n");
 
         cliAdjustmentRange("");
+
+        cliPrint("\r\n# servo\r\n");
+
+        cliServo("");
 
         printSectionBreak();
 
@@ -837,9 +1067,9 @@ static void cliDump(char *cmdline)
     }
 
     if (dumpMask & DUMP_CONTROL_RATE_PROFILE) {
-        printf("\r\n# dump rates\r\n");
+        cliPrint("\r\n# dump rates\r\n");
 
-        printf("\r\n# rateprofile\r\n");
+        cliPrint("\r\n# rateprofile\r\n");
         cliRateProfile("");
 
         printSectionBreak();
@@ -948,10 +1178,6 @@ static void cliGpsPassthrough(char *cmdline)
     gpsEnablePassthroughResult_e result = gpsEnablePassthrough();
 
     switch (result) {
-        case GPS_PASSTHROUGH_NO_GPS:
-            cliPrint("Error: Enable and plug in GPS first\r\n");
-            break;
-
         case GPS_PASSTHROUGH_NO_SERIAL_PORT:
             cliPrint("Error: Enable and plug in GPS first\r\n");
             break;
@@ -1000,6 +1226,7 @@ static void cliMap(char *cmdline)
     printf("%s\r\n", out);
 }
 
+#ifndef USE_QUAD_MIXER_ONLY
 static void cliMixer(char *cmdline)
 {
     int i;
@@ -1008,7 +1235,7 @@ static void cliMixer(char *cmdline)
     len = strlen(cmdline);
 
     if (len == 0) {
-        printf("Current mixer: %s\r\n", mixerNames[masterConfig.mixerConfiguration - 1]);
+        printf("Current mixer: %s\r\n", mixerNames[masterConfig.mixerMode - 1]);
         return;
     } else if (strncasecmp(cmdline, "list", len) == 0) {
         cliPrint("Available mixers: ");
@@ -1027,23 +1254,23 @@ static void cliMixer(char *cmdline)
             break;
         }
         if (strncasecmp(cmdline, mixerNames[i], len) == 0) {
-            masterConfig.mixerConfiguration = i + 1;
+            masterConfig.mixerMode = i + 1;
             printf("Mixer set to %s\r\n", mixerNames[i]);
             break;
         }
     }
 }
+#endif
 
 static void cliMotor(char *cmdline)
 {
     int motor_index = 0;
     int motor_value = 0;
-    int len, index = 0;
+    int index = 0;
     char *pch = NULL;
 
-    len = strlen(cmdline);
-    if (len == 0) {
-        printf("Usage:\r\nmotor index [value] - show [or set] motor value\r\n");
+    if (isEmpty(cmdline)) {
+        cliPrint("Usage:\r\nmotor index [value] - show [or set] motor value\r\n");
         return;
     }
 
@@ -1072,7 +1299,7 @@ static void cliMotor(char *cmdline)
     }
 
     if (motor_value < PWM_RANGE_MIN || motor_value > PWM_RANGE_MAX) {
-        printf("Invalid motor value, 1000..2000\r\n");
+        cliPrint("Invalid motor value, 1000..2000\r\n");
         return;
     }
 
@@ -1082,11 +1309,9 @@ static void cliMotor(char *cmdline)
 
 static void cliProfile(char *cmdline)
 {
-    uint8_t len;
     int i;
 
-    len = strlen(cmdline);
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         printf("profile %d\r\n", getCurrentProfile());
         return;
     } else {
@@ -1102,11 +1327,9 @@ static void cliProfile(char *cmdline)
 
 static void cliRateProfile(char *cmdline)
 {
-    uint8_t len;
     int i;
 
-    len = strlen(cmdline);
-    if (len == 0) {
+    if (isEmpty(cmdline)) {
         printf("rateprofile %d\r\n", getCurrentControlRateProfile());
         return;
     } else {
@@ -1121,6 +1344,7 @@ static void cliRateProfile(char *cmdline)
 static void cliReboot(void) {
     cliPrint("\r\nRebooting");
     waitForSerialPortToFinishTransmitting(cliPort);
+    stopMotors();
     systemReset();
 }
 
@@ -1300,7 +1524,7 @@ static void cliGet(char *cmdline)
             val = &valueTable[i];
             printf("%s = ", valueTable[i].name);
             cliPrintVar(val, 0);
-            printf("\r\n");
+            cliPrint("\r\n");
 
             matchedCommands++;
         }
@@ -1316,27 +1540,38 @@ static void cliGet(char *cmdline)
 
 static void cliStatus(char *cmdline)
 {
-    uint8_t i;
-    uint32_t mask;
-
     UNUSED(cmdline);
 
     printf("System Uptime: %d seconds, Voltage: %d * 0.1V (%dS battery)\r\n",
         millis() / 1000, vbat, batteryCellCount);
-    mask = sensorsMask();
 
-    printf("CPU %dMHz, detected sensors: ", (SystemCoreClock / 1000000));
+
+    printf("CPU Clock=%dMHz", (SystemCoreClock / 1000000));
+
+#ifndef CJMCU
+    uint8_t i;
+    uint32_t mask;
+    uint32_t detectedSensorsMask = sensorsMask();
+
     for (i = 0; ; i++) {
-        if (sensorNames[i] == NULL)
+
+        if (sensorTypeNames[i] == NULL)
             break;
-        if (mask & (1 << i))
-            printf("%s ", sensorNames[i]);
+
+        mask = (1 << i);
+        if ((detectedSensorsMask & mask) && (mask & SENSOR_NAMES_MASK)) {
+            const char *sensorHardware;
+            uint8_t sensorHardwareIndex = detectedSensors[i];
+            sensorHardware = sensorHardwareNames[i][sensorHardwareIndex];
+
+            printf(", %s=%s", sensorTypeNames[i], sensorHardware);
+
+            if (mask == SENSOR_ACC && acc.revisionCode) {
+                printf(".%c", acc.revisionCode);
+            }
+        }
     }
-    if (sensors(SENSOR_ACC)) {
-        printf("ACCHW: %s", accNames[accHardware]);
-        if (acc.revisionCode)
-            printf(".%c", acc.revisionCode);
-    }
+#endif
     cliPrint("\r\n");
 
 #ifdef USE_I2C
@@ -1352,7 +1587,13 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Cleanflight/%s %s / %s (%s)", targetName, buildDate, buildTime, shortGitRevision);
+    printf("Cleanflight/%s %s %s / %s (%s)",
+        targetName,
+        FC_VERSION_STRING,
+        buildDate,
+        buildTime,
+        shortGitRevision
+    );
 }
 
 void cliProcess(void)

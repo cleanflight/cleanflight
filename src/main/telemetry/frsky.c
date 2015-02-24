@@ -31,23 +31,32 @@
 #include "common/axis.h"
 
 #include "drivers/system.h"
+#include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/serial.h"
-#include "io/serial.h"
-#include "rx/rx.h"
-#include "io/rc_controls.h"
 
-#include "config/runtime_config.h"
-#include "config/config.h"
 
 #include "sensors/sensors.h"
+#include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "sensors/barometer.h"
 #include "sensors/battery.h"
-#include "flight/flight.h"
+
+#include "io/serial.h"
+#include "io/rc_controls.h"
 #include "io/gps.h"
+
+#include "rx/rx.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/altitudehold.h"
+
+#include "config/runtime_config.h"
+#include "config/config.h"
 
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
@@ -160,7 +169,7 @@ static void sendBaro(void)
     sendDataHead(ID_ALTITUDE_BP);
     serialize16(BaroAlt / 100);
     sendDataHead(ID_ALTITUDE_AP);
-    serialize16(abs(BaroAlt % 100));
+    serialize16(ABS(BaroAlt % 100));
 }
 
 static void sendGpsAltitude(void)
@@ -211,7 +220,7 @@ static void sendSatalliteSignalQualityAsTemperature2(void)
     } else {
         float tmp = (satellite - 32) / 1.8;
         //Round the value
-        tmp += (tmp < 0) ? -0.5 : 0.5;
+        tmp += (tmp < 0) ? -0.5f : 0.5f;
         serialize16(tmp);
     }
 }
@@ -246,7 +255,7 @@ static void sendTime(void)
 static void GPStoDDDMM_MMMM(int32_t mwiigps, gpsCoordinateDDDMMmmmm_t *result)
 {
     int32_t absgps, deg, min;
-    absgps = abs(mwiigps);
+    absgps = ABS(mwiigps);
     deg    = absgps / GPS_DEGREES_DIVIDER;
     absgps = (absgps - deg * GPS_DEGREES_DIVIDER) * 60;        // absgps = Minutes left * 10^7
     min    = absgps / GPS_DEGREES_DIVIDER;                     // minutes left

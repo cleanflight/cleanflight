@@ -17,9 +17,9 @@
 
 #pragma once
 
-extern int32_t sonarAlt;
+void sonarInit(void);
+void sonarUpdate(void);
 
-void Sonar_init(void);
-void Sonar_update(void);
-
+int32_t sonarRead(void);
 int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle);
+int32_t sonarGetLatestAltitude(void);

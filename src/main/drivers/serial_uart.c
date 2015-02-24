@@ -39,6 +39,35 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode);
 uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode);
 uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode);
 
+static void usartConfigurePinInversion(uartPort_t *uartPort) {
+#if !defined(INVERTER) && !defined(STM32F303xC)
+    UNUSED(uartPort);
+#endif
+
+#ifdef INVERTER
+    if (uartPort->port.inversion == SERIAL_INVERTED && uartPort->USARTx == INVERTER_USART) {
+        // Enable hardware inverter if available.
+        INVERTER_ON;
+    }
+#endif
+
+#ifdef STM32F303xC
+    uint32_t inversionPins = 0;
+
+    if (uartPort->port.mode & MODE_TX) {
+        inversionPins |= USART_InvPin_Tx;
+    }
+    if (uartPort->port.mode & MODE_RX) {
+        inversionPins |= USART_InvPin_Rx;
+    }
+
+    // Note: inversion when using MODE_BIDIR not supported yet.
+
+    USART_InvPinCmd(uartPort->USARTx, inversionPins, uartPort->port.inversion == SERIAL_INVERTED ? ENABLE : DISABLE);
+#endif
+
+}
+
 static void uartReconfigure(uartPort_t *uartPort)
 {
     USART_InitTypeDef USART_InitStructure;
@@ -63,21 +92,15 @@ static void uartReconfigure(uartPort_t *uartPort)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx | USART_Mode_Rx;
 
     USART_Init(uartPort->USARTx, &USART_InitStructure);
+
+    usartConfigurePinInversion(uartPort);
+
     USART_Cmd(uartPort->USARTx, ENABLE);
 }
 
 serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
 {
-    UNUSED(inversion);
-
     uartPort_t *s = NULL;
-
-#ifdef INVERTER
-    if (inversion == SERIAL_INVERTED && USARTx == INVERTER_USART) {
-        // Enable hardware inverter if available.
-        INVERTER_ON;
-    }
-#endif
 
     if (USARTx == USART1) {
         s = serialUSART1(baudRate, mode);
@@ -101,16 +124,10 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     s->port.callback = callback;
     s->port.mode = mode;
     s->port.baudRate = baudRate;
-
-#if 1 // FIXME use inversion on STM32F3
-    s->port.inversion = SERIAL_NOT_INVERTED;
-#else
     s->port.inversion = inversion;
-#endif
 
     uartReconfigure(s);
 
- 
     // Receive DMA or IRQ
     DMA_InitTypeDef DMA_InitStructure;
     if ((mode & MODE_RX) || (mode & MODE_BIDIR)) {
@@ -206,10 +223,19 @@ void uartStartTxDMA(uartPort_t *s)
 uint8_t uartTotalBytesWaiting(serialPort_t *instance)
 {
     uartPort_t *s = (uartPort_t*)instance;
-    if (s->rxDMAChannel)
-        return (s->rxDMAChannel->CNDTR - s->rxDMAPos) & (s->port.txBufferSize - 1);
-    else {
-        return (s->port.rxBufferHead - s->port.rxBufferTail) & (s->port.txBufferSize - 1);
+    if (s->rxDMAChannel) {
+        uint32_t rxDMAHead = s->rxDMAChannel->CNDTR;
+        if (rxDMAHead >= s->rxDMAPos) {
+            return rxDMAHead - s->rxDMAPos;
+        } else {
+            return s->port.rxBufferSize + rxDMAHead - s->rxDMAPos;
+        }
+    }
+
+    if (s->port.rxBufferHead >= s->port.rxBufferTail) {
+        return s->port.rxBufferHead - s->port.rxBufferTail;
+    } else {
+        return s->port.rxBufferSize + s->port.rxBufferHead - s->port.rxBufferTail;
     }
 }
 
@@ -233,7 +259,11 @@ uint8_t uartRead(serialPort_t *instance)
             s->rxDMAPos = s->port.rxBufferSize;
     } else {
         ch = s->port.rxBuffer[s->port.rxBufferTail];
-        s->port.rxBufferTail = (s->port.rxBufferTail + 1) % s->port.rxBufferSize;
+        if (s->port.rxBufferTail + 1 >= s->port.rxBufferSize) {
+            s->port.rxBufferTail = 0;
+        } else {
+            s->port.rxBufferTail++;
+        }
     }
 
     return ch;
@@ -243,7 +273,11 @@ void uartWrite(serialPort_t *instance, uint8_t ch)
 {
     uartPort_t *s = (uartPort_t *)instance;
     s->port.txBuffer[s->port.txBufferHead] = ch;
-    s->port.txBufferHead = (s->port.txBufferHead + 1) % s->port.txBufferSize;
+    if (s->port.txBufferHead + 1 >= s->port.txBufferSize) {
+        s->port.txBufferHead = 0;
+    } else {
+        s->port.txBufferHead++;
+    }
 
     if (s->txDMAChannel) {
         if (!(s->txDMAChannel->CCR & 1))

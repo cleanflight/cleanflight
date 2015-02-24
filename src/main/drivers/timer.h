@@ -17,14 +17,6 @@
 
 #pragma once
 
-#ifdef CHEBUZZF3
-#define USABLE_TIMER_CHANNEL_COUNT 18
-#endif
-
-#ifdef CC3D
-#define USABLE_TIMER_CHANNEL_COUNT 12
-#endif
-
 #if !defined(USABLE_TIMER_CHANNEL_COUNT)
 #define USABLE_TIMER_CHANNEL_COUNT 14
 #endif
@@ -117,5 +109,7 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriori
 
 void timerInit(void);
 void timerStart(void);
+void timerForceOverflow(TIM_TypeDef *tim);
 
 void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz);  // TODO - just for migration
+

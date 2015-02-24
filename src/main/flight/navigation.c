@@ -25,38 +25,37 @@
 #include "platform.h"
 
 #include "common/maths.h"
+#include "common/axis.h"
 
 #include "drivers/system.h"
-
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
-#include "io/serial.h"
-
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
 
-#include "common/axis.h"
-#include "flight/flight.h"
-
 #include "sensors/sensors.h"
+
+#include "io/serial.h"
+#include "io/gps.h"
+#include "io/rc_controls.h"
+
+#include "flight/pid.h"
+#include "flight/navigation.h"
+#include "flight/gps_conversion.h"
+
+#include "rx/rx.h"
+
 
 #include "config/config.h"
 #include "config/runtime_config.h"
 
-#include "flight/gps_conversion.h"
-#include "io/gps.h"
-
-#include "rx/rx.h"
-#include "io/rc_controls.h"
-
-#include "flight/navigation.h"
+extern int16_t magHold;
 
 #ifdef GPS
 
 extern int16_t debug[4];
 
 bool areSticksInApModePosition(uint16_t ap_mode);
-
 
 // **********************
 // GPS
@@ -163,7 +162,7 @@ static int32_t get_D(int32_t input, float *dt, PID *pid, PID_PARAM *pid_param)
 
     // Low pass filter cut frequency for derivative calculation
     // Set to  "1 / ( 2 * PI * gps_lpf )
-    float pidFilter = (1.0f / (2.0f * M_PI * (float)gpsProfile->gps_lpf));
+    float pidFilter = (1.0f / (2.0f * M_PIf * (float)gpsProfile->gps_lpf));
     // discrete low pass filter, cuts out the
     // high frequency noise that can drive the controller crazy
     pid->derivative = pid->last_derivative + (*dt / (pidFilter + *dt)) * (pid->derivative - pid->last_derivative);
@@ -246,12 +245,24 @@ static int32_t nav_bearing;
 // saves the bearing at takeof (1deg = 1) used to rotate to takeoff direction when arrives at home
 static int16_t nav_takeoff_bearing;
 
+void GPS_calculateDistanceAndDirectionToHome(void)
+{
+    if (STATE(GPS_FIX_HOME)) {      // If we don't have home set, do not display anything
+        uint32_t dist;
+        int32_t dir;
+        GPS_distance_cm_bearing(&GPS_coord[LAT], &GPS_coord[LON], &GPS_home[LAT], &GPS_home[LON], &dist, &dir);
+        GPS_distanceToHome = dist / 100;
+        GPS_directionToHome = dir / 100;
+    } else {
+        GPS_distanceToHome = 0;
+        GPS_directionToHome = 0;
+    }
+}
+
 void onGpsNewData(void)
 {
     int axis;
     static uint32_t nav_loopTimer;
-    uint32_t dist;
-    int32_t dir;
     uint16_t speed;
 
 
@@ -261,8 +272,10 @@ void onGpsNewData(void)
 
     if (!ARMING_FLAG(ARMED))
         DISABLE_STATE(GPS_FIX_HOME);
+
     if (!STATE(GPS_FIX_HOME) && ARMING_FLAG(ARMED))
         GPS_reset_home_position();
+
     // Apply moving average filter to GPS data
 #if defined(GPS_FILTERING)
     GPS_filter_index = (GPS_filter_index + 1) % GPS_FILTER_VECTOR_LENGTH;
@@ -284,22 +297,17 @@ void onGpsNewData(void)
         }
     }
 #endif
-    // dTnav calculation
+
+    //
+    // Calculate time delta for navigation loop, range 0-1.0f, in seconds
+    //
     // Time for calculating x,y speed and navigation pids
     dTnav = (float)(millis() - nav_loopTimer) / 1000.0f;
     nav_loopTimer = millis();
     // prevent runup from bad GPS
-    dTnav = min(dTnav, 1.0f);
+    dTnav = MIN(dTnav, 1.0f);
 
-    // calculate distance and bearings for gui and other stuff continously - From home to copter
-    GPS_distance_cm_bearing(&GPS_coord[LAT], &GPS_coord[LON], &GPS_home[LAT], &GPS_home[LON], &dist, &dir);
-    GPS_distanceToHome = dist / 100;
-    GPS_directionToHome = dir / 100;
-
-    if (!STATE(GPS_FIX_HOME)) {      // If we don't have home set, do not display anything
-        GPS_distanceToHome = 0;
-        GPS_directionToHome = 0;
-    }
+    GPS_calculateDistanceAndDirectionToHome();
 
     // calculate the current velocity based on gps coordinates continously to get a valid speed at the moment when we start navigating
     GPS_calc_velocity();
@@ -404,7 +412,7 @@ void gpsUsePIDs(pidProfile_t *pidProfile)
 //
 static void GPS_calc_longitude_scaling(int32_t lat)
 {
-    float rads = (abs((float)lat) / 10000000.0f) * 0.0174532925f;
+    float rads = (ABS((float)lat) / 10000000.0f) * 0.0174532925f;
     GPS_scaleLonDown = cosf(rads);
 }
 
@@ -433,19 +441,22 @@ static bool check_missed_wp(void)
     int32_t temp;
     temp = target_bearing - original_target_bearing;
     temp = wrap_18000(temp);
-    return (abs(temp) > 10000); // we passed the waypoint by 100 degrees
+    return (ABS(temp) > 10000); // we passed the waypoint by 100 degrees
 }
+
+#define DISTANCE_BETWEEN_TWO_LONGITUDE_POINTS_AT_EQUATOR_IN_HUNDREDS_OF_KILOMETERS 1.113195f
+#define TAN_89_99_DEGREES 5729.57795f
 
 ////////////////////////////////////////////////////////////////////////////////////
 // Get distance between two points in cm
 // Get bearing from pos1 to pos2, returns an 1deg = 100 precision
-static void GPS_distance_cm_bearing(int32_t * lat1, int32_t * lon1, int32_t * lat2, int32_t * lon2, uint32_t * dist, int32_t * bearing)
+static void GPS_distance_cm_bearing(int32_t *currentLat1, int32_t *currentLon1, int32_t *destinationLat2, int32_t *destinationLon2, uint32_t *dist, int32_t *bearing)
 {
-    float dLat = *lat2 - *lat1; // difference of latitude in 1/10 000 000 degrees
-    float dLon = (float)(*lon2 - *lon1) * GPS_scaleLonDown;
-    *dist = sqrtf(sq(dLat) + sq(dLon)) * 1.113195f;
+    float dLat = *destinationLat2 - *currentLat1; // difference of latitude in 1/10 000 000 degrees
+    float dLon = (float)(*destinationLon2 - *currentLon1) * GPS_scaleLonDown;
+    *dist = sqrtf(sq(dLat) + sq(dLon)) * DISTANCE_BETWEEN_TWO_LONGITUDE_POINTS_AT_EQUATOR_IN_HUNDREDS_OF_KILOMETERS;
 
-    *bearing = 9000.0f + atan2f(-dLat, dLon) * 5729.57795f;      // Convert the output radians to 100xdeg
+    *bearing = 9000.0f + atan2f(-dLat, dLon) * TAN_89_99_DEGREES;      // Convert the output radians to 100xdeg
     if (*bearing < 0)
         *bearing += 36000;
 }
@@ -467,15 +478,15 @@ static void GPS_distance_cm_bearing(int32_t * lat1, int32_t * lon1, int32_t * la
 static void GPS_calc_velocity(void)
 {
     static int16_t speed_old[2] = { 0, 0 };
-    static int32_t last[2] = { 0, 0 };
+    static int32_t last_coord[2] = { 0, 0 };
     static uint8_t init = 0;
-    // y_GPS_speed positve = Up
-    // x_GPS_speed positve = Right
+    // y_GPS_speed positive = Up
+    // x_GPS_speed positive = Right
 
     if (init) {
         float tmp = 1.0f / dTnav;
-        actual_speed[GPS_X] = (float)(GPS_coord[LON] - last[LON]) * GPS_scaleLonDown * tmp;
-        actual_speed[GPS_Y] = (float)(GPS_coord[LAT] - last[LAT]) * tmp;
+        actual_speed[GPS_X] = (float)(GPS_coord[LON] - last_coord[LON]) * GPS_scaleLonDown * tmp;
+        actual_speed[GPS_Y] = (float)(GPS_coord[LAT] - last_coord[LAT]) * tmp;
 
         actual_speed[GPS_X] = (actual_speed[GPS_X] + speed_old[GPS_X]) / 2;
         actual_speed[GPS_Y] = (actual_speed[GPS_Y] + speed_old[GPS_Y]) / 2;
@@ -485,8 +496,8 @@ static void GPS_calc_velocity(void)
     }
     init = 1;
 
-    last[LON] = GPS_coord[LON];
-    last[LAT] = GPS_coord[LAT];
+    last_coord[LON] = GPS_coord[LON];
+    last_coord[LAT] = GPS_coord[LAT];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -524,7 +535,7 @@ static void GPS_calc_poshold(void)
 
         // get rid of noise
 #if defined(GPS_LOW_SPEED_D_FILTER)
-        if (abs(actual_speed[axis]) < 50)
+        if (ABS(actual_speed[axis]) < 50)
             d = 0;
 #endif
 
@@ -570,7 +581,7 @@ static void GPS_calc_nav_rate(uint16_t max_speed)
 //
 static void GPS_update_crosstrack(void)
 {
-    if (abs(wrap_18000(target_bearing - original_target_bearing)) < 4500) {     // If we are too far off or too close we don't do track following
+    if (ABS(wrap_18000(target_bearing - original_target_bearing)) < 4500) {     // If we are too far off or too close we don't do track following
         float temp = (target_bearing - original_target_bearing) * RADX100;
         crosstrack_error = sinf(temp) * (wp_distance * CROSSTRACK_GAIN); // Meters we are off track line
         nav_bearing = target_bearing + constrain(crosstrack_error, -3000, 3000);
@@ -595,10 +606,10 @@ static uint16_t GPS_calc_desired_speed(uint16_t max_speed, bool _slow)
 {
     // max_speed is default 400 or 4m/s
     if (_slow) {
-        max_speed = min(max_speed, wp_distance / 2);
+        max_speed = MIN(max_speed, wp_distance / 2);
     } else {
-        max_speed = min(max_speed, wp_distance);
-        max_speed = max(max_speed, gpsProfile->nav_speed_min);      // go at least 100cm/s
+        max_speed = MIN(max_speed, wp_distance);
+        max_speed = MAX(max_speed, gpsProfile->nav_speed_min);      // go at least 100cm/s
     }
 
     // limit the ramp up of the speed
@@ -648,43 +659,73 @@ void updateGpsStateForHomeAndHoldMode(void)
 
 void updateGpsWaypointsAndMode(void)
 {
-    static uint8_t GPSNavReset = 1;
+    bool resetNavNow = false;
 
     if (STATE(GPS_FIX) && GPS_numSat >= 5) {
-        // if both GPS_HOME & GPS_HOLD are checked => GPS_HOME is the priority
+
+        //
+        // process HOME mode
+        //
+        // HOME mode takes priority over HOLD mode.
+
         if (IS_RC_MODE_ACTIVE(BOXGPSHOME)) {
             if (!FLIGHT_MODE(GPS_HOME_MODE)) {
+
+                // Transition to HOME mode
                 ENABLE_FLIGHT_MODE(GPS_HOME_MODE);
                 DISABLE_FLIGHT_MODE(GPS_HOLD_MODE);
-                GPSNavReset = 0;
                 GPS_set_next_wp(&GPS_home[LAT], &GPS_home[LON]);
                 nav_mode = NAV_MODE_WP;
+                resetNavNow = true;
             }
         } else {
-            DISABLE_FLIGHT_MODE(GPS_HOME_MODE);
+            if (FLIGHT_MODE(GPS_HOME_MODE)) {
+
+                // Transition from HOME mode
+                DISABLE_FLIGHT_MODE(GPS_HOME_MODE);
+                nav_mode = NAV_MODE_NONE;
+                resetNavNow = true;
+            }
+
+            //
+            // process HOLD mode
+            //
 
             if (IS_RC_MODE_ACTIVE(BOXGPSHOLD) && areSticksInApModePosition(gpsProfile->ap_mode)) {
                 if (!FLIGHT_MODE(GPS_HOLD_MODE)) {
+
+                    // Transition to HOLD mode
                     ENABLE_FLIGHT_MODE(GPS_HOLD_MODE);
-                    GPSNavReset = 0;
                     GPS_hold[LAT] = GPS_coord[LAT];
                     GPS_hold[LON] = GPS_coord[LON];
                     GPS_set_next_wp(&GPS_hold[LAT], &GPS_hold[LON]);
                     nav_mode = NAV_MODE_POSHOLD;
+                    resetNavNow = true;
                 }
             } else {
-                DISABLE_FLIGHT_MODE(GPS_HOLD_MODE);
-                // both boxes are unselected here, nav is reset if not already done
-                if (GPSNavReset == 0) {
-                    GPSNavReset = 1;
-                    GPS_reset_nav();
+                if (FLIGHT_MODE(GPS_HOLD_MODE)) {
+
+                    // Transition from HOLD mode
+                    DISABLE_FLIGHT_MODE(GPS_HOLD_MODE);
+                    nav_mode = NAV_MODE_NONE;
+                    resetNavNow = true;
                 }
             }
         }
     } else {
-        DISABLE_FLIGHT_MODE(GPS_HOME_MODE);
-        DISABLE_FLIGHT_MODE(GPS_HOLD_MODE);
-        nav_mode = NAV_MODE_NONE;
+        if (FLIGHT_MODE(GPS_HOLD_MODE | GPS_HOME_MODE)) {
+
+            // Transition from HOME or HOLD mode
+            DISABLE_FLIGHT_MODE(GPS_HOME_MODE);
+            DISABLE_FLIGHT_MODE(GPS_HOLD_MODE);
+            nav_mode = NAV_MODE_NONE;
+            resetNavNow = true;
+        }
+    }
+
+    if (resetNavNow) {
+        GPS_reset_nav();
     }
 }
+
 #endif

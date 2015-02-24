@@ -11,5 +11,17 @@
 obj/
 patches/
 startup_stm32f10x_md_gcc.s
+<<<<<<< HEAD
 /Debug
 /Release
+
+# script-generated files
+docs/Manual.pdf
+README.pdf
+=======
+
+# script-generated files
+docs/Manual.pdf
+README.pdf
+
+>>>>>>> upstream/master

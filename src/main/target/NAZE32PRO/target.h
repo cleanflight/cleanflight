@@ -40,9 +40,14 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
-#define SENSORS_SET (SENSOR_ACC)
-
 #define GPS
+#define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+#define USE_SERVOS
+
+#define SPEKTRUM_BIND
+// USART2, PA3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3

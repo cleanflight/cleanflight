@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "rx/rx.h"
+
 typedef enum {
     BOXARM = 0,
     BOXANGLE,
@@ -205,7 +207,10 @@ typedef struct adjustmentState_s {
     uint32_t timeoutAt;
 } adjustmentState_t;
 
+
+#ifndef MAX_SIMULTANEOUS_ADJUSTMENT_COUNT
 #define MAX_SIMULTANEOUS_ADJUSTMENT_COUNT 4 // enough for 4 x 3position switches / 4 aux channel
+#endif
 
 #define MAX_ADJUSTMENT_RANGE_COUNT 12 // enough for 2 * 6pos switches.
 
@@ -213,3 +218,6 @@ void configureAdjustment(uint8_t index, uint8_t auxChannelIndex, const adjustmen
 void updateAdjustmentStates(adjustmentRange_t *adjustmentRanges);
 void processRcAdjustments(controlRateConfig_t *controlRateConfig, rxConfig_t *rxConfig);
 
+bool isUsingSticksForArming(void);
+
+int32_t getRcStickDeflection(int32_t axis, uint16_t midrc);

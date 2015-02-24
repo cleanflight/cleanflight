@@ -44,7 +44,6 @@
 
 void updateSerialRxFunctionConstraint(functionConstraint_t *functionConstraintToUpdate);
 
-void mspInit(serialConfig_t *serialConfig);
 void cliInit(serialConfig_t *serialConfig);
 
 // this exists so the user can reference scenarios by a number in the CLI instead of an unuser-friendly bitmask.
@@ -62,7 +61,10 @@ const serialPortFunctionScenario_e serialPortScenarios[SERIAL_PORT_SCENARIO_COUN
     SCENARIO_CLI_ONLY,
     SCENARIO_GPS_PASSTHROUGH_ONLY,
     SCENARIO_MSP_ONLY,
-    SCENARIO_SMARTPORT_TELEMETRY_ONLY
+    SCENARIO_SMARTPORT_TELEMETRY_ONLY,
+
+    SCENARIO_BLACKBOX_ONLY,
+    SCENARIO_MSP_CLI_BLACKBOX_GPS_PASTHROUGH
 };
 
 static serialConfig_t *serialConfig;
@@ -70,22 +72,32 @@ static serialPort_t *serialPorts[SERIAL_PORT_COUNT];
 
 #ifdef STM32F303xC
 static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
+#ifdef USE_VCP
     {SERIAL_PORT_USB_VCP,     NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+#endif
+#ifdef USE_USART1
     {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+#endif
+#ifdef USE_USART2
     {SERIAL_PORT_USART2,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
-#if (SERIAL_PORT_COUNT > 3)
+#endif
+#ifdef USE_USART3
     {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
-    {SERIAL_PORT_USART4,      NULL, SCENARIO_UNUSED, FUNCTION_NONE}
 #endif
 };
 
-static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+#ifdef USE_VCP
     {SERIAL_PORT_USB_VCP,       9600,   115200,   SPF_NONE },
-    {SERIAL_PORT_USART1,        9600,   115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_USART2,        9600,   115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-#if (SERIAL_PORT_COUNT > 3)
-    {SERIAL_PORT_USART3,        9600,   19200,    SPF_SUPPORTS_CALLBACK},
-    {SERIAL_PORT_USART4,        9600,   19200,    SPF_SUPPORTS_CALLBACK}
+#endif
+#ifdef USE_USART1
+    {SERIAL_PORT_USART1,        9600,   250000,   SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+#endif
+#ifdef USE_USART2
+    {SERIAL_PORT_USART2,        9600,   250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+#endif
+#ifdef USE_USART3
+    {SERIAL_PORT_USART3,        9600,   250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
 #endif
 };
 
@@ -93,14 +105,20 @@ static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
 
 #ifdef CC3D
 static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
+#ifdef USE_VCP
+    {SERIAL_PORT_USB_VCP,     NULL, SCENARIO_UNUSED, FUNCTION_NONE},
+#endif
     {SERIAL_PORT_USART1,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_USART3,      NULL, SCENARIO_UNUSED, FUNCTION_NONE},
     {SERIAL_PORT_SOFTSERIAL1, NULL, SCENARIO_UNUSED, FUNCTION_NONE}
 };
 
-static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
-    {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_USART3,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+#ifdef USE_VCP
+    {SERIAL_PORT_USB_VCP,       9600,   115200,   SPF_NONE },
+#endif
+    {SERIAL_PORT_USART1,        9600, 250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+    {SERIAL_PORT_USART3,        9600, 250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
     {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
 };
 #else
@@ -114,9 +132,9 @@ static serialPortFunction_t serialPortFunctions[SERIAL_PORT_COUNT] = {
 #endif
 };
 
-static const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
-    {SERIAL_PORT_USART1,        9600, 115200,   SPF_NONE | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
-    {SERIAL_PORT_USART2,        9600, 115200,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+const serialPortConstraint_t serialPortConstraints[SERIAL_PORT_COUNT] = {
+    {SERIAL_PORT_USART1,        9600, 250000,   SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
+    {SERIAL_PORT_USART2,        9600, 250000,   SPF_SUPPORTS_CALLBACK | SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_BIDIR_MODE},
 #if (SERIAL_PORT_COUNT > 2)
     {SERIAL_PORT_SOFTSERIAL1,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE},
     {SERIAL_PORT_SOFTSERIAL2,   9600, 19200,    SPF_SUPPORTS_CALLBACK | SPF_IS_SOFTWARE_INVERTABLE}
@@ -130,9 +148,10 @@ const functionConstraint_t functionConstraints[] = {
         { FUNCTION_GPS,                 9600,  115200, AUTOBAUD,    SPF_NONE },
         { FUNCTION_GPS_PASSTHROUGH,     9600,  115200, NO_AUTOBAUD, SPF_NONE },
         { FUNCTION_MSP,                 9600,  115200, NO_AUTOBAUD, SPF_NONE },
-        { FUNCTION_SERIAL_RX,           9600,  115200, NO_AUTOBAUD, SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_CALLBACK },
+        { FUNCTION_SERIAL_RX,           9600,  250000, NO_AUTOBAUD, SPF_SUPPORTS_SBUS_MODE | SPF_SUPPORTS_CALLBACK },
         { FUNCTION_TELEMETRY,           9600,  19200,  NO_AUTOBAUD, SPF_NONE },
-        { FUNCTION_SMARTPORT_TELEMETRY, 57600, 57600,  NO_AUTOBAUD, SPF_SUPPORTS_BIDIR_MODE }
+        { FUNCTION_SMARTPORT_TELEMETRY, 57600, 57600,  NO_AUTOBAUD, SPF_SUPPORTS_BIDIR_MODE },
+        { FUNCTION_BLACKBOX,            115200,115200, NO_AUTOBAUD, SPF_NONE }
 };
 
 #define FUNCTION_CONSTRAINT_COUNT (sizeof(functionConstraints) / sizeof(functionConstraint_t))
@@ -252,6 +271,12 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         uint8_t serialPortIndex = lookupSerialPortIndexByIdentifier(serialPortFunction->identifier);
         const serialPortConstraint_t *serialPortConstraint = &serialPortConstraints[serialPortIndex];
 
+#if defined(CC3D)
+        if (!feature(FEATURE_SOFTSERIAL) && (
+                serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1)) {
+            continue;
+        }
+#else
 #if defined(USE_SOFTSERIAL1) ||(defined(USE_SOFTSERIAL2))
         if (!feature(FEATURE_SOFTSERIAL) && (
                 serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL1 ||
@@ -259,19 +284,16 @@ serialPortSearchResult_t *findNextSerialPort(serialPortFunction_e function, cons
         )) {
             continue;
         }
-
+#endif
 #if (defined(NAZE) || defined(OLIMEXINO)) && defined(SONAR)
         if (feature(FEATURE_SONAR) && !feature(FEATURE_RX_PARALLEL_PWM) && (serialPortConstraint->identifier == SERIAL_PORT_SOFTSERIAL2)) {
             continue;
         }
 #endif
-
 #endif
 
-        if (functionConstraint->requiredSerialPortFeatures != SPF_NONE) {
-            if (!(serialPortConstraint->feature & functionConstraint->requiredSerialPortFeatures)) {
-                continue;
-            }
+        if ((serialPortConstraint->feature & functionConstraint->requiredSerialPortFeatures) != functionConstraint->requiredSerialPortFeatures) {
+            continue;
         }
 
         if (functionConstraint->minBaudRate < serialPortConstraint->minBaudRate || functionConstraint->maxBaudRate > serialPortConstraint->maxBaudRate) {
@@ -537,9 +559,10 @@ serialPort_t *findSharedSerialPort(serialPortFunction_e functionToUse, uint16_t 
 
 void applySerialConfigToPortFunctions(serialConfig_t *serialConfig)
 {
-    uint32_t portIndex = 0, serialPortIdentifier;
+    uint32_t portIndex = 0, serialPortIdentifier, constraintIndex;
 
-    for (serialPortIdentifier = 0; serialPortIdentifier < SERIAL_PORT_IDENTIFIER_COUNT && portIndex < SERIAL_PORT_COUNT; serialPortIdentifier++) {
+    for (constraintIndex = 0; constraintIndex < SERIAL_PORT_COUNT && portIndex < SERIAL_PORT_COUNT; constraintIndex++) {
+        serialPortIdentifier = serialPortConstraints[constraintIndex].identifier;
         uint32_t functionIndex = lookupSerialPortFunctionIndexByIdentifier(serialPortIdentifier);
         if (functionIndex == IDENTIFIER_NOT_FOUND) {
             continue;
