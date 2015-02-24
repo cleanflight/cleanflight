@@ -28,7 +28,6 @@
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
 
-#include "flight/flight.h"
 #include "sensors/boardalignment.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -41,7 +40,6 @@
 #endif
 
 mag_t mag;                   // mag access functions
-uint8_t magHardware = MAG_DEFAULT;
 
 extern uint32_t currentTime; // FIXME dependency on global variable, pass it in instead.
 

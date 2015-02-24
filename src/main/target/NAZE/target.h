@@ -18,6 +18,7 @@
 #pragma once
 
 #define TARGET_BOARD_IDENTIFIER "AFNA" // AFroNAze - NAZE might be considered misleading on Naze clones like the flip32.
+#define USE_HARDWARE_REVISION_DETECTION
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
@@ -55,9 +56,18 @@
 #define NAZE_SPI_CS_GPIO      GPIOB
 #define NAZE_SPI_CS_PIN       GPIO_Pin_12
 
+// We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
+#define M25P16_CS_GPIO        NAZE_SPI_CS_GPIO
+#define M25P16_CS_PIN         NAZE_SPI_CS_PIN
+#define M25P16_SPI_INSTANCE   NAZE_SPI_INSTANCE
+
 #define MPU6500_CS_GPIO       NAZE_SPI_CS_GPIO
 #define MPU6500_CS_PIN        NAZE_SPI_CS_PIN
 #define MPU6500_SPI_INSTANCE  NAZE_SPI_INSTANCE
+
+#define USE_FLASHFS
+
+#define USE_FLASH_M25P16
 
 #define GYRO
 #define USE_GYRO_MPU3050
@@ -116,27 +126,46 @@
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
 // #define SOFT_I2C_PB67
 
+#define USE_ADC
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
+#define CURRENT_METER_ADC_GPIO      GPIOB
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
+
+#define VBAT_ADC_GPIO               GPIOA
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
+#define VBAT_ADC_CHANNEL            ADC_Channel_4
+
+#define RSSI_ADC_GPIO               GPIOA
+#define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
+#define RSSI_ADC_CHANNEL            ADC_Channel_1
+
+#define EXTERNAL1_ADC_GPIO          GPIOA
+#define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
+#define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
 #define GPS
 
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
 
+#define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
+#define USE_SERVOS
 
 #define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
 
-// alternative defaults AlienWii32 (activate via OPTIONS="ALIENWII32" during make for NAZE target)
+// alternative defaults for AlienWii32 F1 target
 #ifdef ALIENWII32
-#define BRUSHED_MOTORS
+#undef TARGET_BOARD_IDENTIFIER
+#define TARGET_BOARD_IDENTIFIER "AWF1" // AlienWii32 F1.
 #define HARDWARE_BIND_PLUG
+
 // Hardware bind plug at PB5 (Pin 41)
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5

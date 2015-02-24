@@ -37,7 +37,6 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 
-#include "flight/flight.h"
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sonar.h"
@@ -46,18 +45,12 @@
 #include "sensors/barometer.h"
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
+
 #include "io/beeper.h"
 #include "io/display.h"
 #include "io/escservo.h"
-#include "rx/rx.h"
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
-#include "flight/mixer.h"
-#include "flight/altitudehold.h"
-#include "flight/failsafe.h"
-#include "flight/imu.h"
-#include "flight/autotune.h"
-#include "flight/navigation.h"
 #include "io/gimbal.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
@@ -65,8 +58,21 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+
+#include "rx/rx.h"
 #include "rx/msp.h"
+
 #include "telemetry/telemetry.h"
+#include "blackbox/blackbox.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/altitudehold.h"
+#include "flight/failsafe.h"
+#include "flight/autotune.h"
+#include "flight/navigation.h"
+
 
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -88,6 +94,8 @@ int16_t debug[4];
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
+
+int16_t magHold;
 int16_t headFreeModeHold;
 
 int16_t telemTemperature1;      // gyro sensor temperature
@@ -96,7 +104,8 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern failsafe_t *failsafe;
 
-typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination, rollAndPitchTrims_t *accelerometerTrims);
+typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
 
 extern pidControllerFuncPtr pid_controller;
 
@@ -122,7 +131,7 @@ void updateAutotuneState(void)
                     autotuneReset();
                     landedAfterAutoTuning = false;
                 }
-                autotuneBeginNextPhase(&currentProfile->pidProfile, currentProfile->pidController);
+                autotuneBeginNextPhase(&currentProfile->pidProfile);
                 ENABLE_FLIGHT_MODE(AUTOTUNE_MODE);
                 autoTuneWasUsed = true;
             } else {
@@ -149,8 +158,8 @@ void updateAutotuneState(void)
 bool isCalibrating()
 {
 #ifdef BARO
-    if (sensors(SENSOR_ACC) && !isBaroCalibrationComplete()) {
-        return false;
+    if (sensors(SENSOR_BARO) && !isBaroCalibrationComplete()) {
+        return true;
     }
 #endif
 
@@ -180,7 +189,7 @@ void annexCode(void)
     }
 
     for (axis = 0; axis < 3; axis++) {
-        tmp = min(abs(rcData[axis] - masterConfig.rxConfig.midrc), 500);
+        tmp = MIN(ABS(rcData[axis] - masterConfig.rxConfig.midrc), 500);
         if (axis == ROLL || axis == PITCH) {
             if (currentProfile->rcControlsConfig.deadband) {
                 if (tmp > currentProfile->rcControlsConfig.deadband) {
@@ -203,7 +212,7 @@ void annexCode(void)
                 }
             }
             rcCommand[axis] = tmp * -masterConfig.yaw_control_direction;
-            prop1 = 100 - (uint16_t)currentControlRateProfile->yawRate * abs(tmp) / 500;
+            prop1 = 100 - (uint16_t)currentControlRateProfile->yawRate * ABS(tmp) / 500;
         }
         // FIXME axis indexes into pids.  use something like lookupPidIndex(rc_alias_e alias) to reduce coupling.
         dynP8[axis] = (uint16_t)currentProfile->pidProfile.P8[axis] * prop1 / 100;
@@ -306,6 +315,12 @@ void mwDisarm(void)
             }
         }
 #endif
+
+#ifdef BLACKBOX
+        if (feature(FEATURE_BLACKBOX)) {
+            finishBlackbox();
+        }
+#endif
     }
 }
 
@@ -325,6 +340,16 @@ void mwArm(void)
                 if (sharedTelemetryAndMspPort) {
                     mspReleasePortIfAllocated(sharedTelemetryAndMspPort);
                 }
+            }
+#endif
+
+#ifdef BLACKBOX
+            if (feature(FEATURE_BLACKBOX)) {
+                serialPort_t *sharedBlackboxAndMspPort = findSharedSerialPort(FUNCTION_BLACKBOX, FUNCTION_MSP);
+                if (sharedBlackboxAndMspPort) {
+                    mspReleasePortIfAllocated(sharedBlackboxAndMspPort);
+                }
+                startBlackbox();
             }
 #endif
             disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
@@ -379,7 +404,7 @@ void updateInflightCalibrationState(void)
 
 void updateMagHold(void)
 {
-    if (abs(rcCommand[YAW]) < 70 && FLIGHT_MODE(MAG_MODE)) {
+    if (ABS(rcCommand[YAW]) < 70 && FLIGHT_MODE(MAG_MODE)) {
         int16_t dif = heading - magHold;
         if (dif <= -180)
             dif += 360;
@@ -451,7 +476,7 @@ void executePeriodicTasks(void)
 #ifdef SONAR
     case UPDATE_SONAR_TASK:
         if (sensors(SENSOR_SONAR)) {
-            Sonar_update();
+            sonarUpdate();
         }
         break;
 #endif
@@ -539,17 +564,17 @@ void processRx(void)
         DISABLE_FLIGHT_MODE(ANGLE_MODE); // failsafe support
     }
 
-	if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
+    if (IS_RC_MODE_ACTIVE(BOXHORIZON) && canUseHorizonMode) {
 
-		DISABLE_FLIGHT_MODE(ANGLE_MODE);
+        DISABLE_FLIGHT_MODE(ANGLE_MODE);
 
-		if (!FLIGHT_MODE(HORIZON_MODE)) {
-			resetErrorAngle();
-			ENABLE_FLIGHT_MODE(HORIZON_MODE);
-		}
-	} else {
-		DISABLE_FLIGHT_MODE(HORIZON_MODE);
-	}
+        if (!FLIGHT_MODE(HORIZON_MODE)) {
+            resetErrorAngle();
+            ENABLE_FLIGHT_MODE(HORIZON_MODE);
+        }
+    } else {
+        DISABLE_FLIGHT_MODE(HORIZON_MODE);
+    }
 
     if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
         LED1_ON;
@@ -645,7 +670,7 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        computeIMU(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
+        imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();
@@ -700,12 +725,24 @@ void loop(void)
             &currentProfile->pidProfile,
             currentControlRateProfile,
             masterConfig.max_angle_inclination,
-            &currentProfile->accelerometerTrims
+            &currentProfile->accelerometerTrims,
+            &masterConfig.rxConfig
         );
 
         mixTable();
+
+#ifdef USE_SERVOS
+        filterServos();
         writeServos();
+#endif
+
         writeMotors();
+
+#ifdef BLACKBOX
+        if (!cliMode && feature(FEATURE_BLACKBOX)) {
+            handleBlackbox();
+        }
+#endif
     }
 
 #ifdef TELEMETRY

@@ -49,14 +49,16 @@ typedef struct drv_pwm_config_t {
     bool useOneshot;
     bool useSoftSerial;
     bool useLEDStrip;
+#ifdef USE_SERVOS
     bool useServos;
     bool extraServos;    // configure additional 4 channels in PPM mode as servos, not motors
+    uint16_t servoPwmRate;
+    uint16_t servoCenterPulse;
+#endif
     bool airplane;       // fixed wing hardware config, lots of servos etc
     uint16_t motorPwmRate;
-    uint16_t servoPwmRate;
     uint16_t idlePulse;  // PWM value to use when initializing the driver. set this to either PULSE_1MS (regular pwm),
                          // some higher value (used by 3d mode), or 0, for brushed pwm drivers.
-    uint16_t servoCenterPulse;
 } drv_pwm_config_t;
 
 
@@ -65,7 +67,7 @@ typedef struct pwmOutputConfiguration_s {
     uint8_t motorCount;
 } pwmOutputConfiguration_t;
 
-// This indexes into the read-only hardware definition structure, timerHardware_t, as well as into pwmPorts structure with dynamic data.
+// This indexes into the read-only hardware definition structure, timerHardware_t
 enum {
     PWM1 = 0,
     PWM2,
@@ -80,5 +82,7 @@ enum {
     PWM11,
     PWM12,
     PWM13,
-    PWM14
+    PWM14,
+    PWM15,
+    PWM16
 };

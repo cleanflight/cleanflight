@@ -2,7 +2,7 @@
 
 Spektrum bind with hardware bind plug support.
  
-The Spektrum bind code is actually enabled for the NAZE, NAZE32PRO, CJMCU, EUSTM32F103RC, SPARKY, CC3D targets.
+The Spektrum bind code is actually enabled for the NAZE, NAZE32PRO, CJMCU, EUSTM32F103RC, SPARKY, CC3D, ALIENWIIF1, ALIENWIIF3 targets.
 
 ## Configure the bind code
 
@@ -20,7 +20,7 @@ This is to activate the hardware bind plug feature
 
 ## Hardware
 
-The hardware bind plug will be enabled via defining HARDWARE_BIND_PLUG during building of the firmware. BINDPLUG_PORT and BINDPLUG_PIN also need to be defined (please see above). This is done automatically if the AlienWii32 firmware is build. The hardware bind plug is expected between the defined bind pin and ground. 
+The hardware bind plug will be enabled via defining HARDWARE_BIND_PLUG during building of the firmware. BINDPLUG_PORT and BINDPLUG_PIN also need to be defined (please see above). This is done automatically if the AlienWii32 firmware is built. The hardware bind plug is expected between the defined bind pin and ground. 
 
 ## Function
 
@@ -46,4 +46,19 @@ http://wiki.openpilot.org/display/Doc/Spektrum+Satellite
 
 ### Supported Hardware
 
-NAZE, NAZE32PRO, CJMCU, SPARKY, EUSTM32F103RC, CC3D targets (AlienWii32 with hardware bind plug)
+NAZE, NAZE32PRO, CJMCU, SPARKY, EUSTM32F103RC, CC3D targets and ALIENWIIF1, ALIENWIIF3 targets with hardware bind plug
+
+### Connecting a Spektrum-compatible satellite to a Flip32+ flight controller
+
+The Flip32+ is wired in a rather strange way, i.e. the dedicated connector for the satellite module uses the same UART pins as the USB adapter. This means that you can't use that connector as it maps to UART1 which you really shouldn't assign to SERIAL_RX as that will break USB functionality.
+
+In order to connect the satellite to a Flip32+, you have to wire the serial data pin to RC_CH4. This is the fourth pin from the top in the left column of the 3x6 header on the right side of the board. GND and +3.3V may either be obtained from the dedicated SAT connector or from any ground pin and pin 1 of the BOOT connector which also provides 3.3V.
+
+#### Tested satellite transmitter combinations
+
+| Satellite            | Remote         | Remark                                     |
+| -------------------- | -------------- | ------------------------------------------ |
+| Orange R100          | Spektrum DX6i  | Bind value 3                               |
+| Lemon RX DSM2/DSMX   | Spektrum DX8   |                                            |
+| Lemon RX DSMX        | Walkera Devo10 | Deviation firmware 4.01 up to 12 channels  |
+| Lemon RX DSM2        | Walkera Devo7  | Deviation firmware                         |

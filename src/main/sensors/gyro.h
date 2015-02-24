@@ -17,8 +17,23 @@
 
 #pragma once
 
+typedef enum {
+    GYRO_NONE = 0,
+    GYRO_DEFAULT,
+    GYRO_MPU6050,
+    GYRO_L3G4200D,
+    GYRO_MPU3050,
+    GYRO_L3GD20,
+    GYRO_SPI_MPU6000,
+    GYRO_SPI_MPU6500,
+    GYRO_FAKE
+} gyroSensor_e;
+
 extern gyro_t gyro;
 extern sensor_align_e gyroAlign;
+
+extern int16_t gyroADC[XYZ_AXIS_COUNT];
+extern int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT];
 
 typedef struct gyroConfig_s {
     uint8_t gyroMovementCalibrationThreshold; // people keep forgetting that moving model while init results in wrong gyro offsets. and then they never reset gyro. so this is now on by default.
@@ -26,6 +41,6 @@ typedef struct gyroConfig_s {
 
 void useGyroConfig(gyroConfig_t *gyroConfigToUse);
 void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired);
-void gyroGetADC(void);
+void gyroUpdate(void);
 bool isGyroCalibrationComplete(void);
 

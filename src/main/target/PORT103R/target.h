@@ -19,9 +19,17 @@
 
 #define TARGET_BOARD_IDENTIFIER "103R"
 
-#define LED0_GPIO   GPIOD
-#define LED0_PIN    Pin_2 // PD2 (LED)
-#define LED0_PERIPHERAL RCC_APB2Periph_GPIOD
+#define LED0_GPIO   GPIOB
+#define LED0_PIN    Pin_3 // PB3 (LED)
+#define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
+
+#define LED1_GPIO   GPIOB
+#define LED1_PIN    Pin_4 // PB4 (LED)
+#define LED1_PERIPHERAL RCC_APB2Periph_GPIOB
+
+#define LED2_GPIO   GPIOD
+#define LED2_PIN    Pin_2 // PD2 (LED) - Labelled LED4
+#define LED2_PERIPHERAL RCC_APB2Periph_GPIOD
 
 #define BEEP_GPIO   GPIOA
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
@@ -66,12 +74,17 @@
 
 #define BARO
 #define USE_BARO_MS5611
-//#define USE_BARO_BMP085
+#define USE_BARO_BMP085
 
 #define MAG
+#define USE_MAG_HMC5883
+#define USE_MAG_AK8975
+
 #define SONAR
 #define BEEPER
 #define LED0
+#define LED1
+#define LED2
 #define INVERTER
 #define DISPLAY
 
@@ -95,14 +108,31 @@
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
 // #define SOFT_I2C_PB67
 
-#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
+#define USE_ADC
+
+#define CURRENT_METER_ADC_GPIO      GPIOB
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
+
+#define VBAT_ADC_GPIO               GPIOA
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
+#define VBAT_ADC_CHANNEL            ADC_Channel_4
+
+#define RSSI_ADC_GPIO               GPIOA
+#define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
+#define RSSI_ADC_CHANNEL            ADC_Channel_1
+
+#define EXTERNAL1_ADC_GPIO          GPIOA
+#define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
+#define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
 #define LED0
 #define GPS
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
 
+#define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
 #define AUTOTUNE
-
+#define USE_SERVOS
