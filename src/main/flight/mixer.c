@@ -681,10 +681,17 @@ void mixTable(void)
             }
         } else {
             motor[i] = constrain(motor[i], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
-            // Don't spin the motors if FEATURE_MOTOR_STOP is enabled and we're
-            // at minimum throttle.
-            if (feature(FEATURE_MOTOR_STOP) && (rcData[THROTTLE]) < rxConfig->mincheck)
-				motor[i] = escAndServoConfig->mincommand;
+            // If we're at minimum throttle and FEATURE_MOTOR_STOP enabled,
+            // do not spin motors.
+            // If we're at minimum throttle and disable_pid_at_min_throttle
+            // is enabled, spin motors at minimum throttle.
+            if ((rcData[THROTTLE]) < rxConfig->mincheck) {
+                if (feature(FEATURE_MOTOR_STOP)) {
+                    motor[i] = escAndServoConfig->mincommand;
+                } else if (masterConfig.disable_pid_at_min_throttle != 0) {
+                    motor[i] = escAndServoConfig->minthrottle;
+                }
+            }
         }
         if (!ARMING_FLAG(ARMED)) {
             motor[i] = motor_disarmed[i];
