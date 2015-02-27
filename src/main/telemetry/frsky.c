@@ -121,6 +121,7 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 static uint32_t lastCycleTime = 0;
 static uint8_t cycleNum = 0;
+escAndServoConfig_t *escAndServoConfig;
 static void sendDataHead(uint8_t id)
 {
     serialWrite(frskyPort, PROTOCOL_HEADER);
@@ -190,7 +191,14 @@ static void sendThrottleOrBatterySizeAsRpm(void)
 {
     sendDataHead(ID_RPM);
     if (ARMING_FLAG(ARMED)) {
-        serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
+        if(rcCommand[THROTTLE] <= escAndServoConfig->minthrottle){
+            if (!feature(FEATURE_MOTOR_STOP))
+                serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
+            else
+                serialize16(escAndServoConfig->mincommand / BLADE_NUMBER_DIVIDER);
+        }
+	else
+		serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
     } else {
         serialize16((batteryConfig->batteryCapacity / BLADE_NUMBER_DIVIDER));
     }
