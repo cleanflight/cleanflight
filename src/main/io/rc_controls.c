@@ -596,3 +596,9 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
         }
     }
 }
+
+void resetAdjustmentStates(void)
+{
+    memset(adjustmentStates, 0, sizeof(adjustmentStates));
+}
+

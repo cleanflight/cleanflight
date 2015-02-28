@@ -27,6 +27,7 @@
 #include "common/maths.h"
 #include "common/color.h"
 
+#include "drivers/system.h"
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_output.h"
@@ -561,7 +562,10 @@ static void airplaneMixer(void)
 
 void mixTable(void)
 {
+<<<<<<< HEAD
     int16_t maxMotorOutput;
+=======
+>>>>>>> upstream/master
     uint32_t i;
 
     if (motorCount > 3) {
@@ -679,38 +683,43 @@ void mixTable(void)
     }
 #endif
 
-    // Find the maximum motor output.
-    maxMotorOutput = motor[0];
-    for (i = 1; i < motorCount; i++)
-        if (motor[i] > maxMotorOutput)
-            maxMotorOutput = motor[i];
-    for (i = 0; i < motorCount; i++) {
-        // If one motor is above the maxthrottle threshold, we reduce the value
-        // of all motors by the amount of overshoot.  That way, only one motor
-        // is at max and the relative power of each motor is preserved.
-        if (maxMotorOutput > escAndServoConfig->maxthrottle)
-            motor[i] -= maxMotorOutput - escAndServoConfig->maxthrottle;
-        if (feature(FEATURE_3D)) {
-            if ((rcData[THROTTLE]) > rxConfig->midrc) {
-                motor[i] = constrain(motor[i], flight3DConfig->deadband3d_high, escAndServoConfig->maxthrottle);
-            } else {
-                motor[i] = constrain(motor[i], escAndServoConfig->mincommand, flight3DConfig->deadband3d_low);
+    if (ARMING_FLAG(ARMED)) {
+        // Find the maximum motor output.
+        maxMotorOutput = motor[0];
+        for (i = 1; i < motorCount; i++) {
+            if (motor[i] > maxMotorOutput) {
+                maxMotorOutput = motor[i];
             }
-        } else {
-            motor[i] = constrain(motor[i], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
-            // If we're at minimum throttle and FEATURE_MOTOR_STOP enabled,
-            // do not spin the motors.
-            // If we're at minimum throttle and disable_pid_at_min_throttle
-            // is enabled, spin motors at minimum throttle.
-            if ((rcData[THROTTLE]) < rxConfig->mincheck) {
-                if (feature(FEATURE_MOTOR_STOP)) {
-                    motor[i] = escAndServoConfig->mincommand;
-                } else if (masterConfig.disable_pid_at_min_throttle != 0) {
-                    motor[i] = escAndServoConfig->minthrottle;
+        }
+        for (i = 0; i < motorCount; i++) {
+            // If one motor is above the maxthrottle threshold, we reduce the value
+            // of all motors by the amount of overshoot.  That way, only one motor
+            // is at max and the relative power of each motor is preserved.
+            if (maxMotorOutput > escAndServoConfig->maxthrottle)
+                motor[i] -= maxMotorOutput - escAndServoConfig->maxthrottle;
+            if (feature(FEATURE_3D)) {
+                if ((rcData[THROTTLE]) > rxConfig->midrc) {
+                    motor[i] = constrain(motor[i], flight3DConfig->deadband3d_high, escAndServoConfig->maxthrottle);
+                } else {
+                    motor[i] = constrain(motor[i], escAndServoConfig->mincommand, flight3DConfig->deadband3d_low);
+                }
+            } else {
+                motor[i] = constrain(motor[i], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
+                // If we're at minimum throttle and FEATURE_MOTOR_STOP enabled,
+                // do not spin the motors.
+                // If we're at minimum throttle and disable_pid_at_min_throttle
+                // is enabled, spin motors at minimum throttle.
+                if ((rcData[THROTTLE]) < rxConfig->mincheck) {
+                    if (feature(FEATURE_MOTOR_STOP)) {
+                        motor[i] = escAndServoConfig->mincommand;
+                    } else if (masterConfig.disable_pid_at_min_throttle != 0) {
+                        motor[i] = escAndServoConfig->minthrottle;
+                    }
                 }
             }
         }
-        if (!ARMING_FLAG(ARMED)) {
+    } else {
+        for (i = 0; i < motorCount; i++) {
             motor[i] = motor_disarmed[i];
         }
     }
