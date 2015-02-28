@@ -562,10 +562,7 @@ static void airplaneMixer(void)
 
 void mixTable(void)
 {
-<<<<<<< HEAD
     int16_t maxMotorOutput;
-=======
->>>>>>> upstream/master
     uint32_t i;
 
     if (motorCount > 3) {
