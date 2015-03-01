@@ -27,10 +27,11 @@
 #include "io/rc_controls.h"
 #include "config/runtime_config.h"
 
-#include "flight/flight.h"
 #include "sensors/sensors.h"
 #include "sensors/barometer.h"
 
+#include "flight/mixer.h"
+#include "flight/altitudehold.h"
 #include "flight/failsafe.h"
 
 #define ENABLE_DEBUG_FAILSAFE   (0)
@@ -167,7 +168,7 @@ void failsafeUpdateState(void)
     switch(failsafe.state) {
     case FAILSAFE_IS_DISABLED:
         failsafeReset();
-        failsafe.groundLevel = EstAlt;      // track groundlevel untill arming
+        failsafe.groundLevel = altitudeHoldGetEstimatedAltitude();      // track groundlevel untill arming
         break;
 
     case FAILSAFE_IS_ENABLED:
@@ -196,7 +197,7 @@ void failsafeUpdateState(void)
             }
             // to prevent failsafe triggering when arming with a positive count.
             failsafeReset();
-            failsafe.groundLevel = EstAlt;      // track groundlevel untill arming
+            failsafe.groundLevel = altitudeHoldGetEstimatedAltitude();      // track groundlevel untill arming
         }
         break;
 
@@ -228,7 +229,7 @@ void failsafeUpdateState(void)
         }
 
         // When enabled and estimated altitude measurement is valid, use it to disarm 'failsafe_use_altitude' cm above groundlevel
-        if ((failsafeConfig->failsafe_use_altitude) && (failsafe.isAltitudeValid) && (EstAlt < failsafe.groundLevel + failsafeConfig->failsafe_use_altitude)) {
+        if ((failsafeConfig->failsafe_use_altitude) && (failsafe.isAltitudeValid) && (altitudeHoldGetEstimatedAltitude() < failsafe.groundLevel + failsafeConfig->failsafe_use_altitude)) {
             failsafe.state = FAILSAFE_IS_DISARMING;
         }
         break;

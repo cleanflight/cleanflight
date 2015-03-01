@@ -916,24 +916,6 @@ void updateLedStrip(void)
 
     if (warningFlashNow) {
         nextWarningFlashAt = now + LED_STRIP_10HZ;
-
-        if (warningState == 0) {
-            warningState = 1;
-
-            warningFlags = WARNING_FLAG_NONE;
-            if (feature(FEATURE_VBAT) && shouldSoundBatteryAlarm()) {
-                warningFlags |= WARNING_FLAG_LOW_BATTERY;
-            }
-            if (failsafeHasTimerElapsed()) {
-                warningFlags |= WARNING_FLAG_FAILSAFE;
-            }
-            if (!ARMING_FLAG(ARMED) && !ARMING_FLAG(OK_TO_ARM)) {
-                warningFlags |= WARNING_FLAG_ARMING_DISABLED;
-            }
-
-        } else {
-            warningState = 0;
-        }
     }
     applyLedWarningLayer(warningFlashNow);
 
