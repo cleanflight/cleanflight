@@ -29,6 +29,7 @@
 
 #include "common/maths.h"
 #include "common/axis.h"
+#include "common/color.h"
 
 #include "drivers/system.h"
 #include "drivers/sensor.h"
@@ -36,17 +37,20 @@
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/serial.h"
-
+#include "drivers/pwm_rx.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "sensors/barometer.h"
 #include "sensors/battery.h"
+#include "sensors/boardalignment.h"
 
 #include "io/serial.h"
 #include "io/rc_controls.h"
 #include "io/gps.h"
+#include "io/ledstrip.h"
+#include "io/gimbal.h"
 
 #include "rx/rx.h"
 
@@ -54,12 +58,16 @@
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/altitudehold.h"
-
-#include "config/runtime_config.h"
-#include "config/config.h"
+#include "flight/failsafe.h"
+#include "flight/navigation.h"
 
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
+
+#include "config/runtime_config.h"
+#include "config/config.h"
+#include "config/config_profile.h"
+#include "config/config_master.h"
 
 static serialPort_t *frskyPort;
 #define FRSKY_BAUDRATE 9600
@@ -121,7 +129,6 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 static uint32_t lastCycleTime = 0;
 static uint8_t cycleNum = 0;
-escAndServoConfig_t *escAndServoConfig;
 static void sendDataHead(uint8_t id)
 {
     serialWrite(frskyPort, PROTOCOL_HEADER);
@@ -191,14 +198,10 @@ static void sendThrottleOrBatterySizeAsRpm(void)
 {
     sendDataHead(ID_RPM);
     if (ARMING_FLAG(ARMED)) {
-        if(rcCommand[THROTTLE] <= escAndServoConfig->minthrottle){
-            if (!feature(FEATURE_MOTOR_STOP))
-                serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
-            else
-                serialize16(escAndServoConfig->mincommand / BLADE_NUMBER_DIVIDER);
-        }
-	else
-		serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
+        if((rcData[THROTTLE]) < masterConfig.rxConfig.mincheck && feature(FEATURE_MOTOR_STOP))
+			serialize16(masterConfig.escAndServoConfig.mincommand / BLADE_NUMBER_DIVIDER);
+		else
+			serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
     } else {
         serialize16((batteryConfig->batteryCapacity / BLADE_NUMBER_DIVIDER));
     }
