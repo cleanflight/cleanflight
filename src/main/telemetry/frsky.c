@@ -199,9 +199,9 @@ static void sendThrottleOrBatterySizeAsRpm(void)
     sendDataHead(ID_RPM);
     if (ARMING_FLAG(ARMED)) {
         if((rcData[THROTTLE]) < masterConfig.rxConfig.mincheck && feature(FEATURE_MOTOR_STOP))
-			serialize16(masterConfig.escAndServoConfig.mincommand / BLADE_NUMBER_DIVIDER);
-		else
-			serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
+            serialize16(masterConfig.escAndServoConfig.mincommand / BLADE_NUMBER_DIVIDER);
+        else
+            serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
     } else {
         serialize16((batteryConfig->batteryCapacity / BLADE_NUMBER_DIVIDER));
     }
