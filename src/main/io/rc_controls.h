@@ -25,7 +25,7 @@ typedef enum {
     BOXHORIZON,
     BOXBARO,
     // BOXVARIO,
-    BOXMAG,
+    BOXMAG = 5,
     BOXHEADFREE,
     BOXHEADADJ,
     BOXCAMSTAB,
