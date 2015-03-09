@@ -304,6 +304,7 @@ void mwDisarm(void)
 {
     if (ARMING_FLAG(ARMED)) {
         DISABLE_ARMING_FLAG(ARMED);
+        blinkLedAndSoundBeeper(6, 255, 1);
 
 #ifdef TELEMETRY
         if (feature(FEATURE_TELEMETRY)) {
@@ -326,6 +327,7 @@ void mwDisarm(void)
 void mwArm(void)
 {
     if (ARMING_FLAG(OK_TO_ARM)) {
+        blinkLedAndSoundBeeper(4, 20, 2);
         if (ARMING_FLAG(ARMED)) {
             return;
         }
