@@ -374,6 +374,7 @@ endif
 
 ifeq ($(OPBL),yes)
 ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
+TARGET_FLAGS := -DOPBL $(TARGET_FLAGS)
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k_opbl.ld
 .DEFAULT_GOAL := binary
 else
@@ -558,12 +559,12 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   -D'__TARGET__="$(TARGET)"' \
 		   -D'__REVISION__="$(REVISION)"' \
 		   -save-temps=obj \
-		   -MMD
+		   -MMD -MP
 
 ASFLAGS		 = $(ARCH_FLAGS) \
 		   -x assembler-with-cpp \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
-		  -MMD
+		  -MMD -MP
 
 LDFLAGS		 = -lm \
 		   -nostartfiles \
