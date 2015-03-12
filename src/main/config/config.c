@@ -381,6 +381,12 @@ static void resetConf(void)
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
 
+    // set default calibration to full range and 1:1 mapping
+	for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
+        masterConfig.rxConfig.calibration[i].minrc = PWM_RANGE_MIN;
+        masterConfig.rxConfig.calibration[i].maxrc = PWM_RANGE_MAX;
+    }
+    
     masterConfig.inputFilteringMode = INPUT_FILTERING_DISABLED;
 
     masterConfig.retarded_arm = 0;

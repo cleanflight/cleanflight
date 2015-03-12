@@ -353,4 +353,3 @@ void evaluateOtherData(serialPort_t *serialPort, uint8_t receivedChar)
         systemResetToBootloader();
     }
 }
-
