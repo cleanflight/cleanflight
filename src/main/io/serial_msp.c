@@ -131,7 +131,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   6 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   7 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -882,7 +882,7 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_ANALOG:
         headSerialReply(7);
         serialize8((uint8_t)constrain(vbat, 0, 255));
-        serialize16((uint16_t)constrain(mAhDrawn, 0, 0xFFFF)); // milliamphours drawn from battery
+        serialize16((uint16_t)constrain(mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
         serialize16(rssi);
         if(masterConfig.batteryConfig.multiwiiCurrentMeterOutput) {
             serialize16((uint16_t)constrain(amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
@@ -890,7 +890,7 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize16((int16_t)constrain(amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
         break;
     case MSP_RC_TUNING:
-        headSerialReply(8 + 2);//allow for returning tpa_breakpoint
+        headSerialReply(10);
         serialize8(currentControlRateProfile->rcRate8);
         serialize8(currentControlRateProfile->rcExpo8);
         for (i = 0 ; i < 3; i++) {
@@ -899,7 +899,6 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(currentControlRateProfile->dynThrPID);
         serialize8(currentControlRateProfile->thrMid8);
         serialize8(currentControlRateProfile->thrExpo8);
-        //Configurator pid-tuning can allow tpa_breakpoint update, agnostic if older Configurator versions are used
         serialize16(currentControlRateProfile->tpa_breakpoint);
         break;
     case MSP_PID:
@@ -1259,7 +1258,7 @@ static bool processInCommand(void)
         break;
     case MSP_SET_PID_CONTROLLER:
         currentProfile->pidProfile.pidController = read8();
-        setPIDController(currentProfile->pidProfile.pidController);
+        pidSetController(currentProfile->pidProfile.pidController);
         break;
     case MSP_SET_PID:
         if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
