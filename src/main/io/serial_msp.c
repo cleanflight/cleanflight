@@ -131,7 +131,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   6 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   7 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -882,7 +882,7 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_ANALOG:
         headSerialReply(7);
         serialize8((uint8_t)constrain(vbat, 0, 255));
-        serialize16((uint16_t)constrain(mAhDrawn, 0, 0xFFFF)); // milliamphours drawn from battery
+        serialize16((uint16_t)constrain(mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
         serialize16(rssi);
         if(masterConfig.batteryConfig.multiwiiCurrentMeterOutput) {
             serialize16((uint16_t)constrain(amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
@@ -890,7 +890,7 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize16((int16_t)constrain(amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
         break;
     case MSP_RC_TUNING:
-        headSerialReply(8);
+        headSerialReply(10);
         serialize8(currentControlRateProfile->rcRate8);
         serialize8(currentControlRateProfile->rcExpo8);
         for (i = 0 ; i < 3; i++) {
@@ -899,6 +899,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(currentControlRateProfile->dynThrPID);
         serialize8(currentControlRateProfile->thrMid8);
         serialize8(currentControlRateProfile->thrExpo8);
+        serialize16(currentControlRateProfile->tpa_breakpoint);
         break;
     case MSP_PID:
         headSerialReply(3 * PID_ITEM_COUNT);
@@ -979,7 +980,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_MISC:
-        headSerialReply(2 * 6 + 4 + 2 + 4);
+        headSerialReply(2 * 6 + 4 + 2 + 4 + 2);//24 bytes allows for disarm settings
         serialize16(masterConfig.rxConfig.midrc);
 
         serialize16(masterConfig.escAndServoConfig.minthrottle);
@@ -1007,6 +1008,9 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(masterConfig.batteryConfig.vbatmincellvoltage);
         serialize8(masterConfig.batteryConfig.vbatmaxcellvoltage);
         serialize8(masterConfig.batteryConfig.vbatwarningcellvoltage);
+        
+        serialize8(masterConfig.auto_disarm_delay);
+        serialize8(masterConfig.disarm_kill_switch);
         break;
     case MSP_MOTOR_PINS:
         headSerialReply(8);
@@ -1257,7 +1261,7 @@ static bool processInCommand(void)
         break;
     case MSP_SET_PID_CONTROLLER:
         currentProfile->pidProfile.pidController = read8();
-        setPIDController(currentProfile->pidProfile.pidController);
+        pidSetController(currentProfile->pidProfile.pidController);
         break;
     case MSP_SET_PID:
         if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
@@ -1326,7 +1330,7 @@ static bool processInCommand(void)
         break;
 
     case MSP_SET_RC_TUNING:
-        if (currentPort->dataSize == 8) {
+        if (currentPort->dataSize == 10) {//allow for tpa_breakpoint
             currentControlRateProfile->rcRate8 = read8();
             currentControlRateProfile->rcExpo8 = read8();
             for (i = 0; i < 3; i++) {
@@ -1335,6 +1339,7 @@ static bool processInCommand(void)
             currentControlRateProfile->dynThrPID = read8();
             currentControlRateProfile->thrMid8 = read8();
             currentControlRateProfile->thrExpo8 = read8();
+            currentControlRateProfile->tpa_breakpoint = read16();
         } else {
             headSerialError(0);
         }
@@ -1369,6 +1374,9 @@ static bool processInCommand(void)
         masterConfig.batteryConfig.vbatmincellvoltage = read8();  // vbatlevel_warn1 in MWC2.3 GUI
         masterConfig.batteryConfig.vbatmaxcellvoltage = read8();  // vbatlevel_warn2 in MWC2.3 GUI
         masterConfig.batteryConfig.vbatwarningcellvoltage = read8();  // vbatlevel when buzzer starts to alert
+        
+        masterConfig.auto_disarm_delay = read8();//only applicable if MOTOR_STOP is enabled
+        masterConfig.disarm_kill_switch = read8();//disarm via Aux channel regardless of throttle value
         break;
     case MSP_SET_MOTOR:
         for (i = 0; i < 8; i++) // FIXME should this use MAX_MOTORS or MAX_SUPPORTED_MOTORS instead of 8
