@@ -137,9 +137,7 @@ static const gpsInitData_t gpsInitData[] = {
 //       goes 1 Hz -> 2 Hz -> 5 Hz refresh rate (silently expects that if refresh rate is not supported the GPS will ignore it)
 //       diasbles nav speed treshold (e.g. all movements reported)
 //       SBAS and WAAS enabled
-static const char[]
-define MTK_Init "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n$PMTK220,1000*1F\r\n$PMTK220,500*2B\r\n$PMTK220,200*2C\r\n$PMTK397,0*23\r\n$PMTK313,1*2E\r\n$PMTK319,0*25\r\n$PMTK301,2*2E\r\n";
-
+define MTK_Init "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n$PMTK220,1000*1F\r\n$PMTK220,500*2B\r\n$PMTK220,200*2C\r\n$PMTK397,0*23\r\n$PMTK313,1*2E\r\n$PMTK319,0*25\r\n$PMTK301,2*2E\r\n"
 
 static const uint8_t ubloxInit[] = {
 
