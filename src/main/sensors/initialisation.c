@@ -374,7 +374,7 @@ retry:
     }
 
     // Found anything? Check if error or ACC is really missing.
-    if (accHardwareToUse != ACC_DEFAULT && accHardware == ACC_NONE) {
+    if (accHardware == ACC_NONE && accHardwareToUse != ACC_DEFAULT && accHardwareToUse != ACC_NONE) {
         // Nothing was found and we have a forced sensor that isn't present.
         accHardwareToUse = ACC_DEFAULT;
         goto retry;
@@ -457,26 +457,28 @@ static void detectMag(magSensor_e magHardwareToUse)
     magSensor_e magHardware;
 
 #ifdef USE_MAG_HMC5883
-    static hmc5883Config_t *hmc5883Config = 0;
+    const hmc5883Config_t *hmc5883Config = 0;
 
 #ifdef NAZE
-    hmc5883Config_t nazeHmc5883Config;
-
+    static const hmc5883Config_t nazeHmc5883Config_v1_v4 = {
+            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
+            .gpioPin = Pin_12,
+            .gpioPort = GPIOB
+    };
+    static const hmc5883Config_t nazeHmc5883Config_v5 = {
+            .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
+            .gpioPin = Pin_14,
+            .gpioPort = GPIOC
+    };
     if (hardwareRevision < NAZE32_REV5) {
-        nazeHmc5883Config.gpioAPB2Peripherals = RCC_APB2Periph_GPIOB;
-        nazeHmc5883Config.gpioPin = Pin_12;
-        nazeHmc5883Config.gpioPort = GPIOB;
+        hmc5883Config = &nazeHmc5883Config_v1_v4;
     } else {
-        nazeHmc5883Config.gpioAPB2Peripherals = RCC_APB2Periph_GPIOC;
-        nazeHmc5883Config.gpioPin = Pin_14;
-        nazeHmc5883Config.gpioPort = GPIOC;
+        hmc5883Config = &nazeHmc5883Config_v5;
     }
-
-    hmc5883Config = &nazeHmc5883Config;
 #endif
 
 #ifdef SPRACINGF3
-    hmc5883Config_t spRacingF3Hmc5883Config = {
+    static const hmc5883Config_t spRacingF3Hmc5883Config = {
         .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
         .gpioPin = Pin_14,
         .gpioPort = GPIOC
@@ -524,7 +526,7 @@ retry:
             break;
     }
 
-    if (magHardwareToUse != MAG_DEFAULT && magHardware == MAG_NONE) {
+    if (magHardware == MAG_NONE && magHardwareToUse != MAG_DEFAULT && magHardwareToUse != MAG_NONE) {
         // Nothing was found and we have a forced sensor that isn't present.
         magHardwareToUse = MAG_DEFAULT;
         goto retry;
