@@ -6,12 +6,12 @@
 Module | Comments
 -------|--------
 U-blox Neo-M8N w/Compass |
-Reyax RY825AI | NEO-M8N, 18Hz UART USB interface GPS Glonass BeiDou QZSS antenna module flash. http://www.ebay.com/itm/RY825AI-18Hz-UART-USB-interface-GPS-Glonass-BeiDou-QZSS-antenna-module-flash/181566850426
+Reyax RY825AI | NEO-M8N, 18Hz UART USB interface GPS Glonass BeiDou QZSS antenna module flash. [eBay](http://www.ebay.com/itm/RY825AI-18Hz-UART-USB-interface-GPS-Glonass-BeiDou-QZSS-antenna-module-flash/181566850426)
 
 ####NEO-7
 Module | Comments
 -------|--------
-U-blox Neo-7M w/Compass | http://www.hobbyking.com/hobbyking/store/__55558__Ublox_Neo_7M_GPS_with_Compass_and_Pedestal_Mount.html
+U-blox Neo-7M w/Compass | [HobbyKing](http://www.hobbyking.com/hobbyking/store/__55558__Ublox_Neo_7M_GPS_with_Compass_and_Pedestal_Mount.html)
 
 
 ###NMEA
