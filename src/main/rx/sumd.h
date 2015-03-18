@@ -17,5 +17,4 @@
 
 #pragma once
 
-bool sumdFrameComplete(void);
-void sumdUpdateSerialRxFunctionConstraint(functionConstraint_t *functionConstraint);
+uint8_t sumdFrameStatus(void);

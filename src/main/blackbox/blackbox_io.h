@@ -20,11 +20,23 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "platform.h"
+
+typedef enum BlackboxDevice {
+    BLACKBOX_DEVICE_SERIAL = 0,
+
+#ifdef USE_FLASHFS
+    BLACKBOX_DEVICE_FLASH,
+#endif
+
+    BLACKBOX_DEVICE_END
+} BlackboxDevice;
+
 uint8_t blackboxWriteChunkSize;
 
 void blackboxWrite(uint8_t value);
 
-void blackboxPrintf(char *fmt, ...);
+int blackboxPrintf(const char *fmt, ...);
 int blackboxPrint(const char *s);
 
 void blackboxWriteUnsignedVB(uint32_t value);
@@ -34,8 +46,8 @@ void blackboxWriteTag2_3S32(int32_t *values);
 void blackboxWriteTag8_4S16(int32_t *values);
 void blackboxWriteTag8_8SVB(int32_t *values, int valueCount);
 
-void blackboxDeviceFlush(void);
+bool blackboxDeviceFlush(void);
 bool blackboxDeviceOpen(void);
 void blackboxDeviceClose(void);
 
-bool isBlackboxDeviceIdle(void);
+bool isBlackboxDeviceFull(void);

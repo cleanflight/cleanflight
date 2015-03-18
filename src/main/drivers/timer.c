@@ -181,15 +181,19 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM12, GPIOB, Pin_15, TIM_Channel_2, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF}, // S2_IN - GPIO_PartialRemap_TIM3
     { TIM8, GPIOC, Pin_6, TIM_Channel_1, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S3_IN
     { TIM8, GPIOC, Pin_7, TIM_Channel_2, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S4_IN
-    { TIM8, GPIOC, Pin_8, TIM_Channel_3, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S5_IN
-    { TIM8, GPIOC, Pin_9, TIM_Channel_4, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S6_IN
+    { TIM8, GPIOC, Pin_9, TIM_Channel_4, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S5_IN
+    { TIM8, GPIOC, Pin_8, TIM_Channel_3, TIM8_CC_IRQn, 0, GPIO_Mode_AF}, // S6_IN
 
-    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF},    // S1_OUT
-    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF},    // S2_OUT
-    { TIM9, GPIOA, Pin_3, TIM_Channel_2, TIM1_BRK_TIM9_IRQn, 1, GPIO_Mode_AF},    // S3_OUT
-    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF}, // S4_OUT
-    { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 1, GPIO_Mode_AF},    // S5_OUT - GPIO_PartialRemap_TIM3
+    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF},    // S1_OUT
+    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF},    // S2_OUT
+    { TIM5, GPIOA, Pin_3, TIM_Channel_4, TIM5_IRQn, 1, GPIO_Mode_AF},    // S3_OUT
+    { TIM5, GPIOA, Pin_2, TIM_Channel_3, TIM5_IRQn, 1, GPIO_Mode_AF}, 	 // S4_OUT
+    { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 1, GPIO_Mode_AF},    // S5_OUT
     { TIM5, GPIOA, Pin_0, TIM_Channel_1, TIM5_IRQn, 1, GPIO_Mode_AF},    // S6_OUT
+    { TIM2, GPIOA, Pin_15, TIM_Channel_1, TIM2_IRQn, 1, GPIO_Mode_AF},   // S7_OUT
+    { TIM3, GPIOB, Pin_5, TIM_Channel_2, TIM3_IRQn, 1, GPIO_Mode_AF},    // S8_OUT
+    { TIM3, GPIOB, Pin_4, TIM_Channel_1, TIM3_IRQn, 1, GPIO_Mode_AF},    // S9_OUT
+    { TIM2, GPIOB, Pin_3, TIM_Channel_2, TIM2_IRQn, 1, GPIO_Mode_AF},    // S10_OUT
 };
 
 #define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(12) | TIM_N(8) | TIM_N(9))
@@ -915,6 +919,7 @@ void timerInit(void)
 
 
 #ifdef STM32F40_41xxx
+#ifdef REVO
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_TIM12);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_TIM12);
     GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM8);
@@ -928,6 +933,26 @@ void timerInit(void)
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_TIM2);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_TIM5);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_TIM5);
+#endif
+#ifdef ANYFC
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_TIM12);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_TIM12);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_TIM8);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_TIM8);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource9, GPIO_AF_TIM8);
+    GPIO_PinAFConfig(GPIOC, GPIO_PinSource8, GPIO_AF_TIM8);
+
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource1, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_TIM5);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_TIM5);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_TIM5);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_TIM5);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_TIM2);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource5, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_TIM3);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource3, GPIO_AF_TIM2);
+#endif
 #endif
 // initialize timer channel structures
     for(int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
