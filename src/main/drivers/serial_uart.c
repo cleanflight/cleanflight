@@ -34,11 +34,7 @@
 
 #include "serial.h"
 #include "serial_uart.h"
-
-uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode);
-uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode);
-uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode);
-uartPort_t *serialUSART6(uint32_t baudRate, portMode_t mode);
+#include "serial_uart_impl.h"
 
 static void usartConfigurePinInversion(uartPort_t *uartPort) {
 #if !defined(INVERTER) && !defined(STM32F303xC)
@@ -80,7 +76,11 @@ static void uartReconfigure(uartPort_t *uartPort)
         USART_InitStructure.USART_StopBits = USART_StopBits_2;
         USART_InitStructure.USART_Parity = USART_Parity_Even;
     } else {
-        USART_InitStructure.USART_StopBits = USART_StopBits_1;
+        if (uartPort->port.mode & MODE_STOPBITS2)
+            USART_InitStructure.USART_StopBits = USART_StopBits_2;
+        else
+            USART_InitStructure.USART_StopBits = USART_StopBits_1;
+
         USART_InitStructure.USART_Parity = USART_Parity_No;
     }
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;

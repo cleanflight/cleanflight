@@ -34,6 +34,7 @@
 
 #include "serial.h"
 #include "serial_uart.h"
+#include "serial_uart_impl.h"
 
 // Using RX DMA disables the use of receive callbacks
 //#define USE_USART1_RX_DMA

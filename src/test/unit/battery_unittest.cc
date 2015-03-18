@@ -18,6 +18,8 @@
 
 #include <limits.h>
 
+//#define DEBUG_BATTERY
+
 extern "C" {
     #include "sensors/battery.h"
 }
@@ -35,29 +37,30 @@ typedef struct batteryAdcToVoltageExpectation_s {
 
 TEST(BatteryTest, BatteryADCToVoltage)
 {
-    // given
-
-    batteryConfig_t batteryConfig;
-
     // batteryInit() reads a bunch of fields including vbatscale, so set up the config with useful initial values:
-    memset(&batteryConfig, 0, sizeof(batteryConfig));
-
-    batteryConfig.vbatmaxcellvoltage = 43;
-    batteryConfig.vbatmincellvoltage = 33;
-    batteryConfig.vbatwarningcellvoltage = 35;
-    batteryConfig.vbatscale = VBAT_SCALE_DEFAULT;
+    batteryConfig_t batteryConfig = {
+        .vbatscale = VBAT_SCALE_DEFAULT,
+        .vbatmaxcellvoltage = 43,
+        .vbatmincellvoltage = 33,
+        .vbatwarningcellvoltage = 35,
+        .currentMeterScale = 400,
+        .currentMeterOffset = 0,
+        .currentMeterType = CURRENT_SENSOR_NONE,
+        .multiwiiCurrentMeterOutput = 0,
+        .batteryCapacity = 2200,
+    };
 
     batteryInit(&batteryConfig);
 
     batteryAdcToVoltageExpectation_t batteryAdcToVoltageExpectations[] = {
-            {1420, 125, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1430, 126, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1440, 127, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1890, 167, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1900, 168, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1910, 169, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {   0,   0, VBAT_SCALE_MAX},
-            {4096, 841, VBAT_SCALE_MAX}
+            {1420, 126 /*125.88*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1430, 127 /*126.76*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1440, 128 /*127.65*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1890, 168 /*167.54*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1900, 168 /*168.42*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1910, 169 /*169.31*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {   0,   0 /*  0.00*/, VBAT_SCALE_MAX},
+            {4096, 842 /*841.71*/, VBAT_SCALE_MAX}
     };
     uint8_t testIterationCount = sizeof(batteryAdcToVoltageExpectations) / sizeof(batteryAdcToVoltageExpectation_t);
 
@@ -66,14 +69,15 @@ TEST(BatteryTest, BatteryADCToVoltage)
     for (uint8_t index = 0; index < testIterationCount; index ++) {
         batteryAdcToVoltageExpectation_t *batteryAdcToVoltageExpectation = &batteryAdcToVoltageExpectations[index];
         batteryConfig.vbatscale = batteryAdcToVoltageExpectation->scale;
+#ifdef DEBUG_BATTERY
         printf("adcReading: %d, vbatscale: %d\n",
                 batteryAdcToVoltageExpectation->adcReading,
                 batteryAdcToVoltageExpectation->scale
         );
-
+#endif
         uint16_t pointOneVoltSteps = batteryAdcToVoltage(batteryAdcToVoltageExpectation->adcReading);
 
-        EXPECT_EQ(pointOneVoltSteps, batteryAdcToVoltageExpectation->expectedVoltageInDeciVoltSteps);
+        EXPECT_EQ(batteryAdcToVoltageExpectation->expectedVoltageInDeciVoltSteps, pointOneVoltSteps);
     }
 }
 

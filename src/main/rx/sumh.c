@@ -54,21 +54,22 @@ static void sumhDataReceive(uint16_t c);
 static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 
-void sumhUpdateSerialRxFunctionConstraint(functionConstraint_t *functionConstraint)
-{
-    functionConstraint->minBaudRate = SUMH_BAUDRATE;
-    functionConstraint->maxBaudRate = SUMH_BAUDRATE;
-    functionConstraint->requiredSerialPortFeatures = SPF_SUPPORTS_CALLBACK;
-}
 
 bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     UNUSED(rxConfig);
-    sumhPort = openSerialPort(FUNCTION_SERIAL_RX, sumhDataReceive, SUMH_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+
     if (callback)
         *callback = sumhReadRawRC;
 
     rxRuntimeConfig->channelCount = SUMH_MAX_CHANNEL_COUNT;
+
+    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
+    if (!portConfig) {
+        return false;
+    }
+
+    sumhPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sumhDataReceive, SUMH_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
 
     return sumhPort != NULL;
 }
@@ -96,18 +97,18 @@ static void sumhDataReceive(uint16_t c)
     }
 }
 
-bool sumhFrameComplete(void)
+uint8_t sumhFrameStatus(void)
 {
     uint8_t channelIndex;
 
     if (!sumhFrameDone) {
-        return false;
+        return SERIAL_RX_FRAME_PENDING;
     }
 
     sumhFrameDone = false;
 
     if (!((sumhFrame[0] == 0xA8) && (sumhFrame[SUMH_FRAME_SIZE - 2] == 0))) {
-        return false;
+        return SERIAL_RX_FRAME_PENDING;
     }
 
     for (channelIndex = 0; channelIndex < SUMH_MAX_CHANNEL_COUNT; channelIndex++) {
@@ -115,7 +116,7 @@ bool sumhFrameComplete(void)
         sumhChannels[channelIndex] = (((uint32_t)(sumhFrame[(channelIndex << 1) + 3]) << 8)
                 + sumhFrame[(channelIndex << 1) + 4]) / 6.4 - 375;
     }
-    return true;
+    return SERIAL_RX_FRAME_COMPLETE;
 }
 
 static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)

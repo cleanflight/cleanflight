@@ -258,6 +258,7 @@ COMMON_SRC	 = build_config.c \
 		   common/maths.c \
 		   common/printf.c \
 		   common/typeconversion.c \
+		   common/encoding.c \
 		   main.c \
 		   mw.c \
 		   flight/altitudehold.c \
@@ -265,6 +266,7 @@ COMMON_SRC	 = build_config.c \
 		   flight/pid.c \
 		   flight/imu.c \
 		   flight/mixer.c \
+		   flight/lowpass.c \
 		   drivers/bus_i2c_soft.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
@@ -361,6 +363,8 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
+		   drivers/flash_m25p16.c \
+		   io/flashfs.c \
 		   hardware_revision.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -438,6 +442,7 @@ endif
 
 ifeq ($(OPBL),yes)
 ifneq ($(filter $(TARGET),$(OPBL_VALID_TARGETS)),)
+TARGET_FLAGS := -DOPBL $(TARGET_FLAGS)
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_128k_opbl.ld
 .DEFAULT_GOAL := binary
 else
@@ -464,6 +469,8 @@ CJMCU_SRC	 = \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
 		   hardware_revision.c \
+		   blackbox/blackbox.c \
+		   blackbox/blackbox_io.c \
 		   $(COMMON_SRC)
 
 CC3D_SRC	 = \
@@ -492,6 +499,8 @@ CC3D_SRC	 = \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
+		   drivers/flash_m25p16.c \
+		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
@@ -621,6 +630,8 @@ SPRACINGF3_SRC	 = \
 		   drivers/barometer_ms5611.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
+		   drivers/flash_m25p16.c \
+		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
@@ -670,12 +681,12 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   -D'__TARGET__="$(TARGET)"' \
 		   -D'__REVISION__="$(REVISION)"' \
 		   -save-temps=obj \
-		   -MMD
+		   -MMD -MP
 
 ASFLAGS		 = $(ARCH_FLAGS) \
 		   -x assembler-with-cpp \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
-		  -MMD
+		  -MMD -MP
 
 LDFLAGS		 = -lm \
 		   -nostartfiles \

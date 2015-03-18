@@ -44,26 +44,25 @@
 
 static bool sumdFrameDone = false;
 static uint32_t sumdChannels[SUMD_MAX_CHANNEL];
-static serialPort_t *sumdPort;
 
 static void sumdDataReceive(uint16_t c);
 static uint16_t sumdReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
-void sumdUpdateSerialRxFunctionConstraint(functionConstraint_t *functionConstraint)
-{
-    functionConstraint->minBaudRate = SUMD_BAUDRATE;
-    functionConstraint->maxBaudRate = SUMD_BAUDRATE;
-    functionConstraint->requiredSerialPortFeatures = SPF_SUPPORTS_CALLBACK;
-}
-
 bool sumdInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     UNUSED(rxConfig);
-    sumdPort = openSerialPort(FUNCTION_SERIAL_RX, sumdDataReceive, SUMD_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+
     if (callback)
         *callback = sumdReadRawRC;
 
     rxRuntimeConfig->channelCount = SUMD_MAX_CHANNEL;
+
+    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
+    if (!portConfig) {
+        return false;
+    }
+
+    serialPort_t *sumdPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sumdDataReceive, SUMD_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
 
     return sumdPort != NULL;
 }
@@ -105,18 +104,31 @@ static void sumdDataReceive(uint16_t c)
 #define SUMD_BYTES_PER_CHANNEL 2
 
 
-bool sumdFrameComplete(void)
+#define SUMD_FRAME_STATE_OK 0x01
+#define SUMD_FRAME_STATE_FAILSAFE 0x81
+
+uint8_t sumdFrameStatus(void)
 {
     uint8_t channelIndex;
 
+    uint8_t frameStatus = SERIAL_RX_FRAME_PENDING;
+
     if (!sumdFrameDone) {
-        return false;
+        return frameStatus;
     }
 
     sumdFrameDone = false;
 
-    if (sumd[1] != 0x01) {
-        return false;
+
+    switch (sumd[1]) {
+        case SUMD_FRAME_STATE_FAILSAFE:
+            frameStatus = SERIAL_RX_FRAME_COMPLETE | SERIAL_RX_FRAME_FAILSAFE;
+            break;
+        case SUMD_FRAME_STATE_OK:
+            frameStatus = SERIAL_RX_FRAME_COMPLETE;
+            break;
+        default:
+            return frameStatus;
     }
 
     if (sumdChannelCount > SUMD_MAX_CHANNEL)
@@ -128,7 +140,7 @@ bool sumdFrameComplete(void)
             sumd[SUMD_BYTES_PER_CHANNEL * channelIndex + SUMD_OFFSET_CHANNEL_1_LOW]
         );
     }
-    return true;
+    return frameStatus;
 }
 
 static uint16_t sumdReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
