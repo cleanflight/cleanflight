@@ -99,6 +99,29 @@ void initSpi1(void)
 #endif
 
 #ifdef STM32F40_41xxx
+    // Specific to the STM32F405
+    // SPI1 Driver
+    // PA7    17    SPI1_MOSI
+    // PA6    16    SPI1_MISO
+    // PA5    15    SPI1_SCK
+    // PA4    14    SPI1_NSS
+
+    gpio_config_t gpio;
+
+    // MOSI + SCK as output
+    gpio.mode = Mode_AF_PP;
+    gpio.pin = Pin_7 | Pin_5;
+    gpio.speed = Speed_50MHz;
+    gpioInit(GPIOA, &gpio);
+    // MISO as input
+    gpio.pin = Pin_6;
+    gpio.mode = Mode_AF_PP;
+    gpioInit(GPIOA, &gpio);
+    // NSS as gpio slave select
+    gpio.pin = Pin_4;
+    gpio.mode = Mode_Out_PP;
+    gpioInit(GPIOA, &gpio);
+
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_SPI1);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_SPI1);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_SPI1);

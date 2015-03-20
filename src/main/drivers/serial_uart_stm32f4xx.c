@@ -136,28 +136,35 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     s->rxDMAStream = DMA2_Stream5;
 #endif
     s->txDMAChannel = DMA_Channel_4;
-    //s->txDMAStream = DMA2_Stream7;
+    s->txDMAStream = DMA2_Stream7;
 
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
+#ifdef USART1_APB1_PERIPHERALS
+    RCC_APB1PeriphClockCmd(USART1_APB1_PERIPHERALS, ENABLE);
+#endif
+#ifdef USART1_APB2_PERIPHERALS
+    RCC_APB2PeriphClockCmd(USART1_APB2_PERIPHERALS, ENABLE);
+#endif
+#ifdef USART1_AHB1_PERIPHERALS
+    RCC_AHB1PeriphClockCmd(USART1_AHB1_PERIPHERALS, ENABLE);
+#endif
 
     // USART1_TX    PA9
     // USART1_RX    PA10
     gpio.speed = Speed_50MHz;
-    gpio.pin = Pin_9;
+    gpio.pin = USART1_TX_PIN;
     gpio.mode = Mode_AF_PP;
     if (mode & MODE_TX)
-        gpioInit(GPIOA, &gpio);
+        gpioInit(USART1_GPIO, &gpio);
     gpio.mode = Mode_AF_OD;
     if (mode & MODE_BIDIR)
-        gpioInit(GPIOA, &gpio);
-    gpio.pin = Pin_10;
+        gpioInit(USART1_GPIO, &gpio);
+    gpio.pin = USART1_RX_PIN;
     gpio.mode = Mode_AF_PP;
     if (mode & MODE_RX)
-        gpioInit(GPIOA, &gpio);
+        gpioInit(USART1_GPIO, &gpio);
 
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
+    GPIO_PinAFConfig(USART1_GPIO, GPIO_PinSource9, GPIO_AF_USART1);
+    GPIO_PinAFConfig(USART1_GPIO, GPIO_PinSource10, GPIO_AF_USART1);
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;
@@ -224,56 +231,104 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
 
     s = &uartPort2;
     s->port.vTable = uartVTable;
-    
+
     s->port.baudRate = baudRate;
-    
-    s->port.rxBufferSize = UART2_RX_BUFFER_SIZE;
-    s->port.txBufferSize = UART2_TX_BUFFER_SIZE;
+
     s->port.rxBuffer = rx2Buffer;
     s->port.txBuffer = tx2Buffer;
-    
+    s->port.rxBufferSize = UART2_RX_BUFFER_SIZE;
+    s->port.txBufferSize = UART2_TX_BUFFER_SIZE;
+
     s->USARTx = USART2;
 
     s->txDMAPeripheralBaseAddr = (uint32_t)&s->USARTx->DR;
     s->rxDMAPeripheralBaseAddr = (uint32_t)&s->USARTx->DR;
 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
-    // USART2_TX    PA2
-    // USART2_RX    PA3
+#ifdef USE_USART2_RX_DMA
+    s->rxDMAChannel = DMA_Channel_4;
+    s->rxDMAStream = DMA1_Stream5;
+#endif
+    s->txDMAChannel = DMA_Channel_4;
+    s->txDMAStream = DMA1_Stream6;
+
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+
+#ifdef USART2_APB1_PERIPHERALS
+    RCC_APB1PeriphClockCmd(USART2_APB1_PERIPHERALS, ENABLE);
+#endif
+#ifdef USART2_APB2_PERIPHERALS
+    RCC_APB2PeriphClockCmd(USART2_APB2_PERIPHERALS, ENABLE);
+#endif
+#ifdef USART2_AHB1_PERIPHERALS
+    RCC_AHB1PeriphClockCmd(USART2_AHB1_PERIPHERALS, ENABLE);
+#endif
+
     gpio.speed = Speed_2MHz;
-    gpio.pin = Pin_2;
+    gpio.pin = USART2_TX_PIN;
     gpio.mode = Mode_AF_PP;
     if (mode & MODE_TX)
-        gpioInit(GPIOA, &gpio);
+        gpioInit(USART2_GPIO, &gpio);
     gpio.mode = Mode_AF_OD;
     if (mode & MODE_BIDIR)
-        gpioInit(GPIOA, &gpio);
-    gpio.pin = Pin_3;
+        gpioInit(USART2_GPIO, &gpio);
+    gpio.pin = USART2_RX_PIN;
     gpio.mode = Mode_AF_PP;
     if (mode & MODE_RX)
-        gpioInit(GPIOA, &gpio);
+        gpioInit(USART2_GPIO, &gpio);
 
-    // RX/TX Interrupt
-    NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_SERIALUART2);
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_SERIALUART2);
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+    GPIO_PinAFConfig(USART2_GPIO, GPIO_PinSource3, GPIO_AF_USART2);
+    GPIO_PinAFConfig(USART2_GPIO, GPIO_PinSource2, GPIO_AF_USART2);
 
-    return s;
+
+	// DMA TX Interrupt
+	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream6_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_SERIALUART2_TXDMA);;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_SERIALUART2_TXDMA);
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	#ifndef USE_USART2_RX_DMA
+	// RX/TX Interrupt
+	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_SERIALUART2);
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_SERIALUART2);
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	#endif
+
+	return s;
+}
+// USART2 Tx DMA Handler
+void DMA1_Stream6_IRQHandler(void)
+{
+	uartPort_t *s = &uartPort2;
+	if(DMA_GetITStatus(s->txDMAStream,DMA_IT_TCIF6))
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TCIF6);
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_HTIF6);
+		if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_FEIF6)==SET)
+		{
+			DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_FEIF6);
+		}
+		handleUsartTxDma(s);
+	}
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_TEIF6)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_TEIF6);
+	}
+	if(DMA_GetFlagStatus(s->txDMAStream,DMA_IT_DMEIF6)==SET)
+	{
+		DMA_ClearITPendingBit(s->txDMAStream,DMA_IT_DMEIF6);
+	}
 }
 
-
-// USART2 Rx/Tx IRQ Handler
 void USART2_IRQHandler(void)
 {
-    uartPort_t *s = &uartPort2;
+	uartPort_t *s = &uartPort2;
 
-    usartIrqHandler(s);
+	usartIrqHandler(s);
 }
-
 #endif
 
 #ifdef USE_USART3
@@ -556,8 +611,8 @@ uartPort_t *serialUSART5(uint32_t baudRate, portMode_t mode)
     if (mode & MODE_RX)
         gpioInit(USART5_RXGPIO, &gpio);
 
-    GPIO_PinAFConfig(USART5_TXGPIO, GPIO_PinSource12, GPIO_AF_USART3);
-    GPIO_PinAFConfig(USART5_RXGPIO, GPIO_PinSource2, GPIO_AF_USART3);
+    GPIO_PinAFConfig(USART5_TXGPIO, GPIO_PinSource12, GPIO_AF_UART5);
+    GPIO_PinAFConfig(USART5_RXGPIO, GPIO_PinSource2, GPIO_AF_UART5);
 
     // DMA TX Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream7_IRQn;

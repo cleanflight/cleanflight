@@ -210,6 +210,9 @@ void init(void)
 #if defined(USE_USART2) && defined(STM32F10X)
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
 #endif
+#if defined(USE_USART2) && defined(STM32F40_41xxx)
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#endif
 #if defined(USE_USART6) && defined(STM32F40_41xxx)
     pwm_params.useUART6 = doesConfigurationUsePort(SERIAL_PORT_USART6);
 #endif

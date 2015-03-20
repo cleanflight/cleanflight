@@ -311,6 +311,20 @@ const clivalue_t valueTable[] = {
     { "serial_port_5_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
     { "serial_port_5_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
 #endif
+#if (SERIAL_PORT_COUNT >= 6)
+    { "serial_port_6_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[5].functionMask, 0, 0xFFFF },
+    { "serial_port_6_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[5].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { "serial_port_6_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[5].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { "serial_port_6_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[5].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { "serial_port_6_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[5].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+#endif
+#if (SERIAL_PORT_COUNT >= 7)
+    { "serial_port_7_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[6].functionMask, 0, 0xFFFF },
+    { "serial_port_7_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[6].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { "serial_port_7_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[6].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { "serial_port_7_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[6].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { "serial_port_7_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[6].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+#endif
 #endif
 #endif
 #endif

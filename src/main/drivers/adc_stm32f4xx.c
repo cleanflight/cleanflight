@@ -30,9 +30,7 @@
 #include "accgyro.h"
 
 #include "adc.h"
-
-extern adc_config_t adcConfig[ADC_CHANNEL_COUNT];
-extern volatile uint16_t adcValues[ADC_CHANNEL_COUNT];
+#include "adc_impl.h"
 
 void adcInit(drv_adc_config_t *init)
 {
@@ -41,44 +39,58 @@ void adcInit(drv_adc_config_t *init)
     GPIO_InitTypeDef GPIO_InitStructure;
 
     uint8_t i;
-    uint8_t adcChannelCount = 0;
+    uint8_t configuredAdcChannels = 0;
 
     memset(&adcConfig, 0, sizeof(adcConfig));
 
     GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_8;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_1;
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
     GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
 
-    adcConfig[ADC_BATTERY].adcChannel = ADC_Channel_11;
-    adcConfig[ADC_BATTERY].dmaIndex = adcChannelCount;
-    adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_480Cycles;
-    adcConfig[ADC_BATTERY].enabled = true;
-    adcChannelCount++;
 
-    if (init->enableCurrentMeter) {
-        GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_2;
-        adcConfig[ADC_CURRENT].adcChannel = ADC_Channel_12;
-        adcConfig[ADC_CURRENT].dmaIndex = adcChannelCount;
-        adcConfig[ADC_CURRENT].sampleTime = ADC_SampleTime_480Cycles;
-        adcConfig[ADC_CURRENT].enabled = true;
-        adcChannelCount++;
-
+#ifdef VBAT_ADC_GPIO
+    if (init->enableVBat) {
+        GPIO_InitStructure.GPIO_Pin = VBAT_ADC_GPIO_PIN;
+        GPIO_Init(VBAT_ADC_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_BATTERY].adcChannel = VBAT_ADC_CHANNEL;
+        adcConfig[ADC_BATTERY].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_BATTERY].enabled = true;
+        adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_480Cycles;
     }
+#endif
 
+#ifdef EXTERNAL1_ADC_GPIO
+    if (init->enableExternal1) {
+        GPIO_InitStructure.GPIO_Pin = EXTERNAL1_ADC_GPIO_PIN;
+        GPIO_Init(EXTERNAL1_ADC_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_EXTERNAL1].adcChannel = EXTERNAL1_ADC_CHANNEL;
+        adcConfig[ADC_EXTERNAL1].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_EXTERNAL1].enabled = true;
+        adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_480Cycles;
+    }
+#endif
+
+#ifdef RSSI_ADC_GPIO
     if (init->enableRSSI) {
-        GPIO_InitStructure.GPIO_Pin |= GPIO_Pin_3;
-		adcConfig[ADC_RSSI].adcChannel = ADC_Channel_13;
-		adcConfig[ADC_RSSI].dmaIndex = adcChannelCount;
-		adcConfig[ADC_RSSI].sampleTime = ADC_SampleTime_480Cycles;
-		adcConfig[ADC_RSSI].enabled = true;
-		adcChannelCount++;
+        GPIO_InitStructure.GPIO_Pin = RSSI_ADC_GPIO_PIN;
+        GPIO_Init(RSSI_ADC_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_RSSI].adcChannel = RSSI_ADC_CHANNEL;
+        adcConfig[ADC_RSSI].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_RSSI].enabled = true;
+        adcConfig[ADC_RSSI].sampleTime = ADC_SampleTime_480Cycles;
     }
+#endif
+
+#ifdef CURRENT_METER_ADC_GPIO
+    if (init->enableCurrentMeter) {
+        GPIO_InitStructure.GPIO_Pin   = CURRENT_METER_ADC_GPIO_PIN;
+        GPIO_Init(CURRENT_METER_ADC_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_CURRENT].adcChannel = CURRENT_METER_ADC_CHANNEL;
+        adcConfig[ADC_CURRENT].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_CURRENT].enabled = true;
+        adcConfig[ADC_CURRENT].sampleTime = ADC_SampleTime_480Cycles;
+    }
+#endif
 
     //RCC_ADCCLKConfig(RCC_ADC12PLLCLK_Div256);  // 72 MHz divided by 256 = 281.25 kHz
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
@@ -92,9 +104,9 @@ void adcInit(drv_adc_config_t *init)
     DMA_InitStructure.DMA_Channel = DMA_Channel_0;
     DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)adcValues;
     DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
-    DMA_InitStructure.DMA_BufferSize = adcChannelCount;
+    DMA_InitStructure.DMA_BufferSize = configuredAdcChannels;
     DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_MemoryInc = adcChannelCount > 1 ? DMA_MemoryInc_Enable : DMA_MemoryInc_Disable;
+    DMA_InitStructure.DMA_MemoryInc = configuredAdcChannels > 1 ? DMA_MemoryInc_Enable : DMA_MemoryInc_Disable;
     DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
     DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
     DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
@@ -134,8 +146,8 @@ void adcInit(drv_adc_config_t *init)
     ADC_InitStructure.ADC_ExternalTrigConv 		= ADC_ExternalTrigConv_T1_CC1;
     ADC_InitStructure.ADC_ExternalTrigConvEdge 	= ADC_ExternalTrigConvEdge_None;
     ADC_InitStructure.ADC_DataAlign             = ADC_DataAlign_Right;
-    ADC_InitStructure.ADC_NbrOfConversion       = adcChannelCount;
-    ADC_InitStructure.ADC_ScanConvMode 			= ENABLE; // 1=scan more that one channel in group
+    ADC_InitStructure.ADC_NbrOfConversion       = configuredAdcChannels;
+    ADC_InitStructure.ADC_ScanConvMode 			= configuredAdcChannels > 1 ? ENABLE : DISABLE; // 1=scan more that one channel in group
 
     ADC_Init(ADC1, &ADC_InitStructure);
 
