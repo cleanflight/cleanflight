@@ -382,6 +382,7 @@ uint16_t i2cGetErrorCounter(void)
 
 static void i2cUnstick(I2CDevice bus)
 {
+    GPIO_InitTypeDef GPIO_InitStructure;
     GPIO_TypeDef *gpioscl;
     GPIO_TypeDef *gpiosda;
     gpio_config_t cfg;
@@ -402,10 +403,26 @@ static void i2cUnstick(I2CDevice bus)
     cfg.mode = Mode_Out_OD;
     gpioInit(gpioscl, &cfg);
 
+
+    GPIO_InitStructure.GPIO_Pin = scl;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+    GPIO_Init(gpioscl, &GPIO_InitStructure);
+
+
     cfg.pin = sda;
     cfg.speed = Speed_2MHz;
     cfg.mode = Mode_Out_OD;
     gpioInit(gpiosda, &cfg);
+
+    GPIO_InitStructure.GPIO_Pin = sda;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+    GPIO_Init(gpioscl, &GPIO_InitStructure);
 
     for (i = 0; i < 8; i++) {
         // Wait for any clock stretching to finish
@@ -435,10 +452,24 @@ static void i2cUnstick(I2CDevice bus)
     cfg.mode = Mode_AF_OD;
     gpioInit(gpioscl, &cfg);
 
+    GPIO_InitStructure.GPIO_Pin = scl;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(gpioscl, &GPIO_InitStructure);
+
     cfg.pin = sda;
     cfg.speed = Speed_50MHz;
     cfg.mode = Mode_AF_OD;
     gpioInit(gpiosda, &cfg);
+
+    GPIO_InitStructure.GPIO_Pin = sda;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(gpioscl, &GPIO_InitStructure);
 }
 
 #endif

@@ -28,6 +28,7 @@ extern "C" {
 
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
+    #include "drivers/pwm_mapping.h"
 
     #include "sensors/sensors.h"
     #include "sensors/acceleration.h"
@@ -38,11 +39,27 @@ extern "C" {
     #include "flight/mixer.h"
     #include "flight/lowpass.h"
 
+    #include "io/escservo.h"
+    #include "io/gimbal.h"
     #include "io/rc_controls.h"
 
     extern uint8_t servoCount;
     void forwardAuxChannelsToServos(void);
 
+    void mixerUseConfigs(
+#ifdef USE_SERVOS
+            servoParam_t *servoConfToUse,
+            gimbalConfig_t *gimbalConfigToUse,
+#endif
+            flight3DConfig_t *flight3DConfigToUse,
+            escAndServoConfig_t *escAndServoConfigToUse,
+            mixerConfig_t *mixerConfigToUse,
+            airplaneConfig_t *airplaneConfigToUse,
+            rxConfig_t *rxConfigToUse
+    );
+
+    void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers);
+    void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
 }
 
 #include "unittest_macros.h"
@@ -61,11 +78,12 @@ servo_t servos[MAX_SUPPORTED_SERVOS];
 
 uint8_t lastOneShotUpdateMotorCount;
 
+uint32_t testFeatureMask = 0;
+
 
 TEST(FlightMixerTest, TestForwardAuxChannelsToServosWithNoServos)
 {
     // given
-    memset(&motors, 0, sizeof(motors));
     memset(&servos, 0, sizeof(servos));
     servoCount = 0;
 
@@ -82,6 +100,122 @@ TEST(FlightMixerTest, TestForwardAuxChannelsToServosWithNoServos)
         EXPECT_EQ(servos[i].value, 0);
     }
 }
+
+TEST(FlightMixerTest, TestForwardAuxChannelsToServosWithMaxServos)
+{
+    // given
+    memset(&servos, 0, sizeof(servos));
+    servoCount = MAX_SUPPORTED_SERVOS;
+
+    rcData[AUX1] = 1000;
+    rcData[AUX2] = 1250;
+    rcData[AUX3] = 1750;
+    rcData[AUX4] = 2000;
+
+    // when
+    forwardAuxChannelsToServos();
+
+    // then
+    uint8_t i;
+    for (i = 0; i < MAX_SUPPORTED_SERVOS - 4; i++) {
+        EXPECT_EQ(servos[i].value, 0);
+    }
+
+    // -1 for zero based offset
+    EXPECT_EQ(servos[MAX_SUPPORTED_SERVOS - 3 - 1].value, 1000);
+    EXPECT_EQ(servos[MAX_SUPPORTED_SERVOS - 2 - 1].value, 1250);
+    EXPECT_EQ(servos[MAX_SUPPORTED_SERVOS - 1 - 1].value, 1750);
+    EXPECT_EQ(servos[MAX_SUPPORTED_SERVOS - 0 - 1].value, 2000);
+}
+
+TEST(FlightMixerTest, TestForwardAuxChannelsToServosWithLessServosThanAuxChannelsToForward)
+{
+    // given
+    memset(&servos, 0, sizeof(servos));
+    servoCount = 2;
+
+    rcData[AUX1] = 1000;
+    rcData[AUX2] = 1250;
+    rcData[AUX3] = 1750;
+    rcData[AUX4] = 2000;
+
+    // when
+    forwardAuxChannelsToServos();
+
+    // then
+    uint8_t i;
+    for (i = 2; i < MAX_SUPPORTED_SERVOS; i++) {
+        EXPECT_EQ(servos[i].value, 0);
+    }
+
+    // -1 for zero based offset
+    EXPECT_EQ(servos[0].value, 1000);
+    EXPECT_EQ(servos[1].value, 1250);
+}
+
+TEST(FlightMixerTest, TestTricopterServo)
+{
+    // given
+    mixerConfig_t mixerConfig;
+    memset(&mixerConfig, 0, sizeof(mixerConfig));
+
+    mixerConfig.tri_unarmed_servo = 1;
+
+    escAndServoConfig_t escAndServoConfig;
+    memset(&escAndServoConfig, 0, sizeof(escAndServoConfig));
+    escAndServoConfig.mincommand = 1000;
+
+    servoParam_t servoConf[MAX_SUPPORTED_SERVOS];
+    memset(&servoConf, 0, sizeof(servoConf));
+    servoConf[5].min = DEFAULT_SERVO_MIN;
+    servoConf[5].max = DEFAULT_SERVO_MAX;
+    servoConf[5].middle = DEFAULT_SERVO_MIDDLE;
+    servoConf[5].rate = 100;
+    servoConf[5].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
+
+    gimbalConfig_t gimbalConfig = {
+        .gimbal_flags = 0
+    };
+
+    mixerUseConfigs(
+        servoConf,
+        &gimbalConfig,
+        NULL,
+        &escAndServoConfig,
+        &mixerConfig,
+        NULL,
+        NULL
+    );
+
+    motorMixer_t customMixer[MAX_SUPPORTED_MOTORS];
+    memset(&customMixer, 0, sizeof(customMixer));
+
+    mixerInit(MIXER_TRI, customMixer);
+
+    // and
+    pwmOutputConfiguration_t pwmOutputConfiguration = {
+            .servoCount = 1,
+            .motorCount = 3
+    };
+
+    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+
+    // and
+    memset(rcCommand, 0, sizeof(rcCommand));
+
+    // and
+    memset(axisPID, 0, sizeof(axisPID));
+    axisPID[YAW] = 0;
+
+
+    // when
+    mixTable();
+    writeServos();
+
+    // then
+    EXPECT_EQ(servos[0].value, 1500);
+}
+
 
 // STUBS
 
@@ -102,8 +236,8 @@ uint8_t armingFlags;
 
 void delay(uint32_t) {}
 
-bool feature(uint32_t) {
-    return true;
+bool feature(uint32_t mask) {
+    return (mask & testFeatureMask);
 }
 
 int32_t lowpassFixed(lowpass_t *, int32_t, int16_t) {
