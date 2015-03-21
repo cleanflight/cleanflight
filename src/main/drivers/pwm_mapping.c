@@ -415,6 +415,17 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         }
 #endif
 
+#ifdef SONAR
+        if (init->sonarGPIOConfig && timerHardwarePtr->gpio == init->sonarGPIOConfig->gpio &&
+            (
+                timerHardwarePtr->pin == init->sonarGPIOConfig->triggerPin ||
+                timerHardwarePtr->pin == init->sonarGPIOConfig->echoPin
+            )
+        ) {
+            continue;
+        }
+#endif
+
         // hacks to allow current functionality
         if (type == MAP_TO_PWM_INPUT && !init->useParallelPWM)
             continue;

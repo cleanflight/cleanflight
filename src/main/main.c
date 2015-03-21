@@ -47,6 +47,7 @@
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 #include "drivers/flash_m25p16.h"
+#include "drivers/sonar_hcsr04.h"
 
 #include "rx/rx.h"
 
@@ -117,6 +118,7 @@ void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
 void loop(void);
 void spektrumBind(rxConfig_t *rxConfig);
+const sonarHardware_t *sonarGetHardwareConfiguration(void);
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c
@@ -345,6 +347,18 @@ void init(void)
 
     mspInit(&masterConfig.serialConfig);
     cliInit(&masterConfig.serialConfig);
+
+#ifdef SONAR
+    if (feature(FEATURE_SONAR)) {
+        const sonarHardware_t *sonarHardware = sonarGetHardwareConfiguration();
+        sonarGPIOConfig_t sonarGPIOConfig = {
+                .echoPin = sonarHardware->trigger_pin,
+                .triggerPin = sonarHardware->echo_pin,
+                .gpio = SONAR_GPIO
+        };
+        pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
+    }
+#endif
 
     failsafeInit(&masterConfig.rxConfig);
 
