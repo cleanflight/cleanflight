@@ -613,9 +613,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 
     int16_t yawRc = rcCommand[FD_YAW];
     
-    if (motorCount == 3)
-    {
-    	// reduce yaw on tricopter, it's too powerful
+    if (motorCount == 3) { // reduce yaw on tricopter, it's too powerful
     	yawRc /= 2;
     }
 
