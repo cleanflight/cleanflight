@@ -186,8 +186,8 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
     { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF},    // S1_OUT
     { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF},    // S2_OUT
-    { TIM5, GPIOA, Pin_3, TIM_Channel_4, TIM5_IRQn, 1, GPIO_Mode_AF},    // S3_OUT
-    { TIM5, GPIOA, Pin_2, TIM_Channel_3, TIM5_IRQn, 1, GPIO_Mode_AF}, 	 // S4_OUT
+    { TIM2, GPIOA, Pin_3, TIM_Channel_4, TIM2_IRQn, 1, GPIO_Mode_AF},    // S3_OUT
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF},    // S4_OUT
     { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 1, GPIO_Mode_AF},    // S5_OUT
     { TIM5, GPIOA, Pin_0, TIM_Channel_1, TIM5_IRQn, 1, GPIO_Mode_AF},    // S6_OUT
     { TIM2, GPIOA, Pin_15, TIM_Channel_1, TIM2_IRQn, 1, GPIO_Mode_AF},   // S7_OUT

@@ -115,8 +115,6 @@ void adcInit(drv_adc_config_t *init)
 
     DMA_Cmd(DMA2_Stream4, ENABLE);
 
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
-
     // calibrate
 
     /*ADC_VoltageRegulatorCmd(ADC1, ENABLE);
