@@ -62,9 +62,6 @@
 
 #ifdef BLACKBOX
 
-#define BLACKBOX_BAUDRATE 115200
-#define BLACKBOX_INITIAL_PORT_MODE MODE_TX
-
 // How many bytes should we transmit per loop iteration?
 uint8_t blackboxWriteChunkSize = 16;
 
@@ -94,12 +91,13 @@ static void _putc(void *p, char c)
 }
 
 //printf() to the blackbox serial port with no blocking shenanigans (so it's caller's responsibility to not write too fast!)
-void blackboxPrintf(char *fmt, ...)
+int blackboxPrintf(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
-    tfp_format(NULL, _putc, fmt, va);
+    int written = tfp_format(NULL, _putc, fmt, va);
     va_end(va);
+    return written;
 }
 
 // Print the null-terminated string 's' to the serial port and return the number of bytes written
@@ -447,12 +445,29 @@ bool blackboxDeviceOpen(void)
         case BLACKBOX_DEVICE_SERIAL:
             {
                 serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+                baudRate_e baudRateIndex;
+                portMode_t portMode;
+
                 if (!portConfig) {
                     return false;
                 }
-                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
 
-                blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, NULL, BLACKBOX_BAUDRATE, BLACKBOX_INITIAL_PORT_MODE, SERIAL_NOT_INVERTED);
+                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
+                baudRateIndex = portConfig->blackbox_baudrateIndex;
+
+                portMode = MODE_TX;
+
+                if (baudRates[baudRateIndex] == 230400) {
+                    /*
+                     * OpenLog's 230400 baud rate is very inaccurate, so it requires a larger inter-character gap in
+                     * order to maintain synchronization.
+                     */
+                    portMode |= MODE_STOPBITS2;
+                }
+
+                blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, NULL, baudRates[baudRateIndex],
+                    portMode, SERIAL_NOT_INVERTED);
+
                 return blackboxPort != NULL;
             }
             break;

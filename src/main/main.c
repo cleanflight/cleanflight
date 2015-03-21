@@ -191,6 +191,8 @@ void init(void)
 
     timerInit();  // timer must be initialized before any channel is allocated
 
+    serialInit(&masterConfig.serialConfig);
+
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
     memset(&pwm_params, 0, sizeof(pwm_params));
@@ -290,6 +292,7 @@ void init(void)
 #ifdef USE_ADC
     drv_adc_config_t adc_params;
 
+    adc_params.enableVBat = feature(FEATURE_VBAT);
     adc_params.enableRSSI = feature(FEATURE_RSSI_ADC);
     adc_params.enableCurrentMeter = feature(FEATURE_CURRENT_METER);
     adc_params.enableExternal1 = false;
@@ -339,8 +342,6 @@ void init(void)
 #endif
 
     imuInit();
-
-    serialInit(&masterConfig.serialConfig);
 
     mspInit(&masterConfig.serialConfig);
     cliInit(&masterConfig.serialConfig);
