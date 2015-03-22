@@ -289,7 +289,7 @@ static void processRxChannels(void)
             if (feature(FEATURE_RX_PPM)) {
                 channelCount = ppmGetDetectedNumberOfChannels();
             } else {
-                channelCount = 6;       // allow 6 channels to make using a switch possible when not using PPM
+                channelCount = rxRuntimeConfig.channelCount;
             }
             failsafeCheckPulse(rawChannel, sample, channelCount);
         }
