@@ -631,6 +631,7 @@ SPRACINGF3_SRC	 = \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
 		   drivers/flash_m25p16.c \
+		   drivers/sonar_hcsr04.c \
 		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
