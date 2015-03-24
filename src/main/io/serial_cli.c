@@ -117,6 +117,7 @@ static void cliMap(char *cmdline);
 #ifdef LED_STRIP
 static void cliLed(char *cmdline);
 static void cliColor(char *cmdline);
+static void cliStateColor(char *cmdline);
 #endif
 
 #ifndef USE_QUAD_MIXER_ONLY
@@ -218,6 +219,9 @@ const clicmd_t cmdTable[] = {
     { "servo", "servo config", cliServo },
 #endif
     { "set", "name=value or blank or * for list", cliSet },
+#ifdef LED_STRIP
+    { "state_color", "configure state colors", cliStateColor },
+#endif
     { "status", "show system status", cliStatus },
     { "version", "", cliVersion },
 };
@@ -787,6 +791,23 @@ static void cliColor(char *cmdline)
         }
     }
 }
+
+static void cliStateColor(char* cmdline)
+{
+    uint8_t i;
+    char *ptr;
+    char stateColorBuffer[5];
+
+    if (isEmpty(cmdline)) {
+        for (i = 0; i < STATE_COLOR_COUNT; i++) {
+            formatStateColor(i, stateColorBuffer, sizeof(stateColorBuffer));
+            printf("state_color %s\r\n", stateColorBuffer);
+        }
+    } else {
+        if (!parseStateColor(cmdline))
+            cliPrint("Parse error\r\n");
+    }
+}
 #endif
 
 static void cliServo(char *cmdline)
@@ -1059,6 +1080,9 @@ static void cliDump(char *cmdline)
 
         cliPrint("\r\n\r\n# color\r\n");
         cliColor("");
+
+        cliPrint("\r\n\r\n# state_color\r\n");
+        cliStateColor("");
 #endif
         printSectionBreak();
         dumpValues(MASTER_VALUE);

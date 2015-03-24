@@ -223,6 +223,17 @@ static const modeColorIndexes_t baroModeColors = {
         COLOR_ORANGE
 };
 
+static const char stateColorCodes[] = { 'A', 'U' };
+#define STATE_COLOR_CODES_COUNT (sizeof(stateColorCodes) / sizeof(stateColorCodes[0]))
+typedef enum {
+    STATE_COLOR_ARMED = 0,
+    STATE_COLOR_UNARMED
+} stateColorId_e;
+
+static const uint8_t defaultStateColors[] = {
+        COLOR_BLUE,
+        COLOR_GREEN
+};
 
 uint8_t ledGridWidth;
 uint8_t ledGridHeight;
@@ -232,6 +243,7 @@ uint8_t ledsInRingCount;
 ledConfig_t *ledConfigs;
 hsvColor_t *colors;
 
+uint8_t *stateColors;
 
 #ifdef USE_LED_RING_DEFAULT_CONFIG
 const ledConfig_t defaultLedStripConfig[] = {
@@ -613,9 +625,9 @@ void applyLedModeLayer(void)
         if (!(ledConfig->flags & LED_FUNCTION_FLIGHT_MODE)) {
             if (ledConfig->flags & LED_FUNCTION_ARM_STATE) {
                 if (!ARMING_FLAG(ARMED)) {
-                    setLedHsv(ledIndex, &hsv_green);
+                    setLedHsv(ledIndex, &colors[stateColors[STATE_COLOR_UNARMED]]);
                 } else {
-                    setLedHsv(ledIndex, &hsv_blue);
+                    setLedHsv(ledIndex, &colors[stateColors[STATE_COLOR_ARMED]]);
                 }
             }
             continue;
@@ -963,7 +975,7 @@ void updateLedStrip(void)
 
 bool parseColor(uint8_t index, const char *colorConfig)
 {
-    const char *remainingCharacters = colorConfig;
+	const char *remainingCharacters = colorConfig;
 
     hsvColor_t *color = &colors[index];
 
@@ -1013,12 +1025,53 @@ bool parseColor(uint8_t index, const char *colorConfig)
     return ok;
 }
 
+bool parseStateColor(const char *stateColorConfig)
+{
+    if (strlen(stateColorConfig) < 3)
+        return false;
+
+    char stateCode = stateColorConfig[0];
+    uint8_t stateIndex;
+    uint8_t colorIndex;
+
+    for (stateIndex = 0; stateIndex < STATE_COLOR_CODES_COUNT; stateIndex++)
+        if (stateCode == stateColorCodes[stateIndex])
+            break;
+
+    if (stateIndex >= STATE_COLOR_CODES_COUNT)
+        return false;
+
+    colorIndex = atoi(&stateColorConfig[2]);
+
+    if (colorIndex >= CONFIGURABLE_COLOR_COUNT)
+        return false;
+
+    stateColors[stateIndex] = colorIndex;
+
+    return true;
+}
+
+void formatStateColor(uint8_t stateColorIndex, char *stateColorBuffer,
+        size_t bufferSize)
+{
+    memset(stateColorBuffer, 0, bufferSize);
+
+    sprintf(stateColorBuffer, "%c %u", stateColorCodes[stateColorIndex],
+            stateColors[stateColorIndex]);
+}
+
 void applyDefaultColors(hsvColor_t *colors, uint8_t colorCount)
 {
     memset(colors, 0, colorCount * sizeof(colors));
     for (uint8_t colorIndex = 0; colorIndex < colorCount && colorIndex < (sizeof(defaultColors) / sizeof(defaultColors[0])); colorIndex++) {
         *colors++ = *defaultColors[colorIndex];
     }
+}
+
+void applyDefaultStateColors(uint8_t *stateColors)
+{
+    memset(stateColors, 0, STATE_COLOR_COUNT);
+    memcpy(stateColors, &defaultStateColors, sizeof(defaultStateColors));
 }
 
 void applyDefaultLedStripConfig(ledConfig_t *ledConfigs)
@@ -1029,10 +1082,11 @@ void applyDefaultLedStripConfig(ledConfig_t *ledConfigs)
     reevalulateLedConfig();
 }
 
-void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse)
+void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, uint8_t *stateColorsToUse)
 {
     ledConfigs = ledConfigsToUse;
     colors = colorsToUse;
+    stateColors = stateColorsToUse;
     ledStripInitialised = false;
 }
 

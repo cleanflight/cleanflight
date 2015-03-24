@@ -19,6 +19,7 @@
 
 #define MAX_LED_STRIP_LENGTH 32
 #define CONFIGURABLE_COLOR_COUNT 16
+#define STATE_COLOR_COUNT 2
 
 #define LED_X_BIT_OFFSET 4
 #define LED_Y_BIT_OFFSET 0
@@ -81,8 +82,6 @@ typedef struct ledConfig_s {
 extern uint8_t ledCount;
 extern uint8_t ledsInRingCount;
 
-
-
 bool parseLedStripConfig(uint8_t ledIndex, const char *config);
 void updateLedStrip(void);
 void updateLedRing(void);
@@ -92,6 +91,10 @@ void generateLedConfig(uint8_t ledIndex, char *ledConfigBuffer, size_t bufferSiz
 
 bool parseColor(uint8_t index, const char *colorConfig);
 void applyDefaultColors(hsvColor_t *colors, uint8_t colorCount);
+void applyDefaultStateColors(uint8_t *stateColors);
+
+bool parseStateColor(const char* colorConfig);
+void formatStateColor(uint8_t stateColorIndex, char *stateColorBuffer, size_t bufferSize);
 
 void ledStripEnable(void);
 void reevalulateLedConfig(void);

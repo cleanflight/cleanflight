@@ -82,6 +82,7 @@ typedef struct master_t {
 #ifdef LED_STRIP
     ledConfig_t ledConfigs[MAX_LED_STRIP_LENGTH];
     hsvColor_t colors[CONFIGURABLE_COLOR_COUNT];
+    uint8_t stateColors[STATE_COLOR_COUNT];
 #endif
 
     profile_t profile[MAX_PROFILE_COUNT];

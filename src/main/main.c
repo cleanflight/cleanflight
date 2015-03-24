@@ -114,7 +114,7 @@ void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
 void imuInit(void);
 void displayInit(rxConfig_t *intialRxConfig);
-void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
+void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse, uint8_t *stateColorsToUse);
 void loop(void);
 void spektrumBind(rxConfig_t *rxConfig);
 
@@ -372,7 +372,7 @@ void init(void)
 #endif
 
 #ifdef LED_STRIP
-    ledStripInit(masterConfig.ledConfigs, masterConfig.colors);
+    ledStripInit(masterConfig.ledConfigs, masterConfig.colors, masterConfig.stateColors);
 
     if (feature(FEATURE_LED_STRIP)) {
         ledStripEnable();
