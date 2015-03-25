@@ -243,6 +243,11 @@ void annexCode(void)
             if (feature(FEATURE_VBAT)) {
                 updateBatteryVoltage();
                 batteryState = calculateBatteryState();
+                //handle beepers for battery levels
+                if (batteryState == BATTERY_CRITICAL)
+                    beeper(BEEPER_BAT_CRIT_LOW);    //critically low battery
+                else if (batteryState == BATTERY_WARNING)
+                    beeper(BEEPER_BAT_LOW);         //low battery
             }
 
             if (feature(FEATURE_CURRENT_METER)) {
@@ -252,7 +257,7 @@ void annexCode(void)
         }
     }
 
-    beepcodeUpdateState(batteryState);
+    beeperUpdate();          //call periodic beeper handler
 
     if (ARMING_FLAG(ARMED)) {
         LED0_ON;
@@ -319,6 +324,9 @@ void mwDisarm(void)
         }
 #endif
     }
+
+    // emit disarm tone even if not armed (for model rescue)
+    beeper(BEEPER_DISARMING);
 }
 
 #define TELEMETRY_FUNCTION_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_MSP | FUNCTION_TELEMETRY_SMARTPORT)
@@ -335,8 +343,6 @@ void mwArm(void)
 
 #ifdef TELEMETRY
             if (feature(FEATURE_TELEMETRY)) {
-
-
                 serialPort_t *sharedPort = findSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
                 while (sharedPort) {
                     mspReleasePortIfAllocated(sharedPort);
@@ -355,6 +361,16 @@ void mwArm(void)
             }
 #endif
             disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
+
+            //beep to indicate arming
+#ifdef GPS
+            if (feature(FEATURE_GPS) && STATE(GPS_FIX) && GPS_numSat >= 5)
+                beeper(BEEPER_ARMING_GPS_FIX);
+            else
+                beeper(BEEPER_ARMING);
+#else
+            beeper(BEEPER_ARMING);
+#endif
 
             return;
         }
@@ -381,9 +397,9 @@ void handleInflightCalibrationStickPosition(void)
     } else {
         AccInflightCalibrationArmed = !AccInflightCalibrationArmed;
         if (AccInflightCalibrationArmed) {
-            queueConfirmationBeep(4);
+            beeper(BEEPER_ACC_CALIBRATION);
         } else {
-            queueConfirmationBeep(6);
+            beeper(BEEPER_ACC_CALIBRATION_FAIL);
         }
     }
 }
@@ -523,17 +539,26 @@ void processRx(void)
         pidResetErrorAngle();
         pidResetErrorGyro();
     }
-    // When armed and motors aren't spinning, disarm board after delay so users without buzzer won't lose fingers.
+    // When armed and motors aren't spinning, do beeps and then disarm
+    // board after delay so users without buzzer won't lose fingers.
     // mixTable constrains motor commands, so checking  throttleStatus is enough
     if (ARMING_FLAG(ARMED)
-        && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)
-        && masterConfig.auto_disarm_delay != 0
-        && isUsingSticksForArming()) {
-        if (throttleStatus == THROTTLE_LOW) {
-            if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
-                mwDisarm();
-        } else {
-            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // extend delay
+                     && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)) {
+        if (isUsingSticksForArming()) {
+          if (masterConfig.auto_disarm_delay != 0) {  // disarm after delay
+            if (throttleStatus == THROTTLE_LOW) {
+                if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
+                    mwDisarm();
+                else
+                    beeper(BEEPER_ARMED);   // do warning beeps while armed
+            } else {  // throttle not low; extend disarm time
+                disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;
+            }
+          }
+        }
+        else {  // arming is via AUX switch; beep while throttle low
+            if (throttleStatus == THROTTLE_LOW)
+                beeper(BEEPER_ARMED);
         }
     }
 
