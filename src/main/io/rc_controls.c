@@ -138,19 +138,24 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         return;
     }
 
-    // always call 'mwDisarm()' if sticks in position (even if not armed)
-    // so that disarm tone can always be emitted (for model rescue)
     if (isUsingSticksToArm) {
         // Disarm on throttle down + yaw
         if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) {
-            mwDisarm();
-            rcDelayCommand = 0;   //reset so disarm tone will repeat
+            if (ARMING_FLAG(ARMED))         //board was armed
+                mwDisarm();
+            else {  //board was not armed
+                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
+                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            }
         }
-
         // Disarm on roll (only when retarded_arm is enabled)
         if (retarded_arm && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO)) {
-            mwDisarm();
-            rcDelayCommand = 0;   //reset so disarm tone will repeat
+            if (ARMING_FLAG(ARMED))         //board was armed
+                mwDisarm();
+            else {  //board was not armed
+                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
+                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            }
         }
     }
 

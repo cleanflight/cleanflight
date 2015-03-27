@@ -59,17 +59,21 @@ static const uint8_t beep_shortBeep[] = {
 static const uint8_t beep_batteryBeep[] = {
     10, 5, 0xFF
 };
-// arming beep (follow by short pause)
-static const uint8_t beep_armBeepFast[] = {
-    30, 20, 0xFF
+// arming beep
+static const uint8_t beep_armingBeep[] = {
+    30, 5, 5, 5, 0xFF
 };
-// armed beep (followed by longer pause)
+// armed beep (first pause, then short beep)
 static const uint8_t beep_armedBeep[] = {
-    10, 250, 0xFF
+    0, 245, 10, 5, 0xFF
 };
-// disarming beep (followed by pause)
+// disarming beeps
 static const uint8_t beep_disarmBeep[] = {
-    40, 60, 0xFF
+    15, 5, 15, 5, 0xFF
+};
+// beeps while stick held in disarm position (after pause)
+static const uint8_t beep_disarmRepeatBeep[] = {
+    0, 35, 40, 5, 0xFF
 };
 // Long beep and pause after that
 static const uint8_t beep_longBeep[] = {
@@ -116,6 +120,8 @@ static const uint8_t *beeperPtr = NULL;
 static uint16_t beeperPos = 0;
 // Time when beeper routine must act next time
 static uint32_t beeperNextToggleTime = 0;
+// Time of last arming beep in microseconds (for blackbox)
+static uint32_t armingBeepTimeMicros = 0;
 
 static void beeperCalculations(void);
 
@@ -143,13 +149,18 @@ void beeper(uint8_t mode)
             beeperPtr = beep_readyBeep;
             beeperMode = mode;
             break;
-        case BEEPER_ARMING:       //will be followed by BEEPER_ARMED beep
-            beeperPtr = beep_armBeepFast;
+        case BEEPER_ARMING:
+            beeperPtr = beep_armingBeep;
             beeperMode = mode;
             beeperNextToggleTime = 0;
             break;
         case BEEPER_DISARMING:
             beeperPtr = beep_disarmBeep;
+            beeperMode = mode;
+            beeperNextToggleTime = 0;
+            break;
+        case BEEPER_DISARM_REPEAT:
+            beeperPtr = beep_disarmRepeatBeep;
             beeperMode = mode;
             beeperNextToggleTime = 0;
             break;
@@ -262,8 +273,14 @@ void beeperUpdate(void)
 
     if (!beeperIsOn && beeperNextToggleTime <= millis()) {
         beeperIsOn = 1;
-        if (beeperPtr[beeperPos] != 0)
+        if (beeperPtr[beeperPos] != 0) {
             BEEP_ON;
+                   //if this was arming beep then mark time (for blackbox)
+            if (beeperPos == 0 && (beeperMode == BEEPER_ARMING ||
+                                   beeperMode == BEEPER_ARMING_GPS_FIX)) {
+                armingBeepTimeMicros = micros();
+            }
+        }
         beeperCalculations();
     } else if (beeperIsOn && beeperNextToggleTime <= millis()) {
         beeperIsOn = 0;
@@ -291,4 +308,13 @@ void beeperCalculations(void)
         beeperNextToggleTime = millis() + 10 * beeperPtr[beeperPos];
         beeperPos++;
     }
+}
+
+/*
+ * Returns the time that the last arming beep occurred (in system-uptime
+ * microseconds).  This is fetched and logged by blackbox.
+ */
+uint32_t getArmingBeepTimeMicros(void)
+{
+  return armingBeepTimeMicros;
 }

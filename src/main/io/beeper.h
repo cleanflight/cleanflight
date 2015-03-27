@@ -20,6 +20,7 @@
 void beeper(uint8_t mode);
 void beeperUpdate(void);
 void queueConfirmationBeep(uint8_t beepCount);
+uint32_t getArmingBeepTimeMicros(void);
 
 /* Beeper different modes: (lower number is higher priority)
  * BEEPER_STOP - Stops beeping
@@ -27,11 +28,12 @@ void queueConfirmationBeep(uint8_t beepCount);
  * BEEPER_BAT_LOW - Warning beeps when battery is getting low (repeats)
  * BEEPER_TX_LOST_ARMED - Beeps SOS when armed and TX is turned off or signal lost (autolanding/autodisarm)
  * BEEPER_TX_LOST - Beeps when TX is turned off or signal lost (repeat until TX is okay)
- * BEEPER_DISARMING - One beep when disarming the board
- * BEEPER_ARMING - One beep when arming the board (will be followed by BEEPER_ARMED beep)
+ * BEEPER_DISARMING - Beep when disarming the board
+ * BEEPER_ARMING - Beep when arming the board
  * BEEPER_ARMING_GPS_FIX - Beep a tone when arming the board and GPS has fix
  * BEEPER_TX_SET - Beeps when aux channel is set for beep or beep sequence how many satellites has found if GPS enabled.
  * BEEPER_ARMED - Warning beeps when board is armed. (repeats until board is disarmed or throttle is increased)
+ * BEEPER_DISARM_REPEAT - Beeps sounded while stick held in disarm position
  * BEEPER_ACC_CALIBRATION - ACC inflight calibration completed confirmation
  * BEEPER_ACC_CALIBRATION_FAIL - ACC inflight calibration failed
  * BEEPER_READY_BEEP - Ring a tone when board is ready to flight (GPS ready).
@@ -49,6 +51,7 @@ enum {
     BEEPER_ARMING_GPS_FIX,
     BEEPER_TX_SET,
     BEEPER_ARMED,
+    BEEPER_DISARM_REPEAT,
     BEEPER_ACC_CALIBRATION,
     BEEPER_ACC_CALIBRATION_FAIL,
     BEEPER_READY_BEEP,

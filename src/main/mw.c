@@ -323,10 +323,9 @@ void mwDisarm(void)
             finishBlackbox();
         }
 #endif
-    }
 
-    // emit disarm tone even if not armed (for model rescue)
-    beeper(BEEPER_DISARMING);
+        beeper(BEEPER_DISARMING);      // emit disarm tone
+    }
 }
 
 #define TELEMETRY_FUNCTION_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_MSP | FUNCTION_TELEMETRY_SMARTPORT)
@@ -514,6 +513,8 @@ void executePeriodicTasks(void)
 
 void processRx(void)
 {
+    static bool armedBeeperOn = false;
+
     calculateRxChannelsAndUpdateFailsafe(currentTime);
 
     // in 3D mode, we need to be able to disarm by switch at any time
@@ -545,20 +546,35 @@ void processRx(void)
     if (ARMING_FLAG(ARMED)
                      && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)) {
         if (isUsingSticksForArming()) {
-          if (masterConfig.auto_disarm_delay != 0) {  // disarm after delay
-            if (throttleStatus == THROTTLE_LOW) {
-                if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
-                    mwDisarm();
-                else
-                    beeper(BEEPER_ARMED);   // do warning beeps while armed
-            } else {  // throttle not low; extend disarm time
-                disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;
+            if (throttleStatus == THROTTLE_LOW) {  //throttle is low; disarm after delay
+                if (masterConfig.auto_disarm_delay != 0 &&
+                                       (int32_t)(disarmAt - millis()) < 0) {
+                    mwDisarm();   //disarm configured and delay is over
+                    armedBeeperOn = false;  //track beep status
+                }
+                else {  //still armed; do warning beeps while armed
+                    beeper(BEEPER_ARMED);
+                    armedBeeperOn = true;   //track beep status
+                }
             }
-          }
+            else {  //throttle is not low
+                if (masterConfig.auto_disarm_delay != 0)  //extend disarm time
+                    disarmAt = millis() + masterConfig.auto_disarm_delay*1000;
+                if (armedBeeperOn) {        //if BEEPER_ARMED in progress then
+                    beeper(BEEPER_STOP);    //stop trailing beep
+                    armedBeeperOn = false;  //track beep status
+                }
+            }
         }
-        else {  // arming is via AUX switch; beep while throttle low
-            if (throttleStatus == THROTTLE_LOW)
+        else {  //arming is via AUX switch; beep while throttle low
+            if (throttleStatus == THROTTLE_LOW) {
                 beeper(BEEPER_ARMED);
+                armedBeeperOn = true;       //track beep status
+            } else if (armedBeeperOn) {  //if BEEPER_ARMED in progress then
+                beeper(BEEPER_STOP);     //stop trailing beep
+                armedBeeperOn = false;   //track beep status
+            }
+
         }
     }
 
