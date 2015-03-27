@@ -55,10 +55,6 @@
 static const uint8_t beep_shortBeep[] = {
     10, 10, 0xFF
 };
-// battery beep
-static const uint8_t beep_batteryBeep[] = {
-    10, 5, 0xFF
-};
 // arming beep
 static const uint8_t beep_armingBeep[] = {
     30, 5, 5, 5, 0xFF
@@ -76,8 +72,12 @@ static const uint8_t beep_disarmRepeatBeep[] = {
     0, 35, 40, 5, 0xFF
 };
 // Long beep and pause after that
-static const uint8_t beep_longBeep[] = {
-    70, 200, 0xFF
+static const uint8_t beep_lowBatteryBeep[] = {
+    25, 50, 0xFF
+};
+// critical battery beep
+static const uint8_t beep_critBatteryBeep[] = {
+    50, 2, 0xFF
 };
 // single confirmation beep
 static const uint8_t beep_confirmBeep[] = {
@@ -175,18 +175,22 @@ void beeper(uint8_t mode)
         case BEEPER_TX_LOST_ARMED:
             beeperPtr = beep_sos;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
         case BEEPER_TX_LOST:
             beeperPtr = beep_txLostBeep;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
         case BEEPER_BAT_LOW:
-            beeperPtr = beep_longBeep;
+            beeperPtr = beep_lowBatteryBeep;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
         case BEEPER_BAT_CRIT_LOW:
-            beeperPtr = beep_batteryBeep;
+            beeperPtr = beep_critBatteryBeep;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
         case BEEPER_ARMED:
             beeperPtr = beep_armedBeep;
@@ -200,10 +204,12 @@ void beeper(uint8_t mode)
         case BEEPER_CONFIRM_BEEP:
             beeperPtr = beep_confirmBeep;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
         case BEEPER_MULTI_BEEPS:
             beeperPtr = beep_multiBeeps;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
         case BEEPER_TX_SET:
 #ifdef GPS         // if GPS fix then beep out number of satellites
@@ -222,6 +228,7 @@ void beeper(uint8_t mode)
 #endif
             beeperPtr = beep_shortBeep;
             beeperMode = mode;
+            beeperNextToggleTime = 0;
             break;
 
         default:
