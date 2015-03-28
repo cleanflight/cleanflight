@@ -131,7 +131,9 @@ static void beeperCalculations(void);
  */
 void beeper(uint8_t mode)
 {
+#ifdef GPS
     uint8_t i;
+#endif
 
     // Just return if same or higher priority sound is active.
     if (beeperMode <= mode)
@@ -291,8 +293,9 @@ void beeperUpdate(void)
         beeperCalculations();
     } else if (beeperIsOn && beeperNextToggleTime <= millis()) {
         beeperIsOn = 0;
-        if (beeperPtr[beeperPos] != 0)
+        if (beeperPtr[beeperPos] != 0) {
             BEEP_OFF;
+        }
         beeperCalculations();
     }
 }
