@@ -60,9 +60,9 @@ bool areSticksInApModePosition(uint16_t ap_mode);
 // **********************
 // GPS
 // **********************
-int16_t GPS_angle[ANGLE_INDEX_COUNT] = { 0, 0 };    // it's the angles that must be applied for GPS correction
-int32_t GPS_home[2];
-int32_t GPS_hold[2];
+int16_t GPS_angle[ANGLE_INDEX_COUNT] = { 0, 0, 0 };    // it's the angles that must be applied for GPS correction
+int32_t GPS_home[3];
+int32_t GPS_hold[3];
 
 uint16_t GPS_distanceToHome;        // distance to home point in meters
 int16_t GPS_directionToHome;        // direction to home or hol point in degrees
@@ -131,6 +131,7 @@ typedef struct {
 static PID_PARAM posholdPID_PARAM;
 static PID_PARAM poshold_ratePID_PARAM;
 static PID_PARAM navPID_PARAM;
+static PID_PARAM altPID_PARAM;
 
 typedef struct {
     float integrator;          // integrator value
@@ -358,6 +359,7 @@ void GPS_reset_home_position(void)
     if (STATE(GPS_FIX) && GPS_numSat >= 5) {
         GPS_home[LAT] = GPS_coord[LAT];
         GPS_home[LON] = GPS_coord[LON];
+        GPS_home[ALT] = GPS_altitude;
         GPS_calc_longitude_scaling(GPS_coord[LAT]); // need an initial value for distance and bearing calc
         nav_takeoff_bearing = heading;              // save takeoff heading
         // Set ground altitude
@@ -378,6 +380,11 @@ void GPS_reset_nav(void)
         reset_PID(&poshold_ratePID[i]);
         reset_PID(&navPID[i]);
     }
+    if (STATE(FIXED_WING))
+    {
+    	fw_nav_reset();
+    }
+
 }
 
 // Get the relevant P I D values and set the PID controllers
@@ -396,6 +403,13 @@ void gpsUsePIDs(pidProfile_t *pidProfile)
     navPID_PARAM.kI = (float)pidProfile->I8[PIDNAVR] / 100.0f;
     navPID_PARAM.kD = (float)pidProfile->D8[PIDNAVR] / 1000.0f;
     navPID_PARAM.Imax = POSHOLD_RATE_IMAX * 100;
+
+    if (STATE(FIXED_WING)) {
+	   altPID_PARAM.kP = (float)pidProfile->P8[PIDALT] / 10.0f;
+	   altPID_PARAM.kI = (float)pidProfile->I8[PIDALT] / 100.0f;
+	   altPID_PARAM.kD = (float)pidProfile->D8[PIDALT] / 1000.0f;
+   }
+
 }
 
 // OK here is the onboard GPS code
@@ -636,6 +650,8 @@ void updateGpsStateForHomeAndHoldMode(void)
 {
     float sin_yaw_y = sinf(heading * 0.0174532925f);
     float cos_yaw_x = cosf(heading * 0.0174532925f);
+    if(!STATE(FIXED_WING))
+    {
     if (gpsProfile->nav_slew_rate) {
         nav_rated[LON] += constrain(wrap_18000(nav[LON] - nav_rated[LON]), -gpsProfile->nav_slew_rate, gpsProfile->nav_slew_rate); // TODO check this on uint8
         nav_rated[LAT] += constrain(wrap_18000(nav[LAT] - nav_rated[LAT]), -gpsProfile->nav_slew_rate, gpsProfile->nav_slew_rate);
@@ -644,6 +660,10 @@ void updateGpsStateForHomeAndHoldMode(void)
     } else {
         GPS_angle[AI_ROLL] = (nav[LON] * cos_yaw_x - nav[LAT] * sin_yaw_y) / 10;
         GPS_angle[AI_PITCH] = (nav[LON] * sin_yaw_y + nav[LAT] * cos_yaw_x) / 10;
+    }
+    }
+    else{
+    	fw_nav();
     }
 }
 
@@ -718,4 +738,234 @@ void updateGpsWaypointsAndMode(void)
     }
 }
 
+#include "drivers/system.h"
+#include "drivers/pwm_output.h"
+#include "drivers/pwm_mapping.h"
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
+#include "drivers/system.h"
+
+#include "rx/rx.h"
+
+#include "io/gimbal.h"
+#include "io/escservo.h"
+#include "io/rc_controls.h"
+
+#include "sensors/sensors.h"
+#include "sensors/acceleration.h"
+
+#include "flight/mixer.h"
+#include "flight/pid.h"
+#include "flight/imu.h"
+
+
+// from gps.c
+extern int32_t nav_bearing;
+extern uint32_t wp_distance;
+extern PID_PARAM navPID_PARAM;
+extern PID_PARAM altPID_PARAM;
+
+#define GPS_UPD_HZ 5 // Set loop time for NavUpdate 5 Hz is enough
+#define PITCH_COMP 0.5f // Compensate throttle relative angle of attack
+// Candidates for CLI
+#define SAFE_NAV_ALT 20 // Safe Altitude during climbouts Wings Level below this Alt. (ex. trees & buildings..)
+#define SAFE_DECSCEND_ZONE 50 // Radius around home where descending is OK
+// For speedBoost
+#define GPS_MINSPEED 500 // 500= ~18km/h
+#define I_TERM 0.1f
+float navErrorI;
+float altErrorI;
+static int16_t lastAltDiff;
+static int16_t lastnavDiff;
+static int16_t speedBoost;
+static int16_t altHist[GPS_UPD_HZ + 1]; // shift register
+static int16_t navDif[GPS_UPD_HZ + 1];// shift register
+
+void fw_nav_reset(void)
+{
+	uint8_t i;
+	navErrorI = 0;
+	altErrorI = 0;
+	lastAltDiff = 0;
+	lastnavDiff = 0;
+	speedBoost = 0;
+	for (i = 0; i < GPS_UPD_HZ; i++) {
+		altHist[i] = 0;
+		navDif[i] = 0;
+	}
+}
+
+void fw_nav(void)
+{
+	int16_t GPS_Heading = GPS_ground_course; // Store current bearing
+	int16_t Current_Heading;// Store current bearing
+	int16_t altDiff = 0;
+	int16_t RTH_Alt = poshold_ratePID_PARAM.kD;// conf.pid[PIDALT].D8;
+	int16_t delta[2] = {0, 0}; // D-Term
+	static int16_t NAV_deltaSum, ALT_deltaSum, GPS_FwTarget, GPS_AltErr, NAV_Thro;
+	int16_t TX_Thro = rcData[THROTTLE];// Read and store Throttle pos.
+	int16_t navDiff;// Navigation error
+	float navDT;
+	static uint32_t nav_loopT;
+	int16_t groundSpeed;
+	int spDiff;
+	uint8_t i;
+// Nav timer
+	static uint32_t gpsTimer = 0;
+	static uint16_t gpsFreq = 1000 / GPS_UPD_HZ;// 5HZ 200ms DT
+// Calculated Altitude over home in meters
+	int16_t currAlt = GPS_altitude - GPS_home[ALT];// GPS
+	int16_t navTargetAlt = GPS_hold[ALT] - GPS_home[ALT];// Diff from homeAlt.
+// Handles ReSetting RTH alt if rth is enabled to low!
+	if (STATE(CLIMBOUT_FW) && currAlt < RTH_Alt) {
+		GPS_hold[ALT] = GPS_home[ALT] + RTH_Alt;
+	}
+// Wrap GPS_Heading 1800
+	GPS_Heading = wrap_18000(GPS_Heading * 10) / 10;
+// Only use MAG if Mag and GPS_Heading aligns
+	if (sensors(SENSOR_MAG)) {
+		if (fabs(heading - (GPS_Heading / 10)) > 10 && GPS_speed > 200) {
+			Current_Heading = GPS_Heading / 10;
+		} else {
+			Current_Heading = heading;
+		}
+	} else {
+		Current_Heading = GPS_Heading / 10;
+	}
+// Calculate Navigation errors
+	GPS_FwTarget = nav_bearing / 100;
+	navDiff = GPS_FwTarget - Current_Heading;// Navigation Error
+	GPS_AltErr = currAlt - navTargetAlt;// Altitude error Negative means you're to low
+// Start of NavTimer
+	if (millis() - gpsTimer >= gpsFreq) {
+		gpsTimer = millis();
+// Throttle control
+// Deadpan for throttle at correct Alt.
+		if (fabs(GPS_AltErr) < 1) { // Just cruise along in deadpan.
+			NAV_Thro = gpsProfile->fw_cruise_throttle;
+		} else {
+// Add AltitudeError and scale up with a factor to throttle
+			NAV_Thro = constrain(gpsProfile->fw_cruise_throttle - (GPS_AltErr * gpsProfile->fw_scaler_throttle), gpsProfile->fw_idle_throttle, gpsProfile->fw_climb_throttle);
+		}
+// Reset Climbout Flag when Alt have been reached
+		if (STATE(CLIMBOUT_FW) && GPS_AltErr >= 0) {
+			DISABLE_STATE(CLIMBOUT_FW);
+		}
+// Climb out before RTH
+		if (FLIGHT_MODE(GPS_HOME_MODE)) {
+			if (STATE(CLIMBOUT_FW)) {
+				GPS_AltErr = -(gpsProfile->fw_gps_maxclimb * 10); // Max climbAngle
+				NAV_Thro = gpsProfile->fw_climb_throttle;// Max Allowed Throttle
+				if (currAlt < SAFE_NAV_ALT){
+				navDiff = 0;// Force climb with Level Wings below safe Alt
+				}
+			}
+			if ((GPS_distanceToHome < SAFE_DECSCEND_ZONE) && currAlt > RTH_Alt) {
+				GPS_hold[ALT] = GPS_home[ALT] + RTH_Alt; // Start descend to correct RTH Alt.
+			}
+		}
+// Always DISARM when Home is within 10 meters if FC is in failsafe.
+		if (STATE(FW_FAILSAFE_RTH_ENABLE) && (GPS_distanceToHome < 10)) {
+			DISABLE_ARMING_FLAG(ARMED);
+			DISABLE_STATE(CLIMBOUT_FW); // Abort Climbout
+			GPS_hold[ALT] = GPS_home[ALT] + 5;// Come down
+		}
+// Filtering of navDiff around home to stop nervous servos
+		if (GPS_distanceToHome < 10) {
+			navDiff *= 0.1;
+		}
+// Wrap Heading 180
+		navDiff = wrap_18000(navDiff * 100) / 100;
+		if (fabs(navDiff) > 170) {
+			navDiff = 175; // Forced turn.
+		}
+// PID for Navigating planes.
+		navDT = (float) (millis() - nav_loopT) / 1000;
+		nav_loopT = millis();
+// Altitude PID
+		if (fabs(GPS_AltErr) <= 3) {
+			altErrorI *= navDT; // Remove I-Term in deadspan
+		}
+		GPS_AltErr *= 10;
+		altErrorI += (GPS_AltErr * altPID_PARAM.kI) * navDT; // Acumulate I from PIDPOSR
+		altErrorI = constrain(altErrorI, -500, 500);// limits I term influence
+		delta[0] = (GPS_AltErr - lastAltDiff);
+		lastAltDiff = GPS_AltErr;
+		if (fabs(delta[0]) > 100) {
+			delta[0] = 0;
+		}
+		for (i = 0; i < GPS_UPD_HZ; i++) {
+			altHist[i] = altHist[i + 1];
+		}
+		altHist[GPS_UPD_HZ - 1] = delta[0];
+// Store 1 sec history for D-term in shift register
+		ALT_deltaSum = 0;// Sum History
+		for (i = 0; i < GPS_UPD_HZ; i++) {
+			ALT_deltaSum += altHist[i];
+		}
+		ALT_deltaSum = (ALT_deltaSum * altPID_PARAM.kD) / navDT;
+		altDiff = GPS_AltErr * altPID_PARAM.kP; // Add P in Elevator compensation.
+		altDiff += (altErrorI);// Add I
+// Start of NavPID
+		if (fabs(navDiff) <= 3) {
+			navErrorI *= navDT; // Remove I-Term in deadspan
+		}
+		navDiff *= 10;
+		navErrorI += (navDiff * navPID_PARAM.kI) * navDT;
+		navErrorI = constrain(navErrorI, -500, 500);
+		delta[1] = (navDiff - lastnavDiff);
+		lastnavDiff = navDiff;
+		if (fabs(delta[1]) > 100) {
+			delta[1] = 0;
+		}
+// Store 1 sec history for D-term in shift register
+		for (i = 0; i < GPS_UPD_HZ; i++) {
+			navDif[i] = navDif[i + 1];
+		}
+		navDif[GPS_UPD_HZ - 1] = delta[1];
+		NAV_deltaSum = 0; // Sum History
+		for (i = 0; i < GPS_UPD_HZ; i++) {
+			NAV_deltaSum += navDif[i];
+		}
+		NAV_deltaSum = (NAV_deltaSum * navPID_PARAM.kD) / navDT; // Add D
+		navDiff *= navPID_PARAM.kP;// Add P
+		navDiff += navErrorI;// Add I
+// End of NavPID
+// Limit outputs
+		GPS_angle[AI_PITCH] = constrain(altDiff / 10, -gpsProfile->fw_gps_maxclimb * 10, gpsProfile->fw_gps_maxdive * 10) + ALT_deltaSum;
+		GPS_angle[AI_ROLL] = constrain(navDiff / 10, -gpsProfile->fw_gps_maxcorr * 10, gpsProfile->fw_gps_maxcorr * 10) + NAV_deltaSum;
+		GPS_angle[AI_YAW] = constrain(navDiff / 10, -gpsProfile->fw_gps_rudder * 10, gpsProfile->fw_gps_rudder * 10) + NAV_deltaSum;
+// Elevator compensation depending on behaviour.
+// Prevent stall with Disarmed motor
+		if (STATE(MOTORS_STOPPED)) {
+			GPS_angle[AI_PITCH] = constrain(GPS_angle[PITCH], 0, gpsProfile->fw_gps_maxdive * 10);
+		}
+// Add elevator compared with rollAngle
+		if (!STATE(CLIMBOUT_FW)) {
+			GPS_angle[AI_PITCH] -= (fabs(inclination.values.rollDeciDegrees) * gpsProfile->fw_roll_comp);
+		}
+// Throttle compensation depending on behaviour.
+// Compensate throttle with pitch Angle
+		NAV_Thro -= constrain(inclination.values.pitchDeciDegrees * PITCH_COMP, 0, 450);
+		NAV_Thro = constrain(NAV_Thro, gpsProfile->fw_idle_throttle, gpsProfile->fw_climb_throttle);
+// Force the Plane move forward in headwind with speedBoost
+		groundSpeed = GPS_speed;
+		spDiff = (GPS_MINSPEED - groundSpeed) * I_TERM;
+		if (GPS_speed < GPS_MINSPEED - 50 || GPS_speed > GPS_MINSPEED + 50) {
+			speedBoost += spDiff;
+		}
+		speedBoost = constrain(speedBoost, 0, 500);
+		NAV_Thro += speedBoost;
+	}
+// End of NavTimer
+// PassThru for throttle In AcroMode
+	if ((!FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE)) || (FLIGHT_MODE(PASSTHRU_MODE) && !STATE(FW_FAILSAFE_RTH_ENABLE))) {
+		NAV_Thro = TX_Thro;
+		GPS_angle[AI_PITCH] = 0;
+		GPS_angle[AI_ROLL] = 0;
+		GPS_angle[AI_YAW] = 0;
+	}
+	rcCommand[THROTTLE] = NAV_Thro;
+	rcCommand[YAW] += GPS_angle[AI_YAW];
+}
 #endif

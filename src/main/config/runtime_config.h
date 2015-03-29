@@ -55,6 +55,9 @@ typedef enum {
     CALIBRATE_MAG  = (1 << 2),
     SMALL_ANGLE    = (1 << 3),
     FIXED_WING     = (1 << 4),                   // set when in flying_wing or airplane mode. currently used by althold selection code
+    MOTORS_STOPPED = (1 << 5),
+    FW_FAILSAFE_RTH_ENABLE = (1 << 6),
+    CLIMBOUT_FW = (1 << 7),
 } stateFlags_t;
 
 #define DISABLE_STATE(mask) (stateFlags &= ~(mask))

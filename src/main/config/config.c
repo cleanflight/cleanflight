@@ -87,7 +87,7 @@ void mixerUseConfigs(
 );
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
 
-#define FLASH_TO_RESERVE_FOR_CONFIG 0x800
+#define FLASH_TO_RESERVE_FOR_CONFIG 0x1000
 
 #ifndef FLASH_PAGE_COUNT
 #ifdef STM32F303xC
@@ -190,6 +190,18 @@ void resetGpsProfile(gpsProfile_t *gpsProfile)
     gpsProfile->nav_speed_min = 100;
     gpsProfile->nav_speed_max = 300;
     gpsProfile->ap_mode = 40;
+
+
+    // fw stuff
+    gpsProfile->fw_gps_maxcorr = 20;
+    gpsProfile->fw_gps_rudder = 15;
+    gpsProfile->fw_gps_maxclimb = 15;
+    gpsProfile->fw_gps_maxdive = 15;
+    gpsProfile->fw_climb_throttle = 1900;
+    gpsProfile->fw_cruise_throttle = 1500;
+    gpsProfile->fw_idle_throttle = 1300;
+    gpsProfile->fw_scaler_throttle = 8;
+    gpsProfile->fw_roll_comp = 1;
 }
 #endif
 

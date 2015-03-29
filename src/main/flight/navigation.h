@@ -34,12 +34,25 @@ typedef struct gpsProfile_s {
     uint16_t nav_speed_min;                 // cm/sec
     uint16_t nav_speed_max;                 // cm/sec
     uint16_t ap_mode;                       // Temporarily Disables GPS_HOLD_MODE to be able to make it possible to adjust the Hold-position when moving the sticks, creating a deadspan for GPS
+
+   uint8_t fw_vector_trust;
+   uint8_t fw_flaperons_invert;
+   int16_t fw_gps_maxcorr; // Degrees banking Allowed by GPS.
+   int16_t fw_gps_rudder; // Maximum Rudder
+   int16_t fw_gps_maxclimb; // Degrees climbing . To much can stall the plane.
+   int16_t fw_gps_maxdive; // Degrees Diving . To much can overspeed the plane.
+   uint16_t fw_climb_throttle; // Max allowed throttle in GPS modes.
+   uint16_t fw_cruise_throttle; // Throttle to set for cruisespeed.
+   uint16_t fw_idle_throttle; // Lowest throttleValue during Descend
+   uint16_t fw_scaler_throttle; // Adjust to Match Power/Weight ratio of your model
+   float fw_roll_comp;
+
 } gpsProfile_t;
 
 extern int16_t GPS_angle[ANGLE_INDEX_COUNT];                // it's the angles that must be applied for GPS correction
 
-extern int32_t GPS_home[2];
-extern int32_t GPS_hold[2];
+extern int32_t GPS_home[3];
+extern int32_t GPS_hold[3];
 
 extern uint16_t GPS_distanceToHome;        // distance to home point in meters
 extern int16_t GPS_directionToHome;        // direction to home or hol point in degrees
@@ -53,5 +66,7 @@ void gpsUseProfile(gpsProfile_t *gpsProfileToUse);
 void gpsUsePIDs(pidProfile_t *pidProfile);
 void updateGpsStateForHomeAndHoldMode(void);
 void updateGpsWaypointsAndMode(void);
+void fw_nav(void);
+void fw_nav_reset(void);
 
 void onGpsNewData(void);

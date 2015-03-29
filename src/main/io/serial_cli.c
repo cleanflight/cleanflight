@@ -351,6 +351,19 @@ const clivalue_t valueTable[] = {
     { "nav_speed_min",              VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_speed_min, 10, 2000 },
     { "nav_speed_max",              VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_speed_max, 10, 2000 },
     { "nav_slew_rate",              VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_slew_rate, 0, 100 },
+
+
+    { "fw_gps_maxcorr", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxcorr, -45, 45 },
+   { "fw_gps_rudder", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_rudder, -45, 45 },
+   { "fw_gps_maxclimb", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxclimb, -45, 45 },
+   { "fw_gps_maxdive", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxdive, -45, 45 },
+   { "fw_climb_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_climb_throttle, 1000, 2000 },
+   { "fw_cruise_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_cruise_throttle, 1000, 2000 },
+   { "fw_idle_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_idle_throttle, 1000, 2000 },
+   { "fw_scaler_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_scaler_throttle, 0, 15 },
+   { "fw_roll_comp", VAR_FLOAT| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_roll_comp, 0, 2 },
+   { "fw_rth_alt", VAR_UINT8| PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOSR], 0, 200 },
+
 #endif
 
     { "serialrx_provider",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.serialrx_provider, 0, SERIALRX_PROVIDER_MAX },

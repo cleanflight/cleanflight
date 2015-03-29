@@ -737,6 +737,7 @@ void loop(void)
             if ((FLIGHT_MODE(GPS_HOME_MODE) || FLIGHT_MODE(GPS_HOLD_MODE)) && STATE(GPS_FIX_HOME)) {
                 updateGpsStateForHomeAndHoldMode();
             }
+        	debug[2]=(STATE(GPS_FIX)?10:0)+(STATE(GPS_FIX_HOME)?1:0);
         }
 #endif
 
