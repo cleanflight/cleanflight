@@ -48,6 +48,7 @@
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
 
+#define SONAR
 #define BEEPER
 #define LED0
 
@@ -115,10 +116,6 @@
 #define CURRENT_METER_ADC_GPIO      GPIOA
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_5
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_2
-
-#define RSSI_ADC_GPIO               GPIOB
-#define RSSI_ADC_GPIO_PIN           GPIO_Pin_2
-#define RSSI_ADC_CHANNEL            ADC_Channel_12
 
 #define RSSI_ADC_GPIO               GPIOB
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_2

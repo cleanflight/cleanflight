@@ -20,10 +20,10 @@
 #define TARGET_BOARD_IDENTIFIER "SPKY" // SParKY
 
 #define LED0_GPIO   GPIOB
-#define LED0_PIN    Pin_4 // Blue LEDs - PB4
+#define LED0_PIN    Pin_4  // Blue (Rev 1 & 2) - PB4
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOB
 #define LED1_GPIO   GPIOB
-#define LED1_PIN    Pin_5  // Green LEDs - PB5
+#define LED1_PIN    Pin_5  // Green (Rev 1) / Red (Rev 2) - PB5
 #define LED1_PERIPHERAL RCC_AHBPeriph_GPIOB
 
 #define USABLE_TIMER_CHANNEL_COUNT 11
@@ -85,6 +85,20 @@
 #define I2C2_SDA_PIN         GPIO_Pin_10
 #define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
 #define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
+
+#define USE_ADC
+
+#define ADC_INSTANCE                ADC2
+#define ADC_DMA_CHANNEL             DMA2_Channel1
+#define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA2
+
+#define VBAT_ADC_GPIO               GPIOA
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
+#define VBAT_ADC_CHANNEL            ADC_Channel_1
+
+#define CURRENT_METER_ADC_GPIO      GPIOA
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_7
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_4
 
 #define BLACKBOX
 #define SERIAL_RX
