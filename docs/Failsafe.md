@@ -123,15 +123,6 @@ Throttle level used for landing.  Specify a value that causes the aircraft to de
 
 To configure if a failsafe intervention can be aborted (set to 1) or not (set to 0). Also see above.
 
-### `failsafe_use_altitude`
-
-To configure if failsafe uses altitude information to disarm above the ground.
-Set to 0 (default): failsafe does not use altitude info.
-Set to 1..800: failsafe disarms at 'failsafe_use_altitude' cm above groundlevel.
-
-NOTE:
-This setting only works when a barometer and/or a sonar sensor is present.
-
 Use standard RX usec values.  See Rx documentation.
 
 ### `failsafe_min_usec`
