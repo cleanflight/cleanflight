@@ -54,11 +54,9 @@ typedef enum {
     FAILSAFE_FIND_ME
 } failsafeBeeperWarnings_e;
 
-static failsafe_t* failsafe;
 
-void beepcodeInit(failsafe_t *initialFailsafe)
+void beepcodeInit()
 {
-    failsafe = initialFailsafe;
 }
 
 void beepcodeUpdateState(batteryState_e batteryState)

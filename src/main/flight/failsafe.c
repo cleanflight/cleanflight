@@ -46,7 +46,7 @@ extern int16_t debug[4];
  * failsafeEnable() should be called after system initialisation.
  */
 
-static failsafe_t failsafe;
+static failsafeState_t failsafe;
 
 static failsafeConfig_t *failsafeConfig;
 
@@ -73,7 +73,7 @@ void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse)
 #endif
 }
 
-failsafe_t* failsafeInit(rxConfig_t *intialRxConfig)
+failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 

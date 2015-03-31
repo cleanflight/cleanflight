@@ -40,7 +40,7 @@ typedef struct failsafe_s {
     int16_t counter;
     bool requestByRcSwitch;
     failsafeState_e state;
-} failsafe_t;
+} failsafeState_t;
 
 void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse);
 void failsafeReset(void);

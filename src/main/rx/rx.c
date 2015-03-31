@@ -79,8 +79,6 @@ static rxConfig_t *rxConfig;
 
 void serialRxInit(rxConfig_t *rxConfig);
 
-static failsafe_t *failsafe;
-
 void useRxConfig(rxConfig_t *rxConfigToUse)
 {
     rxConfig = rxConfigToUse;
@@ -88,7 +86,7 @@ void useRxConfig(rxConfig_t *rxConfigToUse)
 
 #define STICK_CHANNEL_COUNT 4
 
-void rxInit(rxConfig_t *rxConfig, failsafe_t *initialFailsafe)
+void rxInit(rxConfig_t *rxConfig)
 {
     uint8_t i;
 
@@ -97,8 +95,6 @@ void rxInit(rxConfig_t *rxConfig, failsafe_t *initialFailsafe)
     for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
         rcData[i] = rxConfig->midrc;
     }
-
-    failsafe = initialFailsafe;
 
 #ifdef SERIAL_RX
     if (feature(FEATURE_RX_SERIAL)) {
