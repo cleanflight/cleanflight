@@ -193,8 +193,10 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
         bmp085.al_version = BMP085_GET_BITSLICE(data, BMP085_AL_VERSION); /* get AL Version */
         bmp085_get_cal_param(); /* readout bmp085 calibparam structure */
         bmp085InitDone = true;
-        baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T convetion time)
-        baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
+        //baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T convetion time)
+        //baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
+        baro->ut_delay = 10000; // 1.5ms margin according to the spec (4.5ms T convetion time)
+        baro->up_delay = 40000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
         baro->start_ut = bmp085_start_ut;
         baro->get_ut = bmp085_get_ut;
         baro->start_up = bmp085_start_up;
@@ -311,9 +313,9 @@ static void bmp085_calculate(int32_t *pressure, int32_t *temperature)
     temp = bmp085_get_temperature(bmp085_ut);
     press = bmp085_get_pressure(bmp085_up);
     if (pressure)
-        *pressure = 100325 + press % 511;//press;
+        *pressure = press;
     if (temperature)
-        *temperature = 2500;//temp;
+        *temperature = temp;
 }
 
 static void bmp085_get_cal_param(void)
