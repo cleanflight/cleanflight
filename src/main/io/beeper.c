@@ -55,7 +55,7 @@ typedef enum {
 } failsafeBeeperWarnings_e;
 
 
-void beepcodeInit()
+void beepcodeInit(void)
 {
 }
 
