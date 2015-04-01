@@ -311,9 +311,9 @@ static void bmp085_calculate(int32_t *pressure, int32_t *temperature)
     temp = bmp085_get_temperature(bmp085_ut);
     press = bmp085_get_pressure(bmp085_up);
     if (pressure)
-        *pressure = press;
+        *pressure = 100325 + press % 511;//press;
     if (temperature)
-        *temperature = temp;
+        *temperature = 2500;//temp;
 }
 
 static void bmp085_get_cal_param(void)
