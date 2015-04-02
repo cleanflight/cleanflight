@@ -285,8 +285,10 @@ static void bmp085_get_ut(void)
 
 #if defined(BARO) && defined(BARO_EOC_GPIO)
     // wait in case of cockup
-    if (!convDone)
+    if (!convDone) {
         convOverrun++;
+        return; // keep old value
+    }
 #endif
 
     i2cRead(BMP085_I2C_ADDR, BMP085_ADC_OUT_MSB_REG, 2, data);
@@ -316,8 +318,10 @@ static void bmp085_get_up(void)
 
 #if defined(BARO) && defined(BARO_EOC_GPIO)
     // wait in case of cockup
-    if (!convDone)
+    if (!convDone) {
         convOverrun++;
+        return; // keep old value
+    }
 #endif
 
     i2cRead(BMP085_I2C_ADDR, BMP085_ADC_OUT_MSB_REG, 3, data);
