@@ -31,6 +31,7 @@
 
 #include "barometer_bmp085.h"
 
+#if defined(BARO) && defined(BARO_EOC_GPIO)
 // BMP085, Standard address 0x77
 static bool convDone = false;
 static uint16_t convOverrun = 0;
@@ -43,6 +44,7 @@ void EXTI15_10_IRQHandler(void)
         convDone = true;
     }
 }
+#endif
 
 typedef struct {
     int16_t ac1;
@@ -193,10 +195,16 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
         bmp085.al_version = BMP085_GET_BITSLICE(data, BMP085_AL_VERSION); /* get AL Version */
         bmp085_get_cal_param(); /* readout bmp085 calibparam structure */
         bmp085InitDone = true;
-        //baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T convetion time)
-        //baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
-        baro->ut_delay = 10000; // 1.5ms margin according to the spec (4.5ms T convetion time)
-        baro->up_delay = 40000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P convetion time with OSS=3)
+        
+#if defined(BARO_EOC_GPIO)        
+        // Stick to datasheet, EOC interrupt will handle the possible cockup in hardware
+        baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T conversion time)
+        baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P conversion time with OSS=3)
+#else
+        // Increase margins to minimise chance of bad data when conversion takes longer than usual (issue #569)
+        baro->ut_delay = 10000; // 4ms margin (4.5ms T conversion time)
+        baro->up_delay = 40000; // 25500+14500=27000 + 14.5ms margin (25.5ms P conversion time with OSS=3)
+#endif
         baro->start_ut = bmp085_start_ut;
         baro->get_ut = bmp085_get_ut;
         baro->start_up = bmp085_start_up;
@@ -265,7 +273,9 @@ static int32_t bmp085_get_pressure(uint32_t up)
 
 static void bmp085_start_ut(void)
 {
+#if defined(BARO) && defined(BARO_EOC_GPIO)
     convDone = false;
+#endif
     i2cWrite(BMP085_I2C_ADDR, BMP085_CTRL_MEAS_REG, BMP085_T_MEASURE);
 }
 
@@ -273,9 +283,11 @@ static void bmp085_get_ut(void)
 {
     uint8_t data[2];
 
+#if defined(BARO) && defined(BARO_EOC_GPIO)
     // wait in case of cockup
     if (!convDone)
         convOverrun++;
+#endif
 
     i2cRead(BMP085_I2C_ADDR, BMP085_ADC_OUT_MSB_REG, 2, data);
     bmp085_ut = (data[0] << 8) | data[1];
@@ -286,7 +298,11 @@ static void bmp085_start_up(void)
     uint8_t ctrl_reg_data;
 
     ctrl_reg_data = BMP085_P_MEASURE + (bmp085.oversampling_setting << 6);
+
+#if defined(BARO) && defined(BARO_EOC_GPIO)    
     convDone = false;
+#endif
+
     i2cWrite(BMP085_I2C_ADDR, BMP085_CTRL_MEAS_REG, ctrl_reg_data);
 }
 
@@ -298,9 +314,11 @@ static void bmp085_get_up(void)
 {
     uint8_t data[3];
 
+#if defined(BARO) && defined(BARO_EOC_GPIO)
     // wait in case of cockup
     if (!convDone)
         convOverrun++;
+#endif
 
     i2cRead(BMP085_I2C_ADDR, BMP085_ADC_OUT_MSB_REG, 3, data);
     bmp085_up = (((uint32_t) data[0] << 16) | ((uint32_t) data[1] << 8) | (uint32_t) data[2])
