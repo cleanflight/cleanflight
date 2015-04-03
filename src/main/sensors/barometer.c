@@ -74,7 +74,7 @@ static int32_t applyBarometerMedianFilter(int32_t newPressureReading)
         medianFilterReady = true;
     }
 
-    barometerFilterSamples[nextSampleIndex] = newPressureReading;
+    barometerFilterSamples[currentFilterSampleIndex] = newPressureReading;
     currentFilterSampleIndex = nextSampleIndex;
     
     if (medianFilterReady)
