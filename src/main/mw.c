@@ -365,6 +365,12 @@ void mwArm(void)
     }
 }
 
+// Returns configured 'minthrottle' value.
+uint16_t getMasterConfigMinthrottle(void)
+{
+    return masterConfig.escAndServoConfig.minthrottle;
+}
+
 // Automatic ACC Offset Calibration
 bool AccInflightCalibrationArmed = false;
 bool AccInflightCalibrationMeasurementDone = false;

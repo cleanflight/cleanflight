@@ -30,6 +30,7 @@ typedef struct failsafeConfig_s {
 
 typedef struct failsafeState_s {
     int16_t counter;
+    int16_t motorsCounter;
     int16_t events;
     bool enabled;
 } failsafeState_t;
