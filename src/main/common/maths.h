@@ -77,3 +77,8 @@ int scaleRange(int x, int srcMin, int srcMax, int destMin, int destMax);
 void normalizeV(struct fp_vector *src, struct fp_vector *dest);
 
 void rotateV(struct fp_vector *v, fp_angles_t *delta);
+
+int32_t quick_median_filter3(int32_t * v);
+int32_t quick_median_filter5(int32_t * v);
+int32_t quick_median_filter7(int32_t * v);
+int32_t quick_median_filter9(int32_t * v);
