@@ -195,16 +195,8 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
         bmp085.al_version = BMP085_GET_BITSLICE(data, BMP085_AL_VERSION); /* get AL Version */
         bmp085_get_cal_param(); /* readout bmp085 calibparam structure */
         bmp085InitDone = true;
-        
-#if defined(BARO_EOC_GPIO)        
-        // Stick to datasheet, EOC interrupt will handle the possible cockup in hardware
         baro->ut_delay = 6000; // 1.5ms margin according to the spec (4.5ms T conversion time)
         baro->up_delay = 27000; // 6000+21000=27000 1.5ms margin according to the spec (25.5ms P conversion time with OSS=3)
-#else
-        // Increase margins to minimise chance of bad data when conversion takes longer than usual (issue #569)
-        baro->ut_delay = 10000; // 4ms margin (4.5ms T conversion time)
-        baro->up_delay = 40000; // 25500+14500=27000 + 14.5ms margin (25.5ms P conversion time with OSS=3)
-#endif
         baro->start_ut = bmp085_start_ut;
         baro->get_ut = bmp085_get_ut;
         baro->start_up = bmp085_start_up;
