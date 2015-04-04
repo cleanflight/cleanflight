@@ -22,7 +22,6 @@
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
-
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 
@@ -30,6 +29,7 @@
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "config/runtime_config.h"
+#include "config/config.h"
 
 #include "flight/failsafe.h"
 
@@ -87,7 +87,7 @@ failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig)
 }
 
 bool failsafeIsIdle(void)
-{             // <= 1 means 'failsafeOnValidDataReceived()' has been called
+{             // <= 1 means failsafeReset/ValidData fn has been called
     return failsafeState.counter <= 1;
 }
 
@@ -172,6 +172,7 @@ void failsafeUpdateState(void)
     // not been above min throttle then disarm copter
     if (failsafeShouldHaveCausedLandingByNow() || !ARMING_FLAG(ARMED) ||
             failsafeState.motorsCounter <= 0) {
+        DISABLE_ARMING_FLAG(OK_TO_ARM);     // don't allow BOXARM
         mwDisarm();
     }
 }
@@ -185,15 +186,23 @@ void failsafeOnRxCycle(void)
 {
     failsafeState.counter++;
 
-    // track if motors are staying above min throttle (if not plane)
-    if (!STATE(FIXED_WING)) {
-        if (rcCommand[THROTTLE] > getMasterConfigMinthrottle()) {
-            if (failsafeState.motorsCounter < 300)    // 300 = ~3 seconds
-                ++failsafeState.motorsCounter;
+    // if failsafe enabled and not plane mode then
+    // track if motors are staying above min throttle
+    if (failsafeState.enabled && !STATE(FIXED_WING)) {
+        if (!feature(FEATURE_3D)) {  // if not 3D mode
+                // if motors are above min throttle (not "low") then set
+                // time value where motors have to go "low" for that long
+                // before allowing direct-disarm on failsafe
+                if (rcCommand[THROTTLE] > getMasterConfigMinthrottle()) {
+                    failsafeState.motorsCounter = 300;   // 300 = ~3 seconds
+                }
+                else {      // motorsCounter=0 means armed but motors "low"
+                    if (failsafeState.motorsCounter > 0)
+                        --failsafeState.motorsCounter;
+                }
         }
-        else {
-            if (failsafeState.motorsCounter > 0)
-                --failsafeState.motorsCounter;
+        else {  // 3D mode, set non-zero value so direct-disarm never happens
+            failsafeState.motorsCounter = 1000;
         }
     }
 }

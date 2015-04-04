@@ -265,13 +265,14 @@ void annexCode(void)
             LED0_TOGGLE;
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
-
-        if (!STATE(SMALL_ANGLE)) {
+        else if (!STATE(SMALL_ANGLE)) {
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
-
-        if (IS_RC_MODE_ACTIVE(BOXAUTOTUNE)) {
+        else if (IS_RC_MODE_ACTIVE(BOXAUTOTUNE)) {
             DISABLE_ARMING_FLAG(OK_TO_ARM);
+        }
+        else if (failsafeHasTimerElapsed()) {  // if failsafe active then
+            DISABLE_ARMING_FLAG(OK_TO_ARM);    // don't allow BOXARM
         }
 
         if (ARMING_FLAG(OK_TO_ARM)) {
