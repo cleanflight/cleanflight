@@ -138,9 +138,17 @@ static const gpsInitData_t gpsInitData[] = {
 // MTK init string
 // sets: NMEA strings frequency (=output respective NMEA string every Nth fix)
 //       goes 1 Hz -> 2 Hz -> 5 Hz refresh rate (silently expects that if refresh rate is not supported the GPS will ignore it)
-//       diasbles nav speed treshold (e.g. all movements reported)
+//       disables nav speed treshold (e.g. all movements reported)
 //       SBAS and WAAS enabled
-define MTK_Init "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n$PMTK220,1000*1F\r\n$PMTK220,500*2B\r\n$PMTK220,200*2C\r\n$PMTK397,0*23\r\n$PMTK313,1*2E\r\n$PMTK319,0*25\r\n$PMTK301,2*2E\r\n"
+#define MTK_Init \
+  "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n" \
+  "$PMTK220,1000*1F\r\n" \
+  "$PMTK220,500*2B\r\n" \
+  "$PMTK220,200*2C\r\n" \
+  "$PMTK397,0*23\r\n" \
+  "$PMTK313,1*2E\r\n" \
+  "$PMTK319,0*25\r\n" \
+  "$PMTK301,2*2E\r\n"
 
 static const uint8_t ubloxInit[] = {
 
@@ -382,13 +390,13 @@ void gpsInitMTK(void)
 
             if (gpsData.state_position < GPS_INIT_ENTRIES) {
                 // try different speed to INIT
-                uint32_t newBaudRate = gpsInitData[gpsData.state_position].baudrate;
+                baudRate_e newBaudRateIndex = gpsInitData[gpsData.state_position].baudrateIndex;
 
                 gpsData.state_ts = now;
 
-                if (serialGetBaudRate(gpsPort) != newBaudRate) {
+                if (lookupBaudRateIndex(serialGetBaudRate(gpsPort)) != newBaudRateIndex) {
                     // change the rate if needed and wait a little
-                    serialSetBaudRate(gpsPort, newBaudRate);
+                    serialSetBaudRate(gpsPort, baudRates[newBaudRateIndex]);
                     return;
                 }
 
@@ -403,7 +411,7 @@ void gpsInitMTK(void)
             break;
 
         case GPS_CHANGE_BAUD:
-            serialSetBaudRate(gpsPort, gpsInitData[gpsData.baudrateIndex].baudrate);
+            serialSetBaudRate(gpsPort, baudRates[gpsInitData[gpsData.baudrateIndex].baudrateIndex]);
             gpsSetState(GPS_CONFIGURE);
             break;
 
