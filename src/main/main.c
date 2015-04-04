@@ -100,7 +100,7 @@ serialPort_t *loopbackPort;
 void printfSupportInit(void);
 void timerInit(void);
 void telemetryInit(void);
-void serialInit(serialConfig_t *initialSerialConfig);
+void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled);
 void mspInit(serialConfig_t *serialConfig);
 void cliInit(serialConfig_t *serialConfig);
 void failsafeInit(rxConfig_t *intialRxConfig);
@@ -190,6 +190,8 @@ void init(void)
     delay(100);
 
     timerInit();  // timer must be initialized before any channel is allocated
+
+    serialInit(&masterConfig.serialConfig, feature(FEATURE_SOFTSERIAL));
 
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
@@ -340,8 +342,6 @@ void init(void)
 #endif
 
     imuInit();
-
-    serialInit(&masterConfig.serialConfig);
 
     mspInit(&masterConfig.serialConfig);
     cliInit(&masterConfig.serialConfig);

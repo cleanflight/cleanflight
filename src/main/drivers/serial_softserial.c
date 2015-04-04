@@ -45,6 +45,41 @@
 #define MAX_SOFTSERIAL_PORTS 1
 #endif
 
+typedef struct softSerial_s {
+    serialPort_t     port;
+
+    const timerHardware_t *rxTimerHardware;
+    volatile uint8_t rxBuffer[SOFTSERIAL_BUFFER_SIZE];
+
+    const timerHardware_t *txTimerHardware;
+    volatile uint8_t txBuffer[SOFTSERIAL_BUFFER_SIZE];
+
+    uint8_t          isSearchingForStartBit;
+    uint8_t          rxBitIndex;
+    uint8_t          rxLastLeadingEdgeAtBitIndex;
+    uint8_t          rxEdge;
+
+    uint8_t          isTransmittingData;
+    int8_t           bitsLeftToTransmit;
+
+    uint16_t         internalTxBuffer;  // includes start and stop bits
+    uint16_t         internalRxBuffer;  // includes start and stop bits
+
+    uint16_t         transmissionErrors;
+    uint16_t         receiveErrors;
+
+    uint8_t          softSerialPortIndex;
+
+    timerCCHandlerRec_t timerCb;
+    timerCCHandlerRec_t edgeCb;
+} softSerial_t;
+
+extern timerHardware_t* serialTimerHardware;
+extern softSerial_t softSerialPorts[];
+
+extern const struct serialPortVTable softSerialVTable[];
+
+
 softSerial_t softSerialPorts[MAX_SOFTSERIAL_PORTS];
 
 void onSerialTimer(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
@@ -52,7 +87,7 @@ void onSerialRxPinChange(timerCCHandlerRec_t *cbRec, captureCompare_t capture);
 
 void setTxSignal(softSerial_t *softSerial, uint8_t state)
 {
-    if (softSerial->port.inversion == SERIAL_INVERTED) {
+    if (softSerial->port.options & SERIAL_INVERTED) {
         state = !state;
     }
 
@@ -119,10 +154,10 @@ static void serialICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
     TIM_ICInit(tim, &TIM_ICInitStructure);
 }
 
-static void serialTimerRxConfig(const timerHardware_t *timerHardwarePtr, uint8_t reference, serialInversion_e inversion)
+static void serialTimerRxConfig(const timerHardware_t *timerHardwarePtr, uint8_t reference, portOptions_t options)
 {
     // start bit is usually a FALLING signal
-    serialICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, inversion == SERIAL_INVERTED ? TIM_ICPolarity_Rising : TIM_ICPolarity_Falling);
+    serialICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, (options & SERIAL_INVERTED) ? TIM_ICPolarity_Rising : TIM_ICPolarity_Falling);
     timerChCCHandlerInit(&softSerialPorts[reference].edgeCb, onSerialRxPinChange);
     timerChConfigCallbacks(timerHardwarePtr, &softSerialPorts[reference].edgeCb, NULL);
 }
@@ -145,7 +180,7 @@ static void resetBuffers(softSerial_t *softSerial)
     softSerial->port.txBufferHead = 0;
 }
 
-serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallbackPtr callback, uint32_t baud, serialInversion_e inversion)
+serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallbackPtr callback, uint32_t baud, portOptions_t options)
 {
     softSerial_t *softSerial = &(softSerialPorts[portIndex]);
 
@@ -166,7 +201,7 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
     softSerial->port.vTable = softSerialVTable;
     softSerial->port.baudRate = baud;
     softSerial->port.mode = MODE_RXTX;
-    softSerial->port.inversion = inversion;
+    softSerial->port.options = options;
     softSerial->port.callback = callback;
 
     resetBuffers(softSerial);
@@ -188,7 +223,7 @@ serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallb
     delay(50);
 
     serialTimerTxConfig(softSerial->txTimerHardware, portIndex, baud);
-    serialTimerRxConfig(softSerial->rxTimerHardware, portIndex, inversion);
+    serialTimerRxConfig(softSerial->rxTimerHardware, portIndex, options);
 
     return &softSerial->port;
 }
@@ -258,7 +293,7 @@ void prepareForNextRxByte(softSerial_t *softSerial)
         serialICConfig(
             softSerial->rxTimerHardware->tim,
             softSerial->rxTimerHardware->channel,
-            softSerial->port.inversion == SERIAL_INVERTED ? TIM_ICPolarity_Rising : TIM_ICPolarity_Falling
+            (softSerial->port.options & SERIAL_INVERTED) ? TIM_ICPolarity_Rising : TIM_ICPolarity_Falling
         );
     }
 }
@@ -328,6 +363,7 @@ void onSerialRxPinChange(timerCCHandlerRec_t *cbRec, captureCompare_t capture)
     UNUSED(capture);
 
     softSerial_t *softSerial = container_of(cbRec, softSerial_t, edgeCb);
+    bool inverted = softSerial->port.options & SERIAL_INVERTED;
 
     if ((softSerial->port.mode & MODE_RX) == 0) {
         return;
@@ -342,7 +378,7 @@ void onSerialRxPinChange(timerCCHandlerRec_t *cbRec, captureCompare_t capture)
             softSerial->transmissionErrors++;
         }
 
-        serialICConfig(softSerial->rxTimerHardware->tim, softSerial->rxTimerHardware->channel, softSerial->port.inversion == SERIAL_INVERTED ? TIM_ICPolarity_Falling : TIM_ICPolarity_Rising);
+        serialICConfig(softSerial->rxTimerHardware->tim, softSerial->rxTimerHardware->channel, inverted ? TIM_ICPolarity_Falling : TIM_ICPolarity_Rising);
         softSerial->rxEdge = LEADING;
 
         softSerial->rxBitIndex = 0;
@@ -360,10 +396,10 @@ void onSerialRxPinChange(timerCCHandlerRec_t *cbRec, captureCompare_t capture)
 
     if (softSerial->rxEdge == TRAILING) {
         softSerial->rxEdge = LEADING;
-        serialICConfig(softSerial->rxTimerHardware->tim, softSerial->rxTimerHardware->channel, softSerial->port.inversion == SERIAL_INVERTED ? TIM_ICPolarity_Falling : TIM_ICPolarity_Rising);
+        serialICConfig(softSerial->rxTimerHardware->tim, softSerial->rxTimerHardware->channel, inverted ? TIM_ICPolarity_Falling : TIM_ICPolarity_Rising);
     } else {
         softSerial->rxEdge = TRAILING;
-        serialICConfig(softSerial->rxTimerHardware->tim, softSerial->rxTimerHardware->channel, softSerial->port.inversion == SERIAL_INVERTED ? TIM_ICPolarity_Rising : TIM_ICPolarity_Falling);
+        serialICConfig(softSerial->rxTimerHardware->tim, softSerial->rxTimerHardware->channel, inverted ? TIM_ICPolarity_Rising : TIM_ICPolarity_Falling);
     }
 }
 
@@ -408,7 +444,7 @@ void softSerialWriteByte(serialPort_t *s, uint8_t ch)
 void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate)
 {
     softSerial_t *softSerial = (softSerial_t *)s;
-    openSoftSerial(softSerial->softSerialPortIndex, s->callback, baudRate, softSerial->port.inversion);
+    openSoftSerial(softSerial->softSerialPortIndex, s->callback, baudRate, softSerial->port.options);
 }
 
 void softSerialSetMode(serialPort_t *instance, portMode_t mode)

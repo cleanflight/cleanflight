@@ -134,7 +134,7 @@ const uint16_t frSkyDataIdTable[] = {
 
 #define __USE_C99_MATH // for roundf()
 #define SMARTPORT_BAUD 57600
-#define SMARTPORT_UART_MODE MODE_BIDIR
+#define SMARTPORT_UART_MODE MODE_RXTX
 #define SMARTPORT_SERVICE_DELAY_MS 5 // telemetry requests comes in at roughly 12 ms intervals, keep this under that
 #define SMARTPORT_NOT_CONNECTED_TIMEOUT_MS 7000
 
@@ -162,10 +162,7 @@ static void smartPortDataReceive(uint16_t c)
     if (lastChar == FSSP_START_STOP) {
         smartPortState = SPSTATE_WORKING;
         smartPortLastRequestTime = now;
-        if ((c == FSSP_SENSOR_ID1) ||
-            (c == FSSP_SENSOR_ID2) ||
-            (c == FSSP_SENSOR_ID3) ||
-            (c == FSSP_SENSOR_ID4)) {
+        if (c == FSSP_SENSOR_ID1) {
             smartPortHasRequest = 1;
             // we only responde to these IDs
             // the X4R-SB does send other IDs, we ignore them, but take note of the time
@@ -229,11 +226,19 @@ void freeSmartPortTelemetryPort(void)
 
 void configureSmartPortTelemetryPort(void)
 {
+    portOptions_t portOptions;
+
     if (!portConfig) {
         return;
     }
 
-    smartPortSerialPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_SMARTPORT, NULL, SMARTPORT_BAUD, SMARTPORT_UART_MODE, telemetryConfig->telemetry_inversion);
+    portOptions = SERIAL_BIDIR;
+
+    if (telemetryConfig->telemetry_inversion) {
+        portOptions |= SERIAL_INVERTED;
+    }
+
+    smartPortSerialPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_SMARTPORT, NULL, SMARTPORT_BAUD, SMARTPORT_UART_MODE, portOptions);
 
     if (!smartPortSerialPort) {
         return;

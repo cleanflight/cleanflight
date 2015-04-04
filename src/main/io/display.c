@@ -69,7 +69,7 @@ controlRateConfig_t *getControlRateConfig(uint8_t profileIndex);
 
 #define MILLISECONDS_IN_A_SECOND (1000 * 1000)
 
-#define DISPLAY_UPDATE_FREQUENCY (MILLISECONDS_IN_A_SECOND / 10)
+#define DISPLAY_UPDATE_FREQUENCY (MILLISECONDS_IN_A_SECOND / 5)
 #define PAGE_CYCLE_FREQUENCY (MILLISECONDS_IN_A_SECOND * 5)
 
 static uint32_t nextDisplayUpdateAt = 0;
@@ -283,7 +283,7 @@ void showProfilePage(void)
 
     controlRateConfig_t *controlRateConfig = getControlRateConfig(currentRateProfileIndex);
 
-    tfp_sprintf(lineBuffer, "Expo: %d, Rate: %d",
+    tfp_sprintf(lineBuffer, "RCE: %d, RCR: %d",
         controlRateConfig->rcExpo8,
         controlRateConfig->rcRate8
     );
@@ -291,7 +291,7 @@ void showProfilePage(void)
     i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
-    tfp_sprintf(lineBuffer, "Rates R:%d P:%d Y:%d",
+    tfp_sprintf(lineBuffer, "RR:%d PR:%d YR:%d",
         controlRateConfig->rates[FD_ROLL],
         controlRateConfig->rates[FD_PITCH],
         controlRateConfig->rates[FD_YAW]
@@ -359,7 +359,7 @@ void showGpsPage() {
     i2c_OLED_set_xy(HALF_SCREEN_CHARACTER_COLUMN_COUNT, rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
-    tfp_sprintf(lineBuffer, "Delta: %d", gpsData.lastMessage - gpsData.lastLastMessage);
+    tfp_sprintf(lineBuffer, "Dt: %d", gpsData.lastMessage - gpsData.lastLastMessage);
     padHalfLineBuffer();
     i2c_OLED_set_line(rowIndex);
     i2c_OLED_send_string(lineBuffer);

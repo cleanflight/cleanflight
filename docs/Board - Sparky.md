@@ -10,18 +10,18 @@ The Sparky is a very low cost and very powerful board.
 * MPU9150 I2C Acc/Gyro/Mag
 * Baro
 
-# Status
-
-Flyable!
-
-Tested with revision 1 board. 
+Tested with revision 1 & 2 boards. 
 
 ## TODO
-* ADC
+
 * Sonar
 * Display (via Flex port)
 * SoftSerial - though having 3 hardware serial ports makes it a little redundant.
 * Airplane PWM mappings.
+
+# Voltage and current monitoring (ADC support)
+
+Voltage monitoring is possible when enabled via PWM9 pin and current can be monitored via PWM8 pin. The voltage divider and current sensor need to be connected externally. The vbatscale cli parameter need to be adjusted to fit the sensor specification. For more details regarding the sensor hardware you can check here: https://github.com/TauLabs/TauLabs/wiki/User-Guide:-Battery-Configuration
 
 # Flashing
 
@@ -165,11 +165,11 @@ Flashing cleanflight will erase the TauLabs bootloader, this is not a problem an
 
 # Serial Ports
 
-| Value | Identifier   | RX        | TX         | Notes                                                                                       |
-| ----- | ------------ | --------- | ---------- | ------------------------------------------------------------------------------------------- |
-| 1     | USB VCP      | RX (USB)  | TX (USB)   |  |
-| 2     | USART1       | RX / PB7  | TX / PB6   | Conn1 / Flexi Port. |
-| 3     | USART2       | RX / PA3  | PWM6 / PA2 | On RX is on INPUT header.  Best port for Serial RX input |
+| Value | Identifier   | RX        | TX         | Notes                                                          |
+| ----- | ------------ | --------- | ---------- | -------------------------------------------------------------- |
+| 1     | USB VCP      | RX (USB)  | TX (USB)   |                                                                |
+| 2     | USART1       | RX / PB7  | TX / PB6   | Conn1 / Flexi Port.                                            |
+| 3     | USART2       | RX / PA3  | PWM6 / PA2 | On RX is on INPUT header.  Best port for Serial RX input       |
 | 4     | USART3       | RX / PB11 | TX / PB10  | RX/TX is on one end of the 6-pin header about the PWM outputs. |
 
 USB VCP *can* be used at the same time as other serial ports (unlike Naze32).
@@ -177,3 +177,31 @@ USB VCP *can* be used at the same time as other serial ports (unlike Naze32).
 All USART ports all support automatic hardware inversion which allows direct connection of serial rx receivers like the FrSky X4RSB - no external inverter needed.
 
 
+# Battery Monitoring Connections
+
+| Pin  | Signal | Function        |
+| ---- | ------ | --------------- |
+| PWM9 | PA4    | Battery Voltage |
+| PWM8 | PA7    | Current Meter   |
+
+## Voltage Monitoring
+
+The Sparky has no battery divider cricuit, PWM9 has an inline 10k resistor which has to be factored into the resistor calculations.
+The divider circuit should eventally create a voltage between 0v and 3.3v (MAX) at the MCU input pin.
+
+WARNING: Double check the output of your voltage divider using a voltmeter *before* connecting to the FC.
+
+### Example Circuit
+
+For a 3Cell battery divider the following circuit works:
+
+`Battery (+) ---< R1 >--- PWM9 ---< R2 >--- Battery (-)`
+ 
+* R1 = 8k2 (Grey Red Red)
+* R2 = 2k0 (Red Black Red)
+ 
+This gives a 2.2k for an 11.2v battery.  The `vbat_scale` for this divider should be set around `52`.
+
+## Current Monitoring
+
+Connect a current sensor to PWM8/PA7 that gives a range between 0v and 3.3v out (MAX). 

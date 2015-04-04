@@ -21,6 +21,7 @@
  *  Created on: 6 Apr 2014
  *      Author: Hydra
  */
+#include "rx/rx.h"
 
 #ifndef TELEMETRY_COMMON_H_
 #define TELEMETRY_COMMON_H_
@@ -37,7 +38,7 @@ typedef enum {
 
 typedef struct telemetryConfig_s {
     uint8_t telemetry_switch;               // Use aux channel to change serial output & baudrate( MSP / Telemetry ). It disables automatic switching to Telemetry when armed.
-    serialInversion_e telemetry_inversion;      // also shared with smartport inversion
+    uint8_t telemetry_inversion;            // also shared with smartport inversion
     float gpsNoFixLatitude;   
     float gpsNoFixLongitude;  
     frskyGpsCoordFormat_e frsky_coordinate_format;   
@@ -46,7 +47,7 @@ typedef struct telemetryConfig_s {
 } telemetryConfig_t;
 
 void checkTelemetryState(void);
-void handleTelemetry(void);
+void handleTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
 
 bool determineNewTelemetryEnabledState(portSharing_e portSharing);
 

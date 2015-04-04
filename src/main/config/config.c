@@ -88,24 +88,44 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 
 #define FLASH_TO_RESERVE_FOR_CONFIG 0x800
 
-#ifndef FLASH_PAGE_COUNT
-#ifdef STM32F303xC
-#define FLASH_PAGE_COUNT 128
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+#if !defined(FLASH_SIZE)
+#error "Flash size not defined for target. (specify in KB)"
 #endif
 
-#ifdef STM32F10X_MD
-#define FLASH_PAGE_COUNT 128
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
+
+#ifndef FLASH_PAGE_SIZE
+    #ifdef STM32F303xC
+        #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+    #endif
+
+    #ifdef STM32F10X_MD
+        #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
+    #endif
+
+    #ifdef STM32F10X_HD
+        #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+    #endif
 #endif
 
-#ifdef STM32F10X_HD
-#define FLASH_PAGE_COUNT 128
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
-#endif
+#if !defined(FLASH_SIZE) && !defined(FLASH_PAGE_COUNT)
+    #ifdef STM32F10X_MD
+        #define FLASH_PAGE_COUNT 128
+    #endif
+
+    #ifdef STM32F10X_HD
+        #define FLASH_PAGE_COUNT 128
+    #endif
 #endif
 
-#if !defined(FLASH_PAGE_COUNT) || !defined(FLASH_PAGE_SIZE)
+#if defined(FLASH_SIZE)
+#define FLASH_PAGE_COUNT ((FLASH_SIZE * 0x400) / FLASH_PAGE_SIZE)
+#endif
+
+#if !defined(FLASH_PAGE_SIZE)
+#error "Flash page size not defined for target."
+#endif
+
+#if !defined(FLASH_PAGE_COUNT)
 #error "Flash page count not defined for target."
 #endif
 
@@ -220,7 +240,7 @@ void resetFlight3DConfig(flight3DConfig_t *flight3DConfig)
 
 void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 {
-    telemetryConfig->telemetry_inversion = SERIAL_NOT_INVERTED;
+    telemetryConfig->telemetry_inversion = 0;
     telemetryConfig->telemetry_switch = 0;
     telemetryConfig->gpsNoFixLatitude = 0;
     telemetryConfig->gpsNoFixLongitude = 0;
@@ -349,6 +369,7 @@ static void resetConf(void)
     featureSet(FEATURE_RX_PPM);
 #endif
     featureSet(FEATURE_VBAT);
+    featureSet(FEATURE_FAILSAFE);
 
     // global settings
     masterConfig.current_profile_index = 0;     // default profile
@@ -448,7 +469,7 @@ static void resetConf(void)
     // Failsafe Variables
     currentProfile->failsafeConfig.failsafe_delay = 10;              // 1sec
     currentProfile->failsafeConfig.failsafe_off_delay = 200;         // 20sec
-    currentProfile->failsafeConfig.failsafe_throttle = 1200;         // decent default which should always be below hover throttle for people.
+    currentProfile->failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
     currentProfile->failsafeConfig.failsafe_min_usec = 985;          // any of first 4 channels below this value will trigger failsafe
     currentProfile->failsafeConfig.failsafe_max_usec = 2115;         // any of first 4 channels above this value will trigger failsafe
 
@@ -490,10 +511,11 @@ static void resetConf(void)
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
     featureSet(FEATURE_FAILSAFE);
-    featureClear(FEATURE_VBAT);
 #ifdef ALIENWIIF3
     masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
+    masterConfig.batteryConfig.vbatscale = 20;
 #else
+    featureClear(FEATURE_VBAT);
     masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
 #endif
     masterConfig.rxConfig.serialrx_provider = 1;
@@ -755,6 +777,12 @@ void validateAndFixConfig(void)
 #if defined(CC3D) && defined(DISPLAY) && defined(USE_USART3)
     if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
         featureClear(FEATURE_DISPLAY);
+    }
+#endif
+
+#if defined(SPRACINGF3) && defined(SONAR)
+    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) ) {
+        featureClear(FEATURE_SONAR);
     }
 #endif
 

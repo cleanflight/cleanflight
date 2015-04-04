@@ -188,7 +188,7 @@ static const blackboxMainFieldDefinition_t blackboxMainFields[] = {
     {"rcCommand",   3, UNSIGNED, .Ipredict = PREDICT(MINTHROTTLE), .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
 
     {"vbatLatest",    -1, UNSIGNED, .Ipredict = PREDICT(VBATREF),  .Iencode = ENCODING(NEG_14BIT),   .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_VBAT},
-    {"amperageLatest",-1, UNSIGNED, .Ipredict = PREDICT(0),        .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_AMPERAGE},
+    {"amperageLatest",-1, UNSIGNED, .Ipredict = PREDICT(0),        .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC},
 
 #ifdef MAG
     {"magADC",      0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_MAG},
@@ -343,8 +343,8 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
         case FLIGHT_LOG_FIELD_CONDITION_VBAT:
             return feature(FEATURE_VBAT);
 
-        case FLIGHT_LOG_FIELD_CONDITION_AMPERAGE:
-            return feature(FEATURE_CURRENT_METER);
+        case FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC:
+            return feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC;
 
         case FLIGHT_LOG_FIELD_CONDITION_NOT_LOGGING_EVERY_FRAME:
             return masterConfig.blackbox_rate_num < masterConfig.blackbox_rate_denom;
@@ -446,7 +446,7 @@ static void writeIntraframe(void)
         blackboxWriteUnsignedVB((vbatReference - blackboxCurrent->vbatLatest) & 0x3FFF);
     }
 
-    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE)) {
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC)) {
         // 12bit value directly from ADC
         blackboxWriteUnsignedVB(blackboxCurrent->amperageLatest);
     }
@@ -554,7 +554,7 @@ static void writeInterframe(void)
         deltas[optionalFieldCount++] = (int32_t) blackboxCurrent->vbatLatest - blackboxLast->vbatLatest;
     }
 
-    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE)) {
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC)) {
         deltas[optionalFieldCount++] = (int32_t) blackboxCurrent->amperageLatest - blackboxLast->amperageLatest;
     }
 
@@ -839,22 +839,11 @@ static bool sendFieldDefinition(const char * const *headerNames, unsigned int he
 
                 // Do we need to print an index in brackets after the name?
                 if (def->fieldNameIndex != -1) {
-                    blackboxWrite('[');
-                    // Assume the field index is a single digit:
-                    blackboxWrite(def->fieldNameIndex + '0');
-                    blackboxWrite(']');
-                    charsWritten += 3;
+                    charsWritten += blackboxPrintf("[%d]", def->fieldNameIndex);
                 }
             } else {
                 //The other headers are integers
-                if (def->arr[xmitState.headerIndex - 1] >= 10) {
-                    blackboxWrite(def->arr[xmitState.headerIndex - 1] / 10 + '0');
-                    blackboxWrite(def->arr[xmitState.headerIndex - 1] % 10 + '0');
-                    charsWritten += 2;
-                } else {
-                    blackboxWrite(def->arr[xmitState.headerIndex - 1] + '0');
-                    charsWritten++;
-                }
+                charsWritten += blackboxPrintf("%d", def->arr[xmitState.headerIndex - 1]);
             }
         }
     }
@@ -896,68 +885,48 @@ static bool blackboxWriteSysinfo()
             xmitState.u.serialBudget -= blackboxPrint("H Firmware type:Cleanflight\n");
         break;
         case 2:
-            blackboxPrintf("H Firmware revision:%s\n", shortGitRevision);
-
-            xmitState.u.serialBudget -= strlen("H Firmware revision:\n") + strlen(shortGitRevision);
+            xmitState.u.serialBudget -= blackboxPrintf("H Firmware revision:%s\n", shortGitRevision);
         break;
         case 3:
-            blackboxPrintf("H Firmware date:%s %s\n", buildDate, buildTime);
-
-            xmitState.u.serialBudget -= strlen("H Firmware date: \n") + strlen(buildDate) + strlen(buildTime);
+            xmitState.u.serialBudget -= blackboxPrintf("H Firmware date:%s %s\n", buildDate, buildTime);
         break;
         case 4:
-            blackboxPrintf("H P interval:%d/%d\n", masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
-
-            /* Don't need to be super exact about the budget so don't mind the fact that we're using the length of
-             * the placeholder "%d" instead of the actual integer size.
-             */
-            xmitState.u.serialBudget -= strlen("H P interval:%d/%d\n");
+            xmitState.u.serialBudget -= blackboxPrintf("H P interval:%d/%d\n", masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
         break;
         case 5:
-            blackboxPrintf("H rcRate:%d\n", masterConfig.controlRateProfiles[masterConfig.current_profile_index].rcRate8);
-
-            xmitState.u.serialBudget -= strlen("H rcRate:%d\n");
+            xmitState.u.serialBudget -= blackboxPrintf("H rcRate:%d\n", masterConfig.controlRateProfiles[masterConfig.current_profile_index].rcRate8);
         break;
         case 6:
-            blackboxPrintf("H minthrottle:%d\n", masterConfig.escAndServoConfig.minthrottle);
-
-            xmitState.u.serialBudget -= strlen("H minthrottle:%d\n");
+            xmitState.u.serialBudget -= blackboxPrintf("H minthrottle:%d\n", masterConfig.escAndServoConfig.minthrottle);
         break;
         case 7:
-            blackboxPrintf("H maxthrottle:%d\n", masterConfig.escAndServoConfig.maxthrottle);
-
-            xmitState.u.serialBudget -= strlen("H maxthrottle:%d\n");
+            xmitState.u.serialBudget -= blackboxPrintf("H maxthrottle:%d\n", masterConfig.escAndServoConfig.maxthrottle);
         break;
         case 8:
-            blackboxPrintf("H gyro.scale:0x%x\n", castFloatBytesToInt(gyro.scale));
-
-            xmitState.u.serialBudget -= strlen("H gyro.scale:0x\n") + 6;
+            xmitState.u.serialBudget -= blackboxPrintf("H gyro.scale:0x%x\n", castFloatBytesToInt(gyro.scale));
         break;
         case 9:
-            blackboxPrintf("H acc_1G:%u\n", acc_1G);
-            
-            xmitState.u.serialBudget -= strlen("H acc_1G:%u\n");
+            xmitState.u.serialBudget -= blackboxPrintf("H acc_1G:%u\n", acc_1G);
         break;
         case 10:
-            blackboxPrintf("H vbatscale:%u\n", masterConfig.batteryConfig.vbatscale);
-
-            xmitState.u.serialBudget -= strlen("H vbatscale:%u\n");
+            if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_VBAT)) {
+                xmitState.u.serialBudget -= blackboxPrintf("H vbatscale:%u\n", masterConfig.batteryConfig.vbatscale);
+            } else {
+                xmitState.headerIndex += 2; // Skip the next two vbat fields too
+            }
         break;
         case 11:
-            blackboxPrintf("H vbatcellvoltage:%u,%u,%u\n", masterConfig.batteryConfig.vbatmincellvoltage,
+            xmitState.u.serialBudget -= blackboxPrintf("H vbatcellvoltage:%u,%u,%u\n", masterConfig.batteryConfig.vbatmincellvoltage,
                 masterConfig.batteryConfig.vbatwarningcellvoltage, masterConfig.batteryConfig.vbatmaxcellvoltage);
-
-            xmitState.u.serialBudget -= strlen("H vbatcellvoltage:%u,%u,%u\n");
         break;
         case 12:
-            blackboxPrintf("H vbatref:%u\n", vbatReference);
-
-            xmitState.u.serialBudget -= strlen("H vbatref:%u\n");
+            xmitState.u.serialBudget -= blackboxPrintf("H vbatref:%u\n", vbatReference);
         break;
         case 13:
-            blackboxPrintf("H currentMeter:%d,%d\n", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
-
-            xmitState.u.serialBudget -= strlen("H currentMeter:%d,%d\n");
+            //Note: Log even if this is a virtual current meter, since the virtual meter uses these parameters too:
+            if (feature(FEATURE_CURRENT_METER)) {
+                xmitState.u.serialBudget -= blackboxPrintf("H currentMeter:%d,%d\n", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
+            }
         break;
         default:
             return true;

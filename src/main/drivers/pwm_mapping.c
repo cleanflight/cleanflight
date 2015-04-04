@@ -28,6 +28,12 @@
 #include "pwm_output.h"
 #include "pwm_rx.h"
 #include "pwm_mapping.h"
+
+void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
+void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
+void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t idlePulse);
+void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse);
+
 /*
     Configuration maps
 
@@ -449,9 +455,17 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         }
 
         if (init->extraServos && !init->airplane) {
-            // remap PWM5..8 as servos when used in extended servo mode
-            if (timerIndex >= PWM5 && timerIndex <= PWM8)
-                type = MAP_TO_SERVO_OUTPUT;
+#if defined(NAZE) && defined(LED_STRIP_TIMER)
+            // if LED strip is active, PWM5-8 are unavailable, so map AUX1+AUX2 to PWM13+PWM14
+            if (init->useLEDStrip) { 
+                if (timerIndex >= PWM13 && timerIndex <= PWM14) {
+                  type = MAP_TO_SERVO_OUTPUT;
+                }
+            } else
+#endif
+                // remap PWM5..8 as servos when used in extended servo mode
+                if (timerIndex >= PWM5 && timerIndex <= PWM8)
+                    type = MAP_TO_SERVO_OUTPUT;
         }
 #endif
 
