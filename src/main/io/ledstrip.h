@@ -36,19 +36,20 @@
 
 typedef enum {
     LED_DISABLED = 0,
-    LED_DIRECTION_NORTH      = (1 << 0),
-    LED_DIRECTION_EAST       = (1 << 1),
-    LED_DIRECTION_SOUTH      = (1 << 2),
-    LED_DIRECTION_WEST       = (1 << 3),
-    LED_DIRECTION_UP         = (1 << 4),
-    LED_DIRECTION_DOWN       = (1 << 5),
-    LED_FUNCTION_INDICATOR   = (1 << 6),
-    LED_FUNCTION_WARNING     = (1 << 7),
-    LED_FUNCTION_FLIGHT_MODE = (1 << 8),
-    LED_FUNCTION_ARM_STATE   = (1 << 9),
-    LED_FUNCTION_THROTTLE    = (1 << 10),
-    LED_FUNCTION_THRUST_RING = (1 << 11),
-    LED_FUNCTION_COLOR       = (1 << 12),
+    LED_DIRECTION_NORTH         = (1 << 0),
+    LED_DIRECTION_EAST          = (1 << 1),
+    LED_DIRECTION_SOUTH         = (1 << 2),
+    LED_DIRECTION_WEST          = (1 << 3),
+    LED_DIRECTION_UP            = (1 << 4),
+    LED_DIRECTION_DOWN          = (1 << 5),
+    LED_FUNCTION_INDICATOR      = (1 << 6),
+    LED_FUNCTION_WARNING        = (1 << 7),
+    LED_FUNCTION_FLIGHT_MODE    = (1 << 8),
+    LED_FUNCTION_ARM_STATE      = (1 << 9),
+    LED_FUNCTION_THROTTLE       = (1 << 10),
+    LED_FUNCTION_THRUST_RING    = (1 << 11),
+    LED_FUNCTION_COLOR          = (1 << 12),
+    LED_FUNCTION_LARSON_SCANNER = (1 << 13),
 } ledFlag_e;
 
 #define LED_DIRECTION_BIT_OFFSET 0
@@ -68,7 +69,8 @@ typedef enum {
     LED_FUNCTION_ARM_STATE | \
     LED_FUNCTION_THROTTLE | \
     LED_FUNCTION_THRUST_RING | \
-    LED_FUNCTION_COLOR \
+    LED_FUNCTION_COLOR | \
+    LED_FUNCTION_LARSON_SCANNER \
 )
 
 
@@ -80,7 +82,7 @@ typedef struct ledConfig_s {
 
 extern uint8_t ledCount;
 extern uint8_t ledsInRingCount;
-
+extern uint8_t ledsInLarsonScannerCount;
 
 
 bool parseLedStripConfig(uint8_t ledIndex, const char *config);

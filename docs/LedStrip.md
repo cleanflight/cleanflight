@@ -108,6 +108,7 @@ Note: It is perfectly possible to configure an LED to have all directions `NESWU
 * `T` - `T`hrust state.
 * `R` - `R`ing thrust state.
 * `C` - `C`olor.
+* `L` - `L`arson Scanner (Cylon Effect)
 
 `cc` specifies the color number (0 based index).
 
@@ -249,6 +250,25 @@ For example, to set led 0 to always use color 10 you would issue this command.
 
 ```
 led 0 0,0::C:10
+```
+
+#### Larson Scanner (Cylon Effect)
+
+The Larson Scanner replicates the scanning "eye" effect seen on the mechanical Cylons and on Kitt from Knight Rider.
+
+This function merely varies the brightness of the color that you choose.
+
+To set up an eight LED Larson Scanner with a red colored "eye":
+
+```
+led 0 0,0::L:3
+led 0 1,0::L:3
+led 0 2,0::L:3
+led 0 3,0::L:3
+led 0 4,0::L:3
+led 0 5,0::L:3
+led 0 6,0::L:3
+led 0 7,0::L:3
 ```
 
 ### Colors
