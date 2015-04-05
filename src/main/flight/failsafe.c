@@ -52,14 +52,21 @@ static failsafeConfig_t *failsafeConfig;
 
 static rxConfig_t *rxConfig;
 
+static bool boxFailsafeFlag = false;
+
 /**
  * Called when valid data is received.  This function resets the
  * failsafe counter that would otherwise be incremented by
  * 'failsafeOnRxCycle()'.
  */
 void failsafeReset(void)
-{
-    failsafeState.counter = 0;
+{             // if failsafe-TX-AUX switch off then allow counter reset
+    if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+        boxFailsafeFlag = false;
+        failsafeState.counter = 0;
+    }
+    else
+      boxFailsafeFlag = true;
 }
 
 /*
@@ -131,11 +138,18 @@ static void failsafeAvoidRearm(void)
  * sure that enough newly-valid data has been received.
  */
 static void failsafeOnValidDataReceived(void)
-{
-    if (failsafeState.counter > 20)
-        failsafeState.counter -= 20;
+{             // if failsafe-TX-AUX switch off then allow counter reset
+    if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+        if (!boxFailsafeFlag && failsafeState.counter > 20) {
+            failsafeState.counter -= 20;
+        }               // if previous failsafe was via TX-AUX switch then
+        else {          // clear counter so 'failsafeAvoidRearm()' not called
+            failsafeState.counter = 0;
+            boxFailsafeFlag = false;
+        }
+    }
     else
-        failsafeState.counter = 0;
+        boxFailsafeFlag = true;
 }
 
 /**
@@ -159,7 +173,8 @@ void failsafeUpdateState(void)
     // above min throttle then execute failsafe landing
     if (failsafeState.motorsCounter > 0 &&
             failsafeShouldForceLanding(ARMING_FLAG(ARMED))) { // Stabilize, and set Throttle to specified level
-        failsafeAvoidRearm();
+        if (!boxFailsafeFlag)          // if failsafe-TX-AUX switch off then
+            failsafeAvoidRearm();      // disallow rearm
 
         for (i = 0; i < 3; i++) {
             rcData[i] = rxConfig->midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
