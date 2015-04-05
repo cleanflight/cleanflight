@@ -261,14 +261,14 @@ This function merely varies the brightness of the color that you choose.
 To set up an eight LED Larson Scanner with a red colored "eye":
 
 ```
-led 0 0,0::L:3
-led 0 1,0::L:3
-led 0 2,0::L:3
-led 0 3,0::L:3
-led 0 4,0::L:3
-led 0 5,0::L:3
-led 0 6,0::L:3
-led 0 7,0::L:3
+led 0 0,0::CL:3
+led 0 1,0::CL:3
+led 0 2,0::CL:3
+led 0 3,0::CL:3
+led 0 4,0::CL:3
+led 0 5,0::CL:3
+led 0 6,0::CL:3
+led 0 7,0::CL:3
 ```
 
 ### Colors
