@@ -24,6 +24,7 @@
 #include "common/maths.h"
 
 #include "drivers/barometer.h"
+#include "drivers/system.h"
 #include "config/config.h"
 
 #include "sensors/barometer.h"
@@ -59,6 +60,30 @@ void baroSetCalibrationCycles(uint16_t calibrationCyclesRequired)
 
 static bool baroReady = false;
 
+#define PRESSURE_SAMPLES_MEDIAN 3
+
+static int32_t applyBarometerMedianFilter(int32_t newPressureReading)
+{
+    static int32_t barometerFilterSamples[PRESSURE_SAMPLES_MEDIAN];
+    static int currentFilterSampleIndex = 0;
+    static bool medianFilterReady = false;
+    int nextSampleIndex;
+    
+    nextSampleIndex = (currentFilterSampleIndex + 1);
+    if (nextSampleIndex == PRESSURE_SAMPLES_MEDIAN) {
+        nextSampleIndex = 0;
+        medianFilterReady = true;
+    }
+
+    barometerFilterSamples[currentFilterSampleIndex] = newPressureReading;
+    currentFilterSampleIndex = nextSampleIndex;
+    
+    if (medianFilterReady)
+        return quickMedianFilter3(barometerFilterSamples);
+    else
+        return newPressureReading;
+}
+
 #define PRESSURE_SAMPLE_COUNT (barometerConfig->baro_sample_count - 1)
 
 static uint32_t recalculateBarometerTotal(uint8_t baroSampleCount, uint32_t pressureTotal, int32_t newPressureReading)
@@ -73,7 +98,7 @@ static uint32_t recalculateBarometerTotal(uint8_t baroSampleCount, uint32_t pres
         nextSampleIndex = 0;
         baroReady = true;
     }
-    barometerSamples[currentSampleIndex] = newPressureReading;
+    barometerSamples[currentSampleIndex] = applyBarometerMedianFilter(newPressureReading);
 
     // recalculate pressure total
     // Note, the pressure total is made up of baroSampleCount - 1 samples - See PRESSURE_SAMPLE_COUNT
@@ -104,8 +129,7 @@ void baroUpdate(uint32_t currentTime)
     if ((int32_t)(currentTime - baroDeadline) < 0)
         return;
 
-    baroDeadline = currentTime;
-
+    baroDeadline = 0;
     switch (state) {
         case BAROMETER_NEEDS_SAMPLES:
             baro.get_ut();
@@ -127,6 +151,7 @@ void baroUpdate(uint32_t currentTime)
             baroPressureSum = recalculateBarometerTotal(barometerConfig->baro_sample_count, baroPressureSum, baroPressure);
         break;
     }
+    baroDeadline += micros();        // make sure deadline is set after calling baro callbacks
 }
 
 int32_t baroCalculateAltitude(void)
