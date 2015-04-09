@@ -100,11 +100,13 @@
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_7
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_4
 
+#define AUTOTUNE
 #define BLACKBOX
 #define SERIAL_RX
 #define GPS
 #define DISPLAY
 #define USE_SERVOS
+#define TELEMETRY
 
 #define LED_STRIP
 #if 1

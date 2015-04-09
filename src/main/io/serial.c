@@ -27,12 +27,18 @@
 #include "common/utils.h"
 
 #include "drivers/system.h"
-#include "drivers/gpio.h"
-#include "drivers/timer.h"
 #include "drivers/serial.h"
+#if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 #include "drivers/serial_softserial.h"
+#endif
+
+#if defined(USE_USART1) || defined(USE_USART2) || defined(USE_USART3)
 #include "drivers/serial_uart.h"
+#endif
+
+#if defined(USE_VCP)
 #include "drivers/serial_usb_vcp.h"
+#endif
 
 #include "io/serial.h"
 #include "serial_cli.h"
@@ -241,8 +247,8 @@ serialPort_t *openSerialPort(
     portOptions_t options)
 {
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
-    if (serialPortUsage->function != FUNCTION_NONE) {
-        // already in use
+    if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {
+        // not available / already in use
         return NULL;
     }
 
@@ -312,7 +318,7 @@ void closeSerialPort(serialPort_t *serialPort) {
     serialPortUsage->serialPort = NULL;
 }
 
-void serialInit(serialConfig_t *initialSerialConfig)
+void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled)
 {
     uint8_t index;
 
@@ -322,6 +328,19 @@ void serialInit(serialConfig_t *initialSerialConfig)
 
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
         serialPortUsageList[index].identifier = serialPortIdentifiers[index];
+
+        if (!softserialEnabled) {
+            if (0
+#ifdef USE_SOFTSERIAL1
+                || serialPortUsageList[index].identifier == SERIAL_PORT_SOFTSERIAL1
+#endif
+#ifdef USE_SOFTSERIAL2
+                || serialPortUsageList[index].identifier == SERIAL_PORT_SOFTSERIAL2
+#endif
+            ) {
+                serialPortUsageList[index].identifier = SERIAL_PORT_NONE;
+            }
+        }
     }
 }
 

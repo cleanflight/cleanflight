@@ -21,6 +21,7 @@
  *  Created on: 6 Apr 2014
  *      Author: Hydra
  */
+#include "rx/rx.h"
 
 #ifndef TELEMETRY_COMMON_H_
 #define TELEMETRY_COMMON_H_
@@ -43,10 +44,11 @@ typedef struct telemetryConfig_s {
     frskyGpsCoordFormat_e frsky_coordinate_format;   
     frskyUnit_e frsky_unit;
     uint8_t frsky_vfas_precision;
+    uint8_t hottAlarmSoundInterval;
 } telemetryConfig_t;
 
 void checkTelemetryState(void);
-void handleTelemetry(void);
+void handleTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
 
 bool determineNewTelemetryEnabledState(portSharing_e portSharing);
 
