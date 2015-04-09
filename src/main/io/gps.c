@@ -122,33 +122,21 @@ static const gpsInitData_t gpsInitData[] = {
 
 #define DEFAULT_BAUD_RATE_INDEX 0
 
-/*
-#define MTK_OUTPUT_STRINGS          "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n" //set NMEA strings frequency
-#define MTK_OUTPUT_1HZ          "$PMTK220,1000*1F\r\n"
-#define MTK_OUTPUT_2HZ          "$PMTK220,500*2B\r\n"
-#define MTK_OUTPUT_5HZ          "$PMTK220,200*2C\r\n"
-#define MTK_OUTPUT_10HZ         "$PMTK220,100*2F\r\n"
-#define MTK_NAVTHRES_OFF        "$PMTK397,0*23\r\n" // Set Nav Threshold (the minimum speed the GPS must be moving to update the position) to 0 m/s
-#define SBAS_ON                 "$PMTK313,1*2E\r\n"
-#define WAAS_ON                 "$PMTK301,2*2E\r\n"
-#define SBAS_TEST_MODE			 "$PMTK319,0*25\r\n"	//Enable test use of sbas satelite in test mode (usually PRN124 is in test mode)
-
-*/
-
 // MTK init string
 // sets: NMEA strings frequency (=output respective NMEA string every Nth fix)
 //       goes 1 Hz -> 2 Hz -> 5 Hz refresh rate (silently expects that if refresh rate is not supported the GPS will ignore it)
 //       disables nav speed treshold (e.g. all movements reported)
 //       SBAS and WAAS enabled
-#define MTK_Init \
-  "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n" \
-  "$PMTK220,1000*1F\r\n" \
-  "$PMTK220,500*2B\r\n" \
-  "$PMTK220,200*2C\r\n" \
-  "$PMTK397,0*23\r\n" \
-  "$PMTK313,1*2E\r\n" \
-  "$PMTK319,0*25\r\n" \
-  "$PMTK301,2*2E\r\n"
+static const char MTK_Init[] =
+   "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n"                      // NMEA strings frequency (=output respective NMEA string every Nth fix)
+   "$PMTK220,1000*1F\r\n"                                                       // Interval between fixes 1s -> 1 Hz update
+   "$PMTK220,500*2B\r\n"                                                        // Interval between fixes 0.5s -> 2 Hz update
+   "$PMTK220,200*2C\r\n"                                                        // Interval between fixes 0.2s -> 5 Hz update
+   "$PMTK397,0*23\r\n"                                                          // Set Sta Nav Treshold (min speed) to 0 -> any movement reported
+   "$PMTK313,1*2E\r\n"                                                          // Set SBAS On
+   "$PMTK319,0*25\r\n"                                                          // Set WAAS On
+   "$PMTK301,2*2E\r\n"                                                          // Enable use of sbas satelite in test mode
+   "\r\n";                                                                      // Extra new line just to be sure
 
 static const uint8_t ubloxInit[] = {
 
@@ -423,7 +411,7 @@ void gpsInitMTK(void)
 
             if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
 
-                if (gpsData.state_position < sizeof(MTK_Init)) {
+                if (gpsData.state_position < sizeof(MTK_Init) - 1) {
                     serialWrite(gpsPort, MTK_Init[gpsData.state_position]);
                     gpsData.state_position++;
                 } else {
