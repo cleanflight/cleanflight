@@ -37,8 +37,11 @@
 #include "drivers/serial_uart.h"
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
+#include "drivers/sensor.h"
+#include "drivers/compass.h"
 
 #include "sensors/sensors.h"
+#include "sensors/compass.h"
 
 #include "io/serial.h"
 #include "io/display.h"
@@ -94,6 +97,8 @@ uint8_t GPS_svinfo_chn[GPS_SV_MAXSATS];     // Channel number
 uint8_t GPS_svinfo_svid[GPS_SV_MAXSATS];    // Satellite ID
 uint8_t GPS_svinfo_quality[GPS_SV_MAXSATS]; // Bitfield Qualtity
 uint8_t GPS_svinfo_cno[GPS_SV_MAXSATS];     // Carrier to Noise Ratio (Signal Strength)
+
+int16_t GPS_MAG[3]; // NAZA GPS mag data XYZ
 
 static gpsConfig_t *gpsConfig;
 uint32_t hwVersion = 0;
@@ -1331,6 +1336,11 @@ static bool NAZA_parse_gps(void)
         int16_t x = decodeShort(_buffernaza.mag.x, mask_mag);
         int16_t y = decodeShort(_buffernaza.mag.y, mask_mag);
         int16_t z = (_buffernaza.mag.z ^ (mask_mag<<8));
+
+        GPS_MAG[0] = x;
+        GPS_MAG[1] = y;
+        GPS_MAG[2] = z;
+
         debug[0]=x;
         debug[1]=y;
         debug[2]=z;
@@ -1350,6 +1360,30 @@ static bool NAZA_parse_gps(void)
         return true;
     }
     return false;
+}
+
+void nazaGPSInit()
+{
+    bool ack;
+    UNUSED(ack);
+}
+
+void nazaGPSRead(int16_t *magData)
+{
+    magData[X] = GPS_MAG[0];
+    magData[Y] = GPS_MAG[1];
+    magData[Z] = GPS_MAG[2];
+}
+
+bool nazaGPSdetect(mag_t *mag)
+{
+	// we dont know provider here yet
+	//if(gpsConfig->provider != GPS_NAZA)
+	//	return false;
+
+    mag->init = nazaGPSInit;
+    mag->read = nazaGPSRead;
+    return true;
 }
 
 static bool gpsNewFrameNAZA(uint8_t data)
