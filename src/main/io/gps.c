@@ -935,10 +935,15 @@ enum {
 
 
 typedef struct {
+	uint8_t res[4]; // 0
+	uint8_t fw[4]; // 4
+	uint8_t hw[4]; // 8
+} naza_ver;
+
+typedef struct {
 	uint16_t x; // 0
 	uint16_t y; // 2
-	uint8_t mask; // 4
-	uint8_t reserved;
+	uint16_t z; // 4
 } naza_mag;
 
 typedef struct {
@@ -971,6 +976,7 @@ enum {
     HEADER2 = 0xAA,
     ID_NAV = 0x10,
     ID_MAG = 0x20,
+    ID_VER = 0x30,
     LEN_NAV = 0x3A,
     LEN_MAG = 0x06,
 } naza_protocol_bytes;
@@ -1030,6 +1036,7 @@ static bool _new_speed;
 static union {
     naza_mag mag;
     naza_nav nav;
+    naza_ver ver;
     uint8_t bytes[UBLOX_PAYLOAD_SIZE];
 } _buffernaza;
 
@@ -1319,10 +1326,18 @@ static bool NAZA_parse_gps(void)
         break;
     case ID_MAG:
         *gpsPacketLogChar = LOG_UBLOX_STATUS;
-        uint8_t mask_mag = _buffernaza.mag.mask;
-        uint16_t x = decodeShort(_buffernaza.mag.x, mask_mag);
-        uint16_t y = decodeShort(_buffernaza.mag.y, mask_mag);
-        //uint16_t z = decodeShort(_buffernaza.mag.z, mask);
+        uint8_t mask_mag = (_buffernaza.mag.z)&0xFF;
+        mask_mag = (((mask_mag ^ (mask_mag >> 4)) & 0x0F) | ((mask_mag << 3) & 0xF0)) ^ (((mask_mag & 0x01) << 3) | ((mask_mag & 0x01) << 7));
+        int16_t x = decodeShort(_buffernaza.mag.x, mask_mag);
+        int16_t y = decodeShort(_buffernaza.mag.y, mask_mag);
+        int16_t z = (_buffernaza.mag.z ^ (mask_mag<<8));
+        debug[0]=x;
+        debug[1]=y;
+        debug[2]=z;
+        debug[3]=mask_mag;
+        break;
+    case ID_VER:
+        *gpsPacketLogChar = LOG_UBLOX_STATUS;
         break;
     default:
         return false;
