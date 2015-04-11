@@ -25,20 +25,28 @@
 #include "io/rc_controls.h"
 #include "config/runtime_config.h"
 
+#include "flight/mixer.h"
+#include "flight/altitudehold.h"
 #include "flight/failsafe.h"
+
+#define ENABLE_DEBUG_FAILSAFE   (0)
+
+#if ENABLE_DEBUG_FAILSAFE > 0
+extern int16_t debug[4];
+#endif
 
 /*
  * Usage:
  *
- * failsafeInit() and useFailsafeConfig() must be called before the other methods are used.
+ * failsafeInit() and failsafeUseConfig() must be called before the other methods are used.
  *
- * failsafeInit() and useFailsafeConfig() can be called in any order.
+ * failsafeInit() and failsafeUseConfig() can be called in any order.
  * failsafeInit() should only be called once.
  *
- * enable() should be called after system initialisation.
+ * failsafeEnable() should be called after system initialisation.
  */
 
-static failsafeState_t failsafeState;
+static failsafeState_t failsafe;
 
 static failsafeConfig_t *failsafeConfig;
 
@@ -46,127 +54,199 @@ static rxConfig_t *rxConfig;
 
 void failsafeReset(void)
 {
-    failsafeState.counter = 0;
+    failsafe.counter = 0;
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[0] = 0;
+#endif
 }
 
 /*
- * Should called when the failsafe config needs to be changed - e.g. a different profile has been selected.
+ * Should be called when the failsafe config needs to be changed - e.g. a different profile has been selected.
  */
-void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse)
+void failsafeUseConfig(failsafeConfig_t *failsafeConfigToUse)
 {
     failsafeConfig = failsafeConfigToUse;
     failsafeReset();
+    failsafe.state = FAILSAFE_IS_DISABLED;
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[1] = FAILSAFE_IS_DISABLED;
+#endif
 }
 
 failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 
-    failsafeState.events = 0;
-    failsafeState.enabled = false;
-
-    return &failsafeState;
+    return &failsafe;
 }
 
 bool failsafeIsIdle(void)
 {
-    return failsafeState.counter == 0;
+    return failsafe.counter == 0;
 }
 
 bool failsafeIsEnabled(void)
 {
-    return failsafeState.enabled;
+    return (FAILSAFE_IS_DISABLED != failsafe.state);
 }
 
 void failsafeEnable(void)
 {
-    failsafeState.enabled = true;
+    failsafe.state = FAILSAFE_IS_ENABLED;
 }
 
 bool failsafeHasTimerElapsed(void)
 {
-    return failsafeState.counter > (5 * failsafeConfig->failsafe_delay);
+    return failsafe.counter > (5 * failsafeConfig->failsafe_delay);
 }
 
-bool failsafeShouldForceLanding(bool armed)
+bool failsafeIsForcedLandingInProgress(void)
 {
-    return failsafeHasTimerElapsed() && armed;
+    return ((FAILSAFE_IS_ENABLED < failsafe.state) && (FAILSAFE_IS_DONE > failsafe.state));
 }
 
-bool failsafeShouldHaveCausedLandingByNow(void)
+bool failsafeIsForcedLandingCompleted(void)
 {
-    return failsafeState.counter > 5 * (failsafeConfig->failsafe_delay + failsafeConfig->failsafe_off_delay);
+    return (FAILSAFE_IS_DONE == failsafe.state);
 }
 
-static void failsafeAvoidRearm(void)
+void failsafeAvoidRearm(void)
 {
     // This will prevent the automatic rearm if failsafe shuts it down and prevents
     // to restart accidently by just reconnect to the tx - you will have to switch off first to rearm
     ENABLE_ARMING_FLAG(PREVENT_ARMING);
 }
 
-static void failsafeOnValidDataReceived(void)
+void failsafeOnValidDataReceived(void)
 {
-    if (failsafeState.counter > 20)
-        failsafeState.counter -= 20;
-    else
-        failsafeState.counter = 0;
+    if (failsafe.counter > 20) {
+        failsafe.counter -= 20;
+    } else {
+        failsafe.counter = 0;
+    }
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[0] = failsafe.counter;
+#endif
 }
 
 void failsafeUpdateState(void)
 {
     uint8_t i;
+    static int16_t countDownTimer = 0;
 
-    if (!failsafeHasTimerElapsed()) {
-        return;
+    if (countDownTimer > 0) {
+        countDownTimer--;
     }
 
-    if (!failsafeIsEnabled()) {
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[1] = failsafe.state;
+    debug[2] = countDownTimer;
+#endif
+
+    switch(failsafe.state) {
+    case FAILSAFE_IS_DISABLED:
         failsafeReset();
-        return;
-    }
+        break;
 
-    if (failsafeShouldForceLanding(ARMING_FLAG(ARMED))) { // Stabilize, and set Throttle to specified level
-        failsafeAvoidRearm();
+    case FAILSAFE_IS_ENABLED:
+        if (ARMING_FLAG(ARMED)) {
+            if (failsafeHasTimerElapsed()) {
+                // RC signal is lost for more then the specified guard time (in 0.1sec)
+                failsafe.requestByRcSwitch = false;
+                ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                failsafe.state = FAILSAFE_IS_LANDING;
+            } else {
+                if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                    // RC switch for failsafe request is ON
+                    failsafe.requestByRcSwitch = true;
+                    ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                    countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                    failsafe.state = FAILSAFE_IS_LANDING;
+                }
+            }
+        } else {
+            // to present failsafe switch is working in GUI
+            if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+            } else {
+                DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+            }
+            // to prevent failsafe triggering when arming with a positive count.
+            failsafeReset();
+        }
+        break;
 
+    case FAILSAFE_IS_LANDING:
+        // Center stick positions and set Throttle to specified level
         for (i = 0; i < 3; i++) {
-            rcData[i] = rxConfig->midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
+            rcData[i] = rxConfig->midrc;
         }
         rcData[THROTTLE] = failsafeConfig->failsafe_throttle;
-        failsafeState.events++;
-    }
 
-    if (failsafeShouldHaveCausedLandingByNow() || !ARMING_FLAG(ARMED)) {
+        // Check abort conditions
+        if (failsafeConfig->failsafe_abortable) {
+            if (failsafe.requestByRcSwitch) {
+                if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                    DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                    failsafe.state = FAILSAFE_IS_ENABLED;
+                }
+            } else {
+                if (failsafeIsIdle()) {
+                    DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                    failsafe.state = FAILSAFE_IS_ENABLED;
+                }
+            }
+        }
+
+        // Check for time-out condition
+        if (!ARMING_FLAG(ARMED) || !countDownTimer) {
+            failsafe.state = FAILSAFE_IS_DISARMING;
+        }
+        break;
+
+    case FAILSAFE_IS_DISARMING:
+        failsafeAvoidRearm();
         mwDisarm();
+        DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
+        failsafe.state = FAILSAFE_IS_DONE;
+        break;
+
+    case FAILSAFE_IS_DONE:
+        break;
     }
 }
 
-/**
- * Should be called once each time RX data is processed by the system.
- */
-void failsafeOnRxCycle(void)
+void failsafeIncrementCounter(void)
 {
-    failsafeState.counter++;
+    if (failsafe.counter < 650) {               // clip counter to limit recovery time
+        failsafe.counter++;
+    }
+#if ENABLE_DEBUG_FAILSAFE > 0
+    debug[0] = failsafe.counter;
+#endif
 }
-
-#define REQUIRED_CHANNEL_MASK 0x0F // first 4 channels
 
 // pulse duration is in micro secons (usec)
-void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration)
+void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration, int8_t channelCount)
 {
-    static uint8_t goodChannelMask = 0;
+    static uint8_t goodChannelCount;
 
-    if (channel < 4 &&
+    if (channel < channelCount &&
         pulseDuration > failsafeConfig->failsafe_min_usec &&
         pulseDuration < failsafeConfig->failsafe_max_usec
-    ) {
-        // if signal is valid - mark channel as OK
-        goodChannelMask |= (1 << channel);
-    }
+    )
+        goodChannelCount++;                      // if signal is valid - count channel as OK
 
-    if (goodChannelMask == REQUIRED_CHANNEL_MASK) {
-        goodChannelMask = 0;
-        failsafeOnValidDataReceived();
+    if (++channel == channelCount) {
+        if (goodChannelCount == channelCount) {  // If all channels have good pulses, clear FailSafe counter
+            failsafeOnValidDataReceived();
+        }
+#if ENABLE_DEBUG_FAILSAFE > 0
+        debug[3] = channelCount * 1000 + goodChannelCount;
+#endif
+        goodChannelCount = 0;
     }
 }
+
 

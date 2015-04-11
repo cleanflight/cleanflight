@@ -54,6 +54,7 @@ typedef enum {
     FAILSAFE_FIND_ME
 } failsafeBeeperWarnings_e;
 
+
 void beepcodeInit(void)
 {
 }
@@ -74,10 +75,10 @@ void beepcodeUpdateState(batteryState_e batteryState)
     }
     //===================== Beeps for failsafe =====================
     if (feature(FEATURE_FAILSAFE)) {
-        if (failsafeShouldForceLanding(ARMING_FLAG(ARMED))) {
+        if (failsafeIsForcedLandingInProgress() && ARMING_FLAG(ARMED)) {
             warn_failsafe = FAILSAFE_LANDING;
 
-            if (failsafeShouldHaveCausedLandingByNow()) {
+            if (failsafeIsForcedLandingCompleted()) {
                 warn_failsafe = FAILSAFE_FIND_ME;
             }
         }

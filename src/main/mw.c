@@ -329,6 +329,10 @@ void mwArm(void)
         if (ARMING_FLAG(ARMED)) {
             return;
         }
+        if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+            // safety: prevent arming whith failsafe active
+            return;
+        }
         if (!ARMING_FLAG(PREVENT_ARMING)) {
             ENABLE_ARMING_FLAG(ARMED);
             headFreeModeHold = heading;
@@ -509,8 +513,7 @@ void processRx(void)
     updateRSSI(currentTime);
 
     if (feature(FEATURE_FAILSAFE)) {
-
-        if (currentTime > FAILSAFE_POWER_ON_DELAY_US && !failsafeIsEnabled()) {
+        if ((currentTime > FAILSAFE_POWER_ON_DELAY_US) && (!failsafeIsEnabled())) {
             failsafeEnable();
         }
 
@@ -552,7 +555,7 @@ void processRx(void)
 
     bool canUseHorizonMode = true;
 
-    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeHasTimerElapsed())) && (sensors(SENSOR_ACC))) {
+    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && FLIGHT_MODE(FAILSAFE_MODE) && ARMING_FLAG(ARMED))) && sensors(SENSOR_ACC)) {
         // bumpless transfer to Level mode
     	canUseHorizonMode = false;
 

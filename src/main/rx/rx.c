@@ -252,6 +252,7 @@ static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
 static void processRxChannels(void)
 {
     uint8_t chan;
+    int8_t channelCount;
 
     if (feature(FEATURE_RX_MSP)) {
         return; // rcData will have already been updated by MSP_SET_RAW_RC
@@ -281,7 +282,12 @@ static void processRxChannels(void)
         uint16_t sample = rcReadRawFunc(&rxRuntimeConfig, rawChannel);
 
         if (feature(FEATURE_FAILSAFE) && shouldCheckPulse) {
-            failsafeCheckPulse(chan, sample);
+            if (feature(FEATURE_RX_PPM)) {
+                channelCount = ppmGetDetectedNumberOfChannels();
+            } else {
+                channelCount = rxRuntimeConfig.channelCount;
+            }
+            failsafeCheckPulse(rawChannel, sample, channelCount);
         }
 
         // validate the range
@@ -313,7 +319,7 @@ void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
     rxUpdateAt = currentTime + DELAY_50_HZ;
 
     if (feature(FEATURE_FAILSAFE)) {
-        failsafeOnRxCycle();
+        failsafeIncrementCounter();
     }
 
     if (isRxDataDriven()) {
