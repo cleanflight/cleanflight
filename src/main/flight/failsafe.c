@@ -82,7 +82,7 @@ failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig)
 
 bool failsafeIsIdle(void)
 {
-    return failsafe.counter == 0;
+    return (failsafe.counter <= 1);
 }
 
 bool failsafeIsEnabled(void)
