@@ -20,12 +20,20 @@
 
 #include "common/axis.h"
 
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
+#include "sensors/sensors.h"
+#include "sensors/acceleration.h"
+
 #include "rx/rx.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "config/runtime_config.h"
+#include "config/config.h"
 
 #include "flight/failsafe.h"
+
+#include "mw.h"
 
 /*
  * Usage:
@@ -44,13 +52,26 @@ static failsafeConfig_t *failsafeConfig;
 
 static rxConfig_t *rxConfig;
 
+static bool boxFailsafeFlag = false;
+
+/**
+ * Called when valid data is received.  This function resets the
+ * failsafe counter that would otherwise be incremented by
+ * 'failsafeOnRxCycle()'.
+ */
 void failsafeReset(void)
-{
-    failsafeState.counter = 0;
+{             // if failsafe-TX-AUX switch off then allow counter reset
+    if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+        boxFailsafeFlag = false;
+        failsafeState.counter = 0;
+    }
+    else
+      boxFailsafeFlag = true;
 }
 
 /*
- * Should called when the failsafe config needs to be changed - e.g. a different profile has been selected.
+ * Should be called when the failsafe config needs to be changed - e.g.
+ * a different profile has been selected.
  */
 void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse)
 {
@@ -58,19 +79,23 @@ void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse)
     failsafeReset();
 }
 
+/**
+ * Initializes the failsafe system.  Should only be called once.
+ */
 failsafeState_t* failsafeInit(rxConfig_t *intialRxConfig)
 {
     rxConfig = intialRxConfig;
 
     failsafeState.events = 0;
     failsafeState.enabled = false;
+    failsafeState.motorsCounter = 0;
 
     return &failsafeState;
 }
 
 bool failsafeIsIdle(void)
-{
-    return failsafeState.counter == 0;
+{             // <= 1 means failsafeReset/ValidData fn has been called
+    return failsafeState.counter <= 1;
 }
 
 bool failsafeIsEnabled(void)
@@ -105,14 +130,32 @@ static void failsafeAvoidRearm(void)
     ENABLE_ARMING_FLAG(PREVENT_ARMING);
 }
 
+/**
+ * Called when valid data is received.  This function decrements the
+ * failsafe counter that would otherwise be incremented by
+ * 'failsafeOnRxCycle()'.  Similar to 'failsafeReset()' but
+ * this function does a "softer" reset of the counter to make
+ * sure that enough newly-valid data has been received.
+ */
 static void failsafeOnValidDataReceived(void)
-{
-    if (failsafeState.counter > 20)
-        failsafeState.counter -= 20;
+{             // if failsafe-TX-AUX switch off then allow counter reset
+    if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+        if (!boxFailsafeFlag && failsafeState.counter > 20) {
+            failsafeState.counter -= 20;
+        }               // if previous failsafe was via TX-AUX switch then
+        else {          // clear counter so 'failsafeAvoidRearm()' not called
+            failsafeState.counter = 0;
+            boxFailsafeFlag = false;
+        }
+    }
     else
-        failsafeState.counter = 0;
+        boxFailsafeFlag = true;
 }
 
+/**
+ * Called once each time RX data is processed by the system if
+ * the failsafe feature is enabled.
+ */
 void failsafeUpdateState(void)
 {
     uint8_t i;
@@ -126,8 +169,12 @@ void failsafeUpdateState(void)
         return;
     }
 
-    if (failsafeShouldForceLanding(ARMING_FLAG(ARMED))) { // Stabilize, and set Throttle to specified level
-        failsafeAvoidRearm();
+    // if 'failsafe_delay' reached and motors have been
+    // above min throttle then execute failsafe landing
+    if (failsafeState.motorsCounter > 0 &&
+            failsafeShouldForceLanding(ARMING_FLAG(ARMED))) { // Stabilize, and set Throttle to specified level
+        if (!boxFailsafeFlag)          // if failsafe-TX-AUX switch off then
+            failsafeAvoidRearm();      // disallow rearm
 
         for (i = 0; i < 3; i++) {
             rcData[i] = rxConfig->midrc;      // after specified guard time after RC signal is lost (in 0.1sec)
@@ -136,17 +183,43 @@ void failsafeUpdateState(void)
         failsafeState.events++;
     }
 
-    if (failsafeShouldHaveCausedLandingByNow() || !ARMING_FLAG(ARMED)) {
+    // if 'failsafe_off_delay' reached or motors have
+    // not been above min throttle then disarm copter
+    if (failsafeShouldHaveCausedLandingByNow() || !ARMING_FLAG(ARMED) ||
+            failsafeState.motorsCounter <= 0) {
+        DISABLE_ARMING_FLAG(OK_TO_ARM);     // don't allow BOXARM
         mwDisarm();
     }
 }
 
 /**
  * Should be called once each time RX data is processed by the system.
+ * Increments the failsafe counter, which will be reset if valid data
+ * is received, via 'failsafeOnValidDataReceived()' or 'failsafeReset()'.
  */
 void failsafeOnRxCycle(void)
 {
     failsafeState.counter++;
+
+    // if failsafe enabled and not plane mode then
+    // track if motors are staying above min throttle
+    if (failsafeState.enabled && !STATE(FIXED_WING)) {
+        if (!feature(FEATURE_3D)) {  // if not 3D mode
+                // if motors are above min throttle (not "low") then set
+                // time value where motors have to go "low" for that long
+                // before allowing direct-disarm on failsafe
+                if (rcCommand[THROTTLE] > getMasterConfigMinthrottle()) {
+                    failsafeState.motorsCounter = 300;   // 300 = ~3 seconds
+                }
+                else {      // motorsCounter=0 means armed but motors "low"
+                    if (failsafeState.motorsCounter > 0)
+                        --failsafeState.motorsCounter;
+                }
+        }
+        else {  // 3D mode, set non-zero value so direct-disarm never happens
+            failsafeState.motorsCounter = 1000;
+        }
+    }
 }
 
 #define REQUIRED_CHANNEL_MASK 0x0F // first 4 channels
@@ -169,4 +242,3 @@ void failsafeCheckPulse(uint8_t channel, uint16_t pulseDuration)
         failsafeOnValidDataReceived();
     }
 }
-
