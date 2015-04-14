@@ -24,3 +24,5 @@ void handleInflightCalibrationStickPosition();
 
 void mwDisarm(void);
 void mwArm(void);
+
+uint16_t getMasterConfigMinthrottle(void);
