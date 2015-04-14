@@ -388,7 +388,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     error = rc - (gyroData[FD_YAW] / 4);
 #endif
     errorGyroI[FD_YAW]  += (int32_t)error * pidProfile->I8[FD_YAW];
-    errorGyroI[FD_YAW]  = constrain(errorGyroI[FD_YAW], 2 - ((int32_t)1 << 28), -2 + ((int32_t)1 << 28));
+    errorGyroI[FD_YAW]  = constrain(errorGyroI[FD_YAW], -GYRO_I_MAX << 13, GYRO_I_MAX << 13);
     if (ABS(rc) > 50) errorGyroI[FD_YAW] = 0;
 
     PTerm = (int32_t)error * pidProfile->P8[FD_YAW] >> 6; // TODO: Bitwise shift on a signed integer is not recommended
