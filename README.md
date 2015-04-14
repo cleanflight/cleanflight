@@ -1,5 +1,8 @@
 # Cleanflight
 
+[![Build Status](http://img.shields.io/travis/cleanflight/cleanflight.svg?style=flat-square)](https://travis-ci.org/cleanflight/cleanflight)
+
+
 Clean-code version of baseflight flight-controller - flight controllers are used to fly multi-rotor craft and fixed wing craft.
 
 This fork differs from baseflight in that it attempts to use modern software development practices which result in:
