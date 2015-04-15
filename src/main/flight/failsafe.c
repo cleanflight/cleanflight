@@ -169,7 +169,7 @@ void failsafeUpdateState(void)
                 } else {
                     failsafe.requestByRcSwitch = false;
                     ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                    countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                    failsafe.throttleLowCounter = countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
                     failsafe.state = FAILSAFE_IS_LANDING;
                 }
             } else {
@@ -182,7 +182,7 @@ void failsafeUpdateState(void)
                     } else {
                         failsafe.requestByRcSwitch = true;
                         ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                        countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                        failsafe.throttleLowCounter = countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
                         failsafe.state = FAILSAFE_IS_LANDING;
                     }
                 }
