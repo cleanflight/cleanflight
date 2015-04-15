@@ -25,15 +25,17 @@ The failsafe system attempts to detect when your receiver loses signal *only whe
 * No valid channel data from the RX is received via Serial RX.
 * Not using PPM and one of the first 4 channels do not have valid signals.
 * Using PPM and one of the channels in the PPM stream do not have valid signals.
-* A transmitter switch that is configured to control the failsafe mode is switched ON.
+* A transmitter switch that is configured to control the failsafe mode is switched ON (and 'failsafe_kill_switch' is set to 0).
 
 Failsafe intervention will be aborted when it was due to:
 
 * a lost RC signal and the RC signal has recovered.
-* a transmitter failsafe switch was set to ON position and the switch is set to OFF position.
+* a transmitter failsafe switch was set to ON position and the switch is set to OFF position (and 'failsafe_kill_switch' is set to 0).
 
 Note that:
-* At the end of a failsafe intervention, the flight controller will be disarmed and re-arming will be locked. From that moment on it is no longer possible to abort or re-arm and the flight controller has to be reset. 
+* At the end of a failsafe intervention, the flight controller will be disarmed and re-arming will be locked. From that moment on it is no longer possible to abort or re-arm and the flight controller has to be reset.
+* When 'failsafe_kill_switch' is set to 1 and the rc switch configured for failsafe is set to ON, the craft is instantly disarmed (but re-arming is not locked). Similar effect can be achieved by setting 'failsafe_throttle' to 1000 and 'failsafe_off_delay' to 0 (but arming is locked).
+* Prior to starting a failsafe intervention it is checked if the throttle position was below 'min_throttle' level for the last 3 seconds. If it was the craft is assumed to be on the ground and is only disarmed. It may be re-armed without a power cycle.     
 
 Some notes about **SAFETY**:
 * The failsafe system will be activated regardless of current throttle position. So when the failsafe intervention is aborted (RC signal restored/failsafe switch set to OFF) the current stick position will direct the craft !
@@ -80,6 +82,10 @@ Delay after failsafe activates before motors finally turn off.  This is the amou
 ### `failsafe_throttle`
 
 Throttle level used for landing.  Specify a value that causes the aircraft to descend at about 1M/sec. Default is set to 1000 which should correspond to throttle off.
+
+### `failsafe_kill_switch`
+
+Configure the rc switched failsafe action: the same action as when the rc link is lost (set to 0) or disarms instantly (set to 1). Also see above.
 
 Use standard RX usec values.  See Rx documentation.
 

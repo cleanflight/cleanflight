@@ -478,6 +478,7 @@ static void resetConf(void)
     currentProfile->failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
     currentProfile->failsafeConfig.failsafe_min_usec = 985;          // all active (when PPM) or any of first 4 channels below this value will trigger failsafe
     currentProfile->failsafeConfig.failsafe_max_usec = 2115;         // all active (when PPM) or any of first 4 channels above this value will trigger failsafe
+    currentProfile->failsafeConfig.failsafe_kill_switch = 0;         // default failsafe switch action is identical to rc link loss
 
 #ifdef USE_SERVOS
     // servos

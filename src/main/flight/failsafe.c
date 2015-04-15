@@ -175,8 +175,9 @@ void failsafeUpdateState(void)
             } else {
                 if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
                     // RC switch for failsafe request is ON
-                    if ((!feature(FEATURE_3D)) && (!failsafe.throttleLowCounter) ) {
+                    if (((!feature(FEATURE_3D)) && (!failsafe.throttleLowCounter)) || failsafeConfig->failsafe_kill_switch) {
                         // Not in 3D mode and throttle command was below minimum for at least FAILSAFE_THROTTLE_LOW_SECONDS seconds
+                        // OR failsafe kill switch is active
                         mwDisarm();
                     } else {
                         failsafe.requestByRcSwitch = true;
