@@ -349,6 +349,11 @@ static void setControlRateProfile(uint8_t profileIndex)
     currentControlRateProfile = &masterConfig.controlRateProfiles[profileIndex];
 }
 
+uint16_t getCurrentMinthrottle(void)
+{
+    return masterConfig.escAndServoConfig.minthrottle;
+}
+
 // Default settings
 static void resetConf(void)
 {

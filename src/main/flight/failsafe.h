@@ -38,6 +38,7 @@ typedef struct failsafeConfig_s {
 
 typedef struct failsafe_s {
     int16_t counter;
+    int16_t throttleLowCounter;             // 0: throttle command was not above min throttle for nn seconds
     bool requestByRcSwitch;
     failsafeState_e state;
 } failsafeState_t;

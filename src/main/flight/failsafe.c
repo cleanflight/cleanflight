@@ -24,12 +24,14 @@
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "config/runtime_config.h"
+#include "config/config.h"
 
 #include "flight/mixer.h"
 #include "flight/altitudehold.h"
 #include "flight/failsafe.h"
 
 #define ENABLE_DEBUG_FAILSAFE   (0)
+#define FAILSAFE_THROTTLE_LOW_SECONDS  (3)
 
 #if ENABLE_DEBUG_FAILSAFE > 0
 extern int16_t debug[4];
@@ -55,6 +57,7 @@ static rxConfig_t *rxConfig;
 void failsafeReset(void)
 {
     failsafe.counter = 0;
+    failsafe.throttleLowCounter = 0;
 #if ENABLE_DEBUG_FAILSAFE > 0
     debug[0] = 0;
 #endif
@@ -150,19 +153,37 @@ void failsafeUpdateState(void)
 
     case FAILSAFE_IS_ENABLED:
         if (ARMING_FLAG(ARMED)) {
+            // Track throttle command below minimum time
+            if (failsafe.throttleLowCounter > 0) {
+                failsafe.throttleLowCounter--;
+            } else {
+                if (rcCommand[THROTTLE] > getCurrentMinthrottle()) {
+                    failsafe.throttleLowCounter = 50 * FAILSAFE_THROTTLE_LOW_SECONDS;
+                }
+            }
             if (failsafeHasTimerElapsed()) {
                 // RC signal is lost for more then the specified guard time (in 0.1sec)
-                failsafe.requestByRcSwitch = false;
-                ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
-                countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
-                failsafe.state = FAILSAFE_IS_LANDING;
-            } else {
-                if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
-                    // RC switch for failsafe request is ON
-                    failsafe.requestByRcSwitch = true;
+                if ((!feature(FEATURE_3D)) && (!failsafe.throttleLowCounter) ) {
+                    // Not in 3D mode and throttle command was below minimum for at least FAILSAFE_THROTTLE_LOW_SECONDS seconds
+                    mwDisarm();
+                } else {
+                    failsafe.requestByRcSwitch = false;
                     ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
                     countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
                     failsafe.state = FAILSAFE_IS_LANDING;
+                }
+            } else {
+                if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+                    // RC switch for failsafe request is ON
+                    if ((!feature(FEATURE_3D)) && (!failsafe.throttleLowCounter) ) {
+                        // Not in 3D mode and throttle command was below minimum for at least FAILSAFE_THROTTLE_LOW_SECONDS seconds
+                        mwDisarm();
+                    } else {
+                        failsafe.requestByRcSwitch = true;
+                        ENABLE_FLIGHT_MODE(FAILSAFE_MODE);
+                        countDownTimer = 5 * failsafeConfig->failsafe_off_delay;
+                        failsafe.state = FAILSAFE_IS_LANDING;
+                    }
                 }
             }
         } else {
