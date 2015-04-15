@@ -206,7 +206,6 @@ void failsafeUpdateState(void)
         rcData[THROTTLE] = failsafeConfig->failsafe_throttle;
 
         // Check abort conditions
-        if (failsafeConfig->failsafe_abortable) {
             if (failsafe.requestByRcSwitch) {
                 if (!IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
                     DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
@@ -216,7 +215,6 @@ void failsafeUpdateState(void)
                 if (failsafeIsIdle()) {
                     DISABLE_FLIGHT_MODE(FAILSAFE_MODE);
                     failsafe.state = FAILSAFE_IS_ENABLED;
-                }
             }
         }
 

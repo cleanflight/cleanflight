@@ -27,7 +27,7 @@ The failsafe system attempts to detect when your receiver loses signal *only whe
 * Using PPM and one of the channels in the PPM stream do not have valid signals.
 * A transmitter switch that is configured to control the failsafe mode is switched ON.
 
-Failsafe intervention may be aborted when `failsafe_abortable` is set to 1 (default) and failsafe intervention was due to:
+Failsafe intervention will be aborted when it was due to:
 
 * a lost RC signal and the RC signal has recovered.
 * a transmitter failsafe switch was set to ON position and the switch is set to OFF position.
@@ -80,10 +80,6 @@ Delay after failsafe activates before motors finally turn off.  This is the amou
 ### `failsafe_throttle`
 
 Throttle level used for landing.  Specify a value that causes the aircraft to descend at about 1M/sec. Default is set to 1000 which should correspond to throttle off.
-
-### `failsafe_abortable`
-
-To configure if a failsafe landing can be aborted (set to 1) or not (set to 0). Also see above.
 
 Use standard RX usec values.  See Rx documentation.
 
