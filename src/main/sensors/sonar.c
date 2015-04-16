@@ -39,7 +39,7 @@ static int32_t calculatedAltitude;
 
 void sonarInit(void)
 {
-#if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
+#if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R) || defined(MAPLEMINI)
     static const sonarHardware_t const sonarPWM56 = {
         .trigger_pin = Pin_8,   // PWM5 (PB8) - 5v tolerant
         .echo_pin = Pin_9,      // PWM6 (PB9) - 5v tolerant

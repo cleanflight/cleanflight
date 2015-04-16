@@ -285,7 +285,7 @@ void resetSerialConfig(serialConfig_t *serialConfig)
 
     serialConfig->portConfigs[0].functionMask = FUNCTION_MSP;
 
-#ifdef CC3D
+#if defined (CC3D) || defined (MAPLEMINI)
     // This allows MSP connection via USART & VCP so the board can be reconfigured.
     serialConfig->portConfigs[1].functionMask = FUNCTION_MSP;
 #endif
@@ -768,7 +768,7 @@ void validateAndFixConfig(void)
     }
 #endif
 
-#if defined(NAZE) && defined(SONAR)
+#if (defined(NAZE)|| defined(MAPLEMINI)) && defined(SONAR)
     if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
         featureClear(FEATURE_CURRENT_METER);
     }
