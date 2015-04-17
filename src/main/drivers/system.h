@@ -35,3 +35,8 @@ bool isMPUSoftReset(void);
 void enableGPIOPowerUsageAndNoiseReductions(void);
 // current crystal frequency - 8 or 12MHz
 extern uint32_t hse_value;
+
+typedef void extiCallbackHandler(void);
+
+void registerExti15_10_CallbackHandler(extiCallbackHandler *fn);
+void unregisterExti15_10_CallbackHandler(extiCallbackHandler *fn);
