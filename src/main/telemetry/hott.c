@@ -78,6 +78,7 @@
 #include "flight/navigation.h"
 #include "io/gps.h"
 
+#include "telemetry/hott_textmode.h"
 #include "telemetry/telemetry.h"
 #include "telemetry/hott.h"
 
@@ -112,6 +113,8 @@ static portSharing_e hottPortSharing;
 
 static HOTT_GPS_MSG_t hottGPSMessage;
 static HOTT_EAM_MSG_t hottEAMMessage;
+static HOTT_TEXT_MSG_t hottTEXTMessage;
+static HOTT_TEXT_DISPLAY_t hottTEXTDisplay;
 
 static void initialiseEAMMessage(HOTT_EAM_MSG_t *msg, size_t size)
 {
@@ -146,6 +149,8 @@ static void initialiseMessages(void)
 #ifdef GPS
     initialiseGPSMessage(&hottGPSMessage, sizeof(hottGPSMessage));
 #endif
+    initialiseTextMessage(&hottTEXTMessage, sizeof(hottTEXTMessage));
+    initialiseHottTXDisplay(&hottTEXTDisplay, sizeof(hottTEXTDisplay));
 }
 
 #ifdef GPS
@@ -303,7 +308,7 @@ void configureHoTTTelemetryPort(void)
     hottTelemetryEnabled = true;
 }
 
-static void hottSendResponse(uint8_t *buffer, int length)
+void hottSendResponse(uint8_t *buffer, int length)
 {
     if(hottIsSending) {
         return;
@@ -408,6 +413,9 @@ static void hottCheckSerialData(uint32_t currentMicros)
     uint8_t requestId = serialRead(hottPort);
     uint8_t address = serialRead(hottPort);
 
+    if (requestId == HOTT_TEXT_MODE_REQUEST_ID)
+    	processTextModeRequest(&hottTEXTMessage, &hottTEXTDisplay, address);
+    else
     if ((requestId == 0) || (requestId == HOTT_BINARY_MODE_REQUEST_ID) || (address == HOTT_TELEMETRY_NO_SENSOR_ID)) {
     /*
      * FIXME the first byte of the HoTT request frame is ONLY either 0x80 (binary mode) or 0x7F (text mode).

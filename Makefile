@@ -266,6 +266,7 @@ HIGHEND_SRC  = flight/autotune.c \
 		   io/display.c \
 		   telemetry/telemetry.c \
 		   telemetry/frsky.c \
+		   telemetry/hott_textmode.c \
 		   telemetry/hott.c \
 		   telemetry/msp.c \
 		   telemetry/smartport.c \

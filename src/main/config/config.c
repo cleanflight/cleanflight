@@ -334,6 +334,11 @@ static void setProfile(uint8_t profileIndex)
     currentProfile = &masterConfig.profile[profileIndex];
 }
 
+void setCurrentPIDprofileConfig(uint8_t profileIndex) {
+    masterConfig.current_profile_index = profileIndex;
+    currentProfile = &masterConfig.profile[profileIndex];
+}
+
 uint8_t getCurrentControlRateProfile(void)
 {
     return currentControlRateProfileIndex;
@@ -343,7 +348,7 @@ controlRateConfig_t *getControlRateConfig(uint8_t profileIndex) {
     return &masterConfig.controlRateProfiles[profileIndex];
 }
 
-static void setControlRateProfile(uint8_t profileIndex)
+void setControlRateProfile(uint8_t profileIndex)
 {
     currentControlRateProfileIndex = profileIndex;
     currentControlRateProfile = &masterConfig.controlRateProfiles[profileIndex];
@@ -409,6 +414,7 @@ static void resetConf(void)
     masterConfig.rxConfig.maxcheck = 1900;
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
+    masterConfig.rxConfig.rssi_warningLevel = 50;
 
     masterConfig.inputFilteringMode = INPUT_FILTERING_DISABLED;
 

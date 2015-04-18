@@ -74,7 +74,7 @@ int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 static rcReadRawDataPtr rcReadRawFunc = NULL;  // receive data from default (pwm/ppm) or additional (spek/sbus/?? receiver drivers)
 
 rxRuntimeConfig_t rxRuntimeConfig;
-static rxConfig_t *rxConfig;
+rxConfig_t *rxConfig;
 
 void serialRxInit(rxConfig_t *rxConfig);
 

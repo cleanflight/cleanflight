@@ -20,6 +20,27 @@
 
 extern uint8_t cliMode;
 
+#ifndef USE_QUAD_MIXER_ONLY
+// sync this with mixerMode_e
+static const char * const mixerNames[] = {
+    "TRI", "QUADP", "QUADX", "BI",
+    "GIMBAL", "Y6", "HEX6",
+    "FLYING_WING", "Y4", "HEX6X", "OCTOX8", "OCTOFLATP", "OCTOFLATX",
+    "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4",
+    "HEX6H", "PPM_TO_SERVO", "DUALCOPTER", "SINGLECOPTER",
+    "ATAIL4", "CUSTOM", NULL
+};
+#endif
+
+// sync this with features_e
+static const char * const featureNames[] = {
+    "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
+    "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
+    "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
+    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
+    "BLACKBOX", NULL
+};
+
 void cliProcess(void);
 bool cliIsActiveOnPort(serialPort_t *serialPort);
 
