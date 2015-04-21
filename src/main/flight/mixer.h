@@ -45,7 +45,12 @@ typedef enum mixerMode
     MIXER_DUALCOPTER = 20,
     MIXER_SINGLECOPTER = 21,
     MIXER_ATAIL4 = 22,
-    MIXER_CUSTOM = 23
+	MIXER_QUADX_TILT = 23,
+	MIXER_QUADX_TILT_COS = 24,
+	MIXER_QUADX_TILT_THRUST = 25,
+	MIXER_QUADX_TILT_PITCH = 26,
+	MIXER_QUADX_TILT_ALL = 27,
+	MIXER_CUSTOM = 28
 } mixerMode_e;
 
 // Custom mixer data per motor
@@ -108,6 +113,7 @@ extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
 void mixerResetMotors(void);
+void mixTilting(void);
 void mixTable(void);
 void writeMotors(void);
 void stopMotors(void);
