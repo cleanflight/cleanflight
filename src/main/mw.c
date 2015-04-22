@@ -790,16 +790,15 @@ void loop(void)
 #endif
 
         //TODO: is good here?
-        if (masterConfig.mixerMode == MIXER_QUADX_TILT_PITCH
-       		|| masterConfig.mixerMode == MIXER_QUADX_TILT_ALL) {
-       		// compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
-       		if (rcData[AUX1] <= 1500) {
-       			actualTilt = rcData[PITCH];
+        if (masterConfig.mixerMode == MIXER_QUADX_TILT_PITCH || masterConfig.mixerMode == MIXER_QUADX_TILT_ALL) {
+       	    // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
+       	    if (rcData[AUX1] <= 1500) {
+       	        actualTilt = rcData[PITCH];
 
-       			rcCommand[PITCH] = 0; //neutral
-       		}else{
-       			actualTilt = rcData[AUX1];
-       		}
+       	        rcCommand[PITCH] = 0; //neutral
+       	    }else{
+       	        actualTilt = rcData[AUX1];
+       	    }
        	}
 
         // PID - note this is function pointer set by setPIDController()
