@@ -522,6 +522,8 @@ void writeServos(void)
 
         case MIXER_QUADX_TILT_PITCH:
         case MIXER_QUADX_TILT_ALL:
+            actualTilt = ((actualTilt-1500)*2)+1500;
+            actualTilt = constrain(actualTilt, 800, 2400);
             pwmWriteServo(0, actualTilt); // data comes from mw.c
             break;
 
@@ -638,11 +640,12 @@ void mixTilting(void) {
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
+    /* TODO: we don't like it
     if (currentMixerMode == MIXER_QUADX_TILT_THRUST
             || currentMixerMode == MIXER_QUADX_TILT_ALL) {
         // compensate the throttle because motor orientation
         rcCommand[THROTTLE] += rcCommand[THROTTLE] * tmpSine;
-    }
+    }*/
 
     if (currentMixerMode == MIXER_QUADX_TILT_COS
             || currentMixerMode == MIXER_QUADX_TILT_ALL) {
