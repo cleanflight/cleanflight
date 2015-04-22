@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "platform.h"
 
@@ -80,6 +81,8 @@ STATIC_UNIT_TESTED uint8_t servoCount;
 static servoParam_t *servoConf;
 static lowpass_t lowpassFilters[MAX_SUPPORTED_SERVOS];
 #endif
+
+uint8_t tiltingServo = 0;
 
 static const motorMixer_t mixerQuadX[] = {
     { 1.0f, -1.0f,  1.0f, -1.0f },          // REAR_R
@@ -437,6 +440,8 @@ void writeServos(void)
     if (!useServo)
         return;
 
+    int16_t actualTilt = 0;
+
     switch (currentMixerMode) {
         case MIXER_BI:
             pwmWriteServo(0, servo[4]);
@@ -480,19 +485,19 @@ void writeServos(void)
         case MIXER_QUADX_TILT:
         case MIXER_QUADX_TILT_COS:
         case MIXER_QUADX_TILT_THRUST:
-            if (rcData[AUX1] > 1500) {
-                //servo[0] = rcData[AUX1];
-                pwmWriteServo(0, rcData[AUX1]);
-            } else {
-                //servo[0] = rcData[PITCH];
-                pwmWriteServo(0, rcData[PITCH]);
-            }
-            break;
         case MIXER_QUADX_TILT_PITCH:
         case MIXER_QUADX_TILT_ALL:
-            actualTilt = ((actualTilt-1500)*2)+1500;
-            actualTilt = constrain(actualTilt, 800, 2400);
-            pwmWriteServo(0, actualTilt); // data comes from mw.c
+            if (rcData[AUX1] > rxConfig->midrc) {
+                actualTilt = rcData[AUX1];
+            } else {
+                actualTilt = rcData[PITCH];
+            }
+
+            //TODO: this should be done with expo curve
+            actualTilt = ((actualTilt-servoConf[tiltingServo].middle)*2)+servoConf[tiltingServo].middle;
+
+            actualTilt = constrain(actualTilt, servoConf[tiltingServo].min, servoConf[tiltingServo].max);
+            pwmWriteServo(tiltingServo, actualTilt);
             break;
         default:
             // Two servos for SERVO_TILT, if enabled
@@ -585,19 +590,24 @@ static void airplaneMixer(void)
 void mixTilting(void) {
     float angleTilt = 0;
     //get estimated position of the tilting servo
-    if (rcData[AUX1] > 1500) {
+    if (rcData[AUX1] > rxConfig->midrc) {
         angleTilt = rcData[AUX1];
     } else {
         angleTilt = rcData[PITCH];
     }
-    //convert from PWM to radiant
-    angleTilt = (angleTilt - 1500) / 328.5f;
+
+    //TODO: we can try to take into account servo timing to get into position
+    //find max rx range
+    float halfMaxRange = (rxConfig->maxcheck-rxConfig->mincheck)/2;
+    //find how much the Servo WILL be tilted from -1 to 1
+    angleTilt = (angleTilt - rxConfig->midrc) / halfMaxRange;
+    //convert to radiant
+    angleTilt *= (M_PIf/2);
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
-    // TODO: we don't like it
     if (currentMixerMode == MIXER_QUADX_TILT_THRUST || currentMixerMode == MIXER_QUADX_TILT_ALL) {
         // compensate the throttle because motor orientation
         rcCommand[THROTTLE] += rcCommand[THROTTLE] * tmpSine;
