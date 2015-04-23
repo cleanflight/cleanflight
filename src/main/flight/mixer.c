@@ -661,7 +661,7 @@ void mixTilting(void) {
 
     if (currentMixerMode == MIXER_QUADX_TILT_THRUST || currentMixerMode == MIXER_QUADX_TILT_ALL) {
         // compensate the throttle because motor orientation
-        rcCommand[THROTTLE] += rcCommand[THROTTLE] * tmpSine;
+        rcCommand[THROTTLE] += (rcCommand[THROTTLE]-1000) * tmpSine;
     }
 
     if (currentMixerMode == MIXER_QUADX_TILT_COS
