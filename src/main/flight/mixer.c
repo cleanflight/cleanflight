@@ -88,6 +88,8 @@ typedef enum {
 #define SERVO_FLAPPERONS_MIN SERVO_FLAPPERON_1
 #define SERVO_FLAPPERONS_MAX SERVO_FLAPPERON_2
 
+#define TILTING_SERVO 0
+
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
 //#define MIXER_DEBUG
@@ -113,8 +115,6 @@ STATIC_UNIT_TESTED uint8_t servoCount;
 static servoParam_t *servoConf;
 static lowpass_t lowpassFilters[MAX_SUPPORTED_SERVOS];
 #endif
-
-const uint8_t tiltingServo = 0;
 
 static const motorMixer_t mixerQuadX[] = {
     { 1.0f, -1.0f,  1.0f, -1.0f },          // REAR_R
@@ -519,21 +519,21 @@ void writeServos(void)
                 actualTilt = rcData[PITCH];
             }
             //remap input value (RX limit) to output value (Servo limit)
-            actualTilt = map(actualTilt, escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle, servoConf[tiltingServo].min, servoConf[tiltingServo].max);
+            actualTilt = map(actualTilt, escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max);
 
             //set actualTilt in range from -X to +X
-            actualTilt = actualTilt-servoConf[tiltingServo].middle;
+            actualTilt = actualTilt-servoConf[TILTING_SERVO].middle;
             //do we need to invert the Servo direction?
-            if (servoConf[tiltingServo].rate & 0){
+            if (servoConf[TILTING_SERVO].rate & 0){
                 actualTilt *= -1;
             }
             //set actualTilt in range for the servo
-            actualTilt += servoConf[tiltingServo].middle;
+            actualTilt += servoConf[TILTING_SERVO].middle;
 
             //be sure actualTilt does NOT break any limit
-            actualTilt = constrain(actualTilt, servoConf[tiltingServo].min, servoConf[tiltingServo].max);
+            actualTilt = constrain(actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max);
             //and now write it!
-            pwmWriteServo(tiltingServo, actualTilt);
+            pwmWriteServo(TILTING_SERVO, actualTilt);
             break;
 
         default:
