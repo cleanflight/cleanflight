@@ -137,7 +137,7 @@ tubing instead.
 Some flight controllers have an onboard SPI NOR flash chip which can be used to store flight logs instead of using an 
 OpenLog.
 
-The full version of the Naze32 and the CC3D have an onboard "m25p16" 2 megayte dataflash storage chip. This is a small
+The full version of the Naze32 and the CC3D have an onboard "m25p16" 2 megabyte dataflash storage chip. This is a small
 chip with 8 fat legs, which can be found at the base of the Naze32's direction arrow. This chip is not present on the
 "Acro" version of the Naze32.
 
