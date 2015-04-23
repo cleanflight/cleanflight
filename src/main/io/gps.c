@@ -124,16 +124,18 @@ static const gpsInitData_t gpsInitData[] = {
 //       goes 1 Hz -> 2 Hz -> 5 Hz refresh rate (silently expects that if refresh rate is not supported the GPS will ignore it)
 //       disables nav speed treshold (e.g. all movements reported)
 //       SBAS and WAAS enabled
-static const char MTK_Init[] =
-   "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n"                      // NMEA strings frequency (=output respective NMEA string every Nth fix)
-   "$PMTK220,1000*1F\r\n"                                                       // Interval between fixes 1s -> 1 Hz update
-   "$PMTK220,500*2B\r\n"                                                        // Interval between fixes 0.5s -> 2 Hz update
-   "$PMTK220,200*2C\r\n"                                                        // Interval between fixes 0.2s -> 5 Hz update
-   "$PMTK397,0*23\r\n"                                                          // Set Sta Nav Treshold (min speed) to 0 -> any movement reported
-   "$PMTK313,1*2E\r\n"                                                          // Set SBAS On
-   "$PMTK319,0*25\r\n"                                                          // Set WAAS On
-   "$PMTK301,2*2E\r\n"                                                          // Enable use of sbas satelite in test mode
-   "\r\n";                                                                      // Extra new line just to be sure
+
+#define MTK_INIT_STRINGS_COUNT 8
+static const char *MTK_Init[] = {
+   "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n",                      // NMEA strings frequency (=output respective NMEA string every Nth fix)
+   "$PMTK220,1000*1F\r\n",                                                       // Interval between fixes 1s -> 1 Hz update
+   "$PMTK220,500*2B\r\n",                                                        // Interval between fixes 0.5s -> 2 Hz update
+   "$PMTK220,200*2C\r\n",                                                        // Interval between fixes 0.2s -> 5 Hz update
+   "$PMTK397,0*23\r\n",                                                          // Set Sta Nav Treshold (min speed) to 0 -> any movement reported
+   "$PMTK313,1*2E\r\n",                                                          // Set SBAS On
+   "$PMTK319,0*25\r\n",                                                          // Set WAAS On
+   "$PMTK301,2*2E\r\n",                                                          // Enable use of sbas satelite in test mode
+   "\r\n"};                                                                      // Extra new line
 
 static const uint8_t ubloxInit[] = {
 
@@ -401,15 +403,15 @@ void gpsInitMTK(void)
             break;
 
         case GPS_CONFIGURE:
-// MTK config strings
             if (gpsData.messageState == GPS_MESSAGE_STATE_IDLE) {
                 gpsData.messageState++;
             }
 
             if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
 
-                if (gpsData.state_position < sizeof(MTK_Init) - 1) {
-                    serialWrite(gpsPort, MTK_Init[gpsData.state_position]);
+                if (gpsData.state_position < MTK_INIT_STRINGS_COUNT) {
+                    serialPrint(gpsPort, MTK_Init[gpsData.state_position]); // MTK init command
+                    serialPrint(gpsPort, MTK_Init[MTK_INIT_STRINGS_COUNT]); // extra new line
                     gpsData.state_position++;
                 } else {
                     // finished
@@ -420,7 +422,7 @@ void gpsInitMTK(void)
 
 
             if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
-                // ublox should be initialised, try receiving
+                // GPS should be initialised, try receiving
                 gpsSetState(GPS_RECEIVING_DATA);
             }
             break;
