@@ -82,7 +82,7 @@ static servoParam_t *servoConf;
 static lowpass_t lowpassFilters[MAX_SUPPORTED_SERVOS];
 #endif
 
-uint8_t tiltingServo = 0;
+const uint8_t tiltingServo = 0;
 
 static const motorMixer_t mixerQuadX[] = {
     { 1.0f, -1.0f,  1.0f, -1.0f },          // REAR_R
@@ -303,6 +303,17 @@ void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers)
 
     // enable servos for mixes that require them. note, this shifts motor counts.
     useServo = mixers[currentMixerMode].useServo;
+
+    if (
+            currentMixerMode == MIXER_QUADX_TILT ||
+            currentMixerMode == MIXER_QUADX_TILT_THRUST ||
+            currentMixerMode == MIXER_QUADX_TILT_PITCH ||
+            currentMixerMode == MIXER_QUADX_TILT_COS ||
+            currentMixerMode == MIXER_QUADX_TILT_ALL
+        ){
+        //prevent conflict; tilting quad and camstab/trig share Servo
+        featureClear(FEATURE_SERVO_TILT);
+    }
     // if we want camstab/trig, that also enables servos, even if mixer doesn't
     if (feature(FEATURE_SERVO_TILT))
         useServo = 1;
@@ -493,10 +504,21 @@ void writeServos(void)
                 actualTilt = rcData[PITCH];
             }
 
-            //TODO: this should be done with expo curve
-            actualTilt = ((actualTilt-servoConf[tiltingServo].middle)*2)+servoConf[tiltingServo].middle;
 
+            //set actualTilt in range from -X to +X
+            actualTilt = actualTilt-servoConf[tiltingServo].middle;
+            //do we need to invert the Servo direction?
+            if (servoConf[tiltingServo].rate & 0){
+                actualTilt *= -1;
+            }
+            //TODO: this should be done with expo curve
+            actualTilt *= 2;
+            //set actualTilt in range for the servo
+            actualTilt += servoConf[tiltingServo].middle;
+
+            //be sure actualTilt does NOT break any limit
             actualTilt = constrain(actualTilt, servoConf[tiltingServo].min, servoConf[tiltingServo].max);
+            //and now write it!
             pwmWriteServo(tiltingServo, actualTilt);
             break;
         default:
