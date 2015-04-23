@@ -197,7 +197,11 @@ TEST(FlightFailsafeTest, TestFailsafeDetectsRxLossAndStartsLanding)
         failsafeUpdateState();
 
         // then
-        EXPECT_EQ(FAILSAFE_RX_LOSS_DETECTED, failsafePhase());
+        if (i < MAX_COUNTER_VALUE_WHEN_RX_IS_RECEIVED_AFTER_RX_CYCLE-1) {
+            EXPECT_EQ(FAILSAFE_IDLE, failsafePhase());
+        } else {
+            EXPECT_EQ(FAILSAFE_RX_LOSS_DETECTED, failsafePhase());
+        }
         EXPECT_EQ(false, failsafeIsActive());
 
     }
@@ -312,6 +316,10 @@ bool feature(uint32_t mask) {
 
 void mwDisarm(void) {
     callCounts[COUNTER_MW_DISARM]++;
+}
+
+void beeper(uint8_t mode) {
+    UNUSED(mode);
 }
 
 }

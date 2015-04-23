@@ -75,8 +75,6 @@ failsafePhase_e failsafePhase()
     return failsafeState.phase;
 }
 
-#define MAX_COUNTER_VALUE_WHEN_RX_IS_RECEIVED_AFTER_RX_CYCLE 1
-
 bool failsafeIsReceivingRxData(void)
 {
     return failsafeState.counter <= MAX_COUNTER_VALUE_WHEN_RX_IS_RECEIVED_AFTER_RX_CYCLE;
@@ -154,15 +152,18 @@ void failsafeUpdateState(void)
 
         switch (failsafeState.phase) {
             case FAILSAFE_IDLE:
-                if (!receivingRxData && armed) {
-                    failsafeState.phase = FAILSAFE_RX_LOSS_DETECTED;
+                if (!receivingRxData) {
+                    beeper(BEEPER_TX_LOST);      //beep even if disarmed
+                    if (armed) {
+                        failsafeState.phase = FAILSAFE_RX_LOSS_DETECTED;
 
-                    reprocessState = true;
+                        reprocessState = true;
+                    }
                 }
                 break;
 
             case FAILSAFE_RX_LOSS_DETECTED:
-                beeper(BEEPER_TX_LOST_ARMED);
+                beeper(BEEPER_TX_LOST);
 
                 if (failsafeShouldForceLanding(armed)) {
                     // Stabilize, and set Throttle to specified level
@@ -173,6 +174,8 @@ void failsafeUpdateState(void)
                 break;
 
             case FAILSAFE_LANDING:
+                beeper(BEEPER_TX_LOST_LANDING);
+
                 if (armed) {
                     failsafeApplyControlInput();
                 }
@@ -187,7 +190,6 @@ void failsafeUpdateState(void)
                 break;
 
             case FAILSAFE_LANDED:
-
                 beeper(BEEPER_TX_LOST);
 
                 if (!armed) {
