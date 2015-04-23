@@ -4,7 +4,13 @@ The Naze32 target supports all Naze hardware revisions.  Revison 4 and Revision 
 frequently flown by the primary maintainer.  Previous Naze hardware revisions may have issues,
 if found please report via the [github issue tracker](https://github.com/cleanflight/cleanflight/issues).
 
-![Naze32 Pinout](Wiring/Naze32Pinout.png)
+![Naze32 Top](Wiring/Naze32Top.png) 
+
+
+![Naze32 Bottom](Wiring/Naze32Bottom.png)
+
+
+![Naze32 IC](Wiring/Naze32ICDef.png)
 
 # Serial Ports
 
