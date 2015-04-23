@@ -18,6 +18,7 @@
 #pragma once
 
 #define FAILSAFE_POWER_ON_DELAY_US (1000 * 1000 * 5)
+#define MAX_COUNTER_VALUE_WHEN_RX_IS_RECEIVED_AFTER_RX_CYCLE 10
 
 typedef struct failsafeConfig_s {
     uint8_t failsafe_delay;                 // Guard time for failsafe activation after signal lost. 1 step = 0.1sec - 1sec in example (10)

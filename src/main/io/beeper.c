@@ -174,7 +174,7 @@ void beeper(uint8_t mode)
             beeperPtr = beep_3shortBeeps;
             beeperMode = mode;
             break;
-        case BEEPER_TX_LOST_ARMED:
+        case BEEPER_TX_LOST_LANDING:
             beeperPtr = beep_sos;
             beeperMode = mode;
             beeperNextToggleTime = 0;

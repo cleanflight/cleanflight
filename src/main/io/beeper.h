@@ -24,8 +24,8 @@ uint32_t getArmingBeepTimeMicros(void);
 
 /* Beeper different modes: (lower number is higher priority)
  * BEEPER_STOP - Stops beeping
- * BEEPER_TX_LOST_ARMED - Beeps SOS when armed and TX is turned off or signal lost (autolanding/autodisarm)
- * BEEPER_TX_LOST - Beeps when TX is turned off or signal lost (repeat until TX is okay)
+ * BEEPER_TX_LOST_LANDING - Beeps SOS when armed, TX signal lost and autolanding in progress
+ * BEEPER_TX_LOST - Beeps when TX signal lost (repeat until TX is okay)
  * BEEPER_DISARMING - Beep when disarming the board
  * BEEPER_ARMING - Beep when arming the board
  * BEEPER_ARMING_GPS_FIX - Beep a tone when arming the board and GPS has fix
@@ -42,7 +42,7 @@ uint32_t getArmingBeepTimeMicros(void);
  */
 enum {
     BEEPER_STOP = 0, // Highest priority command which is used only for stopping the beeper
-    BEEPER_TX_LOST_ARMED,
+    BEEPER_TX_LOST_LANDING,
     BEEPER_TX_LOST,
     BEEPER_DISARMING,
     BEEPER_ARMING,
