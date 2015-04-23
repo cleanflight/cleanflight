@@ -134,6 +134,7 @@ TEST(AltitudeHoldTest, TestCalculateTiltAngle)
 extern "C" {
 uint32_t rcModeActivationMask;
 int16_t rcCommand[4];
+int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
 uint32_t accTimeSum ;        // keep track for integration of acc
 int accSumCount;
@@ -155,6 +156,16 @@ uint8_t armingFlags;
 
 int32_t sonarAlt;
 
+
+uint16_t enableFlightMode(flightModeFlags_e mask)
+{
+    return flightModeFlags |= (mask);
+}
+
+uint16_t disableFlightMode(flightModeFlags_e mask)
+{
+    return flightModeFlags &= ~(mask);
+}
 
 void gyroUpdate(void) {};
 bool sensors(uint32_t mask)
