@@ -511,12 +511,15 @@ void writeServos(void)
         case MIXER_QUADX_TILT_THRUST:
         case MIXER_QUADX_TILT_PITCH:
         case MIXER_QUADX_TILT_ALL:
+            ;
+            float actualTilt;
             if (rcData[AUX1] > rxConfig->midrc) {
                 actualTilt = rcData[AUX1];
             } else {
                 actualTilt = rcData[PITCH];
             }
-
+            //remap input value (RX limit) to output value (Servo limit)
+            actualTilt = map(actualTilt, escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle, servoConf[tiltingServo].min, servoConf[tiltingServo].max);
 
             //set actualTilt in range from -X to +X
             actualTilt = actualTilt-servoConf[tiltingServo].middle;
@@ -524,8 +527,6 @@ void writeServos(void)
             if (servoConf[tiltingServo].rate & 0){
                 actualTilt *= -1;
             }
-            //TODO: this should be done with expo curve
-            actualTilt *= 2;
             //set actualTilt in range for the servo
             actualTilt += servoConf[tiltingServo].middle;
 
