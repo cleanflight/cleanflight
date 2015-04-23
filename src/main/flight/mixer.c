@@ -332,16 +332,6 @@ void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers)
     // enable servos for mixes that require them. note, this shifts motor counts.
     useServo = mixers[currentMixerMode].useServo;
 
-    if (
-            currentMixerMode == MIXER_QUADX_TILT ||
-            currentMixerMode == MIXER_QUADX_TILT_THRUST ||
-            currentMixerMode == MIXER_QUADX_TILT_PITCH ||
-            currentMixerMode == MIXER_QUADX_TILT_COS ||
-            currentMixerMode == MIXER_QUADX_TILT_ALL
-        ){
-        //prevent conflict; tilting quad and camstab/trig share Servo
-        featureClear(FEATURE_SERVO_TILT);
-    }
     // if we want camstab/trig, that also enables servos, even if mixer doesn't
     if (feature(FEATURE_SERVO_TILT))
         useServo = 1;
