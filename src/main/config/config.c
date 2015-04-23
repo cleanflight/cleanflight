@@ -708,6 +708,14 @@ void activateConfig(void)
 
 void validateAndFixConfig(void)
 {
+
+    if (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_QUADX_TILT_THRUST ||
+            masterConfig.mixerMode == MIXER_QUADX_TILT_PITCH || masterConfig.mixerMode == MIXER_QUADX_TILT_COS ||
+            masterConfig.mixerMode == MIXER_QUADX_TILT_ALL ){
+        //prevent conflict; tilting quad and camstab/trig share Servo
+        featureClear(FEATURE_SERVO_TILT);
+    }
+
     if (!(feature(FEATURE_RX_PARALLEL_PWM) || feature(FEATURE_RX_PPM) || feature(FEATURE_RX_SERIAL) || feature(FEATURE_RX_MSP))) {
         featureSet(FEATURE_RX_PARALLEL_PWM); // Consider changing the default to PPM
     }
