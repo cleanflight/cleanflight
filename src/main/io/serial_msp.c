@@ -980,7 +980,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_MISC:
-        headSerialReply(2 * 6 + 4 + 2 + 4 + 2);//24 bytes allows for disarm settings
+        headSerialReply(2 * 6 + 4 + 2 + 4);
         serialize16(masterConfig.rxConfig.midrc);
 
         serialize16(masterConfig.escAndServoConfig.minthrottle);
@@ -1008,9 +1008,6 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(masterConfig.batteryConfig.vbatmincellvoltage);
         serialize8(masterConfig.batteryConfig.vbatmaxcellvoltage);
         serialize8(masterConfig.batteryConfig.vbatwarningcellvoltage);
-        
-        serialize8(masterConfig.auto_disarm_delay);
-        serialize8(masterConfig.disarm_kill_switch);
         break;
     case MSP_MOTOR_PINS:
         headSerialReply(8);
@@ -1374,9 +1371,6 @@ static bool processInCommand(void)
         masterConfig.batteryConfig.vbatmincellvoltage = read8();  // vbatlevel_warn1 in MWC2.3 GUI
         masterConfig.batteryConfig.vbatmaxcellvoltage = read8();  // vbatlevel_warn2 in MWC2.3 GUI
         masterConfig.batteryConfig.vbatwarningcellvoltage = read8();  // vbatlevel when buzzer starts to alert
-        
-        masterConfig.auto_disarm_delay = read8();//only applicable if MOTOR_STOP is enabled
-        masterConfig.disarm_kill_switch = read8();//disarm via Aux channel regardless of throttle value
         break;
     case MSP_SET_MOTOR:
         for (i = 0; i < 8; i++) // FIXME should this use MAX_MOTORS or MAX_SUPPORTED_MOTORS instead of 8
