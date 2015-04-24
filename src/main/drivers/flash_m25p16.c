@@ -153,6 +153,19 @@ static bool m25p16_readIdentification()
 
         return true;
     }
+    if (in[1] == 0xC2 && in[2] == 0x20 && in[3] == 0x16) { // MX25L3206E
+        // In the future we can support other chip geometries here:
+        geometry.sectors = 64;
+        geometry.pagesPerSector = 256;
+        geometry.pageSize = 256;
+
+        geometry.sectorSize = geometry.pagesPerSector * geometry.pageSize;
+        geometry.totalSize = geometry.sectorSize * geometry.sectors;
+
+        couldBeBusy = true; // Just for luck we'll assume the chip could be busy even though it isn't specced to be
+
+        return true;
+    }
 
     geometry.sectors = 0;
     geometry.pagesPerSector = 0;

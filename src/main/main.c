@@ -299,7 +299,7 @@ void init(void)
         i2cInit(I2C_DEVICE);
     }
 #else
-#ifdef ANYFC
+#if defined(ANYFC) || defined(COLIBRI)
     i2cInit(I2C_DEVICE_INT);
     if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
 #ifdef I2C_DEVICE_EXT
@@ -412,7 +412,7 @@ void init(void)
         m25p16_init();
     }
 #endif
-#if defined(SPRACINGF3) || defined(CC3D)
+#if defined(SPRACINGF3) || defined(CC3D) || defined(COLIBRI)
     m25p16_init();
 #endif
     flashfsInit();

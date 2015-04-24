@@ -55,7 +55,7 @@ typedef struct i2cDevice_t {
 static const i2cDevice_t i2cHardwareMap[] = {
     { I2C1, GPIOB, Pin_8, GPIOB, Pin_9, I2C1_EV_IRQn, I2C1_ER_IRQn, RCC_APB1Periph_I2C1 },
     { I2C2, GPIOB, Pin_10, GPIOB, Pin_11, I2C2_EV_IRQn, I2C2_ER_IRQn, RCC_APB1Periph_I2C2 },
-    { I2C2, GPIOA, Pin_8, GPIOC, Pin_9, I2C3_EV_IRQn, I2C3_ER_IRQn, RCC_APB1Periph_I2C3 },
+    { I2C3, GPIOA, Pin_8, GPIOC, Pin_9, I2C3_EV_IRQn, I2C3_ER_IRQn, RCC_APB1Periph_I2C3 },
 };
 
 void I2C1_ER_IRQHandler(void)

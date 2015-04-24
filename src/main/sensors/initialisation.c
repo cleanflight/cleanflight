@@ -503,6 +503,13 @@ static void detectMag(magSensor_e magHardwareToUse)
     anyfcHmc5883Config.gpioPort = GPIOB;
     hmc5883Config = &anyfcHmc5883Config;
 #endif
+#ifdef COLIBRI
+    hmc5883Config_t colibriHmc5883Config;
+    colibriHmc5883Config.gpioAHB1Peripherals = RCC_AHB1Periph_GPIOC;
+    colibriHmc5883Config.gpioPin = Pin_1;
+    colibriHmc5883Config.gpioPort = GPIOC;
+    hmc5883Config = &colibriHmc5883Config;
+#endif
 #ifdef SPRACINGF3
     static const hmc5883Config_t spRacingF3Hmc5883Config = {
         .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
@@ -546,6 +553,7 @@ retry:
 #endif
             ; // fallthrough
         case MAG_NAZA:
+#ifdef USE_MAG_NAZA
             if (nazaGPSdetect(&mag)) {
 #ifdef MAG_NAZA_ALIGN
                 magAlign = MAG_NAZA_ALIGN;
@@ -553,6 +561,7 @@ retry:
                 magHardware = MAG_NAZA;
                 break;
             }
+#endif
             ; // fallthrough
 
         case MAG_NONE:
