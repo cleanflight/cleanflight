@@ -35,27 +35,3 @@
 #define REQUIRE_PRINTF_LONG_SUPPORT
 #endif
 
-extern int16_t debug[4];
-
-#define DEBUG_SECTION_TIMES
-
-#ifdef DEBUG_SECTION_TIMES
-extern uint32_t sectionTimes[2][4];
-
-#define TIME_SECTION_BEGIN(index) { \
-    extern uint32_t sectionTimes[2][4]; \
-    sectionTimes[0][index] = micros(); \
-}
-
-#define TIME_SECTION_END(index) { \
-    extern uint32_t sectionTimes[2][4]; \
-    sectionTimes[1][index] = micros(); \
-    debug[index] = sectionTimes[1][index] - sectionTimes[0][index]; \
-}
-#else
-
-#define TIME_SECTION_BEGIN(index) {}
-#define TIME_SECTION_END(index) {}
-
-#endif
-

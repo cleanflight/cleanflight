@@ -17,7 +17,7 @@
 
 #pragma once
 
-#ifdef STM32F10X
+#if defined(STM32F10X)
 typedef enum
 {
     Mode_AIN = 0x0,
@@ -106,10 +106,12 @@ typedef struct
     GPIO_Speed speed;
 } gpio_config_t;
 
+#ifndef UNIT_TEST
 static inline void digitalHi(GPIO_TypeDef *p, uint16_t i) { p->BSRR = i; }
 static inline void digitalLo(GPIO_TypeDef *p, uint16_t i)     { p->BRR = i; }
 static inline void digitalToggle(GPIO_TypeDef *p, uint16_t i) { p->ODR ^= i; }
 static inline uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i) {return p->IDR & i; }
+#endif
 
 void gpioInit(GPIO_TypeDef *gpio, gpio_config_t *config);
 void gpioExtiLineConfig(uint8_t portsrc, uint8_t pinsrc);

@@ -22,6 +22,8 @@
 #include <limits.h>
 
 extern "C" {
+    #include "debug.h"
+
     #include "platform.h"
 
     #include "common/axis.h"
@@ -148,9 +150,12 @@ TEST(TelemetryHottTest, PrepareGPSMessage_Altitude1m)
 
 extern "C" {
 
-int16_t debug[4];
+int16_t debug[DEBUG16_VALUE_COUNT];
 
 uint8_t stateFlags;
+
+uint16_t batteryWarningVoltage;
+uint8_t useHottAlarmSoundPeriod (void) { return 0; }
 
 
 uint8_t GPS_numSat;
@@ -163,6 +168,12 @@ int16_t GPS_directionToHome;        // direction to home or hol point in degrees
 
 int32_t amperage;
 int32_t mAhDrawn;
+
+uint32_t fixedMillis = 0;
+
+uint32_t millis(void) {
+    return fixedMillis;
+}
 
 uint32_t micros(void) { return 0; }
 
@@ -187,13 +198,13 @@ void serialSetMode(serialPort_t *instance, portMode_t mode) {
 }
 
 
-serialPort_t *openSerialPort(serialPortIdentifier_e identifier, serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion) {
+serialPort_t *openSerialPort(serialPortIdentifier_e identifier, serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options) {
     UNUSED(identifier);
     UNUSED(functionMask);
     UNUSED(baudRate);
     UNUSED(callback);
     UNUSED(mode);
-    UNUSED(inversion);
+    UNUSED(options);
 
     return NULL;
 }

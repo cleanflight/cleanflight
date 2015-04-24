@@ -28,6 +28,8 @@ has a voltage divider that is capable of measuring your particular battery volta
 
 The Naze32 has an on-board battery divider circuit, connect your main battery to the VBAT connector.
 
+**CAUTION:**  When installing connection from main battery to the VBAT connector, be sure to first disconnect the main battery from the frame / power distribution board.  Check the wiring very carefully before connecting battery again.  Incorrect connections can immediately and completely destroy the flight controller and connected peripherals (ESC, GPS, Receiver etc.)
+
 ### CC3D
 
 The CC3D has no battery divider, create one that gives you a 3.3v MAXIMUM output when your battery is
@@ -36,7 +38,11 @@ fully charged and connect the output from it to S5_IN/PA0/RC5.
 S5_IN/PA0/RC5 is Pin 7 on the 8 pin connector, second to last pin, opposite end from the GND/+5/PPM signal input.
 
 Note: When battery monitoring is enabled on the CC3D RC5 can no-longer be used for PWM input.
- 
+
+### Sparky
+
+See Sparky board chapter.
+
 ## Configuration
 
 Enable the `VBAT` feature.

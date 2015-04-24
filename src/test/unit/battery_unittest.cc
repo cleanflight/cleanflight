@@ -22,6 +22,8 @@
 
 extern "C" {
     #include "sensors/battery.h"
+    
+    #include "io/rc_controls.h"
 }
 
 #include "unittest_macros.h"
@@ -53,14 +55,14 @@ TEST(BatteryTest, BatteryADCToVoltage)
     batteryInit(&batteryConfig);
 
     batteryAdcToVoltageExpectation_t batteryAdcToVoltageExpectations[] = {
-            {1420, 125, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1430, 126, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1440, 127, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1890, 167, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1900, 168, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {1910, 169, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
-            {   0,   0, VBAT_SCALE_MAX},
-            {4096, 841, VBAT_SCALE_MAX}
+            {1420, 126 /*125.88*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1430, 127 /*126.76*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1440, 128 /*127.65*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1890, 168 /*167.54*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1900, 168 /*168.42*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {1910, 169 /*169.31*/, ELEVEN_TO_ONE_VOLTAGE_DIVIDER},
+            {   0,   0 /*  0.00*/, VBAT_SCALE_MAX},
+            {4096, 842 /*841.71*/, VBAT_SCALE_MAX}
     };
     uint8_t testIterationCount = sizeof(batteryAdcToVoltageExpectations) / sizeof(batteryAdcToVoltageExpectation_t);
 
@@ -77,7 +79,7 @@ TEST(BatteryTest, BatteryADCToVoltage)
 #endif
         uint16_t pointOneVoltSteps = batteryAdcToVoltage(batteryAdcToVoltageExpectation->adcReading);
 
-        EXPECT_EQ(pointOneVoltSteps, batteryAdcToVoltageExpectation->expectedVoltageInDeciVoltSteps);
+        EXPECT_EQ(batteryAdcToVoltageExpectation->expectedVoltageInDeciVoltSteps, pointOneVoltSteps);
     }
 }
 
@@ -87,6 +89,19 @@ extern "C" {
 
 uint8_t armingFlags = 0;
 int16_t rcCommand[4] = {0,0,0,0};
+
+bool feature(uint32_t mask)
+{
+    UNUSED(mask);
+    return false;
+}
+
+throttleStatus_e calculateThrottleStatus(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
+{
+    UNUSED(*rxConfig);
+    UNUSED(deadband3d_throttle);
+    return THROTTLE_HIGH;
+}
 
 uint16_t adcGetChannel(uint8_t channel)
 {

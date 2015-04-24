@@ -90,7 +90,6 @@ enum {
 /* for VBAT monitoring frequency */
 #define VBATFREQ 6        // to read battery voltage - nth number of loop iterations
 
-int16_t debug[4];
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
@@ -176,7 +175,7 @@ void annexCode(void)
     static uint8_t vbatTimer = 0;
     static int32_t vbatCycleTime = 0;
 
-    // PITCH & ROLL only dynamic PID adjustemnt,  depending on throttle value
+    // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
         prop2 = 100;
     } else {
@@ -243,16 +242,21 @@ void annexCode(void)
             if (feature(FEATURE_VBAT)) {
                 updateBatteryVoltage();
                 batteryState = calculateBatteryState();
+                //handle beepers for battery levels
+                if (batteryState == BATTERY_CRITICAL)
+                    beeper(BEEPER_BAT_CRIT_LOW);    //critically low battery
+                else if (batteryState == BATTERY_WARNING)
+                    beeper(BEEPER_BAT_LOW);         //low battery
             }
 
             if (feature(FEATURE_CURRENT_METER)) {
-                updateCurrentMeter(vbatCycleTime);
+                updateCurrentMeter(vbatCycleTime, &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
             }
             vbatCycleTime = 0;
         }
     }
 
-    beepcodeUpdateState(batteryState);
+    beeperUpdate();          //call periodic beeper handler
 
     if (ARMING_FLAG(ARMED)) {
         LED0_ON;
@@ -318,6 +322,8 @@ void mwDisarm(void)
             finishBlackbox();
         }
 #endif
+
+        beeper(BEEPER_DISARMING);      // emit disarm tone
     }
 }
 
@@ -356,6 +362,16 @@ void mwArm(void)
 #endif
             disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
 
+            //beep to indicate arming
+#ifdef GPS
+            if (feature(FEATURE_GPS) && STATE(GPS_FIX) && GPS_numSat >= 5)
+                beeper(BEEPER_ARMING_GPS_FIX);
+            else
+                beeper(BEEPER_ARMING);
+#else
+            beeper(BEEPER_ARMING);
+#endif
+
             return;
         }
     }
@@ -381,9 +397,9 @@ void handleInflightCalibrationStickPosition(void)
     } else {
         AccInflightCalibrationArmed = !AccInflightCalibrationArmed;
         if (AccInflightCalibrationArmed) {
-            queueConfirmationBeep(4);
+            beeper(BEEPER_ACC_CALIBRATION);
         } else {
-            queueConfirmationBeep(6);
+            beeper(BEEPER_ACC_CALIBRATION_FAIL);
         }
     }
 }
@@ -498,6 +514,8 @@ void executePeriodicTasks(void)
 
 void processRx(void)
 {
+    static bool armedBeeperOn = false;
+
     calculateRxChannelsAndUpdateFailsafe(currentTime);
 
     // in 3D mode, we need to be able to disarm by switch at any time
@@ -510,8 +528,8 @@ void processRx(void)
 
     if (feature(FEATURE_FAILSAFE)) {
 
-        if (currentTime > FAILSAFE_POWER_ON_DELAY_US && !failsafeIsEnabled()) {
-            failsafeEnable();
+        if (currentTime > FAILSAFE_POWER_ON_DELAY_US && !failsafeIsMonitoring()) {
+            failsafeStartMonitoring();
         }
 
         failsafeUpdateState();
@@ -523,17 +541,48 @@ void processRx(void)
         pidResetErrorAngle();
         pidResetErrorGyro();
     }
-    // When armed and motors aren't spinning, disarm board after delay so users without buzzer won't lose fingers.
+
+    // When armed and motors aren't spinning, do beeps and then disarm
+    // board after delay so users without buzzer won't lose fingers.
     // mixTable constrains motor commands, so checking  throttleStatus is enough
     if (ARMING_FLAG(ARMED)
-        && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)
-        && masterConfig.auto_disarm_delay != 0
-        && isUsingSticksForArming()) {
-        if (throttleStatus == THROTTLE_LOW) {
-            if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
-                mwDisarm();
+        && feature(FEATURE_MOTOR_STOP)
+        && !STATE(FIXED_WING)
+    ) {
+        if (isUsingSticksForArming()) {
+            if (throttleStatus == THROTTLE_LOW) {
+                if (masterConfig.auto_disarm_delay != 0
+                    && (int32_t)(disarmAt - millis()) < 0
+                ) {
+                    // auto-disarm configured and delay is over
+                    mwDisarm();
+                    armedBeeperOn = false;
+                } else {
+                    // still armed; do warning beeps while armed
+                    beeper(BEEPER_ARMED);
+                    armedBeeperOn = true;
+                }
+            } else {
+                // throttle is not low
+                if (masterConfig.auto_disarm_delay != 0) {
+                    // extend disarm time
+                    disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;
+                }
+
+                if (armedBeeperOn) {
+                    beeper(BEEPER_STOP);
+                    armedBeeperOn = false;
+                }
+            }
         } else {
-            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // extend delay
+            // arming is via AUX switch; beep while throttle low
+            if (throttleStatus == THROTTLE_LOW) {
+                beeper(BEEPER_ARMED);
+                armedBeeperOn = true;
+            } else if (armedBeeperOn) {
+                beeper(BEEPER_STOP);
+                armedBeeperOn = false;
+            }
         }
     }
 
@@ -552,7 +601,7 @@ void processRx(void)
 
     bool canUseHorizonMode = true;
 
-    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeHasTimerElapsed())) && (sensors(SENSOR_ACC))) {
+    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeIsActive())) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
     	canUseHorizonMode = false;
 
@@ -629,7 +678,7 @@ void loop(void)
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
 
-    updateRx();
+    updateRx(currentTime);
 
     if (shouldProcessRx(currentTime)) {
         processRx();
@@ -703,7 +752,12 @@ void loop(void)
         // If we're armed, at minimum throttle, and we do arming via the
         // sticks, do not process yaw input from the rx.  We do this so the
         // motors do not spin up while we are trying to arm or disarm.
-        if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck) {
+        // Allow yaw control for tricopters if the user wants the servo to move even when unarmed.
+        if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck
+#ifndef USE_QUAD_MIXER_ONLY
+                && !(masterConfig.mixerMode == MIXER_TRI && masterConfig.mixerConfig.tri_unarmed_servo)
+#endif
+        ) {
             rcCommand[YAW] = 0;
         }
 
@@ -747,7 +801,7 @@ void loop(void)
 
 #ifdef TELEMETRY
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
-        handleTelemetry();
+        handleTelemetry(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
     }
 #endif
 

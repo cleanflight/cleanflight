@@ -51,6 +51,7 @@
 
 #include "flight/pid.h"
 #include "flight/navigation.h"
+#include "flight/failsafe.h"
 
 #include "mw.h"
 
@@ -124,7 +125,8 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
             }
         } else {
             // Disarming via ARM BOX
-            if (ARMING_FLAG(ARMED)) {
+
+            if (ARMING_FLAG(ARMED) && rxIsReceivingSignal() && !failsafeIsActive()  ) {
                 if (disarm_kill_switch) {
                     mwDisarm();
                 } else if (throttleStatus == THROTTLE_LOW) {
@@ -138,18 +140,29 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         return;
     }
 
-    if (ARMING_FLAG(ARMED)) {
-        // actions during armed
-
         if (isUsingSticksToArm) {
             // Disarm on throttle down + yaw
-            if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE)
+        if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) {
+            if (ARMING_FLAG(ARMED))         //board was armed
                 mwDisarm();
-
-            // Disarm on roll (only when retarded_arm is enabled)
-            if (retarded_arm && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO))
-                mwDisarm();
+            else {  //board was not armed
+                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
+                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            }
         }
+            // Disarm on roll (only when retarded_arm is enabled)
+        if (retarded_arm && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO)) {
+            if (ARMING_FLAG(ARMED))         //board was armed
+                mwDisarm();
+            else {  //board was not armed
+                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
+                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            }
+        }
+    }
+
+    if (ARMING_FLAG(ARMED)) {
+        // actions during armed
         return;
     }
 
@@ -407,18 +420,18 @@ void applyStepAdjustment(controlRateConfig_t *controlRateConfig, uint8_t adjustm
         case ADJUSTMENT_PITCH_ROLL_RATE:
         case ADJUSTMENT_PITCH_RATE:
             newValue = (int)controlRateConfig->rates[FD_PITCH] + delta;
-            controlRateConfig->rates[FD_PITCH] = constrain(newValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
+            controlRateConfig->rates[FD_PITCH] = constrain(newValue, 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX);
             if (adjustmentFunction == ADJUSTMENT_PITCH_RATE) {
                 break;
             }
             // follow though for combined ADJUSTMENT_PITCH_ROLL_RATE
         case ADJUSTMENT_ROLL_RATE:
             newValue = (int)controlRateConfig->rates[FD_ROLL] + delta;
-            controlRateConfig->rates[FD_ROLL] = constrain(newValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
+            controlRateConfig->rates[FD_ROLL] = constrain(newValue, 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX);
             break;
         case ADJUSTMENT_YAW_RATE:
             newValue = (int)controlRateConfig->rates[FD_YAW] + delta;
-            controlRateConfig->rates[FD_YAW] = constrain(newValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
+            controlRateConfig->rates[FD_YAW] = constrain(newValue, 0, CONTROL_RATE_CONFIG_YAW_RATE_MAX);
             break;
         case ADJUSTMENT_PITCH_ROLL_P:
             if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {

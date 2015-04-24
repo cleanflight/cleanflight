@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "platform.h"
+#include "debug.h"
 
 #include "build_config.h"
 
@@ -27,8 +28,6 @@
 #include "common/maths.h"
 
 #include "drivers/system.h"
-#include "drivers/gpio.h"
-#include "drivers/timer.h"
 #include "drivers/pwm_output.h"
 #include "drivers/pwm_mapping.h"
 #include "drivers/sensor.h"
@@ -59,8 +58,6 @@
 
 //#define MIXER_DEBUG
 
-extern int16_t debug[4];
-
 uint8_t motorCount = 0;
 int16_t motor[MAX_SUPPORTED_MOTORS];
 int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
@@ -78,7 +75,7 @@ static mixerMode_e currentMixerMode;
 static gimbalConfig_t *gimbalConfig;
 int16_t servo[MAX_SUPPORTED_SERVOS];
 static int useServo;
-static uint8_t servoCount;
+STATIC_UNIT_TESTED uint8_t servoCount;
 static servoParam_t *servoConf;
 static lowpass_t lowpassFilters[MAX_SUPPORTED_SERVOS];
 #endif
@@ -205,7 +202,7 @@ static const motorMixer_t mixerDualcopter[] = {
 
 // Keep synced with mixerMode_e
 const mixer_t mixers[] = {
-//    Mo Se Mixtable
+    // motors, servos, motor mixer
     { 0, 0, NULL },                // entry 0
     { 3, 1, mixerTri },            // MIXER_TRI
     { 4, 0, mixerQuadP },          // MIXER_QUADP
@@ -226,7 +223,7 @@ const mixer_t mixers[] = {
     { 4, 0, mixerVtail4 },         // MIXER_VTAIL4
     { 6, 0, mixerHex6H },          // MIXER_HEX6H
     { 0, 1, NULL },                // * MIXER_PPM_TO_SERVO
-    { 2, 1, mixerDualcopter  },    // MIXER_DUALCOPTER
+    { 2, 1, mixerDualcopter },     // MIXER_DUALCOPTER
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
     { 0, 0, NULL },                // MIXER_CUSTOM
@@ -404,6 +401,25 @@ void mixerResetMotors(void)
 }
 
 #ifdef USE_SERVOS
+
+STATIC_UNIT_TESTED void forwardAuxChannelsToServos(void)
+{
+    // offset servos based off number already used in mixer types
+    // airplane and servo_tilt together can't be used
+    int8_t firstServo = servoCount - AUX_FORWARD_CHANNEL_TO_SERVO_COUNT;
+
+    // start forwarding from this channel
+    uint8_t channelOffset = AUX1;
+
+    int8_t servoOffset;
+    for (servoOffset = 0; servoOffset < AUX_FORWARD_CHANNEL_TO_SERVO_COUNT; servoOffset++) {
+        if (firstServo + servoOffset < 0) {
+            continue; // there are not enough servos to forward all the AUX channels.
+        }
+        pwmWriteServo(firstServo + servoOffset, rcData[channelOffset++]);
+    }
+}
+
 static void updateGimbalServos(void)
 {
     pwmWriteServo(0, servo[0]);
@@ -648,25 +664,14 @@ void mixTable(void)
     }
 
     // constrain servos
-    for (i = 0; i < MAX_SUPPORTED_SERVOS; i++)
-        servo[i] = constrain(servo[i], servoConf[i].min, servoConf[i].max); // limit the values
-
+    if (useServo) {
+        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            servo[i] = constrain(servo[i], servoConf[i].min, servoConf[i].max); // limit the values
+        }
+    }
     // forward AUX1-4 to servo outputs (not constrained)
     if (gimbalConfig->gimbal_flags & GIMBAL_FORWARDAUX) {
-        // offset servos based off number already used in mixer types
-        // airplane and servo_tilt together can't be used
-        int8_t firstServo = servoCount - AUX_FORWARD_CHANNEL_TO_SERVO_COUNT;
-
-        // start forwarding from this channel
-        uint8_t channelOffset = AUX1;
-
-        int8_t servoOffset;
-        for (servoOffset = 0; servoOffset < AUX_FORWARD_CHANNEL_TO_SERVO_COUNT; servoOffset++) {
-            if (firstServo + servoOffset < 0) {
-                continue; // there are not enough servos to forward all the AUX channels.
-            }
-            pwmWriteServo(firstServo + servoOffset, rcData[channelOffset++]);
-        }
+        forwardAuxChannelsToServos();
     }
 #endif
 

@@ -27,12 +27,18 @@
 #include "common/utils.h"
 
 #include "drivers/system.h"
-#include "drivers/gpio.h"
-#include "drivers/timer.h"
 #include "drivers/serial.h"
+#if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 #include "drivers/serial_softserial.h"
+#endif
+
+#if defined(USE_USART1) || defined(USE_USART2) || defined(USE_USART3)
 #include "drivers/serial_uart.h"
+#endif
+
+#if defined(USE_VCP)
 #include "drivers/serial_usb_vcp.h"
+#endif
 
 #include "io/serial.h"
 #include "serial_cli.h"
@@ -68,7 +74,7 @@ serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 #endif
 };
 
-uint32_t baudRates[] = {0, 9600, 19200, 38400, 57600, 115200}; // see baudRate_e
+uint32_t baudRates[] = {0, 9600, 19200, 38400, 57600, 115200, 230400, 250000}; // see baudRate_e
 
 #define BAUD_RATE_COUNT (sizeof(baudRates) / sizeof(baudRates[0]))
 
@@ -238,11 +244,11 @@ serialPort_t *openSerialPort(
     serialReceiveCallbackPtr callback,
     uint32_t baudRate,
     portMode_t mode,
-    serialInversion_e inversion)
+    portOptions_t options)
 {
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
-    if (serialPortUsage->function != FUNCTION_NONE) {
-        // already in use
+    if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {
+        // not available / already in use
         return NULL;
     }
 
@@ -256,28 +262,28 @@ serialPort_t *openSerialPort(
 #endif
 #ifdef USE_USART1
         case SERIAL_PORT_USART1:
-            serialPort = uartOpen(USART1, callback, baudRate, mode, inversion);
+            serialPort = uartOpen(USART1, callback, baudRate, mode, options);
             break;
 #endif
 #ifdef USE_USART2
         case SERIAL_PORT_USART2:
-            serialPort = uartOpen(USART2, callback, baudRate, mode, inversion);
+            serialPort = uartOpen(USART2, callback, baudRate, mode, options);
             break;
 #endif
 #ifdef USE_USART3
         case SERIAL_PORT_USART3:
-            serialPort = uartOpen(USART3, callback, baudRate, mode, inversion);
+            serialPort = uartOpen(USART3, callback, baudRate, mode, options);
             break;
 #endif
 #ifdef USE_SOFTSERIAL1
         case SERIAL_PORT_SOFTSERIAL1:
-            serialPort = openSoftSerial(SOFTSERIAL1, callback, baudRate, inversion);
+            serialPort = openSoftSerial(SOFTSERIAL1, callback, baudRate, options);
             serialSetMode(serialPort, mode);
             break;
 #endif
 #ifdef USE_SOFTSERIAL2
         case SERIAL_PORT_SOFTSERIAL2:
-            serialPort = openSoftSerial(SOFTSERIAL2, callback, baudRate, inversion);
+            serialPort = openSoftSerial(SOFTSERIAL2, callback, baudRate, options);
             serialSetMode(serialPort, mode);
             break;
 #endif
@@ -312,7 +318,7 @@ void closeSerialPort(serialPort_t *serialPort) {
     serialPortUsage->serialPort = NULL;
 }
 
-void serialInit(serialConfig_t *initialSerialConfig)
+void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled)
 {
     uint8_t index;
 
@@ -322,6 +328,19 @@ void serialInit(serialConfig_t *initialSerialConfig)
 
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
         serialPortUsageList[index].identifier = serialPortIdentifiers[index];
+
+        if (!softserialEnabled) {
+            if (0
+#ifdef USE_SOFTSERIAL1
+                || serialPortUsageList[index].identifier == SERIAL_PORT_SOFTSERIAL1
+#endif
+#ifdef USE_SOFTSERIAL2
+                || serialPortUsageList[index].identifier == SERIAL_PORT_SOFTSERIAL2
+#endif
+            ) {
+                serialPortUsageList[index].identifier = SERIAL_PORT_NONE;
+            }
+        }
     }
 }
 

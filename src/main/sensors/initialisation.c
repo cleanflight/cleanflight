@@ -76,18 +76,26 @@ uint8_t detectedSensors[MAX_SENSORS_TO_DETECT] = { GYRO_NONE, ACC_NONE, BARO_NON
 const mpu6050Config_t *selectMPU6050Config(void)
 {
 #ifdef NAZE
-    // MPU_INT output on rev4/5 hardware (PB13, PC13)
+    // MPU_INT output on rev4 PB13
     static const mpu6050Config_t nazeRev4MPU6050Config = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
             .gpioPort = GPIOB,
-            .gpioPin = Pin_13
+            .gpioPin = Pin_13,
+            .exti_port_source = GPIO_PortSourceGPIOB,
+            .exti_pin_source = GPIO_PinSource13,
+            .exti_line = EXTI_Line13,
+            .exti_irqn = EXTI15_10_IRQn
     };
+    // MPU_INT output on rev5 hardware PC13
     static const mpu6050Config_t nazeRev5MPU6050Config = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
             .gpioPort = GPIOC,
-            .gpioPin = Pin_13
+            .gpioPin = Pin_13,
+            .exti_port_source = GPIO_PortSourceGPIOC,
+            .exti_pin_source = GPIO_PinSource13,
+            .exti_line = EXTI_Line13,
+            .exti_irqn = EXTI15_10_IRQn
     };
-
 
     if (hardwareRevision < NAZE32_REV5) {
         return &nazeRev4MPU6050Config;
@@ -100,10 +108,15 @@ const mpu6050Config_t *selectMPU6050Config(void)
     static const mpu6050Config_t spRacingF3MPU6050Config = {
             .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
             .gpioPort = GPIOC,
-            .gpioPin = Pin_13
+            .gpioPin = Pin_13,
+            .exti_port_source = EXTI_PortSourceGPIOC,
+            .exti_pin_source = EXTI_PinSource13,
+            .exti_line = EXTI_Line13,
+            .exti_irqn = EXTI15_10_IRQn
     };
     return &spRacingF3MPU6050Config;
 #endif
+
     return NULL;
 }
 
@@ -374,7 +387,7 @@ retry:
     }
 
     // Found anything? Check if error or ACC is really missing.
-    if (accHardwareToUse != ACC_DEFAULT && accHardware == ACC_NONE) {
+    if (accHardware == ACC_NONE && accHardwareToUse != ACC_DEFAULT && accHardwareToUse != ACC_NONE) {
         // Nothing was found and we have a forced sensor that isn't present.
         accHardwareToUse = ACC_DEFAULT;
         goto retry;
@@ -526,7 +539,7 @@ retry:
             break;
     }
 
-    if (magHardwareToUse != MAG_DEFAULT && magHardware == MAG_NONE) {
+    if (magHardware == MAG_NONE && magHardwareToUse != MAG_DEFAULT && magHardwareToUse != MAG_NONE) {
         // Nothing was found and we have a forced sensor that isn't present.
         magHardwareToUse = MAG_DEFAULT;
         goto retry;

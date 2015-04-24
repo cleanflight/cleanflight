@@ -87,10 +87,8 @@
 #endif
 
 #include "build_config.h"
+#include "debug.h"
 
-#ifdef DEBUG_SECTION_TIMES
-uint32_t sectionTimes[2][4];
-#endif
 extern uint32_t previousTime;
 
 #ifdef SOFTSERIAL_LOOPBACK
@@ -100,7 +98,7 @@ serialPort_t *loopbackPort;
 void printfSupportInit(void);
 void timerInit(void);
 void telemetryInit(void);
-void serialInit(serialConfig_t *initialSerialConfig);
+void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled);
 void mspInit(serialConfig_t *serialConfig);
 void cliInit(serialConfig_t *serialConfig);
 void failsafeInit(rxConfig_t *intialRxConfig);
@@ -108,7 +106,6 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
 void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMixers);
 void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
 void rxInit(rxConfig_t *rxConfig);
-void beepcodeInit(void);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
@@ -190,6 +187,8 @@ void init(void)
     delay(100);
 
     timerInit();  // timer must be initialized before any channel is allocated
+
+    serialInit(&masterConfig.serialConfig, feature(FEATURE_SOFTSERIAL));
 
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
@@ -341,14 +340,10 @@ void init(void)
 
     imuInit();
 
-    serialInit(&masterConfig.serialConfig);
-
     mspInit(&masterConfig.serialConfig);
     cliInit(&masterConfig.serialConfig);
 
     failsafeInit(&masterConfig.rxConfig);
-
-    beepcodeInit();
 
     rxInit(&masterConfig.rxConfig);
 

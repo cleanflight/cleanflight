@@ -20,15 +20,17 @@
 
 #include "common/maths.h"
 
-#include "config/runtime_config.h"
-
 #include "drivers/adc.h"
 #include "drivers/system.h"
 
-#include "rx/rx.h"
-#include "io/rc_controls.h"
+#include "config/runtime_config.h"
+#include "config/config.h"
 
 #include "sensors/battery.h"
+
+#include "rx/rx.h"
+
+#include "io/rc_controls.h"
 
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
@@ -48,7 +50,7 @@ uint16_t batteryAdcToVoltage(uint16_t src)
 {
     // calculate battery voltage based on ADC reading
     // result is Vbatt in 0.1V steps. 3.3V = ADC Vref, 0xFFF = 12bit adc, 110 = 11:1 voltage divider (10k:1k) * 10 for 0.1V
-    return (((src) * 3.3f) / 0xFFF) * batteryConfig->vbatscale;
+    return ((uint32_t)src * batteryConfig->vbatscale * 33 + (0xFFF * 5)) / (0xFFF * 10);
 }
 
 #define BATTERY_SAMPLE_COUNT 8
@@ -111,7 +113,7 @@ int32_t currentSensorToCentiamps(uint16_t src)
     return (millivolts * 1000) / (int32_t)batteryConfig->currentMeterScale; // current in 0.01A steps
 }
 
-void updateCurrentMeter(int32_t lastUpdateAt)
+void updateCurrentMeter(int32_t lastUpdateAt, rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 {
     static int32_t amperageRaw = 0;
     static int64_t mAhdrawnRaw = 0;
@@ -127,6 +129,9 @@ void updateCurrentMeter(int32_t lastUpdateAt)
         case CURRENT_SENSOR_VIRTUAL:
             amperage = (int32_t)batteryConfig->currentMeterOffset;
             if(ARMING_FLAG(ARMED)) {
+                throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig, deadband3d_throttle);
+                if (throttleStatus == THROTTLE_LOW && feature(FEATURE_MOTOR_STOP))
+                    throttleOffset = 0;
                 throttleFactor = throttleOffset + (throttleOffset * throttleOffset / 50);
                 amperage += throttleFactor * (int32_t)batteryConfig->currentMeterScale  / 1000;
             }

@@ -15,6 +15,7 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -29,6 +30,47 @@
 #include "nvic.h"
 
 #include "system.h"
+
+
+#ifndef EXTI15_10_CALLBACK_HANDLER_COUNT
+#define EXTI15_10_CALLBACK_HANDLER_COUNT 1
+#endif
+
+static extiCallbackHandler* exti15_10_handlers[EXTI15_10_CALLBACK_HANDLER_COUNT];
+
+void registerExti15_10_CallbackHandler(extiCallbackHandler *fn)
+{
+    for (int index = 0; index < EXTI15_10_CALLBACK_HANDLER_COUNT; index++) {
+        extiCallbackHandler *candidate = exti15_10_handlers[index];
+        if (!candidate) {
+            exti15_10_handlers[index] = fn;
+            return;
+        }
+    }
+    failureMode(15); // EXTI15_10_CALLBACK_HANDLER_COUNT is too low for the amount of handlers required.
+}
+
+void unregisterExti15_10_CallbackHandler(extiCallbackHandler *fn)
+{
+    for (int index = 0; index < EXTI15_10_CALLBACK_HANDLER_COUNT; index++) {
+        extiCallbackHandler *candidate = exti15_10_handlers[index];
+        if (candidate == fn) {
+            exti15_10_handlers[index] = 0;
+            return;
+        }
+    }
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+    for (int index = 0; index < EXTI15_10_CALLBACK_HANDLER_COUNT; index++) {
+        extiCallbackHandler *fn = exti15_10_handlers[index];
+        if (!fn) {
+            continue;
+        }
+        fn();
+    }
+}
 
 // cycles per microsecond
 static uint32_t usTicks = 0;
@@ -96,6 +138,8 @@ void systemInit(void)
     // Init cycle counter
     cycleCounterInit();
 
+
+    memset(&exti15_10_handlers, 0x00, sizeof(exti15_10_handlers));
     // SysTick
     SysTick_Config(SystemCoreClock / 1000);
 }
@@ -143,9 +187,11 @@ void delay(uint32_t ms)
 // FIXME replace mode with an enum so usage can be tracked, currently mode is a magic number
 void failureMode(uint8_t mode)
 {
+    uint8_t flashesRemaining = 10;
+
     LED1_ON;
     LED0_OFF;
-    while (1) {
+    while (flashesRemaining--) {
         LED1_TOGGLE;
         LED0_TOGGLE;
         delay(475 * mode - 2);
@@ -153,6 +199,6 @@ void failureMode(uint8_t mode)
         delay(25);
         BEEP_OFF;
     }
+
+    systemResetToBootloader();
 }
-
-

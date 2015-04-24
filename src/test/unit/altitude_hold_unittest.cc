@@ -25,6 +25,8 @@
 #define BARO
 
 extern "C" {
+    #include "debug.h"
+
     #include "common/axis.h"
     #include "common/maths.h"
 
@@ -71,17 +73,17 @@ TEST(AltitudeHoldTest, IsThrustFacingDownwards)
     // given
 
     inclinationExpectation_t inclinationExpectations[] = {
-            { { 0, 0 }, DOWNWARDS_THRUST },
-            { { 799, 799 }, DOWNWARDS_THRUST },
-            { { 800, 799 }, UPWARDS_THRUST },
-            { { 799, 800 }, UPWARDS_THRUST },
-            { { 800, 800 }, UPWARDS_THRUST },
-            { { 801, 801 }, UPWARDS_THRUST },
-            { { -799, -799 }, DOWNWARDS_THRUST },
-            { { -800, -799 }, UPWARDS_THRUST },
-            { { -799, -800 }, UPWARDS_THRUST },
-            { { -800, -800 }, UPWARDS_THRUST },
-            { { -801, -801 }, UPWARDS_THRUST }
+            { {{    0,    0 }}, DOWNWARDS_THRUST },
+            { {{  799,  799 }}, DOWNWARDS_THRUST },
+            { {{  800,  799 }}, UPWARDS_THRUST },
+            { {{  799,  800 }}, UPWARDS_THRUST },
+            { {{  800,  800 }}, UPWARDS_THRUST },
+            { {{  801,  801 }}, UPWARDS_THRUST },
+            { {{ -799, -799 }}, DOWNWARDS_THRUST },
+            { {{ -800, -799 }}, UPWARDS_THRUST },
+            { {{ -799, -800 }}, UPWARDS_THRUST },
+            { {{ -800, -800 }}, UPWARDS_THRUST },
+            { {{ -801, -801 }}, UPWARDS_THRUST }
     };
     uint8_t testIterationCount = sizeof(inclinationExpectations) / sizeof(inclinationExpectation_t);
 
@@ -105,18 +107,18 @@ typedef struct inclinationAngleExpectations_s {
 TEST(AltitudeHoldTest, TestCalculateTiltAngle)
 {
     inclinationAngleExpectations_t inclinationAngleExpectations[] = {
-        { {0, 0}, 0},
-        { {1, 0}, 1},
-        { {0, 1}, 1},
-        { {0, -1}, 1},
-        { {-1, 0}, 1},
-        { {-1, -2}, 2},
-        { {-2, -1}, 2},
-        { {1, 2}, 2},
-        { {2, 1}, 2}
+        { {{ 0,  0}}, 0},
+        { {{ 1,  0}}, 1},
+        { {{ 0,  1}}, 1},
+        { {{ 0, -1}}, 1},
+        { {{-1,  0}}, 1},
+        { {{-1, -2}}, 2},
+        { {{-2, -1}}, 2},
+        { {{ 1,  2}}, 2},
+        { {{ 2,  1}}, 2}
     };
 
-    rollAndPitchInclination_t inclination = {0, 0};
+    rollAndPitchInclination_t inclination = {{0, 0}};
     uint16_t tilt_angle = calculateTiltAngle(&inclination);
     EXPECT_EQ(tilt_angle, 0);
 
@@ -132,6 +134,7 @@ TEST(AltitudeHoldTest, TestCalculateTiltAngle)
 extern "C" {
 uint32_t rcModeActivationMask;
 int16_t rcCommand[4];
+int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
 uint32_t accTimeSum ;        // keep track for integration of acc
 int accSumCount;
@@ -145,7 +148,7 @@ rollAndPitchInclination_t inclination;
 int32_t accSum[XYZ_AXIS_COUNT];
 //int16_t magADC[XYZ_AXIS_COUNT];
 int32_t BaroAlt;
-int16_t debug[4];
+int16_t debug[DEBUG16_VALUE_COUNT];
 
 uint8_t stateFlags;
 uint16_t flightModeFlags;
@@ -153,6 +156,16 @@ uint8_t armingFlags;
 
 int32_t sonarAlt;
 
+
+uint16_t enableFlightMode(flightModeFlags_e mask)
+{
+    return flightModeFlags |= (mask);
+}
+
+uint16_t disableFlightMode(flightModeFlags_e mask)
+{
+    return flightModeFlags &= ~(mask);
+}
 
 void gyroUpdate(void) {};
 bool sensors(uint32_t mask)
