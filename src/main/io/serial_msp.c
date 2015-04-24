@@ -131,7 +131,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   8 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   9 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -227,6 +227,9 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_LOOP_TIME                   73 //out message         Returns FC cycle time i.e looptime parameter
 #define MSP_SET_LOOP_TIME               74 //in message          Sets FC cycle time i.e looptime parameter
+
+#define MSP_FAILSAFE_CONFIG             75 //out message         Returns FC Fail-Safe settings
+#define MSP_SET_FAILSAFE_CONFIG         76 //in message          Sets FC Fail-Safe settings
 
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
@@ -901,6 +904,14 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(masterConfig.auto_disarm_delay); 
         serialize8(masterConfig.disarm_kill_switch);
         break;
+    case MSP_FAILSAFE_CONFIG:
+        headSerialReply(8);
+        serialize8(masterConfig.failsafeConfig.failsafe_delay);
+        serialize8(masterConfig.failsafeConfig.failsafe_off_delay);
+        serialize16(masterConfig.failsafeConfig.failsafe_throttle);//also in MSP_MISC, just to keep things in sync for now
+        serialize16(masterConfig.rxConfig.rx_min_usec);
+        serialize16(masterConfig.rxConfig.rx_max_usec);                                
+        break;
     case MSP_LOOP_TIME:
         headSerialReply(2);
         serialize16(masterConfig.looptime);
@@ -1278,6 +1289,13 @@ static bool processInCommand(void)
     case MSP_SET_ARMING_CONFIG:
         masterConfig.auto_disarm_delay = read8();
         masterConfig.disarm_kill_switch = read8();
+        break;
+    case MSP_SET_FAILSAFE_CONFIG:
+        masterConfig.failsafeConfig.failsafe_delay = read8();
+        masterConfig.failsafeConfig.failsafe_off_delay = read8();
+        masterConfig.failsafeConfig.failsafe_throttle = read16();//also in MSP_SET_MISC, just to keep things in sync for now
+        masterConfig.rxConfig.rx_min_usec = read16();
+        masterConfig.rxConfig.rx_max_usec = read16();                
         break;
     case MSP_SET_LOOP_TIME:
         masterConfig.looptime = read16();
