@@ -27,9 +27,9 @@
 #define LED1_PERIPHERAL RCC_AHB1Periph_GPIOC
 
 
-#define BEEP_GPIO   GPIOA
-#define BEEP_PIN    Pin_1 // Red LEDs
-#define BEEP_PERIPHERAL RCC_AHB1Periph_GPIOA
+#define BEEP_GPIO   GPIOC
+#define BEEP_PIN    Pin_5 // Red LEDs
+#define BEEP_PERIPHERAL RCC_AHB1Periph_GPIOC
 #define BEEPER_INVERTED
 
 
@@ -146,15 +146,15 @@
 #define ADC_DMA_CHANNEL             DMA2_Channel1
 #define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA2
 
-#define VBAT_ADC_GPIO               GPIOC
+//#define VBAT_ADC_GPIO               GPIOC
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
 #define VBAT_ADC_CHANNEL            ADC_Channel_0
 
-#define CURRENT_METER_ADC_GPIO      GPIOC
+//#define CURRENT_METER_ADC_GPIO      GPIOC
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_1
 
-#define RSSI_ADC_GPIO               GPIOC
+//#define RSSI_ADC_GPIO               GPIOC
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_2
 #define RSSI_ADC_CHANNEL            ADC_Channel_2
 
