@@ -316,7 +316,7 @@ void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode)
     gyroData[FD_ROLL] = gyroADC[FD_ROLL];
     gyroData[FD_PITCH] = gyroADC[FD_PITCH];
 
-    if (!feature(FEATURE_NEW_TRICOPTER_YAW && mixerMode == MIXER_TRI)) {
+    if (!feature(FEATURE_NEW_TRICOPTER_YAW) && mixerMode == MIXER_TRI) {
         gyroData[FD_YAW] = (gyroYawSmooth * 2 + gyroADC[FD_YAW]) / 3;
         gyroYawSmooth = gyroData[FD_YAW];
     } else {
