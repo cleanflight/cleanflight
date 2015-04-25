@@ -97,7 +97,7 @@
 #define USART2_APB1_PERIPHERALS RCC_APB1Periph_USART2
 #define USART2_AHB1_PERIPHERALS RCC_AHB1Periph_GPIOA
 
-#define USE_USART3
+//#define USE_USART3
 #define USART3_RX_PIN Pin_11
 #define USART3_TX_PIN Pin_10
 #define USART3_GPIO GPIOB
@@ -158,8 +158,8 @@
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_2
 #define RSSI_ADC_CHANNEL            ADC_Channel_2
 
-//#define LED_STRIP
-#define LED_STRIP_TIMER TIM5
+#define LED_STRIP
+#define LED_STRIP_TIMER TIM4
 
 #define BLACKBOX
 #define TELEMETRY
