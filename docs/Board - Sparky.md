@@ -176,6 +176,11 @@ USB VCP *can* be used at the same time as other serial ports (unlike Naze32).
 
 All USART ports all support automatic hardware inversion which allows direct connection of serial rx receivers like the FrSky X4RSB - no external inverter needed.
 
+# PPM RX
+
+| Pin  | Signal | Function        |
+| ---- | ------ | --------------- |
+| PWM10| PA1    | PPM Input       |
 
 # Battery Monitoring Connections
 

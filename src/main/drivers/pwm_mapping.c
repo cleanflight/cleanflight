@@ -243,7 +243,7 @@ static const uint16_t airPWM[] = {
 
 #if defined(SPARKY) || defined(ALIENWIIF3)
 static const uint16_t multiPPM[] = {
-    PWM11 | (MAP_TO_PPM_INPUT << 8), // PPM input
+    PWM10 | (MAP_TO_PPM_INPUT << 8), // PPM input
 
     PWM1  | (MAP_TO_MOTOR_OUTPUT << 8), // TIM15
     PWM2  | (MAP_TO_MOTOR_OUTPUT << 8), // TIM15
@@ -254,7 +254,7 @@ static const uint16_t multiPPM[] = {
     PWM7  | (MAP_TO_MOTOR_OUTPUT << 8), // TIM3
     PWM8  | (MAP_TO_MOTOR_OUTPUT << 8), // TIM17
     PWM9  | (MAP_TO_MOTOR_OUTPUT << 8), // TIM3
-    PWM10 | (MAP_TO_MOTOR_OUTPUT << 8), // TIM2
+//  PWM10 | (MAP_TO_MOTOR_OUTPUT << 8), // TIM2
     0xFFFF
 };
 
