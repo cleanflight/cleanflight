@@ -45,6 +45,7 @@
 #include "flight/imu.h"
 
 #include "config/runtime_config.h"
+#include "config/config.h"
 
 int16_t accSmooth[XYZ_AXIS_COUNT];
 int32_t accSum[XYZ_AXIS_COUNT];
@@ -315,7 +316,7 @@ void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode)
     gyroData[FD_ROLL] = gyroADC[FD_ROLL];
     gyroData[FD_PITCH] = gyroADC[FD_PITCH];
 
-    if (mixerMode == MIXER_TRI) {
+    if (!feature(FEATURE_NEW_TRICOPTER_YAW && mixerMode == MIXER_TRI)) {
         gyroData[FD_YAW] = (gyroYawSmooth * 2 + gyroADC[FD_YAW]) / 3;
         gyroYawSmooth = gyroData[FD_YAW];
     } else {

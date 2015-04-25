@@ -44,6 +44,7 @@
 #include "flight/autotune.h"
 
 #include "config/runtime_config.h"
+#include "config/config.h"
 
 extern uint16_t cycleTime;
 extern uint8_t motorCount;
@@ -262,8 +263,13 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
             PTermGYRO = rcCommand[axis];
 
             errorGyroI[axis] = constrain(errorGyroI[axis] + error, -16000, +16000); // WindUp
-            if ((ABS(gyroData[axis]) > (640 * 4)) || (axis == FD_YAW && ABS(rcCommand[axis]) > 100))
-                errorGyroI[axis] = 0;
+	    if (!feature(FEATURE_NEW_TRICOPTER_YAW) && ((ABS(gyroData[axis]) > (640 * 4)) || (axis == FD_YAW && ABS(rcCommand[axis]) > 100))) {
+		errorGyroI[axis] = 0;
+	    } else {
+            	if (feature(FEATURE_NEW_TRICOPTER_YAW) && rcData[THROTTLE] < rxConfig->mincheck) {
+                	errorGyroI[axis] = 0;
+		}
+	    } 
 
             ITermGYRO = (errorGyroI[axis] / 125 * pidProfile->I8[axis]) / 64;
         }
