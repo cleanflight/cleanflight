@@ -89,29 +89,52 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 
 #define FLASH_TO_RESERVE_FOR_CONFIG 0x1000
 
-#ifndef FLASH_PAGE_COUNT
-#ifdef STM32F303xC
-#define FLASH_PAGE_COUNT 128
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+#if !defined(FLASH_SIZE)
+#error "Flash size not defined for target. (specify in KB)"
 #endif
 
+
+#ifndef FLASH_PAGE_SIZE
+    #ifdef STM32F303xC
+        #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+    #endif
+
+    #ifdef STM32F10X_MD
+        #define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
+    #endif
+
+    #ifdef STM32F10X_HD
+        #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+    #endif
+
+    #ifdef STM32F40_41xxx
+        #define FLASH_PAGE_SIZE                 ((uint32_t)0x20000)
+    #endif
+#endif
+
+#if !defined(FLASH_SIZE) && !defined(FLASH_PAGE_COUNT)
+    #ifdef STM32F10X_MD
+        #define FLASH_PAGE_COUNT 128
+    #endif
+
+    #ifdef STM32F10X_HD
+        #define FLASH_PAGE_COUNT 128
+    #endif
+#endif
+
+#if defined(FLASH_SIZE)
 #ifdef STM32F40_41xxx
-#define FLASH_PAGE_COUNT 8 // just to make calculations work
-#define FLASH_PAGE_SIZE                 ((uint32_t)0x20000)
-#endif
-
-#ifdef STM32F10X_MD
-#define FLASH_PAGE_COUNT 128
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x400)
-#endif
-
-#ifdef STM32F10X_HD
-#define FLASH_PAGE_COUNT 128
-#define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
+    #define FLASH_PAGE_COUNT 8 // just to make calculations work
+#else
+	#define FLASH_PAGE_COUNT ((FLASH_SIZE * 0x400) / FLASH_PAGE_SIZE)
 #endif
 #endif
 
-#if !defined(FLASH_PAGE_COUNT) || !defined(FLASH_PAGE_SIZE)
+#if !defined(FLASH_PAGE_SIZE)
+#error "Flash page size not defined for target."
+#endif
+
+#if !defined(FLASH_PAGE_COUNT)
 #error "Flash page count not defined for target."
 #endif
 
@@ -124,7 +147,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 94;
+static const uint8_t EEPROM_CONF_VERSION = 96;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -245,13 +268,14 @@ void resetFlight3DConfig(flight3DConfig_t *flight3DConfig)
 
 void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 {
-    telemetryConfig->telemetry_inversion = SERIAL_NOT_INVERTED;
+    telemetryConfig->telemetry_inversion = 0;
     telemetryConfig->telemetry_switch = 0;
     telemetryConfig->gpsNoFixLatitude = 0;
     telemetryConfig->gpsNoFixLongitude = 0;
     telemetryConfig->frsky_coordinate_format = FRSKY_FORMAT_DMS;
     telemetryConfig->frsky_unit = FRSKY_UNIT_METRICS;
     telemetryConfig->frsky_vfas_precision = 0;
+    telemetryConfig->hottAlarmSoundInterval = 5;
 }
 
 void resetBatteryConfig(batteryConfig_t *batteryConfig)
@@ -373,7 +397,14 @@ static void resetConf(void)
 #if defined(CJMCU) || defined(SPARKY)
     featureSet(FEATURE_RX_PPM);
 #endif
+
+#ifdef BOARD_HAS_VOLTAGE_DIVIDER
+    // only enable the VBAT feature by default if the board has a voltage divider otherwise
+    // the user may see incorrect readings and unexpected issues with pin mappings may occur.
     featureSet(FEATURE_VBAT);
+#endif
+
+    featureSet(FEATURE_FAILSAFE);
 
     // global settings
     masterConfig.current_profile_index = 0;     // default profile
@@ -404,6 +435,9 @@ static void resetConf(void)
     masterConfig.rxConfig.midrc = 1500;
     masterConfig.rxConfig.mincheck = 1100;
     masterConfig.rxConfig.maxcheck = 1900;
+    masterConfig.rxConfig.rx_min_usec = 985;          // any of first 4 channels below this value will trigger rx loss detection
+    masterConfig.rxConfig.rx_max_usec = 2115;         // any of first 4 channels above this value will trigger rx loss detection
+
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
 
@@ -472,11 +506,9 @@ static void resetConf(void)
     currentProfile->throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
 
     // Failsafe Variables
-    currentProfile->failsafeConfig.failsafe_delay = 10;              // 1sec
-    currentProfile->failsafeConfig.failsafe_off_delay = 200;         // 20sec
-    currentProfile->failsafeConfig.failsafe_throttle = 1200;         // decent default which should always be below hover throttle for people.
-    currentProfile->failsafeConfig.failsafe_min_usec = 985;          // any of first 4 channels below this value will trigger failsafe
-    currentProfile->failsafeConfig.failsafe_max_usec = 2115;         // any of first 4 channels above this value will trigger failsafe
+    masterConfig.failsafeConfig.failsafe_delay = 10;              // 1sec
+    masterConfig.failsafeConfig.failsafe_off_delay = 200;         // 20sec
+    masterConfig.failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
 
 #ifdef USE_SERVOS
     // servos
@@ -516,9 +548,9 @@ static void resetConf(void)
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
     featureSet(FEATURE_FAILSAFE);
-    featureClear(FEATURE_VBAT);
 #ifdef ALIENWIIF3
     masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
+    masterConfig.batteryConfig.vbatscale = 20;
 #else
     masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
 #endif
@@ -531,9 +563,9 @@ static void resetConf(void)
     currentProfile->pidProfile.pidController = 3;
     currentProfile->pidProfile.P8[ROLL] = 36;
     currentProfile->pidProfile.P8[PITCH] = 36;
-    currentProfile->failsafeConfig.failsafe_delay = 2;
-    currentProfile->failsafeConfig.failsafe_off_delay = 0;
-    currentProfile->failsafeConfig.failsafe_throttle = 1000;
+    masterConfig.failsafeConfig.failsafe_delay = 2;
+    masterConfig.failsafeConfig.failsafe_off_delay = 0;
+    masterConfig.failsafeConfig.failsafe_throttle = 1000;
     currentControlRateProfile->rcRate8 = 130;
     currentControlRateProfile->rates[FD_PITCH] = 20;
     currentControlRateProfile->rates[FD_ROLL] = 20;
@@ -669,7 +701,7 @@ void activateConfig(void)
     gpsUsePIDs(&currentProfile->pidProfile);
 #endif
 
-    useFailsafeConfig(&currentProfile->failsafeConfig);
+    useFailsafeConfig(&masterConfig.failsafeConfig);
     setAccelerationTrims(&masterConfig.accZero);
 
     mixerUseConfigs(
@@ -792,6 +824,14 @@ void validateAndFixConfig(void)
         featureClear(FEATURE_SONAR);
     }
 #endif
+
+    /*
+     * The retarded_arm setting is incompatible with pid_at_min_throttle because full roll causes the craft to roll over on the ground.
+     * The pid_at_min_throttle implementation ignores yaw on the ground, but doesn't currently ignore roll when retarded_arm is enabled.
+     */
+    if (masterConfig.retarded_arm && masterConfig.mixerConfig.pid_at_min_throttle) {
+        masterConfig.mixerConfig.pid_at_min_throttle = 0;
+    }
 
     useRxConfig(&masterConfig.rxConfig);
 

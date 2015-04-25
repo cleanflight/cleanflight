@@ -23,6 +23,7 @@
 
 
 #include "platform.h"
+#include "debug.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -46,8 +47,6 @@
 #include "flight/imu.h"
 
 #include "config/runtime_config.h"
-
-extern int16_t debug[4];
 
 int32_t setVelocity = 0;
 uint8_t velocityControl = 0;
@@ -91,10 +90,10 @@ static void applyMultirotorAltHold(void)
     // multirotor alt hold
     if (rcControlsConfig->alt_hold_fast_change) {
         // rapid alt changes
-        if (ABS(rcCommand[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
+        if (ABS(rcData[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
             errorVelocityI = 0;
             isAltHoldChanged = 1;
-            rcCommand[THROTTLE] += (rcCommand[THROTTLE] > initialThrottleHold) ? -rcControlsConfig->alt_hold_deadband : rcControlsConfig->alt_hold_deadband;
+            rcCommand[THROTTLE] += (rcData[THROTTLE] > initialThrottleHold) ? -rcControlsConfig->alt_hold_deadband : rcControlsConfig->alt_hold_deadband;
         } else {
             if (isAltHoldChanged) {
                 AltHold = EstAlt;
@@ -104,9 +103,9 @@ static void applyMultirotorAltHold(void)
         }
     } else {
         // slow alt changes, mostly used for aerial photography
-        if (ABS(rcCommand[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
+        if (ABS(rcData[THROTTLE] - initialThrottleHold) > rcControlsConfig->alt_hold_deadband) {
             // set velocity proportional to stick movement +100 throttle gives ~ +50 cm/s
-            setVelocity = (rcCommand[THROTTLE] - initialThrottleHold) / 2;
+            setVelocity = (rcData[THROTTLE] - initialThrottleHold) / 2;
             velocityControl = 1;
             isAltHoldChanged = 1;
         } else if (isAltHoldChanged) {
@@ -147,7 +146,7 @@ void updateAltHoldState(void)
     if (!FLIGHT_MODE(BARO_MODE)) {
         ENABLE_FLIGHT_MODE(BARO_MODE);
         AltHold = EstAlt;
-        initialThrottleHold = rcCommand[THROTTLE];
+        initialThrottleHold = rcData[THROTTLE];
         errorVelocityI = 0;
         altHoldThrottleAdjustment = 0;
     }
@@ -164,7 +163,7 @@ void updateSonarAltHoldState(void)
     if (!FLIGHT_MODE(SONAR_MODE)) {
         ENABLE_FLIGHT_MODE(SONAR_MODE);
         AltHold = EstAlt;
-        initialThrottleHold = rcCommand[THROTTLE];
+        initialThrottleHold = rcData[THROTTLE];
         errorVelocityI = 0;
         altHoldThrottleAdjustment = 0;
     }

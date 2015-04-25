@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "build_config.h"
+#include "debug.h"
 
 #include "platform.h"
 
@@ -89,7 +90,6 @@ static serialPort_t *mspSerialPort;
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
-extern int16_t debug[4]; // FIXME dependency on mw.c
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
 
@@ -132,7 +132,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   7 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   8 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -218,6 +218,17 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_PID_CONTROLLER              59
 #define MSP_SET_PID_CONTROLLER          60
+
+#define MSP_ARMING_CONFIG               61 //out message         Returns auto_disarm_delay and disarm_kill_switch parameters
+#define MSP_SET_ARMING_CONFIG           62 //in message          Sets auto_disarm_delay and disarm_kill_switch parameters
+
+#define MSP_DATAFLASH_SUMMARY           70 //out message - get description of dataflash chip
+#define MSP_DATAFLASH_READ              71 //out message - get content of dataflash chip
+#define MSP_DATAFLASH_ERASE             72 //in message - erase dataflash chip
+
+#define MSP_LOOP_TIME                   73 //out message         Returns FC cycle time i.e looptime parameter
+#define MSP_SET_LOOP_TIME               74 //in message          Sets FC cycle time i.e looptime parameter
+
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -226,17 +237,13 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 // FIXME - Provided for backwards compatibility with configurator code until configurator is updated.
 // DEPRECATED - DO NOT USE "MSP_BF_CONFIG" and MSP_SET_BF_CONFIG.  In Cleanflight, isolated commands already exist and should be used instead.
-#define MSP_BF_CONFIG                      66 //out message baseflight-specific settings that aren't covered elsewhere
-#define MSP_SET_BF_CONFIG                  67 //in message baseflight-specific settings save
+#define MSP_BF_CONFIG                   66 //out message baseflight-specific settings that aren't covered elsewhere
+#define MSP_SET_BF_CONFIG               67 //in message baseflight-specific settings save
 
 #define MSP_REBOOT                      68 //in message reboot settings
 
 // DEPRECATED - Use MSP_BUILD_INFO instead
 #define MSP_BF_BUILD_INFO               69 //out message build date as well as some space for future expansion
-
-#define MSP_DATAFLASH_SUMMARY           70 //out message - get description of dataflash chip
-#define MSP_DATAFLASH_READ              71 //out message - get content of dataflash chip
-#define MSP_DATAFLASH_ERASE             72 //in message - erase dataflash chip
 
 //
 // Multwii original MSP commands
@@ -890,6 +897,15 @@ static bool processOutCommand(uint8_t cmdMSP)
         } else
             serialize16((int16_t)constrain(amperage, -0x8000, 0x7FFF)); // send amperage in 0.01 A steps, range is -320A to 320A
         break;
+    case MSP_ARMING_CONFIG:
+        headSerialReply(2);
+        serialize8(masterConfig.auto_disarm_delay); 
+        serialize8(masterConfig.disarm_kill_switch);
+        break;
+    case MSP_LOOP_TIME:
+        headSerialReply(2);
+        serialize16(masterConfig.looptime);
+        break;
     case MSP_RC_TUNING:
         headSerialReply(10);
         serialize8(currentControlRateProfile->rcRate8);
@@ -988,7 +1004,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.escAndServoConfig.maxthrottle);
         serialize16(masterConfig.escAndServoConfig.mincommand);
 
-        serialize16(currentProfile->failsafeConfig.failsafe_throttle);
+        serialize16(masterConfig.failsafeConfig.failsafe_throttle);
 
 #ifdef GPS
         serialize8(masterConfig.gpsConfig.provider); // gps_type
@@ -1062,10 +1078,12 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 #endif
     case MSP_DEBUG:
-        headSerialReply(8);
-        // make use of this crap, output some useful QA statistics
-        //debug[3] = ((hse_value / 1000000) * 1000) + (SystemCoreClock / 1000000);         // XX0YY [crystal clock : core clock]
-        for (i = 0; i < 4; i++)
+        headSerialReply(DEBUG16_VALUE_COUNT * sizeof(debug[0]));
+
+        // output some useful QA statistics
+        // debug[x] = ((hse_value / 1000000) * 1000) + (SystemCoreClock / 1000000);         // XX0YY [crystal clock : core clock]
+
+        for (i = 0; i < DEBUG16_VALUE_COUNT; i++)
             serialize16(debug[i]);      // 4 variables are here for general monitoring purpose
         break;
 
@@ -1222,6 +1240,7 @@ static bool processInCommand(void)
 {
     uint32_t i;
     uint16_t tmp;
+    uint8_t rate;
 #ifdef GPS
     uint8_t wp_no;
     int32_t lat = 0, lon = 0, alt = 0;
@@ -1256,6 +1275,13 @@ static bool processInCommand(void)
     case MSP_SET_ACC_TRIM:
         currentProfile->accelerometerTrims.values.pitch = read16();
         currentProfile->accelerometerTrims.values.roll  = read16();
+        break;
+    case MSP_SET_ARMING_CONFIG:
+        masterConfig.auto_disarm_delay = read8();
+        masterConfig.disarm_kill_switch = read8();
+        break;
+    case MSP_SET_LOOP_TIME:
+        masterConfig.looptime = read16();
         break;
     case MSP_SET_PID_CONTROLLER:
         currentProfile->pidProfile.pidController = read8();
@@ -1332,9 +1358,11 @@ static bool processInCommand(void)
             currentControlRateProfile->rcRate8 = read8();
             currentControlRateProfile->rcExpo8 = read8();
             for (i = 0; i < 3; i++) {
-                currentControlRateProfile->rates[i] = MIN(read8(), i == FD_YAW ? CONTROL_RATE_CONFIG_YAW_RATE_MAX : CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX);
+                rate = read8();
+                currentControlRateProfile->rates[i] = MIN(rate, i == FD_YAW ? CONTROL_RATE_CONFIG_YAW_RATE_MAX : CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX);
             }
-            currentControlRateProfile->dynThrPID = MIN(read8(), CONTROL_RATE_CONFIG_TPA_MAX);
+            rate = read8();
+            currentControlRateProfile->dynThrPID = MIN(rate, CONTROL_RATE_CONFIG_TPA_MAX);
             currentControlRateProfile->thrMid8 = read8();
             currentControlRateProfile->thrExpo8 = read8();
             currentControlRateProfile->tpa_breakpoint = read16();
@@ -1351,7 +1379,7 @@ static bool processInCommand(void)
         masterConfig.escAndServoConfig.maxthrottle = read16();
         masterConfig.escAndServoConfig.mincommand = read16();
 
-        currentProfile->failsafeConfig.failsafe_throttle = read16();
+        masterConfig.failsafeConfig.failsafe_throttle = read16();
 
 #ifdef GPS
         masterConfig.gpsConfig.provider = read8(); // gps_type

@@ -39,10 +39,11 @@
 static void usartConfigurePinInversion(uartPort_t *uartPort) {
 #if !defined(INVERTER) && !defined(STM32F303xC)
     UNUSED(uartPort);
-#endif
+#else
+    bool inverted = uartPort->port.options & SERIAL_INVERTED;
 
 #ifdef INVERTER
-    if (uartPort->port.inversion == SERIAL_INVERTED && uartPort->USARTx == INVERTER_USART) {
+    if (inverted && uartPort->USARTx == INVERTER_USART) {
         // Enable hardware inverter if available.
         INVERTER_ON;
     }
@@ -58,11 +59,9 @@ static void usartConfigurePinInversion(uartPort_t *uartPort) {
         inversionPins |= USART_InvPin_Rx;
     }
 
-    // Note: inversion when using MODE_BIDIR not supported yet.
-
-    USART_InvPinCmd(uartPort->USARTx, inversionPins, uartPort->port.inversion == SERIAL_INVERTED ? ENABLE : DISABLE);
+    USART_InvPinCmd(uartPort->USARTx, inversionPins, inverted ? ENABLE : DISABLE);
 #endif
-
+#endif
 }
 
 static void uartReconfigure(uartPort_t *uartPort)
@@ -72,58 +71,54 @@ static void uartReconfigure(uartPort_t *uartPort)
 
     USART_InitStructure.USART_BaudRate = uartPort->port.baudRate;
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-    if (uartPort->port.mode & MODE_SBUS) {
-        USART_InitStructure.USART_StopBits = USART_StopBits_2;
-        USART_InitStructure.USART_Parity = USART_Parity_Even;
-    } else {
-        if (uartPort->port.mode & MODE_STOPBITS2)
-            USART_InitStructure.USART_StopBits = USART_StopBits_2;
-        else
-            USART_InitStructure.USART_StopBits = USART_StopBits_1;
 
-        USART_InitStructure.USART_Parity = USART_Parity_No;
-    }
+    USART_InitStructure.USART_StopBits = (uartPort->port.options & SERIAL_STOPBITS_2) ? USART_StopBits_2 : USART_StopBits_1;
+    USART_InitStructure.USART_Parity   = (uartPort->port.options & SERIAL_PARITY_EVEN) ? USART_Parity_Even : USART_Parity_No;
+
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_InitStructure.USART_Mode = 0;
     if (uartPort->port.mode & MODE_RX)
         USART_InitStructure.USART_Mode |= USART_Mode_Rx;
     if (uartPort->port.mode & MODE_TX)
         USART_InitStructure.USART_Mode |= USART_Mode_Tx;
-    if (uartPort->port.mode & MODE_BIDIR)
-        USART_InitStructure.USART_Mode |= USART_Mode_Tx | USART_Mode_Rx;
 
     USART_Init(uartPort->USARTx, &USART_InitStructure);
 
     usartConfigurePinInversion(uartPort);
 
+    if(uartPort->port.options & SERIAL_BIDIR)
+        USART_HalfDuplexCmd(uartPort->USARTx, ENABLE);
+    else
+        USART_HalfDuplexCmd(uartPort->USARTx, DISABLE);
+
     USART_Cmd(uartPort->USARTx, ENABLE);
 }
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, serialInversion_e inversion)
+serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s = NULL;
 
     if (USARTx == USART1) {
-        s = serialUSART1(baudRate, mode);
+        s = serialUSART1(baudRate, mode, options);
 #ifdef USE_USART2
     } else if (USARTx == USART2) {
-        s = serialUSART2(baudRate, mode);
+        s = serialUSART2(baudRate, mode, options);
 #endif
 #ifdef USE_USART3
     } else if (USARTx == USART3) {
-        s = serialUSART3(baudRate, mode);
+        s = serialUSART3(baudRate, mode, options);
 #endif
 #ifdef USE_USART4
     } else if (USARTx == UART4) {
-        s = serialUSART4(baudRate, mode);
+        s = serialUSART4(baudRate, mode, options);
 #endif
 #ifdef USE_USART5
     } else if (USARTx == UART5) {
-        s = serialUSART5(baudRate, mode);
+        s = serialUSART5(baudRate, mode, options);
 #endif
 #ifdef USE_USART6
     } else if (USARTx == USART6) {
-        s = serialUSART6(baudRate, mode);
+        s = serialUSART6(baudRate, mode, options);
 #endif
     } else {
         return (serialPort_t *)s;
@@ -137,13 +132,13 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     s->port.callback = callback;
     s->port.mode = mode;
     s->port.baudRate = baudRate;
-    s->port.inversion = inversion;
+    s->port.options = options;
 
     uartReconfigure(s);
 
     // Receive DMA or IRQ
     DMA_InitTypeDef DMA_InitStructure;
-    if ((mode & MODE_RX) || (mode & MODE_BIDIR)) {
+    if (mode & MODE_RX) {
 #ifdef STM32F40_41xxx
         if (s->rxDMAStream) {
 			DMA_StructInit(&DMA_InitStructure);
@@ -197,7 +192,7 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     }
 
     // Transmit DMA or IRQ
-    if ((mode & MODE_TX) || (mode & MODE_BIDIR)) {
+    if (mode & MODE_TX) {
 #ifdef STM32F40_41xxx
         if (s->txDMAStream) {
 			DMA_StructInit(&DMA_InitStructure);
@@ -248,11 +243,6 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     }
 
     USART_Cmd(s->USARTx, ENABLE);
-
-    if (mode & MODE_BIDIR)
-        USART_HalfDuplexCmd(s->USARTx, ENABLE);
-    else
-        USART_HalfDuplexCmd(s->USARTx, DISABLE);
 
     return (serialPort_t *)s;
 }

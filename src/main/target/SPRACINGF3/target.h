@@ -30,6 +30,8 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 17
 
+#define USE_MPU_DATA_READY_SIGNAL
+
 #define GYRO
 #define USE_GYRO_MPU6050
 #define GYRO_MPU6050_ALIGN CW270_DEG
@@ -104,6 +106,8 @@
 #define M25P16_SPI_INSTANCE     SPI2
 
 #define USE_ADC
+#define BOARD_HAS_VOLTAGE_DIVIDER
+
 
 #define ADC_INSTANCE                ADC2
 #define ADC_DMA_CHANNEL             DMA2_Channel1
@@ -116,10 +120,6 @@
 #define CURRENT_METER_ADC_GPIO      GPIOA
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_5
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_2
-
-#define RSSI_ADC_GPIO               GPIOB
-#define RSSI_ADC_GPIO_PIN           GPIO_Pin_2
-#define RSSI_ADC_CHANNEL            ADC_Channel_12
 
 #define RSSI_ADC_GPIO               GPIOB
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_2

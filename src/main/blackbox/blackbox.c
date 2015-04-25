@@ -38,7 +38,6 @@
 #include "drivers/pwm_rx.h"
 #include "drivers/accgyro.h"
 #include "drivers/light_led.h"
-#include "drivers/sound_beeper.h"
 
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
@@ -189,7 +188,7 @@ static const blackboxMainFieldDefinition_t blackboxMainFields[] = {
     {"rcCommand",   3, UNSIGNED, .Ipredict = PREDICT(MINTHROTTLE), .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
 
     {"vbatLatest",    -1, UNSIGNED, .Ipredict = PREDICT(VBATREF),  .Iencode = ENCODING(NEG_14BIT),   .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_VBAT},
-    {"amperageLatest",-1, UNSIGNED, .Ipredict = PREDICT(0),        .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_AMPERAGE},
+    {"amperageLatest",-1, UNSIGNED, .Ipredict = PREDICT(0),        .Iencode = ENCODING(UNSIGNED_VB), .Ppredict = PREDICT(PREVIOUS),  .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC},
 
 #ifdef MAG
     {"magADC",      0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_MAG},
@@ -344,8 +343,8 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
         case FLIGHT_LOG_FIELD_CONDITION_VBAT:
             return feature(FEATURE_VBAT);
 
-        case FLIGHT_LOG_FIELD_CONDITION_AMPERAGE:
-            return feature(FEATURE_CURRENT_METER);
+        case FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC:
+            return feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC;
 
         case FLIGHT_LOG_FIELD_CONDITION_NOT_LOGGING_EVERY_FRAME:
             return masterConfig.blackbox_rate_num < masterConfig.blackbox_rate_denom;
@@ -447,7 +446,7 @@ static void writeIntraframe(void)
         blackboxWriteUnsignedVB((vbatReference - blackboxCurrent->vbatLatest) & 0x3FFF);
     }
 
-    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE)) {
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC)) {
         // 12bit value directly from ADC
         blackboxWriteUnsignedVB(blackboxCurrent->amperageLatest);
     }
@@ -555,7 +554,7 @@ static void writeInterframe(void)
         deltas[optionalFieldCount++] = (int32_t) blackboxCurrent->vbatLatest - blackboxLast->vbatLatest;
     }
 
-    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE)) {
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC)) {
         deltas[optionalFieldCount++] = (int32_t) blackboxCurrent->amperageLatest - blackboxLast->amperageLatest;
     }
 
@@ -910,7 +909,11 @@ static bool blackboxWriteSysinfo()
             xmitState.u.serialBudget -= blackboxPrintf("H acc_1G:%u\n", acc_1G);
         break;
         case 10:
-            xmitState.u.serialBudget -= blackboxPrintf("H vbatscale:%u\n", masterConfig.batteryConfig.vbatscale);
+            if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_VBAT)) {
+                xmitState.u.serialBudget -= blackboxPrintf("H vbatscale:%u\n", masterConfig.batteryConfig.vbatscale);
+            } else {
+                xmitState.headerIndex += 2; // Skip the next two vbat fields too
+            }
         break;
         case 11:
             xmitState.u.serialBudget -= blackboxPrintf("H vbatcellvoltage:%u,%u,%u\n", masterConfig.batteryConfig.vbatmincellvoltage,
@@ -920,7 +923,10 @@ static bool blackboxWriteSysinfo()
             xmitState.u.serialBudget -= blackboxPrintf("H vbatref:%u\n", vbatReference);
         break;
         case 13:
-            xmitState.u.serialBudget -= blackboxPrintf("H currentMeter:%d,%d\n", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
+            //Note: Log even if this is a virtual current meter, since the virtual meter uses these parameters too:
+            if (feature(FEATURE_CURRENT_METER)) {
+                xmitState.u.serialBudget -= blackboxPrintf("H currentMeter:%d,%d\n", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
+            }
         break;
         default:
             return true;
@@ -975,22 +981,15 @@ void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
     }
 }
 
-// Beep the buzzer and write the current time to the log as a synchronization point
-static void blackboxPlaySyncBeep()
+// Write the time of the last arming beep to the log as a synchronization point
+static void blackboxLogArmingBeep()
 {
     flightLogEvent_syncBeep_t eventData;
 
-    eventData.time = micros();
+    // Get time of last arming beep (in system-uptime microseconds)
+    eventData.time = getArmingBeepTimeMicros();
 
-    /*
-     * The regular beep routines aren't going to work for us, because they queue up the beep to be executed later.
-     * Our beep is timing sensitive, so start beeping now without setting the beeperIsOn flag.
-     */
-    BEEP_ON;
-
-    // Have the regular beeper code turn off the beep for us eventually, since that's not timing-sensitive
-    queueConfirmationBeep(1);
-
+    // Write the time to the log
     blackboxLogEvent(FLIGHT_LOG_EVENT_SYNC_BEEP, (flightLogEventData_t *) &eventData);
 }
 
@@ -1058,7 +1057,7 @@ void handleBlackbox(void)
         case BLACKBOX_STATE_PRERUN:
             blackboxSetState(BLACKBOX_STATE_RUNNING);
 
-            blackboxPlaySyncBeep();
+            blackboxLogArmingBeep();
         break;
         case BLACKBOX_STATE_RUNNING:
             // On entry to this state, blackboxIteration, blackboxPFrameIndex and blackboxIFrameIndex are reset to 0

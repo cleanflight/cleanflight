@@ -194,11 +194,15 @@ static void sendGpsAltitude(void)
 }
 #endif
 
-static void sendThrottleOrBatterySizeAsRpm(void)
+static void sendThrottleOrBatterySizeAsRpm(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 {
+    uint16_t throttleForRPM = rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER;
     sendDataHead(ID_RPM);
     if (ARMING_FLAG(ARMED)) {
-        serialize16(rcCommand[THROTTLE] / BLADE_NUMBER_DIVIDER);
+        throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig, deadband3d_throttle);
+        if (throttleStatus == THROTTLE_LOW && feature(FEATURE_MOTOR_STOP))
+                    throttleForRPM = 0;
+        serialize16(throttleForRPM);
     } else {
         serialize16((batteryConfig->batteryCapacity / BLADE_NUMBER_DIVIDER));
     }
@@ -239,11 +243,12 @@ static void sendSpeed(void)
     if (!STATE(GPS_FIX)) {
         return;
     }
-    //Speed should be sent in m/s (GPS speed is in cm/s)
+    //Speed should be sent in knots (GPS speed is in cm/s)
     sendDataHead(ID_GPS_SPEED_BP);
-    serialize16((GPS_speed * 0.01 + 0.5));
+    //convert to knots: 1cm/s = 0.0194384449 knots
+    serialize16(GPS_speed * 1944 / 10000);
     sendDataHead(ID_GPS_SPEED_AP);
-    serialize16(0); //Not dipslayed
+    serialize16((GPS_speed * 1944 / 100) % 100);
 }
 #endif
 
@@ -434,7 +439,7 @@ void configureFrSkyTelemetryPort(void)
         return;
     }
 
-    frskyPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_FRSKY, NULL, FRSKY_BAUDRATE, FRSKY_INITIAL_PORT_MODE, telemetryConfig->telemetry_inversion);
+    frskyPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_FRSKY, NULL, FRSKY_BAUDRATE, FRSKY_INITIAL_PORT_MODE, telemetryConfig->telemetry_inversion ? SERIAL_INVERTED : SERIAL_NOT_INVERTED);
     if (!frskyPort) {
         return;
     }
@@ -461,7 +466,7 @@ void checkFrSkyTelemetryState(void)
         freeFrSkyTelemetryPort();
 }
 
-void handleFrSkyTelemetry(void)
+void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 {
     if (!frskyTelemetryEnabled) {
         return;
@@ -492,7 +497,7 @@ void handleFrSkyTelemetry(void)
 
     if ((cycleNum % 8) == 0) {      // Sent every 1s
         sendTemperature1();
-        sendThrottleOrBatterySizeAsRpm();
+        sendThrottleOrBatterySizeAsRpm(rxConfig, deadband3d_throttle);
 
         if (feature(FEATURE_VBAT)) {
             sendVoltage();

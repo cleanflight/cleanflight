@@ -108,7 +108,7 @@ static void handleUsartTxDma(uartPort_t *s)
 
 #ifdef USE_USART1
 // USART1 - Telemetry (RX/TX by DMA)
-uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s;
     static volatile uint8_t rx1Buffer[UART1_RX_BUFFER_SIZE];
@@ -152,16 +152,21 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode)
     // USART1_RX    PA10
     gpio.speed = Speed_50MHz;
     gpio.pin = USART1_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (options & SERIAL_BIDIR) {
+        gpio.mode = Mode_AF_OD;
         gpioInit(USART1_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART1_GPIO, &gpio);
-    gpio.pin = USART1_RX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_RX)
-        gpioInit(USART1_GPIO, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART1_GPIO, &gpio);
+        }
+
+        if (mode & MODE_RX) {
+            gpio.pin = USART1_RX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART1_GPIO, &gpio);
+        }
+    }
 
 #ifdef ANYFC
     GPIO_PinAFConfig(USART1_GPIO, GPIO_PinSource9, GPIO_AF_USART1);
@@ -228,7 +233,7 @@ void USART1_IRQHandler(void)
 
 #ifdef USE_USART2
 // USART2 - GPS or Spektrum or ?? (RX + TX by IRQ)
-uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s;
     static volatile uint8_t rx2Buffer[UART2_RX_BUFFER_SIZE];
@@ -273,16 +278,21 @@ uartPort_t *serialUSART2(uint32_t baudRate, portMode_t mode)
 
     gpio.speed = Speed_2MHz;
     gpio.pin = USART2_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (options & SERIAL_BIDIR) {
+        gpio.mode = Mode_AF_OD;
         gpioInit(USART2_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART2_GPIO, &gpio);
-    gpio.pin = USART2_RX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_RX)
-        gpioInit(USART2_GPIO, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART2_GPIO, &gpio);
+        }
+
+        if (mode & MODE_RX) {
+            gpio.pin = USART2_RX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART2_GPIO, &gpio);
+        }
+    }
 
     GPIO_PinAFConfig(USART2_GPIO, GPIO_PinSource3, GPIO_AF_USART2);
     GPIO_PinAFConfig(USART2_GPIO, GPIO_PinSource2, GPIO_AF_USART2);
@@ -340,7 +350,7 @@ void USART2_IRQHandler(void)
 
 #ifdef USE_USART3
 // USART3
-uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s;
     static volatile uint8_t rx3Buffer[UART3_RX_BUFFER_SIZE];
@@ -385,16 +395,21 @@ uartPort_t *serialUSART3(uint32_t baudRate, portMode_t mode)
 
     gpio.speed = Speed_2MHz;
     gpio.pin = USART3_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (options & SERIAL_BIDIR) {
+        gpio.mode = Mode_AF_OD;
         gpioInit(USART3_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART3_GPIO, &gpio);
-    gpio.pin = USART3_RX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_RX)
-        gpioInit(USART3_GPIO, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART3_GPIO, &gpio);
+        }
+
+        if (mode & MODE_RX) {
+            gpio.pin = USART3_RX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART3_GPIO, &gpio);
+        }
+    }
 
     GPIO_PinAFConfig(USART3_GPIO, GPIO_PinSource11, GPIO_AF_USART3);
     GPIO_PinAFConfig(USART3_GPIO, GPIO_PinSource10, GPIO_AF_USART3);
@@ -451,7 +466,7 @@ void USART3_IRQHandler(void)
 
 #ifdef USE_USART4
 // USART4
-uartPort_t *serialUSART4(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART4(uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s;
     static volatile uint8_t rx4Buffer[UART4_RX_BUFFER_SIZE];
@@ -496,16 +511,21 @@ uartPort_t *serialUSART4(uint32_t baudRate, portMode_t mode)
 
     gpio.speed = Speed_2MHz;
     gpio.pin = USART4_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (options & SERIAL_BIDIR) {
+        gpio.mode = Mode_AF_OD;
         gpioInit(USART4_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART4_GPIO, &gpio);
-    gpio.pin = USART4_RX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_RX)
-        gpioInit(USART4_GPIO, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART4_GPIO, &gpio);
+        }
+
+        if (mode & MODE_RX) {
+            gpio.pin = USART4_RX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART4_GPIO, &gpio);
+        }
+    }
 
     GPIO_PinAFConfig(USART4_GPIO, GPIO_PinSource11, GPIO_AF_UART4);
     GPIO_PinAFConfig(USART4_GPIO, GPIO_PinSource10, GPIO_AF_UART4);
@@ -562,7 +582,7 @@ void UART4_IRQHandler(void)
 
 #ifdef USE_USART5
 // USART5
-uartPort_t *serialUSART5(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART5(uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s;
     static volatile uint8_t rx5Buffer[UART5_RX_BUFFER_SIZE];
@@ -607,16 +627,21 @@ uartPort_t *serialUSART5(uint32_t baudRate, portMode_t mode)
 
     gpio.speed = Speed_2MHz;
     gpio.pin = USART5_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (options & SERIAL_BIDIR) {
+        gpio.mode = Mode_AF_OD;
         gpioInit(USART5_TXGPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART5_TXGPIO, &gpio);
-    gpio.pin = USART5_RX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_RX)
-        gpioInit(USART5_RXGPIO, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART5_TXGPIO, &gpio);
+        }
+
+        if (mode & MODE_RX) {
+            gpio.pin = USART5_RX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART5_RXGPIO, &gpio);
+        }
+    }
 
     GPIO_PinAFConfig(USART5_TXGPIO, GPIO_PinSource12, GPIO_AF_UART5);
     GPIO_PinAFConfig(USART5_RXGPIO, GPIO_PinSource2, GPIO_AF_UART5);
@@ -674,7 +699,7 @@ void UART5_IRQHandler(void)
 
 #ifdef USE_USART6
 // USART6
-uartPort_t *serialUSART6(uint32_t baudRate, portMode_t mode)
+uartPort_t *serialUSART6(uint32_t baudRate, portMode_t mode, portOptions_t options)
 {
     uartPort_t *s;
     static volatile uint8_t rx6Buffer[UART6_RX_BUFFER_SIZE];
@@ -719,16 +744,22 @@ uartPort_t *serialUSART6(uint32_t baudRate, portMode_t mode)
 
     gpio.speed = Speed_2MHz;
     gpio.pin = USART6_TX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_TX)
+    if (options & SERIAL_BIDIR) {
+        gpio.mode = Mode_AF_OD;
         gpioInit(USART6_GPIO, &gpio);
-    gpio.mode = Mode_AF_OD;
-    if (mode & MODE_BIDIR)
-        gpioInit(USART6_GPIO, &gpio);
-    gpio.pin = USART6_RX_PIN;
-    gpio.mode = Mode_AF_PP;
-    if (mode & MODE_RX)
-        gpioInit(USART6_GPIO, &gpio);
+    } else {
+        if (mode & MODE_TX) {
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART6_GPIO, &gpio);
+        }
+
+        if (mode & MODE_RX) {
+            gpio.pin = USART6_RX_PIN;
+            gpio.mode = Mode_AF_PP;
+            gpioInit(USART6_GPIO, &gpio);
+        }
+    }
+
 
     GPIO_PinAFConfig(USART6_GPIO, GPIO_PinSource6, GPIO_AF_USART6);
     GPIO_PinAFConfig(USART6_GPIO, GPIO_PinSource7, GPIO_AF_USART6);
