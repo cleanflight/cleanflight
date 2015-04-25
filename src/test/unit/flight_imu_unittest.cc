@@ -122,3 +122,7 @@ bool isBaroCalibrationComplete(void) { return true; }
 void performBaroCalibrationCycle(void) {}
 int32_t baroCalculateAltitude(void) { return 0; }
 }
+
+bool feature(uint32_t mask) {
+return (mask & testFeatureMask);
+}
