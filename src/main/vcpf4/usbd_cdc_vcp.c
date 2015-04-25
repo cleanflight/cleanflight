@@ -161,6 +161,7 @@ uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
     // Try to load some bytes if we can
     if (sendLength) {
     	VCP_DataTx(ptrBuffer,sendLength);
+    	delayMicroseconds(5);
     }
 
     return sendLength;

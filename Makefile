@@ -155,18 +155,19 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(CMSIS_DIR)/CM1/DeviceSupport/ST/STM32F4xx \
 		   $(ROOT)/src/main/vcpf4
 
-LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
-
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
 DEVICE_FLAGS = -DSTM32F40_41xxx
 ifeq ($(TARGET),ANYFC)
 DEVICE_FLAGS += -DHSE_VALUE=8000000
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
 endif
 ifeq ($(TARGET),REVO)
 DEVICE_FLAGS += -DHSE_VALUE=8000000
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
 endif
 ifeq ($(TARGET),COLIBRI)
 DEVICE_FLAGS += -DHSE_VALUE=16000000
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
 endif
 TARGET_FLAGS = -D$(TARGET)
 
