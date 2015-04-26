@@ -611,36 +611,45 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     Mwii3msTimescale = (int32_t)FLOATcycleTime & (int32_t)~3;                  // Filter last 2 bit jitter
     Mwii3msTimescale /= 3000.0f;
 
+    int16_t yawRc = rcCommand[FD_YAW];
+    
+    if (motorCount == 3) { // reduce yaw on tricopter, it's too powerful
+    	yawRc /= 2;
+    }
+
     if (OLD_YAW) { // [0/1] 0 = multiwii 2.3 yaw, 1 = older yaw. hardcoded for now
-        PTerm = ((int32_t)pidProfile->P8[FD_YAW] * (100 - (int32_t)controlRateConfig->rates[FD_YAW] * (int32_t)ABS(rcCommand[FD_YAW]) / 500)) / 100;
+        
+        
+        PTerm = ((int32_t)pidProfile->P8[FD_YAW] * (100 - (int32_t)controlRateConfig->rates[FD_YAW] * (int32_t)ABS(yawRc) / 500)) / 100;
         int32_t tmp = lrintf(gyroData[FD_YAW] * 0.25f);
-        PTerm = rcCommand[FD_YAW] - tmp * PTerm / 80;
+        PTerm = yawRc - tmp * PTerm / 80;
         if ((ABS(tmp) > 640) || (ABS(rcCommand[FD_YAW]) > 100)) {
             errorGyroI[FD_YAW] = 0;
         } else {
-            error = ((int32_t)rcCommand[FD_YAW] * 80 / (int32_t)pidProfile->P8[FD_YAW]) - tmp;
+            error = ((int32_t)yawRc * 80 / (int32_t)pidProfile->P8[FD_YAW]) - tmp;
             errorGyroI[FD_YAW] = constrain(errorGyroI[FD_YAW] + (int32_t)(error * Mwii3msTimescale), -16000, +16000); // WindUp
             ITerm = (errorGyroI[FD_YAW] / 125 * pidProfile->I8[FD_YAW]) >> 6;
         }
     } else {
-        int32_t tmp = ((int32_t)rcCommand[FD_YAW] * (((int32_t)controlRateConfig->rates[FD_YAW] << 1) + 40)) >> 5;
+        int32_t tmp = ((int32_t)yawRc * (((int32_t)controlRateConfig->rates[FD_YAW] << 1) + 40)) >> 5;
         error = tmp - lrintf(gyroData[FD_YAW] * 0.25f);                       // Less Gyrojitter works actually better
-
+        
         if (ABS(tmp) > 50) {
             errorGyroI[FD_YAW] = 0;
         } else {
             errorGyroI[FD_YAW] = constrain(errorGyroI[FD_YAW] + (int32_t)(error * (float)pidProfile->I8[FD_YAW] * Mwii3msTimescale), -268435454, +268435454);
         }
-
+        
         ITerm = constrain(errorGyroI[FD_YAW] >> 13, -GYRO_I_MAX, +GYRO_I_MAX);
         PTerm = ((int32_t)error * (int32_t)pidProfile->P8[FD_YAW]) >> 6;
-
+        
         if (motorCount >= 4) { // Constrain FD_YAW by D value if not servo driven in that case servolimits apply
             int32_t limit = 300;
             if (pidProfile->D8[FD_YAW]) limit -= (int32_t)pidProfile->D8[FD_YAW];
             PTerm = constrain(PTerm, -limit, limit);
         }
     }
+
     axisPID[FD_YAW] = PTerm + ITerm;
     axisPID[FD_YAW] = lrintf(axisPID[FD_YAW]);                                 // Round up result.
 
