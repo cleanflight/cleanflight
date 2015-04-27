@@ -55,6 +55,12 @@
 #define GIMBAL_SERVO_ROLL 1
 #define TILTING_SERVO 0
 
+#define OUR_SERVO_MIN 800
+#define OUR_SERVO_MAX 2500
+
+//#define OUR_SERVO_MIN_LIMIT 800
+//#define OUR_SERVO_MAX_LIMIT 2300
+
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
 //#define MIXER_DEBUG
@@ -493,7 +499,7 @@ void writeServos(void)
                 actualTilt = rcData[PITCH];
             }
             //remap input value (RX limit) to output value (Servo limit)
-            actualTilt = map(actualTilt, escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max);
+            actualTilt = map(actualTilt, escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle, OUR_SERVO_MIN, OUR_SERVO_MAX);
 
             //set actualTilt in range from -X to +X
             actualTilt = actualTilt-servoConf[TILTING_SERVO].middle;
@@ -505,7 +511,7 @@ void writeServos(void)
             actualTilt += servoConf[TILTING_SERVO].middle;
 
             //be sure actualTilt does NOT break any limit
-            actualTilt = constrain(actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max);
+            actualTilt = constrain(actualTilt, OUR_SERVO_MIN, OUR_SERVO_MAX);
             //and now write it!
             pwmWriteServo(TILTING_SERVO, actualTilt);
             break;
@@ -612,7 +618,8 @@ void mixTilting(void) {
     //find how much the Servo WILL be tilted from -1 to 1
     angleTilt = (angleTilt - rxConfig->midrc) / halfMaxRange;
     //convert to radiant
-    angleTilt *= (M_PIf/2);
+    //angleTilt *= (M_PIf/2);
+    angleTilt *= 2.8797932f;
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);

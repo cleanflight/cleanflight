@@ -840,12 +840,14 @@ static bool processOutCommand(uint8_t cmdMSP)
         s_struct((uint8_t *)&servo, 16);
         break;
     case MSP_SERVO_CONF:
-        headSerialReply(56);
+        headSerialReply(72);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize16(currentProfile->servoConf[i].min);
             serialize16(currentProfile->servoConf[i].max);
             serialize16(currentProfile->servoConf[i].middle);
             serialize8(currentProfile->servoConf[i].rate);
+            serialize8(currentProfile->servoConf[i].minLimit);
+            serialize8(currentProfile->servoConf[i].maxLimit);
         }
         break;
     case MSP_CHANNEL_FORWARDING:
@@ -1416,6 +1418,9 @@ static bool processInCommand(void)
                 currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
             }
             currentProfile->servoConf[i].rate = read8();
+
+            currentProfile->servoConf[i].minLimit = read8();
+            currentProfile->servoConf[i].maxLimit = read8();
         }
 #endif
         break;
