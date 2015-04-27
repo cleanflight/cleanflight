@@ -290,6 +290,7 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_SERVO_CONF       212    //in message          Servo settings
 #define MSP_SET_MOTOR            214    //in message          PropBalance function
 #define MSP_SET_NAV_CONFIG       215    //in message          Sets nav config parameters - write to the eeprom
+#define MSP_SET_SERVO_LIMIT      216    //in message          Servo settings limits
 
 // #define MSP_BIND                 240    //in message          no param
 
@@ -1418,7 +1419,12 @@ static bool processInCommand(void)
                 currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
             }
             currentProfile->servoConf[i].rate = read8();
-
+        }
+#endif
+        break;
+    case MSP_SET_SERVO_LIMIT:
+#ifdef USE_SERVOS
+        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             currentProfile->servoConf[i].minLimit = read8();
             currentProfile->servoConf[i].maxLimit = read8();
         }
