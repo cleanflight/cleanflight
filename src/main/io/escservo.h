@@ -24,6 +24,4 @@ typedef struct escAndServoConfig_s {
     uint16_t maxthrottle;                   // This is the maximum value for the ESCs at full power this value can be increased up to 2000
     uint16_t mincommand;                    // This is the value for the ESCs when they are not armed. In some cases, this value must be lowered down to 900 for some specific ESCs
     uint16_t servoCenterPulse;              // This is the value for servos when they should be in the middle. e.g. 1500.
-    uint16_t minlimit;              // This is the value for servos in degree should not surpass
-    uint16_t maxlimit;              // This is the value for servos in degree should not surpass
 } escAndServoConfig_t;

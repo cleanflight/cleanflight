@@ -90,9 +90,6 @@ typedef enum {
 
 #define TILTING_SERVO 0
 
-#define OUR_SERVO_MIN 800
-#define OUR_SERVO_MAX 2500
-
 //#define OUR_SERVO_MIN_LIMIT 800
 //#define OUR_SERVO_MAX_LIMIT 2300
 
@@ -517,29 +514,7 @@ void writeServos(void)
         case MIXER_QUADX_TILT_THRUST:
         case MIXER_QUADX_TILT_PITCH:
         case MIXER_QUADX_TILT_ALL:
-            ;
-            float actualTilt;
-            if (rcData[AUX1] > rxConfig->midrc) {
-                actualTilt = rcData[AUX1];
-            } else {
-                actualTilt = rcData[PITCH];
-            }
-            //remap input value (RX limit) to output value (Servo limit)
-            actualTilt = map(actualTilt, escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle, OUR_SERVO_MIN, OUR_SERVO_MAX);
-
-            //set actualTilt in range from -X to +X
-            actualTilt = actualTilt-servoConf[TILTING_SERVO].middle;
-            //do we need to invert the Servo direction?
-            if (servoConf[TILTING_SERVO].rate & 0){
-                actualTilt *= -1;
-            }
-            //set actualTilt in range for the servo
-            actualTilt += servoConf[TILTING_SERVO].middle;
-
-            //be sure actualTilt does NOT break any limit
-            actualTilt = constrain(actualTilt, OUR_SERVO_MIN, OUR_SERVO_MAX);
-            //and now write it!
-            pwmWriteServo(TILTING_SERVO, actualTilt);
+            servoTilting();
             break;
 
         default:
@@ -644,7 +619,10 @@ static void airplaneMixer(void)
 }
 #endif
 
-void mixTilting(void) {
+/*
+ * float in range [-PI/2:+PI/2]
+ */
+float getTiltAngle(void) {
     float angleTilt = 0;
     //get estimated position of the tilting servo
     if (rcData[AUX1] > rxConfig->midrc) {
@@ -652,15 +630,41 @@ void mixTilting(void) {
     } else {
         angleTilt = rcData[PITCH];
     }
-
-    //TODO: we can try to take into account servo timing to get into position
     //find max rx range
-    float halfMaxRange = (rxConfig->maxcheck-rxConfig->mincheck)/2;
+    float halfMaxRange = (rxConfig->maxcheck - rxConfig->mincheck) / 2.0;
     //find how much the Servo WILL be tilted from -1 to 1
-    angleTilt = (angleTilt - rxConfig->midrc) / halfMaxRange;
+    float angle = (angleTilt - rxConfig->midrc) / halfMaxRange;
     //convert to radiant
-    //angleTilt *= (M_PIf/2);
-    angleTilt *= 2.8797932f;
+    return angle * M_PIf / 2;
+}
+
+void servoTilting(void) {
+    float actualTilt = getTiltAngle();
+
+    //do we need to invert the Servo direction?
+    if (servoConf[TILTING_SERVO].rate & 1){
+        actualTilt *= -1;
+    }
+
+    //limit servo escursion
+    actualTilt = constrainf( actualTilt, degreesToRadians(servoConf[TILTING_SERVO].minLimit), degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
+    if (actualTilt > 0){
+        actualTilt = mapf(actualTilt, 0, +M_PI/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
+    }else{
+        actualTilt = mapf(actualTilt, -M_PI/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
+    }
+
+    //just to be sure
+    int16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
+
+    //and now write it!
+    pwmWriteServo(TILTING_SERVO, outputPwm);
+}
+
+void mixTilting(void) {
+    float angleTilt = getTiltAngle();
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
