@@ -98,8 +98,8 @@ typedef struct servoParam_t {
     int16_t max;                            // servo max
     int16_t middle;                         // servo middle
     int8_t rate;                            // range [-100;+100] ; can be used to ajust a rate 0-100% and a direction
-    uint8_t minLimit;                        // range [0;180] ; can be used to ajust a rate 0-100% and a direction
-    uint8_t maxLimit;                        // range [0;180] ; can be used to ajust a rate 0-100% and a direction
+    int8_t minLimit;                        // range [-90;90] ; can be used to adjust a rate 0-100% and a direction
+    int8_t maxLimit;                        // range [-90;90] ; can be used to adjust a rate 0-100% and a direction
     int8_t forwardFromChannel;              // RX channel index, 0 based.  See CHANNEL_FORWARDING_DISABLED
 } servoParam_t;
 
@@ -115,6 +115,8 @@ extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
 void mixerResetMotors(void);
+float getTiltAngle(void);
+void servoTilting(void);
 void mixTilting(void);
 void mixTable(void);
 void writeMotors(void);
