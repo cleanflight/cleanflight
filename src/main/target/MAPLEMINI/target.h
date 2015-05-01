@@ -21,7 +21,7 @@
 #define FLASH_SIZE 128
 #define LED0_INVERTED
 #define LED0_GPIO   GPIOB
-#define LED0_PIN    Pin_1 // "LED0" is using one of the PWM pins (T3CH4/PWM8), so we must not use PWM8.
+#define LED0_PIN    Pin_1 // "LED0" set to D33 PB1 
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
 #define LED1_GPIO   GPIOB
 #define LED1_PIN    Pin_4 // PB4 (LED)
@@ -29,7 +29,7 @@
 
 
 #define BEEP_GPIO   GPIOB
-#define BEEP_PIN    Pin_2 // PA12 (Beeper)
+#define BEEP_PIN    Pin_2 // PB2 (Beeper) set on boot1 that is not used during normal working condition
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOB
 
 
@@ -40,14 +40,14 @@
 //#define USE_FAKE_GYRO
 //#define USE_GYRO_L3G4200D
 //#define USE_GYRO_L3GD20
-//#define USE_GYRO_MPU3050
+#define USE_GYRO_MPU3050
 #define USE_GYRO_MPU6050
 //#define USE_GYRO_SPI_MPU6000
 //#define USE_GYRO_SPI_MPU6500
 
 #define ACC
 //#define USE_FAKE_ACC
-//#define USE_ACC_ADXL345
+#define USE_ACC_ADXL345
 //#define USE_ACC_BMA280
 //#define USE_ACC_MMA8452
 //#define USE_ACC_LSM303DLHC
@@ -79,7 +79,7 @@
 #define USE_USART2
 //#define USE_SOFTSERIAL1
 //#define USE_SOFTSERIAL2
-#define SERIAL_PORT_COUNT 3
+#define SERIAL_PORT_COUNT 2
 
 //#define SOFTSERIAL_1_TIMER TIM3
 //#define SOFTSERIAL_1_TIMER_RX_HARDWARE 4 // PWM 5
@@ -97,9 +97,9 @@
 
 #define USE_ADC
 
-#define CURRENT_METER_ADC_GPIO      GPIOB
-#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
-#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
+#define CURRENT_METER_ADC_GPIO      GPIOA
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_5
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_5
 
 #define VBAT_ADC_GPIO               GPIOA
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_4

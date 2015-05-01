@@ -16,7 +16,7 @@ PA3  D10 - PWM4  - RC4/Motor7 (Motor8 if USE_VCP)
 PA6  D11 - PWM5  - RC5/Motor8 (Motor9 if USE_VCP)
 PA7  BUT - PWM6  - RC6/Motor9 (Motor10 if USE_VCP)
 PB0  D15 - PWM7  - Motor1
-PB1  D16 - PWM8  - Motor2
+PB6  D16 - PWM8  - Motor2
 PA8  D24 - PWM9  - Motor3/(#NA if  USE_VCP)
 PA11 D25 - PWM10 - #NA/(Motor3 if USE_VCP)
 PB6  D26 - PWM11 - #NA/(Motor4 if USE_VCP)
