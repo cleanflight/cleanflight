@@ -24,6 +24,7 @@
 #include "usb_bsp.h"
 #include "usbd_conf.h"
 #include "stm32f4xx_conf.h"
+#include "../drivers/nvic.h"
 
 
 void USB_OTG_BSP_ConfigVBUS(USB_OTG_CORE_HANDLE *pdev) {
@@ -56,6 +57,17 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
 
  #ifdef USE_USB_OTG_FS
 
+  NVIC_InitTypeDef NVIC_InitStructure;
+#ifdef USE_USB_OTG_HS
+  NVIC_InitStructure.NVIC_IRQChannel = OTG_HS_IRQn;
+#else
+  NVIC_InitStructure.NVIC_IRQChannel = OTG_FS_IRQn;
+#endif
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_USB);
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_USB);
+  NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+  NVIC_Init(&NVIC_InitStructure);
+
   RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA , ENABLE);
 
   /* Configure SOF VBUS ID DM DP Pins */
@@ -75,12 +87,22 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
 
   /* this for ID line debug */
 #ifdef VBUS_SENSING_ENABLED
+#ifdef COLIBRI
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+#endif
+#ifdef REVO
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
+#endif
 #endif
 
 
@@ -270,14 +292,14 @@ void USB_OTG_BSP_EnableInterrupt(USB_OTG_CORE_HANDLE *pdev)
 {
   NVIC_InitTypeDef NVIC_InitStructure;
 
-  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
+  NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);
 #ifdef USE_USB_OTG_HS
   NVIC_InitStructure.NVIC_IRQChannel = OTG_HS_IRQn;
 #else
   NVIC_InitStructure.NVIC_IRQChannel = OTG_FS_IRQn;
 #endif
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_USB);
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_USB);
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 #ifdef USB_OTG_HS_DEDICATED_EP1_ENABLED

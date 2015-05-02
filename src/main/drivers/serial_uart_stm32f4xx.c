@@ -168,7 +168,7 @@ uartPort_t *serialUSART1(uint32_t baudRate, portMode_t mode, portOptions_t optio
         }
     }
 
-#ifdef ANYFC
+#if defined(ANYFC)  || defined(REVO)
     GPIO_PinAFConfig(USART1_GPIO, GPIO_PinSource9, GPIO_AF_USART1);
     GPIO_PinAFConfig(USART1_GPIO, GPIO_PinSource10, GPIO_AF_USART1);
 #endif

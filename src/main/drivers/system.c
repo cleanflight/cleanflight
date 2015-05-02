@@ -123,6 +123,15 @@ void systemInit(void)
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 #endif
 
+#ifdef STM32F40_41xxx
+    /* Accounts for OP Bootloader, set the Vector Table base address as specified in .ld file */
+    extern void *isr_vector_table_base;
+
+    NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);
+
+    RCC_AHB2PeriphClockCmd( RCC_AHB2Periph_OTG_FS, DISABLE);
+#endif
+
     RCC_ClearFlag();
 
 

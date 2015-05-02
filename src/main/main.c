@@ -280,6 +280,7 @@ void init(void)
 #ifdef USE_SPI
     spiInit(SPI1);
     spiInit(SPI2);
+    spiInit(SPI3);
 #endif
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
@@ -296,7 +297,7 @@ void init(void)
         i2cInit(I2C_DEVICE);
     }
 #else
-#if defined(ANYFC) || defined(COLIBRI)
+#if defined(ANYFC) || defined(COLIBRI) || defined(REVO)
     i2cInit(I2C_DEVICE_INT);
     if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
 #ifdef I2C_DEVICE_EXT
@@ -413,7 +414,7 @@ void init(void)
         m25p16_init();
     }
 #endif
-#if defined(SPRACINGF3) || defined(CC3D) || defined(COLIBRI)
+#if defined(SPRACINGF3) || defined(CC3D) || defined(COLIBRI) || defined(REVO)
     m25p16_init();
 #endif
     flashfsInit();

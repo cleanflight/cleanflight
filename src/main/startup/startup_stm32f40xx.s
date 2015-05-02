@@ -38,12 +38,13 @@
   */
     
   .syntax unified
-  .cpu cortex-m3
+  .cpu cortex-m4
   .fpu softvfp
   .thumb
 
 .global  g_pfnVectors
 .global  Default_Handler
+.global	 irq_stack
 
 /* start address for the initialization values of the .data section. 
 defined in linker script */
@@ -132,13 +133,17 @@ Infinite_Loop:
 * 0x0000.0000.
 * 
 *******************************************************************************/
-   .section  .isr_vector,"a",%progbits
+  .section  .irqstack,"aw",%progbits
+  irq_stack:
+  .space  1024
+
+  .section  .isr_vector,"a",%progbits
   .type  g_pfnVectors, %object
   .size  g_pfnVectors, .-g_pfnVectors
     
     
 g_pfnVectors:
-  .word  _estack
+  .word  irq_stack+1024
   .word  Reset_Handler
   .word  NMI_Handler
   .word  HardFault_Handler

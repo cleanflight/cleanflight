@@ -37,7 +37,7 @@ void initInverter(void)
         .cfg = { INVERTER_PIN, Mode_Out_PP, Speed_2MHz } 
     };
 
-#if defined(ANYFC) || defined(COLIBRI)
+#if defined(ANYFC) || defined(COLIBRI) || defined(REVO)
     RCC_AHB1PeriphClockCmd(INVERTER_PERIPHERAL, ENABLE);
 #else
     RCC_APB2PeriphClockCmd(INVERTER_PERIPHERAL, ENABLE);

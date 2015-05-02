@@ -354,15 +354,15 @@ const clivalue_t valueTable[] = {
 
 
     { "fw_gps_maxcorr", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxcorr, -45, 45 },
-   { "fw_gps_rudder", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_rudder, -45, 45 },
-   { "fw_gps_maxclimb", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxclimb, -45, 45 },
-   { "fw_gps_maxdive", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxdive, -45, 45 },
-   { "fw_climb_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_climb_throttle, 1000, 2000 },
-   { "fw_cruise_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_cruise_throttle, 1000, 2000 },
-   { "fw_idle_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_idle_throttle, 1000, 2000 },
-   { "fw_scaler_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_scaler_throttle, 0, 15 },
-   { "fw_roll_comp", VAR_FLOAT| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_roll_comp, 0, 2 },
-   { "fw_rth_alt", VAR_UINT8| PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOSR], 0, 200 },
+    { "fw_gps_rudder", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_rudder, -45, 45 },
+    { "fw_gps_maxclimb", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxclimb, -45, 45 },
+    { "fw_gps_maxdive", VAR_INT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_gps_maxdive, -45, 45 },
+    { "fw_climb_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_climb_throttle, 1000, 2000 },
+    { "fw_cruise_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_cruise_throttle, 1000, 2000 },
+    { "fw_idle_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_idle_throttle, 1000, 2000 },
+    { "fw_scaler_throttle", VAR_UINT16| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_scaler_throttle, 0, 15 },
+    { "fw_roll_comp", VAR_FLOAT| PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.fw_roll_comp, 0, 2 },
+    { "fw_rth_alt", VAR_UINT8| PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOSR], 0, 200 },
 
 #endif
 
@@ -458,12 +458,11 @@ const clivalue_t valueTable[] = {
     { "baro_cf_vel",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_vel, 0, 1 },
     { "baro_cf_alt",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_alt, 0, 1 },
 
-    { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_MAX },
     { "pitot_tab_size",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_sample_count, 0, PITOT_SAMPLE_COUNT_MAX },
     { "pitot_noise_lpf",            VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_noise_lpf, 0, 1 },
     { "pitot_scale",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_scale, 0, 100 },
 
-    { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_NONE },
+    { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_MAX },
     { "mag_declination",            VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mag_declination, -18000, 18000 },
 
     { "pid_controller",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pidController, 0, 5 },

@@ -178,14 +178,17 @@ DEVICE_FLAGS = -DSTM32F40_41xxx
 ifeq ($(TARGET),ANYFC)
 DEVICE_FLAGS += -DHSE_VALUE=8000000
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
+.DEFAULT_GOAL := binary
 endif
 ifeq ($(TARGET),REVO)
 DEVICE_FLAGS += -DHSE_VALUE=8000000
-LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405_bl.ld
+.DEFAULT_GOAL := binary
 endif
 ifeq ($(TARGET),COLIBRI)
 DEVICE_FLAGS += -DHSE_VALUE=16000000
-LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405.ld
+LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f405_bl.ld
+.DEFAULT_GOAL := binary
 endif
 TARGET_FLAGS = -D$(TARGET)
 
@@ -534,7 +537,7 @@ CC3D_SRC	 = \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
 		   
-ANYFC_SRC	 = startup_stm32f40xx.s \
+ANYFC_SRC = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/pitotmeter_ms4525.c \
@@ -562,7 +565,7 @@ ANYFC_SRC	 = startup_stm32f40xx.s \
 		   $(COMMON_SRC) \
 		   $(VCPF4_SRC)
 
-COLIBRI_SRC	 = startup_stm32f40xx.s \
+COLIBRI_SRC = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/pitotmeter_ms4525.c \
@@ -592,9 +595,10 @@ COLIBRI_SRC	 = startup_stm32f40xx.s \
 		   $(COMMON_SRC) \
 		   $(VCPF4_SRC)
 
-REVO_SRC	 = startup_stm32f40xx.s \
+REVO_SRC = startup_stm32f40xx.s \
 		   drivers/accgyro_spi_mpu6000.c \
 		   drivers/barometer_ms5611.c \
+		   drivers/pitotmeter_ms4525.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/adc.c \
 		   drivers/adc_stm32f4xx.c \
@@ -615,8 +619,11 @@ REVO_SRC	 = startup_stm32f40xx.s \
 		   drivers/system_stm32f4xx.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f4xx.c \
+		   drivers/flash_m25p16.c \
+		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
-		   $(COMMON_SRC)
+		   $(COMMON_SRC) \
+		   $(VCPF4_SRC)
 
 STM32F30x_COMMON_SRC	 = \
 		   startup_stm32f30x_md_gcc.S \
