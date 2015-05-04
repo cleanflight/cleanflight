@@ -138,7 +138,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 96;
+static const uint8_t EEPROM_CONF_VERSION = 97;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -179,6 +179,8 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->P8[PIDVEL] = 120;
     pidProfile->I8[PIDVEL] = 45;
     pidProfile->D8[PIDVEL] = 1;
+
+    pidProfile->yaw_p_limit = 0;
 
     pidProfile->P_f[ROLL] = 2.5f;     // new PID with preliminary defaults test carefully
     pidProfile->I_f[ROLL] = 0.6f;
@@ -317,6 +319,7 @@ void resetRcControlsConfig(rcControlsConfig_t *rcControlsConfig) {
 void resetMixerConfig(mixerConfig_t *mixerConfig) {
     mixerConfig->pid_at_min_throttle = 1;
     mixerConfig->yaw_direction = 1;
+    mixerConfig->yaw_jump_prevention_limit = 0;
 #ifdef USE_SERVOS
     mixerConfig->tri_unarmed_servo = 1;
     mixerConfig->servo_lowpass_freq = 400;
