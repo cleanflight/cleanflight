@@ -686,7 +686,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
                 AngleRateTmp = ((int32_t)(rate + 27) * rcCommand[axis]) >> 4;
                 if (FLIGHT_MODE(HORIZON_MODE)) {
                     // mix up angle error to desired AngleRateTmp to add a little auto-level feel
-                    AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL]) >> 8;
+                    AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL]) >> 4;
                 }
             } else { // it's the ANGLE mode - control is angle based, so control loop is needed
                 AngleRateTmp = (errorAngle * pidProfile->P8[PIDLEVEL]) >> 4;
