@@ -24,12 +24,12 @@ sudo apt-get update
 
 For Ubuntu 14.10 (current release, called Utopic Unicorn), you should pin:
 ```
-sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0utopic12
+sudo apt-get install gcc-arm-none-eabi=4.9.3.2015q1-0utopic14
 ```
 
 For Ubuntu 14.04 (an LTS as of Q1'2015, called Trusty Tahr), you should pin:
 ```
-sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0trusty12
+sudo apt-get install gcc-arm-none-eabi=4.9.3.2015q1-0trusty13
 ```
 
 For Ubuntu 12.04 (previous LTS, called Precise Penguin), you should pin:
