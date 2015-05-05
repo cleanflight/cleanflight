@@ -50,3 +50,6 @@ void flashfsInit();
 
 bool flashfsIsReady();
 bool flashfsIsEOF();
+
+uint32_t flashfsBenchmarkWrite();
+uint32_t flashfsBenchmarkRead();

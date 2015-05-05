@@ -135,6 +135,10 @@ static void cliMixer(char *cmdline);
 #ifdef USE_FLASHFS
 static void cliFlashInfo(char *cmdline);
 static void cliFlashErase(char *cmdline);
+
+#ifdef USE_FLASHFS_BENCHMARK_TOOL
+static void cliFlashBench(char *cmdline);
+#endif
 #endif
 
 // buffer
@@ -197,6 +201,9 @@ const clicmd_t cmdTable[] = {
     { "exit", "", cliExit },
     { "feature", "list or -val or val", cliFeature },
 #ifdef USE_FLASHFS
+#ifdef USE_FLASHFS_BENCHMARK_TOOL
+    { "flash_bench", "benchmark flash chip", cliFlashBench },
+#endif
     { "flash_erase", "erase flash chip", cliFlashErase },
     { "flash_info", "get flash chip details", cliFlashInfo },
 #endif
@@ -952,6 +959,29 @@ static void cliFlashInfo(char *cmdline)
     printf("Flash sectors=%u, sectorSize=%u, pagesPerSector=%u, pageSize=%u, totalSize=%u, usedSize=%u\r\n",
             layout->sectors, layout->sectorSize, layout->pagesPerSector, layout->pageSize, layout->totalSize, flashfsGetOffset());
 }
+
+#ifdef USE_FLASHFS_BENCHMARK_TOOL
+
+static void cliFlashBench(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    cliPrint("Benching...\r\n");
+
+    uint32_t readSpeed = flashfsBenchmarkRead();
+
+    printf("Read speed %u B/s\r\n", readSpeed);
+
+    uint32_t writeSpeed = flashfsBenchmarkWrite();
+
+    if (writeSpeed == 0) {
+        cliPrint("No free space left for write benchmark\r\n");
+    } else {
+        printf("Write speed %u B/s\r\n", writeSpeed);
+    }
+}
+
+#endif
 
 static void cliFlashErase(char *cmdline)
 {

@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "drivers/flash_m25p16.h"
+#include "drivers/system.h"
 #include "flashfs.h"
 
 static uint8_t flashWriteBuffer[FLASHFS_WRITE_BUFFER_SIZE];
@@ -144,9 +145,9 @@ static uint32_t flashfsTransmitBufferUsed()
  *
  * Modifies the supplied buffer pointers and sizes to reflect how many bytes remain in each of them.
  *
- * bufferCount: the number of buffers provided
  * buffers: an array of pointers to the beginning of buffers
  * bufferSizes: an array of the sizes of those buffers
+ * bufferCount: the number of buffers provided
  * sync: true if we should wait for the device to be idle before writes, otherwise if the device is busy the
  *       write will be aborted and this routine will return immediately.
  *
@@ -553,4 +554,122 @@ void flashfsInit()
         // Start the file pointer off at the beginning of free space so caller can start writing immediately
         flashfsSeekAbs(flashfsIdentifyStartOfFreeSpace());
     }
+}
+
+static uint32_t alignTo(uint32_t address, uint32_t alignment)
+{
+    uint32_t remainder;
+
+    remainder = address % alignment;
+
+    if (remainder > 0) {
+        // Round up to next block
+        address += alignment - remainder;
+    }
+
+    return address;
+}
+
+/**
+ * Benchmark the raw flash write performance by writing test data at the current seek position.
+ *
+ * @returns Average write speed in bytes per second, or zero if no flash is available or there isn't enough room
+ * to fit the benchmark data.
+ */
+uint32_t flashfsBenchmarkWrite() {
+    enum {
+        PAGE_SIZE = 256, // Assume that a page is 256 bytes (it is on all our targets)
+        NUM_BENCH_SECTORS = 8
+    };
+
+    uint8_t buffer[PAGE_SIZE];
+    const uint8_t *buffers[1];
+    uint32_t bufferSizes[1];
+    int numPagesToWrite;
+
+    uint32_t startTime, endTime;
+
+    const flashGeometry_t *geometry = flashfsGetGeometry();
+
+    if (geometry->totalSize == 0) {
+        return 0;
+    }
+
+    for (unsigned int i = 0; i < sizeof(buffer); i++) {
+        buffer[i] = (uint8_t) i;
+    }
+
+    flashfsFlushSync();
+
+    // Write NUM_BENCH_SECTORS sectors worth of pages
+    numPagesToWrite = geometry->sectorSize / geometry->pageSize * NUM_BENCH_SECTORS;
+
+    // Start off at the beginning of a sector to be tidier (and reduce potential benchmark noise)
+    flashfsSeekAbs(alignTo(flashfsGetOffset(), geometry->sectorSize));
+
+    // Do we have enough room to fit the benchmark data? (don't overwrite anything)
+    if (flashfsGetOffset() + numPagesToWrite * PAGE_SIZE > geometry->totalSize) {
+        return 0;
+    }
+
+    // Wait for any flushed data to make it to the flash
+    m25p16_waitForReady(10000);
+
+    startTime = millis();
+
+    for (int i = 0; i < numPagesToWrite; i++) {
+        //flashfsWriteBuffers modifies these arguments so we must refill them each time:
+        buffers[0] = buffer;
+        bufferSizes[0] = PAGE_SIZE;
+
+        flashfsWriteBuffers(buffers, bufferSizes, 1, true);
+    }
+
+    m25p16_waitForReady(10000);
+
+    endTime = millis();
+
+    return (numPagesToWrite * geometry->pageSize * 1000) / (endTime - startTime);
+}
+
+/**
+ * Benchmark the raw flash read performance by reading test data from the beginning of the volume.
+ *
+ * @returns Average read speed in bytes per second, or zero if no flash is available.
+ */
+uint32_t flashfsBenchmarkRead() {
+    // Assume that a page is 256 bytes (it is on all our targets)
+    enum {
+        PAGE_SIZE = 256,
+        NUM_BENCH_SECTORS = 8
+    };
+
+    uint8_t buffer[PAGE_SIZE];
+    uint32_t address, bytesRead = 0;
+
+    uint32_t startTime, endTime;
+
+    const flashGeometry_t *geometry = flashfsGetGeometry();
+    int i, numPagesToRead;
+
+    if (geometry->totalSize == 0) {
+        return 0;
+    }
+
+    // Read NUM_BENCH_SECTORS worth of pages
+    numPagesToRead = geometry->sectorSize / geometry->pageSize * NUM_BENCH_SECTORS;
+
+    flashfsFlushSync();
+
+    m25p16_waitForReady(10000);
+
+    startTime = millis();
+
+    for (i = 0, address = 0; i < numPagesToRead; i++, address += PAGE_SIZE) {
+        bytesRead += flashfsReadAbs(address, buffer, PAGE_SIZE);
+    }
+
+    endTime = millis();
+
+    return (bytesRead * 1000) / (endTime - startTime);
 }

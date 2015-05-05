@@ -252,18 +252,19 @@ void m25p16_pageProgramFinish()
 }
 
 /**
- * Write bytes to a flash page. Address must not cross a page boundary.
+ * Write bytes to a flash page.
  *
  * Bits can only be set to zero, not from zero back to one again. In order to set bits to 1, use the erase command.
  *
- * Length must be smaller than the page size.
+ * The write must not cross a page boundary, so even for properly aligned writes, the length must not be larger than
+ * the page size.
  *
  * This will wait for the flash to become ready before writing begins.
  *
  * Datasheet indicates typical programming time is 0.8ms for 256 bytes, 0.2ms for 64 bytes, 0.05ms for 16 bytes.
  * (Although the maximum possible write time is noted as 5ms).
  *
- * If you want to write multiple buffers (whose sum of sizes is still not more than the page size) then you can
+ * If you want to write multiple buffers (which still will not cross a page boundary when written) then you can
  * break this operation up into one beginProgram call, one or more continueProgram calls, and one finishProgram call.
  */
 void m25p16_pageProgram(uint32_t address, const uint8_t *data, int length)
