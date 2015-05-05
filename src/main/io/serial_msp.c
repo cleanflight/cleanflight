@@ -917,7 +917,6 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(currentControlRateProfile->dynThrPID);
         serialize8(currentControlRateProfile->thrMid8);
         serialize8(currentControlRateProfile->thrExpo8);
-        serialize8(currentControlRateProfile->rcYawExpo8);
         serialize16(currentControlRateProfile->tpa_breakpoint);
         break;
     case MSP_PID:
