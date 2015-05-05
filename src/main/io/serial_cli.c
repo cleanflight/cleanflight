@@ -135,8 +135,6 @@ static void cliMixer(char *cmdline);
 #ifdef USE_FLASHFS
 static void cliFlashInfo(char *cmdline);
 static void cliFlashErase(char *cmdline);
-static void cliFlashWrite(char *cmdline);
-static void cliFlashRead(char *cmdline);
 #endif
 
 // buffer
@@ -201,8 +199,6 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_FLASHFS
     { "flash_erase", "erase flash chip", cliFlashErase },
     { "flash_info", "get flash chip details", cliFlashInfo },
-    { "flash_read", "read text from the given address", cliFlashRead },
-    { "flash_write", "write text to the given address", cliFlashWrite },
 #endif
     { "get", "get variable value", cliGet },
 #ifdef GPS
@@ -961,7 +957,7 @@ static void cliFlashErase(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Erasing, please wait...\r\n");
+    printf("Erasing...\r\n");
     flashfsEraseCompletely();
 
     while (!flashfsIsReady()) {
@@ -969,60 +965,6 @@ static void cliFlashErase(char *cmdline)
     }
 
     printf("Done.\r\n");
-}
-
-static void cliFlashWrite(char *cmdline)
-{
-    uint32_t address = atoi(cmdline);
-    char *text = strchr(cmdline, ' ');
-
-    if (!text) {
-        printf("Missing text to write.\r\n");
-    } else {
-        flashfsSeekAbs(address);
-        flashfsWrite((uint8_t*)text, strlen(text), true);
-        flashfsFlushSync();
-
-        printf("Wrote %u bytes at %u.\r\n", strlen(text), address);
-    }
-}
-
-static void cliFlashRead(char *cmdline)
-{
-    uint32_t address = atoi(cmdline);
-    uint32_t length;
-    int i;
-
-    uint8_t buffer[32];
-
-    char *nextArg = strchr(cmdline, ' ');
-
-    if (!nextArg) {
-        printf("Missing length argument.\r\n");
-    } else {
-        length = atoi(nextArg);
-
-        printf("Reading %u bytes at %u:\r\n", length, address);
-
-        while (length > 0) {
-            int bytesRead;
-
-            bytesRead = flashfsReadAbs(address, buffer, length < sizeof(buffer) ? length : sizeof(buffer));
-
-            for (i = 0; i < bytesRead; i++) {
-                cliWrite(buffer[i]);
-            }
-
-            length -= bytesRead;
-            address += bytesRead;
-
-            if (bytesRead == 0) {
-                //Assume we reached the end of the volume or something fatal happened
-                break;
-            }
-        }
-        printf("\r\n");
-    }
 }
 
 #endif
