@@ -138,7 +138,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 97;
+static const uint8_t EEPROM_CONF_VERSION = 98;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -301,6 +301,7 @@ static void resetControlRateConfig(controlRateConfig_t *controlRateConfig) {
     controlRateConfig->thrMid8 = 50;
     controlRateConfig->thrExpo8 = 0;
     controlRateConfig->dynThrPID = 0;
+    controlRateConfig->rcYawExpo8 = 0;
     controlRateConfig->tpa_breakpoint = 1500;
 
     for (uint8_t axis = 0; axis < FLIGHT_DYNAMICS_INDEX_COUNT; axis++) {
@@ -512,7 +513,12 @@ static void resetConf(void)
 #endif
 
 #ifdef BLACKBOX
+#ifdef SPRACINGF3
+    featureSet(FEATURE_BLACKBOX);
+    masterConfig.blackbox_device = 1;
+#else
     masterConfig.blackbox_device = 0;
+#endif
     masterConfig.blackbox_rate_num = 1;
     masterConfig.blackbox_rate_denom = 1;
 #endif
@@ -645,6 +651,7 @@ static bool isEEPROMContentValid(void)
 void activateControlRateConfig(void)
 {
     generatePitchRollCurve(currentControlRateProfile);
+    generateYawCurve(currentControlRateProfile);
     generateThrottleCurve(currentControlRateProfile, &masterConfig.escAndServoConfig);
 }
 
@@ -787,12 +794,6 @@ void validateAndFixConfig(void)
 #if defined(CC3D) && defined(DISPLAY) && defined(USE_USART3)
     if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
         featureClear(FEATURE_DISPLAY);
-    }
-#endif
-
-#if defined(SPRACINGF3) && defined(SONAR)
-    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) ) {
-        featureClear(FEATURE_SONAR);
     }
 #endif
 
