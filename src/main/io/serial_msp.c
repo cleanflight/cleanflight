@@ -1365,7 +1365,7 @@ static bool processInCommand(void)
         break;
 
     case MSP_SET_RC_TUNING:
-        if (currentPort->dataSize >= 10) {//allow for yaw expo
+        if (currentPort->dataSize >= 11) {//allow for yaw expo
             currentControlRateProfile->rcRate8 = read8();
             currentControlRateProfile->rcExpo8 = read8();
             for (i = 0; i < 3; i++) {
