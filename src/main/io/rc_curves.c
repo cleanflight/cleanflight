@@ -42,7 +42,7 @@ void generateYawCurve(controlRateConfig_t *controlRateConfig)
     uint8_t i;
 
     for (i = 0; i < PITCH_LOOKUP_LENGTH; i++)
-        lookupYawRC[i] = (2500 + controlRateConfig->rcYawExpo8 * (i * i - 25)) * i * 100 / 2500;
+        lookupYawRC[i] = (2500 + controlRateConfig->rcYawExpo8 * (i * i - 25)) * i / 25;
 }
 
 void generateThrottleCurve(controlRateConfig_t *controlRateConfig, escAndServoConfig_t *escAndServoConfig)
