@@ -201,6 +201,9 @@ void init(void)
 #if defined(USE_USART2) && defined(STM32F10X)
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
 #endif
+#ifdef STM32F303xC
+    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_USART3);
+#endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
@@ -210,6 +213,9 @@ void init(void)
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
     pwm_params.useSerialRx = feature(FEATURE_RX_SERIAL);
+#ifdef SONAR
+    pwm_params.useSonar = feature(FEATURE_SONAR);
+#endif
 
 #ifdef USE_SERVOS
     pwm_params.useServos = isMixerUsingServos();
@@ -362,7 +368,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit();
+        sonarInit(&masterConfig.batteryConfig);
     }
 #endif
 

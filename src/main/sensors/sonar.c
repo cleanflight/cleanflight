@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "platform.h"
+#include "build_config.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -37,7 +38,7 @@
 
 static int32_t calculatedAltitude;
 
-void sonarInit(void)
+void sonarInit(batteryConfig_t *batteryConfig)
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
     static const sonarHardware_t const sonarPWM56 = {
@@ -54,13 +55,14 @@ void sonarInit(void)
         .exti_pin_source = GPIO_PinSource1,
         .exti_irqn = EXTI1_IRQn
     };
-    // If we are using parallel PWM for our receiver, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
-    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+    // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
+    if (feature(FEATURE_RX_PARALLEL_PWM ) || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC) ) {
         hcsr04_init(&sonarPWM56);
     } else {
         hcsr04_init(&sonarRC78);
     }
 #elif defined(OLIMEXINO)
+    UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echo_pin = Pin_1,      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
@@ -70,6 +72,7 @@ void sonarInit(void)
     };
     hcsr04_init(&sonarHardware);
 #elif defined(SPRACINGF3)
+    UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echo_pin = Pin_1,      // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )

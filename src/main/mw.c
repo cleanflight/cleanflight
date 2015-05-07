@@ -209,7 +209,8 @@ void annexCode(void)
                     tmp = 0;
                 }
             }
-            rcCommand[axis] = tmp * -masterConfig.yaw_control_direction;
+            tmp2 = tmp / 100;
+            rcCommand[axis] = (lookupYawRC[tmp2] + (tmp - tmp2 * 100) * (lookupYawRC[tmp2 + 1] - lookupYawRC[tmp2]) / 100) * -masterConfig.yaw_control_direction;
             prop1 = 100 - (uint16_t)currentControlRateProfile->rates[axis] * ABS(tmp) / 500;
         }
         // FIXME axis indexes into pids.  use something like lookupPidIndex(rc_alias_e alias) to reduce coupling.
@@ -756,6 +757,8 @@ void loop(void)
         if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck
 #ifndef USE_QUAD_MIXER_ONLY
                 && !(masterConfig.mixerMode == MIXER_TRI && masterConfig.mixerConfig.tri_unarmed_servo)
+                && masterConfig.mixerMode != MIXER_AIRPLANE
+                && masterConfig.mixerMode != MIXER_FLYING_WING
 #endif
         ) {
             rcCommand[YAW] = 0;
