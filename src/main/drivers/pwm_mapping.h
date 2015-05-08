@@ -45,6 +45,9 @@ typedef struct drv_pwm_config_t {
 #ifdef STM32F10X
     bool useUART2;
 #endif
+#ifdef STM32F303xC
+    bool useUART3;
+#endif
 #ifdef STM32F40_41xxx
     bool useUART2;
     bool useUART6;
@@ -53,6 +56,9 @@ typedef struct drv_pwm_config_t {
     bool useOneshot;
     bool useSoftSerial;
     bool useLEDStrip;
+#ifdef SONAR
+    bool useSonar;
+#endif
 #ifdef USE_SERVOS
     bool useServos;
     bool extraServos;    // configure additional 4 channels in PPM mode as servos, not motors
