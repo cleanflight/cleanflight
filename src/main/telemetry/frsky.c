@@ -120,7 +120,10 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 #define ID_VERT_SPEED         0x30 //opentx vario
 
-#define ID_TEXT               0x3C
+#define ID_TEXT               0x50 // text stream (parity 0)
+#define ID_TEXT_1             0x51 // text stream (parity 1)
+#define ID_TEXT_2             0x52 // text stream (parity 2)
+#define ID_TEXT_3             0x53 // text stream (parity 3)
 
 #define GPS_BAD_QUALITY       300
 #define GPS_MAX_HDOP_VAL      9999
@@ -475,7 +478,7 @@ void checkFrSkyTelemetryState(void)
     else
         freeFrSkyTelemetryPort();
 }
-#define textTransmitBufferSize 5  // max 5x pos+char (10bytes)
+#define textTransmitBufferSize 5  // max pos+char duplets
 #define telemetryTextSize 22 // size of text buffer
 static char telemetryText[telemetryTextSize+1]; // Telemetry text buffer + trailing 0
 static uint8_t textTransmitBuffer[2*textTransmitBufferSize]; // lower byte pos, upper byte char - "FIFO"
@@ -494,17 +497,12 @@ static void sendTelemetryTextTransmitBuffer(void)
 {
     uint8_t i;
     i = 0;
-    uint8_t byteWithParity;
+    uint8_t parity;
     while (countTextTransmitBuffer) {
-      sendDataHead(ID_TEXT);
+      parity = (getOddParity(textTransmitBuffer[2*i]) << 1) | getOddParity(textTransmitBuffer[2*i+1]);
+      sendDataHead(ID_TEXT+parity);
       serializeFrsky(textTransmitBuffer[2*i]);
-      // we will transmit only 7bit ASCII
-      // the highest bit will be used for parity check
-      // strip highest byte
-      byteWithParity = textTransmitBuffer[2*i+1] & 0x7F;
-      // calc parity from both bytes and add it
-      byteWithParity += (getOddParity(textTransmitBuffer[2*i]) ^ getOddParity(textTransmitBuffer[2*i+1] & 0x7F)) << 7;
-      serializeFrsky(byteWithParity);
+      serializeFrsky(textTransmitBuffer[2*i+1]);
       countTextTransmitBuffer--;
       i++;
     }
@@ -729,13 +727,7 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 #endif
 
         sendTelemetryTail();
-    }
-
-    if (cycleNum == 40) {     //Frame 3: Sent every 5s
-        cycleNum = 0;
-        sendTime();
-        sendTelemetryTail();
-    }
+    } else {
 
     /* Telemetry text stream
 
@@ -752,6 +744,9 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
     Note: the speed of text link is 5 chars per transmittion.
     Approximately 40 chars a second at maximum.
 
+    Telemetry text stream is not beeing send when long 1/1s message
+    has already been composed and put into queue
+
     */
 
     // temporary hack - create text here (should be moved elsewhere)
@@ -760,6 +755,14 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
     fillUpTelemetryTextTransmitBuffer();
     sendTelemetryTextTransmitBuffer();
     sendTelemetryTail();
+    }
+
+    if (cycleNum == 40) {     //Frame 3: Sent every 5s
+        cycleNum = 0;
+        sendTime();
+        sendTelemetryTail();
+    }
+
 
 }
 

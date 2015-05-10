@@ -32,4 +32,5 @@ void initFrSkyTelemetry(telemetryConfig_t *telemetryConfig);
 void configureFrSkyTelemetryPort(void);
 void freeFrSkyTelemetryPort(void);
 
+
 #endif /* TELEMETRY_FRSKY_H_ */
