@@ -265,10 +265,6 @@ const mixer_t mixers[] = {
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
     { 4, 1, mixerQuadX },      // MIXER_QUADX_TILT
-    { 4, 1, mixerQuadX },      // MIXER_QUADX_TILT_COS
-    { 4, 1, mixerQuadX },      // MIXER_QUADX_TILT_THRUST
-    { 4, 1, mixerQuadX },      // MIXER_QUADX_TILT_PITCH
-    { 4, 1, mixerQuadX },      // MIXER_QUADX_TILT_ALL
     { 0, 0, NULL },                // MIXER_CUSTOM
 };
 #endif
@@ -279,7 +275,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         gimbalConfig_t *gimbalConfigToUse,
-		tiltArmConfig_t *tiltArmConfigToUse,
+	    tiltArmConfig_t *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
         escAndServoConfig_t *escAndServoConfigToUse,

@@ -320,9 +320,9 @@ void resetMixerConfig(mixerConfig_t *mixerConfig) {
 }
 
 void resetTiltArmProfile(tiltArmConfig_t *tiltConfig){
-	tiltConfig->flagEnabled = 0;
-	tiltConfig->pitchDivisior = 1;
-	tiltConfig->thrustLiftoff = 0;
+    tiltConfig->flagEnabled = 0;
+    tiltConfig->pitchDivisior = 1;
+    tiltConfig->thrustLiftoff = 50;
 }
 
 uint8_t getCurrentProfile(void)
@@ -690,7 +690,7 @@ void activateConfig(void)
 #ifdef USE_SERVOS
         currentProfile->servoConf,
         &currentProfile->gimbalConfig,
-		&currentProfile->tiltArm,
+	    &currentProfile->tiltArm,
 #endif
         &masterConfig.flight3DConfig,
         &masterConfig.escAndServoConfig,
