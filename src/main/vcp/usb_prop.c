@@ -116,7 +116,7 @@ void Virtual_Com_Port_Reset(void)
     pInformation->Current_Configuration = 0;
 
     /* Current Feature initialization */
-    pInformation->Current_Feature = Virtual_Com_Port_ConfigDescriptor[7];
+    pInformation->Current_Feature = Virtual_Com_Port_ConfigDescriptor[7];  // bmAttributes
 
     /* Set Virtual_Com_Port DEVICE with the default Interface*/
     pInformation->Current_Interface = 0;

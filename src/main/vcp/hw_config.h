@@ -55,14 +55,9 @@ void Leave_LowPowerMode(void);
 void USB_Interrupts_Config(void);
 void USB_Cable_Config(FunctionalState NewState);
 void Get_SerialNum(void);
-uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength);  // HJI
-uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len);       // HJI
 uint8_t usbIsConfigured(void);  // HJI
 uint8_t usbIsConnected(void);   // HJI
 /* External variables --------------------------------------------------------*/
-
-extern __IO uint32_t receiveLength;  // HJI
-extern __IO uint32_t packetSent;     // HJI
 
 #endif  /*__HW_CONFIG_H*/
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

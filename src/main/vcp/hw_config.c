@@ -47,7 +47,6 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 ErrorStatus HSEStartUpStatus;
-EXTI_InitTypeDef EXTI_InitStructure;
 
 static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len);
 /* Extern variables ----------------------------------------------------------*/
@@ -131,6 +130,7 @@ void Set_System(void)
 #endif
 
     /* Configure the EXTI line 18 connected internally to the USB IP */
+    EXTI_InitTypeDef EXTI_InitStructure;
     EXTI_ClearITPendingBit(EXTI_Line18);
     EXTI_InitStructure.EXTI_Line = EXTI_Line18;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;

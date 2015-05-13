@@ -50,8 +50,8 @@ const uint8_t Virtual_Com_Port_ConfigDescriptor[] = {
 /*Configuration Descriptor*/
 0x09, /* bLength: Configuration Descriptor size */
 USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
-VIRTUAL_COM_PORT_SIZ_CONFIG_DESC, /* wTotalLength:no of returned bytes */
-0x00, 0x02, /* bNumInterfaces: 2 interface */
+VIRTUAL_COM_PORT_SIZ_CONFIG_DESC, 0, /* wTotalLength:no of returned bytes */
+0x02, /* bNumInterfaces: 2 interface */
 0x01, /* bConfigurationValue: Configuration value */
 0x00, /* iConfiguration: Index of string descriptor describing the configuration */
 0xC0, /* bmAttributes: self powered */
