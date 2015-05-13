@@ -90,12 +90,13 @@ typedef enum {
 
 #define TILTING_SERVO 0
 
-//#define OUR_SERVO_MIN_LIMIT 800
-//#define OUR_SERVO_MAX_LIMIT 2300
-
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
+<<<<<<< HEAD
 //#define MIXER_DEBUG
+=======
+extern int16_t debug[4];
+>>>>>>> bug fixing on the field
 
 uint8_t motorCount = 0;
 int16_t motor[MAX_SUPPORTED_MOTORS];
@@ -623,19 +624,21 @@ static void airplaneMixer(void)
  * float in range [-PI/2:+PI/2]
  */
 float getTiltAngle(void) {
-    float angleTilt = 0;
-    //get estimated position of the tilting servo
+    float userInput = 0;
+
+    //get wanted position of the tilting servo
     if (rcData[AUX1] > rxConfig->midrc) {
-        angleTilt = rcData[AUX1];
+    	userInput = rcData[AUX1];
     } else {
-        angleTilt = rcData[PITCH];
+    	userInput = rcData[PITCH];
     }
-    //find max rx range
-    float halfMaxRange = (rxConfig->maxcheck - rxConfig->mincheck) / 2.0;
-    //find how much the Servo WILL be tilted from -1 to 1
-    float angle = (angleTilt - rxConfig->midrc) / halfMaxRange;
-    //convert to radiant
-    return angle * M_PIf / 2;
+
+    //convert to radiant, keep eventual non-linearity of range
+    if (userInput >= rxConfig->midrc){
+    	return scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+    }else{
+    	return scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, degreesToRadians(servoConf[TILTING_SERVO].minLimit), 0 );
+    }
 }
 
 void servoTilting(void) {
@@ -651,13 +654,13 @@ void servoTilting(void) {
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
     if (actualTilt > 0){
-        actualTilt = mapf(actualTilt, 0, +M_PI/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
+        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
     }else{
-        actualTilt = mapf(actualTilt, -M_PI/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
+        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
     }
 
     //just to be sure
-    int16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
+    uint16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
 
     //and now write it!
     pwmWriteServo(TILTING_SERVO, outputPwm);
@@ -672,7 +675,7 @@ void mixTilting(void) {
 
     if (currentMixerMode == MIXER_QUADX_TILT_THRUST || currentMixerMode == MIXER_QUADX_TILT_ALL) {
         // compensate the throttle because motor orientation
-        rcCommand[THROTTLE] += (rcCommand[THROTTLE]-1000) * tmpSine;
+        rcCommand[THROTTLE] += ((rcCommand[THROTTLE]-1000) * tmpSine) * ((rcData[AUX2]-1000)/1000.0f);
     }
 
     if (currentMixerMode == MIXER_QUADX_TILT_COS
@@ -686,13 +689,14 @@ void mixTilting(void) {
 
         axisPID[ROLL] = -yawCompensationInv + rollCompensation;
         axisPID[YAW] = yawCompensation - rollCompensationInv;
-
     }
 }
 
 void mixTable(void)
 {
     uint32_t i;
+
+    mixTilting();
 
     if (motorCount >= 4 && mixerConfig->yaw_jump_prevention_limit < YAW_JUMP_PREVENTION_LIMIT_HIGH) {
         // prevent "yaw jump" during yaw correction (500 is disabled jump protection)

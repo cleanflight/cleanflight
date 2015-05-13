@@ -791,7 +791,7 @@ void loop(void)
         if (masterConfig.mixerMode == MIXER_QUADX_TILT_PITCH || masterConfig.mixerMode == MIXER_QUADX_TILT_ALL) {
        	    // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
        	    if (rcData[AUX1] <= masterConfig.rxConfig.midrc) {
-       	        rcCommand[PITCH] = 0; //neutral
+       	        rcCommand[PITCH] /= 10; //neutral
        	    }
        	}
 
