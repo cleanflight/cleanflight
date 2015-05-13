@@ -53,6 +53,7 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -102,6 +103,7 @@ static void cliRateProfile(char *cmdline);
 static void cliReboot(void);
 static void cliSave(char *cmdline);
 static void cliServo(char *cmdline);
+static void cliTiltArm(char *cmdline);
 static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
@@ -217,6 +219,7 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_SERVOS
     { "servo", "servo config", cliServo },
 #endif
+	{ "tilt_arm", "tilting arm config", cliTiltArm },
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
     { "version", "", cliVersion },
@@ -789,6 +792,100 @@ static void cliColor(char *cmdline)
 }
 #endif
 
+static void cliTiltArm(char *cmdline)
+{
+    enum { TILT_ARM_ARGUMENT_COUNT = 5 };
+    int16_t arguments[TILT_ARM_ARGUMENT_COUNT];
+
+    tiltArmConfig_t *tilt;
+
+    char *ptr;
+
+    if (isEmpty(cmdline)) {
+        // print out settings
+        tilt = &currentProfile->tiltArm;
+        printf("tilt_arm");
+
+        printf(" pitch compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_PITCH){
+        	printf(" ENABLED");
+        }else{
+        	printf(" DISABLED");
+        }
+        printf(" pitch compensation factor: %d",
+            tilt->pitchDivisior
+        );
+
+        printf(" thrust compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST){
+            printf(" ENABLED");
+        }else{
+            printf(" DISABLED");
+        }
+        printf(" thrust liftoff value: %d",
+            tilt->thrustLiftoff
+        );
+
+        printf(" yaw-roll compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL){
+            printf(" ENABLED");
+        }else{
+            printf(" DISABLED");
+        }
+
+        printf("\r\n");
+
+    } else {
+        int validArgumentCount = 0;
+
+        ptr = cmdline;
+
+        // Command line is integers (possibly negative) separated by spaces, no other characters allowed.
+
+        // If command line doesn't fit the format, don't modify the config
+        while (*ptr) {
+            if ( (*ptr >= '0' && *ptr <= '9')) {
+                if (validArgumentCount >= TILT_ARM_ARGUMENT_COUNT) {
+                    cliPrint("Parse error\r\n");
+                    return;
+                }
+
+                arguments[validArgumentCount++] = atoi(ptr);
+
+                do {
+                    ptr++;
+                } while (*ptr >= '0' && *ptr <= '9');
+            } else if (*ptr == ' ') {
+                ptr++;
+            } else {
+                cliPrint("Parse error\r\n");
+                return;
+            }
+        }
+
+        // Check we got the right number of args and the servo index is correct (don't validate the other values)
+        if (validArgumentCount != TILT_ARM_ARGUMENT_COUNT) {
+            cliPrint("Parse error\r\n");
+            return;
+        }
+
+        tilt = &currentProfile->tiltArm;
+
+        tilt->flagEnabled = 0;
+        if (arguments[0]){
+        	tilt->flagEnabled |= TILT_ARM_ENABLE_PITCH;
+        }
+        if (arguments[1]){
+            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST;
+        }
+        if (arguments[2]){
+            tilt->flagEnabled |= TILT_ARM_ENABLE_YAW_ROLL;
+        }
+        tilt->pitchDivisior = arguments[3];
+        tilt->thrustLiftoff = arguments[4];
+    }
+}
+
 static void cliServo(char *cmdline)
 {
 #ifndef USE_SERVOS
@@ -1085,6 +1182,10 @@ static void cliDump(char *cmdline)
         cliPrint("\r\n# servo\r\n");
 
         cliServo("");
+
+        cliPrint("\r\n# tilting arm\r\n");
+
+        cliTiltArm("");
 
         printSectionBreak();
 

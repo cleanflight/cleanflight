@@ -39,6 +39,7 @@
 #include "io/gimbal.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
+#include "io/tilt_arm_control.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -68,6 +69,7 @@ static flight3DConfig_t *flight3DConfig;
 static escAndServoConfig_t *escAndServoConfig;
 static airplaneConfig_t *airplaneConfig;
 static rxConfig_t *rxConfig;
+static tiltArmConfig_t *tiltArmConfig;
 
 static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 static mixerMode_e currentMixerMode;
@@ -242,6 +244,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         gimbalConfig_t *gimbalConfigToUse,
+		tiltArmConfig_t *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
         escAndServoConfig_t *escAndServoConfigToUse,
@@ -252,6 +255,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
     servoConf = servoConfToUse;
     gimbalConfig = gimbalConfigToUse;
+    tiltArmConfig = tiltArmConfigToUse;
 #endif
     flight3DConfig = flight3DConfigToUse;
     escAndServoConfig = escAndServoConfigToUse;
@@ -479,10 +483,6 @@ void writeServos(void)
             pwmWriteServo(3, servo[6]);
             break;
         case MIXER_QUADX_TILT:
-        case MIXER_QUADX_TILT_COS:
-        case MIXER_QUADX_TILT_THRUST:
-        case MIXER_QUADX_TILT_PITCH:
-        case MIXER_QUADX_TILT_ALL:
             servoTilting();
             break;
         default:
@@ -626,14 +626,19 @@ void mixTilting(void) {
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
-    if (currentMixerMode == MIXER_QUADX_TILT_THRUST || currentMixerMode == MIXER_QUADX_TILT_ALL) {
+    if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
-        rcCommand[THROTTLE] += ((rcCommand[THROTTLE]-1000) * tmpSine) * ((rcData[AUX2]-1000)/1000.0f);
+    	uint16_t liftOffTrust = rcCommand[THROTTLE] - rxConfig->mincheck - (rxConfig->mincheck * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
+    	float compensation = liftOffTrust * ABS(tmpSine); //absolute value because we want do compensate always
+    	if (compensation > 0){
+    		rcCommand[THROTTLE] += compensation;
+    	}
     }
-/*
-    if (currentMixerMode == MIXER_QUADX_TILT_COS || currentMixerMode == MIXER_QUADX_TILT_ALL) {
 
-        //***** quick and dirty compensation to test *****
+    //compensate the roll and yaw because motor orientation
+    if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
+
+        // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
         float rollCompensationInv = axisPID[ROLL] - rollCompensation;
         float yawCompensation = axisPID[YAW] * tmpCosine;
@@ -642,7 +647,7 @@ void mixTilting(void) {
         axisPID[ROLL] = -yawCompensationInv + rollCompensation;
         axisPID[YAW] = yawCompensation - rollCompensationInv;
     }
-*/
+
 }
 
 void mixTable(void)

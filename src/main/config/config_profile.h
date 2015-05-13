@@ -52,6 +52,7 @@ typedef struct profile_s {
     servoParam_t servoConf[MAX_SUPPORTED_SERVOS]; // servo configuration
     // gimbal-related configuration
     gimbalConfig_t gimbalConfig;
+    tiltArmConfig_t tiltArm;
 #endif
 
     // Failsafe related configuration

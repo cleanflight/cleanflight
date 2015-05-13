@@ -46,11 +46,7 @@ typedef enum mixerMode
     MIXER_SINGLECOPTER = 21,
     MIXER_ATAIL4 = 22,
     MIXER_QUADX_TILT = 23,
-    MIXER_QUADX_TILT_COS = 24,
-    MIXER_QUADX_TILT_THRUST = 25,
-    MIXER_QUADX_TILT_PITCH = 26,
-    MIXER_QUADX_TILT_ALL = 27,
-    MIXER_CUSTOM = 28
+    MIXER_CUSTOM = 24
 } mixerMode_e;
 
 // Custom mixer data per motor
