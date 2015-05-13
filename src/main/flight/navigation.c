@@ -23,6 +23,7 @@
 #include <math.h>
 
 #include "platform.h"
+#include "debug.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -35,6 +36,7 @@
 
 #include "sensors/sensors.h"
 
+#include "io/beeper.h"
 #include "io/serial.h"
 #include "io/gps.h"
 #include "io/rc_controls.h"
@@ -52,8 +54,6 @@
 extern int16_t magHold;
 
 #ifdef GPS
-
-extern int16_t debug[4];
 
 bool areSticksInApModePosition(uint16_t ap_mode);
 
@@ -660,6 +660,7 @@ void updateGpsStateForHomeAndHoldMode(void)
 void updateGpsWaypointsAndMode(void)
 {
     bool resetNavNow = false;
+    static bool gpsReadyBeepDone = false;
 
     if (STATE(GPS_FIX) && GPS_numSat >= 5) {
 
@@ -711,6 +712,10 @@ void updateGpsWaypointsAndMode(void)
                     resetNavNow = true;
                 }
             }
+        }
+        if (!gpsReadyBeepDone) {            //if 'ready' beep not yet done
+            beeper(BEEPER_READY_BEEP);      //do ready beep now
+            gpsReadyBeepDone = true;        //only beep once
         }
     } else {
         if (FLIGHT_MODE(GPS_HOLD_MODE | GPS_HOME_MODE)) {

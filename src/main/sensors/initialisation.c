@@ -76,18 +76,26 @@ uint8_t detectedSensors[MAX_SENSORS_TO_DETECT] = { GYRO_NONE, ACC_NONE, BARO_NON
 const mpu6050Config_t *selectMPU6050Config(void)
 {
 #ifdef NAZE
-    // MPU_INT output on rev4/5 hardware (PB13, PC13)
+    // MPU_INT output on rev4 PB13
     static const mpu6050Config_t nazeRev4MPU6050Config = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
             .gpioPort = GPIOB,
-            .gpioPin = Pin_13
+            .gpioPin = Pin_13,
+            .exti_port_source = GPIO_PortSourceGPIOB,
+            .exti_pin_source = GPIO_PinSource13,
+            .exti_line = EXTI_Line13,
+            .exti_irqn = EXTI15_10_IRQn
     };
+    // MPU_INT output on rev5 hardware PC13
     static const mpu6050Config_t nazeRev5MPU6050Config = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
             .gpioPort = GPIOC,
-            .gpioPin = Pin_13
+            .gpioPin = Pin_13,
+            .exti_port_source = GPIO_PortSourceGPIOC,
+            .exti_pin_source = GPIO_PinSource13,
+            .exti_line = EXTI_Line13,
+            .exti_irqn = EXTI15_10_IRQn
     };
-
 
     if (hardwareRevision < NAZE32_REV5) {
         return &nazeRev4MPU6050Config;
@@ -100,10 +108,15 @@ const mpu6050Config_t *selectMPU6050Config(void)
     static const mpu6050Config_t spRacingF3MPU6050Config = {
             .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
             .gpioPort = GPIOC,
-            .gpioPin = Pin_13
+            .gpioPin = Pin_13,
+            .exti_port_source = EXTI_PortSourceGPIOC,
+            .exti_pin_source = EXTI_PinSource13,
+            .exti_line = EXTI_Line13,
+            .exti_irqn = EXTI15_10_IRQn
     };
     return &spRacingF3MPU6050Config;
 #endif
+
     return NULL;
 }
 
@@ -463,12 +476,26 @@ static void detectMag(magSensor_e magHardwareToUse)
     static const hmc5883Config_t nazeHmc5883Config_v1_v4 = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
             .gpioPin = Pin_12,
-            .gpioPort = GPIOB
+            .gpioPort = GPIOB,
+
+            .exti_port_source = 0,
+            .exti_pin_source = 0
+
+            /* Disabled for v4 needs more work.
+            .exti_port_source = GPIO_PortSourceGPIOB,
+            .exti_pin_source = GPIO_PinSource12,
+            .exti_line = EXTI_Line12,
+            .exti_irqn = EXTI15_10_IRQn
+            */
     };
     static const hmc5883Config_t nazeHmc5883Config_v5 = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
             .gpioPin = Pin_14,
-            .gpioPort = GPIOC
+            .gpioPort = GPIOC,
+            .exti_port_source = GPIO_PortSourceGPIOC,
+            .exti_pin_source = GPIO_PinSource14,
+            .exti_line = EXTI_Line14,
+            .exti_irqn = EXTI15_10_IRQn
     };
     if (hardwareRevision < NAZE32_REV5) {
         hmc5883Config = &nazeHmc5883Config_v1_v4;
@@ -481,7 +508,11 @@ static void detectMag(magSensor_e magHardwareToUse)
     static const hmc5883Config_t spRacingF3Hmc5883Config = {
         .gpioAHBPeripherals = RCC_AHBPeriph_GPIOC,
         .gpioPin = Pin_14,
-        .gpioPort = GPIOC
+        .gpioPort = GPIOC,
+        .exti_port_source = EXTI_PortSourceGPIOC,
+        .exti_pin_source = EXTI_PinSource14,
+        .exti_line = EXTI_Line14,
+        .exti_irqn = EXTI15_10_IRQn
     };
 
     hmc5883Config = &spRacingF3Hmc5883Config;

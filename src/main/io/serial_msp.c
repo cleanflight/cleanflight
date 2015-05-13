@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "build_config.h"
+#include "debug.h"
 
 #include "platform.h"
 
@@ -89,7 +90,6 @@ static serialPort_t *mspSerialPort;
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
-extern int16_t debug[4]; // FIXME dependency on mw.c
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
 
@@ -229,6 +229,8 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_LOOP_TIME                   73 //out message         Returns FC cycle time i.e looptime parameter
 #define MSP_SET_LOOP_TIME               74 //in message          Sets FC cycle time i.e looptime parameter
 
+#define MSP_FAILSAFE_CONFIG             75 //out message         Returns FC Fail-Safe settings
+#define MSP_SET_FAILSAFE_CONFIG         76 //in message          Sets FC Fail-Safe settings
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -281,7 +283,7 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
 #define MSP_SET_PID              202    //in message          P I D coeff (9 are used currently)
 #define MSP_SET_BOX              203    //in message          BOX setup (number is dependant of your setup)
-#define MSP_SET_RC_TUNING        204    //in message          rc rate, rc expo, rollpitch rate, yaw rate, dyn throttle PID
+#define MSP_SET_RC_TUNING        204    //in message          rc rate, rc expo, rollpitch rate, yaw rate, dyn throttle PID, yaw expo
 #define MSP_ACC_CALIBRATION      205    //in message          no param
 #define MSP_MAG_CALIBRATION      206    //in message          no param
 #define MSP_SET_MISC             207    //in message          powermeter trig + 8 free for future use
@@ -844,7 +846,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         s_struct((uint8_t *)&servo, 16);
         break;
     case MSP_SERVO_CONF:
-        headSerialReply(72);
+        headSerialReply(MAX_SUPPORTED_SERVOS * 9);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize16(currentProfile->servoConf[i].min);
             serialize16(currentProfile->servoConf[i].max);
@@ -918,7 +920,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.looptime);
         break;
     case MSP_RC_TUNING:
-        headSerialReply(10);
+        headSerialReply(11);
         serialize8(currentControlRateProfile->rcRate8);
         serialize8(currentControlRateProfile->rcExpo8);
         for (i = 0 ; i < 3; i++) {
@@ -928,6 +930,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(currentControlRateProfile->thrMid8);
         serialize8(currentControlRateProfile->thrExpo8);
         serialize16(currentControlRateProfile->tpa_breakpoint);
+        serialize8(currentControlRateProfile->rcYawExpo8);
         break;
     case MSP_PID:
         headSerialReply(3 * PID_ITEM_COUNT);
@@ -1015,7 +1018,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.escAndServoConfig.maxthrottle);
         serialize16(masterConfig.escAndServoConfig.mincommand);
 
-        serialize16(currentProfile->failsafeConfig.failsafe_throttle);
+        serialize16(masterConfig.failsafeConfig.failsafe_throttle);
 
 #ifdef GPS
         serialize8(masterConfig.gpsConfig.provider); // gps_type
@@ -1089,10 +1092,12 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 #endif
     case MSP_DEBUG:
-        headSerialReply(8);
-        // make use of this crap, output some useful QA statistics
-        //debug[3] = ((hse_value / 1000000) * 1000) + (SystemCoreClock / 1000000);         // XX0YY [crystal clock : core clock]
-        for (i = 0; i < 4; i++)
+        headSerialReply(DEBUG16_VALUE_COUNT * sizeof(debug[0]));
+
+        // output some useful QA statistics
+        // debug[x] = ((hse_value / 1000000) * 1000) + (SystemCoreClock / 1000000);         // XX0YY [crystal clock : core clock]
+
+        for (i = 0; i < DEBUG16_VALUE_COUNT; i++)
             serialize16(debug[i]);      // 4 variables are here for general monitoring purpose
         break;
 
@@ -1144,12 +1149,21 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 
     case MSP_RX_CONFIG:
-        headSerialReply(8);
+        headSerialReply(12);
         serialize8(masterConfig.rxConfig.serialrx_provider);
         serialize16(masterConfig.rxConfig.maxcheck);
         serialize16(masterConfig.rxConfig.midrc);
         serialize16(masterConfig.rxConfig.mincheck);
         serialize8(masterConfig.rxConfig.spektrum_sat_bind);
+        serialize16(masterConfig.rxConfig.rx_min_usec);
+        serialize16(masterConfig.rxConfig.rx_max_usec);
+        break;
+
+    case MSP_FAILSAFE_CONFIG:
+        headSerialReply(4);
+        serialize8(masterConfig.failsafeConfig.failsafe_delay);
+        serialize8(masterConfig.failsafeConfig.failsafe_off_delay);
+        serialize16(masterConfig.failsafeConfig.failsafe_throttle);
         break;
 
     case MSP_RSSI_CONFIG:
@@ -1363,7 +1377,7 @@ static bool processInCommand(void)
         break;
 
     case MSP_SET_RC_TUNING:
-        if (currentPort->dataSize == 10) {//allow for tpa_breakpoint
+        if (currentPort->dataSize >= 10) {
             currentControlRateProfile->rcRate8 = read8();
             currentControlRateProfile->rcExpo8 = read8();
             for (i = 0; i < 3; i++) {
@@ -1375,6 +1389,9 @@ static bool processInCommand(void)
             currentControlRateProfile->thrMid8 = read8();
             currentControlRateProfile->thrExpo8 = read8();
             currentControlRateProfile->tpa_breakpoint = read16();
+            if (currentPort->dataSize >= 11) {
+                currentControlRateProfile->rcYawExpo8 = read8();
+            }
         } else {
             headSerialError(0);
         }
@@ -1388,7 +1405,7 @@ static bool processInCommand(void)
         masterConfig.escAndServoConfig.maxthrottle = read16();
         masterConfig.escAndServoConfig.mincommand = read16();
 
-        currentProfile->failsafeConfig.failsafe_throttle = read16();
+        masterConfig.failsafeConfig.failsafe_throttle = read16();
 
 #ifdef GPS
         masterConfig.gpsConfig.provider = read8(); // gps_type
@@ -1556,6 +1573,16 @@ static bool processInCommand(void)
         masterConfig.rxConfig.midrc = read16();
         masterConfig.rxConfig.mincheck = read16();
         masterConfig.rxConfig.spektrum_sat_bind = read8();
+        if (currentPort->dataSize > 8) {
+            masterConfig.rxConfig.rx_min_usec = read16();
+            masterConfig.rxConfig.rx_max_usec = read16();
+        }
+        break;
+
+    case MSP_SET_FAILSAFE_CONFIG:
+        masterConfig.failsafeConfig.failsafe_delay = read8();
+        masterConfig.failsafeConfig.failsafe_off_delay = read8();
+        masterConfig.failsafeConfig.failsafe_throttle = read16();
         break;
 
     case MSP_SET_RSSI_CONFIG:

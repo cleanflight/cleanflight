@@ -21,6 +21,7 @@
 #include <math.h>
 
 #include "platform.h"
+#include "debug.h"
 
 #include "build_config.h"
 
@@ -57,6 +58,7 @@
 #define TILTING_SERVO 0
 
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
+
 
 extern int16_t debug[4];
 
@@ -652,9 +654,9 @@ void mixTable(void)
 
     mixTilting();
 
-    if (motorCount > 3) {
-        // prevent "yaw jump" during yaw correction
-        axisPID[YAW] = constrain(axisPID[YAW], -100 - ABS(rcCommand[YAW]), +100 + ABS(rcCommand[YAW]));
+    if (motorCount >= 4 &&  mixerConfig->yaw_jump_prevention_limit < 500) {
+        // prevent "yaw jump" during yaw correction (500 is disabled jump protection)
+        axisPID[YAW] = constrain(axisPID[YAW], -mixerConfig->yaw_jump_prevention_limit - ABS(rcCommand[YAW]), mixerConfig->yaw_jump_prevention_limit + ABS(rcCommand[YAW]));
     }
 
     // motors for non-servo mixes

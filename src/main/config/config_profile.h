@@ -55,9 +55,6 @@ typedef struct profile_s {
     tiltArmConfig_t tiltArm;
 #endif
 
-    // Failsafe related configuration
-    failsafeConfig_t failsafeConfig;
-
 #ifdef GPS
     gpsProfile_t gpsProfile;
 #endif

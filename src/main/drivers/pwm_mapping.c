@@ -375,6 +375,35 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
             continue;
 #endif
 
+#if defined(STM32F303xC) && defined(USE_USART3)
+        // skip UART3 ports (PB10/PB11)
+        if (init->useUART3 && timerHardwarePtr->gpio == UART3_GPIO && (timerHardwarePtr->pin == UART3_TX_PIN || timerHardwarePtr->pin == UART3_RX_PIN))
+            continue;
+#endif
+
+#ifdef SONAR
+        // skip Sonar pins
+        // FIXME - Hack - See sonar.c sonarInit() and sonarHardware_t
+        if (init->useSonar && timerHardwarePtr->gpio == GPIOB) {
+#if defined(SPRACINGF3) || defined(OLIMEXINO)
+            if (timerHardwarePtr->pin == GPIO_Pin_0 || timerHardwarePtr->pin == GPIO_Pin_1) {
+                continue;
+            }
+#endif
+#if defined(NAZE)
+            if (init->useParallelPWM) {
+                if (timerHardwarePtr->pin == GPIO_Pin_8 || timerHardwarePtr->pin == GPIO_Pin_9) {
+                    continue;
+                }
+            } else {
+                if (timerHardwarePtr->pin == GPIO_Pin_0 || timerHardwarePtr->pin == GPIO_Pin_1) {
+                    continue;
+                }
+            }
+#endif
+        }
+#endif
+
 #ifdef SOFTSERIAL_1_TIMER
         if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_1_TIMER)
             continue;
@@ -486,6 +515,11 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #ifdef CC3D
             if (init->useOneshot) {
                 ppmAvoidPWMTimerClash(timerHardwarePtr, TIM4);
+            }
+#endif
+#ifdef SPARKY
+            if (init->useOneshot) {
+                ppmAvoidPWMTimerClash(timerHardwarePtr, TIM2);
             }
 #endif
             ppmInConfig(timerHardwarePtr);

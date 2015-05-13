@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "platform.h"
+#include "build_config.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -37,7 +38,7 @@
 
 static int32_t calculatedAltitude;
 
-void sonarInit(void)
+void sonarInit(batteryConfig_t *batteryConfig)
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
     static const sonarHardware_t const sonarPWM56 = {
@@ -54,13 +55,14 @@ void sonarInit(void)
         .exti_pin_source = GPIO_PinSource1,
         .exti_irqn = EXTI1_IRQn
     };
-    // If we are using parallel PWM for our receiver, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
-    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+    // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
+    if (feature(FEATURE_RX_PARALLEL_PWM ) || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC) ) {
         hcsr04_init(&sonarPWM56);
     } else {
         hcsr04_init(&sonarRC78);
     }
 #elif defined(OLIMEXINO)
+    UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echo_pin = Pin_1,      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
@@ -70,6 +72,7 @@ void sonarInit(void)
     };
     hcsr04_init(&sonarHardware);
 #elif defined(SPRACINGF3)
+    UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echo_pin = Pin_1,      // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
@@ -91,11 +94,20 @@ void sonarUpdate(void)
     hcsr04_start_reading();
 }
 
+/**
+ * Get the last distance measured by the sonar in centimeters. When the ground is too far away, -1 is returned instead.
+ */
 int32_t sonarRead(void)
 {
     return hcsr04_get_distance();
 }
 
+/**
+ * Apply tilt correction to the given raw sonar reading in order to compensate for the tilt of the craft when estimating
+ * the altitude. Returns the computed altitude in centimeters.
+ *
+ * When the ground is too far away or the tilt is too strong, -1 is returned instead.
+ */
 int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle)
 {
     // calculate sonar altitude only if the sonar is facing downwards(<25deg)
@@ -107,6 +119,10 @@ int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle)
     return calculatedAltitude;
 }
 
+/**
+ * Get the latest altitude that was computed by a call to sonarCalculateAltitude(), or -1 if sonarCalculateAltitude
+ * has never been called.
+ */
 int32_t sonarGetLatestAltitude(void)
 {
     return calculatedAltitude;

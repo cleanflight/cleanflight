@@ -38,7 +38,6 @@
 #include "drivers/pwm_rx.h"
 #include "drivers/accgyro.h"
 #include "drivers/light_led.h"
-#include "drivers/sound_beeper.h"
 
 #include "sensors/sensors.h"
 #include "sensors/boardalignment.h"
@@ -199,6 +198,9 @@ static const blackboxMainFieldDefinition_t blackboxMainFields[] = {
 #ifdef BARO
     {"BaroAlt",    -1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_BARO},
 #endif
+#ifdef SONAR
+    {"sonarRaw",   -1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_8SVB), FLIGHT_LOG_FIELD_CONDITION_SONAR},
+#endif
 
     /* Gyros and accelerometers base their P-predictions on the average of the previous 2 frames to reduce noise impact */
     {"gyroData",   0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(AVERAGE_2),     .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
@@ -325,7 +327,11 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0:
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_1:
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_2:
-            return currentProfile->pidProfile.D8[condition - FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0] != 0;
+            if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
+                return currentProfile->pidProfile.D_f[condition - FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0] != 0;
+            } else {
+                return currentProfile->pidProfile.D8[condition - FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0] != 0;
+            }
 
         case FLIGHT_LOG_FIELD_CONDITION_MAG:
 #ifdef MAG
@@ -346,6 +352,13 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
 
         case FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC:
             return feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC;
+
+        case FLIGHT_LOG_FIELD_CONDITION_SONAR:
+#ifdef SONAR
+            return feature(FEATURE_SONAR);
+#else
+            return false;
+#endif
 
         case FLIGHT_LOG_FIELD_CONDITION_NOT_LOGGING_EVERY_FRAME:
             return masterConfig.blackbox_rate_num < masterConfig.blackbox_rate_denom;
@@ -466,6 +479,12 @@ static void writeIntraframe(void)
         }
 #endif
 
+#ifdef SONAR
+        if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_SONAR)) {
+            blackboxWriteSignedVB(blackboxCurrent->sonarRaw);
+        }
+#endif
+
     for (x = 0; x < XYZ_AXIS_COUNT; x++) {
         blackboxWriteSignedVB(blackboxCurrent->gyroData[x]);
     }
@@ -548,7 +567,7 @@ static void writeInterframe(void)
 
     blackboxWriteTag8_4S16(deltas);
 
-    //Check for sensors that are updated periodically (so deltas are normally zero) VBAT, Amperage, MAG, BARO
+    //Check for sensors that are updated periodically (so deltas are normally zero)
     int optionalFieldCount = 0;
 
     if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_VBAT)) {
@@ -572,6 +591,13 @@ static void writeInterframe(void)
         deltas[optionalFieldCount++] = blackboxCurrent->BaroAlt - blackboxLast->BaroAlt;
     }
 #endif
+
+#ifdef SONAR
+    if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_SONAR)) {
+        deltas[optionalFieldCount++] = blackboxCurrent->sonarRaw - blackboxLast->sonarRaw;
+    }
+#endif
+
     blackboxWriteTag8_8SVB(deltas, optionalFieldCount);
 
     //Since gyros, accs and motors are noisy, base the prediction on the average of the history:
@@ -771,6 +797,11 @@ static void loadBlackboxState(void)
 
 #ifdef BARO
     blackboxCurrent->BaroAlt = BaroAlt;
+#endif
+
+#ifdef SONAR
+    // Store the raw sonar value without applying tilt correction
+    blackboxCurrent->sonarRaw = sonarRead();
 #endif
 
 #ifdef USE_SERVOS
@@ -982,22 +1013,15 @@ void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
     }
 }
 
-// Beep the buzzer and write the current time to the log as a synchronization point
-static void blackboxPlaySyncBeep()
+// Write the time of the last arming beep to the log as a synchronization point
+static void blackboxLogArmingBeep()
 {
     flightLogEvent_syncBeep_t eventData;
 
-    eventData.time = micros();
+    // Get time of last arming beep (in system-uptime microseconds)
+    eventData.time = getArmingBeepTimeMicros();
 
-    /*
-     * The regular beep routines aren't going to work for us, because they queue up the beep to be executed later.
-     * Our beep is timing sensitive, so start beeping now without setting the beeperIsOn flag.
-     */
-    BEEP_ON;
-
-    // Have the regular beeper code turn off the beep for us eventually, since that's not timing-sensitive
-    queueConfirmationBeep(1);
-
+    // Write the time to the log
     blackboxLogEvent(FLIGHT_LOG_EVENT_SYNC_BEEP, (flightLogEventData_t *) &eventData);
 }
 
@@ -1065,7 +1089,7 @@ void handleBlackbox(void)
         case BLACKBOX_STATE_PRERUN:
             blackboxSetState(BLACKBOX_STATE_RUNNING);
 
-            blackboxPlaySyncBeep();
+            blackboxLogArmingBeep();
         break;
         case BLACKBOX_STATE_RUNNING:
             // On entry to this state, blackboxIteration, blackboxPFrameIndex and blackboxIFrameIndex are reset to 0

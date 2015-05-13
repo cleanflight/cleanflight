@@ -88,10 +88,8 @@
 #endif
 
 #include "build_config.h"
+#include "debug.h"
 
-#ifdef DEBUG_SECTION_TIMES
-uint32_t sectionTimes[2][4];
-#endif
 extern uint32_t previousTime;
 
 #ifdef SOFTSERIAL_LOOPBACK
@@ -109,7 +107,6 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
 void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMixers);
 void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
 void rxInit(rxConfig_t *rxConfig);
-void beepcodeInit(void);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
 bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
@@ -205,6 +202,9 @@ void init(void)
 #if defined(USE_USART2) && defined(STM32F10X)
     pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
 #endif
+#ifdef STM32F303xC
+    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_USART3);
+#endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
@@ -214,6 +214,9 @@ void init(void)
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
     pwm_params.useSerialRx = feature(FEATURE_RX_SERIAL);
+#ifdef SONAR
+    pwm_params.useSonar = feature(FEATURE_SONAR);
+#endif
 
 #ifdef USE_SERVOS
     pwm_params.useServos = isMixerUsingServos();
@@ -349,8 +352,6 @@ void init(void)
 
     failsafeInit(&masterConfig.rxConfig);
 
-    beepcodeInit();
-
     rxInit(&masterConfig.rxConfig);
 
 #ifdef GPS
@@ -368,7 +369,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit();
+        sonarInit(&masterConfig.batteryConfig);
     }
 #endif
 

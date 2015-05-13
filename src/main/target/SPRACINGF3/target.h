@@ -30,6 +30,15 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 17
 
+#define EXTI15_10_CALLBACK_HANDLER_COUNT 2 // MPU data ready and MAG data ready
+
+#define USE_MPU_DATA_READY_SIGNAL
+#define ENSURE_MPU_DATA_READY_IS_LOW
+
+#define USE_MAG_DATA_READY_SIGNAL
+#define ENSURE_MAG_DATA_READY_IS_HIGH
+
+
 #define GYRO
 #define USE_GYRO_MPU6050
 #define GYRO_MPU6050_ALIGN CW270_DEG
@@ -104,6 +113,8 @@
 #define M25P16_SPI_INSTANCE     SPI2
 
 #define USE_ADC
+#define BOARD_HAS_VOLTAGE_DIVIDER
+
 
 #define ADC_INSTANCE                ADC2
 #define ADC_DMA_CHANNEL             DMA2_Channel1
