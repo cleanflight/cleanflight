@@ -58,6 +58,7 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 #include "rx/msp.h"
@@ -788,10 +789,10 @@ void loop(void)
 #endif
 
         //TODO: is good here?
-        if (masterConfig.mixerMode == MIXER_QUADX_TILT_PITCH || masterConfig.mixerMode == MIXER_QUADX_TILT_ALL) {
+        if (masterConfig.mixerMode == MIXER_QUADX_TILT && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH) ) {
        	    // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
        	    if (rcData[AUX1] <= masterConfig.rxConfig.midrc) {
-       	        rcCommand[PITCH] /= 10; //neutral
+       	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior; //neutral
        	    }
        	}
 

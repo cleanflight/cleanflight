@@ -40,6 +40,7 @@
 #include "io/gimbal.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
+#include "io/tilt_arm_control.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -92,11 +93,7 @@ typedef enum {
 
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
-<<<<<<< HEAD
 //#define MIXER_DEBUG
-=======
-extern int16_t debug[4];
->>>>>>> bug fixing on the field
 
 uint8_t motorCount = 0;
 int16_t motor[MAX_SUPPORTED_MOTORS];
@@ -107,6 +104,7 @@ static flight3DConfig_t *flight3DConfig;
 static escAndServoConfig_t *escAndServoConfig;
 static airplaneConfig_t *airplaneConfig;
 static rxConfig_t *rxConfig;
+static tiltArmConfig_t *tiltArmConfig;
 
 static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 static mixerMode_e currentMixerMode;
@@ -281,6 +279,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         gimbalConfig_t *gimbalConfigToUse,
+		tiltArmConfig_t *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
         escAndServoConfig_t *escAndServoConfigToUse,
@@ -291,6 +290,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
     servoConf = servoConfToUse;
     gimbalConfig = gimbalConfigToUse;
+    tiltArmConfig = tiltArmConfigToUse;
 #endif
     flight3DConfig = flight3DConfigToUse;
     escAndServoConfig = escAndServoConfigToUse;
@@ -511,10 +511,6 @@ void writeServos(void)
             break;
 
         case MIXER_QUADX_TILT:
-        case MIXER_QUADX_TILT_COS:
-        case MIXER_QUADX_TILT_THRUST:
-        case MIXER_QUADX_TILT_PITCH:
-        case MIXER_QUADX_TILT_ALL:
             servoTilting();
             break;
 
@@ -635,9 +631,9 @@ float getTiltAngle(void) {
 
     //convert to radiant, keep eventual non-linearity of range
     if (userInput >= rxConfig->midrc){
-    	return scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+    	return scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].angleAtMax) );
     }else{
-    	return scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, degreesToRadians(servoConf[TILTING_SERVO].minLimit), 0 );
+    	return scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, -degreesToRadians(servoConf[TILTING_SERVO].angleAtMin), 0 );
     }
 }
 
@@ -648,9 +644,6 @@ void servoTilting(void) {
     if (servoConf[TILTING_SERVO].rate & 1){
         actualTilt *= -1;
     }
-
-    //limit servo escursion
-    actualTilt = constrainf( actualTilt, degreesToRadians(servoConf[TILTING_SERVO].minLimit), degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
     if (actualTilt > 0){
@@ -673,15 +666,19 @@ void mixTilting(void) {
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
-    if (currentMixerMode == MIXER_QUADX_TILT_THRUST || currentMixerMode == MIXER_QUADX_TILT_ALL) {
+    if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
-        rcCommand[THROTTLE] += ((rcCommand[THROTTLE]-1000) * tmpSine) * ((rcData[AUX2]-1000)/1000.0f);
+    	uint16_t liftOffTrust = rcCommand[THROTTLE] - rxConfig->mincheck - (rxConfig->mincheck * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
+    	float compensation = liftOffTrust * ABS(tmpSine); //absolute value because we want do compensate always
+    	if (compensation > 0){
+    		rcCommand[THROTTLE] += compensation;
+    	}
     }
 
-    if (currentMixerMode == MIXER_QUADX_TILT_COS
-            || currentMixerMode == MIXER_QUADX_TILT_ALL) {
+    //compensate the roll and yaw because motor orientation
+    if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
 
-        //***** quick and dirty compensation to test *****
+        // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
         float rollCompensationInv = axisPID[ROLL] - rollCompensation;
         float yawCompensation = axisPID[YAW] * tmpCosine;
@@ -722,11 +719,7 @@ void mixTable(void)
         yawDirection3D = -1;
     }
 
-    if (currentMixerMode == MIXER_QUADX_TILT
-            || currentMixerMode == MIXER_QUADX_TILT_ALL
-            || currentMixerMode == MIXER_QUADX_TILT_COS
-            || currentMixerMode == MIXER_QUADX_TILT_PITCH
-            || currentMixerMode == MIXER_QUADX_TILT_THRUST) {
+    if (currentMixerMode == MIXER_QUADX_TILT) {
         mixTilting();
     }
 

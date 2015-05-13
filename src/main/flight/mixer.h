@@ -49,11 +49,7 @@ typedef enum mixerMode
     MIXER_SINGLECOPTER = 21,
     MIXER_ATAIL4 = 22,
     MIXER_QUADX_TILT = 23,
-    MIXER_QUADX_TILT_COS = 24,
-    MIXER_QUADX_TILT_THRUST = 25,
-    MIXER_QUADX_TILT_PITCH = 26,
-    MIXER_QUADX_TILT_ALL = 27,
-    MIXER_CUSTOM = 28
+    MIXER_CUSTOM = 24
 } mixerMode_e;
 
 // Custom mixer data per motor
@@ -110,6 +106,7 @@ typedef struct servoParam_t {
 struct gimbalConfig_s;
 struct escAndServoConfig_s;
 struct rxConfig_s;
+struct tiltArmConfig_s;
 
 extern int16_t servo[MAX_SUPPORTED_SERVOS];
 bool isMixerUsingServos(void);
@@ -124,6 +121,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         struct gimbalConfig_s *gimbalConfigToUse,
+        struct tiltArmConfig_s *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
 		struct escAndServoConfig_s *escAndServoConfigToUse,

@@ -52,6 +52,7 @@
 #include "io/rc_curves.h"
 #include "io/ledstrip.h"
 #include "io/gps.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 
@@ -318,6 +319,12 @@ void resetMixerConfig(mixerConfig_t *mixerConfig) {
 #endif
 }
 
+void resetTiltArmProfile(tiltArmConfig_t *tiltConfig){
+	tiltConfig->flagEnabled = 0;
+	tiltConfig->pitchDivisior = 1;
+	tiltConfig->thrustLiftoff = 0;
+}
+
 uint8_t getCurrentProfile(void)
 {
     return masterConfig.current_profile_index;
@@ -491,6 +498,8 @@ static void resetConf(void)
     // gimbal
     currentProfile->gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
 #endif
+
+    resetTiltArmProfile(&currentProfile->tiltArm);
 
 #ifdef GPS
     resetGpsProfile(&currentProfile->gpsProfile);
@@ -681,6 +690,7 @@ void activateConfig(void)
 #ifdef USE_SERVOS
         currentProfile->servoConf,
         &currentProfile->gimbalConfig,
+		&currentProfile->tiltArm,
 #endif
         &masterConfig.flight3DConfig,
         &masterConfig.escAndServoConfig,
@@ -718,9 +728,7 @@ void activateConfig(void)
 void validateAndFixConfig(void)
 {
 
-    if (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_QUADX_TILT_THRUST ||
-            masterConfig.mixerMode == MIXER_QUADX_TILT_PITCH || masterConfig.mixerMode == MIXER_QUADX_TILT_COS ||
-            masterConfig.mixerMode == MIXER_QUADX_TILT_ALL ){
+    if (masterConfig.mixerMode == MIXER_QUADX_TILT ){
         //prevent conflict; tilting quad and camstab/trig share Servo
         featureClear(FEATURE_SERVO_TILT);
     }
