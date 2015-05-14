@@ -993,8 +993,8 @@ void timerInit(void)
 
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource1, GPIO_AF_TIM3);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource0, GPIO_AF_TIM3);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_TIM5);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_TIM5);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_TIM2);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_TIM2);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_TIM5);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_TIM5);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_TIM2);
