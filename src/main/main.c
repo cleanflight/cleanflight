@@ -168,6 +168,8 @@ void init(void)
 
     systemInit();
 
+    oneshotFeatureChangedDelay();
+
     ledInit();
 
 #ifdef SPEKTRUM_BIND

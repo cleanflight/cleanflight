@@ -19,6 +19,7 @@
 
 #define MAX_PROFILE_COUNT 3
 #define MAX_CONTROL_RATE_PROFILE_COUNT 3
+#define ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS 1500
 
 
 typedef enum {
@@ -59,6 +60,7 @@ void readEEPROMAndNotify(void);
 void writeEEPROM();
 void ensureEEPROMContainsValidData(void);
 void saveConfigAndNotify(void);
+void oneshotFeatureChangedDelay(void);
 
 uint8_t getCurrentProfile(void);
 void changeProfile(uint8_t profileIndex);
