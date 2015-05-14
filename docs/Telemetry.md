@@ -83,6 +83,8 @@ As noticed by Skrebber the GR-12 (and probably GR-16/24, too) are based on a PIC
 
 Note: The SoftSerial ports may not be 5V tolerant on your board.  Verify if you require a 5v/3.3v level shifters.
 
+The serial port baudrate for HoTT telemetry should be set to 19200 in cleanflight configurator.
+
 ## MultiWii Serial Protocol (MSP)
 
 MSP Telemetry simply transmits MSP packets in sequence to any MSP device attached to the telemetry port.  It rotates though a fixes sequence of command responses.
