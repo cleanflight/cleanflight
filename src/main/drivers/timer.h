@@ -74,6 +74,10 @@ typedef struct {
     uint8_t gpioPinSource;             // TODO - this can be removed and pinSource calculated from pin
     uint8_t alternateFunction;
 #endif
+#ifdef STM32F40_41xxx
+    uint8_t gpioPinSource;             // TODO - this can be removed and pinSource calculated from pin
+    uint8_t alternateFunction;
+#endif
 } timerHardware_t;
 
 extern const timerHardware_t timerHardware[];
