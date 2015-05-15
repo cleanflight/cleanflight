@@ -854,17 +854,19 @@ void readEEPROM(void)
 
     setControlRateProfile(currentProfile->defaultRateProfileIndex);
 
-    oneshotFeatureChangedDelayTime = 0;
     if (firstCallByInit && isMPUSoftReset()) {
         firstCallByInit = false;
-        // When OneShot125 feature changed state, apply an additional boot delay with PWM OFF
-        if ((masterConfig.enabledFeatures ^ readDesiredFeatures()) & FEATURE_ONESHOT125) {
-            oneshotFeatureChangedDelayTime = ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS;
+        uint32_t deltaFeatures = masterConfig.enabledFeatures ^ readDesiredFeatures();
+        if (deltaFeatures) {
+            // When OneShot125 feature changed state, apply an additional boot delay with PWM OFF
+            if (deltaFeatures & FEATURE_ONESHOT125) {
+                oneshotFeatureChangedDelayTime = ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS;
+            }
+            // Copy desired features (latched before soft reset) into the working featureset on first call from init
+            masterConfig.enabledFeatures = readDesiredFeatures();
+            // Write modified enabled features to EEPROM
+            writeEEPROM();
         }
-        // Copy desired features (latched before soft reset) into the working featureset on first call from init
-        masterConfig.enabledFeatures = readDesiredFeatures();
-        // Write (possibly modified) enabled features to EEPROM
-        writeEEPROM();
     }
 
     validateAndFixConfig();
