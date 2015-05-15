@@ -259,6 +259,7 @@ const clivalue_t valueTable[] = {
     { "max_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.maxcheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "rssi_channel",               VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_channel, 0, MAX_SUPPORTED_RC_CHANNEL_COUNT },
     { "rssi_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
+    { "rssi_ppm_invert",            VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_ppm_invert, 0, 1 },
     { "input_filtering_mode",       VAR_INT8   | MASTER_VALUE,  &masterConfig.inputFilteringMode, 0, 1 },
 
     { "min_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.minthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
@@ -1644,7 +1645,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Cleanflight/%s %s %s / %s (%s)",
+    printf("# Cleanflight/%s %s %s / %s (%s)",
         targetName,
         FC_VERSION_STRING,
         buildDate,
@@ -1710,14 +1711,21 @@ void cliProcess(void)
             clicmd_t target;
             cliPrint("\r\n");
 
+            // Strip comment starting with # from line
+            char *p = cliBuffer;
+            p = strchr(p, '#');
+            if (NULL != p) {
+                bufferIndex = (uint32_t)(p - cliBuffer);
+            }
+
             // Strip trailing whitespace
             while (bufferIndex > 0 && cliBuffer[bufferIndex - 1] == ' ') {
                 bufferIndex--;
             }
 
-            cliBuffer[bufferIndex] = 0; // null terminate
-
-            if (cliBuffer[0] != '#') {
+            // Process non-empty lines
+            if (bufferIndex > 0) {
+                cliBuffer[bufferIndex] = 0; // null terminate
                 target.name = cliBuffer;
                 target.param = NULL;
 
@@ -1726,10 +1734,10 @@ void cliProcess(void)
                     cmd->func(cliBuffer + strlen(cmd->name) + 1);
                 else
                     cliPrint("Unknown command, try 'help'");
+                bufferIndex = 0;
             }
 
             memset(cliBuffer, 0, sizeof(cliBuffer));
-            bufferIndex = 0;
 
             // 'exit' will reset this flag, so we don't need to print prompt again
             if (!cliMode)

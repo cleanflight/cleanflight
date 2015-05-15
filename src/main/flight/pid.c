@@ -55,7 +55,8 @@ int16_t axisPID[3];
 int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 #endif
 
-uint8_t dynP8[3], dynI8[3], dynD8[3];
+// PIDweight is a scale factor for PIDs which is derived from the throttle and TPA setting, and 100 = 100% scale means no PID reduction
+uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
 
 static int32_t errorGyroI[3] = { 0, 0, 0 };
 static float errorGyroIf[3] = { 0.0f, 0.0f, 0.0f };
@@ -182,9 +183,9 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         RateError = AngleRate - gyroRate;
 
         // -----calculate P component
-        PTerm = RateError * pidProfile->P_f[axis];
-        // -----calculate I component
-        errorGyroIf[axis] = constrainf(errorGyroIf[axis] + RateError * dT * pidProfile->I_f[axis] * 10, -250.0f, 250.0f);
+        PTerm = RateError * pidProfile->P_f[axis] * PIDweight[axis] / 100;
+        // -----calculate I component. Note that PIDweight is divided by 10, because it is simplified formule from the previous multiply by 10
+        errorGyroIf[axis] = constrainf(errorGyroIf[axis] + RateError * dT * pidProfile->I_f[axis] * PIDweight[axis] / 10, -250.0f, 250.0f);
 
         // limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
         // I coefficient (I8) moved before integration to make limiting independent from PID settings
@@ -201,7 +202,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
-        DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis], -300.0f, 300.0f);
+        DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
         axisPID[axis] = constrain(lrintf(PTerm + ITerm - DTerm), -1000, 1000);
@@ -659,6 +660,36 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     static int32_t lastError[3] = { 0, 0, 0 };
     int32_t AngleRateTmp, RateError;
 
+    int8_t horizonLevelStrength = 100;
+    int32_t stickPosAil, stickPosEle, mostDeflectedPos;
+
+    if (FLIGHT_MODE(HORIZON_MODE)) {
+
+        // Figure out the raw stick positions
+        stickPosAil = getRcStickDeflection(FD_ROLL, rxConfig->midrc);
+        stickPosEle = getRcStickDeflection(FD_PITCH, rxConfig->midrc);
+
+        if(ABS(stickPosAil) > ABS(stickPosEle)){
+            mostDeflectedPos = ABS(stickPosAil);
+        }
+        else {
+            mostDeflectedPos = ABS(stickPosEle);
+        }
+
+        // Progressively turn off the horizon self level strength as the stick is banged over
+        horizonLevelStrength = (500 - mostDeflectedPos) / 5;  // 100 at centre stick, 0 = max stick deflection
+
+        // PID D Level Term is used for Horizon Sensitivity. It is adjusted so the default value of 100 works pretty well.
+        // Default Level D term of 100 equals to 80% sensitivity and 125 and above is 100% sensitivity. It is scaled to prevent too much truncating n integers
+        if(pidProfile->D8[PIDLEVEL] == 0){
+            horizonLevelStrength = 0;
+        } else if (pidProfile->D8[PIDLEVEL] >= 125){
+        	horizonLevelStrength = 100;
+        } else {
+        	horizonLevelStrength = constrain((10 * (horizonLevelStrength - 100) * (10 * pidProfile->D8[PIDLEVEL] / 125) / 100) + 100, 0, 100);
+        }
+    }
+
     // ----------PID controller----------
     for (axis = 0; axis < 3; axis++) {
         uint8_t rate = controlRateConfig->rates[axis];
@@ -685,8 +716,8 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
             if (!FLIGHT_MODE(ANGLE_MODE)) { //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
                 AngleRateTmp = ((int32_t)(rate + 27) * rcCommand[axis]) >> 4;
                 if (FLIGHT_MODE(HORIZON_MODE)) {
-                    // mix up angle error to desired AngleRateTmp to add a little auto-level feel
-                    AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL]) >> 8;
+                    // mix up angle error to desired AngleRateTmp to add a little auto-level feel. horizonLevelStrength is scaled to the stick input
+                	AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL] * horizonLevelStrength / 100) >> 4;
                 }
             } else { // it's the ANGLE mode - control is angle based, so control loop is needed
                 AngleRateTmp = (errorAngle * pidProfile->P8[PIDLEVEL]) >> 4;
@@ -700,13 +731,13 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         RateError = AngleRateTmp - (gyroData[axis] / 4);
 
         // -----calculate P component
-        PTerm = (RateError * pidProfile->P8[axis]) >> 7;
+        PTerm = (RateError * pidProfile->P8[axis] * PIDweight[axis] / 100) >> 7;
         // -----calculate I component
         // there should be no division before accumulating the error to integrator, because the precision would be reduced.
         // Precision is critical, as I prevents from long-time drift. Thus, 32 bits integrator is used.
         // Time correction (to avoid different I scaling for different builds based on average cycle time)
         // is normalized to cycle time = 2048.
-        errorGyroI[axis] = errorGyroI[axis] + ((RateError * cycleTime) >> 11) * pidProfile->I8[axis];
+        errorGyroI[axis] = errorGyroI[axis] + ((RateError * cycleTime) >> 11) * pidProfile->I8[axis] * PIDweight[axis] / 100;
 
         // limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
         // I coefficient (I8) moved before integration to make limiting independent from PID settings
@@ -724,7 +755,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
-        DTerm = (deltaSum * pidProfile->D8[axis]) >> 8;
+        DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
         // -----calculate total PID output
         axisPID[axis] = PTerm + ITerm + DTerm;
