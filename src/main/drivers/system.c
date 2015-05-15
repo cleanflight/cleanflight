@@ -77,7 +77,7 @@ static uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
 // cached value of RCC->CSR
-uint32_t cacedRccCsrValue;
+uint32_t cachedRccCsrValue;
 
 static void cycleCounterInit(void)
 {
@@ -126,7 +126,7 @@ void systemInit(void)
 #endif
 
     // cache RCC->CSR value to use it in isMPUSoftreset() and others
-    cacedRccCsrValue = RCC->CSR;
+    cachedRccCsrValue = RCC->CSR;
     RCC_ClearFlag();
 
 

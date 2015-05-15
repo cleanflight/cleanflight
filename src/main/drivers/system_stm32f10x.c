@@ -56,7 +56,7 @@ void enableGPIOPowerUsageAndNoiseReductions(void)
 
 bool isMPUSoftReset(void)
 {
-    if (cacedRccCsrValue & RCC_CSR_SFTRSTF)
+    if (cachedRccCsrValue & RCC_CSR_SFTRSTF)
         return true;
     else
         return false;
