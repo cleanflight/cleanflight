@@ -1105,7 +1105,7 @@ static bool processOutCommand(uint8_t cmdMSP)
 
     case MSP_FEATURE:
         headSerialReply(4);
-        serialize32(featureMask());
+        serialize32(featureDesiredMask());
         break;
 
     case MSP_BOARD_ALIGNMENT:
@@ -1169,7 +1169,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         headSerialReply(1 + 4 + 1 + 2 + 2 + 2 + 2 + 2);
         serialize8(masterConfig.mixerMode);
 
-        serialize32(featureMask());
+        serialize32(featureDesiredMask());
 
         serialize8(masterConfig.rxConfig.serialrx_provider);
 
@@ -1512,8 +1512,8 @@ static bool processInCommand(void)
         break;
 #endif
     case MSP_SET_FEATURE:
-        featureClearAll();
-        featureSet(read32()); // features bitmap
+        featureDesiredClearAll();
+        featureDesiredSet(read32()); // features bitmap
         break;
 
     case MSP_SET_BOARD_ALIGNMENT:
@@ -1578,8 +1578,8 @@ static bool processInCommand(void)
         masterConfig.mixerMode = read8(); // mixerMode
 #endif
 
-        featureClearAll();
-        featureSet(read32()); // features bitmap
+        featureDesiredClearAll();
+        featureDesiredSet(read32()); // features bitmap
 
         masterConfig.rxConfig.serialrx_provider = read8(); // serialrx_type
 

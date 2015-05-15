@@ -46,10 +46,10 @@ typedef enum {
 } features_e;
 
 bool feature(uint32_t mask);
-void featureSet(uint32_t mask);
-void featureClear(uint32_t mask);
-void featureClearAll(void);
-uint32_t featureMask(void);
+void featureDesiredSet(uint32_t mask);
+void featureDesiredClear(uint32_t mask);
+void featureDesiredClearAll(void);
+uint32_t featureDesiredMask(void);
 
 void copyCurrentProfileToProfileSlot(uint8_t profileSlotIndex);
 

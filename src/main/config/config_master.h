@@ -25,7 +25,6 @@ typedef struct master_t {
 
     uint8_t mixerMode;
     uint32_t enabledFeatures;               // features that are currently enabled (working set)
-    uint32_t desiredFeatures;               // features to be enabled after reboot (feature latch)
     uint16_t looptime;                      // imu loop time in us
     uint8_t emf_avoidance;                   // change pll settings to avoid noise in the uhf band
 

@@ -1042,7 +1042,7 @@ static void cliDump(char *cmdline)
 
         cliPrint("\r\n\r\n# feature\r\n");
 
-        mask = featureMask();
+        mask = featureDesiredMask();
         for (i = 0; ; i++) { // disable all feature first
             if (featureNames[i] == NULL)
                 break;
@@ -1139,7 +1139,7 @@ static void cliFeature(char *cmdline)
     uint32_t mask;
 
     len = strlen(cmdline);
-    mask = featureMask();
+    mask = featureDesiredMask();
 
     if (len == 0) {
         cliPrint("Enabled features: ");
@@ -1190,10 +1190,10 @@ static void cliFeature(char *cmdline)
                 }
 #endif
                 if (remove) {
-                    featureClear(mask);
+                    featureDesiredClear(mask);
                     cliPrint("Disabled ");
                 } else {
-                    featureSet(mask);
+                    featureDesiredSet(mask);
                     cliPrint("Enabled ");
                 }
                 printf("%s\r\n", featureNames[i]);

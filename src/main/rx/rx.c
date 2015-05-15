@@ -166,7 +166,7 @@ void serialRxInit(rxConfig_t *rxConfig)
     }
 
     if (!enabled) {
-        featureClear(FEATURE_RX_SERIAL);
+        featureDesiredClear(FEATURE_RX_SERIAL);
         rcReadRawFunc = NULL;
     }
 }

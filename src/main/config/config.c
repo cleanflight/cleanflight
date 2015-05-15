@@ -140,7 +140,7 @@ controlRateConfig_t *currentControlRateProfile;
 static bool firstCallByInit = true;
 static uint32_t oneshotFeatureChangedDelayTime = 0;
 
-static const uint8_t EEPROM_CONF_VERSION = 99;
+static const uint8_t EEPROM_CONF_VERSION = 98;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -371,18 +371,18 @@ static void resetConf(void)
 
     masterConfig.version = EEPROM_CONF_VERSION;
     masterConfig.mixerMode = MIXER_QUADX;
-    featureClearAll();
+    featureDesiredClearAll();
 #if defined(CJMCU) || defined(SPARKY)
-    featureSet(FEATURE_RX_PPM);
+    featureDesiredSet(FEATURE_RX_PPM);
 #endif
 
 #ifdef BOARD_HAS_VOLTAGE_DIVIDER
     // only enable the VBAT feature by default if the board has a voltage divider otherwise
     // the user may see incorrect readings and unexpected issues with pin mappings may occur.
-    featureSet(FEATURE_VBAT);
+    featureDesiredSet(FEATURE_VBAT);
 #endif
 
-    featureSet(FEATURE_FAILSAFE);
+    featureDesiredSet(FEATURE_FAILSAFE);
 
     // global settings
     masterConfig.current_profile_index = 0;     // default profile
@@ -516,7 +516,7 @@ static void resetConf(void)
 
 #ifdef BLACKBOX
 #ifdef SPRACINGF3
-    featureSet(FEATURE_BLACKBOX);
+    featureDesiredSet(FEATURE_BLACKBOX);
     masterConfig.blackbox_device = 1;
 #else
     masterConfig.blackbox_device = 0;
@@ -527,9 +527,9 @@ static void resetConf(void)
 
     // alternative defaults settings for ALIENWIIF1 and ALIENWIIF3 targets
 #ifdef ALIENWII32
-    featureSet(FEATURE_RX_SERIAL);
-    featureSet(FEATURE_MOTOR_STOP);
-    featureSet(FEATURE_FAILSAFE);
+    featureDesiredSet(FEATURE_RX_SERIAL);
+    featureDesiredSet(FEATURE_MOTOR_STOP);
+    featureDesiredSet(FEATURE_FAILSAFE);
 #ifdef ALIENWIIF3
     masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
     masterConfig.batteryConfig.vbatscale = 20;
@@ -725,12 +725,12 @@ void activateConfig(void)
 #endif
 }
 
-static void featureValidateSet(uint32_t mask)
+static void featureEnabledSet(uint32_t mask)
 {
     masterConfig.enabledFeatures |= mask;
 }
 
-static void featureValidateClear(uint32_t mask)
+static void featureClearEnabled(uint32_t mask)
 {
     masterConfig.enabledFeatures &= ~(mask);
 }
@@ -738,41 +738,41 @@ static void featureValidateClear(uint32_t mask)
 static void validateAndFixConfig(void)
 {
     if (!(feature(FEATURE_RX_PARALLEL_PWM) || feature(FEATURE_RX_PPM) || feature(FEATURE_RX_SERIAL) || feature(FEATURE_RX_MSP))) {
-        featureValidateSet(FEATURE_RX_PARALLEL_PWM); // Consider changing the default to PPM
+        featureEnabledSet(FEATURE_RX_PARALLEL_PWM); // Consider changing the default to PPM
     }
 
     if (feature(FEATURE_RX_PPM)) {
-        featureValidateClear(FEATURE_RX_PARALLEL_PWM);
+        featureClearEnabled(FEATURE_RX_PARALLEL_PWM);
     }
 
     if (feature(FEATURE_RX_MSP)) {
-        featureValidateClear(FEATURE_RX_SERIAL);
-        featureValidateClear(FEATURE_RX_PARALLEL_PWM);
-        featureValidateClear(FEATURE_RX_PPM);
+        featureClearEnabled(FEATURE_RX_SERIAL);
+        featureClearEnabled(FEATURE_RX_PARALLEL_PWM);
+        featureClearEnabled(FEATURE_RX_PPM);
     }
 
     if (feature(FEATURE_RX_SERIAL)) {
-        featureValidateClear(FEATURE_RX_PARALLEL_PWM);
-        featureValidateClear(FEATURE_RX_PPM);
+        featureClearEnabled(FEATURE_RX_PARALLEL_PWM);
+        featureClearEnabled(FEATURE_RX_PPM);
     }
 
     if (feature(FEATURE_RX_PARALLEL_PWM)) {
 #if defined(STM32F10X)
         // rssi adc needs the same ports
-        featureValidateClear(FEATURE_RSSI_ADC);
+        featureClearEnabled(FEATURE_RSSI_ADC);
         // current meter needs the same ports
         if (masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
-            featureValidateClear(FEATURE_CURRENT_METER);
+            featureClearEnabled(FEATURE_CURRENT_METER);
         }
 #endif
 
 #if defined(STM32F10X) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
         // led strip needs the same ports
-        featureValidateClear(FEATURE_LED_STRIP);
+        featureClearEnabled(FEATURE_LED_STRIP);
 #endif
 
         // software serial needs free PWM ports
-        featureValidateClear(FEATURE_SOFTSERIAL);
+        featureClearEnabled(FEATURE_SOFTSERIAL);
     }
 
 
@@ -787,25 +787,25 @@ static void validateAndFixConfig(void)
 #endif
     )) {
         // led strip needs the same timer as softserial
-        featureValidateClear(FEATURE_LED_STRIP);
+        featureClearEnabled(FEATURE_LED_STRIP);
     }
 #endif
 
 #if defined(NAZE) && defined(SONAR)
     if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
-        featureValidateClear(FEATURE_CURRENT_METER);
+        featureClearEnabled(FEATURE_CURRENT_METER);
     }
 #endif
 
 #if defined(OLIMEXINO) && defined(SONAR)
     if (feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
-        featureValidateClear(FEATURE_CURRENT_METER);
+        featureClearEnabled(FEATURE_CURRENT_METER);
     }
 #endif
 
 #if defined(CC3D) && defined(DISPLAY) && defined(USE_USART3)
     if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
-        featureValidateClear(FEATURE_DISPLAY);
+        featureClearEnabled(FEATURE_DISPLAY);
     }
 #endif
 
@@ -854,25 +854,23 @@ void readEEPROM(void)
 
     setControlRateProfile(currentProfile->defaultRateProfileIndex);
 
-    if (firstCallByInit) {
+    oneshotFeatureChangedDelayTime = 0;
+    if (firstCallByInit && isMPUSoftReset()) {
         firstCallByInit = false;
         // When OneShot125 feature changed state, apply an additional boot delay with PWM OFF
-        if ((masterConfig.enabledFeatures ^ masterConfig.desiredFeatures) & FEATURE_ONESHOT125) {
+        if ((masterConfig.enabledFeatures ^ readDesiredFeatures()) & FEATURE_ONESHOT125) {
             oneshotFeatureChangedDelayTime = ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS;
         }
-        // Copy desired features (latched before reboot) into the working featureset on first call from init
-        masterConfig.enabledFeatures = masterConfig.desiredFeatures;
-        validateAndFixConfig();
-        // Copy the validated/modified working featureset into the desired features to start registering changes
-        masterConfig.desiredFeatures = masterConfig.enabledFeatures;
-        // Write eeprom to prevent repeated oneshot delays
-        // Happens once on reboot after a oneshot feature change
-        if (oneshotFeatureChangedDelayTime) {
-            writeEEPROM();
-        }
-    } else {
-        validateAndFixConfig();
+        // Copy desired features (latched before soft reset) into the working featureset on first call from init
+        masterConfig.enabledFeatures = readDesiredFeatures();
+        // Write (possibly modified) enabled features to EEPROM
+        writeEEPROM();
     }
+
+    validateAndFixConfig();
+
+    // Start with equal desired & enabled features
+    writeDesiredFeatures(masterConfig.enabledFeatures);
 
     activateConfig();
 }
@@ -979,23 +977,23 @@ bool feature(uint32_t mask)
     return masterConfig.enabledFeatures & mask;
 }
 
-void featureSet(uint32_t mask)
+void featureDesiredSet(uint32_t mask)
 {
-    masterConfig.desiredFeatures |= mask;
+    writeDesiredFeatures(readDesiredFeatures() | mask);
 }
 
-void featureClear(uint32_t mask)
+void featureDesiredClear(uint32_t mask)
 {
-    masterConfig.desiredFeatures &= ~(mask);
+    writeDesiredFeatures(readDesiredFeatures() & ~(mask));
 }
 
-void featureClearAll()
+void featureDesiredClearAll(void)
 {
-    masterConfig.desiredFeatures = 0;
+    writeDesiredFeatures(0);
 }
 
-uint32_t featureMask(void)
+uint32_t featureDesiredMask(void)
 {
-    return masterConfig.desiredFeatures;
+    return readDesiredFeatures();
 }
 
