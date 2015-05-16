@@ -71,8 +71,30 @@ void enableGPIOPowerUsageAndNoiseReductions(void)
 
 bool isMPUSoftReset(void)
 {
-    if (cacedRccCsrValue & RCC_CSR_SFTRSTF)
+    if (cachedRccCsrValue & RCC_CSR_SFTRSTF)
         return true;
     else
         return false;
 }
+
+
+void writeDesiredFeatures(uint32_t desiredFeatures)
+{
+    // Enable access to BKP regs
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+    PWR->CR |= PWR_CR_DBP;
+    // Write the desires features in RTC backup register BKP0R
+    *((uint32_t *)RTC_BASE + 0x50) = desiredFeatures;
+}
+
+uint32_t readDesiredFeatures(void)
+{
+    uint32_t desiredFeatures;
+
+    // Enable access to BKP regs
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+    PWR->CR |= PWR_CR_DBP;
+    desiredFeatures  = *((uint32_t *)RTC_BASE + 0x50);
+    return desiredFeatures;
+}
+
