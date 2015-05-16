@@ -1127,6 +1127,8 @@ static void cliExit(char *cmdline)
     cliMode = 0;
     // incase a motor was left running during motortest, clear it here
     mixerResetMotors();
+    // discard pending feature changes
+    writeDesiredFeatures(masterConfig.enabledFeatures);
     cliReboot();
 
     cliPort = NULL;

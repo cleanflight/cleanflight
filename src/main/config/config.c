@@ -855,7 +855,6 @@ void readEEPROM(void)
     setControlRateProfile(currentProfile->defaultRateProfileIndex);
 
     if (firstCallByInit && isMPUSoftReset()) {
-        firstCallByInit = false;
         uint32_t deltaFeatures = masterConfig.enabledFeatures ^ readDesiredFeatures();
         if (deltaFeatures) {
             // When OneShot125 feature changed state, apply an additional boot delay with PWM OFF
@@ -871,8 +870,11 @@ void readEEPROM(void)
 
     validateAndFixConfig();
 
-    // Start with equal desired & enabled features
-    writeDesiredFeatures(masterConfig.enabledFeatures);
+    if (firstCallByInit) {
+        firstCallByInit = false;
+        // Start with equal desired & enabled features when called by init()
+        writeDesiredFeatures(masterConfig.enabledFeatures);
+    }
 
     activateConfig();
 }
@@ -942,7 +944,12 @@ void ensureEEPROMContainsValidData(void)
         return;
     }
 
-    resetEEPROM();
+    resetConf();
+    // Since this function is called from init() before everything is up and running, we need to
+    // get the target specific desired features just set in resetConf() into the enabled features.
+    // Otherwise they sit there and will be applied on the next soft reset
+    masterConfig.enabledFeatures = readDesiredFeatures();
+    writeEEPROM();
 }
 
 void resetEEPROM(void)
