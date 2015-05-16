@@ -68,6 +68,7 @@ void writeDesiredFeatures(uint32_t desiredFeatures)
     // Enable access to BKP regs
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
     PWR->CR |= PWR_CR_DBP;
+    // Write the desires features in RTC backup registers BKP_DR3 and BKP_DR4
     *((uint16_t *)BKP_BASE + 0x0C) = (desiredFeatures & 0xffff);
     *((uint16_t *)BKP_BASE + 0x10) = ((desiredFeatures  >> 16) & 0xffff);
 }
@@ -76,10 +77,9 @@ uint32_t readDesiredFeatures(void)
 {
     uint32_t desiredFeatures;
 
-    // Enable access to BKP regs (is this required for reading too?)
+    // Enable access to BKP regs
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
     PWR->CR |= PWR_CR_DBP;
-
     desiredFeatures  = *((uint16_t *)BKP_BASE + 0x0C);
     desiredFeatures |= (*((uint16_t *)BKP_BASE + 0x10) << 16) & 0xffff0000;
     return desiredFeatures;
