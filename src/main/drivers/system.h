@@ -31,6 +31,8 @@ void failureMode(uint8_t mode);
 void systemReset(void);
 void systemResetToBootloader(void);
 bool isMPUSoftReset(void);
+void writeDesiredFeatures(uint32_t desiredFeatures);
+uint32_t readDesiredFeatures(void);
 
 void enableGPIOPowerUsageAndNoiseReductions(void);
 // current crystal frequency - 8 or 12MHz
@@ -40,3 +42,5 @@ typedef void extiCallbackHandler(void);
 
 void registerExti15_10_CallbackHandler(extiCallbackHandler *fn);
 void unregisterExti15_10_CallbackHandler(extiCallbackHandler *fn);
+
+extern uint32_t cachedRccCsrValue;
