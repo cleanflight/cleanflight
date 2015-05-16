@@ -730,7 +730,7 @@ static void featureEnabledSet(uint32_t mask)
     masterConfig.enabledFeatures |= mask;
 }
 
-static void featureClearEnabled(uint32_t mask)
+static void featureEnabledClear(uint32_t mask)
 {
     masterConfig.enabledFeatures &= ~(mask);
 }
@@ -742,37 +742,37 @@ static void validateAndFixConfig(void)
     }
 
     if (feature(FEATURE_RX_PPM)) {
-        featureClearEnabled(FEATURE_RX_PARALLEL_PWM);
+        featureEnabledClear(FEATURE_RX_PARALLEL_PWM);
     }
 
     if (feature(FEATURE_RX_MSP)) {
-        featureClearEnabled(FEATURE_RX_SERIAL);
-        featureClearEnabled(FEATURE_RX_PARALLEL_PWM);
-        featureClearEnabled(FEATURE_RX_PPM);
+        featureEnabledClear(FEATURE_RX_SERIAL);
+        featureEnabledClear(FEATURE_RX_PARALLEL_PWM);
+        featureEnabledClear(FEATURE_RX_PPM);
     }
 
     if (feature(FEATURE_RX_SERIAL)) {
-        featureClearEnabled(FEATURE_RX_PARALLEL_PWM);
-        featureClearEnabled(FEATURE_RX_PPM);
+        featureEnabledClear(FEATURE_RX_PARALLEL_PWM);
+        featureEnabledClear(FEATURE_RX_PPM);
     }
 
     if (feature(FEATURE_RX_PARALLEL_PWM)) {
 #if defined(STM32F10X)
         // rssi adc needs the same ports
-        featureClearEnabled(FEATURE_RSSI_ADC);
+        featureEnabledClear(FEATURE_RSSI_ADC);
         // current meter needs the same ports
         if (masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
-            featureClearEnabled(FEATURE_CURRENT_METER);
+            featureEnabledClear(FEATURE_CURRENT_METER);
         }
 #endif
 
 #if defined(STM32F10X) || defined(CHEBUZZ) || defined(STM32F3DISCOVERY)
         // led strip needs the same ports
-        featureClearEnabled(FEATURE_LED_STRIP);
+        featureEnabledClear(FEATURE_LED_STRIP);
 #endif
 
         // software serial needs free PWM ports
-        featureClearEnabled(FEATURE_SOFTSERIAL);
+        featureEnabledClear(FEATURE_SOFTSERIAL);
     }
 
 
@@ -787,25 +787,25 @@ static void validateAndFixConfig(void)
 #endif
     )) {
         // led strip needs the same timer as softserial
-        featureClearEnabled(FEATURE_LED_STRIP);
+        featureEnabledClear(FEATURE_LED_STRIP);
     }
 #endif
 
 #if defined(NAZE) && defined(SONAR)
     if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
-        featureClearEnabled(FEATURE_CURRENT_METER);
+        featureEnabledClear(FEATURE_CURRENT_METER);
     }
 #endif
 
 #if defined(OLIMEXINO) && defined(SONAR)
     if (feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
-        featureClearEnabled(FEATURE_CURRENT_METER);
+        featureEnabledClear(FEATURE_CURRENT_METER);
     }
 #endif
 
 #if defined(CC3D) && defined(DISPLAY) && defined(USE_USART3)
     if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
-        featureClearEnabled(FEATURE_DISPLAY);
+        featureEnabledClear(FEATURE_DISPLAY);
     }
 #endif
 
