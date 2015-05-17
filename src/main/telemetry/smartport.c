@@ -448,7 +448,7 @@ void handleSmartPortTelemetry(void)
 #ifdef GPS
             case FSSP_DATAID_GPS_ALT    :
                 if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
-                    smartPortSendPackage(id, GPS_altitude * 100); // given in 0.1m , requested in 10 = 1m
+                    smartPortSendPackage(id, GPS_altitude * 100); // given in 0.1m , requested in 10 = 1m (should be in mm, probably a bug in opentx, tested on 2.0.1.7)
                     smartPortHasRequest = 0;
                 }
                 break;
