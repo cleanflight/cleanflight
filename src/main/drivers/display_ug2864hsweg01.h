@@ -34,10 +34,15 @@
 #define VERTICAL_BARGRAPH_ZERO_CHARACTER (128 + 32)
 #define VERTICAL_BARGRAPH_CHARACTER_COUNT 7
 
-void ug2864hsweg01InitI2C(void);
+#define INVERSE_CHAR_FORMAT 0x7f // 0b01111111
+#define NORMAL_CHAR_FORMAT  0x00 // 0b00000000
+
+bool ug2864hsweg01InitI2C(void);
 
 void i2c_OLED_set_xy(uint8_t col, uint8_t row);
 void i2c_OLED_set_line(uint8_t row);
+bool i2c_OLED_send_cmd(uint8_t command);
+bool i2c_OLED_send_byte(uint8_t val);
 void i2c_OLED_send_char(unsigned char ascii);
 void i2c_OLED_send_string(const char *string);
 void i2c_OLED_clear_display(void);

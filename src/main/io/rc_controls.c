@@ -47,10 +47,12 @@
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
 
+#include "io/dataEdition.h"
 #include "io/display.h"
 
 #include "flight/pid.h"
 #include "flight/navigation.h"
+#include "flight/failsafe.h"
 
 #include "mw.h"
 
@@ -71,7 +73,6 @@ bool isUsingSticksForArming(void)
     return isUsingSticksToArm;
 }
 
-
 bool areSticksInApModePosition(uint16_t ap_mode)
 {
     return ABS(rcCommand[ROLL]) < ap_mode && ABS(rcCommand[PITCH]) < ap_mode;
@@ -87,6 +88,41 @@ throttleStatus_e calculateThrottleStatus(rxConfig_t *rxConfig, uint16_t deadband
     return THROTTLE_HIGH;
 }
 
+void setCommandForDataEditionWithSticks(uint8_t rcSticks)
+{
+	commandFromSticks = 0;
+
+	switch (rcSticks){
+		case THR_LO + YAW_CE + PIT_LO + ROL_LO : {
+			onGoingDataEditionWithSticks = false;
+			return;
+		}
+		case THR_LO + YAW_CE + PIT_LO + ROL_HI : {
+			onGoingDataEditionWithSticks = true;
+			return;
+		}
+		case THR_LO + YAW_CE + PIT_HI + ROL_CE : {
+			commandFromSticks= INC_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_LO + ROL_CE : {
+			commandFromSticks= DEC_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_CE + ROL_HI : {
+			commandFromSticks= NEXT_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_CE + ROL_LO : {
+			commandFromSticks= PREV_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_HI + PIT_HI + ROL_CE : {// Selection  or  Exit
+			commandFromSticks= SET_COMMAND;
+			break;
+		}
+	}
+}
 
 
 void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStatus, bool retarded_arm, bool disarm_kill_switch)
@@ -113,6 +149,9 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     rcSticks = stTmp;
 
     // perform actions
+    if (!ARMING_FLAG(ARMED))
+    	setCommandForDataEditionWithSticks(rcSticks);
+
     if (!isUsingSticksToArm) {
 
         if (IS_RC_MODE_ACTIVE(BOXARM)) {
@@ -124,7 +163,8 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
             }
         } else {
             // Disarming via ARM BOX
-            if (ARMING_FLAG(ARMED)) {
+
+            if (ARMING_FLAG(ARMED) && rxIsReceivingSignal() && !failsafeIsActive()  ) {
                 if (disarm_kill_switch) {
                     mwDisarm();
                 } else if (throttleStatus == THROTTLE_LOW) {
@@ -138,18 +178,29 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         return;
     }
 
-    if (ARMING_FLAG(ARMED)) {
-        // actions during armed
-
         if (isUsingSticksToArm) {
             // Disarm on throttle down + yaw
-            if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE)
+        if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) {
+            if (ARMING_FLAG(ARMED))         //board was armed
                 mwDisarm();
-
-            // Disarm on roll (only when retarded_arm is enabled)
-            if (retarded_arm && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO))
-                mwDisarm();
+            else {  //board was not armed
+                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
+                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            }
         }
+            // Disarm on roll (only when retarded_arm is enabled)
+        if (retarded_arm && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO)) {
+            if (ARMING_FLAG(ARMED))         //board was armed
+                mwDisarm();
+            else {  //board was not armed
+                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
+                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            }
+        }
+    }
+
+    if (ARMING_FLAG(ARMED)) {
+        // actions during armed
         return;
     }
 
@@ -358,6 +409,36 @@ static const adjustmentConfig_t defaultAdjustmentConfigs[ADJUSTMENT_FUNCTION_COU
         .adjustmentFunction = ADJUSTMENT_RATE_PROFILE,
         .mode = ADJUSTMENT_MODE_SELECT,
         .data.selectConfig.switchPositions = 3
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_PITCH_P,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data.stepConfig.step = 1
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_PITCH_I,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data.stepConfig.step = 1
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_PITCH_D,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data.stepConfig.step = 1
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_ROLL_P,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data.stepConfig.step = 1
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_ROLL_I,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data.stepConfig.step = 1
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_ROLL_D,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data.stepConfig.step = 1
     }
 };
 
@@ -384,9 +465,9 @@ void applyStepAdjustment(controlRateConfig_t *controlRateConfig, uint8_t adjustm
     float newFloatValue;
 
     if (delta > 0) {
-        queueConfirmationBeep(2);
+        beeperConfirmationBeeps(2);
     } else {
-        queueConfirmationBeep(1);
+        beeperConfirmationBeeps(1);
     }
     switch(adjustmentFunction) {
         case ADJUSTMENT_RC_RATE:
@@ -421,40 +502,67 @@ void applyStepAdjustment(controlRateConfig_t *controlRateConfig, uint8_t adjustm
             controlRateConfig->rates[FD_YAW] = constrain(newValue, 0, CONTROL_RATE_CONFIG_YAW_RATE_MAX);
             break;
         case ADJUSTMENT_PITCH_ROLL_P:
+        case ADJUSTMENT_PITCH_P:
             if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
                 newFloatValue = pidProfile->P_f[PIDPITCH] + (float)(delta / 10.0f);
                 pidProfile->P_f[PIDPITCH] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
-                newFloatValue = pidProfile->P_f[PIDROLL] + (float)(delta / 10.0f);
-                pidProfile->P_f[PIDROLL] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
             } else {
                 newValue = (int)pidProfile->P8[PIDPITCH] + delta;
                 pidProfile->P8[PIDPITCH] = constrain(newValue, 0, 200); // FIXME magic numbers repeated in serial_cli.c
+            }
+            if (adjustmentFunction == ADJUSTMENT_PITCH_P) {
+                break;
+            }
+            // follow though for combined ADJUSTMENT_PITCH_ROLL_P
+        case ADJUSTMENT_ROLL_P:
+            if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
+                newFloatValue = pidProfile->P_f[PIDROLL] + (float)(delta / 10.0f);
+                pidProfile->P_f[PIDROLL] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
+            } else {
                 newValue = (int)pidProfile->P8[PIDROLL] + delta;
                 pidProfile->P8[PIDROLL] = constrain(newValue, 0, 200); // FIXME magic numbers repeated in serial_cli.c
             }
             break;
         case ADJUSTMENT_PITCH_ROLL_I:
+        case ADJUSTMENT_PITCH_I:
             if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
                 newFloatValue = pidProfile->I_f[PIDPITCH] + (float)(delta / 100.0f);
                 pidProfile->I_f[PIDPITCH] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
-                newFloatValue = pidProfile->I_f[PIDROLL] + (float)(delta / 100.0f);
-                pidProfile->I_f[PIDROLL] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
             } else {
                 newValue = (int)pidProfile->I8[PIDPITCH] + delta;
                 pidProfile->I8[PIDPITCH] = constrain(newValue, 0, 200); // FIXME magic numbers repeated in serial_cli.c
+            }
+            if (adjustmentFunction == ADJUSTMENT_PITCH_I) {
+                break;
+            }
+            // follow though for combined ADJUSTMENT_PITCH_ROLL_I
+        case ADJUSTMENT_ROLL_I:
+            if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
+                newFloatValue = pidProfile->I_f[PIDROLL] + (float)(delta / 100.0f);
+                pidProfile->I_f[PIDROLL] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
+            } else {
                 newValue = (int)pidProfile->I8[PIDROLL] + delta;
                 pidProfile->I8[PIDROLL] = constrain(newValue, 0, 200); // FIXME magic numbers repeated in serial_cli.c
             }
             break;
         case ADJUSTMENT_PITCH_ROLL_D:
+        case ADJUSTMENT_PITCH_D:
             if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
                 newFloatValue = pidProfile->D_f[PIDPITCH] + (float)(delta / 1000.0f);
                 pidProfile->D_f[PIDPITCH] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
-                newFloatValue = pidProfile->D_f[PIDROLL] + (float)(delta / 1000.0f);
-                pidProfile->D_f[PIDROLL] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
             } else {
                 newValue = (int)pidProfile->D8[PIDPITCH] + delta;
                 pidProfile->D8[PIDPITCH] = constrain(newValue, 0, 200); // FIXME magic numbers repeated in serial_cli.c
+            }
+            if (adjustmentFunction == ADJUSTMENT_PITCH_D) {
+                break;
+            }
+            // follow though for combined ADJUSTMENT_PITCH_ROLL_D
+        case ADJUSTMENT_ROLL_D:
+            if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
+                newFloatValue = pidProfile->D_f[PIDROLL] + (float)(delta / 1000.0f);
+                pidProfile->D_f[PIDROLL] = constrainf(newFloatValue, 0, 100); // FIXME magic numbers repeated in serial_cli.c
+            } else {
                 newValue = (int)pidProfile->D8[PIDROLL] + delta;
                 pidProfile->D8[PIDROLL] = constrain(newValue, 0, 200); // FIXME magic numbers repeated in serial_cli.c
             }
@@ -507,7 +615,7 @@ void applySelectAdjustment(uint8_t adjustmentFunction, uint8_t position)
     }
 
     if (applied) {
-        queueConfirmationBeep(position + 1);
+        beeperConfirmationBeeps(position + 1);
     }
 }
 

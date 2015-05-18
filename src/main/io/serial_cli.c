@@ -53,6 +53,7 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
+#include "io/beeper.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -71,7 +72,7 @@
 #include "flight/navigation.h"
 #include "flight/failsafe.h"
 
-#include "telemetry/hott_textmode.h"
+#include "io/dataEdition.h"
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
 
@@ -98,6 +99,7 @@ static void cliDump(char *cmdLine);
 static void cliExit(char *cmdline);
 static void cliFeature(char *cmdline);
 static void cliMotor(char *cmdline);
+static void cliPlaySound(char *cmdline);
 static void cliProfile(char *cmdline);
 static void cliRateProfile(char *cmdline);
 static void cliReboot(void);
@@ -191,6 +193,7 @@ const clicmd_t cmdTable[] = {
     { "mixer", "mixer name or list", cliMixer },
 #endif
     { "motor", "get/set motor output value", cliMotor },
+    { "play_sound", "index, or none for next", cliPlaySound },
     { "profile", "index (0 to 2)", cliProfile },
     { "rateprofile", "index (0 to 2)", cliRateProfile },
     { "save", "save and reboot", cliSave },
@@ -203,29 +206,7 @@ const clicmd_t cmdTable[] = {
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
 
-typedef enum {
-    VAR_UINT8 = (1 << 0),
-    VAR_INT8 = (1 << 1),
-    VAR_UINT16 = (1 << 2),
-    VAR_INT16 = (1 << 3),
-    VAR_UINT32 = (1 << 4),
-    VAR_FLOAT = (1 << 5),
-
-    MASTER_VALUE = (1 << 6),
-    PROFILE_VALUE = (1 << 7),
-    CONTROL_RATE_VALUE = (1 << 8)
-} cliValueFlag_e;
-
-#define VALUE_TYPE_MASK (VAR_UINT8 | VAR_INT8 | VAR_UINT16 | VAR_INT16 | VAR_UINT32 | VAR_FLOAT)
 #define SECTION_MASK (MASTER_VALUE | PROFILE_VALUE | CONTROL_RATE_VALUE)
-
-typedef struct {
-    const char *name;
-    const uint16_t type; // cliValueFlag_e - specify one of each from VALUE_TYPE_MASK and SECTION_MASK
-    void *ptr;
-    const int32_t min;
-    const int32_t max;
-} clivalue_t;
 
 const clivalue_t valueTable[] = {
     { "looptime",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.looptime, 0, 9000 },
@@ -236,6 +217,7 @@ const clivalue_t valueTable[] = {
     { "max_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.maxcheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "rssi_channel",               VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_channel, 0, MAX_SUPPORTED_RC_CHANNEL_COUNT },
     { "rssi_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
+    { "rssi_ppm_invert",            VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_ppm_invert, 0, 1 },
     { "input_filtering_mode",       VAR_INT8   | MASTER_VALUE,  &masterConfig.inputFilteringMode, 0, 1 },
 
     { "min_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.minthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
@@ -367,6 +349,7 @@ const clivalue_t valueTable[] = {
 
     { "pid_at_min_throttle",        VAR_UINT8  | MASTER_VALUE, &masterConfig.mixerConfig.pid_at_min_throttle, 0, 1 },
     { "yaw_direction",              VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_direction, -1, 1 },
+    { "yaw_jump_prevention_limit",  VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.yaw_jump_prevention_limit, 80, 500 },
 #ifdef USE_SERVOS
     { "tri_unarmed_servo",          VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.tri_unarmed_servo, 0, 1 },
     { "servo_lowpass_freq",         VAR_INT16  | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_freq, 10, 400},
@@ -376,6 +359,7 @@ const clivalue_t valueTable[] = {
     { "default_rate_profile",       VAR_UINT8  | PROFILE_VALUE , &masterConfig.profile[0].defaultRateProfileIndex, 0, MAX_CONTROL_RATE_PROFILE_COUNT - 1 },
     { "rc_rate",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcRate8, 0, 250 },
     { "rc_expo",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcExpo8, 0, 100 },
+    { "rc_yaw_expo",                VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcYawExpo8, 0, 100 },
     { "thr_mid",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrMid8, 0, 100 },
     { "thr_expo",                   VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrExpo8, 0, 100 },
     { "roll_rate",                  VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_ROLL], 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX },
@@ -384,11 +368,12 @@ const clivalue_t valueTable[] = {
     { "tpa_rate",                   VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].dynThrPID, 0, CONTROL_RATE_CONFIG_TPA_MAX},
     { "tpa_breakpoint",             VAR_UINT16 | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].tpa_breakpoint, PWM_RANGE_MIN, PWM_RANGE_MAX},
 
-    { "failsafe_delay",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_delay, 0, 200 },
-    { "failsafe_off_delay",         VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_off_delay, 0, 200 },
-    { "failsafe_throttle",          VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
-    { "failsafe_min_usec",          VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_min_usec, 100, PWM_RANGE_MAX },
-    { "failsafe_max_usec",          VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].failsafeConfig.failsafe_max_usec, 100, PWM_RANGE_MAX + (PWM_RANGE_MAX - PWM_RANGE_MIN) },
+    { "failsafe_delay",             VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_delay, 0, 200 },
+    { "failsafe_off_delay",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_off_delay, 0, 200 },
+    { "failsafe_throttle",          VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
+
+    { "rx_min_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, 100, PWM_RANGE_MAX },
+    { "rx_max_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, 100, PWM_RANGE_MAX + (PWM_RANGE_MAX - PWM_RANGE_MIN) },
 
 #ifdef USE_SERVOS
     { "gimbal_flags",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gimbalConfig.gimbal_flags, 0, 255},
@@ -449,6 +434,8 @@ const clivalue_t valueTable[] = {
     { "i_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDVEL], 0, 200 },
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
 
+    { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, 0, 500 },
+
 #ifdef BLACKBOX
     { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
     { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
@@ -457,14 +444,9 @@ const clivalue_t valueTable[] = {
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
+uint8_t nmbrOfRecordsInTable = (sizeof(valueTable) / sizeof(clivalue_t));
 
-
-typedef union {
-    int32_t int_value;
-    float float_value;
-} int_float_value_t;
-
-static void cliSetVar(const clivalue_t *var, const int_float_value_t value);
+void cliSetVar(const clivalue_t *var, const int_float_value_t value);
 static void cliPrintVar(const clivalue_t *var, uint32_t full);
 static void cliPrint(const char *str);
 static void cliWrite(uint8_t ch);
@@ -1303,6 +1285,43 @@ static void cliMotor(char *cmdline)
     motor_disarmed[motor_index] = motor_value;
 }
 
+static void cliPlaySound(char *cmdline)
+{
+#if FLASH_SIZE <= 64
+    UNUSED(cmdline);
+#else
+    int i;
+    const char *name;
+    static int lastSoundIdx = -1;
+
+    if (isEmpty(cmdline)) {
+        i = lastSoundIdx + 1;     //next sound index
+        if ((name=beeperNameForTableIndex(i)) == NULL) {
+            while (true) {   //no name for index; try next one
+                if (++i >= beeperTableEntryCount())
+                    i = 0;   //if end then wrap around to first entry
+                if ((name=beeperNameForTableIndex(i)) != NULL)
+                    break;   //if name OK then play sound below
+                if (i == lastSoundIdx + 1) {     //prevent infinite loop
+                    printf("Error playing sound\r\n");
+                    return;
+                }
+            }
+        }
+    } else {       //index value was given
+        i = atoi(cmdline);
+        if ((name=beeperNameForTableIndex(i)) == NULL) {
+            printf("No sound for index %d\r\n", i);
+            return;
+        }
+    }
+    lastSoundIdx = i;
+    beeperSilence();
+    printf("Playing sound %d: %s\r\n", i, name);
+    beeper(beeperModeForTableIndex(i));
+#endif
+}
+
 static void cliProfile(char *cmdline)
 {
     int i;
@@ -1421,7 +1440,7 @@ static void cliPrintVar(const clivalue_t *var, uint32_t full)
         printf(" %d %d", var->min, var->max);
 }
 
-static void cliSetVar(const clivalue_t *var, const int_float_value_t value)
+void cliSetVar(const clivalue_t *var, const int_float_value_t value)
 {
     void *ptr = var->ptr;
     if (var->type & PROFILE_VALUE) {
@@ -1583,7 +1602,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Cleanflight/%s %s %s / %s (%s)",
+    printf("# Cleanflight/%s %s %s / %s (%s)",
         targetName,
         FC_VERSION_STRING,
         buildDate,
@@ -1649,14 +1668,21 @@ void cliProcess(void)
             clicmd_t target;
             cliPrint("\r\n");
 
+            // Strip comment starting with # from line
+            char *p = cliBuffer;
+            p = strchr(p, '#');
+            if (NULL != p) {
+                bufferIndex = (uint32_t)(p - cliBuffer);
+            }
+
             // Strip trailing whitespace
             while (bufferIndex > 0 && cliBuffer[bufferIndex - 1] == ' ') {
                 bufferIndex--;
             }
 
-            cliBuffer[bufferIndex] = 0; // null terminate
-
-            if (cliBuffer[0] != '#') {
+            // Process non-empty lines
+            if (bufferIndex > 0) {
+                cliBuffer[bufferIndex] = 0; // null terminate
                 target.name = cliBuffer;
                 target.param = NULL;
 
@@ -1665,10 +1691,10 @@ void cliProcess(void)
                     cmd->func(cliBuffer + strlen(cmd->name) + 1);
                 else
                     cliPrint("Unknown command, try 'help'");
+                bufferIndex = 0;
             }
 
             memset(cliBuffer, 0, sizeof(cliBuffer));
-            bufferIndex = 0;
 
             // 'exit' will reset this flag, so we don't need to print prompt again
             if (!cliMode)

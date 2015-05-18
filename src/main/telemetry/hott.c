@@ -78,7 +78,8 @@
 #include "flight/navigation.h"
 #include "io/gps.h"
 
-#include "telemetry/hott_textmode.h"
+#include "io/dataEdition.h"
+#include "io/display.h"
 #include "telemetry/telemetry.h"
 #include "telemetry/hott.h"
 
@@ -108,13 +109,12 @@ static serialPort_t *hottPort = NULL;
 static serialPortConfig_t *portConfig;
 
 static telemetryConfig_t *telemetryConfig;
-static bool hottTelemetryEnabled =  false;
 static portSharing_e hottPortSharing;
 
 static HOTT_GPS_MSG_t hottGPSMessage;
 static HOTT_EAM_MSG_t hottEAMMessage;
-static HOTT_TEXT_MSG_t hottTEXTMessage;
-static HOTT_TEXT_DISPLAY_t hottTEXTDisplay;
+
+extern void sendContentOfPageToDisplay(void);//uint8_t whichDisplay);
 
 static void initialiseEAMMessage(HOTT_EAM_MSG_t *msg, size_t size)
 {
@@ -149,8 +149,6 @@ static void initialiseMessages(void)
 #ifdef GPS
     initialiseGPSMessage(&hottGPSMessage, sizeof(hottGPSMessage));
 #endif
-    initialiseTextMessage(&hottTEXTMessage, sizeof(hottTEXTMessage));
-    initialiseHottTXDisplay(&hottTEXTDisplay, sizeof(hottTEXTDisplay));
 }
 
 #ifdef GPS
@@ -335,6 +333,15 @@ static void hottPrepareMessages(void) {
 #endif
 }
 
+void processTextModeRequest(uint8_t address)
+{
+	if (commandFromSticks ==0 )
+	    processDataEdition(address & 0x0F);
+	else
+		processDataEdition(commandFromSticks);
+	sendContentOfPageToDisplay();//(1);
+}
+
 static void processBinaryModeRequest(uint8_t address) {
 
 #ifdef HOTT_DEBUG
@@ -414,7 +421,7 @@ static void hottCheckSerialData(uint32_t currentMicros)
     uint8_t address = serialRead(hottPort);
 
     if (requestId == HOTT_TEXT_MODE_REQUEST_ID)
-    	processTextModeRequest(&hottTEXTMessage, &hottTEXTDisplay, address);
+    	processTextModeRequest(address);
     else
     if ((requestId == 0) || (requestId == HOTT_BINARY_MODE_REQUEST_ID) || (address == HOTT_TELEMETRY_NO_SENSOR_ID)) {
     /*

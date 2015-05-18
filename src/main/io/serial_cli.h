@@ -41,7 +41,37 @@ static const char * const featureNames[] = {
     "BLACKBOX", NULL
 };
 
+
+typedef enum {
+    VAR_UINT8 = (1 << 0),
+    VAR_INT8 = (1 << 1),
+    VAR_UINT16 = (1 << 2),
+    VAR_INT16 = (1 << 3),
+    VAR_UINT32 = (1 << 4),
+    VAR_FLOAT = (1 << 5),
+
+    MASTER_VALUE = (1 << 6),
+    PROFILE_VALUE = (1 << 7),
+    CONTROL_RATE_VALUE = (1 << 8)
+} cliValueFlag_e;
+
+#define VALUE_TYPE_MASK (VAR_UINT8 | VAR_INT8 | VAR_UINT16 | VAR_INT16 | VAR_UINT32 | VAR_FLOAT)
+
+typedef struct {
+    const char *name;
+    const uint16_t type; // cliValueFlag_e - specify one of each from VALUE_TYPE_MASK and SECTION_MASK
+    void *ptr;
+    const int32_t min;
+    const int32_t max;
+} clivalue_t;
+
+typedef union {
+    int32_t int_value;
+    float float_value;
+} int_float_value_t;
+
 void cliProcess(void);
 bool cliIsActiveOnPort(serialPort_t *serialPort);
+void cliSetVar(const clivalue_t *var, const int_float_value_t value);
 
 #endif /* CLI_H_ */

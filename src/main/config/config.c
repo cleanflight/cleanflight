@@ -138,7 +138,7 @@ profile_t *currentProfile;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 95;
+static const uint8_t EEPROM_CONF_VERSION = 99;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -179,6 +179,8 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->P8[PIDVEL] = 120;
     pidProfile->I8[PIDVEL] = 45;
     pidProfile->D8[PIDVEL] = 1;
+
+    pidProfile->yaw_p_limit = 0;
 
     pidProfile->P_f[ROLL] = 2.5f;     // new PID with preliminary defaults test carefully
     pidProfile->I_f[ROLL] = 0.6f;
@@ -299,6 +301,7 @@ static void resetControlRateConfig(controlRateConfig_t *controlRateConfig) {
     controlRateConfig->thrMid8 = 50;
     controlRateConfig->thrExpo8 = 0;
     controlRateConfig->dynThrPID = 0;
+    controlRateConfig->rcYawExpo8 = 0;
     controlRateConfig->tpa_breakpoint = 1500;
 
     for (uint8_t axis = 0; axis < FLIGHT_DYNAMICS_INDEX_COUNT; axis++) {
@@ -317,6 +320,7 @@ void resetRcControlsConfig(rcControlsConfig_t *rcControlsConfig) {
 void resetMixerConfig(mixerConfig_t *mixerConfig) {
     mixerConfig->pid_at_min_throttle = 1;
     mixerConfig->yaw_direction = 1;
+    mixerConfig->yaw_jump_prevention_limit = 200;
 #ifdef USE_SERVOS
     mixerConfig->tri_unarmed_servo = 1;
     mixerConfig->servo_lowpass_freq = 400;
@@ -412,9 +416,13 @@ static void resetConf(void)
     masterConfig.rxConfig.midrc = 1500;
     masterConfig.rxConfig.mincheck = 1100;
     masterConfig.rxConfig.maxcheck = 1900;
+    masterConfig.rxConfig.rx_min_usec = 985;          // any of first 4 channels below this value will trigger rx loss detection
+    masterConfig.rxConfig.rx_max_usec = 2115;         // any of first 4 channels above this value will trigger rx loss detection
+
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
     masterConfig.rxConfig.rssi_warningLevel = 50;
+    masterConfig.rxConfig.rssi_ppm_invert = 0;
 
     masterConfig.inputFilteringMode = INPUT_FILTERING_DISABLED;
 
@@ -480,11 +488,9 @@ static void resetConf(void)
     currentProfile->throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
 
     // Failsafe Variables
-    currentProfile->failsafeConfig.failsafe_delay = 10;              // 1sec
-    currentProfile->failsafeConfig.failsafe_off_delay = 200;         // 20sec
-    currentProfile->failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
-    currentProfile->failsafeConfig.failsafe_min_usec = 985;          // any of first 4 channels below this value will trigger failsafe
-    currentProfile->failsafeConfig.failsafe_max_usec = 2115;         // any of first 4 channels above this value will trigger failsafe
+    masterConfig.failsafeConfig.failsafe_delay = 10;              // 1sec
+    masterConfig.failsafeConfig.failsafe_off_delay = 200;         // 20sec
+    masterConfig.failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
 
 #ifdef USE_SERVOS
     // servos
@@ -514,7 +520,12 @@ static void resetConf(void)
 #endif
 
 #ifdef BLACKBOX
+#ifdef SPRACINGF3
+    featureSet(FEATURE_BLACKBOX);
+    masterConfig.blackbox_device = 1;
+#else
     masterConfig.blackbox_device = 0;
+#endif
     masterConfig.blackbox_rate_num = 1;
     masterConfig.blackbox_rate_denom = 1;
 #endif
@@ -523,14 +534,12 @@ static void resetConf(void)
 #ifdef ALIENWII32
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
-    featureSet(FEATURE_FAILSAFE);
 #ifdef ALIENWIIF3
     masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
     masterConfig.batteryConfig.vbatscale = 20;
 #else
     masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
 #endif
-    masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
@@ -539,9 +548,9 @@ static void resetConf(void)
     currentProfile->pidProfile.pidController = 3;
     currentProfile->pidProfile.P8[ROLL] = 36;
     currentProfile->pidProfile.P8[PITCH] = 36;
-    currentProfile->failsafeConfig.failsafe_delay = 2;
-    currentProfile->failsafeConfig.failsafe_off_delay = 0;
-    currentProfile->failsafeConfig.failsafe_throttle = 1000;
+    masterConfig.failsafeConfig.failsafe_delay = 2;
+    masterConfig.failsafeConfig.failsafe_off_delay = 0;
+    masterConfig.failsafeConfig.failsafe_throttle = 1000;
     currentControlRateProfile->rcRate8 = 130;
     currentControlRateProfile->rates[FD_PITCH] = 20;
     currentControlRateProfile->rates[FD_ROLL] = 20;
@@ -647,6 +656,7 @@ static bool isEEPROMContentValid(void)
 void activateControlRateConfig(void)
 {
     generatePitchRollCurve(currentControlRateProfile);
+    generateYawCurve(currentControlRateProfile);
     generateThrottleCurve(currentControlRateProfile, &masterConfig.escAndServoConfig);
 }
 
@@ -677,7 +687,7 @@ void activateConfig(void)
     gpsUsePIDs(&currentProfile->pidProfile);
 #endif
 
-    useFailsafeConfig(&currentProfile->failsafeConfig);
+    useFailsafeConfig(&masterConfig.failsafeConfig);
     setAccelerationTrims(&masterConfig.accZero);
 
     mixerUseConfigs(
@@ -789,12 +799,6 @@ void validateAndFixConfig(void)
 #if defined(CC3D) && defined(DISPLAY) && defined(USE_USART3)
     if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
         featureClear(FEATURE_DISPLAY);
-    }
-#endif
-
-#if defined(SPRACINGF3) && defined(SONAR)
-    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) ) {
-        featureClear(FEATURE_SONAR);
     }
 #endif
 

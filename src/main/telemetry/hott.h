@@ -26,12 +26,43 @@
 #ifndef HOTT_TELEMETRY_H_
 #define HOTT_TELEMETRY_H_
 
+#define HOTT_BINARY_MODE_REQUEST_ID 	0x80
+#define HOTT_TELEMETRY_NO_SENSOR_ID     0x80	// no sensor has been found during the bus scan
+#define HOTT_TELEMETRY_VARIO_SENSOR_ID  0x89	// Graupner #33601 Vario Module
+#define HOTT_TELEMETRY_GPS_SENSOR_ID    0x8a	// Graupner #33600 GPS Module
+#define HOTT_TELEMETRY_AIRESC_SENSOR_ID 0x8c	// Graupner #337xx Air ESC
+#define HOTT_TELEMETRY_GAM_SENSOR_ID    0x8d	// Graupner #33611 General Air Module
+#define HOTT_TELEMETRY_EAM_SENSOR_ID    0x8e	// Graupner #33620 Electric Air Module
+
+#define HOTT_TEXT_MODE_REQUEST_ID   	0x7F
+#define HOTT_RECEIVER_ID				0x00		// "Receiver" selected on TX for text mode
+#define HOTT_VARIO_SENSOR_TEXT_ID		0x90		// "Vario Module"     --      --
+#define HOTT_GPS_SENSOR_TEXT_ID  		0xA0		// "GPS Module"       --      --
+#define HOTT_GAM_SENSOR_TEXT_ID			0xD0		// "General Air Module"       --
+#define HOTT_EAM_SENSOR_TEXT_ID			0xE0		// "Electric Air Module"      --
+
 #define HOTT_EAM_OFFSET_HEIGHT       500
 #define HOTT_EAM_OFFSET_M2S           72
 #define HOTT_EAM_OFFSET_M3S          120
 #define HOTT_EAM_OFFSET_TEMPERATURE   20
 
 #define HOTT_GPS_ALTITUDE_OFFSET 500
+
+
+//FIXME : Inc and Dec arrows are switched when any part of the TX display is reversed
+// this is known by Graupner but not corrected in v1.185 MX20 firmware
+
+typedef enum {
+    HOTT_EAM_ALARM1_FLAG_NONE = 0,
+    HOTT_EAM_ALARM1_FLAG_MAH = (1 << 0),
+    HOTT_EAM_ALARM1_FLAG_BATTERY_1 = (1 << 1),
+    HOTT_EAM_ALARM1_FLAG_BATTERY_2 = (1 << 2),
+    HOTT_EAM_ALARM1_FLAG_TEMPERATURE_1 = (1 << 3),
+    HOTT_EAM_ALARM1_FLAG_TEMPERATURE_2 = (1 << 4),
+    HOTT_EAM_ALARM1_FLAG_ALTITUDE = (1 << 5),
+    HOTT_EAM_ALARM1_FLAG_CURRENT = (1 << 6),
+    HOTT_EAM_ALARM1_FLAG_MAIN_VOLTAGE = (1 << 7),
+} hottEamAlarm1Flag_e;
 
 typedef enum {
     HOTT_EAM_ALARM2_FLAG_NONE = 0,
@@ -416,6 +447,8 @@ typedef struct HOTT_AIRESC_MSG_s {
     uint8_t version;        //#43   Version number (highest current motor 1-x)
     uint8_t stop_byte;      //#44 constant value 0x7d
 } HOTT_AIRESC_MSG_t;
+
+bool hottTelemetryEnabled;
 
 void handleHoTTTelemetry(void);
 void checkHoTTTelemetryState(void);

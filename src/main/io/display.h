@@ -15,19 +15,26 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//#define ENABLE_DEBUG_OLED_PAGE
+
 typedef enum {
     PAGE_WELCOME,
     PAGE_ARMED,
     PAGE_BATTERY,
     PAGE_SENSORS,
     PAGE_RX,
-    PAGE_PROFILE,
+    PAGE_PROFILE
+#ifdef GPS
+    ,
     PAGE_GPS
+#endif
 #ifdef ENABLE_DEBUG_OLED_PAGE
     ,
     PAGE_DEBUG
 #endif
 } pageId_e;
+
+uint8_t commandFromSticks;
 
 void updateDisplay(void);
 
