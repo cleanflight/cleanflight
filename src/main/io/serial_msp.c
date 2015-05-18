@@ -857,7 +857,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_TILT_ARM_CONFIG:
-        headSerialReply(3);
+        headSerialReply(3+4);
         serialize8( currentProfile->tiltArm.flagEnabled );
         serialize8( currentProfile->tiltArm.pitchDivisior );
         serialize8( currentProfile->tiltArm.thrustLiftoff );
