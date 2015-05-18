@@ -227,7 +227,6 @@ void init(void)
     pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
     pwm_params.idlePulse = = masterConfig.escAndServoConfig.mincommand;
-    //pwm_params.idlePulse = PULSE_1MS; // standard PWM for brushless ESC (default, overridden below)
     if (feature(FEATURE_3D))
         pwm_params.idlePulse = masterConfig.flight3DConfig.neutral3d;
     if (pwm_params.motorPwmRate > 500)
