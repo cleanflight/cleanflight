@@ -837,6 +837,8 @@ void initEEPROM(void)
 
 void readEEPROM(void)
 {
+    bool writeConfig = false;
+
     // Sanity check
     if (!isEEPROMContentValid())
         failureMode(10);
@@ -863,8 +865,7 @@ void readEEPROM(void)
             }
             // Copy desired features (latched before soft reset) into the working featureset on first call from init
             masterConfig.enabledFeatures = readDesiredFeatures();
-            // Write modified enabled features to EEPROM
-            writeEEPROM();
+            writeConfig = true;
         }
     }
 
@@ -874,6 +875,9 @@ void readEEPROM(void)
         firstCallByInit = false;
         // Start with equal desired & enabled features when called by init()
         writeDesiredFeatures(masterConfig.enabledFeatures);
+        if (writeConfig) {
+            writeEEPROM();
+        }
     }
 
     activateConfig();
@@ -944,17 +948,16 @@ void ensureEEPROMContainsValidData(void)
         return;
     }
 
-    resetConf();
-    // Since this function is called from init() before everything is up and running, we need to
-    // get the target specific desired features just set in resetConf() into the enabled features.
-    // Otherwise they sit there and will be applied on the next soft reset
-    masterConfig.enabledFeatures = readDesiredFeatures();
-    writeEEPROM();
+    resetEEPROM();
 }
 
 void resetEEPROM(void)
 {
     resetConf();
+    // Get the target specific desired features just set in resetConf() into the enabled features.
+    // These will normally be applied on the next soft reset.
+    // NOTE: this modifies the working feature set and SHOULD do a soft reset after wrireEEPROM()
+    masterConfig.enabledFeatures = readDesiredFeatures();
     writeEEPROM();
 }
 
