@@ -231,7 +231,7 @@ const mixer_t mixers[] = {
     { 2, 1, mixerDualcopter },     // MIXER_DUALCOPTER
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
-    { 4, 1, mixerQuadX },      // MIXER_QUADX_TILT
+    { 4, 1, mixerQuadX },          // MIXER_QUADX_TILT
     { 0, 0, NULL },                // MIXER_CUSTOM
 };
 #endif
@@ -574,7 +574,7 @@ static void airplaneMixer(void)
 /*
  * float in range [-PI/2:+PI/2]
  */
-float getTiltAngle(void) {
+float getTiltServoAngle(void) {
     float userInput = 0;
 
     //get wanted position of the tilting servo
@@ -593,7 +593,7 @@ float getTiltAngle(void) {
 }
 
 void servoTilting(void) {
-    float actualTilt = getTiltAngle();
+    float actualTilt = getTiltServoAngle();
 
     //do we need to invert the Servo direction?
     if (servoConf[TILTING_SERVO].rate & 1){
@@ -618,7 +618,7 @@ void servoTilting(void) {
 }
 
 void mixTilting(void) {
-    float angleTilt = getTiltAngle();
+    float angleTilt = getTiltServoAngle();
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
@@ -642,8 +642,8 @@ void mixTilting(void) {
         float yawCompensation = axisPID[YAW] * tmpCosine;
         float yawCompensationInv = axisPID[YAW] - yawCompensation;
 
-        axisPID[ROLL] = -yawCompensationInv + rollCompensation;
-        axisPID[YAW] = yawCompensation - rollCompensationInv;
+        axisPID[ROLL] = yawCompensationInv + rollCompensation;
+        axisPID[YAW] = yawCompensation + rollCompensationInv;
     }
 
 }
