@@ -664,9 +664,9 @@ void mixTilting(void) {
 
     if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
-    	uint16_t liftOffTrust = rcCommand[THROTTLE] - rxConfig->mincheck - (rxConfig->mincheck * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
-    	float compensation = liftOffTrust * ABS(tmpSine); //absolute value because we want do compensate always
-    	if (compensation > 0){
+    	uint16_t liftOffTrust = ( (rxConfig->maxcheck - rxConfig->mincheck) * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
+    	float compensation = liftOffTrust * ABS(tmpSine); //absolute value because we want to increase power even if breaking
+    	if (compensation > 0){//prevent oveload
     		rcCommand[THROTTLE] += compensation;
     	}
     }
