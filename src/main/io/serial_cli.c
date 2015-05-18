@@ -132,6 +132,10 @@ static void cliFlashWrite(char *cmdline);
 static void cliFlashRead(char *cmdline);
 #endif
 
+#ifdef USE_USBLINKER
+static void cliUSBLinker(char *cmdline);
+#endif
+
 // signal that we're in cli mode
 uint8_t cliMode = 0;
 
@@ -222,6 +226,9 @@ const clicmd_t cmdTable[] = {
 #endif
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
+#ifdef USE_USBLINKER
+    { "usblinker", "flash simonk escs", cliUSBLinker },
+#endif
     { "version", "", cliVersion },
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
@@ -1644,6 +1651,19 @@ static void cliStatus(char *cmdline)
 
     printf("Cycle Time: %d, I2C Errors: %d, config size: %d\r\n", cycleTime, i2cErrorCounter, sizeof(master_t));
 }
+
+
+#ifdef USE_USBLINKER
+
+void USBLinker(void);
+
+static void cliUSBLinker(char *cmdline)
+{
+    (void)cmdline;
+
+    USBLinker();
+}
+#endif
 
 static void cliVersion(char *cmdline)
 {

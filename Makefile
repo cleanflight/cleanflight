@@ -358,6 +358,7 @@ EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/system_stm32f10x.c \
 		   drivers/timer.c \
 		   drivers/timer_stm32f10x.c \
+		   io/usblinker.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
