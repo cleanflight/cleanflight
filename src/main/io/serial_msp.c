@@ -1454,7 +1454,12 @@ static bool processInCommand(void)
     	currentProfile->tiltArm.flagEnabled = read8();
     	currentProfile->tiltArm.pitchDivisior = read8();
     	currentProfile->tiltArm.thrustLiftoff = read8();
-    	currentProfile->tiltArm.gearRatio = 0.0f | read32(); //trick to make uint32 to float
+    	union{
+    	    uint32_t raw;
+    	    float    floating;
+    	}tmp;
+    	tmp.raw =  read32();
+    	currentProfile->tiltArm.gearRatio = tmp.floating;
     	break;
     case MSP_SET_CHANNEL_FORWARDING:
 #ifdef USE_SERVOS
