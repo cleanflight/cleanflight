@@ -132,7 +132,7 @@ void mixerUseConfigs(
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
 void mixerResetMotors(void);
-float getTiltAngle(void);
+float getTiltServoAngle(void);
 void servoTilting(void);
 void mixTilting(void);
 void mixTable(void);
