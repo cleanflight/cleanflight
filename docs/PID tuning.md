@@ -91,12 +91,9 @@ In Angle mode, this controller uses the LEVEL "P" PID setting to decide how stro
 be. Note that the default value for P_Level is 90.  This is more than likely too high of a value for most, and will cause the model to be very unstable in Angle Mode, and could result in loss of control.  It is recommended to change this value to 20 before using PID Controller 1 in Angle Mode.
 
 In Horizon mode, this controller uses the LEVEL "I" PID setting to decide how much auto-level correction should be
-applied. The default Cleanflight setting for "I" will result in virtually no auto-leveling being applied, so that will
-need to be increased in order to perform like PID controller 0.
-
-The LEVEL "D" setting is not used by this controller.
-
-TPA is not used by this controller.
+applied. 
+Level "I" term: Strength of horizon auto-level. value of 0.030 in the configurator equals to 3.0 for Level P.
+Level "D" term: Strength of horizon transition. 0 is more stick travel on level and 255 is more rate mode what means very narrow angle of leveling.  
 
 ### PID controller 2, "LuxFloat"
 
