@@ -626,11 +626,13 @@ float getTiltServoAngle(void) {
     }
 
     //convert to radiant, keep eventual non-linearity of range
+    float servoAngle;
     if (userInput >= rxConfig->midrc){
-    	return scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].angleAtMax) );
+    	servoAngle = scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].angleAtMin) );
     }else{
-    	return scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, -degreesToRadians(servoConf[TILTING_SERVO].angleAtMin), 0 );
+    	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, -degreesToRadians(servoConf[TILTING_SERVO].angleAtMax), 0 );
     }
+    return servoAngle * tiltArmConfig->gearRatio;
 }
 
 void servoTilting(void) {
