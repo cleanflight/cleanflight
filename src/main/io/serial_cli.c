@@ -803,7 +803,7 @@ static void cliColor(char *cmdline)
 
 static void cliTiltArm(char *cmdline)
 {
-    enum { TILT_ARM_ARGUMENT_COUNT = 5 };
+    enum { TILT_ARM_ARGUMENT_COUNT = 6 };
     int16_t arguments[TILT_ARM_ARGUMENT_COUNT];
 
     tiltArmConfig_t *tilt;
@@ -842,6 +842,10 @@ static void cliTiltArm(char *cmdline)
             printf(" DISABLED");
         }
 
+        printf(" gear ratio: %f",
+            tilt->gearRatio
+        );
+
         printf("\r\n");
 
     } else {
@@ -859,7 +863,11 @@ static void cliTiltArm(char *cmdline)
                     return;
                 }
 
-                arguments[validArgumentCount++] = atoi(ptr);
+                if (validArgumentCount < TILT_ARM_ARGUMENT_COUNT){ //last value is a float
+                	arguments[validArgumentCount++] = atoi(ptr);
+                }else{
+                	arguments[validArgumentCount++] = atof(ptr);
+                }
 
                 do {
                     ptr++;
@@ -892,6 +900,8 @@ static void cliTiltArm(char *cmdline)
         }
         tilt->pitchDivisior = arguments[3];
         tilt->thrustLiftoff = arguments[4];
+
+        tilt->gearRatio = arguments[5];
     }
 }
 

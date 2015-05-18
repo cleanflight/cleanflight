@@ -334,6 +334,7 @@ void resetTiltArmProfile(tiltArmConfig_t *tiltConfig){
     tiltConfig->flagEnabled = 0;
     tiltConfig->pitchDivisior = 1;
     tiltConfig->thrustLiftoff = 50;
+    tiltConfig->gearRatio = 1;
 }
 
 uint8_t getCurrentProfile(void)

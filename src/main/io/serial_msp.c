@@ -861,6 +861,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8( currentProfile->tiltArm.flagEnabled );
         serialize8( currentProfile->tiltArm.pitchDivisior );
         serialize8( currentProfile->tiltArm.thrustLiftoff );
+        serialize32( currentProfile->tiltArm.gearRatio );
         break;
     case MSP_CHANNEL_FORWARDING:
         headSerialReply(8);
@@ -1460,6 +1461,7 @@ static bool processInCommand(void)
     	currentProfile->tiltArm.flagEnabled = read8();
     	currentProfile->tiltArm.pitchDivisior = read8();
     	currentProfile->tiltArm.thrustLiftoff = read8();
+    	currentProfile->tiltArm.gearRatio = 0.0f | read32(); //trick to make uint32 to float
     	break;
     case MSP_SET_CHANNEL_FORWARDING:
 #ifdef USE_SERVOS
