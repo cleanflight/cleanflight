@@ -911,7 +911,7 @@ static void cliTiltArm(char *cmdline)
         }
 
         printf(" gear ratio: %f",
-            tilt->gearRatio
+            (double)tilt->gearRatio //avoid implicit conversion warning; printf use double
         );
 
         printf("\r\n");
