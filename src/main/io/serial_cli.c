@@ -222,9 +222,9 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_SERVOS
     { "servo", "servo config", cliServo },
 #endif
-	{ "tilt_arm", "tilting arm config", cliTiltArm },
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
+	{ "tilt_arm", "tilting arm config", cliTiltArm },
     { "version", "", cliVersion },
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
@@ -803,7 +803,7 @@ static void cliColor(char *cmdline)
 
 static void cliTiltArm(char *cmdline)
 {
-    enum { TILT_ARM_ARGUMENT_COUNT = 6 };
+    enum { TILT_ARM_ARGUMENT_COUNT = 7 };
     int16_t arguments[TILT_ARM_ARGUMENT_COUNT];
 
     tiltArmConfig_t *tilt;
@@ -815,7 +815,7 @@ static void cliTiltArm(char *cmdline)
         tilt = &currentProfile->tiltArm;
         printf("tilt_arm");
 
-        printf(" pitch compensation");
+        printf("\r\npitch compensation");
         if (tilt->flagEnabled & TILT_ARM_ENABLE_PITCH){
         	printf(" ENABLED");
         }else{
@@ -825,7 +825,7 @@ static void cliTiltArm(char *cmdline)
             tilt->pitchDivisior
         );
 
-        printf(" thrust compensation");
+        printf("\r\nthrust compensation");
         if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST){
             printf(" ENABLED");
         }else{
@@ -834,16 +834,23 @@ static void cliTiltArm(char *cmdline)
         printf(" thrust liftoff value: %d",
             tilt->thrustLiftoff
         );
+        printf("\r\nbody thrust compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
+            printf(" ENABLED");
+        }else{
+            printf(" DISABLED");
+        }
 
-        printf(" yaw-roll compensation");
+        printf("\r\nyaw-roll compensation");
         if (tilt->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL){
             printf(" ENABLED");
         }else{
             printf(" DISABLED");
         }
 
-        printf(" gear ratio: %f",
-            (double)tilt->gearRatio //avoid implicit conversion warning; printf use double
+        printf("\r\ngear ratio: %d.%d",//there does not seems to be support fro %f so here the trick
+            (int)tilt->gearRatio,
+			(int)((tilt->gearRatio-(int)tilt->gearRatio)*1000)
         );
 
         printf("\r\n");
@@ -855,23 +862,25 @@ static void cliTiltArm(char *cmdline)
 
         // Command line is integers (possibly negative) separated by spaces, no other characters allowed.
 
+        float gearRatio = 1;
         // If command line doesn't fit the format, don't modify the config
         while (*ptr) {
-            if ( (*ptr >= '0' && *ptr <= '9')) {
+            if ( *ptr >= '0' && *ptr <= '9' ) {
                 if (validArgumentCount >= TILT_ARM_ARGUMENT_COUNT) {
                     cliPrint("Parse error\r\n");
                     return;
                 }
 
-                if (validArgumentCount < TILT_ARM_ARGUMENT_COUNT){ //last value is a float
+                if (validArgumentCount < TILT_ARM_ARGUMENT_COUNT-1){ //last value is a float
                 	arguments[validArgumentCount++] = atoi(ptr);
                 }else{
-                	arguments[validArgumentCount++] = atof(ptr);
+                	gearRatio = atof(ptr);
+                	arguments[validArgumentCount++] = -1; //just to be sure to initialize it
                 }
 
                 do {
                     ptr++;
-                } while (*ptr >= '0' && *ptr <= '9');
+                } while ( (*ptr >= '0' && *ptr <= '9') || (validArgumentCount == TILT_ARM_ARGUMENT_COUNT && *ptr == '.') );
             } else if (*ptr == ' ') {
                 ptr++;
             } else {
@@ -880,7 +889,7 @@ static void cliTiltArm(char *cmdline)
             }
         }
 
-        // Check we got the right number of args and the servo index is correct (don't validate the other values)
+        // Check we got the right number of args
         if (validArgumentCount != TILT_ARM_ARGUMENT_COUNT) {
             cliPrint("Parse error\r\n");
             return;
@@ -898,10 +907,13 @@ static void cliTiltArm(char *cmdline)
         if (arguments[2]){
             tilt->flagEnabled |= TILT_ARM_ENABLE_YAW_ROLL;
         }
-        tilt->pitchDivisior = arguments[3];
-        tilt->thrustLiftoff = arguments[4];
+        if (arguments[3]){
+            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST_BODY;
+        }
+        tilt->pitchDivisior = arguments[4];
+        tilt->thrustLiftoff = arguments[5];
 
-        tilt->gearRatio = arguments[5];
+        tilt->gearRatio = gearRatio;
     }
 }
 
