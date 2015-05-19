@@ -857,11 +857,11 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_TILT_ARM_CONFIG:
-        headSerialReply(3+4);
+        headSerialReply(4);
         serialize8( currentProfile->tiltArm.flagEnabled );
         serialize8( currentProfile->tiltArm.pitchDivisior );
         serialize8( currentProfile->tiltArm.thrustLiftoff );
-        serialize32( currentProfile->tiltArm.gearRatio );
+        serialize8( currentProfile->tiltArm.gearRatioPercent );
         break;
     case MSP_CHANNEL_FORWARDING:
         headSerialReply(8);
@@ -1458,16 +1458,11 @@ static bool processInCommand(void)
 #endif
         break;
     case MSP_SET_TILT_ARM:
-    	currentProfile->tiltArm.flagEnabled = read8();
-    	currentProfile->tiltArm.pitchDivisior = read8();
-    	currentProfile->tiltArm.thrustLiftoff = read8();
-    	union{
-    	    uint32_t raw;
-    	    float    floating;
-    	}tmp;
-    	tmp.raw =  read32();
-    	currentProfile->tiltArm.gearRatio = tmp.floating;
-    	break;
+        currentProfile->tiltArm.flagEnabled = read8();
+        currentProfile->tiltArm.pitchDivisior = read8();
+        currentProfile->tiltArm.thrustLiftoff = read8();
+        currentProfile->tiltArm.gearRatioPercent = read8();
+        break;
     case MSP_SET_CHANNEL_FORWARDING:
 #ifdef USE_SERVOS
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {

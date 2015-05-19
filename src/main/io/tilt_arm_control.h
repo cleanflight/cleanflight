@@ -16,5 +16,5 @@ typedef struct tiltArmConfig_s {
     uint8_t flagEnabled; // b1 == pitch compensation, b10 == thrust compensation, b11 == yawRoll correction
     uint8_t pitchDivisior;
     uint8_t thrustLiftoff; // percent position of the stick
-    float gearRatio;
+    uint8_t gearRatioPercent; //it has to be /100 before use. For example 0.75 is storead as 75
 } tiltArmConfig_t;
