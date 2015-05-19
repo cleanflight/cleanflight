@@ -332,9 +332,22 @@ static void processRxChannels(void)
             rxCheckPulse(chan, sample);
         }
 
-        // validate the range
-        if (sample < PULSE_MIN || sample > PULSE_MAX)
-            sample = rxConfig->midrc;
+        // validate and fix the sample
+        if (sample < PULSE_MIN || sample < rxConfig->rx_min_usec) {
+            if (chan < 4) {
+                // stick channel
+                sample = rxConfig->midrc;
+            } else {
+                sample = rxConfig->rx_min_usec;
+            }
+        } else if (sample > PULSE_MAX || sample > rxConfig->rx_max_usec) {
+            if (chan < 4) {
+                // stick channel
+                sample = rxConfig->midrc;
+            } else {
+                sample = rxConfig->rx_max_usec;
+            }
+        }
 
         if (isRxDataDriven()) {
             rcData[chan] = sample;
