@@ -916,9 +916,8 @@ static void cliTiltArm(char *cmdline)
             printf(" DISABLED");
         }
 
-        printf("\r\ngear ratio: %d.%d",//there does not seems to be support fro %f so here the trick
-            (int)tilt->gearRatio,
-			(int)((tilt->gearRatio-(int)tilt->gearRatio)*1000)
+        printf("\r\ngear ratio percent: %d",
+            tilt->gearRatioPercent
         );
 
         printf("\r\n");
@@ -930,7 +929,6 @@ static void cliTiltArm(char *cmdline)
 
         // Command line is integers (possibly negative) separated by spaces, no other characters allowed.
 
-        float gearRatio = 1;
         // If command line doesn't fit the format, don't modify the config
         while (*ptr) {
             if ( *ptr >= '0' && *ptr <= '9' ) {
@@ -939,16 +937,11 @@ static void cliTiltArm(char *cmdline)
                     return;
                 }
 
-                if (validArgumentCount < TILT_ARM_ARGUMENT_COUNT-1){ //last value is a float
-                	arguments[validArgumentCount++] = atoi(ptr);
-                }else{
-                	gearRatio = atof(ptr);
-                	arguments[validArgumentCount++] = -1; //just to be sure to initialize it
-                }
+                arguments[validArgumentCount++] = atoi(ptr);
 
                 do {
                     ptr++;
-                } while ( (*ptr >= '0' && *ptr <= '9') || (validArgumentCount == TILT_ARM_ARGUMENT_COUNT && *ptr == '.') );
+                } while ( *ptr >= '0' && *ptr <= '9' );
             } else if (*ptr == ' ') {
                 ptr++;
             } else {
@@ -981,7 +974,7 @@ static void cliTiltArm(char *cmdline)
         tilt->pitchDivisior = arguments[4];
         tilt->thrustLiftoff = arguments[5];
 
-        tilt->gearRatio = gearRatio;
+        tilt->gearRatioPercent = arguments[6];
     }
 }
 
