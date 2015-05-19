@@ -232,6 +232,7 @@ const mixer_t mixers[] = {
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
     { 4, 1, mixerQuadX },          // MIXER_QUADX_TILT
+	{ 8, 1, mixerOctoX8 },         // MIXER_OCTOX_TILT
     { 0, 0, NULL },                // MIXER_CUSTOM
 };
 #endif
@@ -481,6 +482,7 @@ void writeServos(void)
             pwmWriteServo(3, servo[6]);
             break;
         case MIXER_QUADX_TILT:
+        case MIXER_OCTOX_TILT:
             servoTilting();
             break;
         default:
@@ -571,8 +573,12 @@ static void airplaneMixer(void)
 }
 #endif
 
+uint8_t isTilting(){
+	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
+}
+
 /*
- * float in range [-PI/2:+PI/2]
+ * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
  */
 float getTiltServoAngle(void) {
     float userInput = 0;
@@ -626,7 +632,7 @@ void mixTilting(void) {
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
-    if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
+    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
     	float pitchToCompensate = tmpSine;
     	if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
@@ -640,7 +646,7 @@ void mixTilting(void) {
     }
 
     //compensate the roll and yaw because motor orientation
-    if (currentMixerMode == MIXER_QUADX_TILT && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
+    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
 
         // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
