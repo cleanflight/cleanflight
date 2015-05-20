@@ -244,6 +244,22 @@ void i2c_OLED_send_string(const char *string)
     }
 }
 
+void i2c_OLED_send_string_formatted(const char *string)
+{
+    // Sends a string of chars until null terminator
+    while (*string) {
+        if (*string & 0x80) { // MSB indicates inverted char
+          CHAR_FORMAT = INVERSE_CHAR_FORMAT;
+          i2c_OLED_send_char(*string & 0xf7); // strip MSB
+          CHAR_FORMAT = NORMAL_CHAR_FORMAT;
+        } else {
+          i2c_OLED_send_char(*string);
+        }
+        string++;
+    }
+}
+
+
 /**
 * according to http://www.adafruit.com/datasheets/UG-2864HSWEG01.pdf Chapter 4.4 Page 15
 */

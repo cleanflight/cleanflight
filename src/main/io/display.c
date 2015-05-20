@@ -135,6 +135,77 @@ typedef struct pageState_s {
 
 static pageState_t pageState;
 
+typedef struct armingFlagDescription_t {
+    const char *longDescription;
+    const char *shortDescription; // used for status line
+} armingFlagDescription_t;
+
+// armingFlagDescription - must be kept in synced with armingFlags
+/*
+OK_TO_ARM       = (1 << 0),
+PREVENT_ARMING  = (1 << 1),
+ARMED           = (1 << 2)
+*/
+static const armingFlagDescription_t armingFlagDescription[] = {
+    { "READY TO ARM", "READY" },
+    { "PREVENT ARMING", "PREVENT A" },
+    { "ARMED", "ARMED" | 0x8080808080 } // set MSB to indicate inverted chars
+};
+
+typedef struct flightFlagDescription_t {
+    const char *longDescription;
+    const char *shortDescription; // used for status line
+} flightFlagDescription_t;
+
+// flightFlagDescription - must be kept in synced with flightFlags
+/*
+ANGLE_MODE      = (1 << 0),
+HORIZON_MODE    = (1 << 1),
+MAG_MODE        = (1 << 2),
+BARO_MODE       = (1 << 3),
+GPS_HOME_MODE   = (1 << 4),
+GPS_HOLD_MODE   = (1 << 5),
+HEADFREE_MODE   = (1 << 6),
+AUTOTUNE_MODE   = (1 << 7),
+PASSTHRU_MODE   = (1 << 8),
+SONAR_MODE      = (1 << 9),
+*/
+static const flightFlagDescription_t flightFlagDescription[] = {
+    { "ANGLE MODE", "ANG" },
+    { "HORIZON MODE", "HOR" },
+    { "MAG MODE", "MAG" },
+    { "BARO MODE", "BAR" },
+    { "GPS HOME MODE", "GHM" },
+    { "GPS HOLD MODE", "GHL" },
+    { "HEADFREE MODE", "HFR" },
+    { "AUTOTUNE MODE", "ATU" },
+    { "PASSTHEU MODE", "PAS" },
+    { "SONAR MODE", "SON" }
+};
+
+typedef struct flightFlagDescription_t {
+    const char *longDescription;
+    const char *shortDescription; // used for status line
+} flightFlagDescription_t;
+
+// stateFlagDescription - must be kept in synced with stateFlags
+/*
+GPS_FIX_HOME   = (1 << 0),
+GPS_FIX        = (1 << 1),
+CALIBRATE_MAG  = (1 << 2),
+SMALL_ANGLE    = (1 << 3),
+FIXED_WING     = (1 << 4),
+*/
+static const stateFlagDescription_t stateFlagDescription[] = {
+    { "GPS FIX HOME", "GFH" | 0X808080},    // inverted to remaind that home is not fixed
+    { "GPS FIX", "GPS"  | 0X808080},        // inverted to remaind that GPS position is not fixed
+    { "CALIBRATE MAG", "CMG"  | 0X808080 }, // inverted as it is an error
+    { "SMALL ANGLE", "SAL" },
+    { "FIXED WING", "FWG" }
+};
+
+
+
 void resetDisplay(void) {
     displayPresent = ug2864hsweg01InitI2C();
 }
@@ -194,6 +265,100 @@ void fillScreenWithCharacters()
 #endif
 
 
+void composeStatus()
+{
+  // let's compose status message
+  // inverted characters are used to reporte
+  // errors or warnings
+
+  // let's start with failsafe
+
+  uint8_t length = strlen(lineBuffer);
+  uint8_t statusTooLong = 0;
+  lineBuffer[lenght-1] = 0x00;
+  lineBuffer[0] = '?' | 0x80;
+  switch (failsafePhase()) {
+      case FAILSAFE_IDLE:
+          lineBuffer[0] = '-';
+          break;
+      case FAILSAFE_RX_LOSS_DETECTED:
+          lineBuffer[0] = 'R' | 0x80;
+          break;
+      case FAILSAFE_LANDING:
+          lineBuffer[0] = 'l' | 0x80;
+          break;
+      case FAILSAFE_LANDED:
+          lineBuffer[0] = 'L' | 0x80;
+          break;
+  }
+
+  // receive status
+  lineBuffer[1] = rxIsReceivingSignal() ? 'R' : ('!' | 0x80);
+
+  // now is time check for ARMING status
+  length = 2;
+  uint8_t i;
+  // iterate trough the flags
+  for (i=0;i<2;i++) {
+    // check if flag is set
+    if ((1<<i) & (armingFlags)) {
+      // check if we have enough space in line
+      if ((length+1+strlen(armingFlagDescription[i].shortDescription))<(strlen(lineBuffer)-1)) {
+        lineBuffer[length] = ' ';
+        strcpy(lineBuffer+length+1,armingFlagDescription[i].shortDescription);
+        length += strlen(armingFlagDescription[i].shortDescription)+1;
+      } else {
+        // set too long flag
+        statusTooLong = 1;
+      }
+    }
+  }
+
+  // now is time to report flight modes
+  // iterate trough the flags
+  for (i=0;i<10;i++) {
+    // check if flag is set
+    if ((1<<i) & (flightFlags)) {
+      // check if we have enough space in line
+      if ((length+1+strlen(flightFlagDescription[i].shortDescription))<(strlen(lineBuffer)-1)) {
+        lineBuffer[length] = ' ';
+        strcpy(lineBuffer+length+1,flightFlagDescription[i].shortDescription);
+        length += strlen(flightFlagDescription[i].shortDescription)+1;
+      } else {
+        // set too long flag
+        statusTooLong = 1;
+      }
+    }
+  }
+
+  // ..and state flags
+  // iterate trough the flags
+  for (i=0;i<5;i++) {
+    // check if flag is set
+    if ((1<<i) & (stateFlags)) {
+      // check if we have enough space in line
+      if ((length+1+strlen(stateFlagDescription[i].shortDescription))<(strlen(lineBuffer)-1)) {
+        lineBuffer[length] = ' ';
+        strcpy(lineBuffer+length+1,stateFlagDescription[i].shortDescription);
+        length += strlen(stateFlagDescription[i].shortDescription)+1;
+      } else {
+        // set too long flag
+        statusTooLong = 1;
+      }
+    }
+  }
+
+  while (length < sizeof(lineBuffer) - 1) {
+      lineBuffer[length++] = ' ';
+  }
+  lineBuffer[length] = 0;
+
+  // check for too long status line and report it
+  if (statusTooLong) {
+    lineBuffer[length-1] = '~' | 0x80;
+  }
+
+}
 void updateTicker(void)
 {
     static uint8_t tickerIndex = 0;
@@ -234,6 +399,17 @@ void showTitle()
 {
     i2c_OLED_set_line(0);
     i2c_OLED_send_string(pageTitles[pageState.pageId]);
+}
+
+void showStatus()
+{
+    // line buffer is hijacked for staus line
+    padLineBuffer();
+    composeStatus();
+    // temporarily put on first line (covers whateveris there such as page title)
+    // and gets covered by ticker
+    i2c_OLED_set_line(0);
+    i2c_OLED_send_string_formatted(lineBuffer);
 }
 
 void handlePageChange(void)
@@ -608,9 +784,12 @@ void updateDisplay(void)
 #endif
     }
     if (!armedState) {
+        /* part of status line now
         updateFailsafeStatus();
         updateRxStatus();
-        updateTicker();
+        */
+        showStatus(); // fixme status covers page title
+        updateTicker(); // fixme ticker covers status overwflow flag
     }
 
 }
