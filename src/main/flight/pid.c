@@ -37,6 +37,7 @@
 
 #include "io/rc_controls.h"
 #include "io/gps.h"
+#include "io/tilt_arm_control.h"
 
 #include "flight/pid.h"
 #include "flight/imu.h"
@@ -64,10 +65,10 @@ static int32_t errorAngleI[2] = { 0, 0 };
 static float errorAngleIf[2] = { 0.0f, 0.0f };
 
 static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf);
 
 typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf);            // pid controller function prototype
 
 pidControllerFuncPtr pid_controller = pidMultiWii; // which pid controller are we using, defaultMultiWii
 
@@ -101,7 +102,7 @@ bool shouldAutotune(void)
 #endif
 
 static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
     float RateError, errorAngle, AngleRate, gyroRate;
     float ITerm,PTerm,DTerm;
@@ -216,7 +217,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 }
 
 static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
     UNUSED(rxConfig);
 
@@ -299,7 +300,7 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 }
 
 static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-            rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+            rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
     UNUSED(rxConfig);
 
@@ -408,7 +409,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 }
 
 static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
     UNUSED(rxConfig);
 
@@ -519,7 +520,7 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
 }
 
 static void pidHarakiri(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
     UNUSED(rxConfig);
 
@@ -641,12 +642,12 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 #endif
 }
 
-static uint8_t shouldCompensate(uint8_t axis, rxConfig_t *rxConfig){
-	return axis == PITCH && rcData[AUX1] < rxConfig->midrc;
+static uint8_t shouldCompensate(uint8_t axis, rxConfig_t *rxConfig, tiltArmConfig_t *tiltArmConfig){
+	return axis == PITCH && rcData[tiltArmConfig->channel] < rxConfig->midrc;
 }
 
 static void pidHarakiriTilt(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
 	// this PID differ because we want to always use HORIZON for PITCH..
     UNUSED(rxConfig);
@@ -671,7 +672,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
         int32_t tmp = (int32_t)((float)gyroData[axis] * 0.3125f);              // Multiwii masks out the last 2 bits, this has the same idea
         gyroDataQuant = (float)tmp * 3.2f;                                     // but delivers more accuracy and also reduces jittery flight
         rcCommandAxis = (float)rcCommand[axis];                                // Calculate common values for pid controllers
-        compensate = shouldCompensate(axis, rxConfig);
+        compensate = shouldCompensate(axis, rxConfig, tiltConf);
         if (compensate || FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
 #ifdef GPS
             error = constrain(2.0f * rcCommandAxis + GPS_angle[axis], -((int) max_angle_inclination), +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
@@ -771,7 +772,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 }
 
 static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-        rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf)
 {
     UNUSED(rxConfig);
 

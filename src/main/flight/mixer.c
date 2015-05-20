@@ -585,8 +585,8 @@ float getTiltServoAngle(void) {
     float userInput = 0;
 
     //get wanted position of the tilting servo
-    if (rcData[AUX1] > rxConfig->midrc) {
-    	userInput = rcData[AUX1];
+    if (rcData[tiltArmConfig->channel] > rxConfig->midrc) {
+    	userInput = rcData[tiltArmConfig->channel];
     } else {
     	userInput = rcData[PITCH];
     }
