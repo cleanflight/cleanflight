@@ -1296,13 +1296,14 @@ static void cliMotor(char *cmdline)
     int motor_value = 0;
     int index = 0;
     char *pch = NULL;
+    char *saveptr;
 
     if (isEmpty(cmdline)) {
         cliPrint("Usage:\r\nmotor index [value] - show [or set] motor value\r\n");
         return;
     }
 
-    pch = strtok(cmdline, " ");
+    pch = strtok_r(cmdline, " ", &saveptr);
     while (pch != NULL) {
         switch (index) {
             case 0:
@@ -1313,7 +1314,7 @@ static void cliMotor(char *cmdline)
                 break;
         }
         index++;
-        pch = strtok(NULL, " ");
+        pch = strtok_r(NULL, " ", &saveptr);
     }
 
     if (motor_index < 0 || motor_index >= MAX_SUPPORTED_MOTORS) {
