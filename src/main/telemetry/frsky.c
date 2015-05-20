@@ -302,12 +302,24 @@ static void sendLatLong(int32_t coord[2])
     serialize16(coord[LON] < 0 ? 'W' : 'E');
 }
 
-
 static void sendFakeLatLong(void)
 {
+    // Heading is only displayed on OpenTX if non-zero lat/long is also sent
     int32_t coord[2] = {0,0};
+    
     coord[LAT] = (telemetryConfig->gpsNoFixLatitude * GPS_DEGREES_DIVIDER);
     coord[LON] = (telemetryConfig->gpsNoFixLongitude * GPS_DEGREES_DIVIDER);
+
+    sendLatLong(coord);
+}
+
+static void sendFakeLatLongThatAllowsHeadingDisplay(void)
+{
+    // Heading is only displayed on OpenTX if non-zero lat/long is also sent
+    int32_t coord[2] = {
+        1 * GPS_DEGREES_DIVIDER,
+        1 * GPS_DEGREES_DIVIDER
+    };
 
     sendLatLong(coord);
 }
@@ -315,16 +327,14 @@ static void sendFakeLatLong(void)
 #ifdef GPS
 static void sendGPSLatLong(void)
 {
-    // Don't set dummy GPS data, if we already had a GPS fix
-    // it can be usefull to keep last valid coordinates
     static uint8_t gpsFixOccured = 0;
 
-    //Dummy data if no 3D fix, this way we can display heading in Taranis
     if (STATE(GPS_FIX) || gpsFixOccured == 1) {
+        // If we have ever had a fix, send the last known lat/long
         gpsFixOccured = 1;
         sendLatLong(GPS_coord);
     } else {
-        // Send dummy GPS Data in order to display compass value
+        // otherwise send fake lat/long in order to display compass value
         sendFakeLatLong();
     }
 }
@@ -521,14 +531,11 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
             sendSatalliteSignalQualityAsTemperature2();
             sendGPSLatLong();
         }
-        else if (telemetryConfig->gpsNoFixLatitude != 0 && telemetryConfig->gpsNoFixLongitude != 0) {
-            sendFakeLatLong();
+        else {
+            sendFakeLatLongThatAllowsHeadingDisplay();
         }
 #else
-        //  Send GPS information to display compass information
-        if (telemetryConfig->gpsNoFixLatitude != 0 && telemetryConfig->gpsNoFixLongitude != 0) {
-            sendFakeLatLong();
-        }
+        sendFakeLatLongThatAllowsHeadingDisplay();
 #endif
 
         sendTelemetryTail();

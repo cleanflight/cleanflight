@@ -46,6 +46,7 @@
 #include "sensors/acceleration.h"
 
 #include "flight/mixer.h"
+#include "flight/failsafe.h"
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/lowpass.h"
@@ -666,7 +667,7 @@ void mixTable(void)
 
     mixTilting();
 
-    if (motorCount >= 4 &&  mixerConfig->yaw_jump_prevention_limit < 500) {
+    if (motorCount >= 4 && mixerConfig->yaw_jump_prevention_limit < YAW_JUMP_PREVENTION_LIMIT_HIGH) {
         // prevent "yaw jump" during yaw correction (500 is disabled jump protection)
         axisPID[YAW] = constrain(axisPID[YAW], -mixerConfig->yaw_jump_prevention_limit - ABS(rcCommand[YAW]), mixerConfig->yaw_jump_prevention_limit + ABS(rcCommand[YAW]));
     }
@@ -779,6 +780,8 @@ void mixTable(void)
 
     if (ARMING_FLAG(ARMED)) {
 
+        bool isFailsafeActive = failsafeIsActive();
+
         // Find the maximum motor output.
         int16_t maxMotor = motor[0];
         for (i = 1; i < motorCount; i++) {
@@ -803,14 +806,18 @@ void mixTable(void)
                     motor[i] = constrain(motor[i], escAndServoConfig->mincommand, flight3DConfig->deadband3d_low);
                 }
             } else {
-                // If we're at minimum throttle and FEATURE_MOTOR_STOP enabled,
-                // do not spin the motors.
-                motor[i] = constrain(motor[i], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
-                if ((rcData[THROTTLE]) < rxConfig->mincheck) {
-                    if (feature(FEATURE_MOTOR_STOP)) {
-                        motor[i] = escAndServoConfig->mincommand;
-                    } else if (mixerConfig->pid_at_min_throttle == 0) {
-                        motor[i] = escAndServoConfig->minthrottle;
+                if (isFailsafeActive) {
+                    motor[i] = constrain(motor[i], escAndServoConfig->mincommand, escAndServoConfig->maxthrottle);
+                } else {
+                    // If we're at minimum throttle and FEATURE_MOTOR_STOP enabled,
+                    // do not spin the motors.
+                    motor[i] = constrain(motor[i], escAndServoConfig->minthrottle, escAndServoConfig->maxthrottle);
+                    if ((rcData[THROTTLE]) < rxConfig->mincheck) {
+                        if (feature(FEATURE_MOTOR_STOP)) {
+                            motor[i] = escAndServoConfig->mincommand;
+                        } else if (mixerConfig->pid_at_min_throttle == 0) {
+                            motor[i] = escAndServoConfig->minthrottle;
+                        }
                     }
                 }
             }

@@ -49,6 +49,8 @@
 
 #include "rx/rx.h"
 
+//#define DEBUG_RX_SIGNAL_LOSS
+
 void rxPwmInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
 bool sbusInit(rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
@@ -72,9 +74,6 @@ static uint32_t needRxSignalBefore = 0;
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 
 #define PPM_AND_PWM_SAMPLE_COUNT 4
-
-#define PULSE_MIN   750       // minimum PWM pulse width which is considered valid
-#define PULSE_MAX   2250      // maximum PWM pulse width which is considered valid
 
 #define DELAY_50_HZ (1000000 / 50)
 #define DELAY_10_HZ (1000000 / 10)
@@ -259,7 +258,8 @@ void updateRx(uint32_t currentTime)
         }
     }
 
-    if (feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived) {
+    if ((feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived)
+         || feature(FEATURE_RX_PARALLEL_PWM)) {
         needRxSignalBefore = currentTime + DELAY_10_HZ;
     }
 
@@ -333,7 +333,7 @@ static void processRxChannels(void)
         }
 
         // validate the range
-        if (sample < PULSE_MIN || sample > PULSE_MAX)
+        if (sample < rxConfig->rx_min_usec || sample > rxConfig->rx_max_usec)
             sample = rxConfig->midrc;
 
         if (isRxDataDriven()) {
@@ -385,8 +385,12 @@ void updateRSSIPWM(void)
     int16_t pwmRssi = 0;
     // Read value of AUX channel as rssi
     pwmRssi = rcData[rxConfig->rssi_channel - 1];
-
-
+	
+	// RSSI_Invert option	
+	if (rxConfig->rssi_ppm_invert) {
+	    pwmRssi = ((2000 - pwmRssi) + 1000);
+	}
+	
     // Range of rawPwmRssi is [1000;2000]. rssi should be in [0;1023];
     rssi = (uint16_t)((constrain(pwmRssi - 1000, 0, 1000) / 1000.0f) * 1023.0f);
 }

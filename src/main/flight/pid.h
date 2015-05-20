@@ -17,6 +17,12 @@
 
 #pragma once
 
+#define GYRO_I_MAX 256                      // Gyro I limiter
+#define RCconstPI   0.159154943092f         // 0.5f / M_PI;
+#define MAIN_CUT_HZ 12.0f                   // (default 12Hz, Range 1-50Hz)
+#define OLD_YAW 0                           // [0/1] 0 = MultiWii 2.3 yaw, 1 = older yaw.
+#define YAW_P_LIMIT_MIN 100                 // Maximum value for yaw P limiter
+#define YAW_P_LIMIT_MAX 500                 // Maximum value for yaw P limiter
 
 typedef enum {
     PIDROLL,
@@ -40,6 +46,7 @@ typedef struct pidProfile_s {
     uint8_t P8[PID_ITEM_COUNT];
     uint8_t I8[PID_ITEM_COUNT];
     uint8_t D8[PID_ITEM_COUNT];
+    uint8_t PIDweight[PID_ITEM_COUNT];
 
     float P_f[3];                           // float p i and d factors for lux float pid controller
     float I_f[3];
