@@ -641,6 +641,10 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 #endif
 }
 
+static uint8_t shouldCompensate(uint8_t axis, rxConfig_t *rxConfig){
+	return axis == PITCH && rcData[AUX1] < rxConfig->midrc;
+}
+
 static void pidHarakiriTilt(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
 rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 {
@@ -650,7 +654,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     float delta, RCfactor, rcCommandAxis, MainDptCut, gyroDataQuant;
     float PTerm, ITerm, DTerm, PTermACC = 0.0f, ITermACC = 0.0f, ITermGYRO, error, prop = 0.0f;
     static float lastGyro[2] = { 0.0f, 0.0f }, lastDTerm[2] = { 0.0f, 0.0f };
-    uint8_t axis;
+    uint8_t axis, compensate;
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
 //    MainDptCut = RCconstPI / (float)cfg.maincuthz;                           // Initialize Cut off frequencies for mainpid D
@@ -667,7 +671,8 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
         int32_t tmp = (int32_t)((float)gyroData[axis] * 0.3125f);              // Multiwii masks out the last 2 bits, this has the same idea
         gyroDataQuant = (float)tmp * 3.2f;                                     // but delivers more accuracy and also reduces jittery flight
         rcCommandAxis = (float)rcCommand[axis];                                // Calculate common values for pid controllers
-        if (axis == PITCH || FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
+        compensate = shouldCompensate(axis, rxConfig);
+        if (compensate || FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
 #ifdef GPS
             error = constrain(2.0f * rcCommandAxis + GPS_angle[axis], -((int) max_angle_inclination), +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
 #else
@@ -686,7 +691,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
             ITermACC = errorAngleIf[axis] * (float)pidProfile->I8[PIDLEVEL] * 0.08f;
         }
 
-        if (axis == PITCH || !FLIGHT_MODE(ANGLE_MODE)) {
+        if ( compensate || !FLIGHT_MODE(ANGLE_MODE)) {
             if (ABS((int16_t)gyroData[axis]) > 2560) {
                 errorGyroIf[axis] = 0.0f;
             } else {
@@ -696,7 +701,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 
             ITermGYRO = errorGyroIf[axis] * (float)pidProfile->I8[axis] * 0.01f;
 
-            if (axis == PITCH || FLIGHT_MODE(HORIZON_MODE)) {
+            if (compensate || FLIGHT_MODE(HORIZON_MODE)) {
                 PTerm = PTermACC + prop * (rcCommandAxis - PTermACC);
                 ITerm = ITermACC + prop * (ITermGYRO - ITermACC);
             } else {
