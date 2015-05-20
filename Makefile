@@ -564,6 +564,7 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   $(DEBUG_FLAGS) \
 		   -std=gnu99 \
 		   -Wall -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion \
+		   -ffast-math \
 		   -ffunction-sections \
 		   -fdata-sections \
 		   $(DEVICE_FLAGS) \
