@@ -58,6 +58,7 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 #include "rx/msp.h"
@@ -104,7 +105,7 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 
 typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, tiltArmConfig_t *tiltConf);            // pid controller function prototype
 
 extern pidControllerFuncPtr pid_controller;
 
@@ -176,7 +177,7 @@ void annexCode(void)
     static uint8_t vbatTimer = 0;
     static int32_t vbatCycleTime = 0;
 
-    // PITCH & ROLL only dynamic PID adjustemnt,  depending on throttle value
+    // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
         prop2 = 100;
     } else {
@@ -720,13 +721,22 @@ void loop(void)
         }
 #endif
 
+        //TODO: is good here?
+        if ( (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT) && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH) ) {
+            // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
+            if (rcData[currentProfile->tiltArm.channel] < masterConfig.rxConfig.midrc) {
+       	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior; //neutral
+       	    }
+       	}
+
         // PID - note this is function pointer set by setPIDController()
         pid_controller(
             &currentProfile->pidProfile,
             currentControlRateProfile,
             masterConfig.max_angle_inclination,
             &currentProfile->accelerometerTrims,
-            &masterConfig.rxConfig
+            &masterConfig.rxConfig,
+			&currentProfile->tiltArm
         );
 
         mixTable();

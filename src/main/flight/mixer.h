@@ -45,7 +45,9 @@ typedef enum mixerMode
     MIXER_DUALCOPTER = 20,
     MIXER_SINGLECOPTER = 21,
     MIXER_ATAIL4 = 22,
-    MIXER_CUSTOM = 23
+    MIXER_QUADX_TILT = 23,
+	MIXER_OCTOX_TILT = 24,
+    MIXER_CUSTOM = 25
 } mixerMode_e;
 
 // Custom mixer data per motor
@@ -93,6 +95,8 @@ typedef struct servoParam_t {
     int16_t max;                            // servo max
     int16_t middle;                         // servo middle
     int8_t rate;                            // range [-100;+100] ; can be used to ajust a rate 0-100% and a direction
+    int8_t minLimit;                        // range [-90;90] ; can be used to adjust a rate 0-100% and a direction
+    int8_t maxLimit;                        // range [-90;90] ; can be used to adjust a rate 0-100% and a direction
     int8_t forwardFromChannel;              // RX channel index, 0 based.  See CHANNEL_FORWARDING_DISABLED
 } servoParam_t;
 
@@ -108,6 +112,9 @@ extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
 void mixerResetMotors(void);
+float getTiltServoAngle(void);
+void servoTilting(void);
+void mixTilting(void);
 void mixTable(void);
 void writeMotors(void);
 void stopMotors(void);

@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "platform.h"
 
@@ -38,6 +39,7 @@
 #include "io/gimbal.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
+#include "io/tilt_arm_control.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -52,6 +54,7 @@
 
 #define GIMBAL_SERVO_PITCH 0
 #define GIMBAL_SERVO_ROLL 1
+#define TILTING_SERVO 0
 
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
@@ -68,6 +71,7 @@ static flight3DConfig_t *flight3DConfig;
 static escAndServoConfig_t *escAndServoConfig;
 static airplaneConfig_t *airplaneConfig;
 static rxConfig_t *rxConfig;
+static tiltArmConfig_t *tiltArmConfig;
 
 static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 static mixerMode_e currentMixerMode;
@@ -227,6 +231,8 @@ const mixer_t mixers[] = {
     { 2, 1, mixerDualcopter },     // MIXER_DUALCOPTER
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
+    { 4, 1, mixerQuadX },          // MIXER_QUADX_TILT
+	{ 8, 1, mixerOctoX8 },         // MIXER_OCTOX_TILT
     { 0, 0, NULL },                // MIXER_CUSTOM
 };
 #endif
@@ -237,6 +243,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         gimbalConfig_t *gimbalConfigToUse,
+	    tiltArmConfig_t *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
         escAndServoConfig_t *escAndServoConfigToUse,
@@ -247,6 +254,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
     servoConf = servoConfToUse;
     gimbalConfig = gimbalConfigToUse;
+    tiltArmConfig = tiltArmConfigToUse;
 #endif
     flight3DConfig = flight3DConfigToUse;
     escAndServoConfig = escAndServoConfigToUse;
@@ -472,7 +480,10 @@ void writeServos(void)
             pwmWriteServo(2, servo[5]);
             pwmWriteServo(3, servo[6]);
             break;
-
+        case MIXER_QUADX_TILT:
+        case MIXER_OCTOX_TILT:
+            servoTilting();
+            break;
         default:
             // Two servos for SERVO_TILT, if enabled
             if (feature(FEATURE_SERVO_TILT)) {
@@ -561,10 +572,100 @@ static void airplaneMixer(void)
 }
 #endif
 
+uint8_t isTilting(){
+	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
+}
+
+/*
+ * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
+ */
+float getTiltServoAngle(void) {
+    float userInput = 0;
+
+    //get wanted position of the tilting servo
+    if (rcData[tiltArmConfig->channel] > rxConfig->midrc) {
+    	userInput = rcData[tiltArmConfig->channel];
+    } else {
+    	userInput = rcData[PITCH];
+    }
+
+    //convert to radiant, keep eventual non-linearity of range
+    float servoAngle;
+    if (userInput >= rxConfig->midrc){
+    	servoAngle = scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+    }else{
+    	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, degreesToRadians(servoConf[TILTING_SERVO].minLimit), 0 );
+    }
+    return servoAngle * (tiltArmConfig->gearRatioPercent/100.0f);
+}
+
+void servoTilting(void) {
+    float actualTilt = getTiltServoAngle();
+
+    //do we need to invert the Servo direction?
+    if (servoConf[TILTING_SERVO].rate & 1){
+        actualTilt *= -1;
+    }
+
+    //limit servo escursion
+    actualTilt = constrainf( actualTilt, degreesToRadians(servoConf[TILTING_SERVO].minLimit), degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
+    if (actualTilt > 0){
+        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
+    }else{
+        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
+    }
+
+    //just to be sure
+    uint16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
+
+    //and now write it!
+    pwmWriteServo(TILTING_SERVO, outputPwm);
+}
+
+void mixTilting(void) {
+    float angleTilt = getTiltServoAngle();
+
+    //do heavy math only one time
+    float tmpCosine = cosf(angleTilt);
+    float tmpSine = sinf(angleTilt);
+
+    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
+        // compensate the throttle because motor orientation
+    	float pitchToCompensate = tmpSine;
+    	if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
+    		pitchToCompensate += degreesToRadians(inclination.values.pitchDeciDegrees);
+    	}
+    	uint16_t liftOffTrust = ( (rxConfig->maxcheck - rxConfig->mincheck) * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
+    	float compensation = liftOffTrust * ABS(pitchToCompensate); //absolute value because we want to increase power even if breaking
+    	if (compensation > 0){//prevent oveload
+    		rcCommand[THROTTLE] += compensation;
+    	}
+    }
+
+    //compensate the roll and yaw because motor orientation
+    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
+
+        // ***** quick and dirty compensation to test *****
+        float rollCompensation = axisPID[ROLL] * tmpCosine;
+        float rollCompensationInv = axisPID[ROLL] - rollCompensation;
+        float yawCompensation = axisPID[YAW] * tmpCosine;
+        float yawCompensationInv = axisPID[YAW] - yawCompensation;
+
+        axisPID[ROLL] = yawCompensationInv + rollCompensation;
+        axisPID[YAW] = yawCompensation + rollCompensationInv;
+    }
+
+}
+
 void mixTable(void)
 {
     uint32_t i;
 
+#ifdef USE_SERVOS
+    //mixTilting();
+#endif
     if (motorCount > 3) {
         // prevent "yaw jump" during yaw correction
         axisPID[YAW] = constrain(axisPID[YAW], -100 - ABS(rcCommand[YAW]), +100 + ABS(rcCommand[YAW]));

@@ -53,6 +53,7 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -102,6 +103,7 @@ static void cliRateProfile(char *cmdline);
 static void cliReboot(void);
 static void cliSave(char *cmdline);
 static void cliServo(char *cmdline);
+static void cliTiltArm(char *cmdline);
 static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
@@ -219,6 +221,7 @@ const clicmd_t cmdTable[] = {
 #endif
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
+	{ "tilt_arm", "tilting arm config", cliTiltArm },
     { "version", "", cliVersion },
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
@@ -789,12 +792,121 @@ static void cliColor(char *cmdline)
 }
 #endif
 
+static void cliTiltArm(char *cmdline)
+{
+    enum { TILT_ARM_ARGUMENT_COUNT = 7 };
+    int16_t arguments[TILT_ARM_ARGUMENT_COUNT];
+
+    tiltArmConfig_t *tilt;
+
+    char *ptr;
+
+    if (isEmpty(cmdline)) {
+        // print out settings
+        tilt = &currentProfile->tiltArm;
+        printf("tilt_arm");
+
+        printf("\r\npitch compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_PITCH){
+        	printf(" ENABLED");
+        }else{
+        	printf(" DISABLED");
+        }
+        printf(" pitch compensation factor: %d",
+            tilt->pitchDivisior
+        );
+
+        printf("\r\nthrust compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST){
+            printf(" ENABLED");
+        }else{
+            printf(" DISABLED");
+        }
+        printf(" thrust liftoff value: %d",
+            tilt->thrustLiftoff
+        );
+        printf("\r\nbody thrust compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
+            printf(" ENABLED");
+        }else{
+            printf(" DISABLED");
+        }
+
+        printf("\r\nyaw-roll compensation");
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL){
+            printf(" ENABLED");
+        }else{
+            printf(" DISABLED");
+        }
+
+        printf("\r\ngear ratio percent: %d",
+            tilt->gearRatioPercent
+        );
+
+        printf("\r\n");
+
+    } else {
+        int validArgumentCount = 0;
+
+        ptr = cmdline;
+
+        // Command line is integers (possibly negative) separated by spaces, no other characters allowed.
+
+        // If command line doesn't fit the format, don't modify the config
+        while (*ptr) {
+            if ( *ptr >= '0' && *ptr <= '9' ) {
+                if (validArgumentCount >= TILT_ARM_ARGUMENT_COUNT) {
+                    cliPrint("Parse error\r\n");
+                    return;
+                }
+
+                arguments[validArgumentCount++] = atoi(ptr);
+
+                do {
+                    ptr++;
+                } while ( *ptr >= '0' && *ptr <= '9' );
+            } else if (*ptr == ' ') {
+                ptr++;
+            } else {
+                cliPrint("Parse error\r\n");
+                return;
+            }
+        }
+
+        // Check we got the right number of args
+        if (validArgumentCount != TILT_ARM_ARGUMENT_COUNT) {
+            cliPrint("Parse error\r\n");
+            return;
+        }
+
+        tilt = &currentProfile->tiltArm;
+
+        tilt->flagEnabled = 0;
+        if (arguments[0]){
+        	tilt->flagEnabled |= TILT_ARM_ENABLE_PITCH;
+        }
+        if (arguments[1]){
+            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST;
+        }
+        if (arguments[2]){
+            tilt->flagEnabled |= TILT_ARM_ENABLE_YAW_ROLL;
+        }
+        if (arguments[3]){
+            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST_BODY;
+        }
+        tilt->pitchDivisior = arguments[4];
+        tilt->thrustLiftoff = arguments[5];
+
+        tilt->gearRatioPercent = arguments[6];
+    }
+}
+
 static void cliServo(char *cmdline)
 {
 #ifndef USE_SERVOS
     UNUSED(cmdline);
 #else
-    enum { SERVO_ARGUMENT_COUNT = 6 };
+    enum { SERVO_ARGUMENT_COUNT = 8 };
     int16_t arguments[SERVO_ARGUMENT_COUNT];
 
     servoParam_t *servo;
@@ -807,11 +919,13 @@ static void cliServo(char *cmdline)
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             servo = &currentProfile->servoConf[i];
 
-            printf("servo %u %d %d %d %d %d\r\n",
+            printf("servo %u %d %d %d %d %d %d %d\r\n",
                 i,
                 servo->min,
                 servo->max,
                 servo->middle,
+                servo->minLimit,
+                servo->maxLimit,
                 servo->rate,
                 servo->forwardFromChannel
             );
@@ -855,8 +969,10 @@ static void cliServo(char *cmdline)
         servo->min = arguments[1];
         servo->max = arguments[2];
         servo->middle = arguments[3];
-        servo->rate = arguments[4];
-        servo->forwardFromChannel = arguments[5];
+        servo->minLimit = arguments[4];
+        servo->maxLimit = arguments[5];
+        servo->rate = arguments[6];
+        servo->forwardFromChannel = arguments[7];
     }
 #endif
 }
@@ -1081,6 +1197,10 @@ static void cliDump(char *cmdline)
         cliPrint("\r\n# servo\r\n");
 
         cliServo("");
+
+        cliPrint("\r\n# tilting arm\r\n");
+
+        cliTiltArm("");
 
         printSectionBreak();
 

@@ -52,6 +52,7 @@
 #include "io/rc_curves.h"
 #include "io/ledstrip.h"
 #include "io/gps.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 
@@ -77,6 +78,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         gimbalConfig_t *gimbalConfigToUse,
+	    tiltArmConfig_t *tiltConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
         escAndServoConfig_t *escAndServoConfigToUse,
@@ -323,6 +325,14 @@ void resetMixerConfig(mixerConfig_t *mixerConfig) {
 #endif
 }
 
+void resetTiltArmProfile(tiltArmConfig_t *tiltConfig){
+    tiltConfig->flagEnabled = 0;
+    tiltConfig->pitchDivisior = 1;
+    tiltConfig->thrustLiftoff = 50;
+    tiltConfig->gearRatioPercent = 100;
+    tiltConfig->channel = AUX1;
+}
+
 uint8_t getCurrentProfile(void)
 {
     return masterConfig.current_profile_index;
@@ -480,12 +490,16 @@ static void resetConf(void)
         currentProfile->servoConf[i].max = DEFAULT_SERVO_MAX;
         currentProfile->servoConf[i].middle = DEFAULT_SERVO_MIDDLE;
         currentProfile->servoConf[i].rate = servoRates[i];
+        currentProfile->servoConf[i].minLimit = DEFAULT_SERVO_MIN_LIMIT;
+        currentProfile->servoConf[i].maxLimit = DEFAULT_SERVO_MAX_LIMIT;
         currentProfile->servoConf[i].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
     }
 
     // gimbal
     currentProfile->gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
 #endif
+
+    resetTiltArmProfile(&currentProfile->tiltArm);
 
 #ifdef GPS
     resetGpsProfile(&currentProfile->gpsProfile);
@@ -672,6 +686,7 @@ void activateConfig(void)
 #ifdef USE_SERVOS
         currentProfile->servoConf,
         &currentProfile->gimbalConfig,
+	    &currentProfile->tiltArm,
 #endif
         &masterConfig.flight3DConfig,
         &masterConfig.escAndServoConfig,
@@ -708,6 +723,12 @@ void activateConfig(void)
 
 void validateAndFixConfig(void)
 {
+
+    if (masterConfig.mixerMode == MIXER_QUADX_TILT ){
+        //prevent conflict; tilting quad and camstab/trig share Servo
+        featureClear(FEATURE_SERVO_TILT);
+    }
+
     if (!(feature(FEATURE_RX_PARALLEL_PWM) || feature(FEATURE_RX_PPM) || feature(FEATURE_RX_SERIAL) || feature(FEATURE_RX_MSP))) {
         featureSet(FEATURE_RX_PARALLEL_PWM); // Consider changing the default to PPM
     }
