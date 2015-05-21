@@ -75,6 +75,8 @@ typedef enum {
     SERVO_SINGLECOPTER_3 = 5,
     SERVO_SINGLECOPTER_4 = 6,
     
+    SERVO_TILT_ARM = 1,
+
 } servoIndex_e;
 
 #define SERVO_PLANE_INDEX_MIN SERVO_FLAPS
@@ -88,8 +90,6 @@ typedef enum {
 
 #define SERVO_FLAPPERONS_MIN SERVO_FLAPPERON_1
 #define SERVO_FLAPPERONS_MAX SERVO_FLAPPERON_2
-
-#define TILTING_SERVO 0
 
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
@@ -511,7 +511,10 @@ void writeServos(void)
         case MIXER_OCTOX_TILT:
             servoTilting();
             break;
-
+        case MIXER_QUADX_TILT:
+        case MIXER_OCTOX_TILT:
+            servoTilting();
+            break;
         default:
             break;
     }
@@ -634,9 +637,9 @@ float getTiltServoAngle(void) {
     //convert to radiant, keep eventual non-linearity of range
     float servoAngle;
     if (userInput >= rxConfig->midrc){
-    	servoAngle = scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[TILTING_SERVO].angleAtMin) );
+    	servoAngle = scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin) );
     }else{
-    	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, -degreesToRadians(servoConf[TILTING_SERVO].angleAtMax), 0 );
+    	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax), 0 );
     }
     return servoAngle * (tiltArmConfig->gearRatioPercent/100.0f);
 }
@@ -645,22 +648,22 @@ void servoTilting(void) {
     float actualTilt = getTiltServoAngle();
 
     //do we need to invert the Servo direction?
-    if (servoConf[TILTING_SERVO].rate & 1){
+    if (servoConf[SERVO_TILT_ARM].rate & 1){
         actualTilt *= -1;
     }
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
     if (actualTilt > 0){
-        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
+        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[SERVO_TILT_ARM].middle, servoConf[SERVO_TILT_ARM].max);
     }else{
-        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
+        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[SERVO_TILT_ARM].min, servoConf[SERVO_TILT_ARM].middle);
     }
 
     //just to be sure
-    uint16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
+    uint16_t outputPwm = constrain( actualTilt, servoConf[SERVO_TILT_ARM].min, servoConf[SERVO_TILT_ARM].max );
 
     //and now write it!
-    pwmWriteServo(TILTING_SERVO, outputPwm);
+    pwmWriteServo(SERVO_TILT_ARM, outputPwm);
 }
 
 void mixTilting(void) {
@@ -701,7 +704,9 @@ void mixTable(void)
 {
     uint32_t i;
 
+#ifdef USE_SERVOS
     mixTilting();
+#endif
 
     if (motorCount >= 4 && mixerConfig->yaw_jump_prevention_limit < YAW_JUMP_PREVENTION_LIMIT_HIGH) {
         // prevent "yaw jump" during yaw correction (500 is disabled jump protection)
