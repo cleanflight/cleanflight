@@ -598,7 +598,7 @@ float getTiltServoAngle(void) {
     }else{
     	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, degreesToRadians(servoConf[TILTING_SERVO].minLimit), 0 );
     }
-    return servoAngle * (tiltArmConfig->gearRatioPercent/100);
+    return servoAngle * (tiltArmConfig->gearRatioPercent/100.0f);
 }
 
 void servoTilting(void) {
