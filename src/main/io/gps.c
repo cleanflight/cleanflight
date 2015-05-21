@@ -549,16 +549,16 @@ static bool gpsNewFrameNMEA(char c)
             if (param == 0) {       //frame identification
                  gps_frame = NO_FRAME;
                 if ((string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A') // GPS
-					|| (string[0] == 'G' && string[1] == 'N' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A') // GNSS 
-					|| (string[0] == 'G' && string[1] == 'L' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')) // GLONASS
+                    || (string[0] == 'G' && string[1] == 'N' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A') // GNSS 
+                    || (string[0] == 'G' && string[1] == 'L' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')) // GLONASS
                     gps_frame = FRAME_GGA;
                 if ((string[0] == 'G' && string[1] == 'P' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') // GPS 
-					|| (string[0] == 'G' && string[1] == 'N' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') //GNSS
-					|| (string[0] == 'G' && string[1] == 'L' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')) // GLONASS 
+                    || (string[0] == 'G' && string[1] == 'N' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') //GNSS
+                    || (string[0] == 'G' && string[1] == 'L' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')) // GLONASS 
                     gps_frame = FRAME_RMC;
                 if ((string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V') //GPS
-					|| (string[0] == 'G' && string[1] == 'N' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V') //GNSS
-					|| (string[0] == 'G' && string[1] == 'L' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V')) //GLONASS
+                    || (string[0] == 'G' && string[1] == 'N' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V') //GNSS
+                    || (string[0] == 'G' && string[1] == 'L' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V')) //GLONASS
                     gps_frame = FRAME_GSV;
             }
 
