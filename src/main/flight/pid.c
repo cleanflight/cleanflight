@@ -271,8 +271,8 @@ static void pidMultiWii(controlRateConfig_t *controlRateConfig, master_t *master
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) masterConfig->max_angle_inclination),
                     +masterConfig->max_angle_inclination) - inclination.raw[axis] + currentProfile->accelerometerTrims.raw[axis];
 #else
-            errorAngle = constrain(2 * rcCommand[axis], -((int) max_angle_inclination),
-                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
+            errorAngle = constrain(2 * rcCommand[axis], -((int) masterConfig->max_angle_inclination),
+                    +masterConfig->max_angle_inclination) - inclination.raw[axis] + currentProfile->accelerometerTrims.raw[axis];
 #endif
 
 #ifdef AUTOTUNE
@@ -461,8 +461,8 @@ static void pidMultiWiiHybrid(controlRateConfig_t *controlRateConfig, master_t *
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) masterConfig->max_angle_inclination),
                     +masterConfig->max_angle_inclination) - inclination.raw[axis] + currentProfile->accelerometerTrims.raw[axis];
 #else
-            errorAngle = constrain(2 * rcCommand[axis], -((int) max_angle_inclination),
-                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
+            errorAngle = constrain(2 * rcCommand[axis], -((int) masterConfig->max_angle_inclination),
+                    +masterConfig->max_angle_inclination) - inclination.raw[axis] + currentProfile->accelerometerTrims.raw[axis];
 #endif
 
 #ifdef AUTOTUNE
