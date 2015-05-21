@@ -572,7 +572,7 @@ static void airplaneMixer(void)
 }
 #endif
 
-uint8_t isTilting(){
+uint8_t hasTiltingMotor(){
 	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
 }
 
@@ -631,7 +631,7 @@ void mixTilting(void) {
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
-    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
+    if ( hasTiltingMotor() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
     	float pitchToCompensate = tmpSine;
     	if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
@@ -645,7 +645,7 @@ void mixTilting(void) {
     }
 
     //compensate the roll and yaw because motor orientation
-    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
+    if ( hasTiltingMotor() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
 
         // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
@@ -664,7 +664,7 @@ void mixTable(void)
     uint32_t i;
 
 #ifdef USE_SERVOS
-    //mixTilting();
+    mixTilting();
 #endif
     if (motorCount > 3) {
         // prevent "yaw jump" during yaw correction
