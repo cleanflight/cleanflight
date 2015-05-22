@@ -497,9 +497,9 @@ static void resetConf(void)
 
     // gimbal
     currentProfile->gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
-#endif
 
     resetTiltArmProfile(&currentProfile->tiltArm);
+#endif
 
 #ifdef GPS
     resetGpsProfile(&currentProfile->gpsProfile);
