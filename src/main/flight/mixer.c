@@ -508,11 +508,6 @@ void writeServos(void)
             break;
 
         case MIXER_QUADX_TILT:
-        case MIXER_OCTOX_TILT:
-            servoTilting();
-            break;
-        case MIXER_QUADX_TILT:
-        case MIXER_OCTOX_TILT:
             servoTilting();
             break;
         default:

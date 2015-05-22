@@ -840,13 +840,8 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize16(currentProfile->servoConf[i].max);
             serialize16(currentProfile->servoConf[i].middle);
             serialize8(currentProfile->servoConf[i].rate);
-<<<<<<< HEAD
             serialize8(currentProfile->servoConf[i].angleAtMin);
             serialize8(currentProfile->servoConf[i].angleAtMax);
-=======
-            serialize8(currentProfile->servoConf[i].minLimit);
-            serialize8(currentProfile->servoConf[i].maxLimit);
->>>>>>> Rebase from 1.8.1, still have problem with throttle
         }
         break;
     case MSP_TILT_ARM_CONFIG:
