@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include <limits.h>
 
@@ -165,13 +166,13 @@ TEST(FlightMixerTest, TestTricopterServo)
     // given
     mixerConfig_t mixerConfig;
     memset(&mixerConfig, 0, sizeof(mixerConfig));
-
+    printf("1");
     mixerConfig.tri_unarmed_servo = 1;
 
     escAndServoConfig_t escAndServoConfig;
     memset(&escAndServoConfig, 0, sizeof(escAndServoConfig));
     escAndServoConfig.mincommand = TEST_MIN_COMMAND;
-
+    printf("2");
     servoParam_t servoConf[MAX_SUPPORTED_SERVOS];
     memset(&servoConf, 0, sizeof(servoConf));
     servoConf[5].min = DEFAULT_SERVO_MIN;
@@ -179,7 +180,7 @@ TEST(FlightMixerTest, TestTricopterServo)
     servoConf[5].middle = DEFAULT_SERVO_MIDDLE;
     servoConf[5].rate = 100;
     servoConf[5].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
-
+    printf("1");
     gimbalConfig_t gimbalConfig = {
         .gimbal_flags = 0
     };
@@ -193,12 +194,12 @@ TEST(FlightMixerTest, TestTricopterServo)
         NULL,
         NULL
     );
-
+    printf("3");
     motorMixer_t customMixer[MAX_SUPPORTED_MOTORS];
     memset(&customMixer, 0, sizeof(customMixer));
-
+    printf("4");
     mixerInit(MIXER_TRI, customMixer);
-
+    printf("5");
     // and
     pwmOutputConfiguration_t pwmOutputConfiguration = {
             .servoCount = 1,
@@ -206,19 +207,20 @@ TEST(FlightMixerTest, TestTricopterServo)
     };
 
     mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
-
+    printf("6");
     // and
     memset(rcCommand, 0, sizeof(rcCommand));
-
+    printf("7");
     // and
     memset(axisPID, 0, sizeof(axisPID));
     axisPID[YAW] = 0;
-
+    printf("8");
 
     // when
     mixTable();
+    printf("9");
     writeServos();
-
+    printf("10");
     // then
     EXPECT_EQ(TEST_SERVO_MID, servos[0].value);
 }
