@@ -104,12 +104,12 @@ static flight3DConfig_t *flight3DConfig;
 static escAndServoConfig_t *escAndServoConfig;
 static airplaneConfig_t *airplaneConfig;
 static rxConfig_t *rxConfig;
-static tiltArmConfig_t *tiltArmConfig;
 
 static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 static mixerMode_e currentMixerMode;
 
 #ifdef USE_SERVOS
+static tiltArmConfig_t *tiltArmConfig;
 static gimbalConfig_t *gimbalConfig;
 int16_t servo[MAX_SUPPORTED_SERVOS];
 static int useServo;
@@ -612,6 +612,7 @@ static void airplaneMixer(void)
 }
 #endif
 
+#ifdef USE_SERVOS
 uint8_t hasTiltingMotor(){
 	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
 }
@@ -694,6 +695,7 @@ void mixTilting(void) {
         axisPID[YAW] = yawCompensation + rollCompensationInv;
     }
 }
+#endif
 
 void mixTable(void)
 {

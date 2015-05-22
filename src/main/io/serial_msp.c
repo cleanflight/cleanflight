@@ -1451,10 +1451,12 @@ static bool processInCommand(void)
 #endif
         break;
     case MSP_SET_TILT_ARM:
-        currentProfile->tiltArm.flagEnabled = read8();
+#ifdef USE_SERVOS
+    	currentProfile->tiltArm.flagEnabled = read8();
         currentProfile->tiltArm.pitchDivisior = read8();
         currentProfile->tiltArm.thrustLiftoff = read8();
         currentProfile->tiltArm.gearRatioPercent = read8();
+#endif
         break;
     case MSP_SET_CHANNEL_FORWARDING:
 #ifdef USE_SERVOS
