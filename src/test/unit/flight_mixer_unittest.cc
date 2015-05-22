@@ -163,8 +163,10 @@ TEST(FlightMixerTest, TestForwardAuxChannelsToServosWithLessServosThanAuxChannel
 
 TEST(FlightMixerTest, TestTricopterServo)
 {
+	printf("tri");
     // given
     mixerConfig_t mixerConfig;
+    printf("0");
     memset(&mixerConfig, 0, sizeof(mixerConfig));
     printf("1");
     mixerConfig.tri_unarmed_servo = 1;
