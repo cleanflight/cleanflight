@@ -36,6 +36,8 @@ typedef enum {
 
 void updateDisplay(void);
 
+void composeStatus(char * buffer, uint8_t size);
+
 void displayShowFixedPage(pageId_e pageId);
 
 void displayEnablePageCycling(void);
