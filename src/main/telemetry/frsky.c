@@ -47,6 +47,7 @@
 #include "io/serial.h"
 #include "io/rc_controls.h"
 #include "io/gps.h"
+#include "io/display.h"
 
 #include "rx/rx.h"
 
@@ -483,7 +484,7 @@ void checkFrSkyTelemetryState(void)
 static char telemetryText[telemetryTextSize+1]; // Telemetry text buffer + trailing 0
 static uint8_t textTransmitBuffer[2*textTransmitBufferSize]; // lower byte pos, upper byte char - "FIFO"
 static uint8_t countTextTransmitBuffer = 0; // number of pairs of pos+char in buffer
-static uint8_t lastTransmittedCharPos = 0; // position of last char from text buffer which was added to transmit buffer
+static uint8_t lastTransmittedCharPos = 0; // position of last char from text buffer which was added to transmit buffer - in fact it is next char to be transmitted :)
 
 unsigned char getOddParity(uint8_t p)
 {
@@ -750,7 +751,11 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
     */
 
     // temporary hack - create text here (should be moved elsewhere)
+    /*
     createTelemetryText();
+    */
+    composeStatus(telemetryText,sizeof(telemetryText)); // hijack status creation from display
+    telemetryText[sizeof(telemetryText)-1]=0;
 
     fillUpTelemetryTextTransmitBuffer();
     sendTelemetryTextTransmitBuffer();
