@@ -646,7 +646,7 @@ void mixTilting(void) {
     }
 
     //compensate the roll and yaw because motor orientation
-    if ( hasTiltingMotor() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
+    if ( tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL ) {
 
         // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
@@ -666,7 +666,9 @@ void mixTable(void)
     uint32_t i;
 
 #ifdef USE_SERVOS
-    mixTilting();
+    if ( hasTiltingMotor() ){
+    	mixTilting();
+	}
 #endif
     if (motorCount > 3) {
         // prevent "yaw jump" during yaw correction
