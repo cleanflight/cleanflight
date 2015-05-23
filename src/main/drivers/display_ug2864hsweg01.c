@@ -250,7 +250,7 @@ void i2c_OLED_send_string_formatted(const char *string)
     while (*string) {
         if (*string & 0x80) { // MSB indicates inverted char
           CHAR_FORMAT = INVERSE_CHAR_FORMAT;
-          i2c_OLED_send_char(*string & 0xf7); // strip MSB
+          i2c_OLED_send_char(*string & 0x7f); // strip MSB
           CHAR_FORMAT = NORMAL_CHAR_FORMAT;
         } else {
           i2c_OLED_send_char(*string);
