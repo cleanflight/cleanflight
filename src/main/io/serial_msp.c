@@ -842,7 +842,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         s_struct((uint8_t *)&servo, 16);
         break;
     case MSP_SERVO_CONF:
-        headSerialReply(56);
+        headSerialReply(MAX_SUPPORTED_SERVOS * 7);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize16(currentProfile->servoConf[i].min);
             serialize16(currentProfile->servoConf[i].max);
@@ -851,7 +851,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_CHANNEL_FORWARDING:
-        headSerialReply(8);
+        headSerialReply(MAX_SUPPORTED_SERVOS);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize8(currentProfile->servoConf[i].forwardFromChannel);
         }
@@ -1183,9 +1183,12 @@ static bool processOutCommand(uint8_t cmdMSP)
 
     case MSP_CF_SERIAL_CONFIG:
         headSerialReply(
-            ((sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4)) * SERIAL_PORT_COUNT)
+            ((sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4)) * serialGetAvailablePortCount())
         );
         for (i = 0; i < SERIAL_PORT_COUNT; i++) {
+            if (!serialIsPortAvailable(masterConfig.serialConfig.portConfigs[i].identifier)) {
+                continue;
+            };
             serialize8(masterConfig.serialConfig.portConfigs[i].identifier);
             serialize16(masterConfig.serialConfig.portConfigs[i].functionMask);
             serialize8(masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex);
@@ -1595,17 +1598,28 @@ static bool processInCommand(void)
         {
             uint8_t portConfigSize = sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4);
 
-            if ((SERIAL_PORT_COUNT * portConfigSize) != currentPort->dataSize) {
+            if (currentPort->dataSize % portConfigSize != 0) {
                 headSerialError(0);
                 break;
             }
-            for (i = 0; i < SERIAL_PORT_COUNT; i++) {
-                masterConfig.serialConfig.portConfigs[i].identifier = read8();
-                masterConfig.serialConfig.portConfigs[i].functionMask = read16();
-                masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].gps_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].telemetry_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].blackbox_baudrateIndex = read8();
+
+            uint8_t remainingPortsInPacket = currentPort->dataSize / portConfigSize;
+
+            while (remainingPortsInPacket--) {
+                uint8_t identifier = read8();
+
+                serialPortConfig_t *portConfig = serialFindPortConfiguration(identifier);
+                if (!portConfig) {
+                    headSerialError(0);
+                    break;
+                }
+
+                portConfig->identifier = identifier;
+                portConfig->functionMask = read16();
+                portConfig->msp_baudrateIndex = read8();
+                portConfig->gps_baudrateIndex = read8();
+                portConfig->telemetry_baudrateIndex = read8();
+                portConfig->blackbox_baudrateIndex = read8();
             }
         }
         break;
