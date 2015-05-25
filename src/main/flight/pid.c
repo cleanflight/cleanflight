@@ -100,8 +100,6 @@ static float errorAngleIf[2] = { 0.0f, 0.0f };
 
 static void pidMultiWii(controlRateConfig_t *controlRateConfig, master_t *masterConfig, profile_t *currentProfile);
 
-typedef void (*pidControllerFuncPtr)(controlRateConfig_t *controlRateConfig, master_t *masterConfig, profile_t *currentProfile); // pid controller function prototype
-
 pidControllerFuncPtr pid_controller = pidMultiWii; // which pid controller are we using, defaultMultiWii
 
 void pidResetErrorAngle(void)

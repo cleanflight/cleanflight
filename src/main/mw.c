@@ -102,8 +102,6 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
 
-typedef void (*pidControllerFuncPtr)(controlRateConfig_t *controlRateConfig, master_t *masterConfig, profile_t *currentProfile); // pid controller function prototype
-
 extern pidControllerFuncPtr pid_controller;
 
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)
