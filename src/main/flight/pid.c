@@ -115,28 +115,89 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     float dT;
     int axis;
     float horizonLevelStrength = 1;
+    int incl_fact_horizon, currentInclination, cutoffDeciDegrees;
+    float inclinationLevelRatio, factorRatio;
+    int sensitFact;
 
     dT = (float)cycleTime * 0.000001f;
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
-        // Figure out the raw stick positions
+        // get raw stick positions (-500 to 500):
         stickPosAil = getRcStickDeflection(FD_ROLL, rxConfig->midrc);
         stickPosEle = getRcStickDeflection(FD_PITCH, rxConfig->midrc);
 
-        if(ABS(stickPosAil) > ABS(stickPosEle)){
-            mostDeflectedPos = ABS(stickPosAil);
-        }
-        else {
-            mostDeflectedPos = ABS(stickPosEle);
-        }
+        // 0 at center stick, 500 at max stick deflection:
+        mostDeflectedPos = MAX(ABS(stickPosAil), ABS(stickPosEle));
 
-        // Progressively turn off the horizon self level strength as the stick is banged over
-        horizonLevelStrength = (float)(500 - mostDeflectedPos) / 500;  // 1 at centre stick, 0 = max stick deflection
-        if(pidProfile->H_sensitivity == 0){
-            horizonLevelStrength = 0;
-        } else {
-            horizonLevelStrength = constrainf(((horizonLevelStrength - 1) * (100 / pidProfile->H_sensitivity)) + 1, 0, 1);
+        // start with 1.0 at center stick, 0.0 at max stick deflection:
+        horizonLevelStrength = (float)(500 - mostDeflectedPos) / 500;
+
+        // 0 at level, 900 at vertical, 1800 at inverted (degrees * 10)
+        currentInclination = MAX(ABS(inclination.values.rollDeciDegrees),
+                                  ABS(inclination.values.pitchDeciDegrees));
+
+        // 'incl_fact_horizon' configuration setting:
+        // 0-99 = range 1 (leveling always active when sticks centered)
+        // 100-250 = range 2 (leveling can be totally off when inverted)
+        incl_fact_horizon = pidProfile->incl_fact_horizon;
+
+        if(incl_fact_horizon >= 100) {
+            // range 2 (leveling can be totally off when inverted)
+            if(incl_fact_horizon < 250) {
+                // incl_fact_horizon 100 to 200 => 2700 to 900
+                //  (represents where leveling goes to zero):
+                cutoffDeciDegrees = (250-incl_fact_horizon) * 18;
+                // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
+                //  for larger inclinations; 0.0 at cutoffDeciDegrees value:
+                inclinationLevelRatio = constrainf(
+                            ((float)(cutoffDeciDegrees-currentInclination))/
+                                                   cutoffDeciDegrees, 0, 1);
+                // apply configured horizon sensitivity:
+                if(pidProfile->H_sensitivity <= 0) {  // zero means no leveling
+                    horizonLevelStrength = 0;
+                } else {
+                    // when stick is near center (horizonLevelStrength ~= 1.0)
+                    //  H_sensitivity value has little effect,
+                    // when stick is deflected (horizonLevelStrength near 0.0)
+                    //  H_sensitivity value has more effect:
+                    horizonLevelStrength =
+                                    constrainf(((horizonLevelStrength - 1) *
+                              (100 / pidProfile->H_sensitivity)) + 1, 0, 1);
+                }
+                // apply inclination ratio, which may lower leveling
+                //  to zero regardless of stick position:
+                horizonLevelStrength *= inclinationLevelRatio;
+            }
+            else
+              horizonLevelStrength = 0;
+        } else {        // incl_fact_horizon < 100
+            // range 1 (leveling always active when sticks centered)
+            if(incl_fact_horizon > 0) {
+                // 0 to 100 => 1.0 to 0.0 (larger means more leveling):
+                factorRatio = ((float)(100-incl_fact_horizon)) / 100;
+                // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
+                //  for larger inclinations, but always hits 1.0 at incl level:
+                inclinationLevelRatio = (float)((1800-currentInclination))/1800 *
+                                           (1.0f-factorRatio) + factorRatio;
+                // apply ratio to configured horizon sensitivity:
+                sensitFact = (int)(pidProfile->H_sensitivity *
+                                                     inclinationLevelRatio);
+            }
+            else   // incl_fact_horizon=0 for "old" functionality
+                sensitFact = (int)(pidProfile->H_sensitivity);
+
+            if(sensitFact <= 0) {           // zero means no leveling
+                horizonLevelStrength = 0;
+            } else {
+                // when stick is near center (horizonLevelStrength ~= 1.0)
+                //  sensitFact value has little effect,
+                // when stick is deflected (horizonLevelStrength near 0.0)
+                //  sensitFact value has more effect:
+                horizonLevelStrength = constrainf(
+                      ((horizonLevelStrength - 1) * (100 / sensitFact)) + 1,
+                                                                      0, 1);
+            }
         }
     }
 

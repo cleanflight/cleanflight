@@ -65,6 +65,7 @@ typedef struct pidProfile_s {
     uint8_t dterm_cut_hz;                   // (default 17Hz, Range 1-50Hz) Used for PT1 element in PID1, PID2 and PID5
     uint8_t pterm_cut_hz;                   // Used for fitlering Pterm noise on noisy frames
     uint8_t gyro_cut_hz;                    // Used for soft gyro filtering
+    uint8_t incl_fact_horizon;              // inclination factor for Horizon mode
 } pidProfile_t;
 
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
