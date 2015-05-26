@@ -59,6 +59,7 @@ void updateBatteryVoltage(void)
 {
     static uint16_t vbatSamples[BATTERY_SAMPLE_COUNT];
     static uint8_t currentSampleIndex = 0;
+    static uint8_t currentSampleCount = 0;
     uint8_t index;
     uint16_t vbatSampleTotal = 0;
 
@@ -69,7 +70,12 @@ void updateBatteryVoltage(void)
     for (index = 0; index < BATTERY_SAMPLE_COUNT; index++) {
         vbatSampleTotal += vbatSamples[index];
     }
-    vbat = batteryAdcToVoltage(vbatSampleTotal / BATTERY_SAMPLE_COUNT);
+
+    if(currentSampleCount < BATTERY_SAMPLE_COUNT) {
+        currentSampleCount++;
+    }
+
+    vbat = batteryAdcToVoltage(vbatSampleTotal / currentSampleCount);
 }
 
 batteryState_e calculateBatteryState(void)
