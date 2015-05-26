@@ -227,7 +227,9 @@ const clicmd_t cmdTable[] = {
 #endif
     { "set", "name=value or blank or * for list", cliSet },
     { "status", "show system status", cliStatus },
+#ifdef USE_SERVOS
 	{ "tilt_arm", "tilting arm config", cliTiltArm },
+#endif
     { "version", "", cliVersion },
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
@@ -807,6 +809,9 @@ static void cliColor(char *cmdline)
 
 static void cliTiltArm(char *cmdline)
 {
+#ifndef USE_SERVOS
+    UNUSED(cmdline);
+#else
     enum { TILT_ARM_ARGUMENT_COUNT = 7 };
     int16_t arguments[TILT_ARM_ARGUMENT_COUNT];
 
@@ -912,6 +917,7 @@ static void cliTiltArm(char *cmdline)
 
         tilt->gearRatioPercent = arguments[6];
     }
+#endif
 }
 
 static void cliServo(char *cmdline)
@@ -1210,6 +1216,10 @@ static void cliDump(char *cmdline)
         cliPrint("\r\n# servo\r\n");
 
         cliServo("");
+
+        cliPrint("\r\n# tilting arm\r\n");
+
+        cliTiltArm("");
 
         cliPrint("\r\n# tilting arm\r\n");
 

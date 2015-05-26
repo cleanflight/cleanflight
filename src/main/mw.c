@@ -786,6 +786,7 @@ void loop(void)
         }
 #endif
 
+#ifdef USE_SERVOS
         //TODO: is good here?
         if ( (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT) && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH) ) {
             // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
@@ -793,7 +794,7 @@ void loop(void)
        	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior; //neutral
        	    }
        	}
-
+#endif
         // PID - note this is function pointer set by setPIDController()
         pid_controller(
             &currentProfile->pidProfile,

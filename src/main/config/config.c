@@ -510,6 +510,8 @@ static void resetConf(void)
 
     // gimbal
     currentProfile->gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
+
+    resetTiltArmProfile(&currentProfile->tiltArm);
 #endif
 
     resetTiltArmProfile(&currentProfile->tiltArm);

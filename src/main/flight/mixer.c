@@ -78,6 +78,7 @@ static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 static mixerMode_e currentMixerMode;
 
 #ifdef USE_SERVOS
+static tiltArmConfig_t *tiltArmConfig;
 static gimbalConfig_t *gimbalConfig;
 int16_t servo[MAX_SUPPORTED_SERVOS];
 static int useServo;
@@ -574,7 +575,8 @@ static void airplaneMixer(void)
 }
 #endif
 
-uint8_t isTilting(){
+#ifdef USE_SERVOS
+uint8_t hasTiltingMotor(){
 	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
 }
 
@@ -598,7 +600,7 @@ float getTiltServoAngle(void) {
     }else{
     	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, degreesToRadians(servoConf[TILTING_SERVO].minLimit), 0 );
     }
-    return servoAngle * (tiltArmConfig->gearRatioPercent/100.0f);
+    return (servoAngle * tiltArmConfig->gearRatioPercent)/100.0f;
 }
 
 void servoTilting(void) {
@@ -633,7 +635,7 @@ void mixTilting(void) {
     float tmpCosine = cosf(angleTilt);
     float tmpSine = sinf(angleTilt);
 
-    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
+    if ( hasTiltingMotor() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
     	float pitchToCompensate = tmpSine;
     	if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
@@ -647,7 +649,7 @@ void mixTilting(void) {
     }
 
     //compensate the roll and yaw because motor orientation
-    if ( isTilting() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) ) {
+    if ( tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL ) {
 
         // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
@@ -660,13 +662,15 @@ void mixTilting(void) {
     }
 
 }
+#endif
 
 void mixTable(void)
 {
     uint32_t i;
 
-    mixTilting();
-
+    if ( hasTiltingMotor() ){
+        mixTilting();
+    }
     if (motorCount >= 4 && mixerConfig->yaw_jump_prevention_limit < YAW_JUMP_PREVENTION_LIMIT_HIGH) {
         // prevent "yaw jump" during yaw correction (500 is disabled jump protection)
         axisPID[YAW] = constrain(axisPID[YAW], -mixerConfig->yaw_jump_prevention_limit - ABS(rcCommand[YAW]), mixerConfig->yaw_jump_prevention_limit + ABS(rcCommand[YAW]));

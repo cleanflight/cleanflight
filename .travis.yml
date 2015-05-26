@@ -32,6 +32,7 @@ install:
    
 before_script: arm-none-eabi-gcc --version
 script: ./.travis.sh
+<<<<<<< HEAD
 
 cache: apt
 
@@ -39,3 +40,5 @@ notifications:
   irc: "chat.freenode.net#cleanflight"
   use_notice: true
   skip_join: true
+=======
+>>>>>>> refs/remotes/origin/tilting-1.8.1

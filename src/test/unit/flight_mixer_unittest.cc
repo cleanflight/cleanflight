@@ -44,6 +44,7 @@ extern "C" {
     #include "io/escservo.h"
     #include "io/gimbal.h"
     #include "io/rc_controls.h"
+	#include "io/tilt_arm_control.h"
 
     extern uint8_t servoCount;
     void forwardAuxChannelsToServos(void);
@@ -52,6 +53,7 @@ extern "C" {
 #ifdef USE_SERVOS
             servoParam_t *servoConfToUse,
             gimbalConfig_t *gimbalConfigToUse,
+			tiltArmConfig_t *tiltConfigToUse,
 #endif
             flight3DConfig_t *flight3DConfigToUse,
             escAndServoConfig_t *escAndServoConfigToUse,
@@ -182,6 +184,9 @@ TEST(FlightMixerTest, TestTricopterServo)
     servoConf[5].rate = 100;
     servoConf[5].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
 
+    tiltArmConfig_t tiltArmConfigToUse;
+    memset(&tiltArmConfigToUse, 0, sizeof(tiltArmConfigToUse));
+
     gimbalConfig_t gimbalConfig = {
         .gimbal_flags = 0
     };
@@ -189,6 +194,7 @@ TEST(FlightMixerTest, TestTricopterServo)
     mixerUseConfigs(
         servoConf,
         &gimbalConfig,
+		&tiltArmConfigToUse,
         NULL,
         &escAndServoConfig,
         &mixerConfig,
@@ -242,9 +248,13 @@ TEST(FlightMixerTest, TestQuadMotors)
         .gimbal_flags = 0
     };
 
+    tiltArmConfig_t tiltArmConfigToUse;
+    memset(&tiltArmConfigToUse, 0, sizeof(tiltArmConfigToUse));
+
     mixerUseConfigs(
         NULL,// servoConf,
         &gimbalConfig,
+		&tiltArmConfigToUse,
         NULL,
         &escAndServoConfig,
         &mixerConfig,
