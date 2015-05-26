@@ -32,6 +32,8 @@
 
 #include "io/rc_controls.h"
 
+#define VBATT_DETECT    10
+
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
 uint16_t batteryWarningVoltage;
@@ -55,11 +57,10 @@ uint16_t batteryAdcToVoltage(uint16_t src)
 
 #define BATTERY_SAMPLE_COUNT 8
 
-void updateBatteryVoltage(void)
+static void updateBatteryVoltage(void)
 {
     static uint16_t vbatSamples[BATTERY_SAMPLE_COUNT];
     static uint8_t currentSampleIndex = 0;
-    static uint8_t currentSampleCount = 0;
     uint8_t index;
     uint16_t vbatSampleTotal = 0;
 
@@ -71,15 +72,44 @@ void updateBatteryVoltage(void)
         vbatSampleTotal += vbatSamples[index];
     }
 
-    if(currentSampleCount < BATTERY_SAMPLE_COUNT) {
-        currentSampleCount++;
-    }
+    vbat = batteryAdcToVoltage(vbatSampleTotal / BATTERY_SAMPLE_COUNT);
+}
 
-    vbat = batteryAdcToVoltage(vbatSampleTotal / currentSampleCount);
+void updateBattery(void)
+{
+    uint32_t i;
+    batteryState_e batteryState;
+    batteryState = calculateBatteryState();
+    updateBatteryVoltage();
+    /* battery has just been connected*/
+    if(batteryState == BATTERY_NOTPRESENT && vbat > VBATT_DETECT)
+    {
+        for (i = 1; i < BATTERY_SAMPLE_COUNT; i++) {
+            updateBatteryVoltage();
+            delay((32 / BATTERY_SAMPLE_COUNT) * 10);
+        }
+        unsigned cells = (vbat / batteryConfig->vbatmaxcellvoltage) + 1;
+        if(cells > 8)            // something is wrong, we expect 8 cells maximum (and autodetection will be problematic at 6+ cells)
+            cells = 8;
+        batteryCellCount = cells;
+        batteryWarningVoltage = batteryCellCount * batteryConfig->vbatwarningcellvoltage;
+        batteryCriticalVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage;
+    }
+    /* battery has been disconnected - can take a while for filter cap to disharge so we use a threshold of VBATT_DETECT */
+    else if(batteryState != BATTERY_NOTPRESENT && vbat <= VBATT_DETECT)
+    {
+        batteryCellCount = 0;
+        batteryWarningVoltage = 0;
+        batteryCriticalVoltage = 0;
+    }    
 }
 
 batteryState_e calculateBatteryState(void)
 {
+    if(batteryCellCount == 0)
+    {
+        return BATTERY_NOTPRESENT;
+    }
     if (vbat <= batteryCriticalVoltage) {
         return BATTERY_CRITICAL;
     }
@@ -92,20 +122,9 @@ batteryState_e calculateBatteryState(void)
 void batteryInit(batteryConfig_t *initialBatteryConfig)
 {
     batteryConfig = initialBatteryConfig;
-
-    uint32_t i;
-
-    for (i = 0; i < BATTERY_SAMPLE_COUNT; i++) {
-        updateBatteryVoltage();
-        delay((32 / BATTERY_SAMPLE_COUNT) * 10);
-    }
-
-    unsigned cells = (vbat / batteryConfig->vbatmaxcellvoltage) + 1;
-    if(cells > 8)            // something is wrong, we expect 8 cells maximum (and autodetection will be problematic at 6+ cells)
-        cells = 8;
-    batteryCellCount = cells;
-    batteryWarningVoltage = batteryCellCount * batteryConfig->vbatwarningcellvoltage;
-    batteryCriticalVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage;
+    batteryCellCount = 0;
+    batteryWarningVoltage = 0;
+    batteryCriticalVoltage = 0;
 }
 
 #define ADCVREF 3300   // in mV

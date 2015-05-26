@@ -251,7 +251,7 @@ void annexCode(void)
         if ((currentTime - vbatLastServiced) >= VBATINTERVAL) {
            vbatLastServiced = currentTime;
             if (feature(FEATURE_VBAT)) {
-                updateBatteryVoltage();
+                updateBattery();
                 batteryState = calculateBatteryState();
                 //handle beepers for battery levels
                 if (batteryState == BATTERY_CRITICAL)

@@ -48,7 +48,8 @@ typedef struct batteryConfig_s {
 typedef enum {
     BATTERY_OK = 0,
     BATTERY_WARNING,
-    BATTERY_CRITICAL
+    BATTERY_CRITICAL,
+    BATTERY_NOTPRESENT
 } batteryState_e;
 
 extern uint8_t vbat;
@@ -61,7 +62,7 @@ extern int32_t mAhDrawn;
 
 uint16_t batteryAdcToVoltage(uint16_t src);
 batteryState_e calculateBatteryState(void);
-void updateBatteryVoltage(void);
+void updateBattery(void);
 void batteryInit(batteryConfig_t *initialBatteryConfig);
 
 void updateCurrentMeter(int32_t lastUpdateAt, rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
