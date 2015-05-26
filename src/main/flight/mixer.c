@@ -234,7 +234,7 @@ const mixer_t mixers[] = {
     { 1, 1, NULL },                // MIXER_SINGLECOPTER
     { 4, 0, mixerAtail4 },         // MIXER_ATAIL4
     { 4, 1, mixerQuadX },          // MIXER_QUADX_TILT
-	{ 8, 1, mixerOctoX8 },         // MIXER_OCTOX_TILT
+    { 8, 1, mixerOctoX8 },         // MIXER_OCTOX_TILT
     { 0, 0, NULL },                // MIXER_CUSTOM
 };
 #endif
