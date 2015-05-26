@@ -49,6 +49,14 @@ typedef struct pidProfile_s {
     uint8_t H_sensitivity;
 } pidProfile_t;
 
+struct controlRateConfig_s;
+struct rollAndPitchTrims_s;
+union rollAndPitchTrims_u;
+struct rxConfig_s;
+
+typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, struct controlRateConfig_s *controlRateConfig,
+        uint16_t max_angle_inclination, union rollAndPitchTrims_u *angleTrim, struct rxConfig_s *rxConfig);            // pid controller function prototype
+
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)
 
