@@ -624,19 +624,15 @@ float getTiltServoAngle(void) {
     float userInput = 0;
 
     //get wanted position of the tilting servo
-    if (rcData[tiltArmConfig->channel] > rxConfig->midrc) {
+    if (rcCommand[tiltArmConfig->channel] > rxConfig->midrc) {
     	userInput = rcData[tiltArmConfig->channel];
     } else {
     	userInput = rcData[PITCH];
     }
 
     //convert to radiant, keep eventual non-linearity of range
-    float servoAngle;
-    if (userInput >= rxConfig->midrc){
-    	servoAngle = scaleRangef(userInput, rxConfig->midrc, rxConfig->maxcheck, 0, degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin) );
-    }else{
-    	servoAngle = scaleRangef(userInput, rxConfig->mincheck, rxConfig->midrc, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax), 0 );
-    }
+    float servoAngle = scaleRangef(userInput, 1000, 2000, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax) );
+
     return (servoAngle * tiltArmConfig->gearRatioPercent)/100.0f;
 }
 
