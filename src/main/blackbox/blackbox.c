@@ -251,7 +251,6 @@ typedef enum BlackboxState {
     BLACKBOX_STATE_SEND_GPS_H_HEADERS,
     BLACKBOX_STATE_SEND_GPS_G_HEADERS,
     BLACKBOX_STATE_SEND_SYSINFO,
-    BLACKBOX_STATE_PRERUN,
     BLACKBOX_STATE_RUNNING,
     BLACKBOX_STATE_SHUTTING_DOWN
 } BlackboxState;
@@ -268,6 +267,8 @@ extern uint8_t motorCount;
 extern uint32_t currentTime;
 
 static BlackboxState blackboxState = BLACKBOX_STATE_DISABLED;
+
+static uint32_t blackboxLastArmingBeep = 0;
 
 static struct {
     uint32_t headerIndex;
@@ -685,6 +686,12 @@ void startBlackbox(void)
          */
         blackboxBuildConditionCache();
 
+        /*
+         * Record the beeper's current idea of the last arming beep time, so that we can detect it changing when
+         * it finally plays the beep for this arming event.
+         */
+        blackboxLastArmingBeep = getArmingBeepTimeMicros();
+
         blackboxSetState(BLACKBOX_STATE_SEND_HEADER);
     }
 }
@@ -1013,16 +1020,19 @@ void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
     }
 }
 
-// Write the time of the last arming beep to the log as a synchronization point
-static void blackboxLogArmingBeep()
+/* If an arming beep has played since it was last logged, write the time of the arming beep to the log as a synchronization point */
+static void blackboxCheckAndLogArmingBeep()
 {
     flightLogEvent_syncBeep_t eventData;
 
-    // Get time of last arming beep (in system-uptime microseconds)
-    eventData.time = getArmingBeepTimeMicros();
+    // Use != so that we can still detect a change if the counter wraps
+    if (getArmingBeepTimeMicros() != blackboxLastArmingBeep) {
+        blackboxLastArmingBeep = getArmingBeepTimeMicros();
 
-    // Write the time to the log
-    blackboxLogEvent(FLIGHT_LOG_EVENT_SYNC_BEEP, (flightLogEventData_t *) &eventData);
+        eventData.time = blackboxLastArmingBeep;
+
+        blackboxLogEvent(FLIGHT_LOG_EVENT_SYNC_BEEP, (flightLogEventData_t *) &eventData);
+    }
 }
 
 /**
@@ -1083,13 +1093,8 @@ void handleBlackbox(void)
 
             //Keep writing chunks of the system info headers until it returns true to signal completion
             if (blackboxWriteSysinfo()) {
-                blackboxSetState(BLACKBOX_STATE_PRERUN);
+                blackboxSetState(BLACKBOX_STATE_RUNNING);
             }
-        break;
-        case BLACKBOX_STATE_PRERUN:
-            blackboxSetState(BLACKBOX_STATE_RUNNING);
-
-            blackboxLogArmingBeep();
         break;
         case BLACKBOX_STATE_RUNNING:
             // On entry to this state, blackboxIteration, blackboxPFrameIndex and blackboxIFrameIndex are reset to 0
@@ -1100,6 +1105,8 @@ void handleBlackbox(void)
                 loadBlackboxState();
                 writeIntraframe();
             } else {
+                blackboxCheckAndLogArmingBeep();
+
                 /* Adding a magic shift of "masterConfig.blackbox_rate_num - 1" in here creates a better spread of
                  * recorded / skipped frames when the I frame's position is considered:
                  */
