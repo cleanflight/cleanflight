@@ -61,7 +61,9 @@ REVISION = $(shell git log -1 --format="%h")
 # Working directories
 ROOT		 := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 SRC_DIR		 = $(ROOT)/src/main
+MSG_DIR		 = $(ROOT)/msg
 OBJECT_DIR	 = $(ROOT)/obj/main
+GEN_DIR	 = $(ROOT)/obj/gen
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
 INCLUDE_DIRS	 = $(SRC_DIR)
@@ -207,7 +209,8 @@ TARGET_DIR = $(ROOT)/src/main/target/NAZE
 endif
 
 INCLUDE_DIRS := $(INCLUDE_DIRS) \
-		    $(TARGET_DIR)
+		$(TARGET_DIR) \
+		$(GEN_DIR)
 
 VPATH		:= $(VPATH):$(TARGET_DIR)
 
@@ -532,6 +535,8 @@ SPRACINGF3_SRC	 = \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
+MSG_SRC 	 = $(wildcard $(MSG_DIR)/*.msg)
+
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
 
@@ -543,6 +548,7 @@ VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
 CC		 = arm-none-eabi-gcc
 OBJCOPY		 = arm-none-eabi-objcopy
 SIZE		 = arm-none-eabi-size
+GENMSP		 = python $(ROOT)/support/genmsp/genmsp.py
 
 #
 # Tool options.
@@ -610,6 +616,7 @@ TARGET_ELF	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).elf
 TARGET_OBJS	 = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
 TARGET_DEPS	 = $(addsuffix .d,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $($(TARGET)_SRC))))
 TARGET_MAP	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
+MSG_GEN		 = $(MSG_SRC:$(MSG_DIR)/%.msg=$(GEN_DIR)/msg/%.h)
 
 # List of buildable ELF files and their object dependencies.
 # It would be nice to compute these lists, but that seems to be just beyond make.
@@ -640,6 +647,10 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@mkdir -p $(dir $@)
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
+
+$(GEN_DIR)/msg/%.h: $(MSG_DIR)/%.msg $(SRC_DIR)/io/msg.h.template
+	@echo %% genmsp $(notdir $<)
+	@$(GENMSP) -p clearflight -o $(@D) -e $(SRC_DIR)/io -I clearflight:$(ROOT)/msg $<
 
 clean:
 	rm -f $(TARGET_BIN) $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)
@@ -675,3 +686,5 @@ $(TARGET_OBJS) : Makefile
 
 # include auto-generated dependencies
 -include $(TARGET_DEPS)
+
+$(OBJECT_DIR)/$(TARGET)/io/serial_msp.o: $(MSG_GEN)
