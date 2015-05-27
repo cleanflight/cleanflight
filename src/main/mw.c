@@ -248,7 +248,7 @@ void annexCode(void)
 
     if (feature(FEATURE_VBAT)) {
         /* currentTime will rollover @ 70 minutes */
-        if ((currentTime - vbatLastServiced) >= VBATINTERVAL) {
+        if ((currentTime - vbatLastServiced) >= masterConfig.batteryConfig.vbatt_interval*1000) {
            vbatLastServiced = currentTime;
             if (feature(FEATURE_VBAT)) {
                 updateBattery();
