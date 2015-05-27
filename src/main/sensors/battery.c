@@ -31,15 +31,18 @@
 #include "rx/rx.h"
 
 #include "io/rc_controls.h"
+#include "flight/lowpass.h"
+#include "io/beeper.h"
 
 #define VBATT_DETECT    10
+#define VBATT_LPF_FREQ  10
 
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
 uint16_t batteryWarningVoltage;
 uint16_t batteryCriticalVoltage;
 
-uint8_t vbat = 0;                   // battery voltage in 0.1V steps
+uint16_t vbat = 0;                   // battery voltage in 0.1V steps (filtered)
 uint16_t vbatLatestADC = 0;         // most recent unsmoothed raw reading from vbat ADC
 uint16_t amperageLatestADC = 0;     // most recent raw reading from current ADC
 
@@ -48,6 +51,9 @@ int32_t mAhDrawn = 0;               // milliampere hours drawn from the battery 
 
 batteryConfig_t *batteryConfig;
 
+static batteryState_e batteryState;
+static lowpass_t lowpassFilter;
+
 uint16_t batteryAdcToVoltage(uint16_t src)
 {
     // calculate battery voltage based on ADC reading
@@ -55,40 +61,37 @@ uint16_t batteryAdcToVoltage(uint16_t src)
     return ((uint32_t)src * batteryConfig->vbatscale * 33 + (0xFFF * 5)) / (0xFFF * 10);
 }
 
-#define BATTERY_SAMPLE_COUNT 8
-
 static void updateBatteryVoltage(void)
 {
-    static uint16_t vbatSamples[BATTERY_SAMPLE_COUNT];
-    static uint8_t currentSampleIndex = 0;
-    uint8_t index;
-    uint16_t vbatSampleTotal = 0;
+    uint16_t vbatSample;
+    uint16_t vbatFiltered;
 
     // store the battery voltage with some other recent battery voltage readings
-    vbatSamples[(currentSampleIndex++) % BATTERY_SAMPLE_COUNT] = vbatLatestADC = adcGetChannel(ADC_BATTERY);
-
-    // calculate vbat based on the average of recent readings
-    for (index = 0; index < BATTERY_SAMPLE_COUNT; index++) {
-        vbatSampleTotal += vbatSamples[index];
-    }
-
-    vbat = batteryAdcToVoltage(vbatSampleTotal / BATTERY_SAMPLE_COUNT);
+    vbatSample = vbatLatestADC = adcGetChannel(ADC_BATTERY);
+    vbatFiltered = (uint16_t)lowpassFixed(&lowpassFilter, vbatSample, VBATT_LPF_FREQ);
+    vbat = batteryAdcToVoltage(vbatFiltered);
 }
+
+#define VBATTERY_STABLE_DELAY 40
+/* Batt Hysteresis of +/-100mV */
+#define VBATT_HYSTERESIS 1
 
 void updateBattery(void)
 {
-    uint32_t i;
-    batteryState_e batteryState;
-    batteryState = calculateBatteryState();
     updateBatteryVoltage();
     /* battery has just been connected*/
     if(batteryState == BATTERY_NOTPRESENT && vbat > VBATT_DETECT)
     {
-        for (i = 1; i < BATTERY_SAMPLE_COUNT; i++) {
-            updateBatteryVoltage();
-            delay((32 / BATTERY_SAMPLE_COUNT) * 10);
-        }
-        unsigned cells = (vbat / batteryConfig->vbatmaxcellvoltage) + 1;
+        /* Actual battery state is calculated below, this is really BATTERY_PRESENT */
+        batteryState = BATTERY_OK;
+        /* wait for VBatt to stabilise then we can calc number of cells
+        (using the filtered value takes a long time to ramp up) 
+        We only do this on the ground so don't care if we do block, not
+        worse than original code anyway*/
+        delay(VBATTERY_STABLE_DELAY);
+        updateBatteryVoltage();
+
+        unsigned cells = (batteryAdcToVoltage(vbatLatestADC) / batteryConfig->vbatmaxcellvoltage) + 1;
         if(cells > 8)            // something is wrong, we expect 8 cells maximum (and autodetection will be problematic at 6+ cells)
             cells = 8;
         batteryCellCount = cells;
@@ -98,30 +101,62 @@ void updateBattery(void)
     /* battery has been disconnected - can take a while for filter cap to disharge so we use a threshold of VBATT_DETECT */
     else if(batteryState != BATTERY_NOTPRESENT && vbat <= VBATT_DETECT)
     {
+        batteryState = BATTERY_NOTPRESENT;
         batteryCellCount = 0;
         batteryWarningVoltage = 0;
         batteryCriticalVoltage = 0;
     }    
+
+    switch(batteryState)
+    {
+        case BATTERY_OK:
+            if(vbat <= (batteryWarningVoltage - VBATT_HYSTERESIS)){
+                batteryState = BATTERY_WARNING;
+                beeper(BEEPER_BAT_LOW);
+            }
+            break;
+        case BATTERY_WARNING:
+            if(vbat <= (batteryCriticalVoltage - VBATT_HYSTERESIS)){
+                batteryState = BATTERY_CRITICAL;
+                 beeper(BEEPER_BAT_CRIT_LOW);
+            }
+            else if(vbat > (batteryWarningVoltage + VBATT_HYSTERESIS)){
+                batteryState = BATTERY_OK;
+            }
+            else{
+                 beeper(BEEPER_BAT_LOW);
+            }
+            break;
+        case BATTERY_CRITICAL:
+            if(vbat > (batteryCriticalVoltage + VBATT_HYSTERESIS)){
+                batteryState = BATTERY_WARNING;
+                beeper(BEEPER_BAT_LOW);
+            }
+            else{
+                 beeper(BEEPER_BAT_CRIT_LOW);
+            }
+            break;
+        case BATTERY_NOTPRESENT:
+            break;
+    }
 }
 
-batteryState_e calculateBatteryState(void)
+batteryState_e getBatteryState(void)
 {
-    if(batteryCellCount == 0)
-    {
-        return BATTERY_NOTPRESENT;
-    }
-    if (vbat <= batteryCriticalVoltage) {
-        return BATTERY_CRITICAL;
-    }
-    if (vbat <= batteryWarningVoltage) {
-        return BATTERY_WARNING;
-    }
-    return BATTERY_OK;
+    return batteryState;
+}
+
+const uint8_t * batteryStateStrings[] = {"OK", "WARNING", "CRITICAL", "NOT PRESENT"};
+
+const int8_t * getBatteryStateString(void)
+{
+    return batteryStateStrings[batteryState];
 }
 
 void batteryInit(batteryConfig_t *initialBatteryConfig)
 {
     batteryConfig = initialBatteryConfig;
+    batteryState = BATTERY_NOTPRESENT;
     batteryCellCount = 0;
     batteryWarningVoltage = 0;
     batteryCriticalVoltage = 0;

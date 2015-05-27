@@ -24,6 +24,8 @@ extern "C" {
     #include "sensors/battery.h"
     
     #include "io/rc_controls.h"
+    #include "flight/lowpass.h"
+    #include "io/beeper.h"
 }
 
 #include "unittest_macros.h"
@@ -90,6 +92,7 @@ extern "C" {
 uint8_t armingFlags = 0;
 int16_t rcCommand[4] = {0,0,0,0};
 
+
 bool feature(uint32_t mask)
 {
     UNUSED(mask);
@@ -114,4 +117,17 @@ void delay(uint32_t ms)
     UNUSED(ms);
     return;
 }
+
+int32_t lowpassFixed(lowpass_t *filter, int32_t in, int16_t freq)
+{
+    UNUSED(filter);
+    UNUSED(freq);
+    return in;
+}
+
+void beeper(beeperMode_e mode)
+{
+    UNUSED(mode);
+}
+
 }

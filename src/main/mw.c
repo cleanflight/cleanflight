@@ -88,7 +88,7 @@ enum {
 };
 
 /* VBAT monitoring interval (in microseconds) - 1s*/
-#define VBATINTERVAL 1000000       
+#define VBATINTERVAL (6 * 3500)       
 /* IBat monitoring interval (in microseconds) - 6 default looptimes */
 #define IBATINTERVAL (6 * 3500)       
 
@@ -173,7 +173,6 @@ void annexCode(void)
     int32_t tmp, tmp2;
     int32_t axis, prop1 = 0, prop2;
 
-    static batteryState_e batteryState = BATTERY_OK;
     static uint32_t vbatLastServiced = 0;
     static uint32_t ibatLastServiced = 0;
     uint32_t ibatTimeSinceLastServiced;
@@ -248,17 +247,9 @@ void annexCode(void)
 
     if (feature(FEATURE_VBAT)) {
         /* currentTime will rollover @ 70 minutes */
-        if ((currentTime - vbatLastServiced) >= masterConfig.batteryConfig.vbatt_interval*1000) {
+        if ((currentTime - vbatLastServiced) >= VBATINTERVAL) {
            vbatLastServiced = currentTime;
-            if (feature(FEATURE_VBAT)) {
-                updateBattery();
-                batteryState = calculateBatteryState();
-                //handle beepers for battery levels
-                if (batteryState == BATTERY_CRITICAL)
-                    beeper(BEEPER_BAT_CRIT_LOW);    //critically low battery
-                else if (batteryState == BATTERY_WARNING)
-                    beeper(BEEPER_BAT_LOW);         //low battery
-            }
+            updateBattery();
         }
     }
 
