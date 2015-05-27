@@ -245,246 +245,870 @@ typedef enum {
 #define VALUE_TYPE_MASK (VAR_UINT8 | VAR_INT8 | VAR_UINT16 | VAR_INT16 | VAR_UINT32 | VAR_FLOAT)
 #define SECTION_MASK (MASTER_VALUE | PROFILE_VALUE | CONTROL_RATE_VALUE)
 
+// These enummeration members are used as an index into: var_coded_names[] and used in: valueTable[]
+// Some parts are conditionally included and will change the numering sequence -eg. #if (SERIAL_PORT_COUNT >= 2)
+// It is important that these stay in sync with equal/matching #if statements in: var_coded_names[]
+typedef enum {
+    SID_looptime = 0,
+    SID_emf_avoidance,
+
+    SID_mid_rc,
+    SID_min_check,
+    SID_max_check,
+    SID_rssi_channel,
+    SID_rssi_scale,
+    SID_rssi_ppm_invert,
+    SID_input_filtering_mode,
+
+    SID_min_throttle,
+    SID_max_throttle,
+    SID_min_command,
+    SID_servo_center_pulse,
+
+    SID_3d_deadband_low,
+    SID_3d_deadband_high,
+    SID_3d_neutral,
+    SID_3d_deadband_throttle,
+
+    SID_motor_pwm_rate,
+    SID_servo_pwm_rate,
+
+    SID_retarded_arm,
+    SID_disarm_kill_switch,
+    SID_auto_disarm_delay,
+    SID_small_angle,
+
+    SID_flaps_speed,
+
+    SID_fixedwing_althold_dir,
+
+    SID_serial_port_1_functions,
+    SID_serial_port_1_msp_baudrate,
+    SID_serial_port_1_telemetry_baudrate,
+    SID_serial_port_1_blackbox_baudrate,
+    SID_serial_port_1_gps_baudrate,
+
+#if (SERIAL_PORT_COUNT >= 2)
+    SID_serial_port_2_functions,
+    SID_serial_port_2_msp_baudrate,
+    SID_serial_port_2_telemetry_baudrate,
+    SID_serial_port_2_blackbox_baudrate,
+    SID_serial_port_2_gps_baudrate,
+
+#if (SERIAL_PORT_COUNT >= 3)
+    SID_serial_port_3_functions,
+    SID_serial_port_3_msp_baudrate,
+    SID_serial_port_3_telemetry_baudrate,
+    SID_serial_port_3_blackbox_baudrate,
+    SID_serial_port_3_gps_baudrate,
+
+#if (SERIAL_PORT_COUNT >= 4)
+    SID_serial_port_4_functions,
+    SID_serial_port_4_msp_baudrate,
+    SID_serial_port_4_telemetry_baudrate,
+    SID_serial_port_4_blackbox_baudrate,
+    SID_serial_port_4_gps_baudrate,
+
+#if (SERIAL_PORT_COUNT >= 5)
+    SID_serial_port_5_functions,
+    SID_serial_port_5_msp_baudrate,
+    SID_serial_port_5_telemetry_baudrate,
+    SID_serial_port_5_blackbox_baudrate,
+    SID_serial_port_5_gps_baudrate,
+#endif
+#endif
+#endif
+#endif
+
+    SID_reboot_character,
+
+#ifdef GPS
+    SID_gps_provider,
+    SID_gps_sbas_mode,
+    SID_gps_auto_config,
+    SID_gps_auto_baud,
+
+    SID_gps_pos_p,
+    SID_gps_pos_i,
+    SID_gps_pos_d,
+    SID_gps_posr_p,
+    SID_gps_posr_i,
+    SID_gps_posr_d,
+    SID_gps_nav_p,
+    SID_gps_nav_i,
+    SID_gps_nav_d,
+    SID_gps_wp_radius,
+    SID_nav_controls_heading,
+    SID_nav_speed_min,
+    SID_nav_speed_max,
+    SID_nav_slew_rate,
+#endif
+
+    SID_serialrx_provider,
+    SID_spektrum_sat_bind,
+
+    SID_telemetry_switch,
+    SID_telemetry_inversion,
+    SID_frsky_default_lattitude,
+    SID_frsky_default_longitude,
+    SID_frsky_coordinates_format,
+    SID_frsky_unit,
+    SID_frsky_vfas_precision,
+    SID_hott_alarm_sound_interval,
+
+    SID_battery_capacity,
+    SID_vbat_scale,
+    SID_vbat_max_cell_voltage,
+    SID_vbat_min_cell_voltage,
+    SID_vbat_warning_cell_voltage,
+    SID_current_meter_scale,
+    SID_current_meter_offset,
+    SID_multiwii_current_meter_output,
+    SID_current_meter_type,
+
+    SID_align_gyro,
+    SID_align_acc,
+    SID_align_mag,
+
+    SID_align_board_roll,
+    SID_align_board_pitch,
+    SID_align_board_yaw,
+
+    SID_max_angle_inclination,
+
+    SID_gyro_lpf,
+    SID_moron_threshold,
+    SID_gyro_cmpf_factor,
+    SID_gyro_cmpfm_factor,
+
+    SID_alt_hold_deadband,
+    SID_alt_hold_fast_change,
+    SID_deadband,
+    SID_yaw_deadband,
+
+    SID_throttle_correction_value,
+    SID_throttle_correction_angle,
+
+    SID_yaw_control_direction,
+
+    SID_pid_at_min_throttle,
+    SID_yaw_direction,
+    SID_yaw_jump_prevention_limit,
+
+#ifdef USE_SERVOS
+    SID_tri_unarmed_servo,
+    SID_servo_lowpass_freq,
+    SID_servo_lowpass_enable,
+#endif
+
+    SID_default_rate_profile,
+    SID_rc_rate,
+    SID_rc_expo,
+    SID_rc_yaw_expo,
+    SID_thr_mid,
+    SID_thr_expo,
+    SID_roll_rate,
+    SID_pitch_rate,
+    SID_yaw_rate,
+    SID_tpa_rate,
+    SID_tpa_breakpoint,
+
+    SID_failsafe_delay,
+    SID_failsafe_off_delay,
+    SID_failsafe_throttle,
+
+    SID_rx_min_usec,
+    SID_rx_max_usec,
+
+#ifdef USE_SERVOS
+    SID_gimbal_flags,
+#endif
+
+    SID_acc_hardware,
+    SID_acc_lpf_factor,
+    SID_accxy_deadband,
+    SID_accz_deadband,
+    SID_accz_lpf_cutoff,
+    SID_acc_unarmedcal,
+    SID_acc_trim_pitch,
+    SID_acc_trim_roll,
+
+    SID_baro_tab_size,
+    SID_baro_noise_lpf,
+    SID_baro_cf_vel,
+    SID_baro_cf_alt,
+
+    SID_mag_hardware,
+    SID_mag_declination,
+
+    SID_pid_controller,
+
+    SID_p_pitch,
+    SID_i_pitch,
+    SID_d_pitch,
+    SID_p_roll,
+    SID_i_roll,
+    SID_d_roll,
+    SID_p_yaw,
+    SID_i_yaw,
+    SID_d_yaw,
+
+    SID_p_pitchf,
+    SID_i_pitchf,
+    SID_d_pitchf,
+    SID_p_rollf,
+    SID_i_rollf,
+    SID_d_rollf,
+    SID_p_yawf,
+    SID_i_yawf,
+    SID_d_yawf,
+
+    SID_level_horizon,
+    SID_level_angle,
+    SID_sensitivity_horizon,
+
+    SID_p_alt,
+    SID_i_alt,
+    SID_d_alt,
+
+    SID_p_level,
+    SID_i_level,
+    SID_d_level,
+
+    SID_p_vel,
+    SID_i_vel,
+    SID_d_vel,
+
+    SID_yaw_p_limit,
+
+#ifdef BLACKBOX
+    SID_blackbox_rate_num,
+    SID_blackbox_rate_denom,
+    SID_blackbox_device,
+#endif
+} sid_id_t;
+
+
 typedef struct {
-    const char *name;
+    const sid_id_t name;
     const uint16_t type; // cliValueFlag_e - specify one of each from VALUE_TYPE_MASK and SECTION_MASK
     void *ptr;
     const int32_t min;
     const int32_t max;
 } clivalue_t;
 
+
+// This array contains strings that are used to compose longer strings, they are represented
+// by a single byte-code and used in: var_coded_names[] array (to preserve code-space)
+char *var_code_parts[] = {
+#define SCP_min                 "\x80"
+        "min",                  // 7
+#define SCP_max                 "\x81"
+        "max",                  // 6
+#define SCP_rssi                "\x82"
+        "rssi",                 // 3
+#define SCP_throttle            "\x83"
+        "throttle",             // 7
+#define SCP_servo               "\x84"
+        "servo",                // 5
+#define SCP_deadband            "\x85"
+        "deadband",             // 8
+#define SCP_rate                "\x86"
+        "rate",                 // 11
+#define SCP_serial_port_        "\x87"
+        "serial_port_",         // 25
+#define SCP__functions          "\x88"
+        "_functions",           // 5
+#define SCP__msp_baudrate       "\x89"
+        "_msp_baudrate",        // 5
+#define SCP__telemetry_baudrate "\x8a"
+        "_telemetry_baudrate",  // 5
+#define SCP__blackbox_baudrate  "\x8b"
+        "_blackbox_baudrate",   // 5
+#define SCP__gps_baudrate       "\x8c"
+        "_gps_baudrate",        // 5
+#define SCP_gps                 "\x8d"
+        "gps",                  // 14
+#define SCP_nav                 "\x8e"
+        "nav",                  // 7
+#define SCP_frsky               "\x8f"
+        "frsky",                // 5
+#define SCP_vbat                "\x90"
+        "vbat",                 // 4
+#define SCP_cell_voltage        "\x91"
+        "cell_voltage",         // 3
+#define SCP_current_meter       "\x92"
+        "current_meter",        // 4
+#define SCP_align               "\x93"
+        "align",                // 6
+#define SCP_gyro                "\x94"
+        "gyro",                 // 3
+#define SCP_yaw                 "\x95"
+        "yaw",                  // 14
+#define SCP_pitch               "\x96"
+        "pitch",                // 9
+#define SCP_roll                "\x97"
+        "roll",                 // 9
+#define SCP_expo                "\x98"
+        "expo",                 // 3
+#define SCP_delay               "\x99"
+        "delay",                // 3
+#define SCP_failsafe            "\x9a"
+        "failsafe",             // 3
+#define SCP_baro                "\x9b"
+        "baro",                 // 4
+#define SCP_level               "\x9c"
+        "level",                // 5
+#define SCP_blackbox            "\x9d"
+        "blackbox",             // 3
+#define SCP_pos                 "\x9e"
+        "pos",                  // 6
+#define SCP_board               "\x9f"
+        "board",                // 3
+#define SCP_acc                 "\xa0"
+        "acc",                  // 9
+#define SCP_alt                 "\xa1"
+        "alt",                  // 7
+#define SCP_vel                 "\xa2"
+        "vel",                  // 4
+#define SCP_provider            "\xa3"
+        "provider",             // 2
+#define SCP_telemetry           "\xa4"
+        "telemetry",            // 2
+#define SCP_default             "\xa5"
+        "default",              // 3
+#define SCP_correction          "\xa6"
+        "correction",           // 2
+#define SCP_direction           "\xa7"
+        "direction",            // 2
+#define SCP_angle               "\xa8"
+        "angle",                // 4
+#define SCP_horizon             "\xa9"
+        "horizon",              // 2
+#define SCP_auto                "\xaa"
+        "auto",                 // 3
+#define SCP_disarm              "\xab"
+        "disarm",               // 2
+#define SCP_limit               "\xac"
+        "limit",                // 2
+};
+
+
+// This array has strings that may contain codes that needs interpretation by: const char* getSidString(uint16_t sid)
+char *var_coded_names[] = {
+        "looptime",
+        "emf_avoidance",
+
+        "mid_rc",
+        SCP_min "_check",                               //"min_check",
+        SCP_max "_check",                               //"max_check",
+        SCP_rssi "_channel",                            //"rssi_channel",
+        SCP_rssi "_scale",                              //"rssi_scale",
+        SCP_rssi "_ppm_invert",                         //"rssi_ppm_invert",
+        "input_filtering_mode",
+
+        SCP_min "_" SCP_throttle,                       //"min_throttle",
+        SCP_max "_" SCP_throttle,                       //"max_throttle",
+        SCP_min "_command",                             //"min_command",
+        SCP_servo "_center_pulse",                      //"servo_center_pulse",
+
+        "3d_" SCP_deadband "_low",                      //"3d_deadband_low",
+        "3d_" SCP_deadband "_high",                     //"3d_deadband_high",
+        "3d_neutral",                                   //"3d_neutral",
+        "3d_" SCP_deadband "_" SCP_throttle,            //"3d_deadband_throttle",
+
+        "motor_pwm_" SCP_rate,                          //"motor_pwm_rate",
+        SCP_servo "_pwm_" SCP_rate,                     //"servo_pwm_rate",
+
+        "retarded_arm",
+        SCP_disarm "_kill_switch",                      //"disarm_kill_switch",
+        SCP_auto "_" SCP_disarm "_" SCP_delay,          //"auto_disarm_delay",
+        "small_" SCP_angle,                             //"small_angle",
+
+        "flaps_speed",
+
+        "fixedwing_" SCP_alt "hold_dir",                //"fixedwing_althold_dir",
+
+        SCP_serial_port_ "1" SCP__functions,            //"serial_port_1_functions",
+        SCP_serial_port_ "1" SCP__msp_baudrate,         //"serial_port_1_msp_baudrate",
+        SCP_serial_port_ "1" SCP__telemetry_baudrate,   //"serial_port_1_telemetry_baudrate",
+        SCP_serial_port_ "1" SCP__blackbox_baudrate,    //"serial_port_1_blackbox_baudrate",
+        SCP_serial_port_ "1" SCP__gps_baudrate,         //"serial_port_1_gps_baudrate",
+    #if (SERIAL_PORT_COUNT >= 2)
+        SCP_serial_port_ "2" SCP__functions,            //"serial_port_2_functions",
+        SCP_serial_port_ "2" SCP__msp_baudrate,         //"serial_port_2_msp_baudrate",
+        SCP_serial_port_ "2" SCP__telemetry_baudrate,   //"serial_port_2_telemetry_baudrate",
+        SCP_serial_port_ "2" SCP__blackbox_baudrate,    //"serial_port_2_blackbox_baudrate",
+        SCP_serial_port_ "2" SCP__gps_baudrate,         //"serial_port_2_gps_baudrate",
+    #if (SERIAL_PORT_COUNT >= 3)
+        SCP_serial_port_ "3" SCP__functions,            //"serial_port_3_functions",
+        SCP_serial_port_ "3" SCP__msp_baudrate,         //"serial_port_3_msp_baudrate",
+        SCP_serial_port_ "3" SCP__telemetry_baudrate,   //"serial_port_3_telemetry_baudrate",
+        SCP_serial_port_ "3" SCP__blackbox_baudrate,    //"serial_port_3_blackbox_baudrate",
+        SCP_serial_port_ "3" SCP__gps_baudrate,         //"serial_port_3_gps_baudrate",
+    #if (SERIAL_PORT_COUNT >= 4)
+        SCP_serial_port_ "4" SCP__functions,            //"serial_port_4_functions",
+        SCP_serial_port_ "4" SCP__msp_baudrate,         //"serial_port_4_msp_baudrate",
+        SCP_serial_port_ "4" SCP__telemetry_baudrate,   //"serial_port_4_telemetry_baudrate",
+        SCP_serial_port_ "4" SCP__blackbox_baudrate,    //"serial_port_4_blackbox_baudrate",
+        SCP_serial_port_ "4" SCP__gps_baudrate,         //"serial_port_4_gps_baudrate",
+    #if (SERIAL_PORT_COUNT >= 5)
+        SCP_serial_port_ "5" SCP__functions,            //"serial_port_5_functions",
+        SCP_serial_port_ "5" SCP__msp_baudrate,         //"serial_port_5_msp_baudrate",
+        SCP_serial_port_ "5" SCP__telemetry_baudrate,   //"serial_port_5_telemetry_baudrate",
+        SCP_serial_port_ "5" SCP__blackbox_baudrate,    //"serial_port_5_blackbox_baudrate",
+        SCP_serial_port_ "5" SCP__gps_baudrate,         //"serial_port_5_gps_baudrate",
+    #endif
+    #endif
+    #endif
+    #endif
+
+        "reboot_character",
+
+    #ifdef GPS
+        SCP_gps "_" SCP_provider,                       //"gps_provider",
+        SCP_gps "_sbas_mode",                           //"gps_sbas_mode",
+        SCP_gps "_" SCP_auto "_config",                 //"gps_auto_config",
+        SCP_gps "_" SCP_auto "_baud",                   //"gps_auto_baud",
+
+        SCP_gps "_" SCP_pos "_p",                       //"gps_pos_p",
+        SCP_gps "_" SCP_pos "_i",                       //"gps_pos_i",
+        SCP_gps "_" SCP_pos "_d",                       //"gps_pos_d",
+        SCP_gps "_" SCP_pos "r_p",                      //"gps_posr_p",
+        SCP_gps "_" SCP_pos "r_i",                      //"gps_posr_i",
+        SCP_gps "_" SCP_pos "r_d",                      //"gps_posr_d",
+        SCP_gps "_" SCP_nav "_p",                       //"gps_nav_p",
+        SCP_gps "_" SCP_nav "_i",                       //"gps_nav_i",
+        SCP_gps "_" SCP_nav "_d",                       //"gps_nav_d",
+        SCP_gps "_wp_radius",                           //"gps_wp_radius",
+        SCP_nav "_controls_heading",                    //"nav_controls_heading",
+        SCP_nav "_speed_" SCP_min,                      //"nav_speed_min",
+        SCP_nav "_speed_" SCP_max,                      //"nav_speed_max",
+        SCP_nav "_slew_" SCP_rate,                      //"nav_slew_rate",
+    #endif
+
+        "serialrx_" SCP_provider,                       //"serialrx_provider",
+        "spektrum_sat_bind",
+
+        SCP_telemetry "_switch",                        //"telemetry_switch",
+        SCP_telemetry "_inversion",                     //"telemetry_inversion",
+        SCP_frsky "_" SCP_default "_lattitude",         //"frsky_default_lattitude",
+        SCP_frsky "_" SCP_default "_longitude",         //"frsky_default_longitude",
+        SCP_frsky "_coordinates_format",                //"frsky_coordinates_format",
+        SCP_frsky "_unit",                              //"frsky_unit",
+        SCP_frsky "_vfas_precision",                    //"frsky_vfas_precision",
+        "hott_alarm_sound_interval",
+
+        "battery_capacity",
+        SCP_vbat "_scale",                              //"vbat_scale",
+        SCP_vbat "_" SCP_max "_" SCP_cell_voltage,      //"vbat_max_cell_voltage",
+        SCP_vbat "_" SCP_min "_" SCP_cell_voltage,      //"vbat_min_cell_voltage",
+        SCP_vbat "_warning_" SCP_cell_voltage,          //"vbat_warning_cell_voltage",
+        SCP_current_meter "_scale",                     //"current_meter_scale",
+        SCP_current_meter "_offset",                    //"current_meter_offset",
+        "multiwii_" SCP_current_meter "_output",        //"multiwii_current_meter_output",
+        SCP_current_meter "_type",                      //"current_meter_type",
+
+        SCP_align "_" SCP_gyro,                         //"align_gyro",
+        SCP_align "_" SCP_acc,                          //"align_acc",
+        SCP_align "_mag",                               //"align_mag",
+
+        SCP_align "_" SCP_board "_" SCP_roll,           //"align_board_roll",
+        SCP_align "_" SCP_board "_" SCP_pitch,          //"align_board_pitch",
+        SCP_align "_" SCP_board "_" SCP_yaw,            //"align_board_yaw",
+
+        SCP_max "_" SCP_angle "_inclination",           //"max_angle_inclination",
+
+        SCP_gyro "_lpf",                                //"gyro_lpf",
+        "moron_threshold",
+        SCP_gyro "_cmpf_factor",                        //"gyro_cmpf_factor",
+        SCP_gyro "_cmpfm_factor",                       //"gyro_cmpfm_factor",
+
+        SCP_alt "_hold_" SCP_deadband,                  //"alt_hold_deadband",
+        SCP_alt "_hold_fast_change",                    //"alt_hold_fast_change",
+        SCP_deadband,                                   //"deadband",
+        SCP_yaw "_" SCP_deadband,                       //"yaw_deadband",
+
+        SCP_throttle "_" SCP_correction "_value",       //"throttle_correction_value",
+        SCP_throttle "_" SCP_correction "_" SCP_angle,  //"throttle_correction_angle",
+
+        SCP_yaw "_control_" SCP_direction,              //"yaw_control_direction",
+
+        "pid_at_" SCP_min "_" SCP_throttle,             //"pid_at_min_throttle",
+        SCP_yaw "_" SCP_direction,                      //"yaw_direction",
+        SCP_yaw "_jump_prevention_" SCP_limit,          //"yaw_jump_prevention_limit",
+
+    #ifdef USE_SERVOS
+        "tri_unarmed_" SCP_servo,                       //"tri_unarmed_servo",
+        SCP_servo "_lowpass_freq",                      //"servo_lowpass_freq",
+        SCP_servo "_lowpass_enable",                    //"servo_lowpass_enable",
+    #endif
+
+        SCP_default "_" SCP_rate "_profile",            //"default_rate_profile",
+        "rc_" SCP_rate,                                 //"rc_rate",
+        "rc_" SCP_expo,                                 //"rc_expo",
+        "rc_" SCP_yaw "_" SCP_expo,                     //"rc_yaw_expo",
+        "thr_mid",
+        "thr_" SCP_expo,                                //"thr_expo",
+        SCP_roll "_" SCP_rate,                          //"roll_rate",
+        SCP_pitch "_" SCP_rate,                         //"pitch_rate",
+        SCP_yaw "_" SCP_rate,                           //"yaw_rate",
+        "tpa_" SCP_rate,                                //"tpa_rate",
+        "tpa_breakpoint",
+
+        SCP_failsafe "_" SCP_delay,                     //"failsafe_delay",
+        SCP_failsafe "_off_" SCP_delay,                 //"failsafe_off_delay",
+        SCP_failsafe "_" SCP_throttle,                  //"failsafe_throttle",
+
+        "rx_" SCP_min "_usec",                          //"rx_min_usec",
+        "rx_" SCP_max "_usec",                          //"rx_max_usec",
+
+    #ifdef USE_SERVOS
+        "gimbal_flags",
+    #endif
+
+        SCP_acc "_hardware",                            //"acc_hardware",
+        SCP_acc "_lpf_factor",                          //"acc_lpf_factor",
+        SCP_acc "xy_" SCP_deadband,                     //"accxy_deadband",
+        SCP_acc "z_" SCP_deadband,                      //"accz_deadband",
+        SCP_acc "z_lpf_cutoff",                         //"accz_lpf_cutoff",
+        SCP_acc "_unarmedcal",                          //"acc_unarmedcal",
+        SCP_acc "_trim_" SCP_pitch,                     //"acc_trim_pitch",
+        SCP_acc "_trim_" SCP_roll,                      //"acc_trim_roll",
+
+        SCP_baro "_tab_size",                           //"baro_tab_size",
+        SCP_baro "_noise_lpf",                          //"baro_noise_lpf",
+        SCP_baro "_cf_" SCP_vel,                        //"baro_cf_vel",
+        SCP_baro "_cf_" SCP_alt,                        //"baro_cf_alt",
+
+        "mag_hardware",
+        "mag_declination",
+
+        "pid_controller",
+
+        "p_" SCP_pitch,                                 //"p_pitch",
+        "i_" SCP_pitch,                                 //"i_pitch",
+        "d_" SCP_pitch,                                 //"d_pitch",
+        "p_" SCP_roll,                                  //"p_roll",
+        "i_" SCP_roll,                                  //"i_roll",
+        "d_" SCP_roll,                                  //"d_roll",
+        "p_" SCP_yaw,                                   //"p_yaw",
+        "i_" SCP_yaw,                                   //"i_yaw",
+        "d_" SCP_yaw,                                   //"d_yaw",
+
+        "p_" SCP_pitch "f",                             //"p_pitchf",
+        "i_" SCP_pitch "f",                             //"i_pitchf",
+        "d_" SCP_pitch "f",                             //"d_pitchf",
+        "p_" SCP_roll "f",                              //"p_rollf",
+        "i_" SCP_roll "f",                              //"i_rollf",
+        "d_" SCP_roll "f",                              //"d_rollf",
+        "p_" SCP_yaw "f",                               //"p_yawf",
+        "i_" SCP_yaw "f",                               //"i_yawf",
+        "d_" SCP_yaw "f",                               //"d_yawf",
+
+        SCP_level "_" SCP_horizon,                      //"level_horizon",
+        SCP_level "_" SCP_angle,                        //"level_angle",
+        "sensitivity_" SCP_horizon,                     //"sensitivity_horizon",
+
+        "p_" SCP_alt,                                   //"p_alt",
+        "i_" SCP_alt,                                   //"i_alt",
+        "d_" SCP_alt,                                   //"d_alt",
+
+        "p_" SCP_level,                                 //"p_level",
+        "i_" SCP_level,                                 //"i_level",
+        "d_" SCP_level,                                 //"d_level",
+
+        "p_" SCP_vel,                                   //"p_vel",
+        "i_" SCP_vel,                                   //"i_vel",
+        "d_" SCP_vel,                                   //"d_vel",
+
+        SCP_yaw "_p_" SCP_limit,                        //"yaw_p_limit",
+
+    #ifdef BLACKBOX
+        SCP_blackbox "_" SCP_rate "_num",               //"blackbox_rate_num",
+        SCP_blackbox "_" SCP_rate "_denom",             //"blackbox_rate_denom",
+        SCP_blackbox "_device",                         //"blackbox_device",
+    #endif
+};
+
+
+#define DEBUG_SID   0
+
+const char* getSidString(uint16_t sid)
+{
+    uint8_t i, j, len1, len2, cp;
+    char *s;
+    char *d;
+    char *f;
+    static char buffer[50];
+
+    // phase 2: assemble required string from string fragments
+    // replace possible codes with their resp. string part
+    d = &buffer[0];
+    s = var_coded_names[sid];
+    len1 = strlen(var_coded_names[sid]);
+    cp = 0x80;
+
+    for (i = 0; i < len1; i++) {
+        *d = *s;
+        if( *d > 0x7f ) {
+            // code part found
+            cp = *d & 0x7f;
+            f = var_code_parts[cp];
+            len2 = strlen(var_code_parts[cp]);
+#if (DEBUG_SID > 0)
+            printf("(cp:%s) ", var_code_parts[cp]);
+#endif
+            for( j = 0; j < len2; j++ ) {
+                *d++ = *f++;
+            }
+            s++;
+        } else {
+            d++;
+            s++;
+        }
+    }
+    *d = 0;
+#if (DEBUG_SID > 0)
+    if(cp != 0x80) {
+        printf("\r\n");
+    }
+#endif
+    return buffer;
+}
+
 const clivalue_t valueTable[] = {
-    { "looptime",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.looptime, 0, 9000 },
-    { "emf_avoidance",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.emf_avoidance, 0, 1 },
+    { SID_looptime,                         VAR_UINT16 | MASTER_VALUE,  &masterConfig.looptime, 0, 9000 },
+    { SID_emf_avoidance,                    VAR_UINT8  | MASTER_VALUE,  &masterConfig.emf_avoidance, 0, 1 },
 
-    { "mid_rc",                     VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.midrc, 1200, 1700 },
-    { "min_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.mincheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
-    { "max_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.maxcheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
-    { "rssi_channel",               VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_channel, 0, MAX_SUPPORTED_RC_CHANNEL_COUNT },
-    { "rssi_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
-    { "rssi_ppm_invert",            VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_ppm_invert, 0, 1 },
-    { "input_filtering_mode",       VAR_INT8   | MASTER_VALUE,  &masterConfig.inputFilteringMode, 0, 1 },
+    { SID_mid_rc,                           VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.midrc, 1200, 1700 },
+    { SID_min_check,                        VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.mincheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_max_check,                        VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.maxcheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_rssi_channel,                     VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_channel, 0, MAX_SUPPORTED_RC_CHANNEL_COUNT },
+    { SID_rssi_scale,                       VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
+    { SID_rssi_ppm_invert,                  VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_ppm_invert, 0, 1 },
+    { SID_input_filtering_mode,             VAR_INT8   | MASTER_VALUE,  &masterConfig.inputFilteringMode, 0, 1 },
 
-    { "min_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.minthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
-    { "max_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.maxthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
-    { "min_command",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.mincommand, PWM_RANGE_ZERO, PWM_RANGE_MAX },
-    { "servo_center_pulse",         VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.servoCenterPulse, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_min_throttle,                     VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.minthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_max_throttle,                     VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.maxthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_min_command,                      VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.mincommand, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_servo_center_pulse,               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.servoCenterPulse, PWM_RANGE_ZERO, PWM_RANGE_MAX },
 
-    { "3d_deadband_low",            VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_low, PWM_RANGE_ZERO, PWM_RANGE_MAX }, // FIXME upper limit should match code in the mixer, 1500 currently
-    { "3d_deadband_high",           VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_high, PWM_RANGE_ZERO, PWM_RANGE_MAX }, // FIXME lower limit should match code in the mixer, 1500 currently,
-    { "3d_neutral",                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.neutral3d, PWM_RANGE_ZERO, PWM_RANGE_MAX },
-    { "3d_deadband_throttle",       VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_throttle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_3d_deadband_low,                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_low, PWM_RANGE_ZERO, PWM_RANGE_MAX }, // FIXME upper limit should match code in the mixer, 1500 currently
+    { SID_3d_deadband_high,                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_high, PWM_RANGE_ZERO, PWM_RANGE_MAX }, // FIXME lower limit should match code in the mixer, 1500 currently,
+    { SID_3d_neutral,                       VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.neutral3d, PWM_RANGE_ZERO, PWM_RANGE_MAX },
+    { SID_3d_deadband_throttle,             VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_throttle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
 
-    { "motor_pwm_rate",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.motor_pwm_rate, 50, 32000 },
-    { "servo_pwm_rate",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.servo_pwm_rate, 50, 498 },
+    { SID_motor_pwm_rate,                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.motor_pwm_rate, 50, 32000 },
+    { SID_servo_pwm_rate,                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.servo_pwm_rate, 50, 498 },
 
-    { "retarded_arm",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.retarded_arm, 0, 1 },
-    { "disarm_kill_switch",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.disarm_kill_switch, 0, 1 },
-    { "auto_disarm_delay",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.auto_disarm_delay, 0, 60 },
-    { "small_angle",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.small_angle, 0, 180 },
+    { SID_retarded_arm,                     VAR_UINT8  | MASTER_VALUE,  &masterConfig.retarded_arm, 0, 1 },
+    { SID_disarm_kill_switch,               VAR_UINT8  | MASTER_VALUE,  &masterConfig.disarm_kill_switch, 0, 1 },
+    { SID_auto_disarm_delay,                VAR_UINT8  | MASTER_VALUE,  &masterConfig.auto_disarm_delay, 0, 60 },
+    { SID_small_angle,                      VAR_UINT8  | MASTER_VALUE,  &masterConfig.small_angle, 0, 180 },
 
-    { "flaps_speed",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.airplaneConfig.flaps_speed, 0, 100 },
+    { SID_flaps_speed,                      VAR_UINT8  | MASTER_VALUE,  &masterConfig.airplaneConfig.flaps_speed, 0, 100 },
 
-    { "fixedwing_althold_dir",      VAR_INT8   | MASTER_VALUE,  &masterConfig.airplaneConfig.fixedwing_althold_dir, -1, 1 },
+    { SID_fixedwing_althold_dir,            VAR_INT8   | MASTER_VALUE,  &masterConfig.airplaneConfig.fixedwing_althold_dir, -1, 1 },
 
-    { "serial_port_1_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].functionMask, 0, 0xFFFF },
-    { "serial_port_1_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_1_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_1_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_1_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_1_functions,          VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].functionMask, 0, 0xFFFF },
+    { SID_serial_port_1_msp_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_1_telemetry_baudrate, VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { SID_serial_port_1_blackbox_baudrate,  VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { SID_serial_port_1_gps_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
 #if (SERIAL_PORT_COUNT >= 2)
-    { "serial_port_2_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].functionMask, 0, 0xFFFF },
-    { "serial_port_2_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_2_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_2_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_2_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_2_functions,          VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].functionMask, 0, 0xFFFF },
+    { SID_serial_port_2_msp_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_2_telemetry_baudrate, VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { SID_serial_port_2_blackbox_baudrate,  VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { SID_serial_port_2_gps_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
 #if (SERIAL_PORT_COUNT >= 3)
-    { "serial_port_3_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].functionMask, 0, 0xFFFF},
-    { "serial_port_3_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_3_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_3_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_3_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_3_functions,          VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].functionMask, 0, 0xFFFF},
+    { SID_serial_port_3_msp_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_3_telemetry_baudrate, VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { SID_serial_port_3_blackbox_baudrate,  VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { SID_serial_port_3_gps_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
 #if (SERIAL_PORT_COUNT >= 4)
-    { "serial_port_4_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].functionMask, 0, 0xFFFF },
-    { "serial_port_4_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_4_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_4_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_4_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_4_functions,          VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].functionMask, 0, 0xFFFF },
+    { SID_serial_port_4_msp_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_4_telemetry_baudrate, VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { SID_serial_port_4_blackbox_baudrate,  VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { SID_serial_port_4_gps_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
 #if (SERIAL_PORT_COUNT >= 5)
-    { "serial_port_5_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].functionMask, 0, 0xFFFF },
-    { "serial_port_5_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_5_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_5_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_5_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_5_functions,          VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].functionMask, 0, 0xFFFF },
+    { SID_serial_port_5_msp_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
+    { SID_serial_port_5_telemetry_baudrate, VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
+    { SID_serial_port_5_blackbox_baudrate,  VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
+    { SID_serial_port_5_gps_baudrate,       VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
 #endif
 #endif
 #endif
 #endif
 
-    { "reboot_character",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.reboot_character, 48, 126 },
+    { SID_reboot_character,                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.reboot_character, 48, 126 },
 
 #ifdef GPS
-    { "gps_provider",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
-    { "gps_sbas_mode",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
-    { "gps_auto_config",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoConfig, GPS_AUTOCONFIG_OFF, GPS_AUTOCONFIG_ON },
-    { "gps_auto_baud",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoBaud, GPS_AUTOBAUD_OFF, GPS_AUTOBAUD_ON },
+    { SID_gps_provider,                     VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.provider, 0, GPS_PROVIDER_MAX },
+    { SID_gps_sbas_mode,                    VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.sbasMode, 0, SBAS_MODE_MAX },
+    { SID_gps_auto_config,                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoConfig, GPS_AUTOCONFIG_OFF, GPS_AUTOCONFIG_ON },
+    { SID_gps_auto_baud,                    VAR_UINT8  | MASTER_VALUE,  &masterConfig.gpsConfig.autoBaud, GPS_AUTOBAUD_OFF, GPS_AUTOBAUD_ON },
 
-    { "gps_pos_p",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOS], 0, 200 },
-    { "gps_pos_i",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDPOS], 0, 200 },
-    { "gps_pos_d",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOS], 0, 200 },
-    { "gps_posr_p",                 VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOSR], 0, 200 },
-    { "gps_posr_i",                 VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDPOSR], 0, 200 },
-    { "gps_posr_d",                 VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOSR], 0, 200 },
-    { "gps_nav_p",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDNAVR], 0, 200 },
-    { "gps_nav_i",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDNAVR], 0, 200 },
-    { "gps_nav_d",                  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDNAVR], 0, 200 },
-    { "gps_wp_radius",              VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.gps_wp_radius, 0, 2000 },
-    { "nav_controls_heading",       VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_controls_heading, 0, 1 },
-    { "nav_speed_min",              VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_speed_min, 10, 2000 },
-    { "nav_speed_max",              VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_speed_max, 10, 2000 },
-    { "nav_slew_rate",              VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_slew_rate, 0, 100 },
+    { SID_gps_pos_p,                        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOS], 0, 200 },
+    { SID_gps_pos_i,                        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDPOS], 0, 200 },
+    { SID_gps_pos_d,                        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOS], 0, 200 },
+    { SID_gps_posr_p,                       VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDPOSR], 0, 200 },
+    { SID_gps_posr_i,                       VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDPOSR], 0, 200 },
+    { SID_gps_posr_d,                       VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDPOSR], 0, 200 },
+    { SID_gps_nav_p,                        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDNAVR], 0, 200 },
+    { SID_gps_nav_i,                        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDNAVR], 0, 200 },
+    { SID_gps_nav_d,                        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDNAVR], 0, 200 },
+    { SID_gps_wp_radius,                    VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.gps_wp_radius, 0, 2000 },
+    { SID_nav_controls_heading,             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_controls_heading, 0, 1 },
+    { SID_nav_speed_min,                    VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_speed_min, 10, 2000 },
+    { SID_nav_speed_max,                    VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_speed_max, 10, 2000 },
+    { SID_nav_slew_rate,                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gpsProfile.nav_slew_rate, 0, 100 },
 #endif
 
-    { "serialrx_provider",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.serialrx_provider, 0, SERIALRX_PROVIDER_MAX },
-    { "spektrum_sat_bind",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.spektrum_sat_bind, SPEKTRUM_SAT_BIND_DISABLED, SPEKTRUM_SAT_BIND_MAX},
+    { SID_serialrx_provider,                VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.serialrx_provider, 0, SERIALRX_PROVIDER_MAX },
+    { SID_spektrum_sat_bind,                VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.spektrum_sat_bind, SPEKTRUM_SAT_BIND_DISABLED, SPEKTRUM_SAT_BIND_MAX},
 
-    { "telemetry_switch",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_switch, 0, 1 },
-    { "telemetry_inversion",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_inversion, 0, 1 },
-    { "frsky_default_lattitude",    VAR_FLOAT  | MASTER_VALUE,  &masterConfig.telemetryConfig.gpsNoFixLatitude, -90.0, 90.0 },
-    { "frsky_default_longitude",    VAR_FLOAT  | MASTER_VALUE,  &masterConfig.telemetryConfig.gpsNoFixLongitude, -180.0, 180.0 },
-    { "frsky_coordinates_format",   VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_coordinate_format, 0, FRSKY_FORMAT_NMEA },
-    { "frsky_unit",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_unit, 0, FRSKY_UNIT_IMPERIALS },
-    { "frsky_vfas_precision",       VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_vfas_precision, FRSKY_VFAS_PRECISION_LOW, FRSKY_VFAS_PRECISION_HIGH },
-    { "hott_alarm_sound_interval",  VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.hottAlarmSoundInterval, 0, 120 },
+    { SID_telemetry_switch,                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_switch, 0, 1 },
+    { SID_telemetry_inversion,              VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.telemetry_inversion, 0, 1 },
+    { SID_frsky_default_lattitude,          VAR_FLOAT  | MASTER_VALUE,  &masterConfig.telemetryConfig.gpsNoFixLatitude, -90.0, 90.0 },
+    { SID_frsky_default_longitude,          VAR_FLOAT  | MASTER_VALUE,  &masterConfig.telemetryConfig.gpsNoFixLongitude, -180.0, 180.0 },
+    { SID_frsky_coordinates_format,         VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_coordinate_format, 0, FRSKY_FORMAT_NMEA },
+    { SID_frsky_unit,                       VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_unit, 0, FRSKY_UNIT_IMPERIALS },
+    { SID_frsky_vfas_precision,             VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.frsky_vfas_precision, FRSKY_VFAS_PRECISION_LOW, FRSKY_VFAS_PRECISION_HIGH },
+    { SID_hott_alarm_sound_interval,        VAR_UINT8  | MASTER_VALUE,  &masterConfig.telemetryConfig.hottAlarmSoundInterval, 0, 120 },
 
-    { "battery_capacity",           VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.batteryCapacity, 0, 20000 },
-    { "vbat_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatscale, VBAT_SCALE_MIN, VBAT_SCALE_MAX },
-    { "vbat_max_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmaxcellvoltage, 10, 50 },
-    { "vbat_min_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmincellvoltage, 10, 50 },
-    { "vbat_warning_cell_voltage",  VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatwarningcellvoltage, 10, 50 },
-    { "current_meter_scale",        VAR_INT16  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterScale, -10000, 10000 },
-    { "current_meter_offset",       VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterOffset, 0, 3300 },
-    { "multiwii_current_meter_output", VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.multiwiiCurrentMeterOutput, 0, 1 },
-    { "current_meter_type",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterType, 0, CURRENT_SENSOR_MAX },
+    { SID_battery_capacity,                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.batteryCapacity, 0, 20000 },
+    { SID_vbat_scale,                       VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatscale, VBAT_SCALE_MIN, VBAT_SCALE_MAX },
+    { SID_vbat_max_cell_voltage,            VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmaxcellvoltage, 10, 50 },
+    { SID_vbat_min_cell_voltage,            VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmincellvoltage, 10, 50 },
+    { SID_vbat_warning_cell_voltage,        VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatwarningcellvoltage, 10, 50 },
+    { SID_current_meter_scale,              VAR_INT16  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterScale, -10000, 10000 },
+    { SID_current_meter_offset,             VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterOffset, 0, 3300 },
+    { SID_multiwii_current_meter_output,    VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.multiwiiCurrentMeterOutput, 0, 1 },
+    { SID_current_meter_type,               VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterType, 0, CURRENT_SENSOR_MAX },
 
-    { "align_gyro",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.gyro_align, 0, 8 },
-    { "align_acc",                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.acc_align, 0, 8 },
-    { "align_mag",                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.mag_align, 0, 8 },
+    { SID_align_gyro,                       VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.gyro_align, 0, 8 },
+    { SID_align_acc,                        VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.acc_align, 0, 8 },
+    { SID_align_mag,                        VAR_UINT8  | MASTER_VALUE,  &masterConfig.sensorAlignmentConfig.mag_align, 0, 8 },
 
-    { "align_board_roll",           VAR_INT16  | MASTER_VALUE,  &masterConfig.boardAlignment.rollDegrees, -180, 360 },
-    { "align_board_pitch",          VAR_INT16  | MASTER_VALUE,  &masterConfig.boardAlignment.pitchDegrees, -180, 360 },
-    { "align_board_yaw",            VAR_INT16  | MASTER_VALUE,  &masterConfig.boardAlignment.yawDegrees, -180, 360 },
+    { SID_align_board_roll,                 VAR_INT16  | MASTER_VALUE,  &masterConfig.boardAlignment.rollDegrees, -180, 360 },
+    { SID_align_board_pitch,                VAR_INT16  | MASTER_VALUE,  &masterConfig.boardAlignment.pitchDegrees, -180, 360 },
+    { SID_align_board_yaw,                  VAR_INT16  | MASTER_VALUE,  &masterConfig.boardAlignment.yawDegrees, -180, 360 },
 
-    { "max_angle_inclination",      VAR_UINT16 | MASTER_VALUE,  &masterConfig.max_angle_inclination, 100, 900 },
+    { SID_max_angle_inclination,            VAR_UINT16 | MASTER_VALUE,  &masterConfig.max_angle_inclination, 100, 900 },
 
-    { "gyro_lpf",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_lpf, 0, 256 },
-    { "moron_threshold",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gyroConfig.gyroMovementCalibrationThreshold, 0, 128 },
-    { "gyro_cmpf_factor",           VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_cmpf_factor, 100, 1000 },
-    { "gyro_cmpfm_factor",          VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_cmpfm_factor, 100, 1000 },
+    { SID_gyro_lpf,                         VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_lpf, 0, 256 },
+    { SID_moron_threshold,                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.gyroConfig.gyroMovementCalibrationThreshold, 0, 128 },
+    { SID_gyro_cmpf_factor,                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_cmpf_factor, 100, 1000 },
+    { SID_gyro_cmpfm_factor,                VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_cmpfm_factor, 100, 1000 },
 
-    { "alt_hold_deadband",          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.alt_hold_deadband, 1, 250 },
-    { "alt_hold_fast_change",       VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.alt_hold_fast_change, 0, 1 },
-    { "deadband",                   VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.deadband, 0, 32 },
-    { "yaw_deadband",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.yaw_deadband, 0, 100 },
+    { SID_alt_hold_deadband,                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.alt_hold_deadband, 1, 250 },
+    { SID_alt_hold_fast_change,             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.alt_hold_fast_change, 0, 1 },
+    { SID_deadband,                         VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.deadband, 0, 32 },
+    { SID_yaw_deadband,                     VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.yaw_deadband, 0, 100 },
 
-    { "throttle_correction_value",  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].throttle_correction_value, 0, 150 },
-    { "throttle_correction_angle",  VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].throttle_correction_angle, 1, 900 },
+    { SID_throttle_correction_value,        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].throttle_correction_value, 0, 150 },
+    { SID_throttle_correction_angle,        VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].throttle_correction_angle, 1, 900 },
 
-    { "yaw_control_direction",      VAR_INT8   | MASTER_VALUE,  &masterConfig.yaw_control_direction, -1, 1 },
+    { SID_yaw_control_direction,            VAR_INT8   | MASTER_VALUE,  &masterConfig.yaw_control_direction, -1, 1 },
 
-    { "pid_at_min_throttle",        VAR_UINT8  | MASTER_VALUE, &masterConfig.mixerConfig.pid_at_min_throttle, 0, 1 },
-    { "yaw_direction",              VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_direction, -1, 1 },
-    { "yaw_jump_prevention_limit",  VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.yaw_jump_prevention_limit, YAW_JUMP_PREVENTION_LIMIT_LOW, YAW_JUMP_PREVENTION_LIMIT_HIGH },
+    { SID_pid_at_min_throttle,              VAR_UINT8  | MASTER_VALUE, &masterConfig.mixerConfig.pid_at_min_throttle, 0, 1 },
+    { SID_yaw_direction,                    VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_direction, -1, 1 },
+    { SID_yaw_jump_prevention_limit,        VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.yaw_jump_prevention_limit, YAW_JUMP_PREVENTION_LIMIT_LOW, YAW_JUMP_PREVENTION_LIMIT_HIGH },
 #ifdef USE_SERVOS
-    { "tri_unarmed_servo",          VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.tri_unarmed_servo, 0, 1 },
-    { "servo_lowpass_freq",         VAR_INT16  | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_freq, 10, 400},
-    { "servo_lowpass_enable",       VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_enable, 0, 1 },
+    { SID_tri_unarmed_servo,                VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.tri_unarmed_servo, 0, 1 },
+    { SID_servo_lowpass_freq,               VAR_INT16  | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_freq, 10, 400},
+    { SID_servo_lowpass_enable,             VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_enable, 0, 1 },
 #endif
 
-    { "default_rate_profile",       VAR_UINT8  | PROFILE_VALUE , &masterConfig.profile[0].defaultRateProfileIndex, 0, MAX_CONTROL_RATE_PROFILE_COUNT - 1 },
-    { "rc_rate",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcRate8, 0, 250 },
-    { "rc_expo",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcExpo8, 0, 100 },
-    { "rc_yaw_expo",                VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcYawExpo8, 0, 100 },
-    { "thr_mid",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrMid8, 0, 100 },
-    { "thr_expo",                   VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrExpo8, 0, 100 },
-    { "roll_rate",                  VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_ROLL], 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX },
-    { "pitch_rate",                 VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_PITCH], 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX },
-    { "yaw_rate",                   VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_YAW], 0, CONTROL_RATE_CONFIG_YAW_RATE_MAX },
-    { "tpa_rate",                   VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].dynThrPID, 0, CONTROL_RATE_CONFIG_TPA_MAX},
-    { "tpa_breakpoint",             VAR_UINT16 | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].tpa_breakpoint, PWM_RANGE_MIN, PWM_RANGE_MAX},
+    { SID_default_rate_profile,             VAR_UINT8  | PROFILE_VALUE , &masterConfig.profile[0].defaultRateProfileIndex, 0, MAX_CONTROL_RATE_PROFILE_COUNT - 1 },
+    { SID_rc_rate,                          VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcRate8, 0, 250 },
+    { SID_rc_expo,                          VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcExpo8, 0, 100 },
+    { SID_rc_yaw_expo,                      VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcYawExpo8, 0, 100 },
+    { SID_thr_mid,                          VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrMid8, 0, 100 },
+    { SID_thr_expo,                         VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrExpo8, 0, 100 },
+    { SID_roll_rate,                        VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_ROLL], 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX },
+    { SID_pitch_rate,                       VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_PITCH], 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX },
+    { SID_yaw_rate,                         VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_YAW], 0, CONTROL_RATE_CONFIG_YAW_RATE_MAX },
+    { SID_tpa_rate,                         VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].dynThrPID, 0, CONTROL_RATE_CONFIG_TPA_MAX},
+    { SID_tpa_breakpoint,                   VAR_UINT16 | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].tpa_breakpoint, PWM_RANGE_MIN, PWM_RANGE_MAX},
 
-    { "failsafe_delay",             VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_delay, 0, 200 },
-    { "failsafe_off_delay",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_off_delay, 0, 200 },
-    { "failsafe_throttle",          VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
+    { SID_failsafe_delay,                   VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_delay, 0, 200 },
+    { SID_failsafe_off_delay,               VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_off_delay, 0, 200 },
+    { SID_failsafe_throttle,                VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
 
-    { "rx_min_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
-    { "rx_max_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
+    { SID_rx_min_usec,                      VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
+    { SID_rx_max_usec,                      VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
 
 #ifdef USE_SERVOS
-    { "gimbal_flags",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gimbalConfig.gimbal_flags, 0, 255},
+    { SID_gimbal_flags,                     VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gimbalConfig.gimbal_flags, 0, 255},
 #endif
 
-    { "acc_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.acc_hardware, 0, ACC_MAX },
-    { "acc_lpf_factor",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].acc_lpf_factor, 0, 250 },
-    { "accxy_deadband",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].accDeadband.xy, 0, 100 },
-    { "accz_deadband",              VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].accDeadband.z, 0, 100 },
-    { "accz_lpf_cutoff",            VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].accz_lpf_cutoff, 1, 20 },
-    { "acc_unarmedcal",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].acc_unarmedcal, 0, 1 },
-    { "acc_trim_pitch",             VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].accelerometerTrims.values.pitch, -300, 300 },
-    { "acc_trim_roll",              VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].accelerometerTrims.values.roll, -300, 300 },
+    { SID_acc_hardware,                     VAR_UINT8  | MASTER_VALUE,  &masterConfig.acc_hardware, 0, ACC_MAX },
+    { SID_acc_lpf_factor,                   VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].acc_lpf_factor, 0, 250 },
+    { SID_accxy_deadband,                   VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].accDeadband.xy, 0, 100 },
+    { SID_accz_deadband,                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].accDeadband.z, 0, 100 },
+    { SID_accz_lpf_cutoff,                  VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].accz_lpf_cutoff, 1, 20 },
+    { SID_acc_unarmedcal,                   VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].acc_unarmedcal, 0, 1 },
+    { SID_acc_trim_pitch,                   VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].accelerometerTrims.values.pitch, -300, 300 },
+    { SID_acc_trim_roll,                    VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].accelerometerTrims.values.roll, -300, 300 },
 
-    { "baro_tab_size",              VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_sample_count, 0, BARO_SAMPLE_COUNT_MAX },
-    { "baro_noise_lpf",             VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_noise_lpf, 0, 1 },
-    { "baro_cf_vel",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_vel, 0, 1 },
-    { "baro_cf_alt",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_alt, 0, 1 },
+    { SID_baro_tab_size,                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_sample_count, 0, BARO_SAMPLE_COUNT_MAX },
+    { SID_baro_noise_lpf,                   VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_noise_lpf, 0, 1 },
+    { SID_baro_cf_vel,                      VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_vel, 0, 1 },
+    { SID_baro_cf_alt,                      VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_alt, 0, 1 },
 
-    { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_MAX },
-    { "mag_declination",            VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mag_declination, -18000, 18000 },
+    { SID_mag_hardware,                     VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, 0, MAG_MAX },
+    { SID_mag_declination,                  VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mag_declination, -18000, 18000 },
 
-    { "pid_controller",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pidController, 0, 5 },
+    { SID_pid_controller,                   VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pidController, 0, 5 },
 
-    { "p_pitch",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PITCH], 0, 200 },
-    { "i_pitch",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PITCH], 0, 200 },
-    { "d_pitch",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PITCH], 0, 200 },
-    { "p_roll",                     VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[ROLL], 0, 200 },
-    { "i_roll",                     VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[ROLL], 0, 200 },
-    { "d_roll",                     VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[ROLL], 0, 200 },
-    { "p_yaw",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[YAW], 0, 200 },
-    { "i_yaw",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[YAW], 0, 200 },
-    { "d_yaw",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[YAW], 0, 200 },
+    { SID_p_pitch,                          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PITCH], 0, 200 },
+    { SID_i_pitch,                          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PITCH], 0, 200 },
+    { SID_d_pitch,                          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PITCH], 0, 200 },
+    { SID_p_roll,                           VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[ROLL], 0, 200 },
+    { SID_i_roll,                           VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[ROLL], 0, 200 },
+    { SID_d_roll,                           VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[ROLL], 0, 200 },
+    { SID_p_yaw,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[YAW], 0, 200 },
+    { SID_i_yaw,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[YAW], 0, 200 },
+    { SID_d_yaw,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[YAW], 0, 200 },
 
-    { "p_pitchf",                   VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P_f[PITCH], 0, 100 },
-    { "i_pitchf",                   VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[PITCH], 0, 100 },
-    { "d_pitchf",                   VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[PITCH], 0, 100 },
-    { "p_rollf",                    VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P_f[ROLL], 0, 100 },
-    { "i_rollf",                    VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[ROLL], 0, 100 },
-    { "d_rollf",                    VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[ROLL], 0, 100 },
-    { "p_yawf",                     VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P_f[YAW], 0, 100 },
-    { "i_yawf",                     VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[YAW], 0, 100 },
-    { "d_yawf",                     VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[YAW], 0, 100 },
+    { SID_p_pitchf,                         VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P_f[PITCH], 0, 100 },
+    { SID_i_pitchf,                         VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[PITCH], 0, 100 },
+    { SID_d_pitchf,                         VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[PITCH], 0, 100 },
+    { SID_p_rollf,                          VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P_f[ROLL], 0, 100 },
+    { SID_i_rollf,                          VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[ROLL], 0, 100 },
+    { SID_d_rollf,                          VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[ROLL], 0, 100 },
+    { SID_p_yawf,                           VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P_f[YAW], 0, 100 },
+    { SID_i_yawf,                           VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[YAW], 0, 100 },
+    { SID_d_yawf,                           VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[YAW], 0, 100 },
 
-    { "level_horizon",              VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_level, 0, 10 },
-    { "level_angle",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.A_level, 0, 10 },
-    { "sensitivity_horizon",        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_sensitivity, 0, 250 },
+    { SID_level_horizon,                    VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_level, 0, 10 },
+    { SID_level_angle,                      VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.A_level, 0, 10 },
+    { SID_sensitivity_horizon,              VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_sensitivity, 0, 250 },
 
-    { "p_alt",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDALT], 0, 200 },
-    { "i_alt",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDALT], 0, 200 },
-    { "d_alt",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDALT], 0, 200 },
+    { SID_p_alt,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDALT], 0, 200 },
+    { SID_i_alt,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDALT], 0, 200 },
+    { SID_d_alt,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDALT], 0, 200 },
 
-    { "p_level",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDLEVEL], 0, 200 },
-    { "i_level",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDLEVEL], 0, 200 },
-    { "d_level",                    VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDLEVEL], 0, 200 },
+    { SID_p_level,                          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDLEVEL], 0, 200 },
+    { SID_i_level,                          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDLEVEL], 0, 200 },
+    { SID_d_level,                          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDLEVEL], 0, 200 },
 
-    { "p_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDVEL], 0, 200 },
-    { "i_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDVEL], 0, 200 },
-    { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
+    { SID_p_vel,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.P8[PIDVEL], 0, 200 },
+    { SID_i_vel,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDVEL], 0, 200 },
+    { SID_d_vel,                            VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
 
-    { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX },
+    { SID_yaw_p_limit,                      VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX },
 
 #ifdef BLACKBOX
-    { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
-    { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
-    { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, 1 },
+    { SID_blackbox_rate_num,                VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
+    { SID_blackbox_rate_denom,              VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
+    { SID_blackbox_device,                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, 1 },
 #endif
 };
 
@@ -967,7 +1591,7 @@ static void dumpValues(uint16_t mask)
             continue;
         }
 
-        printf("set %s = ", valueTable[i].name);
+        printf("set %s = ", getSidString(valueTable[i].name));
         cliPrintVar(value, 0);
         cliPrint("\r\n");
     }
@@ -1536,7 +2160,7 @@ static void cliSet(char *cmdline)
         cliPrint("Current settings: \r\n");
         for (i = 0; i < VALUE_COUNT; i++) {
             val = &valueTable[i];
-            printf("%s = ", valueTable[i].name);
+            printf("%s = ", getSidString(valueTable[i].name));
             cliPrintVar(val, len); // when len is 1 (when * is passed as argument), it will print min/max values as well, for gui
             cliPrint("\r\n");
         }
@@ -1555,7 +2179,7 @@ static void cliSet(char *cmdline)
         for (i = 0; i < VALUE_COUNT; i++) {
             val = &valueTable[i];
             // ensure exact match when setting to prevent setting variables with shorter names
-            if (strncasecmp(cmdline, valueTable[i].name, strlen(valueTable[i].name)) == 0 && variableNameLength == strlen(valueTable[i].name)) {
+            if (strncasecmp(cmdline, getSidString(valueTable[i].name), strlen(getSidString(valueTable[i].name))) == 0 && variableNameLength == strlen(getSidString(valueTable[i].name))) {
                 if (valuef >= valueTable[i].min && valuef <= valueTable[i].max) { // here we compare the float value since... it should work, RIGHT?
                     int_float_value_t tmp;
                     if (valueTable[i].type & VAR_FLOAT)
@@ -1563,7 +2187,7 @@ static void cliSet(char *cmdline)
                     else
                         tmp.int_value = value;
                     cliSetVar(val, tmp);
-                    printf("%s set to ", valueTable[i].name);
+                    printf("%s set to ", getSidString(valueTable[i].name));
                     cliPrintVar(val, 0);
                 } else {
                     cliPrint("Value assignment out of range\r\n");
@@ -1585,9 +2209,9 @@ static void cliGet(char *cmdline)
     int matchedCommands = 0;
 
     for (i = 0; i < VALUE_COUNT; i++) {
-        if (strstr(valueTable[i].name, cmdline)) {
+        if (strstr(getSidString(valueTable[i].name), cmdline)) {
             val = &valueTable[i];
-            printf("%s = ", valueTable[i].name);
+            printf("%s = ", getSidString(valueTable[i].name));
             cliPrintVar(val, 0);
             cliPrint("\r\n");
 
