@@ -733,7 +733,12 @@ void loop(void)
             currentControlRateProfile,
             masterConfig.max_angle_inclination,
             &currentProfile->accelerometerTrims,
-            &masterConfig.rxConfig
+            &masterConfig.rxConfig,
+            masterConfig.mixerMode
+#ifdef USE_SERVOS
+            ,
+            &currentProfile->tiltArm
+#endif
         );
 
         mixTable();
