@@ -788,7 +788,7 @@ void loop(void)
         if ( (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT) && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH) ) {
             // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
             if (rcData[currentProfile->tiltArm.channel] < masterConfig.rxConfig.midrc) {
-       	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior; //neutral
+       	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior;
        	    }
        	}
 #endif
