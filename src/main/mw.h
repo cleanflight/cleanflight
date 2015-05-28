@@ -22,6 +22,7 @@
 
 extern int16_t magHold;
 
+void loop(void);
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta);
 void handleInflightCalibrationStickPosition();
 

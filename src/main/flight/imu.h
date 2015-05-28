@@ -67,6 +67,8 @@ void imuConfigure(
     uint16_t throttle_correction_angle
 );
 
+void imuInit(void);
+
 void calculateEstimatedAltitude(uint32_t currentTime);
 void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode);
 float calculateThrottleAngleScale(uint16_t throttle_correction_angle);

@@ -15,17 +15,12 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLI_H_
-#define CLI_H_
+#pragma once
 
 #include <stdbool.h>
-#include <stdint.h>
-#include "io/serial.h"
 
-extern uint8_t cliMode;
+#include "sensors/sensors.h"
 
-void cliInit(serialConfig_t *serialConfig);
-void cliProcess(void);
-bool cliIsActiveOnPort(serialPort_t *serialPort);
 
-#endif /* CLI_H_ */
+bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, uint8_t magHardwareToUse, int16_t magDeclinationFromConfig);
+

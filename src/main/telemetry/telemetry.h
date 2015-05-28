@@ -48,6 +48,7 @@ typedef struct telemetryConfig_s {
     uint8_t hottAlarmSoundInterval;
 } telemetryConfig_t;
 
+void telemetryInit(void);
 void checkTelemetryState(void);
 void handleTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
 

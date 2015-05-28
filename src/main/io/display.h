@@ -37,6 +37,8 @@ typedef enum {
 #endif
 } pageId_e;
 
+void displayInit(rxConfig_t *intialRxConfig);
+
 void updateDisplay(void);
 
 void displayShowFixedPage(pageId_e pageId);

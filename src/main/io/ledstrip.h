@@ -87,7 +87,7 @@ extern uint8_t ledCount;
 extern uint8_t ledsInRingCount;
 
 
-
+void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
 bool parseLedStripConfig(uint8_t ledIndex, const char *config);
 void updateLedStrip(void);
 void updateLedRing(void);

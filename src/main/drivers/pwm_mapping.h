@@ -103,3 +103,5 @@ enum {
     PWM15,
     PWM16
 };
+
+pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);

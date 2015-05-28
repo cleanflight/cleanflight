@@ -19,6 +19,7 @@
 
 #include <stdbool.h>
 #include "platform.h"
+#include "drivers/pwm_mapping.h"
 
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 10
@@ -111,6 +112,9 @@ void filterServos(void);
 
 extern int16_t motor[MAX_SUPPORTED_MOTORS];
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
+
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMixers);
+void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
 
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);

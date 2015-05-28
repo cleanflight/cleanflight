@@ -19,6 +19,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "rx/rx.h"
 
 #define FAILSAFE_POWER_ON_DELAY_US (1000 * 1000 * 5)
 
@@ -42,6 +43,8 @@ typedef struct failsafeState_s {
     bool active;
     failsafePhase_e phase;
 } failsafeState_t;
+
+void failsafeInit(rxConfig_t *intialRxConfig);
 
 void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse);
 

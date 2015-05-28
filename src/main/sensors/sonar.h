@@ -17,9 +17,12 @@
 
 #pragma once
 #include "sensors/battery.h"
+#include "drivers/sonar_hcsr04.h"
 
 void sonarUpdate(void);
 
+const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
+void sonarInit(const sonarHardware_t *sonarHardware);
 int32_t sonarRead(void);
 int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle);
 int32_t sonarGetLatestAltitude(void);

@@ -96,6 +96,8 @@ typedef enum {
     TYPE_TIMER
 } channelType_t;
 
+void timerInit(void);
+
 void timerConfigure(const timerHardware_t *timHw, uint16_t period, uint8_t mhz);  // This interface should be replaced.
 
 void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);

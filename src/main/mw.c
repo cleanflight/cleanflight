@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "mw.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>

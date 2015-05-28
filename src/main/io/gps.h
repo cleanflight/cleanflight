@@ -19,6 +19,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "io/serial.h"
+
 
 #define LAT 0
 #define LON 1
@@ -120,7 +122,7 @@ extern uint8_t GPS_svinfo_cno[16];         // Carrier to Noise Ratio (Signal Str
 #define GPS_DBHZ_MIN 0
 #define GPS_DBHZ_MAX 55
 
-
+void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void gpsThread(void);
 bool gpsNewFrame(uint8_t c);
 void updateGpsIndicator(uint32_t currentTime);
