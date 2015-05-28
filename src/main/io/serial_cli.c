@@ -799,7 +799,7 @@ static void cliTiltArm(char *cmdline)
 #ifndef USE_SERVOS
     UNUSED(cmdline);
 #else
-    enum { TILT_ARM_ARGUMENT_COUNT = 7 };
+    enum { TILT_ARM_ARGUMENT_COUNT = 8 };
     int16_t arguments[TILT_ARM_ARGUMENT_COUNT];
 
     tiltArmConfig_t *tilt;
@@ -848,6 +848,10 @@ static void cliTiltArm(char *cmdline)
             tilt->gearRatioPercent
         );
 
+        printf("\r\ntilt control channel index: %d",
+            tilt->channel
+        );
+
         printf("\r\n");
 
     } else {
@@ -865,7 +869,17 @@ static void cliTiltArm(char *cmdline)
                     return;
                 }
 
-                arguments[validArgumentCount++] = atoi(ptr);
+                if (validArgumentCount == 7){
+                    int val = atoi(ptr);
+                    if (val >= 0 && val < MAX_AUX_CHANNEL_COUNT) {
+                        arguments[validArgumentCount++] = atoi(ptr);
+                    }else{
+                        cliPrint("Parse error, channel number is invalid\r\n");
+                        return;
+                    }
+                }else{
+                    arguments[validArgumentCount++] = atoi(ptr);
+                }
 
                 do {
                     ptr++;
@@ -903,6 +917,8 @@ static void cliTiltArm(char *cmdline)
         tilt->thrustLiftoff = arguments[5];
 
         tilt->gearRatioPercent = arguments[6];
+
+        tilt->channel = arguments[7];
     }
 #endif
 }
