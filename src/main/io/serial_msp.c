@@ -845,11 +845,12 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_TILT_ARM_CONFIG:
-        headSerialReply(4);
+        headSerialReply(5);
         serialize8( currentProfile->tiltArm.flagEnabled );
         serialize8( currentProfile->tiltArm.pitchDivisior );
         serialize8( currentProfile->tiltArm.thrustLiftoff );
         serialize8( currentProfile->tiltArm.gearRatioPercent );
+        serialize8( currentProfile->tiltArm.channel );
         break;
     case MSP_CHANNEL_FORWARDING:
         headSerialReply(MAX_SUPPORTED_SERVOS);
@@ -1456,6 +1457,7 @@ static bool processInCommand(void)
         currentProfile->tiltArm.pitchDivisior = read8();
         currentProfile->tiltArm.thrustLiftoff = read8();
         currentProfile->tiltArm.gearRatioPercent = read8();
+        currentProfile->tiltArm.channel = read8();
 #endif
         break;
     case MSP_SET_CHANNEL_FORWARDING:
