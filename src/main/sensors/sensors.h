@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 typedef enum {
     SENSOR_INDEX_GYRO = 0,
     SENSOR_INDEX_ACC,

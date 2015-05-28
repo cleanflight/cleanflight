@@ -17,6 +17,12 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "common/axis.h"
+#include "drivers/compass.h"
+#include "sensors/sensors.h"
+#include "platform.h"
+
 // Type of magnetometer used/detected
 typedef enum {
     MAG_DEFAULT = 0,

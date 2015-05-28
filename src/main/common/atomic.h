@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "platform.h"
+
 // only set_BASEPRI is implemented in device library. It does always create memory barrirer
 // missing versions are implemented here
 

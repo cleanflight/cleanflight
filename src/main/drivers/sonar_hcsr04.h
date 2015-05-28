@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "platform.h"
+
 typedef struct sonarHardware_s {
     uint16_t trigger_pin;
     uint16_t echo_pin;

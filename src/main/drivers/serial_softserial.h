@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <stdlib.h>
+#include "drivers/serial.h"
+
 #define SOFTSERIAL_BUFFER_SIZE 256
 
 typedef enum {

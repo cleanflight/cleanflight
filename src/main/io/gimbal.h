@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 typedef enum GimbalFlags {
     GIMBAL_NORMAL = 1 << 0,
     GIMBAL_MIXTILT = 1 << 1,

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <stdint.h>
 
 typedef enum {
     RGB_RED = 0,

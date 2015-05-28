@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+#include "platform.h"
+
 #define MAX_PROFILE_COUNT 3
 #define MAX_CONTROL_RATE_PROFILE_COUNT 3
 

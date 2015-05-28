@@ -17,6 +17,13 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+#include "platform.h"
+#include "common/axis.h"
+#include "drivers/accgyro.h"
+#include "sensors/sensors.h"
+
 typedef enum {
     GYRO_NONE = 0,
     GYRO_DEFAULT,

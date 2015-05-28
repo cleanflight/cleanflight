@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #define FAILSAFE_POWER_ON_DELAY_US (1000 * 1000 * 5)
 
 typedef struct failsafeConfig_s {

@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 typedef enum {
     ADC_BATTERY = 0,
     ADC_RSSI = 1,

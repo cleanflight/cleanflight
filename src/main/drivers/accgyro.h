@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "drivers/sensor.h"
+
 extern uint16_t acc_1G;
 
 typedef struct gyro_s {

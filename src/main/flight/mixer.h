@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include "platform.h"
+
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 10
 #define YAW_JUMP_PREVENTION_LIMIT_LOW 80

@@ -18,10 +18,10 @@
 #pragma once
 
 #include <stdint.h>
-
 #include "common/axis.h"
 #include "flight/mixer.h"
 #include "blackbox/blackbox_fielddefs.h"
+
 
 typedef struct blackboxValues_t {
     uint32_t time;

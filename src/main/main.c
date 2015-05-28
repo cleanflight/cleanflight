@@ -90,6 +90,8 @@
 #include "build_config.h"
 #include "debug.h"
 
+#include "target/stm32_system_generic.h"
+
 extern uint32_t previousTime;
 
 #ifdef SOFTSERIAL_LOOPBACK
@@ -117,15 +119,6 @@ void loop(void);
 void spektrumBind(rxConfig_t *rxConfig);
 const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
 void sonarInit(const sonarHardware_t *sonarHardware);
-
-#ifdef STM32F303xC
-// from system_stm32f30x.c
-void SetSysClock(void);
-#endif
-#ifdef STM32F10X
-// from system_stm32f10x.c
-void SetSysClock(bool overclock);
-#endif
 
 typedef enum {
     SYSTEM_STATE_INITIALISING   = 0,

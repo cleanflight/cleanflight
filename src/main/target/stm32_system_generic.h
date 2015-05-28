@@ -15,15 +15,18 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef SRC_MAIN_TARGET_STM32_SYSTEM_GENERIC_H_
+#define SRC_MAIN_TARGET_STM32_SYSTEM_GENERIC_H_
 
-#include <stdint.h>
-#include "sensors/acceleration.h"
+#include <stdbool.h>
 
-extern int16_t magHold;
+#ifdef STM32F303xC
+// from system_stm32f30x.c
+void SetSysClock(void);
+#endif
+#ifdef STM32F10X
+// from system_stm32f10x.c
+void SetSysClock(bool overclock);
+#endif
 
-void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta);
-void handleInflightCalibrationStickPosition();
-
-void mwDisarm(void);
-void mwArm(void);
+#endif /* SRC_MAIN_TARGET_STM32_SYSTEM_GENERIC_H_ */

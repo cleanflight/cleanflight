@@ -17,6 +17,12 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "common/axis.h"
+#include "common/maths.h"
+#include "sensors/acceleration.h"
+#include "flight/pid.h"
+
 extern int16_t throttleAngleCorrection;
 extern uint32_t accTimeSum;
 extern int accSumCount;

@@ -17,6 +17,21 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "platform.h"
+#include "config/config.h"
+#include "config/config_profile.h"
+#include "drivers/pwm_rx.h"
+#include "io/escservo.h"
+#include "io/gps.h"
+#include "io/ledstrip.h"
+#include "sensors/boardalignment.h"
+#include "sensors/gyro.h"
+#include "sensors/battery.h"
+#include "flight/failsafe.h"
+#include "telemetry/telemetry.h"
+
+
 // System-wide
 typedef struct master_t {
     uint8_t version;

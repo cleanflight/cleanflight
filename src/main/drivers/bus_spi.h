@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+#include "platform.h"
+
 #define SPI_0_5625MHZ_CLOCK_DIVIDER 128
 #define SPI_18MHZ_CLOCK_DIVIDER     2
 #define SPI_9MHZ_CLOCK_DIVIDER      4

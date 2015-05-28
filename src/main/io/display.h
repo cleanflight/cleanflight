@@ -15,6 +15,9 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "rx/rx.h"
 //#define ENABLE_DEBUG_OLED_PAGE
 
 typedef enum {

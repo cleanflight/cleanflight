@@ -22,6 +22,7 @@
  *      Author: Hydra
  */
 #include "rx/rx.h"
+#include "io/serial.h"
 
 #ifndef TELEMETRY_COMMON_H_
 #define TELEMETRY_COMMON_H_

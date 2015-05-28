@@ -17,6 +17,15 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "platform.h"
+#include "sensors/barometer.h"
+#include "io/gimbal.h"
+#include "io/rc_controls.h"
+#include "flight/imu.h"
+#include "flight/mixer.h"
+#include "flight/navigation.h"
+
 typedef struct profile_s {
     pidProfile_t pidProfile;
 

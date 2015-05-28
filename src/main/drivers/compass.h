@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "drivers/sensor.h"
+
 typedef struct mag_s {
     sensorInitFuncPtr init;                                 // initialize function
     sensorReadFuncPtr read;                                 // read 3 axis data function

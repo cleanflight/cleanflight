@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+#include "platform.h"
+
 #define MAX_PWM_MOTORS  12
 #define MAX_PWM_SERVOS  10
 

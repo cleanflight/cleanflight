@@ -17,6 +17,13 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <stdbool.h>
+#include "platform.h"
+#include "sensors.h"
+#include "common/axis.h"
+#include "drivers/accgyro.h"
+
 // Type of accelerometer used/detected
 typedef enum {
     ACC_DEFAULT = 0,

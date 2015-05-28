@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "common/axis.h"
+
 #define GYRO_I_MAX 256                      // Gyro I limiter
 #define RCconstPI   0.159154943092f         // 0.5f / M_PI;
 #define MAIN_CUT_HZ 12.0f                   // (default 12Hz, Range 1-50Hz)

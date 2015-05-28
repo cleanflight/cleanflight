@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include "flight/pid.h"
+
 // navigation mode
 typedef enum {
     NAV_MODE_NONE = 0,
