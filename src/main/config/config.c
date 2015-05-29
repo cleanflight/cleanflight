@@ -991,3 +991,8 @@ uint32_t featureMask(void)
     return masterConfig.enabledFeatures;
 }
 
+uint32_t latchedFeatureMask(void)
+{
+    return activeFeaturesLatch;
+}
+

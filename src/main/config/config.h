@@ -53,6 +53,7 @@ void featureSet(uint32_t mask);
 void featureClear(uint32_t mask);
 void featureClearAll(void);
 uint32_t featureMask(void);
+uint32_t latchedFeatureMask(void);
 
 void copyCurrentProfileToProfileSlot(uint8_t profileSlotIndex);
 

@@ -131,7 +131,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   10 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   11 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -305,6 +305,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_ACC_TRIM             240    //out message         get acc angle trim values
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
+#define MSP_FEATURE_LATCHED      165    //out message         get currently active features
 
 #define INBUF_SIZE 64
 
@@ -1090,6 +1091,11 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_FEATURE:
         headSerialReply(4);
         serialize32(featureMask());
+        break;
+
+    case MSP_FEATURE_LATCHED:
+        headSerialReply(4);
+        serialize32(latchedFeatureMask());
         break;
 
     case MSP_BOARD_ALIGNMENT:
