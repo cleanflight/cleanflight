@@ -57,6 +57,12 @@ typedef struct pidProfile_s {
     uint16_t yaw_p_limit;                   // set P term limit (fixed value was 300)
 } pidProfile_t;
 
+struct controlRateConfig_s;
+struct master_s;
+struct profile_s;
+
+typedef void (*pidControllerFuncPtr)(struct controlRateConfig_s *controlRateConfig, struct master_s *masterConfig, struct profile_s *currentProfile); // pid controller function prototype
+
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)
 
