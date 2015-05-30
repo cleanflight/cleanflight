@@ -131,7 +131,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   10 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   11 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -305,6 +305,18 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_ACC_TRIM             240    //out message         get acc angle trim values
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
+
+// Next two commands are for preliminary access to (otherwise unsupported) development variables.
+// Use one of the index value as #defined below to refer to a specific variable.
+// Only the GET command returns an indication of index validity.
+// Clients should read at least once to determine if the index is valid (supported).
+// Do not re-use an index value that has been used before for another purpose.
+// Note that all values are returned as type: uint32_t
+#define MSP_GET_VAR_VALUE        165    //out message         Returns variable value
+#define MSP_SET_VAR_VALUE        166    //in message          Set variable value
+
+// Index defines for use with commands MSP_SET_VAR_VALUE and MSP_GET_VAR_VALUE
+#define VIDX_LOOPTIME             01  // looptime (as an example)
 
 #define INBUF_SIZE 64
 
@@ -1092,6 +1104,26 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize32(featureMask());
         break;
 
+    case MSP_GET_VAR_VALUE:
+        {
+            uint16_t variableIndex = read16();
+            uint32_t variablevalue = 0;
+            uint8_t result = false;
+
+            headSerialReply(5);
+            switch (variableIndex) {
+            case VIDX_LOOPTIME:
+                result = true;
+                variablevalue = masterConfig.looptime;
+                break;
+            default:
+                break;
+            }
+            serialize8(result);
+            serialize32(variablevalue);
+        }
+        break;
+
     case MSP_BOARD_ALIGNMENT:
         headSerialReply(6);
         serialize16(masterConfig.boardAlignment.rollDegrees);
@@ -1554,6 +1586,20 @@ static bool processInCommand(void)
     case MSP_SET_RX_MAP:
         for (i = 0; i < MAX_MAPPABLE_RX_INPUTS; i++) {
             masterConfig.rxConfig.rcmap[i] = read8();
+        }
+        break;
+
+    case MSP_SET_VAR_VALUE:
+        {
+            uint16_t variableIndex = read16();
+
+            switch (variableIndex) {
+            case VIDX_LOOPTIME:
+                masterConfig.looptime = (uint16_t)read32();
+                break;
+            default:
+                break;
+            }
         }
         break;
 
