@@ -553,7 +553,7 @@ static bool gpsNewFrameNMEA(char c)
                 satSystem = string[1];
                 if (string[0] == 'G' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')
                     gps_frame = FRAME_GGA;
-                if (string[0] == 'G' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') 
+                if (string[0] == 'G' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')
                     gps_frame = FRAME_RMC;
                 if (string[0] == 'G' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V')
                     gps_frame = FRAME_GSV;
@@ -586,11 +586,7 @@ static bool gpsNewFrameNMEA(char c)
                             }
                             break;
                         case 7:
-                            if (satSystem == 'P')
-                                GPS_gpsNumCh = grab_fields(string, 0);
-                            else if (satSystem == 'L')
-                                GPS_glonassNumCh = grab_fields(string, 0);
-                            gps_Msg.numSat = GPS_gpsNumCh + GPS_glonassNumCh;
+                            gps_Msg.numSat = grab_fields(string, 0);
                             break;
                         case 9:
                             gps_Msg.altitude = grab_fields(string, 0);     // altitude in meters added by Mis
@@ -678,21 +674,22 @@ static bool gpsNewFrameNMEA(char c)
                     *gpsPacketLogChar = LOG_IGNORED;
                     GPS_packetCount++;
                     switch (gps_frame) {
-                    case FRAME_GGA:
-                      *gpsPacketLogChar = LOG_NMEA_GGA;
-                      frameOK = 1;
-                      if (STATE(GPS_FIX)) {
-                            GPS_coord[LAT] = gps_Msg.latitude;
-                            GPS_coord[LON] = gps_Msg.longitude;
-                            GPS_numSat = gps_Msg.numSat;
-                            GPS_altitude = gps_Msg.altitude;
-                        }
-                        break;
-                    case FRAME_RMC:
-                        *gpsPacketLogChar = LOG_NMEA_RMC;
-                        GPS_speed = gps_Msg.speed;
-                        GPS_ground_course = gps_Msg.ground_course;
-                        break;
+                        case FRAME_GGA:
+                            *gpsPacketLogChar = LOG_NMEA_GGA;
+                            frameOK = 1;
+                            if (STATE(GPS_FIX)) {
+                                GPS_coord[LAT] = gps_Msg.latitude;
+                                GPS_coord[LON] = gps_Msg.longitude;
+                                GPS_numSat = gps_Msg.numSat;
+                                GPS_altitude = gps_Msg.altitude;
+                            }
+                            else GPS_numSat = gps_Msg.numSat;
+                            break;
+                        case FRAME_RMC:
+                            *gpsPacketLogChar = LOG_NMEA_RMC;
+                            GPS_speed = gps_Msg.speed;
+                            GPS_ground_course = gps_Msg.ground_course;
+                            break;
                     } // end switch
                 } else {
                     *gpsPacketLogChar = LOG_ERROR;
