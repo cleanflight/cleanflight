@@ -127,6 +127,15 @@ Click `CFG (Configuration` in the Configuration View.
 
 Select `Save current configuration` and click `Send`.
 
+### NMEA message configuration
+If you are running the NMEA protocol, make sure you disable all messages in the MSG tab of the U-Center Configuration view.
+
+Then proceed enabling the following messages on the UART1 output:
+
+    NMEA GxGGA
+    NMEA GxRMC
+    NMEA GxGSV
+
 ### UBlox Navigation model
 
 Cleanflight will use `Pedestrian` when gps auto config is used.
