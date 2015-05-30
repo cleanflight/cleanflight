@@ -82,6 +82,8 @@ uint16_t GPS_speed;                 // speed in 0.1m/s
 uint16_t GPS_ground_course = 0;     // degrees * 10
 
 uint8_t GPS_numCh;                          // Number of channels
+uint8_t GPS_gpsNumCh;                       // Number of gps channels
+uint8_t GPS_glonassNumCh;                   // Number of glonass channels
 uint8_t GPS_svinfo_chn[GPS_SV_MAXSATS];     // Channel number
 uint8_t GPS_svinfo_svid[GPS_SV_MAXSATS];    // Satellite ID
 uint8_t GPS_svinfo_quality[GPS_SV_MAXSATS]; // Bitfield Qualtity
@@ -532,10 +534,10 @@ static bool gpsNewFrameNMEA(char c)
 
     uint8_t frameOK = 0;
     static uint8_t param = 0, offset = 0, parity = 0;
-    static char string[15];
+    static char string[15], satSystem;
     static uint8_t checksum_param, gps_frame = NO_FRAME;
     static uint8_t svMessageNum = 0;
-    uint8_t svSatNum = 0, svPacketIdx = 0, svSatParam = 0;
+    uint8_t svSatNum = 0, svPacketIdx = 0, svSatParam = 0, satIndent = 0;
 
     switch (c) {
         case '$':
@@ -547,18 +549,13 @@ static bool gpsNewFrameNMEA(char c)
         case '*':
             string[offset] = 0;
             if (param == 0) {       //frame identification
-                 gps_frame = NO_FRAME;
-                if ((string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A') // GPS
-                    || (string[0] == 'G' && string[1] == 'N' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A') // GNSS 
-                    || (string[0] == 'G' && string[1] == 'L' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')) // GLONASS
+                gps_frame = NO_FRAME;
+                satSystem = string[1];
+                if (string[0] == 'G' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')
                     gps_frame = FRAME_GGA;
-                if ((string[0] == 'G' && string[1] == 'P' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') // GPS 
-                    || (string[0] == 'G' && string[1] == 'N' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') //GNSS
-                    || (string[0] == 'G' && string[1] == 'L' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')) // GLONASS 
+                if (string[0] == 'G' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C') 
                     gps_frame = FRAME_RMC;
-                if ((string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V') //GPS
-                    || (string[0] == 'G' && string[1] == 'N' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V') //GNSS
-                    || (string[0] == 'G' && string[1] == 'L' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V')) //GLONASS
+                if (string[0] == 'G' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V')
                     gps_frame = FRAME_GSV;
             }
 
@@ -589,7 +586,11 @@ static bool gpsNewFrameNMEA(char c)
                             }
                             break;
                         case 7:
-                            gps_Msg.numSat = grab_fields(string, 0);
+                            if (satSystem == 'P')
+                                GPS_gpsNumCh = grab_fields(string, 0);
+                            else if (satSystem == 'L')
+                                GPS_glonassNumCh = grab_fields(string, 0);
+                            gps_Msg.numSat = GPS_gpsNumCh + GPS_glonassNumCh;
                             break;
                         case 9:
                             gps_Msg.altitude = grab_fields(string, 0);     // altitude in meters added by Mis
@@ -617,14 +618,21 @@ static bool gpsNewFrameNMEA(char c)
                             break;
                         case 3:
                             // Total number of SVs visible
-                            GPS_numCh = grab_fields(string, 0);
+                            if (satSystem == 'P')
+                                GPS_gpsNumCh = grab_fields(string, 0);
+                            else if (satSystem == 'L')
+                                GPS_glonassNumCh = grab_fields(string, 0);
+                            GPS_numCh = GPS_gpsNumCh + GPS_glonassNumCh;
                             break;
                     }
                     if(param < 4)
                         break;
 
+                    if (satSystem == 'L' ) // GLONASS
+                        satIndent = GPS_gpsNumCh; // shift by the number of gps channels
+
                     svPacketIdx = (param - 4) / 4 + 1; // satellite number in packet, 1-4
-                    svSatNum    = svPacketIdx + (4 * (svMessageNum - 1)); // global satellite number
+                    svSatNum    = svPacketIdx + (4 * (svMessageNum - 1)) + satIndent; // global satellite number
                     svSatParam  = param - 3 - (4 * (svPacketIdx - 1)); // parameter number for satellite
 
                     if(svSatNum > GPS_SV_MAXSATS)
