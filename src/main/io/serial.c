@@ -53,7 +53,7 @@
 static serialConfig_t *serialConfig;
 static serialPortUsage_t serialPortUsageList[SERIAL_PORT_COUNT];
 
-const serialPortIdentifier_e const serialPortIdentifiers[SERIAL_PORT_COUNT] = {
+const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 #ifdef USE_VCP
     SERIAL_PORT_USB_VCP,
 #endif
@@ -76,7 +76,7 @@ const serialPortIdentifier_e const serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 
 static uint8_t serialPortCount;
 
-const uint32_t const baudRates[] = {0, 9600, 19200, 38400, 57600, 115200, 230400, 250000}; // see baudRate_e
+const uint32_t baudRates[] = {0, 9600, 19200, 38400, 57600, 115200, 230400, 250000}; // see baudRate_e
 
 #define BAUD_RATE_COUNT (sizeof(baudRates) / sizeof(baudRates[0]))
 
@@ -254,6 +254,13 @@ serialPort_t *openSerialPort(
     portMode_t mode,
     portOptions_t options)
 {
+#if (!defined(USE_VCP) && !defined(USE_USART1) && !defined(USE_USART2) && !defined(USE_USART3) && !defined(USE_SOFTSERIAL1) && !defined(USE_SOFTSERIAL1))
+    UNUSED(callback);
+    UNUSED(baudRate);
+    UNUSED(mode);
+    UNUSED(options);
+#endif
+
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
     if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {
         // not available / already in use
