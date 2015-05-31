@@ -254,6 +254,7 @@ COMMON_SRC	 = build_config.c \
 		   sensors/compass.c \
 		   sensors/gyro.c \
 		   sensors/initialisation.c \
+		   kalman_filter.c \
 		   $(CMSIS_SRC) \
 		   $(DEVICE_STDPERIPH_SRC)
 

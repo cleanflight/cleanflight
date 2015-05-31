@@ -297,7 +297,7 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
 
-        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
         lastDTerm[axis] = deltaSum;
         DTerm = (deltaSum * dynD8[axis]) / 32;
 
@@ -381,7 +381,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
 
-        DTerm = lastDTerm[axis] + dT / (RC + dT) * (DTerm - lastDTerm[axis]);
+        DTerm = lastDTerm[axis] + dT / (RC + dT) * ((float)DTerm - lastDTerm[axis]);
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
         lastDTerm[axis] = DTerm;
 
@@ -498,7 +498,7 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
 
-        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
         lastDTerm[axis] = deltaSum;
 
         DTerm = (deltaSum * dynD8[axis]) / 32;
@@ -768,7 +768,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
 
-        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
         lastDTerm[axis] = deltaSum;
 
         DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;

@@ -30,6 +30,7 @@
 #include "sensors/boardalignment.h"
 
 #include "sensors/gyro.h"
+#include "kalman_filter.h"
 
 uint16_t calibratingG = 0;
 int16_t gyroADC[XYZ_AXIS_COUNT];
@@ -115,6 +116,9 @@ void gyroUpdate(void)
 
     // range: +/- 8192; +/- 2000 deg/sec
     gyro.read(gyroADC);
+    // gyro filter
+    gyroFilter(gyroADC);
+
     alignSensors(gyroADC, gyroADC, gyroAlign);
 
     if (!isGyroCalibrationComplete()) {
