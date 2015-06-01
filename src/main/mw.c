@@ -708,9 +708,12 @@ void loop(void)
         }
 
 
-        if (currentProfile->throttle_correction_value && (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE))) {
+        if ( currentProfile->throttle_hovering_percent ) {
+            rcCommand[THROTTLE] += calculateThrottleAngleCorrectionAxis(currentProfile->throttle_hovering_percent, currentProfile->throttle_compensation_axis);
+        }else if (currentProfile->throttle_correction_value && (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE))) {
             rcCommand[THROTTLE] += calculateThrottleAngleCorrection(currentProfile->throttle_correction_value);
         }
+
 
 #ifdef GPS
         if (sensors(SENSOR_GPS)) {

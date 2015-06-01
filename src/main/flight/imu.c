@@ -342,3 +342,8 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
         angle = 900;
     return lrintf(throttle_correction_value * sinf(angle / (900.0f * M_PIf / 2.0f)));
 }
+
+int16_t calculateThrottleAngleCorrectionAxis(uint8_t throttle_hovering, uint8_t axis){
+    uint16_t liftOffTrust = throttle_hovering * 100; //hover value is in range 1000-2000
+    return lrintf( liftOffTrust*sinf(anglerad[axis]) );
+}

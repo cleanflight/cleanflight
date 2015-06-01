@@ -382,6 +382,9 @@ const clivalue_t valueTable[] = {
     { "throttle_correction_value",  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].throttle_correction_value, 0, 150 },
     { "throttle_correction_angle",  VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].throttle_correction_angle, 1, 900 },
 
+    { "throttle_hovering_percent",  VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].throttle_hovering_percent, 0, 100 },
+    { "throttle_compensation_axis", VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].throttle_compensation_axis, 0, 1 },
+
     { "yaw_control_direction",      VAR_INT8   | MASTER_VALUE,  &masterConfig.yaw_control_direction, -1, 1 },
 
     { "pid_at_min_throttle",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.mixerConfig.pid_at_min_throttle, 0, 1 },
