@@ -70,6 +70,7 @@ static bool shouldCheckPulse = true;
 
 static uint32_t rxUpdateAt = 0;
 static uint32_t needRxSignalBefore = 0;
+static uint16_t channelPreviousPosition[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 
@@ -143,6 +144,7 @@ void rxInit(rxConfig_t *rxConfig)
 #ifdef SERIAL_RX
 void serialRxInit(rxConfig_t *rxConfig)
 {
+    uint8_t chan;
     bool enabled = false;
     switch (rxConfig->serialrx_provider) {
         case SERIALRX_SPEKTRUM1024:
@@ -167,6 +169,10 @@ void serialRxInit(rxConfig_t *rxConfig)
     if (!enabled) {
         featureClear(FEATURE_RX_SERIAL);
         rcReadRawFunc = NULL;
+    }
+
+    for (chan = 0; chan < rxRuntimeConfig.channelCount; chan++) {
+        channelPreviousPosition[chan] = rxConfig->midrc;
     }
 }
 
@@ -334,7 +340,11 @@ static void processRxChannels(void)
 
         // validate the range
         if (sample < rxConfig->rx_min_usec || sample > rxConfig->rx_max_usec)
-            sample = rxConfig->midrc;
+        {
+            sample = channelPreviousPosition[chan];
+        } else {
+            channelPreviousPosition[chan] = sample;
+        }
 
         if (isRxDataDriven()) {
             rcData[chan] = sample;
