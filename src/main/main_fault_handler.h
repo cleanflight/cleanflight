@@ -15,34 +15,18 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "main_initialisation.h"
-#include "platform.h"
-#include "mw.h"
+#ifndef SRC_MAIN_MAIN_FAULT_HANDLER_H_
+#define SRC_MAIN_MAIN_FAULT_HANDLER_H_
 
-#ifdef SOFTSERIAL_LOOPBACK
-serialPort_t *loopbackPort;
-#endif
+typedef enum {
+    SYSTEM_STATE_INITIALISING   = 0,
+    SYSTEM_STATE_CONFIG_LOADED  = (1 << 0),
+    SYSTEM_STATE_SENSORS_READY  = (1 << 1),
+    SYSTEM_STATE_MOTORS_READY   = (1 << 2),
+    SYSTEM_STATE_READY          = (1 << 7)
+} systemState_e;
 
-#ifdef SOFTSERIAL_LOOPBACK
-void processLoopback(void) {
-    if (loopbackPort) {
-        uint8_t bytesWaiting;
-        while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {
-            uint8_t b = serialRead(loopbackPort);
-            serialWrite(loopbackPort, b);
-        };
-    }
-}
-#else
-#define processLoopback()
-#endif
+extern systemState_e systemState;
 
-int main(void) {
-    init();
 
-    while (1) {
-        loop();
-        processLoopback();
-    }
-}
-
+#endif /* SRC_MAIN_MAIN_FAULT_HANDLER_H_ */

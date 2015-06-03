@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "platform.h"
+
 // Helpful macros
 #ifdef LED0
 #define LED0_TOGGLE              digitalToggle(LED0_GPIO, LED0_PIN)

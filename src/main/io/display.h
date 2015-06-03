@@ -18,6 +18,7 @@
 #pragma once
 
 #include "rx/rx.h"
+#include "platform.h"
 //#define ENABLE_DEBUG_OLED_PAGE
 
 typedef enum {

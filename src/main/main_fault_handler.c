@@ -15,34 +15,17 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "main_initialisation.h"
-#include "platform.h"
-#include "mw.h"
+#include "main_fault_handler.h"
+#include "flight/mixer.h"
 
-#ifdef SOFTSERIAL_LOOPBACK
-serialPort_t *loopbackPort;
-#endif
+systemState_e systemState = SYSTEM_STATE_INITIALISING;
 
-#ifdef SOFTSERIAL_LOOPBACK
-void processLoopback(void) {
-    if (loopbackPort) {
-        uint8_t bytesWaiting;
-        while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {
-            uint8_t b = serialRead(loopbackPort);
-            serialWrite(loopbackPort, b);
-        };
+void HardFault_Handler(void)
+{
+    // fall out of the sky
+	systemState_e requiredState = SYSTEM_STATE_CONFIG_LOADED | SYSTEM_STATE_MOTORS_READY;
+    if ((systemState & requiredState) == requiredState) {
+        stopMotors();
     }
+    while (1);
 }
-#else
-#define processLoopback()
-#endif
-
-int main(void) {
-    init();
-
-    while (1) {
-        loop();
-        processLoopback();
-    }
-}
-

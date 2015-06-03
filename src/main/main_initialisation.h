@@ -15,34 +15,10 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "main_initialisation.h"
-#include "platform.h"
-#include "mw.h"
+#ifndef SRC_MAIN_MAIN_INITIALISATION_H_
+#define SRC_MAIN_MAIN_INITIALISATION_H_
 
-#ifdef SOFTSERIAL_LOOPBACK
-serialPort_t *loopbackPort;
-#endif
+void init(void);
 
-#ifdef SOFTSERIAL_LOOPBACK
-void processLoopback(void) {
-    if (loopbackPort) {
-        uint8_t bytesWaiting;
-        while ((bytesWaiting = serialTotalBytesWaiting(loopbackPort))) {
-            uint8_t b = serialRead(loopbackPort);
-            serialWrite(loopbackPort, b);
-        };
-    }
-}
-#else
-#define processLoopback()
-#endif
 
-int main(void) {
-    init();
-
-    while (1) {
-        loop();
-        processLoopback();
-    }
-}
-
+#endif /* SRC_MAIN_MAIN_INITIALISATION_H_ */

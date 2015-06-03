@@ -221,6 +221,8 @@ COMMON_SRC	 = build_config.c \
 		   common/printf.c \
 		   common/typeconversion.c \
 		   common/encoding.c \
+		   main_initialisation.c \
+		   main_fault_handler.c \
 		   main.c \
 		   mw.c \
 		   flight/altitudehold.c \
