@@ -44,7 +44,7 @@
 #include "sensors/boardalignment.h"
 #include "sensors/battery.h"
 
-#include "io/statusindicator.h"
+#include "io/beeper.h"
 #include "io/serial.h"
 #include "io/gimbal.h"
 #include "io/escservo.h"
@@ -74,18 +74,6 @@
 #define BRUSHED_MOTORS_PWM_RATE 16000
 #define BRUSHLESS_MOTORS_PWM_RATE 400
 
-void mixerUseConfigs(
-#ifdef USE_SERVOS
-        servoParam_t *servoConfToUse,
-        gimbalConfig_t *gimbalConfigToUse,
-	    tiltArmConfig_t *tiltConfigToUse,
-#endif
-        flight3DConfig_t *flight3DConfigToUse,
-        escAndServoConfig_t *escAndServoConfigToUse,
-        mixerConfig_t *mixerConfigToUse,
-        airplaneConfig_t *airplaneConfigToUse,
-        rxConfig_t *rxConfig
-);
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
 
 #define FLASH_TO_RESERVE_FOR_CONFIG 0x800
@@ -136,11 +124,12 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 
 master_t masterConfig;                 // master config struct with data independent from profiles
 profile_t *currentProfile;
+static uint32_t activeFeaturesLatch = 0;
 
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 100;
+static const uint8_t EEPROM_CONF_VERSION = 101;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -550,6 +539,7 @@ static void resetConf(void)
 #else
     masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
 #endif
+    masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
@@ -747,26 +737,26 @@ void validateAndFixConfig(void)
         featureClear(FEATURE_SERVO_TILT);
     }
 
-    if (!(feature(FEATURE_RX_PARALLEL_PWM) || feature(FEATURE_RX_PPM) || feature(FEATURE_RX_SERIAL) || feature(FEATURE_RX_MSP))) {
+    if (!(featureConfigured(FEATURE_RX_PARALLEL_PWM) || featureConfigured(FEATURE_RX_PPM) || featureConfigured(FEATURE_RX_SERIAL) || featureConfigured(FEATURE_RX_MSP))) {
         featureSet(FEATURE_RX_PARALLEL_PWM); // Consider changing the default to PPM
     }
 
-    if (feature(FEATURE_RX_PPM)) {
+    if (featureConfigured(FEATURE_RX_PPM)) {
         featureClear(FEATURE_RX_PARALLEL_PWM);
     }
 
-    if (feature(FEATURE_RX_MSP)) {
+    if (featureConfigured(FEATURE_RX_MSP)) {
         featureClear(FEATURE_RX_SERIAL);
         featureClear(FEATURE_RX_PARALLEL_PWM);
         featureClear(FEATURE_RX_PPM);
     }
 
-    if (feature(FEATURE_RX_SERIAL)) {
+    if (featureConfigured(FEATURE_RX_SERIAL)) {
         featureClear(FEATURE_RX_PARALLEL_PWM);
         featureClear(FEATURE_RX_PPM);
     }
 
-    if (feature(FEATURE_RX_PARALLEL_PWM)) {
+    if (featureConfigured(FEATURE_RX_PARALLEL_PWM)) {
 #if defined(STM32F10X)
         // rssi adc needs the same ports
         featureClear(FEATURE_RSSI_ADC);
@@ -787,7 +777,7 @@ void validateAndFixConfig(void)
 
 
 #if defined(LED_STRIP) && (defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2))
-    if (feature(FEATURE_SOFTSERIAL) && (
+    if (featureConfigured(FEATURE_SOFTSERIAL) && (
             0
 #ifdef USE_SOFTSERIAL1
             || (LED_STRIP_TIMER == SOFTSERIAL_1_TIMER)
@@ -802,7 +792,7 @@ void validateAndFixConfig(void)
 #endif
 
 #if defined(NAZE) && defined(SONAR)
-    if (feature(FEATURE_RX_PARALLEL_PWM) && feature(FEATURE_SONAR) && feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
+    if (featureConfigured(FEATURE_RX_PARALLEL_PWM) && featureConfigured(FEATURE_SONAR) && featureConfigured(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC) {
         featureClear(FEATURE_CURRENT_METER);
     }
 #endif
@@ -873,7 +863,7 @@ void readEEPROMAndNotify(void)
 {
     // re-read written data
     readEEPROM();
-    blinkLedAndSoundBeeper(15, 20, 1);
+    beeperConfirmationBeeps(1);
 }
 
 void writeEEPROM(void)
@@ -954,7 +944,7 @@ void changeProfile(uint8_t profileIndex)
     masterConfig.current_profile_index = profileIndex;
     writeEEPROM();
     readEEPROM();
-    blinkLedAndSoundBeeper(2, 40, profileIndex + 1);
+    beeperConfirmationBeeps(profileIndex + 1);
 }
 
 void changeControlRateProfile(uint8_t profileIndex)
@@ -966,9 +956,30 @@ void changeControlRateProfile(uint8_t profileIndex)
     activateControlRateConfig();
 }
 
-bool feature(uint32_t mask)
+void handleOneshotFeatureChangeOnRestart(void)
+{
+    // Shutdown PWM on all motors prior to soft restart
+    StopPwmAllMotors();
+    delay(50);
+    // Apply additional delay when OneShot125 feature changed from on to off state
+    if (feature(FEATURE_ONESHOT125) && !featureConfigured(FEATURE_ONESHOT125)) {
+        delay(ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS);
+    }
+}
+
+void latchActiveFeatures()
+{
+    activeFeaturesLatch = masterConfig.enabledFeatures;
+}
+
+bool featureConfigured(uint32_t mask)
 {
     return masterConfig.enabledFeatures & mask;
+}
+
+bool feature(uint32_t mask)
+{
+    return activeFeaturesLatch & mask;
 }
 
 void featureSet(uint32_t mask)

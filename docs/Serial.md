@@ -13,11 +13,11 @@ a dedicated USB to UART adapter.  VCP does not 'use' a physical UART port.
 * UART - A pair of dedicated hardware transmit and receive pins with signal detection and generation done in hardware.
 * SoftSerial - A pair of hardware transmit and receive pins with signal detection and generation done in software.
 
-UART is the most efficent in terms of CPU usage.
-SoftSerial is the least efficient and slowest, SoftSerial should only be used for low-bandwith usages, such as telemetry transmission.
+UART is the most efficient in terms of CPU usage.
+SoftSerial is the least efficient and slowest, SoftSerial should only be used for low-bandwidth usages, such as telemetry transmission.
 
 UART ports are sometimes exposed via on-board USB to UART converters, such as the CP2102 as found on the Naze and Flip32 boards.
-If the flight controller does not have an onboard USB to UART converter and doesn't support VCP then an external USB to UART board is required.
+If the flight controller does not have an on-board USB to UART converter and doesn't support VCP then an external USB to UART board is required.
 These are sometimes referred to as FTDI boards.  FTDI is just a common manufacturer of a chip (the FT232RL) used on USB to UART boards.
 
 When selecting a USB to UART converter choose one that has DTR exposed as well as a selector for 3.3v and 5v since they are more useful.
@@ -31,9 +31,9 @@ Both SoftSerial and UART ports can be connected to your computer via USB to UART
 
 ## Serial Configuration
 
-Serial port configuration is best done via the configurator.  You can use the CLI too but the commands are reserved for developers and advanced users.
+Serial port configuration is best done via the configurator.
 
-Configure serial ports first, then enable/disable features that use the ports.
+Configure serial ports first, then enable/disable features that use the ports.  To configure SoftSerial ports the SOFTSERIAL feature must be also be enabled. 
 
 ### Constraints
 
@@ -52,9 +52,23 @@ e.g. after configuring a port for GPS enable the GPS feature.
 * You can use as many different telemetry systems as you like at the same time.
 * You can only use each telemetry system once.  e.g.  FrSky telemetry cannot be used on two port, but MSP Telemetry + FrSky on different ports is fine.
 
+### Configuration via CLI
+
+You can use the CLI for configuration but the commands are reserved for developers and advanced users.
+
+The `serial` CLI command takes 6 arguments.
+
+1. Identifier
+1. Function bitmask (see serialPortFunction_e in the source) 
+1. MSP baud rate
+1. GPS baud rate
+1. Telemetry baud rate (auto baud allowed)
+1. Blackbox baud rate
+
+
 ### Baud Rates
 
-Each baud rate is assigned an identifier, they are as follows:
+The allowable baud rates are as follows:
 
 | Identifier | Baud rate |
 | ---------- | --------- |
@@ -66,3 +80,4 @@ Each baud rate is assigned an identifier, they are as follows:
 | 5          | 115200    |
 | 6          | 230400    |
 | 7          | 250000    |
+
