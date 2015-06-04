@@ -236,16 +236,7 @@ static const adjustmentConfig_t rateAdjustmentConfig = {
 
 class RcControlsAdjustmentsTest : public ::testing::Test {
 protected:
-    controlRateConfig_t controlRateConfig = {
-            .rcRate8 = 90,
-            .rcExpo8 = 0,
-            .thrMid8 = 0,
-            .thrExpo8 = 0,
-            .rcYawExpo8 = 0,
-            .rates = {0,0,0},
-            .dynThrPID = 0,
-            .tpa_breakpoint = 0
-    };
+    controlRateConfig_t controlRateConfig; 
 
     virtual void SetUp() {
         adjustmentStateMask = 0;
@@ -255,6 +246,18 @@ protected:
         rxConfig.mincheck = DEFAULT_MIN_CHECK;
         rxConfig.maxcheck = DEFAULT_MAX_CHECK;
         rxConfig.midrc = 1500;
+
+        controlRateConfig.rcRate8 = 90;
+        controlRateConfig.rcExpo8 = 0;
+        controlRateConfig.thrMid8 = 0;
+        controlRateConfig.thrExpo8 = 0;
+        controlRateConfig.rcYawExpo8 = 0;
+        controlRateConfig.rates[0] = 0;
+        controlRateConfig.rates[1] = 0;
+        controlRateConfig.rates[2] = 0;
+        controlRateConfig.dynThrPID = 0;
+        controlRateConfig.tpa_breakpoint = 0;
+
     }
 };
 

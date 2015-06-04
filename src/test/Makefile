@@ -30,7 +30,8 @@ COMMON_FLAGS = \
 	-ggdb3 \
 	-O0 \
 	-DUNIT_TEST \
-	-isystem $(GTEST_DIR)/inc
+	-isystem $(GTEST_DIR)/inc \
+	-pthread
 
 # Flags passed to the C compiler.
 C_FLAGS = $(COMMON_FLAGS) \
