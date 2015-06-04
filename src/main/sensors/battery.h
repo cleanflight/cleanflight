@@ -63,7 +63,7 @@ extern int32_t mAhDrawn;
 
 uint16_t batteryAdcToVoltage(uint16_t src);
 batteryState_e getBatteryState(void);
-const  int8_t * getBatteryStateString(void);
+const  char * getBatteryStateString(void);
 void updateBattery(void);
 void batteryInit(batteryConfig_t *initialBatteryConfig);
 

@@ -79,6 +79,7 @@ static void updateBatteryVoltage(void)
 void updateBattery(void)
 {
     updateBatteryVoltage();
+    
     /* battery has just been connected*/
     if(batteryState == BATTERY_NOTPRESENT && vbat > VBATT_DETECT)
     {
@@ -146,9 +147,9 @@ batteryState_e getBatteryState(void)
     return batteryState;
 }
 
-const uint8_t * batteryStateStrings[] = {"OK", "WARNING", "CRITICAL", "NOT PRESENT"};
+const char * batteryStateStrings[] = {"OK", "WARNING", "CRITICAL", "NOT PRESENT"};
 
-const int8_t * getBatteryStateString(void)
+const char * getBatteryStateString(void)
 {
     return batteryStateStrings[batteryState];
 }
@@ -157,7 +158,7 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
 {
     batteryConfig = initialBatteryConfig;
     batteryState = BATTERY_NOTPRESENT;
-    batteryCellCount = 0;
+    batteryCellCount = 1;
     batteryWarningVoltage = 0;
     batteryCriticalVoltage = 0;
 }
