@@ -587,7 +587,7 @@ float getTiltServoAngle(void) {
     float userInput = 0;
 
     //get wanted position of the tilting servo
-    if (rcCommand[tiltArmConfig->channel] > rxConfig->midrc) {
+    if (rcData[tiltArmConfig->channel] >= rxConfig->midrc) {
     	userInput = rcData[tiltArmConfig->channel];
     } else {
     	userInput = rcData[PITCH];
@@ -606,9 +606,6 @@ void servoTilting(void) {
     if (servoConf[TILTING_SERVO].rate & 1){
         actualTilt *= -1;
     }
-
-    //limit servo escursion
-    actualTilt = constrainf( actualTilt, degreesToRadians(servoConf[TILTING_SERVO].minLimit), degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
     if (actualTilt > 0){
