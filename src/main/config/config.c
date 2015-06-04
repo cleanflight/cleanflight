@@ -466,6 +466,9 @@ static void resetConf(void)
     currentProfile->throttle_correction_value = 0;      // could 10 with althold or 40 for fpv
     currentProfile->throttle_correction_angle = 800;    // could be 80.0 deg with atlhold or 45.0 for fpv
 
+    currentProfile->throttle_hovering_percent = 0;      // could 10 with althold or 40 for fpv
+    currentProfile->throttle_compensation_axis = 0;      // could 10 with althold or 40 for fpv
+
     // Failsafe Variables
     currentProfile->failsafeConfig.failsafe_delay = 10;              // 1sec
     currentProfile->failsafeConfig.failsafe_off_delay = 200;         // 20sec
