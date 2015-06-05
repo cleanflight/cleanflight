@@ -615,6 +615,27 @@ static void airplaneMixer(void)
 #endif
 
 #ifdef USE_SERVOS
+void radiantWriteServo(uint8_t index, float angle){
+    // normalize angle to range -PI to PI
+    while (angle > M_PIf)
+        angle -= M_PIf;
+    while (angle < M_PIf)
+            angle += M_PIf;
+
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
+    if (angle > 0){
+        angle = scaleRangef(angle, 0, +M_PIf, servoConf[index].middle, servoConf[index].max);
+    }else{
+        angle = scaleRangef(angle, -M_PIf, 0, servoConf[index].min, servoConf[index].middle);
+    }
+
+    //just to be sure
+    uint16_t outputPwm = constrain( angle, servoConf[index].min, servoConf[index].max );
+
+    //and now write it!
+    pwmWriteServo(index, outputPwm);
+}
+
 uint8_t hasTiltingMotor(){
 	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
 }
@@ -622,7 +643,7 @@ uint8_t hasTiltingMotor(){
 /*
  * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
  */
-float estimateTiltServoAngle() {
+float requestedTiltServoAngle() {
     uint16_t userInput = 0;
 
     //get wanted position of the tilting servo
@@ -639,29 +660,18 @@ float estimateTiltServoAngle() {
 }
 
 void servoTilting(void) {
-    float actualTilt = estimateTiltServoAngle();
+    float actualTilt = requestedTiltServoAngle();
 
     //do we need to invert the Servo direction?
     if (servoConf[SERVO_TILT_ARM].rate & 1){
         actualTilt *= -1;
     }
 
-    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
-    if (actualTilt > 0){
-        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[SERVO_TILT_ARM].middle, servoConf[SERVO_TILT_ARM].max);
-    }else{
-        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[SERVO_TILT_ARM].min, servoConf[SERVO_TILT_ARM].middle);
-    }
-
-    //just to be sure
-    uint16_t outputPwm = constrain( actualTilt, servoConf[SERVO_TILT_ARM].min, servoConf[SERVO_TILT_ARM].max );
-
-    //and now write it!
-    pwmWriteServo(SERVO_TILT_ARM, outputPwm);
+    radiantWriteServo(SERVO_TILT_ARM, actualTilt);
 }
 
 void mixTilting(void) {
-    float angleTilt = estimateTiltServoAngle();
+    float angleTilt = requestedTiltServoAngle();
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
