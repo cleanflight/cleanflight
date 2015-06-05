@@ -47,6 +47,7 @@
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 #include "drivers/flash_m25p16.h"
+#include "drivers/sonar_hcsr04.h"
 
 #include "rx/rx.h"
 
@@ -91,6 +92,7 @@
 #include "debug.h"
 
 extern uint32_t previousTime;
+extern uint8_t motorControlEnable;
 
 #ifdef SOFTSERIAL_LOOPBACK
 serialPort_t *loopbackPort;
@@ -115,6 +117,8 @@ void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
 void loop(void);
 void spektrumBind(rxConfig_t *rxConfig);
+const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
+void sonarInit(const sonarHardware_t *sonarHardware);
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c
@@ -176,6 +180,9 @@ void init(void)
 
     systemInit();
 
+    // Latch active features to be used for feature() in the remainder of init().
+    latchActiveFeatures();
+
     ledInit();
 
 #ifdef SPEKTRUM_BIND
@@ -201,6 +208,21 @@ void init(void)
     mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
 
     memset(&pwm_params, 0, sizeof(pwm_params));
+
+#ifdef SONAR
+    const sonarHardware_t *sonarHardware = NULL;
+
+    if (feature(FEATURE_SONAR)) {
+        sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
+        sonarGPIOConfig_t sonarGPIOConfig = {
+                .echoPin = sonarHardware->trigger_pin,
+                .triggerPin = sonarHardware->echo_pin,
+                .gpio = SONAR_GPIO
+        };
+        pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
+    }
+#endif
+
     // when using airplane/wing mixer, servo/motor outputs are remapped
     if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING)
         pwm_params.airplane = true;
@@ -240,7 +262,7 @@ void init(void)
 
     pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
-    pwm_params.idlePulse = PULSE_1MS; // standard PWM for brushless ESC (default, overridden below)
+    pwm_params.idlePulse = masterConfig.escAndServoConfig.mincommand;
     if (feature(FEATURE_3D))
         pwm_params.idlePulse = masterConfig.flight3DConfig.neutral3d;
     if (pwm_params.motorPwmRate > 500)
@@ -251,6 +273,9 @@ void init(void)
     pwmOutputConfiguration_t *pwmOutputConfiguration = pwmInit(&pwm_params);
 
     mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
+
+    if (!feature(FEATURE_ONESHOT125))
+        motorControlEnable = true;
 
     systemState |= SYSTEM_STATE_MOTORS_READY;
 
@@ -293,10 +318,22 @@ void init(void)
     updateHardwareRevision();
 #endif
 
+#if defined(NAZE)
+    if (hardwareRevision == NAZE32_SP) {
+        serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
+    } else  {
+        serialRemovePort(SERIAL_PORT_USART3);
+    }
+#endif
+
 #ifdef USE_I2C
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);
+    } else {
+        if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+            i2cInit(I2C_DEVICE);
+        }
     }
 #elif defined(CC3D)
     if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
@@ -369,7 +406,10 @@ void init(void)
     imuInit();
 
     mspInit(&masterConfig.serialConfig);
+
+#ifdef USE_CLI
     cliInit(&masterConfig.serialConfig);
+#endif
 
     failsafeInit(&masterConfig.rxConfig);
 
@@ -390,7 +430,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit(&masterConfig.batteryConfig);
+        sonarInit(sonarHardware);
     }
 #endif
 
@@ -475,6 +515,10 @@ void init(void)
 #ifdef CJMCU
     LED2_ON;
 #endif
+
+    // Latch active features AGAIN since some may be modified by init().
+    latchActiveFeatures();
+    motorControlEnable = true;
 
     systemState |= SYSTEM_STATE_READY;
 }

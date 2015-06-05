@@ -61,6 +61,8 @@ You can also step-debug the tests in eclipse and you can use the GoogleTest test
 
 The tests are currently always compiled with debugging information enabled, there may be additional warnings, if you see any warnings please attempt to fix them and submit pull requests with the fixes.
 
+Tests are verified and working with GCC 4.9.2.
+
 ## Using git and github
 
 Ensure you understand the github workflow: https://guides.github.com/introduction/flow/index.html
@@ -93,6 +95,7 @@ Later, you can get the changes from the cleanflight repo into your `master` bran
 2. `git checkout master`
 3. `git fetch cleanflight`
 4. `git merge cleanflight/master`
+5. `git push origin master` is an optional step that will update your fork on github
  
 
 You can also perform the git commands using the git client inside Eclipse.  Refer to the Eclipse git manual.

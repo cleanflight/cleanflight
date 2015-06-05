@@ -141,12 +141,12 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define BASEFLIGHT_IDENTIFIER "BAFL";
 
 #define FLIGHT_CONTROLLER_IDENTIFIER_LENGTH 4
-static const char *flightControllerIdentifier = CLEANFLIGHT_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
+static const char * const flightControllerIdentifier = CLEANFLIGHT_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
 
 #define FLIGHT_CONTROLLER_VERSION_LENGTH    3
 #define FLIGHT_CONTROLLER_VERSION_MASK      0xFFF
 
-const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
+static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define BOARD_IDENTIFIER_LENGTH             4 // 4 UPPER CASE alpha numeric characters that identify the board being used.
 #define BOARD_HARDWARE_REVISION_LENGTH      2
 
@@ -397,38 +397,22 @@ static mspPort_t mspPorts[MAX_MSP_PORT_COUNT];
 
 static mspPort_t *currentPort;
 
-static void serialize32(uint32_t a)
-{
-    static uint8_t t;
-    t = a;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 8;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 16;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 24;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-}
-
-static void serialize16(int16_t a)
-{
-    static uint8_t t;
-    t = a;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 8 & 0xff;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-}
-
 static void serialize8(uint8_t a)
 {
     serialWrite(mspSerialPort, a);
     currentPort->checksum ^= a;
+}
+
+static void serialize16(uint16_t a)
+{
+    serialize8((uint8_t)(a >> 0));
+    serialize8((uint8_t)(a >> 8));
+}
+
+static void serialize32(uint32_t a)
+{
+    serialize16((uint16_t)(a >> 0));
+    serialize16((uint16_t)(a >> 16));
 }
 
 static uint8_t read8(void)
@@ -683,7 +667,7 @@ void mspInit(serialConfig_t *serialConfig)
 
     activeBoxIds[activeBoxIdCount++] = BOXOSD;
 
-    if (feature(FEATURE_TELEMETRY && masterConfig.telemetryConfig.telemetry_switch))
+    if (feature(FEATURE_TELEMETRY) && masterConfig.telemetryConfig.telemetry_switch)
         activeBoxIds[activeBoxIdCount++] = BOXTELEMETRY;
 
 #ifdef AUTOTUNE
@@ -834,7 +818,7 @@ static bool processOutCommand(uint8_t cmdMSP)
                 serialize16(accSmooth[i]);
         }
         for (i = 0; i < 3; i++)
-            serialize16(gyroData[i]);
+            serialize16(gyroADC[i]);
         for (i = 0; i < 3; i++)
             serialize16(magADC[i]);
         break;
@@ -852,7 +836,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_CHANNEL_FORWARDING:
-        headSerialReply(8);
+        headSerialReply(MAX_SUPPORTED_SERVOS);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize8(currentProfile->servoConf[i].forwardFromChannel);
         }
@@ -1184,9 +1168,12 @@ static bool processOutCommand(uint8_t cmdMSP)
 
     case MSP_CF_SERIAL_CONFIG:
         headSerialReply(
-            ((sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4)) * SERIAL_PORT_COUNT)
+            ((sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4)) * serialGetAvailablePortCount())
         );
         for (i = 0; i < SERIAL_PORT_COUNT; i++) {
+            if (!serialIsPortAvailable(masterConfig.serialConfig.portConfigs[i].identifier)) {
+                continue;
+            };
             serialize8(masterConfig.serialConfig.portConfigs[i].identifier);
             serialize16(masterConfig.serialConfig.portConfigs[i].functionMask);
             serialize8(masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex);
@@ -1596,17 +1583,28 @@ static bool processInCommand(void)
         {
             uint8_t portConfigSize = sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4);
 
-            if ((SERIAL_PORT_COUNT * portConfigSize) != currentPort->dataSize) {
+            if (currentPort->dataSize % portConfigSize != 0) {
                 headSerialError(0);
                 break;
             }
-            for (i = 0; i < SERIAL_PORT_COUNT; i++) {
-                masterConfig.serialConfig.portConfigs[i].identifier = read8();
-                masterConfig.serialConfig.portConfigs[i].functionMask = read16();
-                masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].gps_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].telemetry_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].blackbox_baudrateIndex = read8();
+
+            uint8_t remainingPortsInPacket = currentPort->dataSize / portConfigSize;
+
+            while (remainingPortsInPacket--) {
+                uint8_t identifier = read8();
+
+                serialPortConfig_t *portConfig = serialFindPortConfiguration(identifier);
+                if (!portConfig) {
+                    headSerialError(0);
+                    break;
+                }
+
+                portConfig->identifier = identifier;
+                portConfig->functionMask = read16();
+                portConfig->msp_baudrateIndex = read8();
+                portConfig->gps_baudrateIndex = read8();
+                portConfig->telemetry_baudrateIndex = read8();
+                portConfig->blackbox_baudrateIndex = read8();
             }
         }
         break;
@@ -1751,6 +1749,7 @@ void mspProcess(void)
                 delay(50);
             }
             stopMotors();
+            handleOneshotFeatureChangeOnRestart();
             systemReset();
         }
     }
