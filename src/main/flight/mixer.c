@@ -620,7 +620,7 @@ uint8_t hasTiltingMotor(){
 /*
  * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
  */
-float estimateTiltServoAngle(uint16_t userInput) {
+float estimateTiltServoAngle() {
     uint16_t userInput = 0;
 
     //get wanted position of the tilting servo
