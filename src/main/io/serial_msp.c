@@ -1421,12 +1421,21 @@ static bool processInCommand(void)
         break;
     case MSP_SET_SERVO_CONF:
 #ifdef USE_SERVOS
-        if (currentPort->dataSize % sizeof(servoParam_t) != 0) {
+        // tmp will true if this use old API (no angleAtMin and angleAtMax), false otherwise
+        tmp = currentPort->dataSize % (sizeof(servoParam_t) - 2) == 0;
+
+        if (!tmp && currentPort->dataSize % sizeof(servoParam_t) != 0) {
             headSerialError(0);
         } else {
             memset(currentProfile->servoConf, 0, sizeof(currentProfile->servoConf));
 
-            uint8_t servoCount = currentPort->dataSize / sizeof(servoParam_t);
+            uint8_t servoCount;
+            if (tmp){
+                servoCount = currentPort->dataSize / (sizeof(servoParam_t) - 2);
+            }else{
+                servoCount = currentPort->dataSize / sizeof(servoParam_t);
+            }
+
             for (i = 0; i < MAX_SUPPORTED_SERVOS && i < servoCount; i++) {
                 currentProfile->servoConf[i].min = read16();
                 currentProfile->servoConf[i].max = read16();
@@ -1440,8 +1449,14 @@ static bool processInCommand(void)
                     currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
                 }
                 currentProfile->servoConf[i].rate = read8();
-                currentProfile->servoConf[i].angleAtMin = read8();
-                currentProfile->servoConf[i].angleAtMax = read8();
+
+                if (tmp){
+                    currentProfile->servoConf[i].angleAtMin = DEFAULT_SERVO_MIN_ANGLE;
+                    currentProfile->servoConf[i].angleAtMax = DEFAULT_SERVO_MAX_ANGLE;
+                }else{
+                    currentProfile->servoConf[i].angleAtMin = read8();
+                    currentProfile->servoConf[i].angleAtMax = read8();
+                }
             }
         }
 #endif
