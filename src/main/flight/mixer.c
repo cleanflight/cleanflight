@@ -69,12 +69,12 @@ typedef enum {
 
     SERVO_DUALCOPTER_LEFT = 4,
     SERVO_DUALCOPTER_RIGHT = 5,
-    
+
     SERVO_SINGLECOPTER_1 = 3,
     SERVO_SINGLECOPTER_2 = 4,
     SERVO_SINGLECOPTER_3 = 5,
     SERVO_SINGLECOPTER_4 = 6,
-    
+
     SERVO_TILT_ARM = 0,
 
 } servoIndex_e;
@@ -622,8 +622,8 @@ uint8_t hasTiltingMotor(){
 /*
  * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
  */
-float getTiltServoAngle(void) {
-    float userInput = 0;
+float estimateTiltServoAngle(uint16_t userInput) {
+    uint16_t userInput = 0;
 
     //get wanted position of the tilting servo
     if (rcData[tiltArmConfig->channel] >= rxConfig->midrc) {
@@ -633,13 +633,13 @@ float getTiltServoAngle(void) {
     }
 
     //convert to radiant, keep eventual non-linearity of range
-    float servoAngle = scaleRangef(userInput, 1000, 2000, degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax) );
+    float servoAngle = scaleRangef(userInput, 1000, 2000, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax) );
 
     return (servoAngle * tiltArmConfig->gearRatioPercent)/100.0f;
 }
 
 void servoTilting(void) {
-    float actualTilt = getTiltServoAngle();
+    float actualTilt = estimateTiltServoAngle();
 
     //do we need to invert the Servo direction?
     if (servoConf[SERVO_TILT_ARM].rate & 1){
@@ -661,7 +661,7 @@ void servoTilting(void) {
 }
 
 void mixTilting(void) {
-    float angleTilt = getTiltServoAngle();
+    float angleTilt = estimateTiltServoAngle();
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
