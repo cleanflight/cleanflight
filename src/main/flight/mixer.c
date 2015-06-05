@@ -75,6 +75,8 @@ typedef enum {
     SERVO_SINGLECOPTER_3 = 5,
     SERVO_SINGLECOPTER_4 = 6,
     
+    SERVO_TILT_ARM = 0,
+
 } servoIndex_e;
 
 #define SERVO_PLANE_INDEX_MIN SERVO_FLAPS
@@ -631,7 +633,7 @@ float getTiltServoAngle(void) {
     }
 
     //convert to radiant, keep eventual non-linearity of range
-    float servoAngle = scaleRangef(userInput, 1000, 2000, degreesToRadians(servoConf[TILTING_SERVO].minLimit), degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+    float servoAngle = scaleRangef(userInput, 1000, 2000, degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax) );
 
     return (servoAngle * tiltArmConfig->gearRatioPercent)/100.0f;
 }
@@ -640,22 +642,22 @@ void servoTilting(void) {
     float actualTilt = getTiltServoAngle();
 
     //do we need to invert the Servo direction?
-    if (servoConf[TILTING_SERVO].rate & 1){
+    if (servoConf[SERVO_TILT_ARM].rate & 1){
         actualTilt *= -1;
     }
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
     if (actualTilt > 0){
-        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
+        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[SERVO_TILT_ARM].middle, servoConf[SERVO_TILT_ARM].max);
     }else{
-        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
+        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[SERVO_TILT_ARM].min, servoConf[SERVO_TILT_ARM].middle);
     }
 
     //just to be sure
-    uint16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
+    uint16_t outputPwm = constrain( actualTilt, servoConf[SERVO_TILT_ARM].min, servoConf[SERVO_TILT_ARM].max );
 
     //and now write it!
-    pwmWriteServo(TILTING_SERVO, outputPwm);
+    pwmWriteServo(SERVO_TILT_ARM, outputPwm);
 }
 
 void mixTilting(void) {

@@ -98,15 +98,16 @@ typedef struct servoParam_t {
     int16_t min;                            // servo min
     int16_t max;                            // servo max
     int16_t middle;                         // servo middle
-    int8_t rate;                            // range [-100;+100] ; can be used to ajust a rate 0-100% and a direction
-    int8_t minLimit;                        // range [-90;90] ; can be used to adjust a rate 0-100% and a direction
-    int8_t maxLimit;                        // range [-90;90] ; can be used to adjust a rate 0-100% and a direction
+    int8_t rate;                            // range [-100;+100] ; can be used to adjust a rate 0-100% and a direction
+    uint8_t angleAtMin;                       // range [0;180] the measured angle in degrees from the middle when the servo is at the 'min' value.
+    uint8_t angleAtMax;                       // range [0;180] the measured angle in degrees from the middle when the servo is at the 'max' value.
     int8_t forwardFromChannel;              // RX channel index, 0 based.  See CHANNEL_FORWARDING_DISABLED
 } servoParam_t;
 
 struct gimbalConfig_s;
 struct escAndServoConfig_s;
 struct rxConfig_s;
+struct tiltArmConfig_s;
 
 extern int16_t servo[MAX_SUPPORTED_SERVOS];
 bool isMixerUsingServos(void);
@@ -116,18 +117,19 @@ void filterServos(void);
 
 extern int16_t motor[MAX_SUPPORTED_MOTORS];
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
-/*
+
 void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         struct gimbalConfig_s *gimbalConfigToUse,
+        struct tiltArmConfig_s *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
 		struct escAndServoConfig_s *escAndServoConfigToUse,
         mixerConfig_t *mixerConfigToUse,
         airplaneConfig_t *airplaneConfigToUse,
 		struct rxConfig_s *rxConfigToUse);
-*/
+
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
 void mixerResetMotors(void);
