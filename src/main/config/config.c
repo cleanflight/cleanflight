@@ -668,7 +668,7 @@ void activateConfig(void)
     useTelemetryConfig(&masterConfig.telemetryConfig);
 #endif
 
-    pidSetController(currentProfile->pidProfile.pidController);
+    pidSetController(currentProfile->pidProfile.pidController, masterConfig.fcut);
 
 #ifdef GPS
     gpsUseProfile(&currentProfile->gpsProfile);

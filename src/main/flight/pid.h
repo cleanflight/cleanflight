@@ -19,8 +19,7 @@
 
 #define GYRO_I_MAX 256                      // Gyro I limiter
 #define RCconstPI   0.159154943092f         // 0.5f / M_PI;
-// moved to the masterconfig
-//#define MAIN_CUT_HZ 12.0f                   // (default 12Hz, Range 1-50Hz)
+#define MAIN_CUT_HZ 12.0f                   // (default 12Hz, Range 1-50Hz)
 #define OLD_YAW 0                           // [0/1] 0 = MultiWii 2.3 yaw, 1 = older yaw.
 #define YAW_P_LIMIT_MIN 100                 // Maximum value for yaw P limiter
 #define YAW_P_LIMIT_MAX 500                 // Maximum value for yaw P limiter
@@ -64,8 +63,6 @@ typedef struct pidProfile_s {
 extern int16_t axisPID[XYZ_AXIS_COUNT];
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 
-void pidSetController(int type);
+void pidSetController(int type, int fcut);
 void pidResetErrorAngle(void);
 void pidResetErrorGyro(void);
-
-

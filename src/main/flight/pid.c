@@ -24,50 +24,26 @@
 #include "build_config.h"
 
 #include "common/axis.h"
-#include "common/color.h"
 #include "common/maths.h"
-
-#include "drivers/gpio.h"
-#include "drivers/timer.h"
-
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
-#include "drivers/serial.h"
-#include "drivers/pwm_rx.h"
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
 #include "sensors/acceleration.h"
-#include "sensors/battery.h"
-#include "sensors/boardalignment.h"
 
 #include "rx/rx.h"
 
 #include "io/rc_controls.h"
-#include "io/gimbal.h"
 #include "io/gps.h"
-#include "io/ledstrip.h"
 
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/navigation.h"
 #include "flight/autotune.h"
 
-#include "io/serial.h"
-#include "telemetry/telemetry.h"
-
-#include "flight/mixer.h"
-#include "flight/pid.h"
-#include "flight/imu.h"
-#include "flight/failsafe.h"
-#include "flight/altitudehold.h"
-#include "flight/navigation.h"
-
 #include "config/runtime_config.h"
-#include "config/config.h"
-#include "config/config_profile.h"
-#include "config/config_master.h"
 
 extern uint16_t cycleTime;
 extern uint8_t motorCount;
@@ -576,7 +552,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
 //    MainDptCut = RCconstPI / (float)cfg.maincuthz;                           // Initialize Cut off frequencies for mainpid D
-    MainDptCut = RCconstPI / (float) masterConfig.fcut;                        // maincuthz (default 12Hz, Range 1-50Hz), hardcoded for now
+    MainDptCut = RCconstPI / MAIN_CUT_HZ;                                      // maincuthz (default 12Hz, Range 1-50Hz), hardcoded for now
     FLOATcycleTime  = (float)constrain(cycleTime, 1, 100000);                  // 1us - 100ms
     ACCDeltaTimeINS = FLOATcycleTime * 0.000001f;                              // ACCDeltaTimeINS is in seconds now
     RCfactor = ACCDeltaTimeINS / (MainDptCut + ACCDeltaTimeINS);               // used for pt1 element
@@ -808,11 +784,11 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     }
 }
 
-void pidSetController(int type)
+void pidSetController(int type, int fcut)
 {
     // pt1 initialisation
     // the cutoff frequency might be taken from the config later on
-    RC = 1.0f / ( 2.0f * (float)M_PI * (float) masterConfig.fcut );
+    RC = 1.0f / ( 2.0f * (float)M_PI * (float) fcut );
 
     switch (type) {
         case 0:
