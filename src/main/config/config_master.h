@@ -96,6 +96,9 @@ typedef struct master_t {
     uint8_t blackbox_device;
 #endif
 
+    // pid pt1 cutoff frequency for the d-term
+    uint8_t fcut;
+
     uint8_t magic_ef;                       // magic number, should be 0xEF
     uint8_t chk;                            // XOR checksum
 } master_t;

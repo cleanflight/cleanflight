@@ -97,6 +97,8 @@ uint16_t cycleTime = 0;         // this is the number in micro second to achieve
 int16_t magHold;
 int16_t headFreeModeHold;
 
+uint8_t motorControlEnable = false;
+
 int16_t telemTemperature1;      // gyro sensor temperature
 static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
@@ -274,11 +276,6 @@ void annexCode(void)
             ENABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
-        if (isCalibrating()) {
-            LED0_TOGGLE;
-            DISABLE_ARMING_FLAG(OK_TO_ARM);
-        }
-
         if (!STATE(SMALL_ANGLE)) {
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
@@ -287,13 +284,18 @@ void annexCode(void)
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
-        if (ARMING_FLAG(OK_TO_ARM)) {
-            disableWarningLed();
+        if (isCalibrating()) {
+            warningLedFlash();
+            DISABLE_ARMING_FLAG(OK_TO_ARM);
         } else {
-            enableWarningLed(currentTime);
+            if (ARMING_FLAG(OK_TO_ARM)) {
+                warningLedDisable();
+            } else {
+                warningLedFlash();
+            }
         }
 
-        updateWarningLed(currentTime);
+        warningLedUpdate();
     }
 
 #ifdef TELEMETRY
@@ -386,7 +388,7 @@ void mwArm(void)
     }
 
     if (!ARMING_FLAG(ARMED)) {
-        blinkLedAndSoundBeeper(2, 255, 1);
+        beeperConfirmationBeeps(1);
     }
 }
 
@@ -728,7 +730,7 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
+        imuUpdate(&currentProfile->accelerometerTrims);
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();
@@ -801,7 +803,9 @@ void loop(void)
         writeServos();
 #endif
 
-        writeMotors();
+        if (motorControlEnable) {
+            writeMotors();
+        }
 
 #ifdef BLACKBOX
         if (!cliMode && feature(FEATURE_BLACKBOX)) {
