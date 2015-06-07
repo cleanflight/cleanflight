@@ -32,6 +32,7 @@
 
 #include "drivers/serial.h"
 #include "drivers/adc.h"
+#include "io/rc_controls.h"
 #include "io/serial.h"
 
 #include "flight/failsafe.h"
@@ -90,22 +91,21 @@ void useRxConfig(rxConfig_t *rxConfigToUse)
     rxConfig = rxConfigToUse;
 }
 
-#define REQUIRED_CHANNEL_MASK 0x0F // first 4 channels
-
 // pulse duration is in micro seconds (usec)
 STATIC_UNIT_TESTED void rxCheckPulse(uint8_t channel, uint16_t pulseDuration)
 {
     static uint8_t goodChannelMask = 0;
+    uint8_t curChannelBit = (1 << channel);
 
-    if (channel < 4 &&
-        pulseDuration >= rxConfig->rx_min_usec &&
-        pulseDuration <= rxConfig->rx_max_usec
-    ) {
+    if (curChannelBit & rxConfig->failsafe_channel_mask &&
+        (pulseDuration <= rxConfig->fs_min_usec ||
+         pulseDuration >= rxConfig->fs_max_usec))
+    {
         // if signal is valid - mark channel as OK
-        goodChannelMask |= (1 << channel);
+        goodChannelMask |= curChannelBit;
     }
 
-    if (goodChannelMask == REQUIRED_CHANNEL_MASK) {
+    if (goodChannelMask & rxConfig->failsafe_channel_mask) {
         goodChannelMask = 0;
         failsafeOnValidDataReceived();
         rxSignalReceived = true;
@@ -122,6 +122,10 @@ void rxInit(rxConfig_t *rxConfig)
     for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
         rcData[i] = rxConfig->midrc;
     }
+
+    rxConfig->failsafe_channel_mask = 0x0F;
+    rxConfig->fs_min_usec = PWM_PULSE_MAX;
+    rxConfig->fs_max_usec = PWM_PULSE_MIN;
 
 #ifdef SERIAL_RX
     if (feature(FEATURE_RX_SERIAL)) {
@@ -333,8 +337,11 @@ static void processRxChannels(void)
         }
 
         // validate the range
-        if (sample < rxConfig->rx_min_usec || sample > rxConfig->rx_max_usec)
+        if (chan != THROTTLE && chan < AUX1 &&
+            (sample < rxConfig->rx_min_usec || sample > rxConfig->rx_max_usec))
+        {
             sample = rxConfig->midrc;
+        }
 
         if (isRxDataDriven()) {
             rcData[chan] = sample;

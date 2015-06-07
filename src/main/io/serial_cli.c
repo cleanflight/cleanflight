@@ -384,6 +384,9 @@ const clivalue_t valueTable[] = {
     { "failsafe_delay",             VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_delay, 0, 200 },
     { "failsafe_off_delay",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_off_delay, 0, 200 },
     { "failsafe_throttle",          VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
+    { "failsafe_channel_mask",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.failsafe_channel_mask, 0, 0xFF },
+    { "failsafe_min",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.fs_min_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
+    { "failsafe_max",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.fs_max_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
 
     { "rx_min_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
     { "rx_max_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
