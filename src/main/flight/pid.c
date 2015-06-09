@@ -113,7 +113,8 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     float ITerm,PTerm,DTerm;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
     static float lastGyroRate[3];
-    float delta;
+    static float delta1[3], delta2[3];
+    float delta, deltaSum;
     float dT;
     int axis;
     float horizonLevelStrength = 1;
@@ -202,10 +203,14 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
-        delta /= dT;
-        delta = lastDTerm[axis] + dT / (RC + dT) * (delta - lastDTerm[axis]);
-        lastDTerm[axis] = delta;
-        DTerm = constrainf(delta * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
+        delta *= (1.0f / dT);
+        // add moving average here to reduce noise
+        deltaSum = delta1[axis] + delta2[axis] + delta;
+        delta2[axis] = delta1[axis];
+        delta1[axis] = delta;
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
+        DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
         axisPID[axis] = constrain(lrintf(PTerm + ITerm - DTerm), -1000, 1000);
@@ -227,7 +232,9 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     int32_t error, errorAngle;
     int32_t PTerm, ITerm, PTermACC = 0, ITermACC = 0, PTermGYRO = 0, ITermGYRO = 0, DTerm;
     static int16_t lastGyro[3] = { 0, 0, 0 };
-    float delta;
+    static int32_t delta1[3], delta2[3];
+    int32_t deltaSum;
+    int32_t delta;
 
     UNUSED(controlRateConfig);
     float dT = (float)cycleTime * 0.000001f;
@@ -284,12 +291,15 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         }
 
         PTerm -= ((int32_t)gyroADC[axis] / 4) * dynP8[axis] / 10 / 8; // 32 bits is needed for calculation
-        delta = (float)(gyroADC[axis] - lastGyro[axis]);
+        delta = (gyroADC[axis] - lastGyro[axis]) / 4;
         lastGyro[axis] = gyroADC[axis];
+        deltaSum = delta1[axis] + delta2[axis] + delta;
+        delta2[axis] = delta1[axis];
+        delta1[axis] = delta;
 
-        delta = lastDTerm[axis] + dT / (RC + dT) * (delta - lastDTerm[axis]);
-        lastDTerm[axis] = delta;
-        DTerm = (delta * dynD8[axis]) / 32;
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
+        DTerm = (deltaSum * dynD8[axis]) / 32;
 
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -310,6 +320,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     int32_t rc, error, errorAngle;
     int32_t PTerm, ITerm, PTermACC, ITermACC, DTerm;
     static int16_t lastGyro[2] = { 0, 0 };
+    static int32_t delta1[2] = { 0, 0 }, delta2[2] = { 0, 0 };
     int32_t delta;
     float dT = (float)cycleTime * 0.000001f;
 
@@ -364,10 +375,13 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 
         PTerm -= ((int32_t)(gyroADC[axis] / 4) * dynP8[axis]) >> 6;   // 32 bits is needed for calculation
 
-        delta = (gyroADC[axis] - lastGyro[axis]);   // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
+        delta = (gyroADC[axis] - lastGyro[axis]) / 4;   // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
         lastGyro[axis] = gyroADC[axis];
+        DTerm = delta1[axis] + delta2[axis] + delta;
+        delta2[axis] = delta1[axis];
+        delta1[axis] = delta;
 
-        DTerm = lastDTerm[axis] + dT / (RC + dT) * ((float)delta - lastDTerm[axis]);
+        DTerm = lastDTerm[axis] + dT / (RC + dT) * ((float)DTerm - lastDTerm[axis]);
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
         lastDTerm[axis] = DTerm;
 
@@ -418,7 +432,9 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
     int32_t rc, error, errorAngle;
     int32_t PTerm, ITerm, PTermACC = 0, ITermACC = 0, PTermGYRO = 0, ITermGYRO = 0, DTerm;
     static int16_t lastGyro[2] = { 0, 0 };
-    float delta;
+    static int32_t delta1[2] = { 0, 0 }, delta2[2] = { 0, 0 };
+    int32_t deltaSum;
+    int32_t delta;
 
     UNUSED(controlRateConfig);
     float dT = (float)cycleTime * 0.000001f;
@@ -476,13 +492,16 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
 
 
         PTerm -= ((int32_t)gyroADC[axis] / 4) * dynP8[axis] / 10 / 8; // 32 bits is needed for calculation
-        delta = (gyroADC[axis] - lastGyro[axis]);
+        delta = (gyroADC[axis] - lastGyro[axis]) / 4;
         lastGyro[axis] = gyroADC[axis];
+        deltaSum = delta1[axis] + delta2[axis] + delta;
+        delta2[axis] = delta1[axis];
+        delta1[axis] = delta;
 
-        delta = lastDTerm[axis] + dT / (RC + dT) * (delta - lastDTerm[axis]);
-        lastDTerm[axis] = delta;
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
 
-        DTerm = (delta * dynD8[axis]) / 32;
+        DTerm = (deltaSum * dynD8[axis]) / 32;
         axisPID[axis] = PTerm + ITerm - DTerm;
 
 #ifdef BLACKBOX
@@ -651,7 +670,8 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
 
     int32_t errorAngle;
     int axis;
-    int32_t delta;
+    int32_t delta, deltaSum;
+    static int32_t delta1[3], delta2[3];
     int32_t PTerm, ITerm, DTerm;
     static int32_t lastError[3] = { 0, 0, 0 };
     int32_t AngleRateTmp, RateError;
@@ -743,11 +763,15 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
         delta = (delta * ((uint16_t) 0xFFFF / (cycleTime >> 4))) >> 6;
+        // add moving average here to reduce noise
+        deltaSum = delta1[axis] + delta2[axis] + delta;
+        delta2[axis] = delta1[axis];
+        delta1[axis] = delta;
 
-        delta = lastDTerm[axis] + dT / (RC + dT) * ((float)delta - lastDTerm[axis]);
-        lastDTerm[axis] = delta;
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
 
-        DTerm = (delta * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
+        DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
         // -----calculate total PID output
         axisPID[axis] = PTerm + ITerm + DTerm;
