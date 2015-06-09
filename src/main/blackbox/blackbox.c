@@ -486,7 +486,7 @@ static void writeIntraframe(void)
 #endif
 
     for (x = 0; x < XYZ_AXIS_COUNT; x++) {
-        blackboxWriteSignedVB(blackboxCurrent->gyroData[x]);
+        blackboxWriteSignedVB(blackboxCurrent->gyroADC[x]);
     }
 
     for (x = 0; x < XYZ_AXIS_COUNT; x++) {
@@ -602,7 +602,7 @@ static void writeInterframe(void)
 
     //Since gyros, accs and motors are noisy, base the prediction on the average of the history:
     for (x = 0; x < XYZ_AXIS_COUNT; x++) {
-        blackboxWriteSignedVB(blackboxHistory[0]->gyroData[x] - (blackboxHistory[1]->gyroData[x] + blackboxHistory[2]->gyroData[x]) / 2);
+        blackboxWriteSignedVB(blackboxHistory[0]->gyroADC[x] - (blackboxHistory[1]->gyroADC[x] + blackboxHistory[2]->gyroADC[x]) / 2);
     }
 
     for (x = 0; x < XYZ_AXIS_COUNT; x++) {
@@ -781,7 +781,7 @@ static void loadBlackboxState(void)
     }
 
     for (i = 0; i < XYZ_AXIS_COUNT; i++) {
-        blackboxCurrent->gyroData[i] = gyroADC[i];
+        blackboxCurrent->gyroADC[i] = gyroADC[i];
     }
 
     for (i = 0; i < XYZ_AXIS_COUNT; i++) {
