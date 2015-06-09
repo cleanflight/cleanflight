@@ -159,15 +159,6 @@ The PID controller is flight tested and running well with the default PID settin
 
 Yaw authority is also quite good.
 
-### PID controller 6, "BruceLee"
-
-PID Controller 6 is an experimental PID controller, which is same as PID1 for P and I, but with different D gain filtering. D term is the most sensitive tuning
-parameter when it comes to vibrations and PT1 element is implemented, which acts as a low pass filter to make the Dterm less sensitive to vibrations.
-Therefore this PID controller allows it easily to run less gyro_lpf filtering from MPU6050 to get less delay to the PID controller and better tuning for Acro flights.
-
-Angle and Horizon mode work the same way as on the PID1, but in this case default gains should be better as different scaling is used.
-TPA is also supported.
-
 
 ## RC rate, Pitch and Roll Rates (P/R rate before they were separated), and Yaw rate
 
