@@ -131,7 +131,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   9 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   10 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -140,12 +140,12 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define BASEFLIGHT_IDENTIFIER "BAFL";
 
 #define FLIGHT_CONTROLLER_IDENTIFIER_LENGTH 4
-static const char *flightControllerIdentifier = CLEANFLIGHT_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
+static const char * const flightControllerIdentifier = CLEANFLIGHT_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
 
 #define FLIGHT_CONTROLLER_VERSION_LENGTH    3
 #define FLIGHT_CONTROLLER_VERSION_MASK      0xFFF
 
-const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
+static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define BOARD_IDENTIFIER_LENGTH             4 // 4 UPPER CASE alpha numeric characters that identify the board being used.
 #define BOARD_HARDWARE_REVISION_LENGTH      2
 
@@ -281,7 +281,7 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
 #define MSP_SET_PID              202    //in message          P I D coeff (9 are used currently)
 #define MSP_SET_BOX              203    //in message          BOX setup (number is dependant of your setup)
-#define MSP_SET_RC_TUNING        204    //in message          rc rate, rc expo, rollpitch rate, yaw rate, dyn throttle PID
+#define MSP_SET_RC_TUNING        204    //in message          rc rate, rc expo, rollpitch rate, yaw rate, dyn throttle PID, yaw expo
 #define MSP_ACC_CALIBRATION      205    //in message          no param
 #define MSP_MAG_CALIBRATION      206    //in message          no param
 #define MSP_SET_MISC             207    //in message          powermeter trig + 8 free for future use
@@ -396,38 +396,22 @@ static mspPort_t mspPorts[MAX_MSP_PORT_COUNT];
 
 static mspPort_t *currentPort;
 
-static void serialize32(uint32_t a)
-{
-    static uint8_t t;
-    t = a;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 8;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 16;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 24;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-}
-
-static void serialize16(int16_t a)
-{
-    static uint8_t t;
-    t = a;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-    t = a >> 8 & 0xff;
-    serialWrite(mspSerialPort, t);
-    currentPort->checksum ^= t;
-}
-
 static void serialize8(uint8_t a)
 {
     serialWrite(mspSerialPort, a);
     currentPort->checksum ^= a;
+}
+
+static void serialize16(uint16_t a)
+{
+    serialize8((uint8_t)(a >> 0));
+    serialize8((uint8_t)(a >> 8));
+}
+
+static void serialize32(uint32_t a)
+{
+    serialize16((uint16_t)(a >> 0));
+    serialize16((uint16_t)(a >> 16));
 }
 
 static uint8_t read8(void)
@@ -682,7 +666,7 @@ void mspInit(serialConfig_t *serialConfig)
 
     activeBoxIds[activeBoxIdCount++] = BOXOSD;
 
-    if (feature(FEATURE_TELEMETRY && masterConfig.telemetryConfig.telemetry_switch))
+    if (feature(FEATURE_TELEMETRY) && masterConfig.telemetryConfig.telemetry_switch)
         activeBoxIds[activeBoxIdCount++] = BOXTELEMETRY;
 
 #ifdef AUTOTUNE
@@ -833,7 +817,7 @@ static bool processOutCommand(uint8_t cmdMSP)
                 serialize16(accSmooth[i]);
         }
         for (i = 0; i < 3; i++)
-            serialize16(gyroData[i]);
+            serialize16(gyroADC[i]);
         for (i = 0; i < 3; i++)
             serialize16(magADC[i]);
         break;
@@ -842,7 +826,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         s_struct((uint8_t *)&servo, 16);
         break;
     case MSP_SERVO_CONF:
-        headSerialReply(56);
+        headSerialReply(MAX_SUPPORTED_SERVOS * 7);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize16(currentProfile->servoConf[i].min);
             serialize16(currentProfile->servoConf[i].max);
@@ -851,7 +835,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         }
         break;
     case MSP_CHANNEL_FORWARDING:
-        headSerialReply(8);
+        headSerialReply(MAX_SUPPORTED_SERVOS);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize8(currentProfile->servoConf[i].forwardFromChannel);
         }
@@ -908,7 +892,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.looptime);
         break;
     case MSP_RC_TUNING:
-        headSerialReply(10);
+        headSerialReply(11);
         serialize8(currentControlRateProfile->rcRate8);
         serialize8(currentControlRateProfile->rcExpo8);
         for (i = 0 ; i < 3; i++) {
@@ -918,6 +902,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(currentControlRateProfile->thrMid8);
         serialize8(currentControlRateProfile->thrExpo8);
         serialize16(currentControlRateProfile->tpa_breakpoint);
+        serialize8(currentControlRateProfile->rcYawExpo8);
         break;
     case MSP_PID:
         headSerialReply(3 * PID_ITEM_COUNT);
@@ -1136,7 +1121,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 
     case MSP_RX_CONFIG:
-        headSerialReply(8);
+        headSerialReply(12);
         serialize8(masterConfig.rxConfig.serialrx_provider);
         serialize16(masterConfig.rxConfig.maxcheck);
         serialize16(masterConfig.rxConfig.midrc);
@@ -1147,7 +1132,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 
     case MSP_FAILSAFE_CONFIG:
-        headSerialReply(8);
+        headSerialReply(4);
         serialize8(masterConfig.failsafeConfig.failsafe_delay);
         serialize8(masterConfig.failsafeConfig.failsafe_off_delay);
         serialize16(masterConfig.failsafeConfig.failsafe_throttle);
@@ -1182,9 +1167,12 @@ static bool processOutCommand(uint8_t cmdMSP)
 
     case MSP_CF_SERIAL_CONFIG:
         headSerialReply(
-            ((sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4)) * SERIAL_PORT_COUNT)
+            ((sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4)) * serialGetAvailablePortCount())
         );
         for (i = 0; i < SERIAL_PORT_COUNT; i++) {
+            if (!serialIsPortAvailable(masterConfig.serialConfig.portConfigs[i].identifier)) {
+                continue;
+            };
             serialize8(masterConfig.serialConfig.portConfigs[i].identifier);
             serialize16(masterConfig.serialConfig.portConfigs[i].functionMask);
             serialize8(masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex);
@@ -1364,7 +1352,7 @@ static bool processInCommand(void)
         break;
 
     case MSP_SET_RC_TUNING:
-        if (currentPort->dataSize == 10) {//allow for tpa_breakpoint
+        if (currentPort->dataSize >= 10) {
             currentControlRateProfile->rcRate8 = read8();
             currentControlRateProfile->rcExpo8 = read8();
             for (i = 0; i < 3; i++) {
@@ -1376,6 +1364,9 @@ static bool processInCommand(void)
             currentControlRateProfile->thrMid8 = read8();
             currentControlRateProfile->thrExpo8 = read8();
             currentControlRateProfile->tpa_breakpoint = read16();
+            if (currentPort->dataSize >= 11) {
+                currentControlRateProfile->rcYawExpo8 = read8();
+            }
         } else {
             headSerialError(0);
         }
@@ -1591,17 +1582,28 @@ static bool processInCommand(void)
         {
             uint8_t portConfigSize = sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4);
 
-            if ((SERIAL_PORT_COUNT * portConfigSize) != currentPort->dataSize) {
+            if (currentPort->dataSize % portConfigSize != 0) {
                 headSerialError(0);
                 break;
             }
-            for (i = 0; i < SERIAL_PORT_COUNT; i++) {
-                masterConfig.serialConfig.portConfigs[i].identifier = read8();
-                masterConfig.serialConfig.portConfigs[i].functionMask = read16();
-                masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].gps_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].telemetry_baudrateIndex = read8();
-                masterConfig.serialConfig.portConfigs[i].blackbox_baudrateIndex = read8();
+
+            uint8_t remainingPortsInPacket = currentPort->dataSize / portConfigSize;
+
+            while (remainingPortsInPacket--) {
+                uint8_t identifier = read8();
+
+                serialPortConfig_t *portConfig = serialFindPortConfiguration(identifier);
+                if (!portConfig) {
+                    headSerialError(0);
+                    break;
+                }
+
+                portConfig->identifier = identifier;
+                portConfig->functionMask = read16();
+                portConfig->msp_baudrateIndex = read8();
+                portConfig->gps_baudrateIndex = read8();
+                portConfig->telemetry_baudrateIndex = read8();
+                portConfig->blackbox_baudrateIndex = read8();
             }
         }
         break;
@@ -1746,6 +1748,7 @@ void mspProcess(void)
                 delay(50);
             }
             stopMotors();
+            handleOneshotFeatureChangeOnRestart();
             systemReset();
         }
     }

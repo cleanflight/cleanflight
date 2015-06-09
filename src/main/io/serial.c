@@ -53,7 +53,7 @@
 static serialConfig_t *serialConfig;
 static serialPortUsage_t serialPortUsageList[SERIAL_PORT_COUNT];
 
-serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
+const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 #ifdef USE_VCP
     SERIAL_PORT_USB_VCP,
 #endif
@@ -74,7 +74,9 @@ serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 #endif
 };
 
-uint32_t baudRates[] = {0, 9600, 19200, 38400, 57600, 115200, 230400, 250000}; // see baudRate_e
+static uint8_t serialPortCount;
+
+const uint32_t baudRates[] = {0, 9600, 19200, 38400, 57600, 115200, 230400, 250000}; // see baudRate_e
 
 #define BAUD_RATE_COUNT (sizeof(baudRates) / sizeof(baudRates[0]))
 
@@ -87,7 +89,7 @@ baudRate_e lookupBaudRateIndex(uint32_t baudRate)
             return index;
         }
     }
-    return 0;
+    return BAUD_AUTO;
 }
 
 static serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier)
@@ -226,16 +228,22 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
     return true;
 }
 
-bool doesConfigurationUsePort(serialPortIdentifier_e identifier)
+serialPortConfig_t *serialFindPortConfiguration(serialPortIdentifier_e identifier)
 {
     uint8_t index;
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
         serialPortConfig_t *candidate = &serialConfig->portConfigs[index];
-        if (candidate->identifier == identifier && candidate->functionMask) {
-            return true;
+        if (candidate->identifier == identifier) {
+            return candidate;
         }
     }
-    return false;
+    return NULL;
+}
+
+bool doesConfigurationUsePort(serialPortIdentifier_e identifier)
+{
+    serialPortConfig_t *candidate = serialFindPortConfiguration(identifier);
+    return candidate != NULL && candidate->functionMask;
 }
 
 serialPort_t *openSerialPort(
@@ -246,6 +254,13 @@ serialPort_t *openSerialPort(
     portMode_t mode,
     portOptions_t options)
 {
+#if (!defined(USE_VCP) && !defined(USE_USART1) && !defined(USE_USART2) && !defined(USE_USART3) && !defined(USE_SOFTSERIAL1) && !defined(USE_SOFTSERIAL1))
+    UNUSED(callback);
+    UNUSED(baudRate);
+    UNUSED(mode);
+    UNUSED(options);
+#endif
+
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
     if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {
         // not available / already in use
@@ -324,6 +339,7 @@ void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled)
 
     serialConfig = initialSerialConfig;
 
+    serialPortCount = SERIAL_PORT_COUNT;
     memset(&serialPortUsageList, 0, sizeof(serialPortUsageList));
 
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
@@ -339,18 +355,46 @@ void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled)
 #endif
             ) {
                 serialPortUsageList[index].identifier = SERIAL_PORT_NONE;
+                serialPortCount--;
             }
         }
     }
 }
 
+void serialRemovePort(serialPortIdentifier_e identifier)
+{
+    for (uint8_t index = 0; index < SERIAL_PORT_COUNT; index++) {
+        if (serialPortUsageList[index].identifier == identifier) {
+            serialPortUsageList[index].identifier = SERIAL_PORT_NONE;
+            serialPortCount--;
+        }
+    }
+}
+
+uint8_t serialGetAvailablePortCount(void)
+{
+    return serialPortCount;
+}
+
+bool serialIsPortAvailable(serialPortIdentifier_e identifier)
+{
+    for (uint8_t index = 0; index < SERIAL_PORT_COUNT; index++) {
+        if (serialPortUsageList[index].identifier == identifier) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void handleSerial(void)
 {
+#ifdef USE_CLI
     // in cli mode, all serial stuff goes to here. enter cli mode by sending #
     if (cliMode) {
         cliProcess();
         return;
     }
+#endif
 
     mspProcess();
 }
@@ -366,9 +410,14 @@ void cliEnter(serialPort_t *serialPort);
 
 void evaluateOtherData(serialPort_t *serialPort, uint8_t receivedChar)
 {
+#ifndef USE_CLI
+    UNUSED(serialPort);
+#else
     if (receivedChar == '#') {
         cliEnter(serialPort);
-    } else if (receivedChar == serialConfig->reboot_character) {
+    }
+#endif
+    if (receivedChar == serialConfig->reboot_character) {
         systemResetToBootloader();
     }
 }

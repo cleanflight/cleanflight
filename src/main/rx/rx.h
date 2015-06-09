@@ -24,6 +24,9 @@
 #define PWM_RANGE_MAX 2000
 #define PWM_RANGE_MIDDLE (PWM_RANGE_MIN + ((PWM_RANGE_MAX - PWM_RANGE_MIN) / 2))
 
+#define PWM_PULSE_MIN   750       // minimum PWM pulse width which is considered valid
+#define PWM_PULSE_MAX   2250      // maximum PWM pulse width which is considered valid
+
 #define DEFAULT_SERVO_MIN 1020
 #define DEFAULT_SERVO_MIDDLE 1500
 #define DEFAULT_SERVO_MAX 2000
@@ -78,6 +81,7 @@ typedef struct rxConfig_s {
     uint8_t spektrum_sat_bind;              // number of bind pulses for Spektrum satellite receivers
     uint8_t rssi_channel;
     uint8_t rssi_scale;
+    uint8_t rssi_ppm_invert;
     uint16_t midrc;                         // Some radios have not a neutral point centered on 1500. can be changed here
     uint16_t mincheck;                      // minimum rc end
     uint16_t maxcheck;                      // maximum rc end

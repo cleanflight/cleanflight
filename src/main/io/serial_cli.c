@@ -53,6 +53,7 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
+#include "io/beeper.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -83,6 +84,12 @@
 
 #include "serial_cli.h"
 
+// FIXME remove this for targets that don't need a CLI.  Perhaps use a no-op macro when USE_CLI is not enabled
+// signal that we're in cli mode
+uint8_t cliMode = 0;
+
+#ifdef USE_CLI
+
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 
 void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort);
@@ -97,10 +104,12 @@ static void cliDump(char *cmdLine);
 static void cliExit(char *cmdline);
 static void cliFeature(char *cmdline);
 static void cliMotor(char *cmdline);
+static void cliPlaySound(char *cmdline);
 static void cliProfile(char *cmdline);
 static void cliRateProfile(char *cmdline);
 static void cliReboot(void);
 static void cliSave(char *cmdline);
+static void cliSerial(char *cmdline);
 static void cliServo(char *cmdline);
 static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
@@ -129,9 +138,6 @@ static void cliFlashErase(char *cmdline);
 static void cliFlashWrite(char *cmdline);
 static void cliFlashRead(char *cmdline);
 #endif
-
-// signal that we're in cli mode
-uint8_t cliMode = 0;
 
 // buffer
 static char cliBuffer[48];
@@ -211,9 +217,11 @@ const clicmd_t cmdTable[] = {
     { "mixer", "mixer name or list", cliMixer },
 #endif
     { "motor", "get/set motor output value", cliMotor },
+    { "play_sound", "index, or none for next", cliPlaySound },
     { "profile", "index (0 to 2)", cliProfile },
     { "rateprofile", "index (0 to 2)", cliRateProfile },
     { "save", "save and reboot", cliSave },
+    { "serial", "show/set serial settings", cliSerial },
 #ifdef USE_SERVOS
     { "servo", "servo config", cliServo },
 #endif
@@ -256,6 +264,7 @@ const clivalue_t valueTable[] = {
     { "max_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.maxcheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
     { "rssi_channel",               VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_channel, 0, MAX_SUPPORTED_RC_CHANNEL_COUNT },
     { "rssi_scale",                 VAR_UINT8  | MASTER_VALUE,  &masterConfig.rxConfig.rssi_scale, RSSI_SCALE_MIN, RSSI_SCALE_MAX },
+    { "rssi_ppm_invert",            VAR_INT8   | MASTER_VALUE,  &masterConfig.rxConfig.rssi_ppm_invert, 0, 1 },
     { "input_filtering_mode",       VAR_INT8   | MASTER_VALUE,  &masterConfig.inputFilteringMode, 0, 1 },
 
     { "min_throttle",               VAR_UINT16 | MASTER_VALUE,  &masterConfig.escAndServoConfig.minthrottle, PWM_RANGE_ZERO, PWM_RANGE_MAX },
@@ -279,40 +288,6 @@ const clivalue_t valueTable[] = {
     { "flaps_speed",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.airplaneConfig.flaps_speed, 0, 100 },
 
     { "fixedwing_althold_dir",      VAR_INT8   | MASTER_VALUE,  &masterConfig.airplaneConfig.fixedwing_althold_dir, -1, 1 },
-
-    { "serial_port_1_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].functionMask, 0, 0xFFFF },
-    { "serial_port_1_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_1_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_1_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_1_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[0].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
-#if (SERIAL_PORT_COUNT >= 2)
-    { "serial_port_2_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].functionMask, 0, 0xFFFF },
-    { "serial_port_2_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_2_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_2_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_2_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[1].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
-#if (SERIAL_PORT_COUNT >= 3)
-    { "serial_port_3_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].functionMask, 0, 0xFFFF},
-    { "serial_port_3_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_3_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_3_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_3_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[2].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
-#if (SERIAL_PORT_COUNT >= 4)
-    { "serial_port_4_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].functionMask, 0, 0xFFFF },
-    { "serial_port_4_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_4_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_4_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_4_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[3].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
-#if (SERIAL_PORT_COUNT >= 5)
-    { "serial_port_5_functions",    VAR_UINT16 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].functionMask, 0, 0xFFFF },
-    { "serial_port_5_msp_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].msp_baudrateIndex,         BAUD_9600, BAUD_115200 },
-    { "serial_port_5_telemetry_baudrate",   VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].telemetry_baudrateIndex,   BAUD_AUTO, BAUD_115200 },
-    { "serial_port_5_blackbox_baudrate",    VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].blackbox_baudrateIndex,    BAUD_9600, BAUD_115200 },
-    { "serial_port_5_gps_baudrate",         VAR_UINT8 | MASTER_VALUE,  &masterConfig.serialConfig.portConfigs[4].gps_baudrateIndex,         BAUD_9600, BAUD_115200 },
-#endif
-#endif
-#endif
-#endif
 
     { "reboot_character",           VAR_UINT8  | MASTER_VALUE,  &masterConfig.serialConfig.reboot_character, 48, 126 },
 
@@ -355,7 +330,7 @@ const clivalue_t valueTable[] = {
     { "vbat_max_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmaxcellvoltage, 10, 50 },
     { "vbat_min_cell_voltage",      VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatmincellvoltage, 10, 50 },
     { "vbat_warning_cell_voltage",  VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.vbatwarningcellvoltage, 10, 50 },
-    { "current_meter_scale",        VAR_INT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterScale, -10000, 10000 },
+    { "current_meter_scale",        VAR_INT16  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterScale, -10000, 10000 },
     { "current_meter_offset",       VAR_UINT16 | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterOffset, 0, 3300 },
     { "multiwii_current_meter_output", VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.multiwiiCurrentMeterOutput, 0, 1 },
     { "current_meter_type",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.batteryConfig.currentMeterType, 0, CURRENT_SENSOR_MAX },
@@ -387,7 +362,7 @@ const clivalue_t valueTable[] = {
 
     { "pid_at_min_throttle",        VAR_UINT8  | MASTER_VALUE, &masterConfig.mixerConfig.pid_at_min_throttle, 0, 1 },
     { "yaw_direction",              VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_direction, -1, 1 },
-    { "yaw_jump_prevention_limit",  VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.yaw_jump_prevention_limit, 0, 500 },
+    { "yaw_jump_prevention_limit",  VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.yaw_jump_prevention_limit, YAW_JUMP_PREVENTION_LIMIT_LOW, YAW_JUMP_PREVENTION_LIMIT_HIGH },
 #ifdef USE_SERVOS
     { "tri_unarmed_servo",          VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.tri_unarmed_servo, 0, 1 },
     { "servo_lowpass_freq",         VAR_INT16  | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_freq, 10, 400},
@@ -397,6 +372,7 @@ const clivalue_t valueTable[] = {
     { "default_rate_profile",       VAR_UINT8  | PROFILE_VALUE , &masterConfig.profile[0].defaultRateProfileIndex, 0, MAX_CONTROL_RATE_PROFILE_COUNT - 1 },
     { "rc_rate",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcRate8, 0, 250 },
     { "rc_expo",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcExpo8, 0, 100 },
+    { "rc_yaw_expo",                VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rcYawExpo8, 0, 100 },
     { "thr_mid",                    VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrMid8, 0, 100 },
     { "thr_expo",                   VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].thrExpo8, 0, 100 },
     { "roll_rate",                  VAR_UINT8  | CONTROL_RATE_VALUE, &masterConfig.controlRateProfiles[0].rates[FD_ROLL], 0, CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX },
@@ -409,8 +385,8 @@ const clivalue_t valueTable[] = {
     { "failsafe_off_delay",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_off_delay, 0, 200 },
     { "failsafe_throttle",          VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
 
-    { "rx_min_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, 100, PWM_RANGE_MAX },
-    { "rx_max_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, 100, PWM_RANGE_MAX + (PWM_RANGE_MAX - PWM_RANGE_MIN) },
+    { "rx_min_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
+    { "rx_max_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
 
 #ifdef USE_SERVOS
     { "gimbal_flags",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].gimbalConfig.gimbal_flags, 0, 255},
@@ -471,7 +447,7 @@ const clivalue_t valueTable[] = {
     { "i_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDVEL], 0, 200 },
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
 
-    { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, 0, 500 },
+    { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX },
 
 #ifdef BLACKBOX
     { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
@@ -583,6 +559,102 @@ static void cliAux(char *cmdline)
     }
 }
 
+static void cliSerial(char *cmdline)
+{
+    int i, val;
+    char *ptr;
+
+    if (isEmpty(cmdline)) {
+        for (i = 0; i < SERIAL_PORT_COUNT; i++) {
+            if (!serialIsPortAvailable(masterConfig.serialConfig.portConfigs[i].identifier)) {
+                continue;
+            };
+            printf("serial %d %d %ld %ld %ld %ld\r\n" ,
+                masterConfig.serialConfig.portConfigs[i].identifier,
+                masterConfig.serialConfig.portConfigs[i].functionMask,
+                baudRates[masterConfig.serialConfig.portConfigs[i].msp_baudrateIndex],
+                baudRates[masterConfig.serialConfig.portConfigs[i].gps_baudrateIndex],
+                baudRates[masterConfig.serialConfig.portConfigs[i].telemetry_baudrateIndex],
+                baudRates[masterConfig.serialConfig.portConfigs[i].blackbox_baudrateIndex]
+            );
+        }
+        return;
+    }
+
+    serialPortConfig_t portConfig;
+    memset(&portConfig, 0 , sizeof(portConfig));
+
+    serialPortConfig_t *currentConfig;
+
+    uint8_t validArgumentCount = 0;
+
+    ptr = cmdline;
+
+    val = atoi(ptr++);
+    currentConfig = serialFindPortConfiguration(val);
+    if (currentConfig) {
+        portConfig.identifier = val;
+        validArgumentCount++;
+    }
+
+    ptr = strchr(ptr, ' ');
+    if (ptr) {
+        val = atoi(++ptr);
+        portConfig.functionMask = val & 0xFFFF;
+        validArgumentCount++;
+    }
+
+    for (i = 0; i < 4; i ++) {
+        ptr = strchr(ptr, ' ');
+        if (!ptr) {
+            break;
+        }
+
+        val = atoi(++ptr);
+
+        uint8_t baudRateIndex = lookupBaudRateIndex(val);
+        if (baudRates[baudRateIndex] != (uint32_t) val) {
+            break;
+        }
+
+        switch(i) {
+            case 0:
+                if (baudRateIndex < BAUD_9600 || baudRateIndex > BAUD_115200) {
+                    continue;
+                }
+                portConfig.msp_baudrateIndex = baudRateIndex;
+                break;
+            case 1:
+                if (baudRateIndex < BAUD_9600 || baudRateIndex > BAUD_115200) {
+                    continue;
+                }
+                portConfig.gps_baudrateIndex = baudRateIndex;
+                break;
+            case 2:
+                if (baudRateIndex != BAUD_AUTO && baudRateIndex > BAUD_115200) {
+                    continue;
+                }
+                portConfig.telemetry_baudrateIndex = baudRateIndex;
+                break;
+            case 3:
+                if (baudRateIndex < BAUD_19200 || baudRateIndex > BAUD_250000) {
+                    continue;
+                }
+                portConfig.blackbox_baudrateIndex = baudRateIndex;
+                break;
+        }
+
+        validArgumentCount++;
+    }
+
+    if (validArgumentCount < 6) {
+        cliPrint("Parse error\r\n");
+        return;
+    }
+
+    memcpy(currentConfig, &portConfig, sizeof(portConfig));
+
+}
 
 static void cliAdjustmentRange(char *cmdline)
 {
@@ -1058,6 +1130,9 @@ static void cliDump(char *cmdline)
         buf[i] = '\0';
         printf("map %s\r\n", buf);
 
+        cliPrint("\r\n\r\n# serial\r\n");
+        cliSerial("");
+
 #ifdef LED_STRIP
         cliPrint("\r\n\r\n# led\r\n");
         cliLed("");
@@ -1327,6 +1402,43 @@ static void cliMotor(char *cmdline)
     motor_disarmed[motor_index] = motor_value;
 }
 
+static void cliPlaySound(char *cmdline)
+{
+#if FLASH_SIZE <= 64
+    UNUSED(cmdline);
+#else
+    int i;
+    const char *name;
+    static int lastSoundIdx = -1;
+
+    if (isEmpty(cmdline)) {
+        i = lastSoundIdx + 1;     //next sound index
+        if ((name=beeperNameForTableIndex(i)) == NULL) {
+            while (true) {   //no name for index; try next one
+                if (++i >= beeperTableEntryCount())
+                    i = 0;   //if end then wrap around to first entry
+                if ((name=beeperNameForTableIndex(i)) != NULL)
+                    break;   //if name OK then play sound below
+                if (i == lastSoundIdx + 1) {     //prevent infinite loop
+                    printf("Error playing sound\r\n");
+                    return;
+                }
+            }
+        }
+    } else {       //index value was given
+        i = atoi(cmdline);
+        if ((name=beeperNameForTableIndex(i)) == NULL) {
+            printf("No sound for index %d\r\n", i);
+            return;
+        }
+    }
+    lastSoundIdx = i;
+    beeperSilence();
+    printf("Playing sound %d: %s\r\n", i, name);
+    beeper(beeperModeForTableIndex(i));
+#endif
+}
+
 static void cliProfile(char *cmdline)
 {
     int i;
@@ -1365,6 +1477,7 @@ static void cliReboot(void) {
     cliPrint("\r\nRebooting");
     waitForSerialPortToFinishTransmitting(cliPort);
     stopMotors();
+    handleOneshotFeatureChangeOnRestart();
     systemReset();
 }
 
@@ -1607,7 +1720,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("Cleanflight/%s %s %s / %s (%s)",
+    printf("# Cleanflight/%s %s %s / %s (%s)",
         targetName,
         FC_VERSION_STRING,
         buildDate,
@@ -1673,14 +1786,21 @@ void cliProcess(void)
             clicmd_t target;
             cliPrint("\r\n");
 
+            // Strip comment starting with # from line
+            char *p = cliBuffer;
+            p = strchr(p, '#');
+            if (NULL != p) {
+                bufferIndex = (uint32_t)(p - cliBuffer);
+            }
+
             // Strip trailing whitespace
             while (bufferIndex > 0 && cliBuffer[bufferIndex - 1] == ' ') {
                 bufferIndex--;
             }
 
-            cliBuffer[bufferIndex] = 0; // null terminate
-
-            if (cliBuffer[0] != '#') {
+            // Process non-empty lines
+            if (bufferIndex > 0) {
+                cliBuffer[bufferIndex] = 0; // null terminate
                 target.name = cliBuffer;
                 target.param = NULL;
 
@@ -1689,10 +1809,10 @@ void cliProcess(void)
                     cmd->func(cliBuffer + strlen(cmd->name) + 1);
                 else
                     cliPrint("Unknown command, try 'help'");
+                bufferIndex = 0;
             }
 
             memset(cliBuffer, 0, sizeof(cliBuffer));
-            bufferIndex = 0;
 
             // 'exit' will reset this flag, so we don't need to print prompt again
             if (!cliMode)
@@ -1718,3 +1838,4 @@ void cliInit(serialConfig_t *serialConfig)
 {
     UNUSED(serialConfig);
 }
+#endif

@@ -66,12 +66,10 @@
 
 controlRateConfig_t *getControlRateConfig(uint8_t profileIndex);
 
-//#define ENABLE_DEBUG_OLED_PAGE
+#define MICROSECONDS_IN_A_SECOND (1000 * 1000)
 
-#define MILLISECONDS_IN_A_SECOND (1000 * 1000)
-
-#define DISPLAY_UPDATE_FREQUENCY (MILLISECONDS_IN_A_SECOND / 5)
-#define PAGE_CYCLE_FREQUENCY (MILLISECONDS_IN_A_SECOND * 5)
+#define DISPLAY_UPDATE_FREQUENCY (MICROSECONDS_IN_A_SECOND / 5)
+#define PAGE_CYCLE_FREQUENCY (MICROSECONDS_IN_A_SECOND * 5)
 
 static uint32_t nextDisplayUpdateAt = 0;
 static bool displayPresent = false;
@@ -85,7 +83,7 @@ static char lineBuffer[SCREEN_CHARACTER_COLUMN_COUNT + 1];
 #define HALF_SCREEN_CHARACTER_COLUMN_COUNT (SCREEN_CHARACTER_COLUMN_COUNT / 2)
 #define IS_SCREEN_CHARACTER_COLUMN_COUNT_ODD (SCREEN_CHARACTER_COLUMN_COUNT & 1)
 
-const char* pageTitles[] = {
+static const char* const pageTitles[] = {
     "CLEANFLIGHT",
     "ARMED",
     "BATTERY",
