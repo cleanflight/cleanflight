@@ -756,6 +756,130 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     }
 }
 
+
+static void pidBruceLee(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
+        rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+{
+    UNUSED(rxConfig);
+
+    // Experimental PID controller designed for the minimal delay and best used with gyro_lpf = 256.
+    // The main logic is from pidrewrite, but there is some floating point math used for D calculation
+    // PT1 element should prevent unwanted D oscillations, but still give the best flight experience
+
+    int32_t errorAngle;
+    int axis;
+    float delta;
+    int32_t PTerm, ITerm, DTerm;
+    static int32_t lastError[3] = { 0, 0, 0 };
+    int32_t AngleRateTmp, RateError;
+
+    int8_t horizonLevelStrength = 100;
+    int32_t stickPosAil, stickPosEle, mostDeflectedPos;
+
+    float dT = (float)cycleTime * 0.000001f;
+
+    static float    RC;
+    static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
+
+    // pt1 initialisation
+    // the cutoff frequency might be taken from the config later on
+    RC = 1.0f / ( 2.0f * (float)M_PI * F_CUT );
+
+
+    if (FLIGHT_MODE(HORIZON_MODE)) {
+
+        // Figure out the raw stick positions
+        stickPosAil = getRcStickDeflection(FD_ROLL, rxConfig->midrc);
+        stickPosEle = getRcStickDeflection(FD_PITCH, rxConfig->midrc);
+
+        if(ABS(stickPosAil) > ABS(stickPosEle)){
+            mostDeflectedPos = ABS(stickPosAil);
+        }
+        else {
+            mostDeflectedPos = ABS(stickPosEle);
+        }
+
+        // Progressively turn off the horizon self level strength as the stick is banged over
+        horizonLevelStrength = (500 - mostDeflectedPos) / 5;  // 100 at centre stick, 0 = max stick deflection
+
+        // Using Level D as a Sensitivity for Horizon. 0 more level to 255 more rate. Default value of 100 seems to work fine.
+        // For more rate mode increase D and slower flips and rolls will be possible
+       	horizonLevelStrength = constrain((10 * (horizonLevelStrength - 100) * (10 * pidProfile->D8[PIDLEVEL] / 80) / 100) + 100, 0, 100);
+    }
+
+    // ----------PID controller----------
+    for (axis = 0; axis < 3; axis++) {
+        uint8_t rate = controlRateConfig->rates[axis];
+
+        // -----Get the desired angle rate depending on flight mode
+        if (axis == FD_YAW) { // YAW is always gyro-controlled (MAG correction is applied to rcCommand)
+            AngleRateTmp = (((int32_t)(rate + 40) * rcCommand[YAW]) >> 5);
+        } else {
+            // calculate error and limit the angle to max configured inclination
+#ifdef GPS
+            errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
+                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]; // 16 bits is ok here
+#else
+            errorAngle = constrain(2 * rcCommand[axis], -((int) max_angle_inclination),
+                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]; // 16 bits is ok here
+#endif
+
+#ifdef AUTOTUNE
+            if (shouldAutotune()) {
+                errorAngle = DEGREES_TO_DECIDEGREES(autotune(rcAliasToAngleIndexMap[axis], &inclination, DECIDEGREES_TO_DEGREES(errorAngle)));
+            }
+#endif
+
+            if (!FLIGHT_MODE(ANGLE_MODE)) { //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
+                AngleRateTmp = ((int32_t)(rate + 27) * rcCommand[axis]) >> 4;
+                if (FLIGHT_MODE(HORIZON_MODE)) {
+                    // mix up angle error to desired AngleRateTmp to add a little auto-level feel. horizonLevelStrength is scaled to the stick input
+                	AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL] * horizonLevelStrength / 100) >> 5;
+                }
+            } else { // it's the ANGLE mode - control is angle based, so control loop is needed
+                AngleRateTmp = (errorAngle * pidProfile->P8[PIDLEVEL]) >> 5;
+            }
+        }
+
+        // --------low-level gyro-based PID. ----------
+        // Used in stand-alone mode for ACRO, controlled by higher level regulators in other modes
+        // -----calculate scaled error.AngleRates
+        // multiplication of rcCommand corresponds to changing the sticks scaling here
+        RateError = AngleRateTmp - (gyroADC[axis] / 4);
+
+        // -----calculate P component
+        PTerm = (RateError * pidProfile->P8[axis] * PIDweight[axis] / 100) >> 7;
+        // -----calculate I component
+        // there should be no division before accumulating the error to integrator, because the precision would be reduced.
+        // Precision is critical, as I prevents from long-time drift. Thus, 32 bits integrator is used.
+        // Time correction (to avoid different I scaling for different builds based on average cycle time)
+        // is normalized to cycle time = 2048.
+        errorGyroI[axis] = errorGyroI[axis] + ((RateError * cycleTime) >> 11) * pidProfile->I8[axis] * PIDweight[axis] / 100;
+
+        // limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
+        // I coefficient (I8) moved before integration to make limiting independent from PID settings
+        errorGyroI[axis] = constrain(errorGyroI[axis], (int32_t) - GYRO_I_MAX << 13, (int32_t) + GYRO_I_MAX << 13);
+        ITerm = errorGyroI[axis] >> 13;
+
+        //-----calculate D-term
+        delta = RateError - lastError[axis];
+        lastError[axis] = RateError;
+
+        delta = lastDTerm[axis] + dT / (RC + dT) * (delta - lastDTerm[axis]);
+        lastDTerm[axis] = delta;
+        DTerm = (delta * pidProfile->D8[axis] * PIDweight[axis] / 100) / 16;
+
+        // -----calculate total PID output
+        axisPID[axis] = PTerm + ITerm + DTerm;
+
+#ifdef BLACKBOX
+        axisPID_P[axis] = PTerm;
+        axisPID_I[axis] = ITerm;
+        axisPID_D[axis] = DTerm;
+#endif
+    }
+}
+
 void pidSetController(int type)
 {
     switch (type) {
@@ -777,6 +901,9 @@ void pidSetController(int type)
             break;
         case 5:
             pid_controller = pidHarakiri;
+            break;
+        case 6:
+            pid_controller = pidBruceLee;
     }
 }
 
