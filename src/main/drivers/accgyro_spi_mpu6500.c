@@ -99,10 +99,14 @@ static bool mpu6500Detect(void)
     uint8_t tmp;
 
     mpu6500ReadRegister(MPU6500_RA_WHOAMI, &tmp, 1);
+#ifdef COLIBRI_RACE
+    return true; //true anyway.
+#else
     if (tmp != MPU6500_WHO_AM_I_CONST)
         return false;
 
     return true;
+#endif
 }
 
 bool mpu6500SpiAccDetect(acc_t *acc)
@@ -163,8 +167,32 @@ static void mpu6500AccRead(int16_t *accData)
     accData[Z] = (int16_t)((buf[4] << 8) | buf[5]);
 }
 
+#ifdef COLIBRI_RACE
+static void mpu6500SpiInit(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+
+    RCC_AHBPeriphClockCmd(MPU6500_CS_GPIO_CLK_PERIPHERAL, ENABLE);
+
+    GPIO_InitStructure.GPIO_Pin = MPU6500_CS_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+
+    GPIO_Init(MPU6500_CS_GPIO, &GPIO_InitStructure);
+
+    DISABLE_MPU6500;
+
+    spiSetDivisor(MPU6500_SPI, SPI_9MHZ_CLOCK_DIVIDER);
+}
+#endif
+
 static void mpu6500GyroInit(void)
 {
+#ifdef COLIBRI_RACE
+    mpu6500SpiInit();
+#endif
 
 #ifdef NAZE
     gpio_config_t gpio;
