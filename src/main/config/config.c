@@ -531,11 +531,7 @@ static void resetConf(void)
     masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
     masterConfig.escAndServoConfig.minthrottle = 1000;
-#ifdef BRUSHEDFC
-    masterConfig.escAndServoConfig.maxthrottle = 2500;
-#else
     masterConfig.escAndServoConfig.maxthrottle = 2000;
-#endif
     masterConfig.motor_pwm_rate = 32000;
     masterConfig.looptime = 2000;
     currentProfile->pidProfile.pidController = 3;
