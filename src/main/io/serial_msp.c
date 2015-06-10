@@ -306,7 +306,9 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
 
-#define INBUF_SIZE 64
+#define INBUF_SIZE 72 // FIXME See MSP_SET_SERVO_CONFIG, ideally we want this to be smaller.
+
+#define SERVO_CHUNK_SIZE 9
 
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
@@ -315,7 +317,7 @@ typedef struct box_e {
 } box_t;
 
 // FIXME remove ;'s
-static const box_t const boxes[CHECKBOX_ITEM_COUNT + 1] = {
+static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXARM, "ARM;", 0 },
     { BOXANGLE, "ANGLE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
@@ -619,6 +621,8 @@ void mspReleasePortIfAllocated(serialPort_t *serialPort)
 
 void mspInit(serialConfig_t *serialConfig)
 {
+    BUILD_BUG_ON((SERVO_CHUNK_SIZE * MAX_SUPPORTED_SERVOS) > INBUF_SIZE);
+
     // calculate used boxes based on features and fill availableBoxes[] array
     memset(activeBoxIds, 0xFF, sizeof(activeBoxIds));
 
@@ -823,7 +827,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 #ifdef USE_SERVOS
     case MSP_SERVO:
-        s_struct((uint8_t *)&servo, 16);
+        s_struct((uint8_t *)&servo, MAX_SUPPORTED_SERVOS * 2);
         break;
     case MSP_SERVO_CONF:
         headSerialReply(MAX_SUPPORTED_SERVOS * 9);
@@ -1410,12 +1414,11 @@ static bool processInCommand(void)
         break;
     case MSP_SET_SERVO_CONF:
 #ifdef USE_SERVOS
-        if (currentPort->dataSize % sizeof(servoParam_t) != 0) {
+        if (currentPort->dataSize % SERVO_CHUNK_SIZE != 0) {
+            debug[0] = currentPort->dataSize;
             headSerialError(0);
         } else {
-            memset(currentProfile->servoConf, 0, sizeof(currentProfile->servoConf));
-
-            uint8_t servoCount = currentPort->dataSize / sizeof(servoParam_t);
+            uint8_t servoCount = currentPort->dataSize / SERVO_CHUNK_SIZE;
             for (i = 0; i < MAX_SUPPORTED_SERVOS && i < servoCount; i++) {
                 currentProfile->servoConf[i].min = read16();
                 currentProfile->servoConf[i].max = read16();
@@ -1429,6 +1432,7 @@ static bool processInCommand(void)
                     currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
                 }
                 currentProfile->servoConf[i].rate = read8();
+
                 currentProfile->servoConf[i].angleAtMin = read8();
                 currentProfile->servoConf[i].angleAtMax = read8();
             }
