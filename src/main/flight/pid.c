@@ -119,7 +119,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 
     // pt1 initialisation
     // the cutoff frequency might be taken from the config later on
-    RC = 1.0f / ( 2.0f * (float)M_PI * F_CUT );
+    RC = 1.0f / ( 2.0f * (float)M_PI * MAIN_CUT_HZ );
 
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
@@ -668,7 +668,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
 
     // pt1 initialisation
     // the cutoff frequency might be taken from the config later on
-    RC = 1.0f / ( 2.0f * (float)M_PI * F_CUT );
+    RC = 1.0f / ( 2.0f * (float)M_PI * MAIN_CUT_HZ );
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
 

@@ -17,10 +17,9 @@
 
 #pragma once
 
-#define F_CUT 17.0f                         // Used for PT1 element
 #define GYRO_I_MAX 256                      // Gyro I limiter
 #define RCconstPI   0.159154943092f         // 0.5f / M_PI;
-#define MAIN_CUT_HZ 12.0f                   // (default 12Hz, Range 1-50Hz)
+#define MAIN_CUT_HZ 17.0f                   // (default 12Hz, Range 1-50Hz) Used for PT1 element in PID1, PID2 and PID5
 #define OLD_YAW 0                           // [0/1] 0 = MultiWii 2.3 yaw, 1 = older yaw.
 #define YAW_P_LIMIT_MIN 100                 // Maximum value for yaw P limiter
 #define YAW_P_LIMIT_MAX 500                 // Maximum value for yaw P limiter
