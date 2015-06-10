@@ -107,7 +107,8 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     float ITerm,PTerm,DTerm;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
     static float lastGyroRate[3];
-    float delta;
+    static float delta1[3], delta2[3];
+    float delta, deltaSum;
     float dT;
     int axis;
     float horizonLevelStrength = 1;
@@ -204,10 +205,14 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
-        delta /= dT;
-        delta = lastDTerm[axis] + dT / (RC + dT) * (delta - lastDTerm[axis]);
-        lastDTerm[axis] = delta;
-        DTerm = constrainf(delta * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
+        delta *= (1.0f / dT);
+        // add moving average here to reduce noise
+        deltaSum = delta1[axis] + delta2[axis] + delta;
+        delta2[axis] = delta1[axis];
+        delta1[axis] = delta;
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
+        DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
         axisPID[axis] = constrain(lrintf(PTerm + ITerm - DTerm), -1000, 1000);
