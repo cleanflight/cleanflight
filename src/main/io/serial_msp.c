@@ -132,7 +132,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   11 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   12 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -294,8 +294,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_SERVO_CONF       212    //in message          Servo settings
 #define MSP_SET_MOTOR            214    //in message          PropBalance function
 #define MSP_SET_NAV_CONFIG       215    //in message          Sets nav config parameters - write to the eeprom
-#define MSP_SET_SERVO_LIMIT      216    //in message          Servo settings limits
-#define MSP_SET_TILT_ARM         217    //in message          Tilt arm settings
+#define MSP_SET_TILT_ARM         216    //in message          Tilt arm settings
 
 // #define MSP_BIND                 240    //in message          no param
 
@@ -1469,7 +1468,7 @@ static bool processInCommand(void)
         break;
     case MSP_SET_TILT_ARM:
 #ifdef USE_SERVOS
-    	currentProfile->tiltArm.flagEnabled = read8();
+        currentProfile->tiltArm.flagEnabled = read8();
         currentProfile->tiltArm.pitchDivisior = read8();
         currentProfile->tiltArm.thrustLiftoff = read8();
         currentProfile->tiltArm.gearRatioPercent = read8();

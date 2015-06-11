@@ -53,6 +53,7 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
+#include "io/tilt_arm_control.h"
 #include "io/beeper.h"
 #include "io/tilt_arm_control.h"
 

@@ -93,7 +93,8 @@ typedef enum {
 
 #define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
 
-//#define MIXER_DEBUG
+
+extern int16_t debug[4];
 
 uint8_t motorCount = 0;
 int16_t motor[MAX_SUPPORTED_MOTORS];
@@ -104,6 +105,7 @@ static flight3DConfig_t *flight3DConfig;
 static escAndServoConfig_t *escAndServoConfig;
 static airplaneConfig_t *airplaneConfig;
 static rxConfig_t *rxConfig;
+static tiltArmConfig_t *tiltArmConfig;
 
 static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 static mixerMode_e currentMixerMode;
@@ -508,8 +510,10 @@ void writeServos(void)
             break;
 
         case MIXER_QUADX_TILT:
+        case MIXER_OCTOX_TILT:
             servoTilting();
             break;
+
         default:
             break;
     }

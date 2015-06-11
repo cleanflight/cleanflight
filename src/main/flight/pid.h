@@ -68,7 +68,7 @@ typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, struct controlRat
 #ifdef USE_SERVOS
         , struct tiltArmConfig_s *tiltArm
 #endif
-    );            // pid controller function prototype
+        );            // pid controller function prototype
 
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)

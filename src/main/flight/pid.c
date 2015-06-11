@@ -621,7 +621,8 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
             ITermACC = errorAngleIf[axis] * (float)pidProfile->I8[PIDLEVEL] * 0.08f;
         }
 
-        if (!FLIGHT_MODE(ANGLE_MODE)) {
+
+        if (!( (stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE) )) {
             if (ABS((int16_t)gyroADC[axis]) > 2560) {
                 errorGyroIf[axis] = 0.0f;
             } else {
@@ -716,7 +717,6 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     int32_t PTerm, ITerm, DTerm;
     static int32_t lastError[3] = { 0, 0, 0 };
     int32_t AngleRateTmp, RateError;
-
     int8_t horizonLevelStrength = 100;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
 

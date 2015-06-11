@@ -503,6 +503,8 @@ static void resetConf(void)
     resetTiltArmProfile(&currentProfile->tiltArm);
 #endif
 
+    resetTiltArmProfile(&currentProfile->tiltArm);
+
 #ifdef GPS
     resetGpsProfile(&currentProfile->gpsProfile);
 #endif
