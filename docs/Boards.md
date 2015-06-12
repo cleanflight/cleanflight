@@ -16,6 +16,7 @@ Cleanflight also runs on the following developer boards:
 * STM32F3Discovery
 * Port103R
 * EUSTM32F103RB
+* STM32F103-DIP40
 
 There is also limited support for the following boards which may be removed due to lack of users or commercial availability.
  
