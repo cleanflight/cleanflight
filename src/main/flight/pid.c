@@ -119,9 +119,13 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
 
     // pt1 initialisation
-    // the cutoff frequency might be taken from the config later on
-    RC = 1.0f / ( 2.0f * (float)M_PI * MAIN_CUT_HZ );
-
+    // 0 means PT1 disabled
+    if (pidProfile->main_cut_hz > 0) {
+        RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
+    }
+    else {
+       	RC = 0;
+    }
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
@@ -210,8 +214,11 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
-        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
-        lastDTerm[axis] = deltaSum;
+
+        if (pidProfile->main_cut_hz > 0) {
+            deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+            lastDTerm[axis] = deltaSum;
+        }
         DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
@@ -673,8 +680,13 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
 
     // pt1 initialisation
-    // the cutoff frequency might be taken from the config later on
-    RC = 1.0f / ( 2.0f * (float)M_PI * MAIN_CUT_HZ );
+    // 0 means PT1 disabled
+    if (pidProfile->main_cut_hz > 0) {
+        RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
+    }
+    else {
+    	RC = 0;
+    }
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
@@ -763,8 +775,10 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
 
-        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
-        lastDTerm[axis] = deltaSum;
+        if (pidProfile->main_cut_hz > 0) {
+            deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+            lastDTerm[axis] = deltaSum;
+        }
 
         DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
