@@ -123,9 +123,6 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     if (pidProfile->main_cut_hz > 0) {
         RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
     }
-    else {
-       	RC = 0;
-    }
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
@@ -683,9 +680,6 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     // 0 means PT1 disabled
     if (pidProfile->main_cut_hz > 0) {
         RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
-    }
-    else {
-    	RC = 0;
     }
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
