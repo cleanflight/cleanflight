@@ -324,6 +324,17 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     static int32_t delta1[2] = { 0, 0 }, delta2[2] = { 0, 0 };
     int32_t delta;
 
+    float dT = (float)cycleTime * 0.000001f;
+
+    static float    RC;
+    static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
+
+    // pt1 initialisation
+    // 0 means PT1 disabled
+    if (pidProfile->main_cut_hz > 0) {
+        RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
+    }
+
     if (FLIGHT_MODE(HORIZON_MODE)) {
         prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 512);
     }
@@ -380,6 +391,11 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
         DTerm = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->main_cut_hz > 0) {
+        	DTerm = lastDTerm[axis] + dT / (RC + dT) * (DTerm - lastDTerm[axis]);
+            lastDTerm[axis] = DTerm;
+        }
 
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
 
