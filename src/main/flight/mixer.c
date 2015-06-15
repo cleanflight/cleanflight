@@ -741,10 +741,6 @@ void mixTable(void)
         yawDirection3D = -1;
     }
 
-    if (currentMixerMode == MIXER_QUADX_TILT) {
-        mixTilting();
-    }
-
     // airplane / servo mixes
     switch (currentMixerMode) {
         case MIXER_BI:
