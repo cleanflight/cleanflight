@@ -573,6 +573,27 @@ static void airplaneMixer(void)
 #endif
 
 #ifdef USE_SERVOS
+void radiantWriteServo(uint8_t index, float angle){
+    // normalize angle to range -PI to PI
+    while (angle > M_PIf)
+        angle -= M_PIf;
+    while (angle < M_PIf)
+            angle += M_PIf;
+
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
+    if (angle > 0){
+        angle = scaleRangef(angle, 0, +M_PIf, servoConf[index].middle, servoConf[index].max);
+    }else{
+        angle = scaleRangef(angle, -M_PIf, 0, servoConf[index].min, servoConf[index].middle);
+    }
+
+    //just to be sure
+    uint16_t outputPwm = constrain( angle, servoConf[index].min, servoConf[index].max );
+
+    //and now write it!
+    pwmWriteServo(index, outputPwm);
+}
+
 uint8_t hasTiltingMotor(){
 	return currentMixerMode == MIXER_QUADX_TILT || currentMixerMode == MIXER_OCTOX_TILT;
 }
@@ -580,8 +601,8 @@ uint8_t hasTiltingMotor(){
 /*
  * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
  */
-float getTiltServoAngle(void) {
-    float userInput = 0;
+float requestedTiltServoAngle() {
+    uint16_t userInput = 0;
 
     //get wanted position of the tilting servo
     if (rcData[tiltArmConfig->channel] >= rxConfig->midrc) {
@@ -591,35 +612,24 @@ float getTiltServoAngle(void) {
     }
 
     //convert to radiant, keep eventual non-linearity of range
-    float servoAngle = scaleRangef(userInput, 1000, 2000, degreesToRadians(servoConf[TILTING_SERVO].minLimit), degreesToRadians(servoConf[TILTING_SERVO].maxLimit) );
+    float servoAngle = scaleRangef(userInput, 1000, 2000, -degreesToRadians(servoConf[TILTING_SERVO].angleAtMin), degreesToRadians(servoConf[TILTING_SERVO].angleAtMax) );
 
     return (servoAngle * tiltArmConfig->gearRatioPercent)/100.0f;
 }
 
 void servoTilting(void) {
-    float actualTilt = getTiltServoAngle();
+    float actualTilt = requestedTiltServoAngle();
 
     //do we need to invert the Servo direction?
     if (servoConf[TILTING_SERVO].rate & 1){
         actualTilt *= -1;
     }
 
-    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
-    if (actualTilt > 0){
-        actualTilt = scaleRangef(actualTilt, 0, +M_PIf/2, servoConf[TILTING_SERVO].middle, servoConf[TILTING_SERVO].max);
-    }else{
-        actualTilt = scaleRangef(actualTilt, -M_PIf/2, 0, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].middle);
-    }
-
-    //just to be sure
-    uint16_t outputPwm = constrain( actualTilt, servoConf[TILTING_SERVO].min, servoConf[TILTING_SERVO].max );
-
-    //and now write it!
-    pwmWriteServo(TILTING_SERVO, outputPwm);
+    radiantWriteServo(TILTING_SERVO, actualTilt);
 }
 
 void mixTilting(void) {
-    float angleTilt = getTiltServoAngle();
+    float angleTilt = requestedTiltServoAngle();
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
@@ -650,7 +660,6 @@ void mixTilting(void) {
         axisPID[ROLL] = yawCompensationInv + rollCompensation;
         axisPID[YAW] = yawCompensation + rollCompensationInv;
     }
-
 }
 #endif
 
@@ -849,4 +858,3 @@ void filterServos(void)
 
 #endif
 }
-
