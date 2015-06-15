@@ -93,6 +93,34 @@ void pidResetErrorGyro(void)
 
 const angle_index_t rcAliasToAngleIndexMap[] = { AI_ROLL, AI_PITCH };
 
+#define BB0 15191
+#define BB1 30381
+#define BB2 15191
+#define BFACTOR (4096*1024)
+
+#define BA0 4096
+#define BA1 7466
+#define BA2 -3429
+#define AFACTOR BA0
+
+int16_t ButterWs[9]={0,0,0,0,0,0,0,0,0};
+
+int16_t Butter(int16_t *w, int16_t NewValue)
+{
+    int32_t Acc;
+
+    Acc = NewValue*BA0;
+    Acc += (BA1 * w[1]);
+    Acc += (BA2 * w[2]);
+    w[0] = (int16_t) (Acc/AFACTOR);
+    Acc = (BB0 * w[0]);
+    Acc += (BB1 * w[1]);
+    Acc += (BB2 * w[2]);
+    w[2] = w[1];
+    w[1] = w[0];
+    return (int16_t)(Acc/BFACTOR);
+}
+
 #ifdef AUTOTUNE
 bool shouldAutotune(void)
 {
@@ -307,7 +335,6 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     int32_t rc, error, errorAngle;
     int32_t PTerm, ITerm, PTermACC, ITermACC, DTerm;
     static int16_t lastGyro[2] = { 0, 0 };
-    static int32_t delta1[2] = { 0, 0 }, delta2[2] = { 0, 0 };
     int32_t delta;
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
@@ -363,11 +390,8 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 
         delta = (gyroADC[axis] - lastGyro[axis]) / 4;   // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
         lastGyro[axis] = gyroADC[axis];
-        DTerm = delta1[axis] + delta2[axis] + delta;
-        delta2[axis] = delta1[axis];
-        delta1[axis] = delta;
 
-        DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
+        DTerm=(Butter(&(ButterWs[3*axis]), delta) * (dynD8[axis] * 2) * PIDweight[axis] / 100)>>5;
 
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -648,8 +672,8 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
 
     int32_t errorAngle;
     int axis;
-    int32_t delta, deltaSum;
-    static int32_t delta1[3], delta2[3];
+    int32_t delta;
+   //static int32_t delta1[3], delta2[3];
     int32_t PTerm, ITerm, DTerm;
     static int32_t lastError[3] = { 0, 0, 0 };
     int32_t AngleRateTmp, RateError;
@@ -739,11 +763,8 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
         delta = (delta * ((uint16_t) 0xFFFF / (cycleTime >> 4))) >> 6;
-        // add moving average here to reduce noise
-        deltaSum = delta1[axis] + delta2[axis] + delta;
-        delta2[axis] = delta1[axis];
-        delta1[axis] = delta;
-        DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
+
+        DTerm=(Butter(&(ButterWs[3*axis]), delta) * (pidProfile->D8[axis] * 2) * PIDweight[axis] / 100)>>8;
 
         // -----calculate total PID output
         axisPID[axis] = PTerm + ITerm + DTerm;
