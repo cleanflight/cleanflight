@@ -115,6 +115,15 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 
     dT = (float)cycleTime * 0.000001f;
 
+    static float    RC;
+    static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
+
+    // pt1 initialisation
+    // 0 means PT1 disabled
+    if (pidProfile->main_cut_hz > 0) {
+        RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
+    }
+
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
         // Figure out the raw stick positions
@@ -202,6 +211,11 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->main_cut_hz > 0) {
+            deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+            lastDTerm[axis] = deltaSum;
+        }
         DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
@@ -310,6 +324,17 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     static int32_t delta1[2] = { 0, 0 }, delta2[2] = { 0, 0 };
     int32_t delta;
 
+    float dT = (float)cycleTime * 0.000001f;
+
+    static float    RC;
+    static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
+
+    // pt1 initialisation
+    // 0 means PT1 disabled
+    if (pidProfile->main_cut_hz > 0) {
+        RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
+    }
+
     if (FLIGHT_MODE(HORIZON_MODE)) {
         prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 512);
     }
@@ -366,6 +391,11 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
         DTerm = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->main_cut_hz > 0) {
+        	DTerm = lastDTerm[axis] + dT / (RC + dT) * (DTerm - lastDTerm[axis]);
+            lastDTerm[axis] = DTerm;
+        }
 
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
 
@@ -530,7 +560,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
 //    MainDptCut = RCconstPI / (float)cfg.maincuthz;                           // Initialize Cut off frequencies for mainpid D
-    MainDptCut = RCconstPI / MAIN_CUT_HZ;                                      // maincuthz (default 12Hz, Range 1-50Hz), hardcoded for now
+    MainDptCut = RCconstPI / pidProfile->main_cut_hz;                          // maincuthz (default 12Hz, Range 1-50Hz), hardcoded for now
     FLOATcycleTime  = (float)constrain(cycleTime, 1, 100000);                  // 1us - 100ms
     ACCDeltaTimeINS = FLOATcycleTime * 0.000001f;                              // ACCDeltaTimeINS is in seconds now
     RCfactor = ACCDeltaTimeINS / (MainDptCut + ACCDeltaTimeINS);               // used for pt1 element
@@ -657,6 +687,17 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     int8_t horizonLevelStrength = 100;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
 
+    float dT = (float)cycleTime * 0.000001f;
+
+    static float    RC;
+    static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
+
+    // pt1 initialisation
+    // 0 means PT1 disabled
+    if (pidProfile->main_cut_hz > 0) {
+        RC = 1.0f / ( 2.0f * (float)M_PI * pidProfile->main_cut_hz );
+    }
+
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
         // Figure out the raw stick positions
@@ -743,6 +784,12 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->main_cut_hz > 0) {
+            deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+            lastDTerm[axis] = deltaSum;
+        }
+
         DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
         // -----calculate total PID output
