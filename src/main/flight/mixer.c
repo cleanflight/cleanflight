@@ -577,7 +577,7 @@ void radiantWriteServo(uint8_t index, float angle){
     // normalize angle to range -PI to PI
     while (angle > M_PIf)
         angle -= M_PIf;
-    while (angle < M_PIf)
+    while (angle < -M_PIf)
             angle += M_PIf;
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
