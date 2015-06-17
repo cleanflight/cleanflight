@@ -46,7 +46,7 @@
 
 void adcInit(drv_adc_config_t *init)
 {
-#if defined(CJMCU) || defined(CC3D)
+#if defined(CJMCU) || defined(CC3D) || defined(STM32DIP40)
     UNUSED(init);
 #endif
 

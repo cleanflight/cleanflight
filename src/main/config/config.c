@@ -282,6 +282,11 @@ void resetSerialConfig(serialConfig_t *serialConfig)
     serialConfig->portConfigs[1].functionMask = FUNCTION_MSP;
 #endif
 
+#ifdef STM32DIP40
+    // This allows MSP connection via USART & VCP so the board can be reconfigured.
+    serialConfig->portConfigs[1].functionMask = FUNCTION_MSP;
+#endif
+
     serialConfig->reboot_character = 'R';
 }
 
@@ -787,6 +792,13 @@ void validateAndFixConfig(void)
     }
 #endif
 
+#if defined(STM32DIP40) && defined(DISPLAY) && defined(USE_USART3)
+    if (doesConfigurationUsePort(SERIAL_PORT_USART3) && feature(FEATURE_DISPLAY)) {
+        featureClear(FEATURE_DISPLAY);
+    }
+#endif
+
+
     /*
      * The retarded_arm setting is incompatible with pid_at_min_throttle because full roll causes the craft to roll over on the ground.
      * The pid_at_min_throttle implementation ignores yaw on the ground, but doesn't currently ignore roll when retarded_arm is enabled.
@@ -796,6 +808,12 @@ void validateAndFixConfig(void)
     }
 
 #if defined(CC3D) && defined(SONAR) && defined(USE_SOFTSERIAL1)
+    if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
+        featureClear(FEATURE_SONAR);
+    }
+#endif
+
+#if defined(STM32DIP40) && defined(SONAR) && defined(USE_SOFTSERIAL1)
     if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
         featureClear(FEATURE_SONAR);
     }

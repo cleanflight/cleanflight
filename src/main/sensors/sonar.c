@@ -71,7 +71,7 @@ const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryCon
         .exti_irqn = EXTI1_IRQn
     };
     return &sonarHardware;
-#elif defined(CC3D)
+#elif defined(CC3D) || defined(STM32DIP40)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_5,   // (PB5)

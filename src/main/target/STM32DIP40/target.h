@@ -17,18 +17,18 @@
 
 #pragma once
 
-#define TARGET_BOARD_IDENTIFIER "STM32DIP40" // CJMCU
+#define TARGET_BOARD_IDENTIFIER "STM32DIP40" //
 
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
+
 #define LED1_GPIO   GPIOB
 #define LED1_PIN    Pin_4 // PB4 (LED)
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOB
 
 
 #define BEEP_GPIO   GPIOA
-//#define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PIN Pin_15 // PA15 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
 
@@ -41,24 +41,7 @@
 #define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
 #define INVERTER_GPIO GPIOB
 #define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
-#define INVERTER_USART USART2
-
-// SPI2
-// PB15 28 SPI2_MOSI
-// PB14 27 SPI2_MISO
-// PB13 26 SPI2_SCK
-// PB12 25 SPI2_NSS
-
-//#define USE_SPI
-//#define USE_SPI_DEVICE_2
-
-//#define NAZE_SPI_INSTANCE     SPI2
-//#define NAZE_SPI_CS_GPIO      GPIOB
-//#define NAZE_SPI_CS_PIN       GPIO_Pin_12
-
-//#define MPU6500_CS_GPIO       NAZE_SPI_CS_GPIO
-//#define MPU6500_CS_PIN        NAZE_SPI_CS_PIN
-//#define MPU6500_SPI_INSTANCE  NAZE_SPI_INSTANCE
+#define INVERTER_USART USART1
 
 #define GYRO
 #define USE_GYRO_MPU6050
@@ -82,30 +65,35 @@
 #define INVERTER
 #define DISPLAY
 
+
 #define USE_VCP
 #define USE_USART1
 #define USE_USART2
+#define USE_SOFTSERIAL1
+#define SERIAL_PORT_COUNT 4
 
-//#define USE_SOFTSERIAL1
-//#define USE_SOFTSERIAL2
-#define SERIAL_PORT_COUNT 3
-
-//#define SOFTSERIAL_1_TIMER TIM3
-//#define SOFTSERIAL_1_TIMER_RX_HARDWARE 4 // PWM 5
-//#define SOFTSERIAL_1_TIMER_TX_HARDWARE 5 // PWM 6
-//#define SOFTSERIAL_2_TIMER TIM3
-//#define SOFTSERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
-//#define SOFTSERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
+#define SOFTSERIAL_1_TIMER TIM3
+#define SOFTSERIAL_1_TIMER_TX_HARDWARE 1 // PWM 2
+#define SOFTSERIAL_1_TIMER_RX_HARDWARE 2 // PWM 3
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
 
-// #define SOFT_I2C // enable to test software i2c
-// #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
-// #define SOFT_I2C_PB67
-
-
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_MAG)
+
+#define USE_ADC
+
+#define CURRENT_METER_ADC_GPIO      GPIOB
+#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
+#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
+
+#define VBAT_ADC_GPIO               GPIOA
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
+#define VBAT_ADC_CHANNEL            ADC_Channel_0
+
+#define RSSI_ADC_GPIO               GPIOA
+#define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
+#define RSSI_ADC_CHANNEL            ADC_Channel_1
 
 #define GPS
 
@@ -114,4 +102,7 @@
 
 #define TELEMETRY
 #define SERIAL_RX
+#define SONAR
 #define AUTOTUNE
+#define USE_SERVOS
+#define USE_CLI
