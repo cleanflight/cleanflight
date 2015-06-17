@@ -43,6 +43,8 @@
 #include "flight/navigation.h"
 #include "flight/autotune.h"
 
+#include "flight/butterworth.h"
+
 #include "config/runtime_config.h"
 
 extern uint16_t cycleTime;
@@ -202,7 +204,16 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
-        DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
+
+        if (pidProfile->dterm_filtering) {
+        	deltaSum = (float) Butterworth(axis, (int16_t) deltaSum);
+        	DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 50, -300.0f, 300.0f);
+        }
+
+        else {
+
+            DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
+        }
 
         // -----calculate total PID output
         axisPID[axis] = constrain(lrintf(PTerm + ITerm - DTerm), -1000, 1000);
@@ -287,6 +298,11 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->dterm_filtering) {
+        	deltaSum = Butterworth(axis, (int16_t) deltaSum);
+        }
+
         DTerm = (deltaSum * dynD8[axis]) / 32;
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -366,6 +382,10 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
         DTerm = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->dterm_filtering) {
+        	DTerm = Butterworth(axis, (int16_t) DTerm);
+        }
 
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
 
@@ -479,6 +499,11 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->dterm_filtering) {
+        	deltaSum = Butterworth(axis, (int16_t) deltaSum);
+        }
+
         DTerm = (deltaSum * dynD8[axis]) / 32;
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -743,6 +768,11 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        if (pidProfile->dterm_filtering) {
+            deltaSum = Butterworth(axis, (int16_t) deltaSum);
+        }
+
         DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
         // -----calculate total PID output
