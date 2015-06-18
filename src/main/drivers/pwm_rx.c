@@ -35,6 +35,8 @@
 
 #include "pwm_rx.h"
 
+#include "config/config.h"
+
 #define PPM_CAPTURE_COUNT 12
 #define PWM_INPUT_PORT_COUNT 8
 
@@ -326,6 +328,7 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     ppmInit();
 
     pwmInputPort_t *self = &pwmInputPorts[FIRST_PWM_PORT];
+    uint8_t sampleRateMultiplier = feature(FEATURE_RX_PPM_DOUBLESAMPLERATE) ? 2 : 1;
 
     self->mode = INPUT_MODE_PPM;
     self->timerHardware = timerHardwarePtr;
@@ -333,7 +336,7 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     pwmGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, timerHardwarePtr->gpioInputMode);
     pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
 
-    timerConfigure(timerHardwarePtr, (uint16_t)PPM_TIMER_PERIOD, PWM_TIMER_MHZ);
+    timerConfigure(timerHardwarePtr, (uint16_t)PPM_TIMER_PERIOD, PWM_TIMER_MHZ * sampleRateMultiplier);
 
     timerChCCHandlerInit(&self->edgeCb, ppmEdgeCallback);
     timerChOvrHandlerInit(&self->overflowCb, ppmOverflowCallback);

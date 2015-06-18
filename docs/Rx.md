@@ -33,6 +33,13 @@ http://orangerx.com/2014/05/20/r615x-spektrumjr-dsm2dsmx-compatible-6ch-2-4ghz-r
 FrSky D8R-XP 8ch telemetry receiver, or CPPM and RSSI enabled receiver
 http://www.frsky-rc.com/product/pro.php?pro_id=21
 
+Walkera RXF-01 6ch Futaba FHSS receiver with double rate CPPM ouptut.
+http://www.myrcmart.com/walkera-futaba-fhss-receiver-module-rxf01-for-new-v120d02s-p-7390.html
+With the antenna and connectors on your right; The CPPM pin is the left pin in the top white connector.
+The middle pins of both connectors are VCC (3.3v works, 5v untested) and the right pins are GND.
+Enable FEATURE_RX_PPM_DOUBLESAMPLERATE as the CPPM signal is output at twice the normal
+rate.
+
 ## Serial Receivers
 
 ### Spektrum
