@@ -352,6 +352,13 @@ static uint8_t activeBoxIdCount = 0;
 // from mixer.c
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 
+#ifdef USE_HIL
+//extern uint32_t EstAlt;
+static uint32_t EstAltHil;
+static uint16_t headingHil;
+static uint16_t angleHil[2]={0,0};
+#endif
+
 // cause reboot after MSP processing complete
 static bool isRebootScheduled = false;
 
@@ -1650,6 +1657,23 @@ static bool processInCommand(void)
         }
         break;
 #endif
+
+
+   	case MSP_SET_ATTITUDE:
+#ifdef USE_HIL
+   		for (i = 0; i < 2; i++) {
+        angleHil[i] = read16();
+        //inclination.raw[i]=angleHil[i];
+       }
+       headingHil = read16();
+         //heading=headingHil;
+       EstAltHil = read32();
+         //EstAlt = EstAltHil;
+       headSerialReply(0);
+#endif
+       break;
+
+
     case MSP_REBOOT:
         isRebootScheduled = true;
         break;
