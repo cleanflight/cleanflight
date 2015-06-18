@@ -74,8 +74,6 @@ static uint32_t nextRotationUpdateAt = 0;
 #error "Led strip length must match driver"
 #endif
 
-hsvColor_t *colors;
-
 //                          H    S    V
 #define LED_BLACK        {  0,   0,   0}
 #define LED_WHITE        {  0, 255, 255}
@@ -661,7 +659,7 @@ void applyLedWarningLayer(uint8_t updateNow)
         if (feature(FEATURE_VBAT) && calculateBatteryState() != BATTERY_OK) {
             warningFlags |= WARNING_FLAG_LOW_BATTERY;
         }
-        if (feature(FEATURE_FAILSAFE) && failsafeHasTimerElapsed()) {
+        if (feature(FEATURE_FAILSAFE) && failsafeIsActive()) {
             warningFlags |= WARNING_FLAG_FAILSAFE;
         }
         if (!ARMING_FLAG(ARMED) && !ARMING_FLAG(OK_TO_ARM)) {
@@ -714,6 +712,9 @@ void applyLedIndicatorLayer(uint8_t indicatorFlashState)
     const ledConfig_t *ledConfig;
     static const hsvColor_t *flashColor;
 
+    if (!rxIsReceivingSignal()) {
+        return;
+    }
 
     if (indicatorFlashState == 0) {
         flashColor = &hsv_orange;
@@ -889,11 +890,11 @@ void updateLedStrip(void)
 
     uint32_t now = micros();
 
-    bool indicatorFlashNow = indicatorFlashNow = (int32_t)(now - nextIndicatorFlashAt) >= 0L;
-    bool warningFlashNow = warningFlashNow = (int32_t)(now - nextWarningFlashAt) >= 0L;
+    bool indicatorFlashNow = (int32_t)(now - nextIndicatorFlashAt) >= 0L;
+    bool warningFlashNow = (int32_t)(now - nextWarningFlashAt) >= 0L;
     bool rotationUpdateNow = (int32_t)(now - nextRotationUpdateAt) >= 0L;
 #ifdef USE_LED_ANIMATION
-    bool animationUpdateNow = animationUpdateNow = (int32_t)(now - nextAnimationUpdateAt) >= 0L;
+    bool animationUpdateNow = (int32_t)(now - nextAnimationUpdateAt) >= 0L;
 #endif
     if (!(
             indicatorFlashNow ||

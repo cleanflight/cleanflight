@@ -16,11 +16,5 @@
  */
 
 #pragma once
-#include "sensors/battery.h"
 
-void sonarUpdate(void);
-
-int32_t sonarRead(void);
-int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle);
-int32_t sonarGetLatestAltitude(void);
-
+bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, uint8_t magHardwareToUse, int16_t magDeclinationFromConfig);

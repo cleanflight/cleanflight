@@ -47,11 +47,11 @@ http://www.lemon-rx.com/shop/index.php?route=product/product&product_id=118
 
 ### S.BUS
 
-16 channels via serial currently supported.  See the Serial chapter in the documentation for a configuration example.
+16 channels via serial currently supported.  See below how to set up your transmitter.
 
-* In most cases you will need an inverter between the receiver output and the flight controller hardware.  
+* You probably need an inverter between the receiver output and the flight controller. However, some flight controllers have this built in (the main port on CC3D, for example), and doesn't need one.
 * Softserial ports cannot be used with SBUS because it runs at too high of a bitrate (1Mbps).  Refer to the chapter specific to your board to determine which port(s) may be used.
-* You will need to configure the channel mapping in the GUI (Receiver tab) or CLI (`map` command).
+* You will need to configure the channel mapping in the GUI (Receiver tab) or CLI (`map` command). Note that channels above 8 are mapped "straight", with no remapping.
 
 These receivers are reported working:
 
@@ -67,12 +67,13 @@ http://www.futaba-rc.com/systems/futk8100-8j/
 
 #### OpenTX S.BUS configuration
 
-If using OpenTX set the transmitter module to D16 mode and select CH1-16 on the transmitter before binding to allow reception
-of 16 channels. 
+If using OpenTX set the transmitter module to D16 mode and ALSO select CH1-16 on the transmitter before binding to allow reception
+of all 16 channels. 
 
 OpenTX 2.09, which is shipped on some Taranis X9D Plus transmitters, has a bug - [issue:1701](https://github.com/opentx/opentx/issues/1701).
 The bug prevents use of all 16 channels.  Upgrade to the latest OpenTX version to allow correct reception of all 16 channels,
 without the fix you are limited to 8 channels regardless of the CH1-16/D16 settings.
+
 
 
 ### XBUS
@@ -130,6 +131,12 @@ Only one receiver feature can be enabled at a time.
 
 See the Serial chapter for some some RX configuration examples.
 
+To setup spectrum on the Naze32 or clones in the GUI:
+1. Start on the "Ports" tab make sure that UART2 has serial RX.  If not set the checkbox, save and reboot.
+2. Move to the "Configuration" page and in the upper lefthand corner choose Serial RX as the receiver type.
+3. Below that choose the type of serial receiver that you are using.  Save and reboot.
+
+Using CLI:
 For Serial RX enable `RX_SERIAL` and set the `serialrx_provider` CLI setting as follows.
 
 | Serial RX Provider | Value |

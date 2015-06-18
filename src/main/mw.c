@@ -97,10 +97,12 @@ uint16_t cycleTime = 0;         // this is the number in micro second to achieve
 int16_t magHold;
 int16_t headFreeModeHold;
 
+uint8_t motorControlEnable = false;
+
 int16_t telemTemperature1;      // gyro sensor temperature
 static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
-extern uint8_t dynP8[3], dynI8[3], dynD8[3];
+extern uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
 
 typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
         uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
@@ -175,7 +177,7 @@ void annexCode(void)
     static uint8_t vbatTimer = 0;
     static int32_t vbatCycleTime = 0;
 
-    // PITCH & ROLL only dynamic PID adjustemnt,  depending on throttle value
+    // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
         prop2 = 100;
     } else {
@@ -209,13 +211,22 @@ void annexCode(void)
                     tmp = 0;
                 }
             }
-            rcCommand[axis] = tmp * -masterConfig.yaw_control_direction;
+            tmp2 = tmp / 100;
+            rcCommand[axis] = (lookupYawRC[tmp2] + (tmp - tmp2 * 100) * (lookupYawRC[tmp2 + 1] - lookupYawRC[tmp2]) / 100) * -masterConfig.yaw_control_direction;
             prop1 = 100 - (uint16_t)currentControlRateProfile->rates[axis] * ABS(tmp) / 500;
         }
         // FIXME axis indexes into pids.  use something like lookupPidIndex(rc_alias_e alias) to reduce coupling.
         dynP8[axis] = (uint16_t)currentProfile->pidProfile.P8[axis] * prop1 / 100;
         dynI8[axis] = (uint16_t)currentProfile->pidProfile.I8[axis] * prop1 / 100;
         dynD8[axis] = (uint16_t)currentProfile->pidProfile.D8[axis] * prop1 / 100;
+
+        // non coupled PID reduction scaler used in PID controller 1 and PID controller 2. YAW TPA disabled. 100 means 100% of the pids
+        if (axis == YAW) {
+            PIDweight[axis] = 100;
+        }
+        else {
+            PIDweight[axis] = prop2;
+        }
 
         if (rcData[axis] < masterConfig.rxConfig.midrc)
             rcCommand[axis] = -rcCommand[axis];
@@ -242,6 +253,11 @@ void annexCode(void)
             if (feature(FEATURE_VBAT)) {
                 updateBatteryVoltage();
                 batteryState = calculateBatteryState();
+                //handle beepers for battery levels
+                if (batteryState == BATTERY_CRITICAL)
+                    beeper(BEEPER_BAT_CRIT_LOW);    //critically low battery
+                else if (batteryState == BATTERY_WARNING)
+                    beeper(BEEPER_BAT_LOW);         //low battery
             }
 
             if (feature(FEATURE_CURRENT_METER)) {
@@ -251,18 +267,13 @@ void annexCode(void)
         }
     }
 
-    beepcodeUpdateState(batteryState);
+    beeperUpdate();          //call periodic beeper handler
 
     if (ARMING_FLAG(ARMED)) {
         LED0_ON;
     } else {
         if (IS_RC_MODE_ACTIVE(BOXARM) == 0) {
             ENABLE_ARMING_FLAG(OK_TO_ARM);
-        }
-
-        if (isCalibrating()) {
-            LED0_TOGGLE;
-            DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
         if (!STATE(SMALL_ANGLE)) {
@@ -273,13 +284,18 @@ void annexCode(void)
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
-        if (ARMING_FLAG(OK_TO_ARM)) {
-            disableWarningLed();
+        if (isCalibrating()) {
+            warningLedFlash();
+            DISABLE_ARMING_FLAG(OK_TO_ARM);
         } else {
-            enableWarningLed(currentTime);
+            if (ARMING_FLAG(OK_TO_ARM)) {
+                warningLedDisable();
+            } else {
+                warningLedFlash();
+            }
         }
 
-        updateWarningLed(currentTime);
+        warningLedUpdate();
     }
 
 #ifdef TELEMETRY
@@ -317,6 +333,8 @@ void mwDisarm(void)
             finishBlackbox();
         }
 #endif
+
+        beeper(BEEPER_DISARMING);      // emit disarm tone
     }
 }
 
@@ -355,12 +373,22 @@ void mwArm(void)
 #endif
             disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
 
+            //beep to indicate arming
+#ifdef GPS
+            if (feature(FEATURE_GPS) && STATE(GPS_FIX) && GPS_numSat >= 5)
+                beeper(BEEPER_ARMING_GPS_FIX);
+            else
+                beeper(BEEPER_ARMING);
+#else
+            beeper(BEEPER_ARMING);
+#endif
+
             return;
         }
     }
 
     if (!ARMING_FLAG(ARMED)) {
-        blinkLedAndSoundBeeper(2, 255, 1);
+        beeperConfirmationBeeps(1);
     }
 }
 
@@ -380,9 +408,9 @@ void handleInflightCalibrationStickPosition(void)
     } else {
         AccInflightCalibrationArmed = !AccInflightCalibrationArmed;
         if (AccInflightCalibrationArmed) {
-            queueConfirmationBeep(4);
+            beeper(BEEPER_ACC_CALIBRATION);
         } else {
-            queueConfirmationBeep(6);
+            beeper(BEEPER_ACC_CALIBRATION_FAIL);
         }
     }
 }
@@ -497,6 +525,8 @@ void executePeriodicTasks(void)
 
 void processRx(void)
 {
+    static bool armedBeeperOn = false;
+
     calculateRxChannelsAndUpdateFailsafe(currentTime);
 
     // in 3D mode, we need to be able to disarm by switch at any time
@@ -509,8 +539,8 @@ void processRx(void)
 
     if (feature(FEATURE_FAILSAFE)) {
 
-        if (currentTime > FAILSAFE_POWER_ON_DELAY_US && !failsafeIsEnabled()) {
-            failsafeEnable();
+        if (currentTime > FAILSAFE_POWER_ON_DELAY_US && !failsafeIsMonitoring()) {
+            failsafeStartMonitoring();
         }
 
         failsafeUpdateState();
@@ -522,17 +552,48 @@ void processRx(void)
         pidResetErrorAngle();
         pidResetErrorGyro();
     }
-    // When armed and motors aren't spinning, disarm board after delay so users without buzzer won't lose fingers.
+
+    // When armed and motors aren't spinning, do beeps and then disarm
+    // board after delay so users without buzzer won't lose fingers.
     // mixTable constrains motor commands, so checking  throttleStatus is enough
     if (ARMING_FLAG(ARMED)
-        && feature(FEATURE_MOTOR_STOP) && !STATE(FIXED_WING)
-        && masterConfig.auto_disarm_delay != 0
-        && isUsingSticksForArming()) {
-        if (throttleStatus == THROTTLE_LOW) {
-            if ((int32_t)(disarmAt - millis()) < 0)  // delay is over
-                mwDisarm();
+        && feature(FEATURE_MOTOR_STOP)
+        && !STATE(FIXED_WING)
+    ) {
+        if (isUsingSticksForArming()) {
+            if (throttleStatus == THROTTLE_LOW) {
+                if (masterConfig.auto_disarm_delay != 0
+                    && (int32_t)(disarmAt - millis()) < 0
+                ) {
+                    // auto-disarm configured and delay is over
+                    mwDisarm();
+                    armedBeeperOn = false;
+                } else {
+                    // still armed; do warning beeps while armed
+                    beeper(BEEPER_ARMED);
+                    armedBeeperOn = true;
+                }
+            } else {
+                // throttle is not low
+                if (masterConfig.auto_disarm_delay != 0) {
+                    // extend disarm time
+                    disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;
+                }
+
+                if (armedBeeperOn) {
+                    beeperSilence();
+                    armedBeeperOn = false;
+                }
+            }
         } else {
-            disarmAt = millis() + masterConfig.auto_disarm_delay * 1000;   // extend delay
+            // arming is via AUX switch; beep while throttle low
+            if (throttleStatus == THROTTLE_LOW) {
+                beeper(BEEPER_ARMED);
+                armedBeeperOn = true;
+            } else if (armedBeeperOn) {
+                beeperSilence();
+                armedBeeperOn = false;
+            }
         }
     }
 
@@ -551,7 +612,7 @@ void processRx(void)
 
     bool canUseHorizonMode = true;
 
-    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeHasTimerElapsed())) && (sensors(SENSOR_ACC))) {
+    if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeIsActive())) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
     	canUseHorizonMode = false;
 
@@ -628,7 +689,7 @@ void loop(void)
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
 
-    updateRx();
+    updateRx(currentTime);
 
     if (shouldProcessRx(currentTime)) {
         processRx();
@@ -669,7 +730,7 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
+        imuUpdate(&currentProfile->accelerometerTrims);
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();
@@ -702,7 +763,14 @@ void loop(void)
         // If we're armed, at minimum throttle, and we do arming via the
         // sticks, do not process yaw input from the rx.  We do this so the
         // motors do not spin up while we are trying to arm or disarm.
-        if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck) {
+        // Allow yaw control for tricopters if the user wants the servo to move even when unarmed.
+        if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck
+#ifndef USE_QUAD_MIXER_ONLY
+                && !(masterConfig.mixerMode == MIXER_TRI && masterConfig.mixerConfig.tri_unarmed_servo)
+                && masterConfig.mixerMode != MIXER_AIRPLANE
+                && masterConfig.mixerMode != MIXER_FLYING_WING
+#endif
+        ) {
             rcCommand[YAW] = 0;
         }
 
@@ -735,7 +803,9 @@ void loop(void)
         writeServos();
 #endif
 
-        writeMotors();
+        if (motorControlEnable) {
+            writeMotors();
+        }
 
 #ifdef BLACKBOX
         if (!cliMode && feature(FEATURE_BLACKBOX)) {

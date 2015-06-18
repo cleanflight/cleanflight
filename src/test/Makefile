@@ -26,8 +26,8 @@ OBJECT_DIR = ../../obj/test
 COMMON_FLAGS = \
 	-g \
 	-Wall \
-	-Wextra \
 	-pthread \
+	-Wextra \
 	-ggdb3 \
 	-O0 \
 	-DUNIT_TEST \
@@ -39,7 +39,7 @@ C_FLAGS = $(COMMON_FLAGS) \
 
 # Flags passed to the C++ compiler.
 CXX_FLAGS = $(COMMON_FLAGS) \
-	-std=gnu++98
+	-std=gnu++11
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
@@ -47,11 +47,13 @@ TESTS = \
 	battery_unittest \
 	flight_imu_unittest \
 	flight_mixer_unittest \
+	flight_failsafe_unittest \
 	altitude_hold_unittest \
 	maths_unittest \
 	gps_conversion_unittest \
 	telemetry_hott_unittest \
 	rc_controls_unittest \
+	rx_rx_unittest \
 	ledstrip_unittest \
 	ws2811_unittest \
 	encoding_unittest \
@@ -81,7 +83,7 @@ GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/inc/gtest/*.h $(GTEST_HEADERS)
 # compiles fast and for ordinary users its source rarely changes.
 $(OBJECT_DIR)/gtest-all.o : $(GTEST_SRCS_)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) -I$(GTEST_DIR) -c \
+	$(CXX) $(CXX_FLAGS) -I$(GTEST_DIR) -Wno-missing-field-initializers -Wno-unused-const-variable -c \
             $(GTEST_DIR)/src/gtest-all.cc -o $@
 
 $(OBJECT_DIR)/gtest_main.o : $(GTEST_SRCS_)
@@ -132,7 +134,7 @@ battery_unittest : \
 	$(OBJECT_DIR)/battery_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 	
 $(OBJECT_DIR)/common/encoding.o : $(USER_DIR)/common/encoding.c $(USER_DIR)/common/encoding.h $(GTEST_HEADERS)
 	@mkdir -p $(dir $@)
@@ -151,7 +153,7 @@ encoding_unittest : \
 	$(OBJECT_DIR)/encoding_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 $(OBJECT_DIR)/flight/imu.o : \
 	$(USER_DIR)/flight/imu.c \
@@ -176,7 +178,7 @@ flight_imu_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 $(OBJECT_DIR)/maths_unittest.o : \
 	$(TEST_DIR)/maths_unittest.cc \
@@ -190,7 +192,7 @@ maths_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 
@@ -215,7 +217,7 @@ altitude_hold_unittest : \
 	$(OBJECT_DIR)/altitude_hold_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 $(OBJECT_DIR)/flight/gps_conversion.o : \
@@ -239,7 +241,7 @@ gps_conversion_unittest : \
 	$(OBJECT_DIR)/gps_conversion_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 
@@ -265,7 +267,7 @@ telemetry_hott_unittest : \
 	$(OBJECT_DIR)/flight/gps_conversion.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 
@@ -291,7 +293,7 @@ rc_controls_unittest : \
 	$(OBJECT_DIR)/rc_controls_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 $(OBJECT_DIR)/io/ledstrip.o : \
@@ -315,7 +317,7 @@ ledstrip_unittest : \
 	$(OBJECT_DIR)/ledstrip_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 
@@ -340,7 +342,7 @@ ws2811_unittest : \
 	$(OBJECT_DIR)/ws2811_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
 $(OBJECT_DIR)/flight/lowpass.o : \
@@ -364,7 +366,7 @@ lowpass_unittest : \
 	$(OBJECT_DIR)/lowpass_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 $(OBJECT_DIR)/flight/mixer.o : \
 	$(USER_DIR)/flight/mixer.c \
@@ -388,7 +390,31 @@ flight_mixer_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
+$(OBJECT_DIR)/flight/failsafe.o : \
+	$(USER_DIR)/flight/failsafe.c \
+	$(USER_DIR)/flight/failsafe.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/flight/failsafe.c -o $@
+
+$(OBJECT_DIR)/flight_failsafe_unittest.o : \
+	$(TEST_DIR)/flight_failsafe_unittest.cc \
+	$(USER_DIR)/flight/failsafe.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/flight_failsafe_unittest.cc -o $@
+
+flight_failsafe_unittest : \
+	$(OBJECT_DIR)/flight/failsafe.o \
+	$(OBJECT_DIR)/flight_failsafe_unittest.o \
+	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 $(OBJECT_DIR)/io/serial.o : \
 	$(USER_DIR)/io/serial.c \
@@ -411,7 +437,31 @@ io_serial_unittest : \
 	$(OBJECT_DIR)/io_serial_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
-	$(CXX) $(CXX_FLAGS) -lpthread $^ -o $(OBJECT_DIR)/$@
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
+$(OBJECT_DIR)/rx/rx.o : \
+	$(USER_DIR)/rx/rx.c \
+	$(USER_DIR)/rx/rx.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/rx/rx.c -o $@
+
+$(OBJECT_DIR)/rx_rx_unittest.o : \
+	$(TEST_DIR)/rx_rx_unittest.cc \
+	$(USER_DIR)/rx/rx.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/rx_rx_unittest.cc -o $@
+
+rx_rx_unittest : \
+	$(OBJECT_DIR)/rx/rx.o \
+	$(OBJECT_DIR)/rx_rx_unittest.o \
+	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 test: $(TESTS)
 	set -e && for test in $(TESTS) ; do \

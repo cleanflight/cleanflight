@@ -66,6 +66,7 @@
 #include "display.h"
 
 
+<<<<<<< HEAD
 static const uint8_t const logoCleanflight[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x7C,
 	0xFE, 0xFE, 0xFF, 0x7F, 0x3E, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0xC0, 0xC0,
@@ -123,9 +124,14 @@ static char lineBuffer[SCREEN_CHARACTER_COLUMN_COUNT + 1];
 #define HALF_SCREEN_CHARACTER_COLUMN_COUNT (SCREEN_CHARACTER_COLUMN_COUNT / 2)
 #define IS_SCREEN_CHARACTER_COLUMN_COUNT_ODD (SCREEN_CHARACTER_COLUMN_COUNT & 1)
 
+<<<<<<< HEAD
 const char* pageTitles[] = {
     "      Welcome !",
 //    "CLEANFLIGHT",
+=======
+static const char* const pageTitles[] = {
+    "CLEANFLIGHT",
+>>>>>>> cleanflight/master
     "ARMED",
     "BATTERY",
     "SENSORS",
@@ -141,7 +147,7 @@ const char* pageTitles[] = {
 
 #define PAGE_COUNT (PAGE_RX + 1)
 
-const uint8_t cyclePageIds[] = {
+const pageId_e cyclePageIds[] = {
     PAGE_PROFILE,
 #ifdef GPS
     PAGE_GPS,

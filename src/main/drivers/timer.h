@@ -33,6 +33,11 @@ typedef uint16_t timCCR_t;
 typedef uint16_t timCCER_t;
 typedef uint16_t timSR_t;
 typedef uint16_t timCNT_t;
+#elif defined(UNIT_TEST)
+typedef uint32_t timCCR_t;
+typedef uint32_t timCCER_t;
+typedef uint32_t timSR_t;
+typedef uint32_t timCNT_t;
 #else
 # error "Unknown CPU defined"
 #endif
@@ -55,7 +60,7 @@ typedef struct timerOvrHandlerRec_s {
 typedef struct {
     TIM_TypeDef *tim;
     GPIO_TypeDef *gpio;
-    uint32_t pin;
+    uint16_t pin;
     uint8_t channel;
     uint8_t irq;
     uint8_t outputEnable;

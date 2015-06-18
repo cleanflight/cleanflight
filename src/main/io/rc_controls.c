@@ -178,23 +178,23 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         return;
     }
 
-        if (isUsingSticksToArm) {
-            // Disarm on throttle down + yaw
+    if (isUsingSticksToArm) {
+        // Disarm on throttle down + yaw
         if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) {
-            if (ARMING_FLAG(ARMED))         //board was armed
+            if (ARMING_FLAG(ARMED))
                 mwDisarm();
-            else {  //board was not armed
-                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
-                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            else {
+                beeper(BEEPER_DISARM_REPEAT);    // sound tone while stick held
+                rcDelayCommand = 0;              // reset so disarm tone will repeat
             }
         }
             // Disarm on roll (only when retarded_arm is enabled)
         if (retarded_arm && (rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO)) {
-            if (ARMING_FLAG(ARMED))         //board was armed
+            if (ARMING_FLAG(ARMED))
                 mwDisarm();
-            else {  //board was not armed
-                beeper(BEEPER_DISARM_REPEAT);    //sound tone while stick held
-                rcDelayCommand = 0;         //reset so disarm tone will repeat
+            else {
+                beeper(BEEPER_DISARM_REPEAT);    // sound tone while stick held
+                rcDelayCommand = 0;              // reset so disarm tone will repeat
             }
         }
     }
@@ -353,92 +353,102 @@ static const adjustmentConfig_t defaultAdjustmentConfigs[ADJUSTMENT_FUNCTION_COU
     {
         .adjustmentFunction = ADJUSTMENT_RC_RATE,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_RC_EXPO,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_THROTTLE_EXPO,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_ROLL_RATE,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_YAW_RATE,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_ROLL_P,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_ROLL_I,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_ROLL_D,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_YAW_P,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_YAW_I,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_YAW_D,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_RATE_PROFILE,
         .mode = ADJUSTMENT_MODE_SELECT,
-        .data.selectConfig.switchPositions = 3
+        .data = { .selectConfig = { .switchPositions = 3 }}
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_PITCH_RATE,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data = { .stepConfig = { .step = 1 }}
+    },
+    {
+        .adjustmentFunction = ADJUSTMENT_ROLL_RATE,
+        .mode = ADJUSTMENT_MODE_STEP,
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_P,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_I,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_PITCH_D,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_ROLL_P,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_ROLL_I,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     },
     {
         .adjustmentFunction = ADJUSTMENT_ROLL_D,
         .mode = ADJUSTMENT_MODE_STEP,
-        .data.stepConfig.step = 1
+        .data = { .stepConfig = { .step = 1 }}
     }
 };
 
@@ -626,6 +636,9 @@ void processRcAdjustments(controlRateConfig_t *controlRateConfig, rxConfig_t *rx
     uint8_t adjustmentIndex;
     uint32_t now = millis();
 
+    bool canUseRxData = rxIsReceivingSignal();
+
+
     for (adjustmentIndex = 0; adjustmentIndex < MAX_SIMULTANEOUS_ADJUSTMENT_COUNT; adjustmentIndex++) {
         adjustmentState_t *adjustmentState = &adjustmentStates[adjustmentIndex];
 
@@ -645,6 +658,9 @@ void processRcAdjustments(controlRateConfig_t *controlRateConfig, rxConfig_t *rx
             MARK_ADJUSTMENT_FUNCTION_AS_READY(adjustmentIndex);
         }
 
+        if (!canUseRxData) {
+            continue;
+        }
 
         uint8_t channelIndex = NON_AUX_CHANNEL_COUNT + adjustmentState->auxChannelIndex;
 

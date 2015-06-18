@@ -32,6 +32,7 @@ extern "C" {
     #include "sensors/sensors.h"
     #include "sensors/acceleration.h"
 
+    #include "io/beeper.h"
     #include "io/escservo.h"
     #include "io/rc_controls.h"
 
@@ -47,13 +48,18 @@ extern "C" {
 extern void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfig, pidProfile_t *pidProfile);
 }
 
-TEST(RcControlsTest, updateActivatedModesWithAllInputsAtMidde)
+class RcControlsModesTest : public ::testing::Test {
+protected:
+    modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
+
+    virtual void SetUp() {
+        memset(&modeActivationConditions, 0, sizeof(modeActivationConditions));
+    }
+};
+
+TEST_F(RcControlsModesTest, updateActivatedModesWithAllInputsAtMidde)
 {
     // given
-    modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
-    memset(&modeActivationConditions, 0, sizeof(modeActivationConditions));
-
-    // and
     rcModeActivationMask = 0;
 
     // and
@@ -78,12 +84,9 @@ TEST(RcControlsTest, updateActivatedModesWithAllInputsAtMidde)
     }
 }
 
-TEST(RcControlsTest, updateActivatedModesUsingValidAuxConfigurationAndRXValues)
+TEST_F(RcControlsModesTest, updateActivatedModesUsingValidAuxConfigurationAndRXValues)
 {
     // given
-    modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
-    memset(&modeActivationConditions, 0, sizeof(modeActivationConditions));
-
     modeActivationConditions[0].modeId = (boxId_e)0;
     modeActivationConditions[0].auxChannelIndex = AUX1 - NON_AUX_CHANNEL_COUNT;
     modeActivationConditions[0].range.startStep = CHANNEL_VALUE_TO_STEP(1700);
@@ -187,8 +190,12 @@ void generatePitchRollCurve(controlRateConfig_t *) {
     callCounts[COUNTER_GENERATE_PITCH_ROLL_CURVE]++;
 }
 
-void queueConfirmationBeep(uint8_t) {
+void beeperConfirmationBeeps(uint8_t) {
     callCounts[COUNTER_QUEUE_CONFIRMATION_BEEP]++;
+}
+
+void beeper(beeperMode_e mode) {
+    UNUSED(mode);
 }
 
 void changeControlRateProfile(uint8_t) {
@@ -227,27 +234,33 @@ static const adjustmentConfig_t rateAdjustmentConfig = {
     .data = { { 1 } }
 };
 
-TEST(RcControlsTest, processRcAdjustmentsSticksInMiddle)
-{
-    // given
+class RcControlsAdjustmentsTest : public ::testing::Test {
+protected:
     controlRateConfig_t controlRateConfig = {
             .rcRate8 = 90,
             .rcExpo8 = 0,
             .thrMid8 = 0,
             .thrExpo8 = 0,
-            .rates = {0,0,0},
+            .rates = {0, 0, 0},
             .dynThrPID = 0,
+            .rcYawExpo8 = 0,
             .tpa_breakpoint = 0
     };
 
-    // and
-    memset(&rxConfig, 0, sizeof (rxConfig));
-    rxConfig.mincheck = DEFAULT_MIN_CHECK;
-    rxConfig.maxcheck = DEFAULT_MAX_CHECK;
-    rxConfig.midrc = 1500;
+    virtual void SetUp() {
+        adjustmentStateMask = 0;
+        memset(&adjustmentStates, 0, sizeof(adjustmentStates));
 
-    adjustmentStateMask = 0;
-    memset(&adjustmentStates, 0, sizeof(adjustmentStates));
+        memset(&rxConfig, 0, sizeof (rxConfig));
+        rxConfig.mincheck = DEFAULT_MIN_CHECK;
+        rxConfig.maxcheck = DEFAULT_MAX_CHECK;
+        rxConfig.midrc = 1500;
+    }
+};
+
+TEST_F(RcControlsAdjustmentsTest, processRcAdjustmentsSticksInMiddle)
+{
+    // given
     configureAdjustment(0, AUX3 - NON_AUX_CHANNEL_COUNT, &rateAdjustmentConfig);
 
     // and
@@ -270,28 +283,9 @@ TEST(RcControlsTest, processRcAdjustmentsSticksInMiddle)
     EXPECT_EQ(adjustmentStateMask, 0);
 }
 
-TEST(RcControlsTest, processRcAdjustmentsWithRcRateFunctionSwitchUp)
+TEST_F(RcControlsAdjustmentsTest, processRcAdjustmentsWithRcRateFunctionSwitchUp)
 {
     // given
-    controlRateConfig_t controlRateConfig = {
-            .rcRate8 = 90,
-            .rcExpo8 = 0,
-            .thrMid8 = 0,
-            .thrExpo8 = 0,
-            .rates = {0,0,0},
-            .dynThrPID = 0,
-            .tpa_breakpoint = 0
-    };
-
-    // and
-    memset(&rxConfig, 0, sizeof (rxConfig));
-    rxConfig.mincheck = DEFAULT_MIN_CHECK;
-    rxConfig.maxcheck = DEFAULT_MAX_CHECK;
-    rxConfig.midrc = 1500;
-
-    // and
-    adjustmentStateMask = 0;
-    memset(&adjustmentStates, 0, sizeof(adjustmentStates));
     configureAdjustment(0, AUX3 - NON_AUX_CHANNEL_COUNT, &rateAdjustmentConfig);
 
     // and
@@ -436,28 +430,9 @@ static const adjustmentConfig_t rateProfileAdjustmentConfig = {
     .data = { { 3 } }
 };
 
-TEST(RcControlsTest, processRcRateProfileAdjustments)
+TEST_F(RcControlsAdjustmentsTest, processRcRateProfileAdjustments)
 {
     // given
-    controlRateConfig_t controlRateConfig = {
-            .rcRate8 = 90,
-            .rcExpo8 = 0,
-            .thrMid8 = 0,
-            .thrExpo8 = 0,
-            .rates = {0,0,0},
-            .dynThrPID = 0,
-            .tpa_breakpoint = 0
-    };
-
-    // and
-    memset(&rxConfig, 0, sizeof (rxConfig));
-    rxConfig.mincheck = DEFAULT_MIN_CHECK;
-    rxConfig.maxcheck = DEFAULT_MAX_CHECK;
-    rxConfig.midrc = 1500;
-
-    adjustmentStateMask = 0;
-    memset(&adjustmentStates, 0, sizeof(adjustmentStates));
-
     int adjustmentIndex = 3;
     configureAdjustment(adjustmentIndex, AUX4 - NON_AUX_CHANNEL_COUNT, &rateProfileAdjustmentConfig);
 
@@ -523,7 +498,7 @@ static const adjustmentConfig_t pidYawDAdjustmentConfig = {
     .data = { { 1 } }
 };
 
-TEST(RcControlsTest, processPIDIncreasePidController0)
+TEST_F(RcControlsAdjustmentsTest, processPIDIncreasePidController0)
 {
     // given
     modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
@@ -548,15 +523,6 @@ TEST(RcControlsTest, processPIDIncreasePidController0)
     // and
     controlRateConfig_t controlRateConfig;
     memset(&controlRateConfig, 0, sizeof (controlRateConfig));
-
-    // and
-    memset(&rxConfig, 0, sizeof (rxConfig));
-    rxConfig.mincheck = DEFAULT_MIN_CHECK;
-    rxConfig.maxcheck = DEFAULT_MAX_CHECK;
-    rxConfig.midrc = 1500;
-
-    adjustmentStateMask = 0;
-    memset(&adjustmentStates, 0, sizeof(adjustmentStates));
 
     configureAdjustment(0, AUX1 - NON_AUX_CHANNEL_COUNT, &pidPitchAndRollPAdjustmentConfig);
     configureAdjustment(1, AUX2 - NON_AUX_CHANNEL_COUNT, &pidPitchAndRollIAdjustmentConfig);
@@ -609,7 +575,7 @@ TEST(RcControlsTest, processPIDIncreasePidController0)
     EXPECT_EQ(28, pidProfile.D8[YAW]);
 }
 
-TEST(RcControlsTest, processPIDIncreasePidController2)
+TEST_F(RcControlsAdjustmentsTest, processPIDIncreasePidController2)
 {
     // given
     modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
@@ -634,15 +600,6 @@ TEST(RcControlsTest, processPIDIncreasePidController2)
     // and
     controlRateConfig_t controlRateConfig;
     memset(&controlRateConfig, 0, sizeof (controlRateConfig));
-
-    // and
-    memset(&rxConfig, 0, sizeof (rxConfig));
-    rxConfig.mincheck = DEFAULT_MIN_CHECK;
-    rxConfig.maxcheck = DEFAULT_MAX_CHECK;
-    rxConfig.midrc = 1500;
-
-    adjustmentStateMask = 0;
-    memset(&adjustmentStates, 0, sizeof(adjustmentStates));
 
     configureAdjustment(0, AUX1 - NON_AUX_CHANNEL_COUNT, &pidPitchAndRollPAdjustmentConfig);
     configureAdjustment(1, AUX2 - NON_AUX_CHANNEL_COUNT, &pidPitchAndRollIAdjustmentConfig);
@@ -710,6 +667,9 @@ void sensors(uint32_t) {}
 void mwDisarm(void) {}
 void displayDisablePageCycling() {}
 void displayEnablePageCycling() {}
+
+bool failsafeIsActive() { return false; }
+bool rxIsReceivingSignal() { return true; }
 
 uint8_t getCurrentControlRateProfile(void) {
     return 0;

@@ -30,7 +30,14 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 17
 
+#define EXTI15_10_CALLBACK_HANDLER_COUNT 2 // MPU data ready and MAG data ready
+
 #define USE_MPU_DATA_READY_SIGNAL
+#define ENSURE_MPU_DATA_READY_IS_LOW
+
+#define USE_MAG_DATA_READY_SIGNAL
+#define ENSURE_MAG_DATA_READY_IS_HIGH
+
 
 #define GYRO
 #define USE_GYRO_MPU6050
@@ -44,6 +51,7 @@
 #define USE_BARO_MS5611
 
 #define MAG
+#define USE_MAG_AK8975
 #define USE_MAG_HMC5883
 #define MAG_HMC5883_ALIGN CW270_DEG
 
@@ -146,3 +154,4 @@
 #define AUTOTUNE
 #define DISPLAY
 #define USE_SERVOS
+#define USE_CLI
