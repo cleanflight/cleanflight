@@ -276,6 +276,7 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_NAV_STATUS           121    //out message         Returns navigation status
 #define MSP_NAV_CONFIG           122    //out message         Returns navigation parameters
 #define MSP_TILT_ARM_CONFIG      123    //out message         Returns tilting arm parameters
+#define MSP_SET_SERVO_ANGLE   124    //out message         Returns tilting arm parameters
 
 #define MSP_SET_RAW_RC           200    //in message          8 rc chan
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
@@ -307,7 +308,7 @@ const char *boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
 
-#define INBUF_SIZE 85
+#define INBUF_SIZE 64
 
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
@@ -1417,21 +1418,13 @@ static bool processInCommand(void)
         break;
     case MSP_SET_SERVO_CONF:
 #ifdef USE_SERVOS
-        // tmp will true if this use old API (no angleAtMin and angleAtMax), false otherwise
-        tmp = ( currentPort->dataSize % (sizeof(servoParam_t) - 3) ) == 0;
-
-        if (!tmp && currentPort->dataSize % (sizeof(servoParam_t)-1) != 0) {
+        if (currentPort->dataSize % 7 != 0) {
             debug[0] = currentPort->dataSize;
             headSerialError(0);
         } else {
-            memset(currentProfile->servoConf, 0, sizeof(currentProfile->servoConf));
-
             uint8_t servoCount;
-            if (tmp){
-                servoCount = currentPort->dataSize / (sizeof(servoParam_t) - 3);
-            }else{
-                servoCount = currentPort->dataSize / (sizeof(servoParam_t) - 1);
-            }
+
+            servoCount = currentPort->dataSize / (sizeof(servoParam_t) - 3);
 
             for (i = 0; i < MAX_SUPPORTED_SERVOS && i < servoCount; i++) {
                 currentProfile->servoConf[i].min = read16();
@@ -1446,16 +1439,14 @@ static bool processInCommand(void)
                     currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
                 }
                 currentProfile->servoConf[i].rate = read8();
-
-                if (tmp){
-                    currentProfile->servoConf[i].angleAtMin = DEFAULT_SERVO_MIN_ANGLE;
-                    currentProfile->servoConf[i].angleAtMax = DEFAULT_SERVO_MAX_ANGLE;
-                }else{
-                    currentProfile->servoConf[i].angleAtMin = read8();
-                    currentProfile->servoConf[i].angleAtMax = read8();
-                }
             }
         }
+#endif
+        break;
+    case MSP_SET_SERVO_ANGLE:
+#ifdef USE_SERVOS
+        currentProfile->servoConf[i].angleAtMin = read8();
+        currentProfile->servoConf[i].angleAtMax = read8();
 #endif
         break;
     case MSP_SET_TILT_ARM:
