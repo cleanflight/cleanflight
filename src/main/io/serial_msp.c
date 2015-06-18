@@ -173,6 +173,9 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 //
 // MSP commands for Cleanflight original features
 //
+
+#define MSP_SET_ATTITUDE                10    // in message  roll , pitch , magHead ( trueHead )
+
 #define MSP_CHANNEL_FORWARDING          32    //out message         Returns channel forwarding settings
 #define MSP_SET_CHANNEL_FORWARDING      33    //in message          Channel forwarding settings
 
