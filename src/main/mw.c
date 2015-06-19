@@ -299,6 +299,9 @@ void annexCode(void)
     }
 
 #ifdef TELEMETRY
+#ifdef USE_HIL
+    if (!masterConfig.hil)
+#endif
     checkTelemetryState();
 #endif
 
