@@ -21,32 +21,57 @@
 #include <stdlib.h>
 #include <math.h>
 
-
 #include "platform.h"
 #include "debug.h"
 
 #include "common/maths.h"
+#include "common/color.h"
 #include "common/axis.h"
+#include "common/typeconversion.h"
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
+#include "drivers/compass.h"
+#include "drivers/serial.h"
+#include "drivers/bus_i2c.h"
+#include "drivers/gpio.h"
+#include "drivers/timer.h"
+#include "drivers/pwm_rx.h"
 
+#include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
+#include "sensors/battery.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/compass.h"
+#include "sensors/gyro.h"
 #include "sensors/sonar.h"
 
 #include "rx/rx.h"
 
-#include "io/rc_controls.h"
 #include "io/escservo.h"
+#include "io/rc_controls.h"
+#include "io/gps.h"
+#include "io/gimbal.h"
+#include "io/serial.h"
+#include "io/ledstrip.h"
+#include "io/flashfs.h"
 
+#include "telemetry/telemetry.h"
+
+#include "flight/hil.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/imu.h"
+#include "flight/failsafe.h"
+#include "flight/navigation.h"
 
 #include "config/runtime_config.h"
+#include "config/config.h"
+#include "config/config_profile.h"
+#include "config/config_master.h"
 
+//extern master_t masterConfig;
 int32_t setVelocity = 0;
 uint8_t velocityControl = 0;
 int32_t errorVelocityI = 0;
@@ -242,6 +267,8 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 #endif
 
     dTime = currentTime - previousTime;
+
+
     if (dTime < BARO_UPDATE_FREQUENCY_40HZ)
         return;
 
@@ -311,6 +338,13 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     } else {
         EstAlt = accAlt;
     }
+
+#ifdef USE_HIL
+     if (masterConfig.hil) {
+    	EstAlt = EstAltHil;	 // if HIL enabled & hil-feature are - ON, just rewrite data from sensors by data received from hil
+    	BaroAlt = EstAlt;
+    }
+#endif
 
     baroVel = (BaroAlt - lastBaroAlt) * 1000000.0f / dTime;
     lastBaroAlt = BaroAlt;

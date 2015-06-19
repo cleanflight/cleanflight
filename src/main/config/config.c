@@ -436,6 +436,10 @@ static void resetConf(void)
 #endif
     masterConfig.servo_pwm_rate = 50;
 
+#ifdef USE_HIL
+    masterConfig.hil=0;
+#endif
+
 #ifdef GPS
     // gps/nav stuff
     masterConfig.gpsConfig.provider = GPS_NMEA;

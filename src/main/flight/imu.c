@@ -27,24 +27,52 @@
 #include "debug.h"
 
 #include "common/axis.h"
+#include "common/color.h"
+#include "common/axis.h"
+#include "common/typeconversion.h"
 
 #include "drivers/system.h"
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
+#include "drivers/serial.h"
+#include "drivers/bus_i2c.h"
+#include "drivers/gpio.h"
+#include "drivers/timer.h"
+#include "drivers/pwm_rx.h"
 
+#include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
-#include "sensors/gyro.h"
-#include "sensors/compass.h"
+#include "sensors/battery.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/compass.h"
+#include "sensors/gyro.h"
 #include "sensors/sonar.h"
 
+#include "rx/rx.h"
+
+#include "io/escservo.h"
+#include "io/rc_controls.h"
+#include "io/gps.h"
+#include "io/gimbal.h"
+#include "io/serial.h"
+#include "io/ledstrip.h"
+#include "io/flashfs.h"
+
+#include "telemetry/telemetry.h"
+
+#include "flight/hil.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/imu.h"
+#include "flight/failsafe.h"
+#include "flight/navigation.h"
 
 #include "config/runtime_config.h"
+#include "config/config.h"
+#include "config/config_profile.h"
+#include "config/config_master.h"
 
 int16_t accSmooth[XYZ_AXIS_COUNT];
 int32_t accSum[XYZ_AXIS_COUNT];
@@ -280,7 +308,7 @@ static void imuCalculateEstimatedAttitude(void)
     inclination.values.rollDeciDegrees = lrintf(anglerad[AI_ROLL] * (1800.0f / M_PIf));
     inclination.values.pitchDeciDegrees = lrintf(anglerad[AI_PITCH] * (1800.0f / M_PIf));
 
-    if (sensors(SENSOR_MAG)) {
+        if (sensors(SENSOR_MAG)) {
         rotateV(&EstM.V, &deltaGyroAngle);
         // FIXME what does the _M_ mean?
         float invGyroComplimentaryFilter_M_Factor = (1.0f / (imuRuntimeConfig->gyro_cmpfm_factor + 1.0f));
@@ -293,6 +321,14 @@ static void imuCalculateEstimatedAttitude(void)
         normalizeV(&EstN.V, &EstN.V);
         heading = imuCalculateHeading(&EstN);
     }
+
+#ifdef USE_HIL
+     if (masterConfig.hil) {	 // if HIL enabled & hil-feature are - ON, just rewrite data from sensors by data received from hil
+         inclination.raw[0]=angleHil[0];
+         inclination.raw[1]=angleHil[1];
+         heading=headingHil;
+    }
+#endif
 
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
 }

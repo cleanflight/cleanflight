@@ -64,6 +64,7 @@
 #include "sensors/compass.h"
 #include "sensors/gyro.h"
 
+#include "flight/hil.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/imu.h"
@@ -353,10 +354,9 @@ static uint8_t activeBoxIdCount = 0;
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 
 #ifdef USE_HIL
-//extern uint32_t EstAlt;
-static uint32_t EstAltHil;
-static uint16_t headingHil;
-static uint16_t angleHil[2]={0,0};
+uint32_t EstAltHil;
+uint16_t headingHil;
+uint16_t angleHil[2]={0,0};
 #endif
 
 // cause reboot after MSP processing complete
