@@ -27,27 +27,57 @@
 #include "debug.h"
 
 #include "common/maths.h"
+#include "common/color.h"
 #include "common/axis.h"
+#include "common/typeconversion.h"
 
 #include "drivers/system.h"
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
+#include "drivers/compass.h"
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
+#include "drivers/bus_i2c.h"
 #include "drivers/gpio.h"
+#include "drivers/timer.h"
+#include "drivers/pwm_rx.h"
 #include "drivers/light_led.h"
 
+#include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
+#include "sensors/battery.h"
+#include "sensors/acceleration.h"
+#include "sensors/barometer.h"
+#include "sensors/compass.h"
+#include "sensors/gyro.h"
+#include "sensors/sonar.h"
 
+#include "rx/rx.h"
+
+#include "io/escservo.h"
+#include "io/rc_controls.h"
+#include "io/gps.h"
+#include "io/gimbal.h"
 #include "io/serial.h"
 #include "io/display.h"
 #include "io/gps.h"
+#include "io/ledstrip.h"
+#include "io/flashfs.h"
 
+#include "telemetry/telemetry.h"
+
+#include "flight/hil.h"
+#include "flight/mixer.h"
 #include "flight/gps_conversion.h"
 #include "flight/pid.h"
+#include "flight/imu.h"
+#include "flight/failsafe.h"
 #include "flight/navigation.h"
 
-#include "config/config.h"
 #include "config/runtime_config.h"
-
+#include "config/config.h"
+#include "config/config_profile.h"
+#include "config/config_master.h"
 
 #ifdef GPS
 
@@ -357,6 +387,15 @@ void gpsInitHardware(void)
 
 void gpsThread(void)
 {
+
+#ifdef USE_HIL
+     if (masterConfig.hil) {
+        gpsNewData(' ');
+        return;
+    }
+#endif
+
+
     // read out available GPS bytes
     if (gpsPort) {
         while (serialTotalBytesWaiting(gpsPort))
@@ -389,6 +428,9 @@ void gpsThread(void)
 
         case GPS_RECEIVING_DATA:
             // check for no data/gps timeout/cable disconnection etc
+#ifdef USE_HIL
+        	if (!masterConfig.hil)
+# endif
             if (millis() - gpsData.lastMessage > GPS_TIMEOUT) {
                 // remove GPS from capability
                 sensorsClear(SENSOR_GPS);
@@ -400,9 +442,16 @@ void gpsThread(void)
 
 static void gpsNewData(uint16_t c)
 {
-    if (!gpsNewFrame(c)) {
-        return;
+
+#ifndef USE_HIL
+     if (!gpsNewFrame(c)) {
+    	 return;
     }
+#else
+     if (!(masterConfig.hil || gpsNewFrame(c))) {
+    	 return;
+     }
+#endif
 
     // new data received and parsed, we're in business
     gpsData.lastLastMessage = gpsData.lastMessage;
