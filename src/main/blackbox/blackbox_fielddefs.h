@@ -138,10 +138,10 @@ typedef struct flightLogEvent_autotuneTargets_t {
 } flightLogEvent_autotuneTargets_t;
 
 typedef struct flightLogEvent_inflightAdjustment_t {
-	uint8_t adjustmentFunction;
-	bool floatFlag;
-	int32_t newValue;
-	float newFloatValue;
+    uint8_t adjustmentFunction;
+    bool floatFlag;
+    int32_t newValue;
+    float newFloatValue;
 } flightLogEvent_inflightAdjustment_t;
 
 typedef union flightLogEventData_t

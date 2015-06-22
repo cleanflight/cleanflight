@@ -422,7 +422,6 @@ void blackboxWriteFloat(float value)
     blackboxWriteU32(castFloatBytesToInt(value));
 }
 
-
 /**
  * If there is data waiting to be written to the blackbox device, attempt to write (a portion of) that now.
  * 
