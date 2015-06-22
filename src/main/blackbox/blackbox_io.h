@@ -32,7 +32,11 @@ typedef enum BlackboxDevice {
     BLACKBOX_DEVICE_END
 } BlackboxDevice;
 
-extern uint8_t blackboxWriteChunkSize;
+typedef enum {
+    BLACKBOX_RESERVE_SUCCESS,
+    BLACKBOX_RESERVE_TEMPORARY_FAILURE,
+    BLACKBOX_RESERVE_PERMANENT_FAILURE
+} blackboxBufferReserveStatus_e;
 
 void blackboxWrite(uint8_t value);
 
@@ -51,3 +55,5 @@ bool blackboxDeviceOpen(void);
 void blackboxDeviceClose(void);
 
 bool isBlackboxDeviceFull(void);
+
+blackboxBufferReserveStatus_e blackboxDeviceReserveBufferSpace(uint32_t bytes);
