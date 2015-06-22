@@ -143,7 +143,7 @@ static const uint16_t airPWM[] = {
 };
 #endif
 
-#ifdef CC3D
+#if defined(CC3D) || defined(STM32DIP40)
 static const uint16_t multiPPM[] = {
     PWM1  | (MAP_TO_PPM_INPUT << 8),     // PPM input
     PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
@@ -513,7 +513,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         }
 #endif
 
-#ifdef CC3D
+#if defined(CC3D) || defined(STM32DIP40)
         if (init->useParallelPWM) {
             // Skip PWM inputs that conflict with timers used outputs.
             if ((type == MAP_TO_SERVO_OUTPUT || type == MAP_TO_MOTOR_OUTPUT) && (timerHardwarePtr->tim == TIM2 || timerHardwarePtr->tim == TIM3)) {
@@ -527,7 +527,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
 
         if (type == MAP_TO_PPM_INPUT) {
-#ifdef CC3D
+#if defined(CC3D) || defined(STM32DIP40)
             if (init->useOneshot) {
                 ppmAvoidPWMTimerClash(timerHardwarePtr, TIM4);
             }

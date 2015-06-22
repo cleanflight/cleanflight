@@ -16,6 +16,7 @@ env:
   - TARGET=STM32F3DISCOVERY
   - TARGET=ALIENWIIF1
   - TARGET=ALIENWIIF3
+  - TARGET=STM32DIP40
 
 # We use cpp for unit tests, and c for the main project.
 language: cpp

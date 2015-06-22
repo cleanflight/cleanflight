@@ -38,7 +38,7 @@ FLASH_SIZE ?=
 
 FORKNAME			 = cleanflight
 
-VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC SPRACINGF3 PORT103R SPARKY ALIENWIIF1 ALIENWIIF3
+VALID_TARGETS	 = NAZE NAZE32PRO OLIMEXINO STM32F3DISCOVERY CHEBUZZF3 CC3D CJMCU EUSTM32F103RC SPRACINGF3 PORT103R SPARKY ALIENWIIF1 ALIENWIIF3 STM32DIP40
 
 # Valid targets for OP BootLoader support
 OPBL_VALID_TARGETS = CC3D
@@ -47,7 +47,7 @@ OPBL_VALID_TARGETS = CC3D
 ifeq ($(FLASH_SIZE),)
 ifeq ($(TARGET),$(filter $(TARGET),CJMCU))
 FLASH_SIZE = 64
-else ifeq ($(TARGET),$(filter $(TARGET),NAZE CC3D ALIENWIIF1 SPRACINGF3 OLIMEXINO))
+else ifeq ($(TARGET),$(filter $(TARGET),NAZE CC3D ALIENWIIF1 SPRACINGF3 OLIMEXINO STM32DIP40))
 FLASH_SIZE = 128
 else ifeq ($(TARGET),$(filter $(TARGET),EUSTM32F103RC PORT103R STM32F3DISCOVERY CHEBUZZF3 NAZE32PRO SPARKY ALIENWIIF3))
 FLASH_SIZE = 256
@@ -173,7 +173,8 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 
 DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
 
-ifeq ($(TARGET),CC3D)
+#ifeq ($(TARGET),CC3D STM32DIP40)
+ifeq ($(TARGET),$(filter $(TARGET),CC3D STM32DIP40))
 INCLUDE_DIRS := $(INCLUDE_DIRS) \
 		   $(USBFS_DIR)/inc \
 		   $(ROOT)/src/main/vcp
@@ -454,6 +455,44 @@ CC3D_SRC	 = \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
+
+
+STM32DIP40_SRC	 = startup_stm32f10x_md_gcc.S \
+		   drivers/accgyro_adxl345.c \
+		   drivers/accgyro_bma280.c \
+		   drivers/accgyro_l3g4200d.c \
+		   drivers/accgyro_mma845x.c \
+		   drivers/accgyro_mpu3050.c \
+		   drivers/accgyro_mpu6050.c \
+		   drivers/adc.c \
+		   drivers/adc_stm32f10x.c \
+		   drivers/barometer_bmp085.c \
+		   drivers/barometer_ms5611.c \
+		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/compass_hmc5883l.c \
+		   drivers/display_ug2864hsweg01.h \
+		   drivers/gpio_stm32f10x.c \
+		   drivers/inverter.c \
+		   drivers/light_led_stm32f10x.c \
+		   drivers/light_ws2811strip.c \
+		   drivers/light_ws2811strip_stm32f10x.c \
+		   drivers/sonar_hcsr04.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_softserial.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f10x.c \
+		   drivers/serial_usb_vcp.c \
+		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/system_stm32f10x.c \
+		   drivers/timer.c \
+		   drivers/timer_stm32f10x.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC)  \
+		    $(VCP_SRC)
+		   
+
 
 STM32F30x_COMMON_SRC	 = \
 		   startup_stm32f30x_md_gcc.S \

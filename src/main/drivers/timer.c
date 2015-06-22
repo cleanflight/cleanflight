@@ -66,7 +66,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB)
 #endif
 
-#ifdef CC3D
+#if defined(CC3D) || defined(STM32DIP40)
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM4, GPIOB, Pin_6, TIM_Channel_1, TIM4_IRQn, 0, Mode_IPD}, // S1_IN - PPM
     { TIM3, GPIOB, Pin_5, TIM_Channel_2, TIM3_IRQn, 0, Mode_IPD}, // S2_IN - SoftSerial TX - GPIO_PartialRemap_TIM3
@@ -792,7 +792,7 @@ void timerInit(void)
 {
     memset(timerConfig, 0, sizeof (timerConfig));
 
-#ifdef CC3D
+#if defined(CC3D) || defined(STM32DIP40)
     GPIO_PinRemapConfig(GPIO_PartialRemap_TIM3, ENABLE);
 #endif
 
