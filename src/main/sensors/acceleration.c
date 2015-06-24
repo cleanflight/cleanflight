@@ -33,6 +33,7 @@
 #include "config/config.h"
 
 #include "sensors/acceleration.h"
+#include "kalman_filter.h"
 
 int16_t accADC[XYZ_AXIS_COUNT];
 
@@ -172,6 +173,9 @@ void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
     acc.read(accADC);
+    // accelerometer filter
+    accFilter(accADC);
+
     alignSensors(accADC, accADC, accAlign);
 
     if (!isAccelerationCalibrationComplete()) {

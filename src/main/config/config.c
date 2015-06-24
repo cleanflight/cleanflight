@@ -374,9 +374,9 @@ static void resetConf(void)
 
     // global settings
     masterConfig.current_profile_index = 0;     // default profile
-    masterConfig.gyro_cmpf_factor = 600;        // default MWC
+    masterConfig.gyro_cmpf_factor = 400;        // default MWC
     masterConfig.gyro_cmpfm_factor = 250;       // default MWC
-    masterConfig.gyro_lpf = 42;                 // supported by all gyro drivers now. In case of ST gyro, will default to 32Hz instead
+    masterConfig.gyro_lpf = 88;                 // supported by all gyro drivers now. In case of ST gyro, will default to 32Hz instead
 
     resetAccelerometerTrims(&masterConfig.accZero);
 
@@ -441,8 +441,11 @@ static void resetConf(void)
 
     resetSerialConfig(&masterConfig.serialConfig);
 
-    masterConfig.looptime = 3500;
-    masterConfig.emf_avoidance = 0;
+    masterConfig.looptime = 2000;
+    masterConfig.emf_avoidance = 1;
+
+    // pt1 default cutoff frequency
+    masterConfig.fcut = 17;
 
     resetPidProfile(&currentProfile->pidProfile);
 
@@ -665,7 +668,7 @@ void activateConfig(void)
     telemetryUseConfig(&masterConfig.telemetryConfig);
 #endif
 
-    pidSetController(currentProfile->pidProfile.pidController);
+    pidSetController(currentProfile->pidProfile.pidController, masterConfig.fcut);
 
 #ifdef GPS
     gpsUseProfile(&currentProfile->gpsProfile);

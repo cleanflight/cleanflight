@@ -1284,7 +1284,7 @@ static bool processInCommand(void)
         break;
     case MSP_SET_PID_CONTROLLER:
         currentProfile->pidProfile.pidController = read8();
-        pidSetController(currentProfile->pidProfile.pidController);
+        pidSetController(currentProfile->pidProfile.pidController, masterConfig.fcut);
         break;
     case MSP_SET_PID:
         if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {

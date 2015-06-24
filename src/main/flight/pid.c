@@ -71,6 +71,12 @@ typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig
 
 pidControllerFuncPtr pid_controller = pidMultiWii; // which pid controller are we using, defaultMultiWii
 
+// PT1 element - moved to the masterconfig
+//#define         F_CUT (17.0f)
+
+static float    RC;
+static float    lastDTerm[3] = { 0.0f, 0.0f, 0.0f };
+
 void pidResetErrorAngle(void)
 {
     errorAngleI[ROLL] = 0;
@@ -202,6 +208,8 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * (deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
         DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
@@ -229,6 +237,7 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     int32_t delta;
 
     UNUSED(controlRateConfig);
+    float dT = (float)cycleTime * 0.000001f;
 
     // **** PITCH & ROLL & YAW PID ****
     prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 500); // range [0;500]
@@ -287,7 +296,11 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
         DTerm = (deltaSum * dynD8[axis]) / 32;
+
         axisPID[axis] = PTerm + ITerm - DTerm;
 
 #ifdef BLACKBOX
@@ -309,6 +322,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     static int16_t lastGyro[2] = { 0, 0 };
     static int32_t delta1[2] = { 0, 0 }, delta2[2] = { 0, 0 };
     int32_t delta;
+    float dT = (float)cycleTime * 0.000001f;
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
         prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 512);
@@ -367,7 +381,9 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
 
+        DTerm = lastDTerm[axis] + dT / (RC + dT) * ((float)DTerm - lastDTerm[axis]);
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
+        lastDTerm[axis] = DTerm;
 
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -392,7 +408,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     PTerm = (int32_t)error * pidProfile->P8[FD_YAW] >> 6; // TODO: Bitwise shift on a signed integer is not recommended
 
     // Constrain YAW by D value if not servo driven in that case servolimits apply
-    if(motorCount >= 4 && pidProfile->yaw_p_limit < YAW_P_LIMIT_MAX) {
+    if (motorCount >= 4 && pidProfile->yaw_p_limit < YAW_P_LIMIT_MAX) {
         PTerm = constrain(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
     }
 
@@ -421,6 +437,7 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
     int32_t delta;
 
     UNUSED(controlRateConfig);
+    float dT = (float)cycleTime * 0.000001f;
 
     // **** PITCH & ROLL ****
     prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 500); // range [0;500]
@@ -473,12 +490,17 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
             }
         }
 
+
         PTerm -= ((int32_t)gyroADC[axis] / 4) * dynP8[axis] / 10 / 8; // 32 bits is needed for calculation
         delta = (gyroADC[axis] - lastGyro[axis]) / 4;
         lastGyro[axis] = gyroADC[axis];
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
+
         DTerm = (deltaSum * dynD8[axis]) / 32;
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -525,7 +547,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 
     float delta, RCfactor, rcCommandAxis, MainDptCut, gyroADCQuant;
     float PTerm, ITerm, DTerm, PTermACC = 0.0f, ITermACC = 0.0f, ITermGYRO, error, prop = 0.0f;
-    static float lastGyro[2] = { 0.0f, 0.0f }, lastDTerm[2] = { 0.0f, 0.0f };
+    static float lastGyro[2] = { 0.0f, 0.0f };
     uint8_t axis;
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
@@ -657,6 +679,8 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     int8_t horizonLevelStrength = 100;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
 
+    float dT = (float)cycleTime * 0.000001f;
+
     if (FLIGHT_MODE(HORIZON_MODE)) {
 
         // Figure out the raw stick positions
@@ -743,6 +767,10 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        deltaSum = lastDTerm[axis] + dT / (RC + dT) * ((float)deltaSum - lastDTerm[axis]);
+        lastDTerm[axis] = deltaSum;
+
         DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
         // -----calculate total PID output
@@ -756,8 +784,12 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     }
 }
 
-void pidSetController(int type)
+void pidSetController(int type, int fcut)
 {
+    // pt1 initialisation
+    // the cutoff frequency might be taken from the config later on
+    RC = 1.0f / ( 2.0f * (float)M_PI * (float) fcut );
+
     switch (type) {
         case 0:
         default:
