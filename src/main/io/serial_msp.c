@@ -416,6 +416,13 @@ static void serialize32(uint32_t a)
     serialize16((uint16_t)(a >> 16));
 }
 
+static void serialize8s(const uint8_t *p, int n)
+{
+    for (const uint8_t *pend = p + n; p != pend; p++) {
+        serialize8(*p);
+    }
+}
+
 static uint8_t read8(void)
 {
     return currentPort->inBuf[currentPort->indRX++] & 0xff;
@@ -687,6 +694,15 @@ void mspInit(serialConfig_t *serialConfig)
 
 #define IS_ENABLED(mask) (mask == 0 ? 0 : 1)
 
+#include "msg/ApiVersion.h"
+#include "msg/FcVariant.h"
+#include "msg/FcVersion.h"
+#include "msg/BoardInfo.h"
+#include "msg/BuildInfo.h"
+#ifdef USE_SERVOS
+#include "msg/ServoConf.h"
+#endif
+
 static bool processOutCommand(uint8_t cmdMSP)
 {
     uint32_t i, tmp, junk;
@@ -698,64 +714,33 @@ static bool processOutCommand(uint8_t cmdMSP)
 
     switch (cmdMSP) {
     case MSP_API_VERSION:
-        headSerialReply(
-            1 + // protocol version length
-            API_VERSION_LENGTH
-        );
-        serialize8(MSP_PROTOCOL_VERSION);
-
-        serialize8(API_VERSION_MAJOR);
-        serialize8(API_VERSION_MINOR);
+        sendApiVersion(MSP_PROTOCOL_VERSION,
+                       API_VERSION_MAJOR,
+                       API_VERSION_MINOR);
         break;
 
     case MSP_FC_VARIANT:
-        headSerialReply(FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
-
-        for (i = 0; i < FLIGHT_CONTROLLER_IDENTIFIER_LENGTH; i++) {
-            serialize8(flightControllerIdentifier[i]);
-        }
+        sendFcVariant(flightControllerIdentifier);
         break;
 
     case MSP_FC_VERSION:
-        headSerialReply(FLIGHT_CONTROLLER_VERSION_LENGTH);
-
-        serialize8(FC_VERSION_MAJOR);
-        serialize8(FC_VERSION_MINOR);
-        serialize8(FC_VERSION_PATCH_LEVEL);
+        sendFcVersion(FC_VERSION_MAJOR,
+                      FC_VERSION_MINOR,
+                      FC_VERSION_PATCH_LEVEL);
         break;
 
     case MSP_BOARD_INFO:
-        headSerialReply(
-            BOARD_IDENTIFIER_LENGTH +
-            BOARD_HARDWARE_REVISION_LENGTH
-        );
-        for (i = 0; i < BOARD_IDENTIFIER_LENGTH; i++) {
-            serialize8(boardIdentifier[i]);
-        }
+        sendBoardInfo(boardIdentifier,
 #ifdef NAZE
-        serialize16(hardwareRevision);
+                      hardwareRevision
 #else
-        serialize16(0); // No other build targets currently have hardware revision detection.
+                      0 // No other build targets currently have hardware revision detection.
 #endif
+            );
         break;
 
     case MSP_BUILD_INFO:
-        headSerialReply(
-                BUILD_DATE_LENGTH +
-                BUILD_TIME_LENGTH +
-                GIT_SHORT_REVISION_LENGTH
-        );
-
-        for (i = 0; i < BUILD_DATE_LENGTH; i++) {
-            serialize8(buildDate[i]);
-        }
-        for (i = 0; i < BUILD_TIME_LENGTH; i++) {
-            serialize8(buildTime[i]);
-        }
-
-        for (i = 0; i < GIT_SHORT_REVISION_LENGTH; i++) {
-            serialize8(shortGitRevision[i]);
-        }
+        sendBuildInfo(buildDate, buildTime, shortGitRevision);
         break;
 
     // DEPRECATED - Use MSP_API_VERSION
@@ -827,13 +812,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         s_struct((uint8_t *)&servo, MAX_SUPPORTED_SERVOS * 2);
         break;
     case MSP_SERVO_CONF:
-        headSerialReply(MAX_SUPPORTED_SERVOS * 7);
-        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
-            serialize16(currentProfile->servoConf[i].min);
-            serialize16(currentProfile->servoConf[i].max);
-            serialize16(currentProfile->servoConf[i].middle);
-            serialize8(currentProfile->servoConf[i].rate);
-        }
+        sendServoConf(currentProfile->servoConf);
         break;
     case MSP_CHANNEL_FORWARDING:
         headSerialReply(MAX_SUPPORTED_SERVOS);
