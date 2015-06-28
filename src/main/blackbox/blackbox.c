@@ -914,6 +914,39 @@ static bool sendFieldDefinition(const char * const *headerNames, unsigned int he
 }
 
 /**
+ * Encode and transmit PID
+ */
+static uint32_t blackboxWritePID(uint8_t pid)
+{
+    uint8_t kP, kI, kD;
+
+    if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
+        if (pid < 3) {
+            kP = constrain(lrintf(currentProfile->pidProfile.P_f[pid] * 10.0f), 0, 250);
+            kI = constrain(lrintf(currentProfile->pidProfile.I_f[pid] * 100.0f), 0, 250);
+            kD = constrain(lrintf(currentProfile->pidProfile.D_f[pid] * 1000.0f), 0, 100);
+        }
+        else if (pid == PIDLEVEL) {
+            kP = constrain(lrintf(currentProfile->pidProfile.A_level * 10.0f), 0, 250);
+            kI = constrain(lrintf(currentProfile->pidProfile.H_level * 10.0f), 0, 250);
+            kD = constrain(lrintf(currentProfile->pidProfile.H_sensitivity), 0, 250);
+        }
+        else {
+            kP = currentProfile->pidProfile.P8[pid];
+            kI = currentProfile->pidProfile.I8[pid];
+            kD = currentProfile->pidProfile.D8[pid];
+        }
+    }
+    else {
+            kP = currentProfile->pidProfile.P8[pid];
+            kI = currentProfile->pidProfile.I8[pid];
+            kD = currentProfile->pidProfile.D8[pid];
+    }
+
+    return blackboxPrintf("H pid[%u]:%u,%u,%u\n", pid, kP, kI, kD);
+}
+
+/**
  * Transmit a portion of the system information headers. Call the first time with xmitState.headerIndex == 0. Returns
  * true iff transmission is complete, otherwise call again later to continue transmission.
  */
@@ -982,6 +1015,21 @@ static bool blackboxWriteSysinfo()
             if (feature(FEATURE_CURRENT_METER)) {
                 xmitState.u.serialBudget -= blackboxPrintf("H currentMeter:%d,%d\n", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
             }
+        break;
+        case 14:
+            xmitState.u.serialBudget -= blackboxPrintf("H pidc:%u\n", currentProfile->pidProfile.pidController);
+        break;
+        case 15:    // PIDROLL
+        case 16:    // PIDPITCH
+        case 17:    // PIDYAW
+        case 18:    // PIDALT
+        case 19:    // PIDPOS
+        case 20:    // PIDPOSR
+        case 21:    // PIDNAVR
+        case 22:    // PIDLEVEL
+        case 23:    // PIDMAG
+        case 24:    // PIDVEL
+            xmitState.u.serialBudget -= blackboxWritePID(xmitState.headerIndex - 15);
         break;
         default:
             return true;
