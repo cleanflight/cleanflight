@@ -5,7 +5,7 @@ BRANCH=$(git rev-parse --abbrev-ref HEAD)
 REVISION=$(git rev-parse --short HEAD)
 LAST_COMMIT_DATE=$(git log -1 --date=short --format="%cd")
 TARGET_FILE=obj/cleanflight_${TARGET}
-$TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG:=$USER/undefined}
+TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG:=$USER/undefined}
 BUILDNAME=${BUILDNAME:=travis}
 TRAVIS_BUILD_NUMBER=${TRAVIS_BUILD_NUMBER:=undefined}
 
