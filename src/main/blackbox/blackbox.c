@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 #include "platform.h"
 #include "version.h"
@@ -918,18 +919,18 @@ static bool sendFieldDefinition(const char * const *headerNames, unsigned int he
  */
 static uint32_t blackboxWritePID(uint8_t pid)
 {
-    uint8_t kP, kI, kD;
+    uint32_t kP, kI, kD;
 
     if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
         if (pid < 3) {
-            kP = constrain(lrintf(currentProfile->pidProfile.P_f[pid] * 10.0f), 0, 250);
-            kI = constrain(lrintf(currentProfile->pidProfile.I_f[pid] * 100.0f), 0, 250);
-            kD = constrain(lrintf(currentProfile->pidProfile.D_f[pid] * 1000.0f), 0, 100);
+            kP = lrintf(currentProfile->pidProfile.P_f[pid] * 10.0f);
+            kI = lrintf(currentProfile->pidProfile.I_f[pid] * 100.0f);
+            kD = lrintf(currentProfile->pidProfile.D_f[pid] * 1000.0f);
         }
         else if (pid == PIDLEVEL) {
-            kP = constrain(lrintf(currentProfile->pidProfile.A_level * 10.0f), 0, 250);
-            kI = constrain(lrintf(currentProfile->pidProfile.H_level * 10.0f), 0, 250);
-            kD = constrain(lrintf(currentProfile->pidProfile.H_sensitivity), 0, 250);
+            kP = lrintf(currentProfile->pidProfile.A_level * 10.0f);
+            kI = lrintf(currentProfile->pidProfile.H_level * 10.0f);
+            kD = lrintf(currentProfile->pidProfile.H_sensitivity);
         }
         else {
             kP = currentProfile->pidProfile.P8[pid];
