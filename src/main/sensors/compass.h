@@ -29,7 +29,7 @@ typedef enum {
 
 #ifdef MAG
 void compassInit(void);
-void updateCompass(flightDynamicsTrims_t *magZero);
+void updateCompass(flightDynamicsTrims_t *magZero, const uint32_t currentTime);
 #endif
 
 extern int16_t magADC[XYZ_AXIS_COUNT];

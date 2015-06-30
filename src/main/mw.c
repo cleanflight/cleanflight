@@ -462,7 +462,7 @@ void executePeriodicTasks(void)
 #ifdef MAG
     case UPDATE_COMPASS_TASK:
         if (sensors(SENSOR_MAG)) {
-            updateCompass(&masterConfig.magZero);
+	  updateCompass(&masterConfig.magZero, currentTime);
         }
         break;
 #endif
