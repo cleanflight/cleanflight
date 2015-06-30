@@ -27,7 +27,7 @@ OPBL ?=no
 DEBUG ?=
 
 # Serial port/Device for flashing
-SERIAL_DEVICE	?= /dev/ttyUSB0
+SERIAL_DEVICE	?= $(firstword $(wildcard /dev/ttyUSB*) no-port-found)
 
 # Flash size (KB).  Some low-end chips actually have more flash than advertised, use this to override.
 FLASH_SIZE ?=
@@ -303,6 +303,7 @@ COMMON_SRC	 = build_config.c \
 		   flight/imu.c \
 		   flight/mixer.c \
 		   flight/lowpass.c \
+		   flight/filter.c \
 		   drivers/bus_i2c_soft.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
@@ -695,9 +696,11 @@ SPRACINGF3_SRC	 = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/barometer_ms5611.c \
+		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
 		   drivers/flash_m25p16.c \
+		   drivers/serial_softserial.c \
 		   drivers/sonar_hcsr04.c \
 		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
@@ -762,6 +765,7 @@ LDFLAGS		 = -lm \
 		   $(DEBUG_FLAGS) \
 		   -static \
 		   -Wl,-gc-sections,-Map,$(TARGET_MAP) \
+		   -Wl,-L$(LINKER_DIR) \
 		   -T$(LD_SCRIPT)
 
 ###############################################################################

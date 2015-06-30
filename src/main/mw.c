@@ -73,6 +73,7 @@
 #include "flight/failsafe.h"
 #include "flight/autotune.h"
 #include "flight/navigation.h"
+#include "flight/filter.h"
 
 
 #include "config/runtime_config.h"
@@ -300,7 +301,7 @@ void annexCode(void)
     }
 
 #ifdef TELEMETRY
-    checkTelemetryState();
+    telemetryCheckState();
 #endif
 
     handleSerial();
@@ -321,14 +322,6 @@ void mwDisarm(void)
     if (ARMING_FLAG(ARMED)) {
         DISABLE_ARMING_FLAG(ARMED);
 
-#ifdef TELEMETRY
-        if (feature(FEATURE_TELEMETRY)) {
-            // the telemetry state must be checked immediately so that shared serial ports are released.
-            checkTelemetryState();
-            mspAllocateSerialPorts(&masterConfig.serialConfig);
-        }
-#endif
-
 #ifdef BLACKBOX
         if (feature(FEATURE_BLACKBOX)) {
             finishBlackbox();
@@ -341,6 +334,14 @@ void mwDisarm(void)
 
 #define TELEMETRY_FUNCTION_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_MSP | FUNCTION_TELEMETRY_SMARTPORT)
 
+void releaseSharedTelemetryPorts(void) {
+    serialPort_t *sharedPort = findSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
+    while (sharedPort) {
+        mspReleasePortIfAllocated(sharedPort);
+        sharedPort = findNextSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
+    }
+}
+
 void mwArm(void)
 {
     if (ARMING_FLAG(OK_TO_ARM)) {
@@ -350,18 +351,6 @@ void mwArm(void)
         if (!ARMING_FLAG(PREVENT_ARMING)) {
             ENABLE_ARMING_FLAG(ARMED);
             headFreeModeHold = heading;
-
-#ifdef TELEMETRY
-            if (feature(FEATURE_TELEMETRY)) {
-
-
-                serialPort_t *sharedPort = findSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
-                while (sharedPort) {
-                    mspReleasePortIfAllocated(sharedPort);
-                    sharedPort = findNextSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
-                }
-            }
-#endif
 
 #ifdef BLACKBOX
             if (feature(FEATURE_BLACKBOX)) {
@@ -700,6 +689,21 @@ void processRx(void)
     if (masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_AIRPLANE) {
         DISABLE_FLIGHT_MODE(HEADFREE_MODE);
     }
+
+#ifdef TELEMETRY
+    if (feature(FEATURE_TELEMETRY)) {
+        if ((!masterConfig.telemetryConfig.telemetry_switch && ARMING_FLAG(ARMED)) ||
+                (masterConfig.telemetryConfig.telemetry_switch && IS_RC_MODE_ACTIVE(BOXTELEMETRY))) {
+
+            releaseSharedTelemetryPorts();
+        } else {
+            // the telemetry state must be checked immediately so that shared serial ports are released.
+            telemetryCheckState();
+            mspAllocateSerialPorts(&masterConfig.serialConfig);
+        }
+    }
+#endif
+
 }
 
 void loop(void)
@@ -756,6 +760,16 @@ void loop(void)
         currentTime = micros();
         cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
+
+        // Gyro Low Pass
+        if (currentProfile->pidProfile.gyro_cut_hz) {
+            int axis;
+            static filterStatePt1_t gyroADCState[XYZ_AXIS_COUNT];
+
+            for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        	    gyroADC[axis] = filterApplyPt1(gyroADC[axis], &gyroADCState[axis], currentProfile->pidProfile.gyro_cut_hz);
+            }
+        }
 
         annexCode();
 #if defined(BARO) || defined(SONAR)
@@ -837,7 +851,7 @@ void loop(void)
 
 #ifdef TELEMETRY
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
-        handleTelemetry(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
+        telemetryProcess(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
     }
 #endif
 

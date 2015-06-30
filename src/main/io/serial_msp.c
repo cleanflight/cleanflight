@@ -132,7 +132,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   10 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   11 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -309,6 +309,8 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define INBUF_SIZE 64
 
+#define SERVO_CHUNK_SIZE 7
+
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
     const char *boxName;            // GUI-readable box name
@@ -316,7 +318,7 @@ typedef struct box_e {
 } box_t;
 
 // FIXME remove ;'s
-static const box_t const boxes[CHECKBOX_ITEM_COUNT + 1] = {
+static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXARM, "ARM;", 0 },
     { BOXANGLE, "ANGLE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
@@ -620,6 +622,8 @@ void mspReleasePortIfAllocated(serialPort_t *serialPort)
 
 void mspInit(serialConfig_t *serialConfig)
 {
+    BUILD_BUG_ON((SERVO_CHUNK_SIZE * MAX_SUPPORTED_SERVOS) > INBUF_SIZE);
+
     // calculate used boxes based on features and fill availableBoxes[] array
     memset(activeBoxIds, 0xFF, sizeof(activeBoxIds));
 
@@ -809,14 +813,12 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_RAW_IMU:
         headSerialReply(18);
-        // Hack due to choice of units for sensor data in multiwii
-        if (acc_1G > 1024) {
-            for (i = 0; i < 3; i++)
-                serialize16(accSmooth[i] / 8);
-        } else {
-            for (i = 0; i < 3; i++)
-                serialize16(accSmooth[i]);
-        }
+
+        // Hack scale due to choice of units for sensor data in multiwii
+        uint8_t scale = (acc_1G > 1024) ? 8 : 1;
+
+        for (i = 0; i < 3; i++)
+            serialize16(accSmooth[i] / scale);
         for (i = 0; i < 3; i++)
             serialize16(gyroADC[i]);
         for (i = 0; i < 3; i++)
@@ -824,15 +826,17 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 #ifdef USE_SERVOS
     case MSP_SERVO:
-        s_struct((uint8_t *)&servo, 16);
+        s_struct((uint8_t *)&servo, MAX_SUPPORTED_SERVOS * 2);
         break;
     case MSP_SERVO_CONF:
-        headSerialReply(MAX_SUPPORTED_SERVOS * 7);
+        headSerialReply(MAX_SUPPORTED_SERVOS * 9);
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize16(currentProfile->servoConf[i].min);
             serialize16(currentProfile->servoConf[i].max);
             serialize16(currentProfile->servoConf[i].middle);
             serialize8(currentProfile->servoConf[i].rate);
+            serialize8(currentProfile->servoConf[i].angleAtMin);
+            serialize8(currentProfile->servoConf[i].angleAtMax);
         }
         break;
     case MSP_CHANNEL_FORWARDING:
@@ -1409,18 +1413,27 @@ static bool processInCommand(void)
         break;
     case MSP_SET_SERVO_CONF:
 #ifdef USE_SERVOS
-        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
-            currentProfile->servoConf[i].min = read16();
-            currentProfile->servoConf[i].max = read16();
-            // provide temporary support for old clients that try and send a channel index instead of a servo middle
-            uint16_t potentialServoMiddleOrChannelToForward = read16();
-            if (potentialServoMiddleOrChannelToForward < MAX_SUPPORTED_SERVOS) {
-                currentProfile->servoConf[i].forwardFromChannel = potentialServoMiddleOrChannelToForward;
+        if (currentPort->dataSize % SERVO_CHUNK_SIZE != 0) {
+            debug[0] = currentPort->dataSize;
+            headSerialError(0);
+        } else {
+            uint8_t servoCount = currentPort->dataSize / SERVO_CHUNK_SIZE;
+            for (i = 0; i < MAX_SUPPORTED_SERVOS && i < servoCount; i++) {
+                currentProfile->servoConf[i].min = read16();
+                currentProfile->servoConf[i].max = read16();
+
+                // provide temporary support for old clients that try and send a channel index instead of a servo middle
+                uint16_t potentialServoMiddleOrChannelToForward = read16();
+                if (potentialServoMiddleOrChannelToForward < MAX_SUPPORTED_SERVOS) {
+                    currentProfile->servoConf[i].forwardFromChannel = potentialServoMiddleOrChannelToForward;
+                }
+                if (potentialServoMiddleOrChannelToForward >= PWM_RANGE_MIN && potentialServoMiddleOrChannelToForward <= PWM_RANGE_MAX) {
+                    currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
+                }
+                currentProfile->servoConf[i].rate = read8();
+                currentProfile->servoConf[i].angleAtMin = read8();
+                currentProfile->servoConf[i].angleAtMax = read8();
             }
-            if (potentialServoMiddleOrChannelToForward >= PWM_RANGE_MIN && potentialServoMiddleOrChannelToForward <= PWM_RANGE_MAX) {
-                currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
-            }
-            currentProfile->servoConf[i].rate = read8();
         }
 #endif
         break;

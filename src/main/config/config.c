@@ -137,7 +137,7 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 101;
+static const uint8_t EEPROM_CONF_VERSION = 103;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -180,6 +180,9 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->D8[PIDVEL] = 1;
 
     pidProfile->yaw_p_limit = YAW_P_LIMIT_MAX;
+    pidProfile->dterm_cut_hz = 0;
+    pidProfile->pterm_cut_hz = 0;
+    pidProfile->gyro_cut_hz = 0;
 
     pidProfile->P_f[ROLL] = 2.5f;     // new PID with preliminary defaults test carefully
     pidProfile->I_f[ROLL] = 0.6f;
@@ -376,7 +379,7 @@ static void resetConf(void)
 {
     int i;
 #ifdef USE_SERVOS
-    int8_t servoRates[MAX_SUPPORTED_SERVOS] = { 30, 30, 100, 100, 100, 100, 100, 100, 100, 100 };
+    int8_t servoRates[MAX_SUPPORTED_SERVOS] = { 30, 30, 100, 100, 100, 100, 100, 100 };
     ;
 #endif
 
@@ -512,6 +515,8 @@ static void resetConf(void)
         currentProfile->servoConf[i].max = DEFAULT_SERVO_MAX;
         currentProfile->servoConf[i].middle = DEFAULT_SERVO_MIDDLE;
         currentProfile->servoConf[i].rate = servoRates[i];
+        currentProfile->servoConf[i].angleAtMin = DEFAULT_SERVO_MIN_ANGLE;
+        currentProfile->servoConf[i].angleAtMax = DEFAULT_SERVO_MAX_ANGLE;
         currentProfile->servoConf[i].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
     }
 
@@ -564,7 +569,6 @@ static void resetConf(void)
     currentProfile->pidProfile.P8[PITCH] = 36;
     masterConfig.failsafeConfig.failsafe_delay = 2;
     masterConfig.failsafeConfig.failsafe_off_delay = 0;
-    masterConfig.failsafeConfig.failsafe_throttle = 1000;
     currentControlRateProfile->rcRate8 = 130;
     currentControlRateProfile->rates[FD_PITCH] = 20;
     currentControlRateProfile->rates[FD_ROLL] = 20;
@@ -691,7 +695,7 @@ void activateConfig(void)
     useGyroConfig(&masterConfig.gyroConfig);
 
 #ifdef TELEMETRY
-    useTelemetryConfig(&masterConfig.telemetryConfig);
+    telemetryUseConfig(&masterConfig.telemetryConfig);
 #endif
 
     pidSetController(currentProfile->pidProfile.pidController);

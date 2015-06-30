@@ -31,6 +31,7 @@
 
 #include "common/maths.h"
 #include "common/axis.h"
+#include "common/utils.h"
 
 #include "drivers/system.h"
 #include "drivers/serial.h"
@@ -213,7 +214,7 @@ static const ubloxSbas_t ubloxSbas[] = {
 };
 
 
-enum {
+typedef enum {
     GPS_UNKNOWN,
     GPS_INITIALIZING,
     GPS_CHANGE_BAUD,
@@ -221,7 +222,7 @@ enum {
     GPS_CONFIGURE,
     GPS_RECEIVING_DATA,
     GPS_LOST_COMMUNICATION,
-};
+} gpsState_e;
 
 gpsData_t gpsData;
 
@@ -230,7 +231,7 @@ static void shiftPacketLog(void)
 {
     uint32_t i;
 
-    for (i = sizeof(gpsPacketLog) - 1; i > 0 ; i--) {
+    for (i = ARRAYLEN(gpsPacketLog) - 1; i > 0 ; i--) {
         gpsPacketLog[i] = gpsPacketLog[i-1];
     }
 }
@@ -240,7 +241,7 @@ static bool gpsNewFrameNMEA(char c);
 static bool gpsNewFrameUBLOX(uint8_t data);
 static bool gpsNewFrameNAZA(uint8_t data);
 
-static void gpsSetState(uint8_t state)
+static void gpsSetState(gpsState_e state)
 {
     gpsData.state = state;
     gpsData.state_position = 0;

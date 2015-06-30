@@ -466,6 +466,9 @@ const clivalue_t valueTable[] = {
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
 
     { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX },
+	{ "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, 0, 200 },
+	{ "pterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pterm_cut_hz, 0, 200 },
+	{ "gyro_cut_hz",                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.gyro_cut_hz, 0, 200 },
 
 #ifdef BLACKBOX
     { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, 1, 32 },
@@ -889,7 +892,7 @@ static void cliServo(char *cmdline)
 #ifndef USE_SERVOS
     UNUSED(cmdline);
 #else
-    enum { SERVO_ARGUMENT_COUNT = 6 };
+    enum { SERVO_ARGUMENT_COUNT = 8 };
     int16_t arguments[SERVO_ARGUMENT_COUNT];
 
     servoParam_t *servo;
@@ -902,11 +905,13 @@ static void cliServo(char *cmdline)
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             servo = &currentProfile->servoConf[i];
 
-            printf("servo %u %d %d %d %d %d\r\n",
+            printf("servo %u %d %d %d %d %d %d %d\r\n",
                 i,
                 servo->min,
                 servo->max,
                 servo->middle,
+                servo->angleAtMin,
+                servo->angleAtMax,
                 servo->rate,
                 servo->forwardFromChannel
             );
@@ -950,8 +955,10 @@ static void cliServo(char *cmdline)
         servo->min = arguments[1];
         servo->max = arguments[2];
         servo->middle = arguments[3];
-        servo->rate = arguments[4];
-        servo->forwardFromChannel = arguments[5];
+        servo->angleAtMin = arguments[4];
+        servo->angleAtMax = arguments[5];
+        servo->rate = arguments[6];
+        servo->forwardFromChannel = arguments[7];
     }
 #endif
 }
@@ -1381,13 +1388,14 @@ static void cliMotor(char *cmdline)
     int motor_value = 0;
     int index = 0;
     char *pch = NULL;
+    char *saveptr;
 
     if (isEmpty(cmdline)) {
         cliPrint("Usage:\r\nmotor index [value] - show [or set] motor value\r\n");
         return;
     }
 
-    pch = strtok(cmdline, " ");
+    pch = strtok_r(cmdline, " ", &saveptr);
     while (pch != NULL) {
         switch (index) {
             case 0:
@@ -1398,7 +1406,7 @@ static void cliMotor(char *cmdline)
                 break;
         }
         index++;
-        pch = strtok(NULL, " ");
+        pch = strtok_r(NULL, " ", &saveptr);
     }
 
     if (motor_index < 0 || motor_index >= MAX_SUPPORTED_MOTORS) {

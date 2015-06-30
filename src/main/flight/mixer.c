@@ -87,8 +87,6 @@ typedef enum {
 #define SERVO_FLAPPERONS_MIN SERVO_FLAPPERON_1
 #define SERVO_FLAPPERONS_MAX SERVO_FLAPPERON_2
 
-#define AUX_FORWARD_CHANNEL_TO_SERVO_COUNT 4
-
 //#define MIXER_DEBUG
 
 uint8_t motorCount = 0;
@@ -431,86 +429,82 @@ void mixerResetMotors(void)
 
 #ifdef USE_SERVOS
 
-STATIC_UNIT_TESTED void forwardAuxChannelsToServos(void)
+STATIC_UNIT_TESTED void forwardAuxChannelsToServos(uint8_t firstServoIndex)
 {
-    // offset servos based off number already used in mixer types
-    // airplane and servo_tilt together can't be used
-    int8_t firstServo = servoCount - AUX_FORWARD_CHANNEL_TO_SERVO_COUNT;
-
     // start forwarding from this channel
     uint8_t channelOffset = AUX1;
 
-    int8_t servoOffset;
-    for (servoOffset = 0; servoOffset < AUX_FORWARD_CHANNEL_TO_SERVO_COUNT; servoOffset++) {
-        if (firstServo + servoOffset < 0) {
-            continue; // there are not enough servos to forward all the AUX channels.
-        }
-        pwmWriteServo(firstServo + servoOffset, rcData[channelOffset++]);
+    uint8_t servoOffset;
+    for (servoOffset = 0; servoOffset < MAX_AUX_CHANNEL_COUNT && channelOffset < MAX_SUPPORTED_RC_CHANNEL_COUNT; servoOffset++) {
+        pwmWriteServo(firstServoIndex + servoOffset, rcData[channelOffset++]);
     }
 }
 
-static void updateGimbalServos(void)
+static void updateGimbalServos(uint8_t firstServoIndex)
 {
-    pwmWriteServo(0, servo[SERVO_GIMBAL_PITCH]);
-    pwmWriteServo(1, servo[SERVO_GIMBAL_ROLL]);
+    pwmWriteServo(firstServoIndex + 0, servo[SERVO_GIMBAL_PITCH]);
+    pwmWriteServo(firstServoIndex + 1, servo[SERVO_GIMBAL_ROLL]);
 }
 
 void writeServos(void)
 {
-    if (!useServo)
-        return;
+    uint8_t servoIndex = 0;
 
     switch (currentMixerMode) {
         case MIXER_BI:
-            pwmWriteServo(0, servo[SERVO_BIPLANE_LEFT]);
-            pwmWriteServo(1, servo[SERVO_BIPLANE_RIGHT]);
+            pwmWriteServo(servoIndex++, servo[SERVO_BIPLANE_LEFT]);
+            pwmWriteServo(servoIndex++, servo[SERVO_BIPLANE_RIGHT]);
             break;
 
         case MIXER_TRI:
             if (mixerConfig->tri_unarmed_servo) {
                 // if unarmed flag set, we always move servo
-                pwmWriteServo(0, servo[SERVO_RUDDER]);
+                pwmWriteServo(servoIndex++, servo[SERVO_RUDDER]);
             } else {
                 // otherwise, only move servo when copter is armed
                 if (ARMING_FLAG(ARMED))
-                    pwmWriteServo(0, servo[SERVO_RUDDER]);
+                    pwmWriteServo(servoIndex++, servo[SERVO_RUDDER]);
                 else
-                    pwmWriteServo(0, 0); // kill servo signal completely.
+                    pwmWriteServo(servoIndex++, 0); // kill servo signal completely.
             }
             break;
 
         case MIXER_FLYING_WING:
-            pwmWriteServo(0, servo[SERVO_FLAPPERON_1]);
-            pwmWriteServo(1, servo[SERVO_FLAPPERON_2]);
-            break;
-
-        case MIXER_GIMBAL:
-            updateGimbalServos();
+            pwmWriteServo(servoIndex++, servo[SERVO_FLAPPERON_1]);
+            pwmWriteServo(servoIndex++, servo[SERVO_FLAPPERON_2]);
             break;
 
         case MIXER_DUALCOPTER:
-            pwmWriteServo(0, servo[SERVO_DUALCOPTER_LEFT]);
-            pwmWriteServo(1, servo[SERVO_DUALCOPTER_RIGHT]);
+            pwmWriteServo(servoIndex++, servo[SERVO_DUALCOPTER_LEFT]);
+            pwmWriteServo(servoIndex++, servo[SERVO_DUALCOPTER_RIGHT]);
             break;
 
         case MIXER_AIRPLANE:
             for (int i = SERVO_PLANE_INDEX_MIN; i <= SERVO_PLANE_INDEX_MAX; i++) {
-                pwmWriteServo(i - SERVO_PLANE_INDEX_MIN, servo[i]);
+                pwmWriteServo(servoIndex++, servo[i]);
             }
             break;
 
         case MIXER_SINGLECOPTER:
             for (int i = SERVO_SINGLECOPTER_INDEX_MIN; i <= SERVO_SINGLECOPTER_INDEX_MAX; i++) {
-                pwmWriteServo(i - SERVO_SINGLECOPTER_INDEX_MIN, servo[i]);
+                pwmWriteServo(servoIndex++, servo[i]);
             }
             break;
 
         default:
-            // Two servos for SERVO_TILT, if enabled
-            if (feature(FEATURE_SERVO_TILT)) {
-                updateGimbalServos();
-            }
             break;
+    }
+
+    // Two servos for SERVO_TILT, if enabled
+    if (feature(FEATURE_SERVO_TILT)) {
+        updateGimbalServos(servoIndex);
+        servoIndex += 2;
+    }
+
+    // forward AUX to remaining servo outputs (not constrained)
+    if (gimbalConfig->gimbal_flags & GIMBAL_FORWARDAUX) {
+        forwardAuxChannelsToServos(servoIndex);
+        servoIndex += MAX_AUX_CHANNEL_COUNT;
     }
 }
 #endif
@@ -710,10 +704,6 @@ void mixTable(void)
             servo[i] = constrain(servo[i], servoConf[i].min, servoConf[i].max); // limit the values
         }
     }
-    // forward AUX1-4 to servo outputs (not constrained)
-    if (gimbalConfig->gimbal_flags & GIMBAL_FORWARDAUX) {
-        forwardAuxChannelsToServos();
-    }
 #endif
 
     if (ARMING_FLAG(ARMED)) {
@@ -731,11 +721,14 @@ void mixTable(void)
             }
         }
 
+        int16_t maxThrottleDifference = 0;
+        if (maxMotor > escAndServoConfig->maxthrottle) {
+            maxThrottleDifference = maxMotor - escAndServoConfig->maxthrottle;
+        }
+
         for (i = 0; i < motorCount; i++) {
-            if (maxMotor > escAndServoConfig->maxthrottle) {
-                // this is a way to still have good gyro corrections if at least one motor reaches its max.
-                motor[i] -= maxMotor - escAndServoConfig->maxthrottle;
-            }
+            // this is a way to still have good gyro corrections if at least one motor reaches its max.
+            motor[i] -= maxThrottleDifference;
 
             if (feature(FEATURE_3D)) {
                 if ((rcData[THROTTLE]) > rxConfig->midrc) {
