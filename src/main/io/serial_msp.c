@@ -230,6 +230,10 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_FAILSAFE_CONFIG             75 //out message         Returns FC Fail-Safe settings
 #define MSP_SET_FAILSAFE_CONFIG         76 //in message          Sets FC Fail-Safe settings
+
+#define MSP_PID_FILTERS                 79 //out message         Returns PID cutoff filter settings
+#define MSP_SET_PID_FILTERS             80 //in message          Sets PID cutoff filter settings
+
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -1142,6 +1146,15 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(masterConfig.failsafeConfig.failsafe_throttle);
         break;
 
+    case MSP_PID_FILTERS:
+        headSerialReply(7);
+        serialize16(masterConfig.gyro_lpf);
+        serialize8(currentProfile->pidProfile.gyro_cut_hz);
+        serialize8(currentProfile->pidProfile.pterm_cut_hz);
+        serialize8(currentProfile->pidProfile.dterm_cut_hz);
+        serialize16(currentProfile->pidProfile.yaw_p_limit);
+        break;
+
     case MSP_RSSI_CONFIG:
         headSerialReply(1);
         serialize8(masterConfig.rxConfig.rssi_channel);
@@ -1558,6 +1571,14 @@ static bool processInCommand(void)
         masterConfig.failsafeConfig.failsafe_delay = read8();
         masterConfig.failsafeConfig.failsafe_off_delay = read8();
         masterConfig.failsafeConfig.failsafe_throttle = read16();
+        break;
+
+    case MSP_SET_PID_FILTERS:
+        masterConfig.gyro_lpf = read16();
+        currentProfile->pidProfile.gyro_cut_hz = read8();
+        currentProfile->pidProfile.pterm_cut_hz = read8();
+        currentProfile->pidProfile.dterm_cut_hz = read8();
+        currentProfile->pidProfile.yaw_p_limit = read16();
         break;
 
     case MSP_SET_RSSI_CONFIG:
