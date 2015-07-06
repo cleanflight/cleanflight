@@ -1147,12 +1147,13 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 
     case MSP_PID_FILTERS:
-        headSerialReply(7);
+        headSerialReply(9);
         serialize16(masterConfig.gyro_lpf);
         serialize8(currentProfile->pidProfile.gyro_cut_hz);
         serialize8(currentProfile->pidProfile.pterm_cut_hz);
         serialize8(currentProfile->pidProfile.dterm_cut_hz);
         serialize16(currentProfile->pidProfile.yaw_p_limit);
+        serialize16(masterConfig.mixerConfig.yaw_jump_prevention_limit);
         break;
 
     case MSP_RSSI_CONFIG:
@@ -1579,6 +1580,7 @@ static bool processInCommand(void)
         currentProfile->pidProfile.pterm_cut_hz = read8();
         currentProfile->pidProfile.dterm_cut_hz = read8();
         currentProfile->pidProfile.yaw_p_limit = read16();
+        masterConfig.mixerConfig.yaw_jump_prevention_limit = read16();
         break;
 
     case MSP_SET_RSSI_CONFIG:
