@@ -46,6 +46,7 @@
 #include "rx/sumh.h"
 #include "rx/msp.h"
 #include "rx/xbus.h"
+#include "rx/nRF24L01.h"
 
 #include "rx/rx.h"
 
@@ -132,6 +133,12 @@ void rxInit(rxConfig_t *rxConfig)
     if (feature(FEATURE_RX_MSP)) {
         rxMspInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
     }
+
+#ifdef NRF24
+    if (feature(FEATURE_RX_NRF24)) {
+        rxNRF24Init(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
+    }
+#endif
 
     if (feature(FEATURE_RX_PPM) || feature(FEATURE_RX_PARALLEL_PWM)) {
         rxPwmInit(&rxRuntimeConfig, &rcReadRawFunc);
@@ -258,7 +265,13 @@ void updateRx(uint32_t currentTime)
         }
     }
 
-    if ((feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived)
+#ifdef NRF24
+    if (feature(FEATURE_RX_NRF24)) {
+        rxDataReceived = rxNRF24ReceivePacket();
+    }
+#endif
+
+    if ((feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP | FEATURE_RX_NRF24) && rxDataReceived)
          || feature(FEATURE_RX_PARALLEL_PWM)) {
         needRxSignalBefore = currentTime + DELAY_10_HZ;
     }
@@ -312,7 +325,7 @@ static void processRxChannels(void)
 {
     uint8_t chan;
 
-    if (feature(FEATURE_RX_MSP)) {
+    if (feature(FEATURE_RX_MSP | FEATURE_RX_NRF24)) {
         return; // rcData will have already been updated by MSP_SET_RAW_RC
     }
 

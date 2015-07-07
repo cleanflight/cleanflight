@@ -231,6 +231,7 @@ COMMON_SRC	 = build_config.c \
 		   flight/lowpass.c \
 		   flight/filter.c \
 		   drivers/bus_i2c_soft.c \
+                   drivers/bus_spi_soft.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
 		   drivers/system.c \
@@ -249,6 +250,7 @@ COMMON_SRC	 = build_config.c \
 		   rx/sumh.c \
 		   rx/spektrum.c \
 		   rx/xbus.c \
+                   rx/nRF24L01.c \
 		   sensors/acceleration.c \
 		   sensors/battery.c \
 		   sensors/boardalignment.c \
