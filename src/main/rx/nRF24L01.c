@@ -10,6 +10,8 @@
 
 #include "rx.h"
 
+#ifdef NRF24
+
 /***************************** Configuration ********************************/
 
 // nRF24L01 pin setup for Flip32 using soft SPI
@@ -1188,5 +1190,4 @@ void nrf24_setRetries(uint8_t delay, uint8_t count)
     nrf24_write_register(NRF24_SETUP_RETR, (delay & 0xf) << NRF24_ARD | (count & 0xf) << NRF24_ARC);
 }
 
-// vim:ai:cin:sts=2 sw=2 ft=cpp
-
+#endif // NRF24

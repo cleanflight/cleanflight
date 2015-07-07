@@ -26,6 +26,7 @@
 
 #include "bus_spi_soft.h"
 
+#ifdef USE_SOFT_SPI
 
 void softSpiInit(SoftSPIDevice *dev)
 {
@@ -77,3 +78,4 @@ uint8_t softSpiTransferByte(SoftSPIDevice *dev, uint8_t byte)
     return byte;
 }
 
+#endif // USE_SOFT_SPI

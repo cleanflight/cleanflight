@@ -158,5 +158,7 @@ extern "C" {
 
     void rxPwmInit(rxRuntimeConfig_t *, rcReadRawDataPtr *) {}
 
+    void rxNRF24Init(rxConfig_t *, rxRuntimeConfig_t *, rcReadRawDataPtr *) {}
 
+    bool rxNRF24ReceivePacket() { return false; }
 }

@@ -134,9 +134,11 @@ void rxInit(rxConfig_t *rxConfig)
         rxMspInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
     }
 
+#ifdef NRF24
     if (feature(FEATURE_RX_NRF24)) {
         rxNRF24Init(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
     }
+#endif
 
     if (feature(FEATURE_RX_PPM) || feature(FEATURE_RX_PARALLEL_PWM)) {
         rxPwmInit(&rxRuntimeConfig, &rcReadRawFunc);
@@ -263,9 +265,11 @@ void updateRx(uint32_t currentTime)
         }
     }
 
+#ifdef NRF24
     if (feature(FEATURE_RX_NRF24)) {
         rxDataReceived = rxNRF24ReceivePacket();
     }
+#endif
 
     if ((feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP | FEATURE_RX_NRF24) && rxDataReceived)
          || feature(FEATURE_RX_PARALLEL_PWM)) {
