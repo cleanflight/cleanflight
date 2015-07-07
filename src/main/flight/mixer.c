@@ -449,11 +449,13 @@ static void updateGimbalServos(uint8_t firstServoIndex)
 void writeServos(void)
 {
     uint8_t servoIndex = 0;
+    uint8_t fwdAuxServoIdx = 0;
 
     switch (currentMixerMode) {
         case MIXER_BI:
             pwmWriteServo(servoIndex++, servo[SERVO_BIPLANE_LEFT]);
             pwmWriteServo(servoIndex++, servo[SERVO_BIPLANE_RIGHT]);
+            fwdAuxServoIdx = 2;
             break;
 
         case MIXER_TRI:
@@ -467,28 +469,33 @@ void writeServos(void)
                 else
                     pwmWriteServo(servoIndex++, 0); // kill servo signal completely.
             }
+            fwdAuxServoIdx = 2;
             break;
 
         case MIXER_FLYING_WING:
             pwmWriteServo(servoIndex++, servo[SERVO_FLAPPERON_1]);
             pwmWriteServo(servoIndex++, servo[SERVO_FLAPPERON_2]);
+            fwdAuxServoIdx = 4;
             break;
 
         case MIXER_DUALCOPTER:
             pwmWriteServo(servoIndex++, servo[SERVO_DUALCOPTER_LEFT]);
             pwmWriteServo(servoIndex++, servo[SERVO_DUALCOPTER_RIGHT]);
+            fwdAuxServoIdx = 2;
             break;
 
         case MIXER_AIRPLANE:
             for (int i = SERVO_PLANE_INDEX_MIN; i <= SERVO_PLANE_INDEX_MAX; i++) {
                 pwmWriteServo(servoIndex++, servo[i]);
             }
+            fwdAuxServoIdx = 4;
             break;
 
         case MIXER_SINGLECOPTER:
             for (int i = SERVO_SINGLECOPTER_INDEX_MIN; i <= SERVO_SINGLECOPTER_INDEX_MAX; i++) {
                 pwmWriteServo(servoIndex++, servo[i]);
             }
+            fwdAuxServoIdx = 2;
             break;
 
         default:
@@ -499,11 +506,13 @@ void writeServos(void)
     if (feature(FEATURE_SERVO_TILT)) {
         updateGimbalServos(servoIndex);
         servoIndex += 2;
+        if (fwdAuxServoIdx == 0)            // if not explicitly set above
+            fwdAuxServoIdx = servoIndex;    //  then set value (to 2)
     }
 
     // forward AUX to remaining servo outputs (not constrained)
     if (gimbalConfig->gimbal_flags & GIMBAL_FORWARDAUX) {
-        forwardAuxChannelsToServos(servoIndex);
+        forwardAuxChannelsToServos(fwdAuxServoIdx);
         servoIndex += MAX_AUX_CHANNEL_COUNT;
     }
 }
