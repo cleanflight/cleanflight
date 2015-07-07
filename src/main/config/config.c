@@ -328,7 +328,7 @@ void resetMixerConfig(mixerConfig_t *mixerConfig) {
 void resetTiltArmProfile(tiltArmConfig_t *tiltConfig){
     tiltConfig->flagEnabled = 0;
     tiltConfig->pitchDivisior = 1;
-    tiltConfig->thrustLiftoff = 50;
+    tiltConfig->thrustLiftoff = 0;
     tiltConfig->gearRatioPercent = 100;
     tiltConfig->channel = AUX1;
 }
