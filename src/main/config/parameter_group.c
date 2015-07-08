@@ -15,17 +15,36 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <stddef.h>
+#include <string.h>
+#include <stdint.h>
 
-#include "config/parameter_group.h"
+#include "parameter_group.h"
+#include "common/maths.h"
 
-typedef struct boardAlignment_s {
-    int16_t rollDegrees;
-    int16_t pitchDegrees;
-    int16_t yawDegrees;
-} PG_PACKED boardAlignment_t;
+const pgRegistry_t* pgFind(pgn_t pgn)
+{
+    PG_FOREACH(reg) {
+        if (reg->pgn == pgn) {
+            return reg;
+        }
+    }
+    return NULL;
+}
 
-extern boardAlignment_t boardAlignment;
+const pgRegistry_t* pgFindForSet(pgn_t pgn)
+{
+    PG_FOREACH(reg) {
+        if (reg->pgn_for_set == pgn) {
+            return reg;
+        }
+    }
+    return NULL;
+}
 
-void alignSensors(int16_t *src, int16_t *dest, uint8_t rotation);
-void initBoardAlignment();
+void pgLoad(const pgRegistry_t* reg, const void *from, int size)
+{
+    memset(reg->base, 0, reg->size);
+    int take = MIN(size, reg->size);
+    memcpy(reg->base, from, take);
+}

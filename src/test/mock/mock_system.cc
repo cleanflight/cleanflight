@@ -15,17 +15,18 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <stdint.h>
 
-#include "config/parameter_group.h"
+extern "C" {
+    #include "drivers/system.h"
+}
 
-typedef struct boardAlignment_s {
-    int16_t rollDegrees;
-    int16_t pitchDegrees;
-    int16_t yawDegrees;
-} PG_PACKED boardAlignment_t;
+#include "unittest_macros.h"
+#include "gtest/gtest.h"
 
-extern boardAlignment_t boardAlignment;
+void failureMode(uint8_t mode)
+{
+    EXPECT_TRUE(false);
+}
 
-void alignSensors(int16_t *src, int16_t *dest, uint8_t rotation);
-void initBoardAlignment();
+uint16_t cycleTime;
