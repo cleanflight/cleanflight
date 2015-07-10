@@ -64,9 +64,6 @@
 
 #define BLACKBOX_SERIAL_PORT_MODE MODE_TX
 
-// How many bytes should we transmit per loop iteration?
-uint8_t blackboxWriteChunkSize = 16;
-
 static serialPort_t *blackboxPort = NULL;
 static portSharing_e blackboxPortSharing;
 
@@ -434,15 +431,6 @@ bool blackboxDeviceFlush(void)
  */
 bool blackboxDeviceOpen(void)
 {
-    /*
-     * We want to write at about 7200 bytes per second to give the OpenLog a good chance to save to disk. If
-     * about looptime microseconds elapse between our writes, this is the budget of how many bytes we should
-     * transmit with each write.
-     *
-     * 9 / 1250 = 7200 / 1000000
-     */
-    blackboxWriteChunkSize = MAX((masterConfig.looptime * 9) / 1250, 4);
-
     switch (masterConfig.blackbox_device) {
         case BLACKBOX_DEVICE_SERIAL:
             {
@@ -526,6 +514,65 @@ bool isBlackboxDeviceFull(void)
 
         default:
             return false;
+    }
+}
+
+/**
+ * Attempt to guarantee that the given amount of bytes can be written to the Blackbox device without blocking or
+ * data loss.
+ *
+ * Returns:
+ *  BLACKBOX_RESERVE_SUCCESS - Upon success
+ *  BLACKBOX_RESERVE_TEMPORARY_FAILURE - The buffer is currently too full to service the request, try again later
+ *  BLACKBOX_RESERVE_PERMANENT_FAILURE - The buffer is too small to ever service this request
+ */
+blackboxBufferReserveStatus_e blackboxDeviceReserveBufferSpace(uint32_t bytes)
+{
+    uint32_t freeSpace;
+
+    switch (masterConfig.blackbox_device) {
+        case BLACKBOX_DEVICE_SERIAL:
+            freeSpace = serialTxBytesFree(blackboxPort);
+
+            if (bytes <= freeSpace) {
+                return BLACKBOX_RESERVE_SUCCESS;
+            }
+
+            // One byte of the tx buffer isn't available for user data (due to its circular list implementation), hence the -1
+            if (bytes >= blackboxPort->txBufferSize) {
+                return BLACKBOX_RESERVE_PERMANENT_FAILURE;
+            }
+
+            return BLACKBOX_RESERVE_TEMPORARY_FAILURE;
+
+#ifdef USE_FLASHFS
+        case BLACKBOX_DEVICE_FLASH:
+            freeSpace = flashfsGetWriteBufferFreeSpace();
+
+            if (bytes <= freeSpace) {
+                return BLACKBOX_RESERVE_SUCCESS;
+            }
+
+            if (bytes > flashfsGetWriteBufferSize()) {
+                return BLACKBOX_RESERVE_PERMANENT_FAILURE;
+            }
+
+            // The write doesn't currently fit in the buffer, so try to make room for it:
+            flashfsFlushAsync();
+
+            // Check again, we might have flushed some data out already:
+            freeSpace = flashfsGetWriteBufferFreeSpace();
+
+            if (bytes <= freeSpace) {
+                return BLACKBOX_RESERVE_SUCCESS;
+            }
+
+            // Otherwise caller will have to try later once the flush completes
+            return BLACKBOX_RESERVE_TEMPORARY_FAILURE;
+#endif
+
+        default:
+            return BLACKBOX_RESERVE_PERMANENT_FAILURE;
     }
 }
 
