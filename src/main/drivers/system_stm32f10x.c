@@ -29,8 +29,11 @@
 void systemReset(void)
 {
     // Generate system reset
-    SCB->AIRCR = AIRCR_VECTKEY_MASK | (uint32_t)0x04;
+    NVIC_SystemReset();
 }
+
+
+
 
 void systemResetToBootloader(void) {
     // 1FFFF000 -> 20000200 -> SP
