@@ -48,7 +48,6 @@
 
 int16_t accSmooth[XYZ_AXIS_COUNT];
 int32_t accSum[XYZ_AXIS_COUNT];
-int16_t gyroData[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
 
 uint32_t accTimeSum = 0;        // keep track for integration of acc
 int accSumCount = 0;
@@ -66,9 +65,9 @@ float gyroScaleRad;
 rollAndPitchInclination_t inclination = { { 0, 0 } };     // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
 float anglerad[2] = { 0.0f, 0.0f };    // absolute angle inclination in radians
 
-imuRuntimeConfig_t *imuRuntimeConfig;
-pidProfile_t *pidProfile;
-accDeadband_t *accDeadband;
+static imuRuntimeConfig_t *imuRuntimeConfig;
+static pidProfile_t *pidProfile;
+static accDeadband_t *accDeadband;
 
 void imuConfigure(
     imuRuntimeConfig_t *initialImuRuntimeConfig,
@@ -87,7 +86,7 @@ void imuConfigure(
 
 void imuInit()
 {
-    smallAngle = lrintf(acc_1G * cosf(degreesToRadians(imuRuntimeConfig->small_angle)));
+    smallAngle = lrintf(acc_1G * cos_approx(degreesToRadians(imuRuntimeConfig->small_angle)));
     accVelScale = 9.80665f / acc_1G / 10000.0f;
     gyroScaleRad = gyro.scale * (M_PIf / 180.0f) * 0.000001f;
 }
@@ -209,10 +208,10 @@ int16_t imuCalculateHeading(t_fp_vector *vec)
 {
     int16_t head;
 
-    float cosineRoll = cosf(anglerad[AI_ROLL]);
-    float sineRoll = sinf(anglerad[AI_ROLL]);
-    float cosinePitch = cosf(anglerad[AI_PITCH]);
-    float sinePitch = sinf(anglerad[AI_PITCH]);
+    float cosineRoll = cos_approx(anglerad[AI_ROLL]);
+    float sineRoll = sin_approx(anglerad[AI_ROLL]);
+    float cosinePitch = cos_approx(anglerad[AI_PITCH]);
+    float sinePitch = sin_approx(anglerad[AI_PITCH]);
     float Xh = vec->A[X] * cosinePitch + vec->A[Y] * sineRoll * sinePitch + vec->A[Z] * sinePitch * cosineRoll;
     float Yh = vec->A[Y] * cosineRoll - vec->A[Z] * sineRoll;
     //TODO: Replace this comment with an explanation of why Yh and Xh can never simultanoeusly be zero,
@@ -298,11 +297,10 @@ static void imuCalculateEstimatedAttitude(void)
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
 }
 
-void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode)
+void imuUpdate(rollAndPitchTrims_t *accelerometerTrims)
 {
-    static int16_t gyroYawSmooth = 0;
-
     gyroUpdate();
+
     if (sensors(SENSOR_ACC)) {
         updateAccelerationReadings(accelerometerTrims); // TODO rename to accelerometerUpdate and rename many other 'Acceleration' references to be 'Accelerometer'
         imuCalculateEstimatedAttitude();
@@ -310,16 +308,6 @@ void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode)
         accADC[X] = 0;
         accADC[Y] = 0;
         accADC[Z] = 0;
-    }
-
-    gyroData[FD_ROLL] = gyroADC[FD_ROLL];
-    gyroData[FD_PITCH] = gyroADC[FD_PITCH];
-
-    if (mixerMode == MIXER_TRI) {
-        gyroData[FD_YAW] = (gyroYawSmooth * 2 + gyroADC[FD_YAW]) / 3;
-        gyroYawSmooth = gyroData[FD_YAW];
-    } else {
-        gyroData[FD_YAW] = gyroADC[FD_YAW];
     }
 }
 
@@ -338,5 +326,5 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
     int angle = lrintf(acosf(cosZ) * throttleAngleScale);
     if (angle > 900)
         angle = 900;
-    return lrintf(throttle_correction_value * sinf(angle / (900.0f * M_PIf / 2.0f)));
+    return lrintf(throttle_correction_value * sin_approx(angle / (900.0f * M_PIf / 2.0f)));
 }

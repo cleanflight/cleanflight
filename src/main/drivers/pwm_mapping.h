@@ -36,6 +36,12 @@
 #define PWM_TIMER_MHZ 1
 #define ONESHOT125_TIMER_MHZ 8
 
+typedef struct sonarGPIOConfig_s {
+    GPIO_TypeDef *gpio;
+    uint16_t triggerPin;
+    uint16_t echoPin;
+} sonarGPIOConfig_t;
+
 typedef struct drv_pwm_config_t {
     bool useParallelPWM;
     bool usePPM;
@@ -57,7 +63,7 @@ typedef struct drv_pwm_config_t {
 #endif
 #ifdef USE_SERVOS
     bool useServos;
-    bool extraServos;    // configure additional 4 channels in PPM mode as servos, not motors
+    bool useChannelForwarding;    // configure additional channels as servos
     uint16_t servoPwmRate;
     uint16_t servoCenterPulse;
 #endif
@@ -65,6 +71,7 @@ typedef struct drv_pwm_config_t {
     uint16_t motorPwmRate;
     uint16_t idlePulse;  // PWM value to use when initializing the driver. set this to either PULSE_1MS (regular pwm),
                          // some higher value (used by 3d mode), or 0, for brushed pwm drivers.
+    sonarGPIOConfig_t *sonarGPIOConfig;
 } drv_pwm_config_t;
 
 

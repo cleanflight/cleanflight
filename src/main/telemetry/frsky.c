@@ -230,7 +230,7 @@ static void sendSatalliteSignalQualityAsTemperature2(void)
     if (telemetryConfig->frsky_unit == FRSKY_UNIT_METRICS) {
         serialize16(satellite);
     } else {
-        float tmp = (satellite - 32) / 1.8;
+        float tmp = (satellite - 32) / 1.8f;
         //Round the value
         tmp += (tmp < 0) ? -0.5f : 0.5f;
         serialize16(tmp);
@@ -472,7 +472,7 @@ bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
 
 void checkFrSkyTelemetryState(void)
 {
-    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(frskyPortSharing);
+    bool newTelemetryEnabledValue = telemetryDetermineEnabledState(frskyPortSharing);
 
     if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
         return;

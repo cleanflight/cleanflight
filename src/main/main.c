@@ -47,6 +47,7 @@
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 #include "drivers/flash_m25p16.h"
+#include "drivers/sonar_hcsr04.h"
 
 #include "rx/rx.h"
 
@@ -67,6 +68,7 @@
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
+#include "sensors/initialisation.h"
 
 #include "telemetry/telemetry.h"
 #include "blackbox/blackbox.h"
@@ -90,6 +92,7 @@
 #include "debug.h"
 
 extern uint32_t previousTime;
+extern uint8_t motorControlEnable;
 
 #ifdef SOFTSERIAL_LOOPBACK
 serialPort_t *loopbackPort;
@@ -103,17 +106,22 @@ void mspInit(serialConfig_t *serialConfig);
 void cliInit(serialConfig_t *serialConfig);
 void failsafeInit(rxConfig_t *intialRxConfig);
 pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
-void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMixers);
+#ifdef USE_SERVOS
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers, servoMixer_t *customServoMixers);
+#else
+void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers);
+#endif
 void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
 void rxInit(rxConfig_t *rxConfig);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
-bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t gyroLpf, uint8_t accHardwareToUse, int8_t magHardwareToUse, int16_t magDeclinationFromConfig);
 void imuInit(void);
 void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
 void loop(void);
 void spektrumBind(rxConfig_t *rxConfig);
+const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
+void sonarInit(const sonarHardware_t *sonarHardware);
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c
@@ -168,6 +176,9 @@ void init(void)
 
     systemInit();
 
+    // Latch active features to be used for feature() in the remainder of init().
+    latchActiveFeatures();
+
     ledInit();
 
 #ifdef SPEKTRUM_BIND
@@ -190,11 +201,30 @@ void init(void)
 
     serialInit(&masterConfig.serialConfig, feature(FEATURE_SOFTSERIAL));
 
-    mixerInit(masterConfig.mixerMode, masterConfig.customMixer);
+#ifdef USE_SERVOS
+    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer, masterConfig.customServoMixer);
+#else
+    mixerInit(masterConfig.mixerMode, masterConfig.customMotorMixer);
+#endif
 
     memset(&pwm_params, 0, sizeof(pwm_params));
+
+#ifdef SONAR
+    const sonarHardware_t *sonarHardware = NULL;
+
+    if (feature(FEATURE_SONAR)) {
+        sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
+        sonarGPIOConfig_t sonarGPIOConfig = {
+            .gpio = SONAR_GPIO,
+            .triggerPin = sonarHardware->echo_pin,
+            .echoPin = sonarHardware->trigger_pin,
+        };
+        pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
+    }
+#endif
+
     // when using airplane/wing mixer, servo/motor outputs are remapped
-    if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING)
+    if (masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
@@ -219,14 +249,14 @@ void init(void)
 
 #ifdef USE_SERVOS
     pwm_params.useServos = isMixerUsingServos();
-    pwm_params.extraServos = currentProfile->gimbalConfig.gimbal_flags & GIMBAL_FORWARDAUX;
+    pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
     pwm_params.servoCenterPulse = masterConfig.escAndServoConfig.servoCenterPulse;
     pwm_params.servoPwmRate = masterConfig.servo_pwm_rate;
 #endif
 
     pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
     pwm_params.motorPwmRate = masterConfig.motor_pwm_rate;
-    pwm_params.idlePulse = PULSE_1MS; // standard PWM for brushless ESC (default, overridden below)
+    pwm_params.idlePulse = masterConfig.escAndServoConfig.mincommand;
     if (feature(FEATURE_3D))
         pwm_params.idlePulse = masterConfig.flight3DConfig.neutral3d;
     if (pwm_params.motorPwmRate > 500)
@@ -238,13 +268,16 @@ void init(void)
 
     mixerUsePWMOutputConfiguration(pwmOutputConfiguration);
 
+    if (!feature(FEATURE_ONESHOT125))
+        motorControlEnable = true;
+
     systemState |= SYSTEM_STATE_MOTORS_READY;
 
 #ifdef BEEPER
     beeperConfig_t beeperConfig = {
+        .gpioPeripheral = BEEP_PERIPHERAL,
         .gpioPin = BEEP_PIN,
         .gpioPort = BEEP_GPIO,
-        .gpioPeripheral = BEEP_PERIPHERAL,
 #ifdef BEEPER_INVERTED
         .gpioMode = Mode_Out_PP,
         .isInverted = true
@@ -278,10 +311,29 @@ void init(void)
     updateHardwareRevision();
 #endif
 
+#if defined(NAZE)
+    if (hardwareRevision == NAZE32_SP) {
+        serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
+    } else  {
+        serialRemovePort(SERIAL_PORT_USART3);
+    }
+#endif
+
+#if defined(SPRACINGF3) && defined(SONAR) && defined(USE_SOFTSERIAL2)
+    if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
+        serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
+    }
+#endif
+
+
 #ifdef USE_I2C
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);
+    } else {
+        if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+            i2cInit(I2C_DEVICE);
+        }
     }
 #elif defined(CC3D)
     if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
@@ -347,7 +399,10 @@ void init(void)
     imuInit();
 
     mspInit(&masterConfig.serialConfig);
+
+#ifdef USE_CLI
     cliInit(&masterConfig.serialConfig);
+#endif
 
     failsafeInit(&masterConfig.rxConfig);
 
@@ -368,7 +423,7 @@ void init(void)
 
 #ifdef SONAR
     if (feature(FEATURE_SONAR)) {
-        sonarInit(&masterConfig.batteryConfig);
+        sonarInit(sonarHardware);
     }
 #endif
 
@@ -447,6 +502,10 @@ void init(void)
 #ifdef CJMCU
     LED2_ON;
 #endif
+
+    // Latch active features AGAIN since some may be modified by init().
+    latchActiveFeatures();
+    motorControlEnable = true;
 
     systemState |= SYSTEM_STATE_READY;
 }

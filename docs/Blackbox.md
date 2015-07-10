@@ -20,10 +20,10 @@ https://github.com/cleanflight/blackbox-log-viewer
 ## Logged data
 The blackbox records flight data on every iteration of the flight control loop. It records the current time in
 microseconds, P, I and D corrections for each axis, your RC command stick positions (after applying expo curves),
-gyroscope data, accelerometer data (after your configured low-pass filtering), barometer readings, 3-axis magnetometer
-readings, raw VBAT and current measurements, and the command being sent to each motor speed controller. This is all
-stored without any approximation or loss of precision, so even quite subtle problems should be detectable from the fight
-data log.
+gyroscope data, accelerometer data (after your configured low-pass filtering), barometer and sonar readings, 3-axis
+magnetometer readings, raw VBAT and current measurements, RSSI, and the command being sent to each motor speed
+controller. This is all stored without any approximation or loss of precision, so even quite subtle problems should be
+detectable from the fight data log.
 
 GPS data is logged whenever new GPS data is available. Although the CSV decoder will decode this data, the video
 renderer does not yet show any of the GPS information (this will be added later).
@@ -146,6 +146,8 @@ These chips are also supported:
 * Micron/ST M25P16 - 16 Mbit
 * Micron N25Q064 - 64 Mbit
 * Winbond W25Q64 - 64 Mbit
+* Micron N25Q0128 - 128 Mbit
+* Winbond W25Q128 - 128 Mbit
 
 ## Enabling the Blackbox (CLI)
 In the [Cleanflight Configurator][] , enter the CLI tab. Enable the Blackbox feature by typing in `feature BLACKBOX` and
@@ -203,9 +205,9 @@ flight problems like vibration or PID setting issues.
 
 The Blackbox starts recording data as soon as you arm your craft, and stops when you disarm.
 
-If your craft has a buzzer attached, a short beep will be played when you arm and recording begins. You can later use
-this beep to synchronize your recorded flight video with the rendered flight data log (the beep is shown as a blue line
-in the flight data log, which you can sync against the beep in your recorded audio track).
+If your craft has a buzzer attached, you can use Cleanflight's arming beep to synchronize your Blackbox log with your
+flight video. Cleanflight's arming beep is a "long, short" pattern. The beginning of the first long beep will be shown 
+as a blue line in the flight data log, which you can sync against your recorded audio track.
 
 You should wait a few seconds after disarming your craft to allow the Blackbox to finish saving its data.
 
@@ -224,8 +226,9 @@ minutes.
 ![Dataflash tab in Configurator](Screenshots/blackbox-dataflash.png)
 
 After downloading the log, be sure to erase the chip to make it ready for reuse by clicking the "erase flash" button.
-If you try to start recording a new flight when the dataflash is already full, the Blackbox will not make its regular
-arming beep and nothing will be recorded.
+
+If you try to start recording a new flight when the dataflash is already full, Blackbox logging will be disabled and
+nothing will be recorded.
 
 ## Converting logs to CSV or PNG
 After your flights, you'll have a series of flight log files with a .TXT extension. You'll need to decode these with
