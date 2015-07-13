@@ -349,6 +349,8 @@ static blackboxMainState_t blackboxHistoryRing[3];
 // These point into blackboxHistoryRing, use them to know where to store history of a given age (0, 1 or 2 generations old)
 static blackboxMainState_t* blackboxHistory[3];
 
+static bool blackboxModeActivationConditionPresent = false;
+
 static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
 {
     switch (condition) {
@@ -771,6 +773,7 @@ static void validateBlackboxConfig()
  */
 void startBlackbox(void)
 {
+    blackboxModeActivationConditionPresent = isModeActivationConditionPresent(currentProfile->modeActivationConditions, BOXBLACKBOX);
     if (blackboxState == BLACKBOX_STATE_STOPPED) {
         validateBlackboxConfig();
 
@@ -1176,7 +1179,7 @@ static bool blackboxShouldLogPFrame(uint32_t pFrameIndex)
 }
 
 // Called once every FC loop in order to log the current state
-static void blackboxLogIteration()
+static void blackboxLogIteration(bool writeFrames)
 {
     // Write a keyframe every BLACKBOX_I_INTERVAL frames so we can resynchronise upon missing frames
     if (blackboxPFrameIndex == 0) {
@@ -1185,9 +1188,10 @@ static void blackboxLogIteration()
          * an additional item to write at the same time)
          */
         writeSlowFrameIfNeeded(false);
-
-        loadMainState();
-        writeIntraframe();
+        if (writeFrames) {
+            loadMainState();
+            writeIntraframe();
+        }
     } else {
         blackboxCheckAndLogArmingBeep();
         
@@ -1198,11 +1202,13 @@ static void blackboxLogIteration()
              */
             writeSlowFrameIfNeeded(true);
 
-            loadMainState();
-            writeInterframe();
+            if (writeFrames) {
+                loadMainState();
+                writeInterframe();
+            }
         }
 #ifdef GPS
-        if (feature(FEATURE_GPS)) {
+        if (feature(FEATURE_GPS) && writeFrames) {
             /*
              * If the GPS home point has been updated, or every 128 intraframes (~10 seconds), write the
              * GPS home position.
@@ -1307,8 +1313,16 @@ void handleBlackbox(void)
         break;
         case BLACKBOX_STATE_RUNNING:
             // On entry to this state, blackboxIteration, blackboxPFrameIndex and blackboxIFrameIndex are reset to 0
-
-            blackboxLogIteration();
+            if (blackboxModeActivationConditionPresent) {
+                if (IS_RC_MODE_ACTIVE(BOXBLACKBOX)) {
+                    blackboxLogIteration(true);
+                } else {
+                    // Log only first I frame
+                    blackboxLogIteration(blackboxIteration == 0);
+                }
+            } else {
+                blackboxLogIteration(true);
+            }
         break;
         case BLACKBOX_STATE_SHUTTING_DOWN:
             //On entry of this state, startTime is set and a flush is performed

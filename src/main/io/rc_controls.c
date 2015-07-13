@@ -302,6 +302,17 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
 
 }
 
+bool isModeActivationConditionPresent(modeActivationCondition_t *modeActivationConditions, boxId_e modeId)
+{
+    uint8_t index;
+
+    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
+        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
+        if (modeActivationCondition->modeId == modeId) return true;
+    }
+    return false;
+}
+
 bool isRangeActive(uint8_t auxChannelIndex, channelRange_t *range) {
     if (!IS_RANGE_USABLE(range)) {
         return false;
