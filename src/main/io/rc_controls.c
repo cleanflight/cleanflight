@@ -735,8 +735,6 @@ int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse)
 {
-    uint8_t index;
-
     escAndServoConfig = escAndServoConfigToUse;
     pidProfile = pidProfileToUse;
 
