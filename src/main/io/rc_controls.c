@@ -308,7 +308,7 @@ bool isModeActivationConditionPresent(modeActivationCondition_t *modeActivationC
 
     for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
         modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
-        if (modeActivationCondition->modeId == modeId) return true;
+        if (modeActivationCondition->modeId == modeId && IS_RANGE_USABLE(&modeActivationCondition->range)) return true;
     }
     return false;
 }
@@ -740,15 +740,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
     escAndServoConfig = escAndServoConfigToUse;
     pidProfile = pidProfileToUse;
 
-    isUsingSticksToArm = true;
-
-    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
-        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
-        if (modeActivationCondition->modeId == BOXARM && IS_RANGE_USABLE(&modeActivationCondition->range)) {
-            isUsingSticksToArm = false;
-            break;
-        }
-    }
+    isUsingSticksToArm = !isModeActivationConditionPresent(modeActivationConditions, BOXARM);
 }
 
 void resetAdjustmentStates(void)

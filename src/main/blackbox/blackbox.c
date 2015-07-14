@@ -1187,25 +1187,22 @@ static void blackboxLogIteration(bool writeFrames)
          * Don't log a slow frame if the slow data didn't change ("I" frames are already large enough without adding
          * an additional item to write at the same time)
          */
-        writeSlowFrameIfNeeded(false);
         if (writeFrames) {
+            writeSlowFrameIfNeeded(false);
             loadMainState();
             writeIntraframe();
         }
     } else {
         blackboxCheckAndLogArmingBeep();
         
-        if (blackboxShouldLogPFrame(blackboxPFrameIndex)) {
-            /*
+        if (blackboxShouldLogPFrame(blackboxPFrameIndex) && writeFrames) {
+             /*
              * We assume that slow frames are only interesting in that they aid the interpretation of the main data stream.
              * So only log slow frames during loop iterations where we log a main frame.
              */
             writeSlowFrameIfNeeded(true);
-
-            if (writeFrames) {
-                loadMainState();
-                writeInterframe();
-            }
+            loadMainState();
+            writeInterframe();
         }
 #ifdef GPS
         if (feature(FEATURE_GPS) && writeFrames) {
