@@ -400,8 +400,11 @@ static void resetConf(void)
     masterConfig.rxConfig.midrc = 1500;
     masterConfig.rxConfig.mincheck = 1100;
     masterConfig.rxConfig.maxcheck = 1900;
-    masterConfig.rxConfig.rx_min_usec = 985;          // any of first 4 channels below this value will trigger rx loss detection
-    masterConfig.rxConfig.rx_max_usec = 2115;         // any of first 4 channels above this value will trigger rx loss detection
+    masterConfig.rxConfig.rx_min_usec = PWM_PULSE_MIN;          // only used for constraining now
+    masterConfig.rxConfig.rx_max_usec = PWM_PULSE_MAX;          // only used for constraining now
+    masterConfig.rxConfig.failsafe_channel_mask = 0x0F;         // default to all stick channels
+    masterConfig.rxConfig.fs_min_usec = 0;                      //     if all channels in channel mask are between
+    masterConfig.rxConfig.fs_max_usec = 935;                    //     fs_min_usec and fs_max_usec, trigger failsafe
 
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
