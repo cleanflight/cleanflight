@@ -512,6 +512,7 @@ typedef union {
 static void cliSetVar(const clivalue_t *var, const int_float_value_t value);
 static void cliPrintVar(const clivalue_t *var, uint32_t full);
 static void cliPrint(const char *str);
+static void cliPrintf(const char *fmt, ...);
 static void cliWrite(uint8_t ch);
 
 static void cliPrompt(void)
@@ -1746,8 +1747,27 @@ static void cliDefaults(char *cmdline)
 
 static void cliPrint(const char *str)
 {
+    serialBeginWrite(cliPort);
     while (*str)
         serialWrite(cliPort, *(str++));
+    serialEndWrite(cliPort);
+}
+
+static void cliPutch(void *port, char ch)
+{
+    serialWrite(port, ch);
+}
+
+static void cliPrintf(const char* fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+
+    serialBeginWrite(cliPort);
+    tfp_format(cliPort, cliPutch, fmt, va);
+    serialEndWrite(cliPort);
+    
+    va_end(va);
 }
 
 static void cliWrite(uint8_t ch)
