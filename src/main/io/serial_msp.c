@@ -90,7 +90,10 @@ static serialPort_t *mspSerialPort;
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
 
-void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
+void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions,
+                         escAndServoConfig_t *escAndServoConfigToUse,
+                         pidProfile_t *pidProfileToUse,
+                         bool stick_arm_enable_switch);
 
 /**
  * MSP Guidelines, emphasis is used to clarify.
@@ -1363,7 +1366,10 @@ static bool processInCommand(void)
                 mac->range.startStep = read8();
                 mac->range.endStep = read8();
 
-                useRcControlsConfig(currentProfile->modeActivationConditions, &masterConfig.escAndServoConfig, &currentProfile->pidProfile);
+                useRcControlsConfig(currentProfile->modeActivationConditions,
+                                    &masterConfig.escAndServoConfig,
+                                    &currentProfile->pidProfile,
+                                    masterConfig.stick_arm_enable_switch);
             } else {
                 headSerialError(0);
             }
