@@ -17,6 +17,7 @@
 
 #include "stdbool.h"
 #include "stdint.h"
+#include <math.h>
 
 #include "common/maths.h"
 
@@ -34,10 +35,12 @@
 
 // Battery monitoring stuff
 uint8_t batteryCellCount = 3;       // cell count
+uint16_t batteryMaxVoltage;
 uint16_t batteryWarningVoltage;
 uint16_t batteryCriticalVoltage;
 
 uint8_t vbat = 0;                   // battery voltage in 0.1V steps
+float vbatf = 0.0f;                 // battery voltage in 0.1V steps, but maintaining averaging resolution
 uint16_t vbatLatestADC = 0;         // most recent unsmoothed raw reading from vbat ADC
 uint16_t amperageLatestADC = 0;     // most recent raw reading from current ADC
 
@@ -46,30 +49,22 @@ int32_t mAhDrawn = 0;               // milliampere hours drawn from the battery 
 
 batteryConfig_t *batteryConfig;
 
-uint16_t batteryAdcToVoltage(uint16_t src)
+float batteryAdcToVoltageF(uint16_t src)
 {
     // calculate battery voltage based on ADC reading
     // result is Vbatt in 0.1V steps. 3.3V = ADC Vref, 0xFFF = 12bit adc, 110 = 11:1 voltage divider (10k:1k) * 10 for 0.1V
-    return ((uint32_t)src * batteryConfig->vbatscale * 33 + (0xFFF * 5)) / (0xFFF * 10);
+    return ((uint32_t)src * batteryConfig->vbatscale * 3.3f) / 0xFFF;
 }
-
-#define BATTERY_SAMPLE_COUNT 8
-
+// for the unit test
+uint16_t batteryAdcToVoltage(uint16_t src)
+{
+  return lrintf(batteryAdcToVoltageF(src));
+}
 void updateBatteryVoltage(void)
 {
-    static uint16_t vbatSamples[BATTERY_SAMPLE_COUNT];
-    static uint8_t currentSampleIndex = 0;
-    uint8_t index;
-    uint16_t vbatSampleTotal = 0;
-
-    // store the battery voltage with some other recent battery voltage readings
-    vbatSamples[(currentSampleIndex++) % BATTERY_SAMPLE_COUNT] = vbatLatestADC = adcGetChannel(ADC_BATTERY);
-
-    // calculate vbat based on the average of recent readings
-    for (index = 0; index < BATTERY_SAMPLE_COUNT; index++) {
-        vbatSampleTotal += vbatSamples[index];
-    }
-    vbat = batteryAdcToVoltage(vbatSampleTotal / BATTERY_SAMPLE_COUNT);
+    vbatLatestADC = adcGetChannel(ADC_BATTERY);
+    vbatf = (vbatf * 0.98f) + (batteryAdcToVoltageF(vbatLatestADC) * 0.02f);
+    vbat = (uint8_t)lrintf(vbatf);
 }
 
 batteryState_e calculateBatteryState(void)
@@ -89,9 +84,10 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
 
     uint32_t i;
 
-    for (i = 0; i < BATTERY_SAMPLE_COUNT; i++) {
+    vbatf = batteryAdcToVoltageF(adcGetChannel(ADC_BATTERY));
+    for (i = 0; i < 100; i++) {
         updateBatteryVoltage();
-        delay((32 / BATTERY_SAMPLE_COUNT) * 10);
+        delay(2);
     }
 
     unsigned cells = (vbat / batteryConfig->vbatmaxcellvoltage) + 1;
@@ -100,6 +96,7 @@ void batteryInit(batteryConfig_t *initialBatteryConfig)
     batteryCellCount = cells;
     batteryWarningVoltage = batteryCellCount * batteryConfig->vbatwarningcellvoltage;
     batteryCriticalVoltage = batteryCellCount * batteryConfig->vbatmincellvoltage;
+    batteryMaxVoltage = batteryCellCount * batteryConfig->vbatmaxcellvoltage;
 }
 
 #define ADCVREF 3300   // in mV

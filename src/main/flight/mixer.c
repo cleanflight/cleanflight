@@ -43,6 +43,7 @@
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
+#include "sensors/battery.h"
 
 #include "flight/mixer.h"
 #include "flight/failsafe.h"
@@ -739,11 +740,33 @@ STATIC_UNIT_TESTED void servoMixer(void)
 }
 
 #endif
+#ifdef VBAT_SCALING
+float vbat_rpy_scale = 1.0f;
+float vbat_th_scale = 1.0f;
+#endif
 
 void mixTable(void)
 {
     uint32_t i;
 
+#ifdef VBAT_SCALING
+    // scale to have constant rpy gain through battery sag
+    if (feature(FEATURE_VBAT))
+    {
+        vbat_rpy_scale = constrainf(batteryWarningVoltage / vbatf, 0.80f, 1.0f);
+        vbat_th_scale = constrainf(batteryMaxVoltage / vbatf, 1.0f, 1.24f);
+        //debug[0] = batteryMaxVoltage;
+        //debug[1] = vbatf * 100;
+        //debug[2] = (vbat_rpy_scale * 1000) - 1000;
+        //debug[3] = (vbat_th_scale * 1000) - 1000;
+        axisPID[PITCH] = axisPID[PITCH] * vbat_rpy_scale;
+        axisPID[ROLL] = axisPID[ROLL] * vbat_rpy_scale;
+        axisPID[YAW] = axisPID[YAW] * vbat_rpy_scale;
+        // actual '0' is somewhere between mincommand and minthrottle, but that'd be esc firmware dependent.
+        uint16_t t0 = (escAndServoConfig->mincommand + escAndServoConfig->minthrottle) / 2;
+        rcCommand[THROTTLE] = t0 + (vbat_th_scale * (rcCommand[THROTTLE] - t0));
+    }
+#endif
     if (motorCount >= 4 && mixerConfig->yaw_jump_prevention_limit < YAW_JUMP_PREVENTION_LIMIT_HIGH) {
         // prevent "yaw jump" during yaw correction
         axisPID[YAW] = constrain(axisPID[YAW], -mixerConfig->yaw_jump_prevention_limit - ABS(rcCommand[YAW]), mixerConfig->yaw_jump_prevention_limit + ABS(rcCommand[YAW]));

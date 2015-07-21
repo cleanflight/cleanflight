@@ -219,6 +219,10 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
 
     /* Tricopter tail servo */
     {"servo",      5, UNSIGNED, .Ipredict = PREDICT(1500),    .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(TRICOPTER)}
+#ifdef VBAT_SCALING_BB
+    { "vbatrpy", -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS) },
+    { "vbatth", -1, SIGNED, .Ipredict = PREDICT(0), .Iencode = ENCODING(SIGNED_VB), .Ppredict = PREDICT(PREVIOUS), .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS) },
+#endif
 };
 
 #ifdef GPS
@@ -284,6 +288,10 @@ typedef struct blackboxMainState_t {
     int32_t sonarRaw;
 #endif
     uint16_t rssi;
+#ifdef VBAT_SCALING_BB
+    int16_t vbatrpyscale;
+    int16_t vbatthscale;
+#endif
 } blackboxMainState_t;
 
 typedef struct blackboxGpsState_t {
@@ -558,6 +566,10 @@ static void writeIntraframe(void)
         blackboxWriteSignedVB(blackboxHistory[0]->servo[5] - 1500);
     }
 
+#ifdef VBAT_SCALING_BB
+    blackboxWriteSignedVB(blackboxCurrent->vbatrpyscale);
+    blackboxWriteSignedVB(blackboxCurrent->vbatthscale);
+#endif
     //Rotate our history buffers:
 
     //The current state becomes the new "before" state
@@ -673,6 +685,10 @@ static void writeInterframe(void)
     if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_TRICOPTER)) {
         blackboxWriteSignedVB(blackboxCurrent->servo[5] - blackboxLast->servo[5]);
     }
+#ifdef VBAT_SCALING_BB
+    blackboxWriteSignedVB(blackboxCurrent->vbatrpyscale - blackboxLast->vbatrpyscale);
+    blackboxWriteSignedVB(blackboxCurrent->vbatthscale - blackboxLast->vbatthscale);
+#endif
 
     //Rotate our history buffers
     blackboxHistory[2] = blackboxHistory[1];
@@ -926,6 +942,10 @@ static void loadMainState(void)
 #ifdef USE_SERVOS
     //Tail servo for tricopters
     blackboxCurrent->servo[5] = servo[5];
+#endif
+#ifdef VBAT_SCALING_BB
+    blackboxCurrent->vbatrpyscale = (int16_t)(vbat_rpy_scale * 1000) - 1000;
+    blackboxCurrent->vbatthscale = (int16_t)(vbat_th_scale * 1000) - 1000;
 #endif
 }
 

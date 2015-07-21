@@ -89,7 +89,7 @@ enum {
 };
 
 /* for VBAT monitoring frequency */
-#define VBATFREQ 6        // to read battery voltage - nth number of loop iterations
+#define VBATFREQ 1        // to read battery voltage - nth number of loop iterations
 
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
@@ -175,7 +175,9 @@ void annexCode(void)
     int32_t axis, prop1 = 0, prop2;
 
     static batteryState_e batteryState = BATTERY_OK;
+#if VBATFREQ > 1
     static uint8_t vbatTimer = 0;
+#endif
     static int32_t vbatCycleTime = 0;
 
     // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
@@ -249,7 +251,10 @@ void annexCode(void)
 
     if (feature(FEATURE_VBAT | FEATURE_CURRENT_METER)) {
         vbatCycleTime += cycleTime;
-        if (!(++vbatTimer % VBATFREQ)) {
+#if VBATFREQ > 1
+        if (!(++vbatTimer % VBATFREQ)) 
+#endif
+        {
 
             if (feature(FEATURE_VBAT)) {
                 updateBatteryVoltage();
