@@ -136,8 +136,10 @@ static void cliMixer(char *cmdline);
 #ifdef USE_FLASHFS
 static void cliFlashInfo(char *cmdline);
 static void cliFlashErase(char *cmdline);
+#ifdef USE_FLASH_TOOLS
 static void cliFlashWrite(char *cmdline);
 static void cliFlashRead(char *cmdline);
+#endif
 #endif
 
 // buffer
@@ -224,8 +226,10 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_FLASHFS
     CLI_COMMAND_DEF("flash_erase", "erase flash chip", NULL, cliFlashErase),
     CLI_COMMAND_DEF("flash_info", "show flash chip info", NULL, cliFlashInfo),
+#ifdef USE_FLASH_TOOLS
     CLI_COMMAND_DEF("flash_read", NULL, "<length> <address>", cliFlashRead),
     CLI_COMMAND_DEF("flash_write", NULL, "<address> <message>", cliFlashWrite),
+#endif
 #endif
     CLI_COMMAND_DEF("get", "get variable value",
             "[name]", cliGet),
@@ -399,7 +403,7 @@ const clivalue_t valueTable[] = {
     { "yaw_control_direction",      VAR_INT8   | MASTER_VALUE,  &masterConfig.yaw_control_direction, -1, 1 },
 
     { "pid_at_min_throttle",        VAR_UINT8  | MASTER_VALUE, &masterConfig.mixerConfig.pid_at_min_throttle, 0, 1 },
-    { "yaw_direction",              VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_direction, -1, 1 },
+    { "yaw_motor_direction",        VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_motor_direction, -1, 1 },
     { "yaw_jump_prevention_limit",  VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.yaw_jump_prevention_limit, YAW_JUMP_PREVENTION_LIMIT_LOW, YAW_JUMP_PREVENTION_LIMIT_HIGH },
 #ifdef USE_SERVOS
     { "tri_unarmed_servo",          VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.tri_unarmed_servo, 0, 1 },
@@ -966,13 +970,31 @@ static void cliServo(char *cmdline)
             }
         }
 
+        enum {INDEX = 0, MIN, MAX, MIDDLE, ANGLE_AT_MIN, ANGLE_AT_MAX, RATE, FORWARD};
+
+        i = arguments[INDEX];
+
         // Check we got the right number of args and the servo index is correct (don't validate the other values)
-        if (validArgumentCount != SERVO_ARGUMENT_COUNT || arguments[0] < 0 || arguments[0] >= MAX_SUPPORTED_SERVOS) {
+        if (validArgumentCount != SERVO_ARGUMENT_COUNT || i < 0 || i >= MAX_SUPPORTED_SERVOS) {
             cliShowParseError();
             return;
         }
 
-        servo = &currentProfile->servoConf[arguments[0]];
+        servo = &currentProfile->servoConf[i];
+
+        if (
+            arguments[MIN] < PWM_PULSE_MIN || arguments[MIN] > PWM_PULSE_MAX ||
+            arguments[MAX] < PWM_PULSE_MIN || arguments[MAX] > PWM_PULSE_MAX ||
+            arguments[MIDDLE] < arguments[MIN] || arguments[MIDDLE] > arguments[MAX] ||
+            arguments[MIN] > arguments[MAX] || arguments[MAX] < arguments[MIN] ||
+            arguments[RATE] < 100 || arguments[RATE] > 100 ||
+            arguments[FORWARD] >= MAX_SUPPORTED_RC_CHANNEL_COUNT ||
+            arguments[ANGLE_AT_MIN] < 0 || arguments[ANGLE_AT_MIN] > 180 ||
+            arguments[ANGLE_AT_MAX] < 0 || arguments[ANGLE_AT_MAX] > 180
+        ) {
+            cliShowParseError();
+            return;
+        }
 
         servo->min = arguments[1];
         servo->max = arguments[2];
@@ -1147,6 +1169,8 @@ static void cliFlashErase(char *cmdline)
     printf("Done.\r\n");
 }
 
+#ifdef USE_FLASH_TOOLS
+
 static void cliFlashWrite(char *cmdline)
 {
     uint32_t address = atoi(cmdline);
@@ -1201,6 +1225,7 @@ static void cliFlashRead(char *cmdline)
     }
 }
 
+#endif
 #endif
 
 static void dumpValues(uint16_t mask)
