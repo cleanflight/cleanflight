@@ -81,6 +81,8 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
+#include "drivers/serial_escserial.h"
+
 #include "common/printf.h"
 
 #include "serial_cli.h"
@@ -120,6 +122,9 @@ static void cliVersion(char *cmdline);
 
 #ifdef GPS
 static void cliGpsPassthrough(char *cmdline);
+#endif
+#ifdef USE_ESCSERIAL
+static void cliEscPassthrough(char *cmdline);
 #endif
 
 static void cliHelp(char *cmdline);
@@ -236,6 +241,9 @@ const clicmd_t cmdTable[] = {
             "[name]", cliGet),
 #ifdef GPS
     CLI_COMMAND_DEF("gpspassthrough", "passthrough gps to serial", NULL, cliGpsPassthrough),
+#endif
+#ifdef USE_ESCSERIAL
+    CLI_COMMAND_DEF("escpassthrough", "passthrough esc to serial", NULL, cliEscPassthrough),
 #endif
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
 #ifdef LED_STRIP
@@ -1537,6 +1545,30 @@ static void cliGpsPassthrough(char *cmdline)
     gpsEnablePassthrough(cliPort);
 }
 #endif
+
+#ifdef USE_ESCSERIAL
+static void cliEscPassthrough(char *cmdline)
+{
+    int i;
+
+    if (isEmpty(cmdline)) {
+        cliPrint("pwm output needed\r\n");
+        return;
+    } else {
+        i = atoi(cmdline);
+        if (i >= 0 && i < USABLE_TIMER_CHANNEL_COUNT) {
+            printf("passthru at pwm output %d enabled\r\n", i);
+        }
+        else {
+            printf("invalid pwm output, valid range: 0 to %d\r\n", USABLE_TIMER_CHANNEL_COUNT);
+            return;
+        }
+    }
+
+    escEnablePassthrough(cliPort,i);
+}
+#endif
+
 
 static void cliHelp(char *cmdline)
 {
