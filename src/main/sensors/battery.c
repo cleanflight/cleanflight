@@ -153,3 +153,31 @@ uint8_t calculateBatteryCapacityRemainingPercentage(void)
 
     return constrain((batteryCapacity - constrain(mAhDrawn, 0, 0xFFFF)) * 100.0f / batteryCapacity , 0, 100);
 }
+
+
+#ifdef VBAT_SCALING
+#include "common/axis.h"
+#include "flight/pid.h"
+
+float vbat_rpy_scale = 1.0f;
+float vbat_th_scale = 1.0f;
+
+void batteryScaleThrottleAndPIDs(uint16_t throttle_zero)
+{
+  // scale to have constant rpy gain through battery sag
+  if (feature(FEATURE_VBAT))
+  {
+    vbat_rpy_scale = constrainf(batteryWarningVoltage / vbatf, 0.80f, 1.0f);
+    vbat_th_scale = constrainf(batteryMaxVoltage / vbatf, 1.0f, 1.24f);
+    //debug[0] = batteryMaxVoltage;
+    //debug[1] = vbatf * 100;
+    //debug[2] = (vbat_rpy_scale * 1000) - 1000;
+    //debug[3] = (vbat_th_scale * 1000) - 1000;
+    axisPID[PITCH] = axisPID[PITCH] * vbat_rpy_scale;
+    axisPID[ROLL] = axisPID[ROLL] * vbat_rpy_scale;
+    axisPID[YAW] = axisPID[YAW] * vbat_rpy_scale;
+
+    rcCommand[THROTTLE] = throttle_zero + (vbat_th_scale * (rcCommand[THROTTLE] - throttle_zero));
+  }
+}
+#endif

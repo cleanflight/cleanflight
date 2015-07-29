@@ -89,6 +89,7 @@ extern "C" {
 
 uint8_t armingFlags = 0;
 int16_t rcCommand[4] = {0,0,0,0};
+int16_t axisPID[3] = { 0, 0, 0 };
 
 bool feature(uint32_t mask)
 {

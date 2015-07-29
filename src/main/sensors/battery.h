@@ -72,3 +72,12 @@ int32_t currentMeterToCentiamps(uint16_t src);
 
 uint8_t calculateBatteryPercentage(void);
 uint8_t calculateBatteryCapacityRemainingPercentage(void);
+
+#define VBAT_SCALING
+#ifdef VBAT_SCALING
+#define VBAT_SCALING_BB // define to log these in the blackbox
+extern float vbat_rpy_scale;
+extern float vbat_th_scale;
+void batteryScaleThrottleAndPIDs(uint16_t throttle_zero);
+#endif
+

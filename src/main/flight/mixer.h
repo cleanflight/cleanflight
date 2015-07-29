@@ -17,13 +17,6 @@
 
 #pragma once
 
-#define VBAT_SCALING
-#ifdef VBAT_SCALING
-//#define VBAT_SCALING_BB // define to log these in the blackbox
-extern float vbat_rpy_scale;
-extern float vbat_th_scale;
-#endif
-
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
 #define YAW_JUMP_PREVENTION_LIMIT_LOW 80

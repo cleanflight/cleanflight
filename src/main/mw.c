@@ -815,6 +815,11 @@ void loop(void)
             &masterConfig.rxConfig
         );
 
+#ifdef VBAT_SCALING
+	    // actual '0' is somewhere between mincommand and minthrottle, but that'd be esc firmware dependent.
+        batteryScaleThrottleAndPIDs((masterConfig.escAndServoConfig.mincommand + masterConfig.escAndServoConfig.minthrottle) / 2);
+#endif
+
         mixTable();
 
 #ifdef USE_SERVOS
