@@ -367,7 +367,7 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
             return motorCount >= condition - FLIGHT_LOG_FIELD_CONDITION_AT_LEAST_MOTORS_1 + 1;
         
         case FLIGHT_LOG_FIELD_CONDITION_TRICOPTER:
-            return masterConfig.mixerMode == MIXER_TRI;
+            return masterConfig.mixerMode == MIXER_TRI || masterConfig.mixerMode == MIXER_CUSTOM_TRI;
 
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0:
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_1:
@@ -1132,6 +1132,15 @@ void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
             blackboxWrite((uint8_t) data->autotuneTargets.targetAngleAtPeak);
             blackboxWriteS16(data->autotuneTargets.firstPeakAngle);
             blackboxWriteS16(data->autotuneTargets.secondPeakAngle);
+        break;
+        case FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT:
+            if (data->inflightAdjustment.floatFlag) {
+                blackboxWrite(data->inflightAdjustment.adjustmentFunction + FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT_FUNCTION_FLOAT_VALUE_FLAG);
+                blackboxWriteFloat(data->inflightAdjustment.newFloatValue);
+            } else {
+                blackboxWrite(data->inflightAdjustment.adjustmentFunction);
+                blackboxWriteSignedVB(data->inflightAdjustment.newValue);
+            }
         break;
         case FLIGHT_LOG_EVENT_LOG_END:
             blackboxPrint("End of log");
