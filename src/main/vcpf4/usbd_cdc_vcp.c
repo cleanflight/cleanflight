@@ -26,6 +26,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_vcp.h"
 #include "stm32f4xx_conf.h"
+#include "stdbool.h"
+#include "drivers/system.h"
 
 LINE_CODING g_lc;
 
@@ -41,9 +43,10 @@ extern uint32_t APP_Rx_ptr_out;
 extern uint32_t APP_Rx_ptr_in; /* Increment this pointer or roll it back to
  start address when writing received data
  in the buffer APP_Rx_Buffer. */
-uint8_t receiveBuffer[1024];
-uint8_t receiveIndex=0;
 __IO uint32_t receiveLength=0;
+
+usbStruct_t usbData;
+
 /* Private function prototypes -----------------------------------------------*/
 static uint16_t VCP_Init(void);
 static uint16_t VCP_DeInit(void);
@@ -149,22 +152,13 @@ static uint16_t VCP_Ctrl(uint32_t Cmd, uint8_t* Buf, uint32_t Len)
  *******************************************************************************/
 uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
 {
-    /* Last transmission hasn't finished, abort */
-	//if(APP_Rx_ptr_in != APP_Rx_ptr_out)
-	//	return 0;
-
-	// We can only put 64 bytes in the buffer
-    if (sendLength > 64 / 2) {
-        sendLength = 64 / 2;
-    }
-
-    // Try to load some bytes if we can
-    if (sendLength) {
-    	VCP_DataTx(ptrBuffer,sendLength);
-    	delayMicroseconds(5);
-    }
-
-    return sendLength;
+	if(USB_Tx_State!=1)
+	{
+		VCP_DataTx(ptrBuffer,sendLength);
+		delayMicroseconds(20);
+		return sendLength;
+	}
+	return 0;
 }
 
 /**
@@ -177,19 +171,21 @@ uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
  */
 static uint16_t VCP_DataTx(uint8_t* Buf, uint32_t Len)
 {
-	uint32_t i = 0;
 
-	while (i < Len) {
-		APP_Rx_Buffer[APP_Rx_ptr_in] = *(Buf + i);
-		APP_Rx_ptr_in++;
-		i++;
+    uint16_t ptr = APP_Rx_ptr_in;
+    uint32_t i;
 
-		/* To avoid buffer overflow */
-		if (APP_Rx_ptr_in == APP_RX_DATA_SIZE)
-			APP_Rx_ptr_in = 0;
-	}
-   
-	return Len;
+    for (i = 0; i < Len; i++)
+    	APP_Rx_Buffer[ptr++ & (APP_RX_DATA_SIZE-1)] = Buf[i];
+
+    APP_Rx_ptr_in = ptr % APP_RX_DATA_SIZE;
+
+    return USBD_OK;
+}
+
+
+uint8_t usbAvailable(void) {
+    return (usbData.rxBufHead != usbData.rxBufTail);
 }
 
 /*******************************************************************************
@@ -201,26 +197,15 @@ static uint16_t VCP_DataTx(uint8_t* Buf, uint32_t Len)
  *******************************************************************************/
 uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len)
 {
-    static uint8_t offset = 0;
-    uint8_t i;
+    uint8_t ch = 0;
 
-    if (len > receiveLength) {
-        len = receiveLength;
+    if (usbAvailable()) {
+    	recvBuf[0] = usbData.rxBuf[usbData.rxBufTail];
+    	usbData.rxBufTail = (usbData.rxBufTail + 1) % USB_RX_BUFSIZE;
+    	ch=1;
+        receiveLength--;
     }
-
-    for (i = 0; i < len; i++) {
-        recvBuf[i] = (uint8_t)(receiveBuffer[i + offset]);
-    }
-
-    receiveLength -= len;
-    offset += len;
-
-    if (receiveLength == 0) {
-        offset = 0;
-        receiveIndex=0;
-    }
-
-    return len;
+    return ch;
 }
 
 
@@ -241,15 +226,16 @@ uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len)
  */
 static uint16_t VCP_DataRx(uint8_t* Buf, uint32_t Len)
 {
-	uint8_t i;
-    for (i = 0; i < Len; i++) {
-    	receiveBuffer[receiveIndex+i] = (uint8_t)(Buf[i]);
-    }
-	receiveIndex+=Len;
-	receiveIndex = receiveIndex % 64;
-	receiveLength = receiveLength + Len;
+    uint16_t ptr = usbData.rxBufHead;
+    uint32_t i;
 
-   return USBD_OK;
+    for (i = 0; i < Len; i++)
+    	usbData.rxBuf[ptr++ & (USB_RX_BUFSIZE-1)] = Buf[i];
+
+    usbData.rxBufHead = ptr % USB_RX_BUFSIZE;
+
+    receiveLength += Len;
+    return USBD_OK;
 }
 
 /*******************************************************************************

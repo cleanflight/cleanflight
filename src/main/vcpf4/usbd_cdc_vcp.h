@@ -34,6 +34,8 @@
 #include "usbd_usr.h"
 #include "usbd_desc.h"
 
+#define USB_RX_BUFSIZE		512
+
 __ALIGN_BEGIN USB_OTG_CORE_HANDLE  USB_OTG_dev __ALIGN_END;
 
 uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength);  // HJI
@@ -65,6 +67,13 @@ typedef struct
   uint8_t  paritytype;
   uint8_t  datatype;
 } LINE_CODING;
+
+typedef struct {
+    uint8_t rxBuf[USB_RX_BUFSIZE];
+    uint16_t rxBufHead;
+    uint16_t rxBufTail;
+} usbStruct_t;
+
 
 #endif /* __USBD_CDC_VCP_H */
 

@@ -481,6 +481,7 @@ void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output)
             	serialWrite(escPort, serialRead(escPassthroughPort));
             LED1_OFF;
         }
+        delay(10);
     }
 }
 

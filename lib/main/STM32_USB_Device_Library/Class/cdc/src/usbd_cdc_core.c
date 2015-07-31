@@ -163,7 +163,7 @@ __ALIGN_BEGIN uint8_t USB_Rx_Buffer   [CDC_DATA_MAX_PACKET_SIZE] __ALIGN_END ;
     #pragma data_alignment=4   
   #endif
 #endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
-__ALIGN_BEGIN uint8_t APP_Rx_Buffer   [APP_RX_DATA_SIZE] __ALIGN_END ; 
+__ALIGN_BEGIN uint8_t APP_Rx_Buffer   [APP_RX_DATA_SIZE] __ALIGN_END ;
 
 
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
@@ -177,7 +177,7 @@ uint32_t APP_Rx_ptr_in  = 0;
 uint32_t APP_Rx_ptr_out = 0;
 uint32_t APP_Rx_length  = 0;
 
-uint8_t  USB_Tx_State = 0;
+volatile uint8_t  USB_Tx_State = 0;
 
 static uint32_t cdcCmd = 0xFF;
 static uint32_t cdcLen = 0;
@@ -218,7 +218,7 @@ __ALIGN_BEGIN uint8_t usbd_cdc_CfgDesc[USB_CDC_CONFIG_DESC_SIZ]  __ALIGN_END =
   0x01,   /* bConfigurationValue: Configuration value */
   0x00,   /* iConfiguration: Index of string descriptor describing the configuration */
   0xC0,   /* bmAttributes: self powered */
-  0x32,   /* MaxPower 0 mA */
+  0xfa,   /* MaxPower 500 mA */
   
   /*---------------------------------------------------------------------------*/
   
@@ -723,21 +723,19 @@ static void Handle_USBAsynchXfer (void *pdev)
       APP_Rx_ptr_out = 0;
     }
     
-    if(APP_Rx_ptr_out == APP_Rx_ptr_in) 
+    if(APP_Rx_ptr_out == APP_Rx_ptr_in)
     {
-      USB_Tx_State = 0; 
+      USB_Tx_State = 0;
       return;
     }
     
     if(APP_Rx_ptr_out > APP_Rx_ptr_in) /* rollback */
     { 
       APP_Rx_length = APP_RX_DATA_SIZE - APP_Rx_ptr_out;
-    
     }
     else 
     {
       APP_Rx_length = APP_Rx_ptr_in - APP_Rx_ptr_out;
-     
     }
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
      APP_Rx_length &= ~0x03;
