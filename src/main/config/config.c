@@ -188,7 +188,7 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->H_level = 3.0f;
     pidProfile->H_sensitivity = 75;
 
-    pidProfile->sync_looptime=1;
+    pidProfile->sync_looptime=0;
 }
 
 #ifdef GPS

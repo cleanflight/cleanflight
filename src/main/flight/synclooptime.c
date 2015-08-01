@@ -1,6 +1,6 @@
 /*
 sync looptime with gyro interrupt
-nksreera
+author: nksreera
 */
 
 
