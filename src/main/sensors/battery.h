@@ -52,14 +52,17 @@ typedef enum {
 } batteryState_e;
 
 extern uint8_t vbat;
+extern float vbatf;
 extern uint16_t vbatLatestADC;
 extern uint8_t batteryCellCount;
 extern uint16_t batteryWarningVoltage;
+extern uint16_t batteryMaxVoltage;
 extern uint16_t amperageLatestADC;
 extern int32_t amperage;
 extern int32_t mAhDrawn;
 
 uint16_t batteryAdcToVoltage(uint16_t src);
+
 batteryState_e calculateBatteryState(void);
 void updateBatteryVoltage(void);
 void batteryInit(batteryConfig_t *initialBatteryConfig);
@@ -69,3 +72,12 @@ int32_t currentMeterToCentiamps(uint16_t src);
 
 uint8_t calculateBatteryPercentage(void);
 uint8_t calculateBatteryCapacityRemainingPercentage(void);
+
+#define VBAT_SCALING
+#ifdef VBAT_SCALING
+#define VBAT_SCALING_BB // define to log these in the blackbox
+extern float vbat_rpy_scale;
+extern float vbat_th_scale;
+void batteryScaleThrottleAndPIDs(uint16_t throttle_zero);
+#endif
+
