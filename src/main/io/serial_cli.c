@@ -581,13 +581,12 @@ static void cliRxFail(char *cmdline)
             rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[channel];
 
             uint16_t value;
-            rxFailsafeChannelMode_e mode;
+            rxFailsafeChannelMode_e mode = RX_FAILSAFE_MODE_HOLD;
 
             ptr = strchr(ptr, ' ');
             if (ptr) {
                 switch (*(++ptr)) {
                     case 'h':
-                        mode = RX_FAILSAFE_MODE_HOLD;
                         break;
 
                     case 's':
