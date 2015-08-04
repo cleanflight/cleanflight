@@ -129,7 +129,7 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 102;
+static const uint8_t EEPROM_CONF_VERSION = 103;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -172,6 +172,9 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->D8[PIDVEL] = 1;
 
     pidProfile->yaw_p_limit = YAW_P_LIMIT_MAX;
+    pidProfile->dterm_cut_hz = 0;
+    pidProfile->pterm_cut_hz = 0;
+    pidProfile->gyro_cut_hz = 0;
 
     pidProfile->P_f[ROLL] = 2.5f;     // new PID with preliminary defaults test carefully
     pidProfile->I_f[ROLL] = 0.6f;
@@ -310,7 +313,7 @@ void resetRcControlsConfig(rcControlsConfig_t *rcControlsConfig) {
 
 void resetMixerConfig(mixerConfig_t *mixerConfig) {
     mixerConfig->pid_at_min_throttle = 1;
-    mixerConfig->yaw_direction = 1;
+    mixerConfig->yaw_motor_direction = 1;
     mixerConfig->yaw_jump_prevention_limit = 200;
 #ifdef USE_SERVOS
     mixerConfig->tri_unarmed_servo = 1;
@@ -356,10 +359,6 @@ static void setControlRateProfile(uint8_t profileIndex)
 static void resetConf(void)
 {
     int i;
-#ifdef USE_SERVOS
-    int8_t servoRates[MAX_SUPPORTED_SERVOS] = { 30, 30, 100, 100, 100, 100, 100, 100 };
-    ;
-#endif
 
     // Clear all configuration
     memset(&masterConfig, 0, sizeof(master_t));
@@ -410,12 +409,21 @@ static void resetConf(void)
     masterConfig.rxConfig.midrc = 1500;
     masterConfig.rxConfig.mincheck = 1100;
     masterConfig.rxConfig.maxcheck = 1900;
-    masterConfig.rxConfig.rx_min_usec = 985;          // any of first 4 channels below this value will trigger rx loss detection
+    masterConfig.rxConfig.rx_min_usec = 885;          // any of first 4 channels below this value will trigger rx loss detection
     masterConfig.rxConfig.rx_max_usec = 2115;         // any of first 4 channels above this value will trigger rx loss detection
+
+    for (i = 0; i < MAX_AUX_CHANNEL_COUNT; i++) {
+        rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[i];
+
+        channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_HOLD;
+        channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+    }
 
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
     masterConfig.rxConfig.rssi_ppm_invert = 0;
+
+    resetAllRxChannelRangeConfigurations(masterConfig.rxConfig.channelRanges);
 
     masterConfig.inputFilteringMode = INPUT_FILTERING_DISABLED;
 
@@ -426,7 +434,6 @@ static void resetConf(void)
 
     resetMixerConfig(&masterConfig.mixerConfig);
 
-    masterConfig.airplaneConfig.flaps_speed = 0;
     masterConfig.airplaneConfig.fixedwing_althold_dir = 1;
 
     // Motor/ESC/Servo
@@ -491,19 +498,17 @@ static void resetConf(void)
         currentProfile->servoConf[i].min = DEFAULT_SERVO_MIN;
         currentProfile->servoConf[i].max = DEFAULT_SERVO_MAX;
         currentProfile->servoConf[i].middle = DEFAULT_SERVO_MIDDLE;
-        currentProfile->servoConf[i].rate = servoRates[i];
+        currentProfile->servoConf[i].rate = 100;
         currentProfile->servoConf[i].angleAtMin = DEFAULT_SERVO_MIN_ANGLE;
         currentProfile->servoConf[i].angleAtMax = DEFAULT_SERVO_MAX_ANGLE;
         currentProfile->servoConf[i].forwardFromChannel = CHANNEL_FORWARDING_DISABLED;
     }
 
     // gimbal
-    currentProfile->gimbalConfig.gimbal_flags = GIMBAL_NORMAL;
+    currentProfile->gimbalConfig.mode = GIMBAL_MODE_NORMAL;
 
     resetTiltArmProfile(&currentProfile->tiltArm);
 #endif
-
-    resetTiltArmProfile(&currentProfile->tiltArm);
 
 #ifdef GPS
     resetGpsProfile(&currentProfile->gpsProfile);
@@ -511,7 +516,7 @@ static void resetConf(void)
 
     // custom mixer. clear by defaults.
     for (i = 0; i < MAX_SUPPORTED_MOTORS; i++)
-        masterConfig.customMixer[i].throttle = 0.0f;
+        masterConfig.customMotorMixer[i].throttle = 0.0f;
 
 #ifdef LED_STRIP
     applyDefaultColors(masterConfig.colors, CONFIGURABLE_COLOR_COUNT);
@@ -550,60 +555,59 @@ static void resetConf(void)
     currentProfile->pidProfile.P8[PITCH] = 36;
     masterConfig.failsafeConfig.failsafe_delay = 2;
     masterConfig.failsafeConfig.failsafe_off_delay = 0;
-    masterConfig.failsafeConfig.failsafe_throttle = 1000;
     currentControlRateProfile->rcRate8 = 130;
     currentControlRateProfile->rates[FD_PITCH] = 20;
     currentControlRateProfile->rates[FD_ROLL] = 20;
     currentControlRateProfile->rates[FD_YAW] = 100;
     parseRcChannels("TAER1234", &masterConfig.rxConfig);
 
-    //  { 1.0f, -0.5f,  1.0f, -1.0f },          // REAR_R
-    masterConfig.customMixer[0].throttle = 1.0f;
-    masterConfig.customMixer[0].roll = -0.5f;
-    masterConfig.customMixer[0].pitch = 1.0f;
-    masterConfig.customMixer[0].yaw = -1.0f;
+    //  { 1.0f, -0.414178f,  1.0f, -1.0f },          // REAR_R
+    masterConfig.customMotorMixer[0].throttle = 1.0f;
+    masterConfig.customMotorMixer[0].roll = -0.414178f;
+    masterConfig.customMotorMixer[0].pitch = 1.0f;
+    masterConfig.customMotorMixer[0].yaw = -1.0f;
 
-    //  { 1.0f, -0.5f, -1.0f,  1.0f },          // FRONT_R
-    masterConfig.customMixer[1].throttle = 1.0f;
-    masterConfig.customMixer[1].roll = -0.5f;
-    masterConfig.customMixer[1].pitch = -1.0f;
-    masterConfig.customMixer[1].yaw = 1.0f;
+    //  { 1.0f, -0.414178f, -1.0f,  1.0f },          // FRONT_R
+    masterConfig.customMotorMixer[1].throttle = 1.0f;
+    masterConfig.customMotorMixer[1].roll = -0.414178f;
+    masterConfig.customMotorMixer[1].pitch = -1.0f;
+    masterConfig.customMotorMixer[1].yaw = 1.0f;
 
-    //  { 1.0f,  0.5f,  1.0f,  1.0f },          // REAR_L
-    masterConfig.customMixer[2].throttle = 1.0f;
-    masterConfig.customMixer[2].roll = 0.5f;
-    masterConfig.customMixer[2].pitch = 1.0f;
-    masterConfig.customMixer[2].yaw = 1.0f;
+    //  { 1.0f,  0.414178f,  1.0f,  1.0f },          // REAR_L
+    masterConfig.customMotorMixer[2].throttle = 1.0f;
+    masterConfig.customMotorMixer[2].roll = 0.414178f;
+    masterConfig.customMotorMixer[2].pitch = 1.0f;
+    masterConfig.customMotorMixer[2].yaw = 1.0f;
 
-    //  { 1.0f,  0.5f, -1.0f, -1.0f },          // FRONT_L
-    masterConfig.customMixer[3].throttle = 1.0f;
-    masterConfig.customMixer[3].roll = 0.5f;
-    masterConfig.customMixer[3].pitch = -1.0f;
-    masterConfig.customMixer[3].yaw = -1.0f;
+    //  { 1.0f,  0.414178f, -1.0f, -1.0f },          // FRONT_L
+    masterConfig.customMotorMixer[3].throttle = 1.0f;
+    masterConfig.customMotorMixer[3].roll = 0.414178f;
+    masterConfig.customMotorMixer[3].pitch = -1.0f;
+    masterConfig.customMotorMixer[3].yaw = -1.0f;
 
-    //  { 1.0f, -1.0f, -0.5f, -1.0f },          // MIDFRONT_R
-    masterConfig.customMixer[4].throttle = 1.0f;
-    masterConfig.customMixer[4].roll = -1.0f;
-    masterConfig.customMixer[4].pitch = -0.5f;
-    masterConfig.customMixer[4].yaw = -1.0f;
+    //  { 1.0f, -1.0f, -0.414178f, -1.0f },          // MIDFRONT_R
+    masterConfig.customMotorMixer[4].throttle = 1.0f;
+    masterConfig.customMotorMixer[4].roll = -1.0f;
+    masterConfig.customMotorMixer[4].pitch = -0.414178f;
+    masterConfig.customMotorMixer[4].yaw = -1.0f;
 
-    //  { 1.0f,  1.0f, -0.5f,  1.0f },          // MIDFRONT_L
-    masterConfig.customMixer[5].throttle = 1.0f;
-    masterConfig.customMixer[5].roll = 1.0f;
-    masterConfig.customMixer[5].pitch = -0.5f;
-    masterConfig.customMixer[5].yaw = 1.0f;
+    //  { 1.0f,  1.0f, -0.414178f,  1.0f },          // MIDFRONT_L
+    masterConfig.customMotorMixer[5].throttle = 1.0f;
+    masterConfig.customMotorMixer[5].roll = 1.0f;
+    masterConfig.customMotorMixer[5].pitch = -0.414178f;
+    masterConfig.customMotorMixer[5].yaw = 1.0f;
 
-    //  { 1.0f, -1.0f,  0.5f,  1.0f },          // MIDREAR_R
-    masterConfig.customMixer[6].throttle = 1.0f;
-    masterConfig.customMixer[6].roll = -1.0f;
-    masterConfig.customMixer[6].pitch = 0.5f;
-    masterConfig.customMixer[6].yaw = 1.0f;
+    //  { 1.0f, -1.0f,  0.414178f,  1.0f },          // MIDREAR_R
+    masterConfig.customMotorMixer[6].throttle = 1.0f;
+    masterConfig.customMotorMixer[6].roll = -1.0f;
+    masterConfig.customMotorMixer[6].pitch = 0.414178f;
+    masterConfig.customMotorMixer[6].yaw = 1.0f;
 
-    //  { 1.0f,  1.0f,  0.5f, -1.0f },          // MIDREAR_L
-    masterConfig.customMixer[7].throttle = 1.0f;
-    masterConfig.customMixer[7].roll = 1.0f;
-    masterConfig.customMixer[7].pitch = 0.5f;
-    masterConfig.customMixer[7].yaw = -1.0f;
+    //  { 1.0f,  1.0f,  0.414178f, -1.0f },          // MIDREAR_L
+    masterConfig.customMotorMixer[7].throttle = 1.0f;
+    masterConfig.customMotorMixer[7].roll = 1.0f;
+    masterConfig.customMotorMixer[7].pitch = 0.414178f;
+    masterConfig.customMotorMixer[7].yaw = -1.0f;
 #endif
 
     // copy first profile into remaining profile
@@ -677,7 +681,7 @@ void activateConfig(void)
     useGyroConfig(&masterConfig.gyroConfig);
 
 #ifdef TELEMETRY
-    useTelemetryConfig(&masterConfig.telemetryConfig);
+    telemetryUseConfig(&masterConfig.telemetryConfig);
 #endif
 
     pidSetController(currentProfile->pidProfile.pidController);

@@ -33,6 +33,7 @@
 #include "drivers/serial.h"
 #include "drivers/adc.h"
 #include "io/serial.h"
+#include "io/rc_controls.h"
 
 #include "flight/failsafe.h"
 
@@ -92,26 +93,37 @@ void useRxConfig(rxConfig_t *rxConfigToUse)
 
 #define REQUIRED_CHANNEL_MASK 0x0F // first 4 channels
 
-// pulse duration is in micro seconds (usec)
-STATIC_UNIT_TESTED void rxCheckPulse(uint8_t channel, uint16_t pulseDuration)
-{
-    static uint8_t goodChannelMask = 0;
+static uint8_t validFlightChannelMask;
 
-    if (channel < 4 &&
+STATIC_UNIT_TESTED void rxResetFlightChannelStatus(void) {
+    validFlightChannelMask = 0;
+}
+
+STATIC_UNIT_TESTED bool rxHaveValidFlightChannels(void)
+{
+    return (validFlightChannelMask == REQUIRED_CHANNEL_MASK);
+}
+
+// pulse duration is in micro seconds (usec)
+STATIC_UNIT_TESTED void rxUpdateFlightChannelStatus(uint8_t channel, uint16_t pulseDuration)
+{
+    if (channel < NON_AUX_CHANNEL_COUNT &&
         pulseDuration >= rxConfig->rx_min_usec &&
         pulseDuration <= rxConfig->rx_max_usec
     ) {
         // if signal is valid - mark channel as OK
-        goodChannelMask |= (1 << channel);
-    }
-
-    if (goodChannelMask == REQUIRED_CHANNEL_MASK) {
-        goodChannelMask = 0;
-        failsafeOnValidDataReceived();
-        rxSignalReceived = true;
+        validFlightChannelMask |= (1 << channel);
     }
 }
 
+void resetAllRxChannelRangeConfigurations(rxChannelRangeConfiguration_t *rxChannelRangeConfiguration) {
+    // set default calibration to full range and 1:1 mapping
+    for (int i = 0; i < NON_AUX_CHANNEL_COUNT; i++) {
+        rxChannelRangeConfiguration->min = PWM_RANGE_MIN;
+        rxChannelRangeConfiguration->max = PWM_RANGE_MAX;
+        rxChannelRangeConfiguration++;
+    }
+}
 
 void rxInit(rxConfig_t *rxConfig)
 {
@@ -259,7 +271,7 @@ void updateRx(uint32_t currentTime)
     }
 
     if ((feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived)
-         || feature(FEATURE_RX_PARALLEL_PWM)) {
+          || feature(FEATURE_RX_PARALLEL_PWM)) {
         needRxSignalBefore = currentTime + DELAY_10_HZ;
     }
 
@@ -308,7 +320,47 @@ static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
     return rcDataMean[chan] / PPM_AND_PWM_SAMPLE_COUNT;
 }
 
-static void processRxChannels(void)
+static uint16_t getRxfailValue(uint8_t channel)
+{
+    switch (channel) {
+        case ROLL:
+        case PITCH:
+        case YAW:
+            return rxConfig->midrc;
+        case THROTTLE:
+            if (feature(FEATURE_3D))
+                return rxConfig->midrc;
+            else
+                return rxConfig->rx_min_usec;
+    }
+
+    rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &rxConfig->failsafe_aux_channel_configurations[channel - NON_AUX_CHANNEL_COUNT];
+
+    switch(channelFailsafeConfiguration->mode) {
+        default:
+        case RX_FAILSAFE_MODE_HOLD:
+            return rcData[channel];
+
+        case RX_FAILSAFE_MODE_SET:
+            return RXFAIL_STEP_TO_CHANNEL_VALUE(channelFailsafeConfiguration->step);
+    }
+
+}
+
+STATIC_UNIT_TESTED uint16_t applyRxChannelRangeConfiguraton(int sample, rxChannelRangeConfiguration_t range)
+{
+    // Avoid corruption of channel with a value of PPM_RCVR_TIMEOUT
+    if (sample == PPM_RCVR_TIMEOUT) {
+        return PPM_RCVR_TIMEOUT;
+    }
+
+    sample = scaleRange(sample, range.min, range.max, PWM_RANGE_MIN, PWM_RANGE_MAX);
+    sample = MIN(MAX(PWM_PULSE_MIN, sample), PWM_PULSE_MAX);
+
+    return sample;
+}
+
+void processRxChannels(void)
 {
     uint8_t chan;
 
@@ -316,10 +368,12 @@ static void processRxChannels(void)
         return; // rcData will have already been updated by MSP_SET_RAW_RC
     }
 
+    rxResetFlightChannelStatus();
+
     for (chan = 0; chan < rxRuntimeConfig.channelCount; chan++) {
 
         if (!rcReadRawFunc) {
-            rcData[chan] = rxConfig->midrc;
+            rcData[chan] = getRxfailValue(chan);
             continue;
         }
 
@@ -328,18 +382,36 @@ static void processRxChannels(void)
         // sample the channel
         uint16_t sample = rcReadRawFunc(&rxRuntimeConfig, rawChannel);
 
-        if (shouldCheckPulse) {
-            rxCheckPulse(chan, sample);
+        // apply the rx calibration
+        if (chan < NON_AUX_CHANNEL_COUNT) {
+            sample = applyRxChannelRangeConfiguraton(sample, rxConfig->channelRanges[chan]);
         }
 
-        // validate the range
-        if (sample < rxConfig->rx_min_usec || sample > rxConfig->rx_max_usec)
-            sample = rxConfig->midrc;
+        rxUpdateFlightChannelStatus(chan, sample);
+
+        if (sample < rxConfig->rx_min_usec || sample > rxConfig->rx_max_usec || !rxSignalReceived) {
+            sample = getRxfailValue(chan);
+        }
 
         if (isRxDataDriven()) {
             rcData[chan] = sample;
         } else {
             rcData[chan] = calculateNonDataDrivenChannel(chan, sample);
+        }
+    }
+
+    if (rxHaveValidFlightChannels()) {
+        if (shouldCheckPulse) {
+            failsafeOnValidDataReceived();
+            rxSignalReceived = true;
+        }
+    } else {
+        if (feature(FEATURE_RX_PARALLEL_PWM)) {
+            rxSignalReceived = false;
+        }
+
+        for (chan = 0; chan < rxRuntimeConfig.channelCount; chan++) {
+            rcData[chan] = getRxfailValue(chan);
         }
     }
 }

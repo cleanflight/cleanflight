@@ -20,10 +20,10 @@ https://github.com/cleanflight/blackbox-log-viewer
 ## Logged data
 The blackbox records flight data on every iteration of the flight control loop. It records the current time in
 microseconds, P, I and D corrections for each axis, your RC command stick positions (after applying expo curves),
-gyroscope data, accelerometer data (after your configured low-pass filtering), barometer readings, 3-axis magnetometer
-readings, raw VBAT and current measurements, and the command being sent to each motor speed controller. This is all
-stored without any approximation or loss of precision, so even quite subtle problems should be detectable from the fight
-data log.
+gyroscope data, accelerometer data (after your configured low-pass filtering), barometer and sonar readings, 3-axis
+magnetometer readings, raw VBAT and current measurements, RSSI, and the command being sent to each motor speed
+controller. This is all stored without any approximation or loss of precision, so even quite subtle problems should be
+detectable from the fight data log.
 
 GPS data is logged whenever new GPS data is available. Although the CSV decoder will decode this data, the video
 renderer does not yet show any of the GPS information (this will be added later).
@@ -146,6 +146,8 @@ These chips are also supported:
 * Micron/ST M25P16 - 16 Mbit
 * Micron N25Q064 - 64 Mbit
 * Winbond W25Q64 - 64 Mbit
+* Micron N25Q0128 - 128 Mbit
+* Winbond W25Q128 - 128 Mbit
 
 ## Enabling the Blackbox (CLI)
 In the [Cleanflight Configurator][] , enter the CLI tab. Enable the Blackbox feature by typing in `feature BLACKBOX` and
@@ -227,6 +229,14 @@ After downloading the log, be sure to erase the chip to make it ready for reuse 
 
 If you try to start recording a new flight when the dataflash is already full, Blackbox logging will be disabled and
 nothing will be recorded.
+
+### Usage - Logging switch
+If you're recording to an onboard flash chip, you probably want to disable Blackbox recording when not required in order
+to save storage space. To do this, you can add a Blackbox flight mode to one of your AUX channels on the Configurator's 
+modes tab. Once you've added a mode, Blackbox will only log flight data when the mode is active.
+
+A log header will always be recorded at arming time, even if logging is paused. You can freely pause and resume logging 
+while in flight.
 
 ## Converting logs to CSV or PNG
 After your flights, you'll have a series of flight log files with a .TXT extension. You'll need to decode these with

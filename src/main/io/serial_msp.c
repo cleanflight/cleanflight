@@ -174,9 +174,6 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 //
 // MSP commands for Cleanflight original features
 //
-#define MSP_CHANNEL_FORWARDING          32    //out message         Returns channel forwarding settings
-#define MSP_SET_CHANNEL_FORWARDING      33    //in message          Channel forwarding settings
-
 #define MSP_MODE_RANGES                 34    //out message         Returns all mode ranges
 #define MSP_SET_MODE_RANGE              35    //in message          Sets a single mode range
 
@@ -231,6 +228,10 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_FAILSAFE_CONFIG             75 //out message         Returns FC Fail-Safe settings
 #define MSP_SET_FAILSAFE_CONFIG         76 //in message          Sets FC Fail-Safe settings
+
+#define MSP_RXFAIL_CONFIG               77 //out message         Returns RXFAIL settings
+#define MSP_SET_RXFAIL_CONFIG           78 //in message          Sets RXFAIL settings
+
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -257,9 +258,9 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_STATUS               101    //out message         cycletime & errors_count & sensor present & box activation & current setting number
 #define MSP_RAW_IMU              102    //out message         9 DOF
-#define MSP_SERVO                103    //out message         8 servos
-#define MSP_MOTOR                104    //out message         8 motors
-#define MSP_RC                   105    //out message         8 rc chan and more
+#define MSP_SERVO                103    //out message         servos
+#define MSP_MOTOR                104    //out message         motors
+#define MSP_RC                   105    //out message         rc channels and more
 #define MSP_RAW_GPS              106    //out message         fix, numsat, lat, lon, alt, speed, ground course
 #define MSP_COMP_GPS             107    //out message         distance home, direction home
 #define MSP_ATTITUDE             108    //out message         2 angles 1 heading
@@ -274,7 +275,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_PIDNAMES             117    //out message         the PID names
 #define MSP_WP                   118    //out message         get a WP, WP# is in the payload, returns (WP#, lat, lon, alt, flags) WP#0-home, WP#16-poshold
 #define MSP_BOXIDS               119    //out message         get the permanent IDs associated to BOXes
-#define MSP_SERVO_CONF           120    //out message         Servo settings
+#define MSP_SERVO_CONFIGURATIONS 120    //out message         All servo configurations.
 #define MSP_NAV_STATUS           121    //out message         Returns navigation status
 #define MSP_NAV_CONFIG           122    //out message         Returns navigation parameters
 #define MSP_TILT_ARM_CONFIG      123    //out message         Returns tilting arm parameters
@@ -292,7 +293,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_WP               209    //in message          sets a given WP (WP#,lat, lon, alt, flags)
 #define MSP_SELECT_SETTING       210    //in message          Select Setting Number (0-2)
 #define MSP_SET_HEAD             211    //in message          define a new heading hold direction
-#define MSP_SET_SERVO_CONF       212    //in message          Servo settings
+#define MSP_SET_SERVO_CONFIGURATION 212    //in message          Servo settings
 #define MSP_SET_MOTOR            214    //in message          PropBalance function
 #define MSP_SET_NAV_CONFIG       215    //in message          Sets nav config parameters - write to the eeprom
 #define MSP_SET_TILT_ARM         216    //in message          Tilt arm settings
@@ -309,10 +310,10 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_ACC_TRIM             240    //out message         get acc angle trim values
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
+#define MSP_SERVO_MIX_RULES      241    //out message         Returns servo mixer configuration
+#define MSP_SET_SERVO_MIX_RULE   242    //in message          Sets servo mixer configuration
 
-#define INBUF_SIZE 72 // FIXME See MSP_SET_SERVO_CONFIG, ideally we want this to be smaller.
-
-#define SERVO_CHUNK_SIZE 9
+#define INBUF_SIZE 64 // FIXME See MSP_SET_SERVO_CONFIG, ideally we want this to be smaller.
 
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
@@ -345,6 +346,10 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXTELEMETRY, "TELEMETRY;", 20 },
     { BOXAUTOTUNE, "AUTOTUNE;", 21 },
     { BOXSONAR, "SONAR;", 22 },
+    { BOXSERVO1, "SERVO1;", 23 },
+    { BOXSERVO2, "SERVO2;", 24 },
+    { BOXSERVO3, "SERVO3;", 25 },
+    { BOXBLACKBOX, "BLACKBOX;", 26 },
     { CHECKBOX_ITEM_COUNT, NULL, 0xFF }
 };
 
@@ -625,8 +630,6 @@ void mspReleasePortIfAllocated(serialPort_t *serialPort)
 
 void mspInit(serialConfig_t *serialConfig)
 {
-    BUILD_BUG_ON((SERVO_CHUNK_SIZE * MAX_SUPPORTED_SERVOS) > INBUF_SIZE);
-
     // calculate used boxes based on features and fill availableBoxes[] array
     memset(activeBoxIds, 0xFF, sizeof(activeBoxIds));
 
@@ -684,6 +687,20 @@ void mspInit(serialConfig_t *serialConfig)
     if (feature(FEATURE_SONAR)){
         activeBoxIds[activeBoxIdCount++] = BOXSONAR;
     }
+
+#ifdef USE_SERVOS
+    if (masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE) {
+        activeBoxIds[activeBoxIdCount++] = BOXSERVO1;
+        activeBoxIds[activeBoxIdCount++] = BOXSERVO2;
+        activeBoxIds[activeBoxIdCount++] = BOXSERVO3;
+    }
+#endif
+
+#ifdef BLACKBOX
+    if (feature(FEATURE_BLACKBOX)){
+        activeBoxIds[activeBoxIdCount++] = BOXBLACKBOX;
+    }
+#endif
 
     memset(mspPorts, 0x00, sizeof(mspPorts));
     mspAllocateSerialPorts(serialConfig);
@@ -768,7 +785,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(MW_VERSION);
         serialize8(masterConfig.mixerMode);
         serialize8(MSP_PROTOCOL_VERSION);
-        serialize32(CAP_DYNBALANCE | (masterConfig.airplaneConfig.flaps_speed ? CAP_FLAPS : 0)); // "capability"
+        serialize32(CAP_DYNBALANCE); // "capability"
         break;
 
     case MSP_STATUS:
@@ -805,7 +822,8 @@ static bool processOutCommand(uint8_t cmdMSP)
             IS_ENABLED(IS_RC_MODE_ACTIVE(BOXTELEMETRY)) << BOXTELEMETRY |
             IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAUTOTUNE)) << BOXAUTOTUNE |
             IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
-            IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM;
+            IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBLACKBOX)) << BOXBLACKBOX;
         for (i = 0; i < activeBoxIdCount; i++) {
             int flag = (tmp & (1 << activeBoxIds[i]));
             if (flag)
@@ -816,14 +834,12 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
     case MSP_RAW_IMU:
         headSerialReply(18);
-        // Hack due to choice of units for sensor data in multiwii
-        if (acc_1G > 1024) {
-            for (i = 0; i < 3; i++)
-                serialize16(accSmooth[i] / 8);
-        } else {
-            for (i = 0; i < 3; i++)
-                serialize16(accSmooth[i]);
-        }
+
+        // Hack scale due to choice of units for sensor data in multiwii
+        uint8_t scale = (acc_1G > 1024) ? 8 : 1;
+
+        for (i = 0; i < 3; i++)
+            serialize16(accSmooth[i] / scale);
         for (i = 0; i < 3; i++)
             serialize16(gyroADC[i]);
         for (i = 0; i < 3; i++)
@@ -833,8 +849,8 @@ static bool processOutCommand(uint8_t cmdMSP)
     case MSP_SERVO:
         s_struct((uint8_t *)&servo, MAX_SUPPORTED_SERVOS * 2);
         break;
-    case MSP_SERVO_CONF:
-        headSerialReply(MAX_SUPPORTED_SERVOS * 9);
+    case MSP_SERVO_CONFIGURATIONS:
+        headSerialReply(MAX_SUPPORTED_SERVOS * sizeof(servoParam_t));
         for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
             serialize16(currentProfile->servoConf[i].min);
             serialize16(currentProfile->servoConf[i].max);
@@ -842,6 +858,8 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize8(currentProfile->servoConf[i].rate);
             serialize8(currentProfile->servoConf[i].angleAtMin);
             serialize8(currentProfile->servoConf[i].angleAtMax);
+            serialize8(currentProfile->servoConf[i].forwardFromChannel);
+            serialize32(currentProfile->servoConf[i].reversedSources);
         }
         break;
     case MSP_TILT_ARM_CONFIG:
@@ -852,10 +870,16 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8( currentProfile->tiltArm.gearRatioPercent );
         serialize8( currentProfile->tiltArm.channel );
         break;
-    case MSP_CHANNEL_FORWARDING:
-        headSerialReply(MAX_SUPPORTED_SERVOS);
-        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
-            serialize8(currentProfile->servoConf[i].forwardFromChannel);
+    case MSP_SERVO_MIX_RULES:
+        headSerialReply(MAX_SERVO_RULES * sizeof(servoMixer_t));
+        for (i = 0; i < MAX_SERVO_RULES; i++) {
+            serialize8(masterConfig.customServoMixer[i].targetChannel);
+            serialize8(masterConfig.customServoMixer[i].inputSource);
+            serialize8(masterConfig.customServoMixer[i].rate);
+            serialize8(masterConfig.customServoMixer[i].speed);
+            serialize8(masterConfig.customServoMixer[i].min);
+            serialize8(masterConfig.customServoMixer[i].max);
+            serialize8(masterConfig.customServoMixer[i].box);
         }
         break;
 #endif
@@ -1030,7 +1054,9 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(masterConfig.batteryConfig.vbatmaxcellvoltage);
         serialize8(masterConfig.batteryConfig.vbatwarningcellvoltage);
         break;
+
     case MSP_MOTOR_PINS:
+        // FIXME This is hardcoded and should not be.
         headSerialReply(8);
         for (i = 0; i < 8; i++)
             serialize8(i + 1);
@@ -1154,6 +1180,14 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(masterConfig.failsafeConfig.failsafe_delay);
         serialize8(masterConfig.failsafeConfig.failsafe_off_delay);
         serialize16(masterConfig.failsafeConfig.failsafe_throttle);
+        break;
+
+    case MSP_RXFAIL_CONFIG:
+        headSerialReply(3 * (rxRuntimeConfig.channelCount - NON_AUX_CHANNEL_COUNT));
+        for (i = NON_AUX_CHANNEL_COUNT; i < rxRuntimeConfig.channelCount; i++) {
+            serialize8(masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].mode);
+            serialize16(RXFAIL_STEP_TO_CHANNEL_VALUE(masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].step));
+        }
         break;
 
     case MSP_RSSI_CONFIG:
@@ -1424,65 +1458,46 @@ static bool processInCommand(void)
         for (i = 0; i < 8; i++) // FIXME should this use MAX_MOTORS or MAX_SUPPORTED_MOTORS instead of 8
             motor_disarmed[i] = read16();
         break;
-    case MSP_SET_SERVO_CONF:
+    case MSP_SET_SERVO_CONFIGURATION:
 #ifdef USE_SERVOS
-        // tmp will true if this use old API (no angleAtMin and angleAtMax), false otherwise
-        tmp = currentPort->dataSize % (sizeof(servoParam_t) - 2) == 0;
-
-        if (!tmp && currentPort->dataSize % sizeof(servoParam_t) != 0) {
-            debug[0] = currentPort->dataSize;
+        if (currentPort->dataSize != 1 + sizeof(servoParam_t)) {
+            headSerialError(0);
+            break;
+        }
+        i = read8();
+        if (i >= MAX_SUPPORTED_SERVOS) {
             headSerialError(0);
         } else {
-            memset(currentProfile->servoConf, 0, sizeof(currentProfile->servoConf));
-
-            uint8_t servoCount;
-            if (tmp){
-                servoCount = currentPort->dataSize / (sizeof(servoParam_t) - 2);
-            }else{
-                servoCount = currentPort->dataSize / sizeof(servoParam_t);
-            }
-
-            for (i = 0; i < MAX_SUPPORTED_SERVOS && i < servoCount; i++) {
-                currentProfile->servoConf[i].min = read16();
-                currentProfile->servoConf[i].max = read16();
-
-                // provide temporary support for old clients that try and send a channel index instead of a servo middle
-                uint16_t potentialServoMiddleOrChannelToForward = read16();
-                if (potentialServoMiddleOrChannelToForward < MAX_SUPPORTED_SERVOS) {
-                    currentProfile->servoConf[i].forwardFromChannel = potentialServoMiddleOrChannelToForward;
-                }
-                if (potentialServoMiddleOrChannelToForward >= PWM_RANGE_MIN && potentialServoMiddleOrChannelToForward <= PWM_RANGE_MAX) {
-                    currentProfile->servoConf[i].middle = potentialServoMiddleOrChannelToForward;
-                }
-                currentProfile->servoConf[i].rate = read8();
-
-                if (tmp){
-                    currentProfile->servoConf[i].angleAtMin = DEFAULT_SERVO_MIN_ANGLE;
-                    currentProfile->servoConf[i].angleAtMax = DEFAULT_SERVO_MAX_ANGLE;
-                }else{
-                    currentProfile->servoConf[i].angleAtMin = read8();
-                    currentProfile->servoConf[i].angleAtMax = read8();
-                }
-            }
-        }
-#endif
-        break;
-    case MSP_SET_TILT_ARM:
-#ifdef USE_SERVOS
-        currentProfile->tiltArm.flagEnabled = read8();
-        currentProfile->tiltArm.pitchDivisior = read8();
-        currentProfile->tiltArm.thrustLiftoff = read8();
-        currentProfile->tiltArm.gearRatioPercent = read8();
-        currentProfile->tiltArm.channel = read8();
-#endif
-        break;
-    case MSP_SET_CHANNEL_FORWARDING:
-#ifdef USE_SERVOS
-        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            currentProfile->servoConf[i].min = read16();
+            currentProfile->servoConf[i].max = read16();
+            currentProfile->servoConf[i].middle = read16();
+            currentProfile->servoConf[i].rate = read8();
+            currentProfile->servoConf[i].angleAtMin = read8();
+            currentProfile->servoConf[i].angleAtMax = read8();
             currentProfile->servoConf[i].forwardFromChannel = read8();
+            currentProfile->servoConf[i].reversedSources = read32();
         }
 #endif
         break;
+        
+    case MSP_SET_SERVO_MIX_RULE:
+#ifdef USE_SERVOS
+        i = read8();
+        if (i >= MAX_SERVO_RULES) {
+            headSerialError(0);
+        } else {
+            masterConfig.customServoMixer[i].targetChannel = read8();
+            masterConfig.customServoMixer[i].inputSource = read8();
+            masterConfig.customServoMixer[i].rate = read8();
+            masterConfig.customServoMixer[i].speed = read8();
+            masterConfig.customServoMixer[i].min = read8();
+            masterConfig.customServoMixer[i].max = read8();
+            masterConfig.customServoMixer[i].box = read8();
+            loadCustomServoMixer();
+        }
+#endif
+        break;
+        
     case MSP_RESET_CONF:
         if (!ARMING_FLAG(ARMED)) {
             resetEEPROM();
@@ -1598,6 +1613,20 @@ static bool processInCommand(void)
         masterConfig.failsafeConfig.failsafe_delay = read8();
         masterConfig.failsafeConfig.failsafe_off_delay = read8();
         masterConfig.failsafeConfig.failsafe_throttle = read16();
+        break;
+
+    case MSP_SET_RXFAIL_CONFIG:
+        {
+            uint8_t channelCount = currentPort->dataSize / 3;
+            if (channelCount > MAX_AUX_CHANNEL_COUNT) {
+                headSerialError(0);
+            } else {
+                for (i = NON_AUX_CHANNEL_COUNT; i < channelCount; i++) {
+                    masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].mode = read8();
+                    masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].step = CHANNEL_VALUE_TO_RXFAIL_STEP(read16());
+                }
+            }
+        }
         break;
 
     case MSP_SET_RSSI_CONFIG:

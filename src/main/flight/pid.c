@@ -43,6 +43,7 @@
 #include "flight/imu.h"
 #include "flight/navigation.h"
 #include "flight/autotune.h"
+#include "flight/filter.h"
 #include "flight/mixer.h"
 
 #include "config/runtime_config.h"
@@ -95,6 +96,8 @@ void pidResetErrorGyro(void)
 }
 
 const angle_index_t rcAliasToAngleIndexMap[] = { AI_ROLL, AI_PITCH };
+
+static filterStatePt1_t PTermState[3], DTermState[3];
 
 #ifdef AUTOTUNE
 bool shouldAutotune(void)
@@ -185,7 +188,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
                 AngleRate = errorAngle * pidProfile->A_level;
             } else {
                 //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
-                AngleRate = (float)((rate + 20) * rcCommand[axis]) / 50.0f; // 200dps to 1200dps max yaw rate
+                AngleRate = (float)((rate + 20) * rcCommand[axis]) / 50.0f; // 200dps to 1200dps max roll/pitch rate
                 if (FLIGHT_MODE(HORIZON_MODE)) {
                     // mix up angle error to desired AngleRate to add a little auto-level feel
                     AngleRate += errorAngle * pidProfile->H_level * horizonLevelStrength;
@@ -203,6 +206,11 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 
         // -----calculate P component
         PTerm = RateError * pidProfile->P_f[axis] * PIDweight[axis] / 100;
+
+        // Pterm low pass
+        if (pidProfile->pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+        }
         // -----calculate I component. Note that PIDweight is divided by 10, because it is simplified formule from the previous multiply by 10
         errorGyroIf[axis] = constrainf(errorGyroIf[axis] + RateError * dT * pidProfile->I_f[axis] * PIDweight[axis] / 10, -250.0f, 250.0f);
 
@@ -221,6 +229,12 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        // Dterm low pass
+        if (pidProfile->dterm_cut_hz) {
+            deltaSum = filterApplyPt1(deltaSum, &DTermState[axis], pidProfile->dterm_cut_hz);
+        }
+
         DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
@@ -311,11 +325,23 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         }
 
         PTerm -= ((int32_t)gyroADC[axis] / 4) * dynP8[axis] / 10 / 8; // 32 bits is needed for calculation
+
+        // Pterm low pass
+        if (pidProfile->pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+        }
+
         delta = (gyroADC[axis] - lastGyro[axis]) / 4;
         lastGyro[axis] = gyroADC[axis];
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        // Dterm low pass
+        if (pidProfile->dterm_cut_hz) {
+            deltaSum = filterApplyPt1(deltaSum, &DTermState[axis], pidProfile->dterm_cut_hz);
+        }
+
         DTerm = (deltaSum * dynD8[axis]) / 32;
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -400,11 +426,21 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 
         PTerm -= ((int32_t)(gyroADC[axis] / 4) * dynP8[axis]) >> 6;   // 32 bits is needed for calculation
 
+        // Pterm low pass
+        if (pidProfile->pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+        }
+
         delta = (gyroADC[axis] - lastGyro[axis]) / 4;   // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
         lastGyro[axis] = gyroADC[axis];
         DTerm = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        // Dterm low pass
+        if (pidProfile->dterm_cut_hz) {
+            DTerm = filterApplyPt1(DTerm, &DTermState[axis], pidProfile->dterm_cut_hz);
+        }
 
         DTerm = ((int32_t)DTerm * dynD8[axis]) >> 5;   // 32 bits is needed for calculation
 
@@ -523,11 +559,22 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
         }
 
         PTerm -= ((int32_t)gyroADC[axis] / 4) * dynP8[axis] / 10 / 8; // 32 bits is needed for calculation
+
+        // Pterm low pass
+        if (pidProfile->pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+        }
         delta = (gyroADC[axis] - lastGyro[axis]) / 4;
         lastGyro[axis] = gyroADC[axis];
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        // Dterm low pass
+        if (pidProfile->dterm_cut_hz) {
+            deltaSum = filterApplyPt1(deltaSum, &DTermState[axis], pidProfile->dterm_cut_hz);
+        }
+
         DTerm = (deltaSum * dynD8[axis]) / 32;
         axisPID[axis] = PTerm + ITerm - DTerm;
 
@@ -582,8 +629,7 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
     uint8_t axis;
     float ACCDeltaTimeINS, FLOATcycleTime, Mwii3msTimescale;
 
-//    MainDptCut = RCconstPI / (float)cfg.maincuthz;                           // Initialize Cut off frequencies for mainpid D
-    MainDptCut = RCconstPI / MAIN_CUT_HZ;                                      // maincuthz (default 12Hz, Range 1-50Hz), hardcoded for now
+    MainDptCut = RCconstPI / constrain(pidProfile->dterm_cut_hz, 1, 50);       // maincuthz (default 0 (disabled), Range 1-50Hz)
     FLOATcycleTime  = (float)constrain(cycleTime, 1, 100000);                  // 1us - 100ms
     ACCDeltaTimeINS = FLOATcycleTime * 0.000001f;                              // ACCDeltaTimeINS is in seconds now
     RCfactor = ACCDeltaTimeINS / (MainDptCut + ACCDeltaTimeINS);               // used for pt1 element
@@ -645,6 +691,12 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
         }
 
         PTerm -= gyroADCQuant * dynP8[axis] * 0.003f;
+
+        // Pterm low pass
+        if (pidProfile->pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+        }
+
         delta = (gyroADCQuant - lastGyro[axis]) / ACCDeltaTimeINS;
 
         lastGyro[axis] = gyroADCQuant;
@@ -691,6 +743,12 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
             PTerm = constrain(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
         }
     }
+
+    // Pterm low pass
+    if (pidProfile->pterm_cut_hz) {
+        PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+    }
+
     axisPID[FD_YAW] = PTerm + ITerm;
     axisPID[FD_YAW] = lrintf(axisPID[FD_YAW]);                                 // Round up result.
 
@@ -788,6 +846,12 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
 
         // -----calculate P component
         PTerm = (RateError * pidProfile->P8[axis] * PIDweight[axis] / 100) >> 7;
+
+        // Pterm low pass
+        if (pidProfile->pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz);
+        }
+
         // -----calculate I component
         // there should be no division before accumulating the error to integrator, because the precision would be reduced.
         // Precision is critical, as I prevents from long-time drift. Thus, 32 bits integrator is used.
@@ -811,6 +875,12 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         deltaSum = delta1[axis] + delta2[axis] + delta;
         delta2[axis] = delta1[axis];
         delta1[axis] = delta;
+
+        // Dterm delta low pass
+        if (pidProfile->dterm_cut_hz) {
+            deltaSum = filterApplyPt1(deltaSum, &DTermState[axis], pidProfile->dterm_cut_hz);
+        }
+
         DTerm = (deltaSum * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
 
         // -----calculate total PID output
@@ -824,26 +894,26 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     }
 }
 
-void pidSetController(int type)
+void pidSetController(pidControllerType_e type)
 {
     switch (type) {
-        case 0:
+        case PID_CONTROLLER_MULTI_WII:
         default:
             pid_controller = pidMultiWii;
             break;
-        case 1:
+        case PID_CONTROLLER_REWRITE:
             pid_controller = pidRewrite;
             break;
-        case 2:
+        case PID_CONTROLLER_LUX_FLOAT:
             pid_controller = pidLuxFloat;
             break;
-        case 3:
+        case PID_CONTROLLER_MULTI_WII_23:
             pid_controller = pidMultiWii23;
             break;
-        case 4:
+        case PID_CONTROLLER_MULTI_WII_HYBRID:
             pid_controller = pidMultiWiiHybrid;
             break;
-        case 5:
+        case PID_CONTROLLER_HARAKIRI:
             pid_controller = pidHarakiri;
             break;
     }
