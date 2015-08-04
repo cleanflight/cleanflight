@@ -255,6 +255,7 @@ void resetBatteryConfig(batteryConfig_t *batteryConfig)
     batteryConfig->currentMeterScale = 400; // for Allegro ACS758LCB-100U (40mV/A)
     batteryConfig->batteryCapacity = 0;
     batteryConfig->currentMeterType = CURRENT_SENSOR_ADC;
+    batteryConfig->vbatt_interval = 500;
 }
 
 #ifdef SWAP_SERIAL_PORT_0_AND_1_DEFAULTS

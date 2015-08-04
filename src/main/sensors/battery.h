@@ -43,12 +43,14 @@ typedef struct batteryConfig_s {
     // FIXME this doesn't belong in here since it's a concern of MSP, not of the battery code.
     uint8_t multiwiiCurrentMeterOutput;     // if set to 1 output the amperage in milliamp steps instead of 0.01A steps via msp
     uint16_t batteryCapacity;               // mAh
+    uint16_t vbatt_interval;               // ms
 } batteryConfig_t;
 
 typedef enum {
     BATTERY_OK = 0,
     BATTERY_WARNING,
-    BATTERY_CRITICAL
+    BATTERY_CRITICAL,
+    BATTERY_NOTPRESENT
 } batteryState_e;
 
 extern uint8_t vbat;
@@ -61,7 +63,7 @@ extern int32_t mAhDrawn;
 
 uint16_t batteryAdcToVoltage(uint16_t src);
 batteryState_e calculateBatteryState(void);
-void updateBatteryVoltage(void);
+void updateBattery(void);
 void batteryInit(batteryConfig_t *initialBatteryConfig);
 
 void updateCurrentMeter(int32_t lastUpdateAt, rxConfig_t *rxConfig, uint16_t deadband3d_throttle);
