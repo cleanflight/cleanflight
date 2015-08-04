@@ -1009,4 +1009,3 @@ uint32_t featureMask(void)
 {
     return masterConfig.enabledFeatures;
 }
-
