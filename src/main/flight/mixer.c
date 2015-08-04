@@ -319,6 +319,8 @@ const mixerRules_t servoMixers[] = {
     { COUNT_SERVO_RULES(servoMixerDual), servoMixerDual },      // MULTITYPE_DUALCOPTER
     { COUNT_SERVO_RULES(servoMixerSingle), servoMixerSingle },    // MULTITYPE_SINGLECOPTER
     { 0, NULL },                // MULTITYPE_ATAIL4
+    { 0, NULL },                // MIXER_QUADX_TILT
+    { 0, NULL },                // MIXER_OCTOX_TILT
     { 0, NULL },                // MULTITYPE_CUSTOM
     { 0, NULL },                // MULTITYPE_CUSTOM_PLANE
     { 0, NULL },                // MULTITYPE_CUSTOM_TRI
