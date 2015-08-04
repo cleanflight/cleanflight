@@ -278,6 +278,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_NAV_STATUS           121    //out message         Returns navigation status
 #define MSP_NAV_CONFIG           122    //out message         Returns navigation parameters
 #define MSP_TILT_ARM_CONFIG      123    //out message         Returns tilting arm parameters
+#define MSP_SET_SERVO_ANGLE   124    //out message         Returns tilting arm parameters
 
 #define MSP_SET_RAW_RC           200    //in message          8 rc chan
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
