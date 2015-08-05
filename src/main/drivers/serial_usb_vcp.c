@@ -67,6 +67,8 @@ bool isUsbVcpTransmitBufferEmpty(serialPort_t *instance)
 uint8_t usbVcpAvailable(serialPort_t *instance)
 {
     UNUSED(instance);
+    if(receiveLength>0xFF)
+    	return 0xFF;
 
     return receiveLength & 0xFF; // FIXME use uint32_t return type everywhere
 }

@@ -234,7 +234,9 @@ static uint16_t VCP_DataRx(uint8_t* Buf, uint32_t Len)
 
     usbData.rxBufHead = ptr % USB_RX_BUFSIZE;
 
-    receiveLength += Len;
+    receiveLength = ((usbData.rxBufHead - usbData.rxBufTail)>0?(usbData.rxBufHead - usbData.rxBufTail):(usbData.rxBufHead + USB_RX_BUFSIZE - usbData.rxBufTail)) % USB_RX_BUFSIZE;
+    if((receiveLength) > (USB_RX_BUFSIZE-1))
+    	return USBD_FAIL;
     return USBD_OK;
 }
 
