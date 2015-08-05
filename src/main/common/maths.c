@@ -117,8 +117,7 @@ float devStandardDeviation(stdev_t *dev)
     return sqrtf(devVariance(dev));
 }
 
-float degreesToRadians(int16_t degrees)
-{
+float degreesToRadians(int16_t degrees){
     return degrees * RAD;
 }
 

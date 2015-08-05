@@ -739,8 +739,11 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
+#ifdef USE_QUATERNION
+        qimuUpdate(&currentProfile->accelerometerTrims);
+#else
         imuUpdate(&currentProfile->accelerometerTrims);
-
+#endif
         // Measure loop rate just after reading the sensors
         currentTime = micros();
         cycleTime = (int32_t)(currentTime - previousTime);

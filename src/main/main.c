@@ -115,13 +115,18 @@ void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfigura
 void rxInit(rxConfig_t *rxConfig);
 void gpsInit(serialConfig_t *serialConfig, gpsConfig_t *initialGpsConfig);
 void navigationInit(gpsProfile_t *initialGpsProfile, pidProfile_t *pidProfile);
-void imuInit(void);
 void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
 void loop(void);
 void spektrumBind(rxConfig_t *rxConfig);
 const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
 void sonarInit(const sonarHardware_t *sonarHardware);
+
+#ifdef USE_QUATERNION
+void qimuInit(void);
+#else
+void imuInit(void);
+#endif
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c
@@ -396,8 +401,11 @@ void init(void)
         compassInit();
 #endif
 
+#ifdef USE_QUATERNION
+    qimuInit();
+#else
     imuInit();
-
+#endif
     mspInit(&masterConfig.serialConfig);
 
 #ifdef USE_CLI
