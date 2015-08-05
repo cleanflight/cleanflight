@@ -345,5 +345,5 @@ int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value)
 
 int16_t calculateThrottleAngleCorrectionAxis(uint8_t throttle_hovering_percent, uint8_t axis){
     uint16_t liftOffTrust = throttle_hovering_percent * 10; //to bring from 0-100 range to 0-1000 range (thrust input is in the 1000-2000 range)
-    return lrintf( liftOffTrust*sinf(anglerad[axis]) );
+    return lrintf( liftOffTrust * (1-cosf(anglerad[axis])) );
 }
