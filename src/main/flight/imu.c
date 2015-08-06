@@ -672,6 +672,9 @@ q4_t attitude_est_e_q;
 float acc_rad_scale; // adc -> G
 float gyro_rads_scale; // adc -> rad/s
 float cosSmallAngle;
+float acc_lpf_f0, acc_lpf_f1;
+v3_t gravity_lpf_b_v, acc_lpf_b_v;
+
 void qimuInit()
 {
   cosSmallAngle = cos_approx(RAD*imuRuntimeConfig->small_angle);
@@ -679,12 +682,17 @@ void qimuInit()
   acc_rad_scale = 1.0f / acc_1G;
   gyro_rads_scale = gyro.scale * RAD;
 
+  acc_lpf_f1 = (1.0f / imuRuntimeConfig->acc_lpf_factor);
+  acc_lpf_f0 = 1.0f - acc_lpf_f1;
+  gravity_lpf_b_v = VZ;
+  acc_lpf_b_v = VZ;
+
   quaternion_from_rpy(&RPY0, &attitude_est_e_q);
 }
 
 void qimuUpdate(rollAndPitchTrims_t *accelerometerTrims)
 {
-  const float gyro_drift_factor = 0.01f;
+  const float gyro_drift_factor = 0.00f;
   static v3_t gyro_drift_correction_b_v = { .x = 0.0f, .y = 0.0f, .z = 0.0f }; // rad/s
 
   const float attitude_correction_factor = 0.001f;
@@ -736,10 +744,42 @@ void qimuUpdate(rollAndPitchTrims_t *accelerometerTrims)
   quaternion(&gyro_rotation_b_v, &attitude_est_update_b_q);              // convert angle vector to quaternion
   MulQQ(&attitude_est_update_b_q, &attitude_est_e_q, &attitude_est_e_q); // and rotate estimate
 
+  v3_t gravity_b_v;
+  // Calculate expected gravity(allows drift to be compensated on all 3 axis when possible)
+  RotateVQ(&VZ, &attitude_est_e_q, &gravity_b_v);
+
+  // check small angle
+  if (gravity_b_v.z > cosSmallAngle)
+  {
+    ENABLE_STATE(SMALL_ANGLE);
+  }
+  else
+  {
+    DISABLE_STATE(SMALL_ANGLE);
+  }
+  
+  // acc_lpf
+  if (imuRuntimeConfig->acc_lpf_factor > 0)
+  {
+    v3_t a0, a1;
+    MulVF(&acc_lpf_b_v, acc_lpf_f0, &a0);
+    MulVF(&acc_b_v, acc_lpf_f1, &a1);
+    SumVV(&a0, &a1, &acc_lpf_b_v);
+
+    MulVF(&gravity_lpf_b_v, acc_lpf_f0, &a0);
+    MulVF(&gravity_b_v, acc_lpf_f1, &a1);
+    SumVV(&a0, &a1, &gravity_lpf_b_v);
+  }
+  else
+  {
+    acc_lpf_b_v = acc_b_v;
+    gravity_lpf_b_v = gravity_b_v;
+  }
+
   ////////////////////////////////////////////////////////////////
   // Calculate Correction
   float acc_m2 = Mag2V(&acc_b_v);
-  debug[3] = acc_m2;
+  debug[3] = acc_m2*1000;
 
   if ((acc_m2 > 1.1025f) || (acc_m2 < 0.9025f)) 
   {
@@ -747,36 +787,25 @@ void qimuUpdate(rollAndPitchTrims_t *accelerometerTrims)
   }
   else // we're not accelerating
   {
-    v3_t gravity_b_v;
-    // Calculate expected gravity(allows drift to be compensated on all 3 axis when possible)
-    RotateVQ(&VZ, &attitude_est_e_q, &gravity_b_v);
-
-    // check small angle
-    if (gravity_b_v.z > cosSmallAngle)
-    { 
-      ENABLE_STATE(SMALL_ANGLE); 
-    }
-    else 
-    { 
-      DISABLE_STATE(SMALL_ANGLE); 
-    }
-
     // Cross product to determine error
-    CrossVV(&acc_b_v, &gravity_b_v, &attitude_correction_b_v);
+    CrossVV(&acc_lpf_b_v, &gravity_lpf_b_v, &attitude_correction_b_v);
     MulVF(&attitude_correction_b_v, attitude_correction_factor/dT, &attitude_correction_b_v); // convert to rate for drift correction
 
-    // conditionally update drift for valid axes (14 degree check)
-    if (ABS(gravity_b_v.x) < 0.97f)
+    if (gyro_drift_factor != 0.0f)
     {
-      gyro_drift_correction_b_v.x = gyro_drift_correction_b_v.x + (attitude_correction_b_v.x*gyro_drift_factor);
-    }
-    if (ABS(gravity_b_v.y) < 0.97f)
-    {
-      gyro_drift_correction_b_v.y = gyro_drift_correction_b_v.y + (attitude_correction_b_v.y*gyro_drift_factor);
-    }
-    if (ABS(gravity_b_v.z) < 0.97f)
-    {
-      gyro_drift_correction_b_v.z = gyro_drift_correction_b_v.z + (attitude_correction_b_v.z*gyro_drift_factor);
+      // conditionally update drift for valid axes (4.5 degree check)
+      if (ABS(gravity_b_v.x) < 0.997f)
+      {
+        gyro_drift_correction_b_v.x = gyro_drift_correction_b_v.x + (attitude_correction_b_v.x*gyro_drift_factor);
+      }
+      if (ABS(gravity_b_v.y) < 0.997f)
+      {
+        gyro_drift_correction_b_v.y = gyro_drift_correction_b_v.y + (attitude_correction_b_v.y*gyro_drift_factor);
+      }
+      if (ABS(gravity_b_v.z) < 0.997f)
+      {
+        gyro_drift_correction_b_v.z = gyro_drift_correction_b_v.z + (attitude_correction_b_v.z*gyro_drift_factor);
+      }
     }
   }
 
