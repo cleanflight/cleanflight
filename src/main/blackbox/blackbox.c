@@ -176,6 +176,14 @@ static const blackboxDeltaFieldDefinition_t blackboxMainFields[] = {
     {"axisD",       0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(NONZERO_PID_D_0)},
     {"axisD",       1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(NONZERO_PID_D_1)},
     {"axisD",       2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(NONZERO_PID_D_2)},
+
+    /* Velocity PID used for alt hold */
+    {"velPID",        0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
+    {"velPID",        1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
+    {"velPID",        2, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
+    /* Alt hold P */
+    {"altPID",        0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(SIGNED_VB), CONDITION(ALWAYS)},
+
     /* rcCommands are encoded together as a group in P-frames: */
     {"rcCommand",   0, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
     {"rcCommand",   1, SIGNED,   .Ipredict = PREDICT(0),       .Iencode = ENCODING(SIGNED_VB),   .Ppredict = PREDICT(PREVIOUS),      .Pencode = ENCODING(TAG8_4S16), CONDITION(ALWAYS)},
@@ -264,7 +272,8 @@ typedef struct blackboxMainState_t {
     uint32_t time;
 
     int32_t axisPID_P[XYZ_AXIS_COUNT], axisPID_I[XYZ_AXIS_COUNT], axisPID_D[XYZ_AXIS_COUNT];
-
+    int32_t velPID[3];
+    int32_t altPID;
     int16_t rcCommand[4];
     int16_t gyroADC[XYZ_AXIS_COUNT];
     int16_t accSmooth[XYZ_AXIS_COUNT];
@@ -306,6 +315,12 @@ extern uint32_t currentTime;
 
 //From rx.c:
 extern uint16_t rssi;
+
+//From althold.c
+extern int32_t velPID_P;
+extern int32_t velPID_I;
+extern int32_t velPID_D;
+extern int32_t altPID_P;
 
 static BlackboxState blackboxState = BLACKBOX_STATE_DISABLED;
 
@@ -493,6 +508,11 @@ static void writeIntraframe(void)
         }
     }
 
+    blackboxWriteSignedVB(blackboxCurrent->velPID[0]);
+    blackboxWriteSignedVB(blackboxCurrent->velPID[1]);
+    blackboxWriteSignedVB(blackboxCurrent->velPID[2]);
+    blackboxWriteSignedVB(blackboxCurrent->altPID);
+
     for (x = 0; x < 3; x++) {
         blackboxWriteSignedVB(blackboxCurrent->rcCommand[x]);
     }
@@ -609,6 +629,11 @@ static void writeInterframe(void)
             blackboxWriteSignedVB(blackboxCurrent->axisPID_D[x] - blackboxLast->axisPID_D[x]);
         }
     }
+
+    blackboxWriteSignedVB(blackboxCurrent->velPID[0] - blackboxLast->velPID[0]);
+    blackboxWriteSignedVB(blackboxCurrent->velPID[1] - blackboxLast->velPID[1]);
+    blackboxWriteSignedVB(blackboxCurrent->velPID[2] - blackboxLast->velPID[2]);
+    blackboxWriteSignedVB(blackboxCurrent->altPID - blackboxLast->altPID);
 
     /*
      * RC tends to stay the same or fairly small for many frames at a time, so use an encoding that
@@ -902,6 +927,11 @@ static void loadMainState(void)
     for (i = 0; i < motorCount; i++) {
         blackboxCurrent->motor[i] = motor[i];
     }
+
+    blackboxCurrent->velPID[0] = velPID_P;
+    blackboxCurrent->velPID[1] = velPID_I;
+    blackboxCurrent->velPID[2] = velPID_D;
+    blackboxCurrent->altPID = altPID_P;
 
     blackboxCurrent->vbatLatest = vbatLatestADC;
     blackboxCurrent->amperageLatest = amperageLatestADC;

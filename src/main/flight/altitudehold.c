@@ -54,6 +54,9 @@ int32_t altHoldThrottleAdjustment = 0;
 int32_t AltHold;
 int32_t vario = 0;                      // variometer in cm/s
 
+#ifdef BLACKBOX
+int32_t velPID_P, velPID_I, velPID_D, altPID_P;
+#endif
 
 static barometerConfig_t *barometerConfig;
 static pidProfile_t *pidProfile;
@@ -188,6 +191,10 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     int32_t result = 0;
     int32_t error;
     int32_t setVel;
+    int32_t altPTerm;
+    int32_t velPTerm;
+    int32_t velITerm;
+    int32_t velDTerm;
 
     if (!isThrustFacingDownwards(&inclination)) {
         return result;
@@ -198,7 +205,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     if (!velocityControl) {
         error = constrain(AltHold - EstAlt, -500, 500);
         error = applyDeadband(error, 10); // remove small P parameter to reduce noise near zero position
-        setVel = constrain((pidProfile->P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
+        setVel = altPTerm = constrain((pidProfile->P8[PIDALT] * error / 128), -300, +300); // limit velocity to +/- 3 m/s
     } else {
         setVel = setVelocity;
     }
@@ -206,16 +213,24 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
     // P
     error = setVel - vel_tmp;
-    result = constrain((pidProfile->P8[PIDVEL] * error / 32), -300, +300);
+    result = velPTerm = constrain((pidProfile->P8[PIDVEL] * error / 32), -300, +300);
 
     // I
     errorVelocityI += (pidProfile->I8[PIDVEL] * error);
     errorVelocityI = constrain(errorVelocityI, -(8192 * 200), (8192 * 200));
-    result += errorVelocityI / 8192;     // I in range +/-200
+    velITerm = errorVelocityI / 8192;
+    result += velITerm ;     // I in range +/-200
 
     // D
-    result -= constrain(pidProfile->D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
+    velDTerm = constrain(pidProfile->D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
+    result -= velDTerm;
 
+    #ifdef BLACKBOX
+        velPID_P = velPTerm;
+        velPID_I = velITerm;
+        velPID_D = -velDTerm;
+        altPID_P = altPTerm;
+    #endif
     return result;
 }
 
