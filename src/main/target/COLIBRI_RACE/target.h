@@ -17,7 +17,9 @@
 
 #pragma once
 
-#define TARGET_BOARD_IDENTIFIER "SDF3" // STM Discovery F3
+#define TARGET_BOARD_IDENTIFIER "CLBR"
+#define BST_DEVICE_NAME "COLIBRI RACE"
+#define BST_DEVICE_NAME_LENGTH 12
 
 #define LED0_GPIO   GPIOC
 #define LED0_PIN    Pin_13
@@ -107,7 +109,7 @@
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
 
 #define USE_I2C
-#define I2C_DEVICE (I2CDEV_2) // SDA (PA10/AF4), SCL (PA9/AF4)
+#define I2C_DEVICE (I2CDEV_2)
 
 #define I2C2_SCL_GPIO        GPIOA
 #define I2C2_SCL_GPIO_AF     GPIO_AF_4
@@ -119,6 +121,11 @@
 #define I2C2_SDA_PIN         GPIO_Pin_10
 #define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
 #define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
+
+#define USE_BST
+#define BST_DEVICE (BSTDEV_1)
+/* Configure the CRC peripheral to use the polynomial x8 + x7 + x6 + x4 + x2 + 1 */
+#define BST_CRC_POLYNOM			 0xD5
 
 #define USE_ADC
 
@@ -146,19 +153,18 @@
 #define GPS
 #define LED_STRIP
 
-// alternative LED strip configuration, tested working.
 #define LED_STRIP_TIMER TIM16
 
-#define USE_LED_STRIP_ON_DMA1_CHANNEL2
+#define USE_LED_STRIP_ON_DMA1_CHANNEL3
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
 #define WS2811_GPIO_AF                  GPIO_AF_1
-#define WS2811_PIN                      GPIO_Pin_6
+#define WS2811_PIN                      GPIO_Pin_6 // TIM16_CH1
 #define WS2811_PIN_SOURCE               GPIO_PinSource6
-#define WS2811_TIMER                    TIM1
+#define WS2811_TIMER                    TIM16
 #define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM16
-#define WS2811_DMA_CHANNEL              DMA1_Channel2
-#define WS2811_IRQ                      DMA1_Channel2_IRQn
+#define WS2811_DMA_CHANNEL              DMA1_Channel3
+#define WS2811_IRQ                      DMA1_Channel3_IRQn
 
 #define TELEMETRY
 #define SERIAL_RX
