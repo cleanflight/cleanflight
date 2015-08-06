@@ -228,6 +228,10 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_FAILSAFE_CONFIG             75 //out message         Returns FC Fail-Safe settings
 #define MSP_SET_FAILSAFE_CONFIG         76 //in message          Sets FC Fail-Safe settings
+
+#define MSP_RXFAIL_CONFIG               77 //out message         Returns RXFAIL settings
+#define MSP_SET_RXFAIL_CONFIG           78 //in message          Sets RXFAIL settings
+
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
 //
@@ -342,7 +346,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXSERVO1, "SERVO1;", 23 },
     { BOXSERVO2, "SERVO2;", 24 },
     { BOXSERVO3, "SERVO3;", 25 },
-    
+    { BOXBLACKBOX, "BLACKBOX;", 26 },
     { CHECKBOX_ITEM_COUNT, NULL, 0xFF }
 };
 
@@ -689,6 +693,12 @@ void mspInit(serialConfig_t *serialConfig)
     }
 #endif
 
+#ifdef BLACKBOX
+    if (feature(FEATURE_BLACKBOX)){
+        activeBoxIds[activeBoxIdCount++] = BOXBLACKBOX;
+    }
+#endif
+
     memset(mspPorts, 0x00, sizeof(mspPorts));
     mspAllocateSerialPorts(serialConfig);
 }
@@ -809,7 +819,8 @@ static bool processOutCommand(uint8_t cmdMSP)
             IS_ENABLED(IS_RC_MODE_ACTIVE(BOXTELEMETRY)) << BOXTELEMETRY |
             IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAUTOTUNE)) << BOXAUTOTUNE |
             IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
-            IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM;
+            IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM |
+            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBLACKBOX)) << BOXBLACKBOX;
         for (i = 0; i < activeBoxIdCount; i++) {
             int flag = (tmp & (1 << activeBoxIds[i]));
             if (flag)
@@ -1158,6 +1169,14 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(masterConfig.failsafeConfig.failsafe_delay);
         serialize8(masterConfig.failsafeConfig.failsafe_off_delay);
         serialize16(masterConfig.failsafeConfig.failsafe_throttle);
+        break;
+
+    case MSP_RXFAIL_CONFIG:
+        headSerialReply(3 * (rxRuntimeConfig.channelCount - NON_AUX_CHANNEL_COUNT));
+        for (i = NON_AUX_CHANNEL_COUNT; i < rxRuntimeConfig.channelCount; i++) {
+            serialize8(masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].mode);
+            serialize16(RXFAIL_STEP_TO_CHANNEL_VALUE(masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].step));
+        }
         break;
 
     case MSP_RSSI_CONFIG:
@@ -1583,6 +1602,20 @@ static bool processInCommand(void)
         masterConfig.failsafeConfig.failsafe_delay = read8();
         masterConfig.failsafeConfig.failsafe_off_delay = read8();
         masterConfig.failsafeConfig.failsafe_throttle = read16();
+        break;
+
+    case MSP_SET_RXFAIL_CONFIG:
+        {
+            uint8_t channelCount = currentPort->dataSize / 3;
+            if (channelCount > MAX_AUX_CHANNEL_COUNT) {
+                headSerialError(0);
+            } else {
+                for (i = NON_AUX_CHANNEL_COUNT; i < channelCount; i++) {
+                    masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].mode = read8();
+                    masterConfig.rxConfig.failsafe_aux_channel_configurations[i - NON_AUX_CHANNEL_COUNT].step = CHANNEL_VALUE_TO_RXFAIL_STEP(read16());
+                }
+            }
+        }
         break;
 
     case MSP_SET_RSSI_CONFIG:
