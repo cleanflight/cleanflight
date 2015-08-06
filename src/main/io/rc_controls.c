@@ -23,6 +23,8 @@
 
 #include "platform.h"
 
+#include "build_config.h"
+
 #include "common/axis.h"
 #include "common/maths.h"
 
@@ -70,7 +72,10 @@ uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
 
 
 void blackboxLogInflightAdjustmentEvent(adjustmentFunction_e adjustmentFunction, int32_t newValue) {
-#ifdef BLACKBOX
+#ifndef BLACKBOX
+    UNUSED(adjustmentFunction);
+    UNUSED(newValue);
+#else
     if (feature(FEATURE_BLACKBOX)) {
         flightLogEvent_inflightAdjustment_t eventData;
         eventData.adjustmentFunction = adjustmentFunction;
@@ -82,7 +87,10 @@ void blackboxLogInflightAdjustmentEvent(adjustmentFunction_e adjustmentFunction,
 }
 
 void blackboxLogInflightAdjustmentEventFloat(adjustmentFunction_e adjustmentFunction, float newFloatValue) {
-#ifdef BLACKBOX
+#ifndef BLACKBOX
+    UNUSED(adjustmentFunction);
+    UNUSED(newFloatValue);
+#else
     if (feature(FEATURE_BLACKBOX)) {
         flightLogEvent_inflightAdjustment_t eventData;
         eventData.adjustmentFunction = adjustmentFunction;
@@ -300,6 +308,21 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     }
 #endif
 
+}
+
+bool isModeActivationConditionPresent(modeActivationCondition_t *modeActivationConditions, boxId_e modeId)
+{
+    uint8_t index;
+
+    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
+        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
+        
+        if (modeActivationCondition->modeId == modeId && IS_RANGE_USABLE(&modeActivationCondition->range)) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 bool isRangeActive(uint8_t auxChannelIndex, channelRange_t *range) {
@@ -724,20 +747,10 @@ int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse)
 {
-    uint8_t index;
-
     escAndServoConfig = escAndServoConfigToUse;
     pidProfile = pidProfileToUse;
 
-    isUsingSticksToArm = true;
-
-    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
-        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
-        if (modeActivationCondition->modeId == BOXARM && IS_RANGE_USABLE(&modeActivationCondition->range)) {
-            isUsingSticksToArm = false;
-            break;
-        }
-    }
+    isUsingSticksToArm = !isModeActivationConditionPresent(modeActivationConditions, BOXARM);
 }
 
 void resetAdjustmentStates(void)

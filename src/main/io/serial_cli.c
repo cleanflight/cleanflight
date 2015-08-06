@@ -97,6 +97,7 @@ void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort);
 static serialPort_t *cliPort;
 
 static void cliAux(char *cmdline);
+static void cliRxFail(char *cmdline);
 static void cliAdjustmentRange(char *cmdline);
 static void cliMotorMix(char *cmdline);
 static void cliDefaults(char *cmdline);
@@ -116,6 +117,7 @@ static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
 static void cliVersion(char *cmdline);
+static void cliRxRange(char *cmdline);
 
 #ifdef GPS
 static void cliGpsPassthrough(char *cmdline);
@@ -256,6 +258,8 @@ const clicmd_t cmdTable[] = {
         "[<index>]", cliProfile),
     CLI_COMMAND_DEF("rateprofile", "change rate profile",
         "[<index>]", cliRateProfile),
+    CLI_COMMAND_DEF("rxrange", "configure rx channel ranges", NULL, cliRxRange),
+    CLI_COMMAND_DEF("rxfail", "show/set rx failsafe settings", NULL, cliRxFail),
     CLI_COMMAND_DEF("save", "save and reboot", NULL, cliSave),
     CLI_COMMAND_DEF("serial", "configure serial ports", NULL, cliSerial),
 #ifdef USE_SERVOS
@@ -558,6 +562,73 @@ static bool isEmpty(const char *string)
     return *string == '\0';
 }
 
+static void cliRxFail(char *cmdline)
+{
+    uint8_t channel;
+    char buf[3];
+
+    if (isEmpty(cmdline)) {
+        // print out rxConfig failsafe settings
+        for (channel = 0; channel < MAX_AUX_CHANNEL_COUNT; channel++) {
+            cliRxFail(itoa(channel, buf, 10));
+        }
+    } else {
+        char *ptr = cmdline;
+
+        channel = atoi(ptr++);
+        if ((channel < MAX_AUX_CHANNEL_COUNT)) {
+
+            rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[channel];
+
+            uint16_t value;
+            rxFailsafeChannelMode_e mode;
+
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                switch (*(++ptr)) {
+                    case 'h':
+                        mode = RX_FAILSAFE_MODE_HOLD;
+                        break;
+
+                    case 's':
+                        mode = RX_FAILSAFE_MODE_SET;
+                        break;
+                    default:
+                        cliShowParseError();
+                        return;
+                }
+            }
+
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                value = atoi(++ptr);
+                value = CHANNEL_VALUE_TO_RXFAIL_STEP(value);
+                if (value > MAX_RXFAIL_RANGE_STEP) {
+                    cliPrint("Value out of range\r\n");
+                    return;
+                }
+
+                channelFailsafeConfiguration->mode = mode;
+                channelFailsafeConfiguration->step = value;
+            }
+
+            char modeCharacter = channelFailsafeConfiguration->mode == RX_FAILSAFE_MODE_SET ? 's' : 'h';
+            // triple use of printf below
+            // 1. acknowledge interpretation on command,
+            // 2. query current setting on single item,
+            // 3. recursive use for full list.
+
+            printf("rxfail %u %c %d\r\n",
+                channel,
+                modeCharacter,
+                RXFAIL_STEP_TO_CHANNEL_VALUE(channelFailsafeConfiguration->step)
+            );
+        } else {
+            printf("channel must be < %u\r\n", MAX_AUX_CHANNEL_COUNT);
+        }
+    }
+}
+
 static void cliAux(char *cmdline)
 {
     int i, val = 0;
@@ -856,6 +927,51 @@ static void cliMotorMix(char *cmdline)
         }
     }
 #endif
+}
+
+static void cliRxRange(char *cmdline)
+{
+    int i, validArgumentCount = 0;
+    char *ptr;
+
+    if (isEmpty(cmdline)) {
+        for (i = 0; i < NON_AUX_CHANNEL_COUNT; i++) {
+            rxChannelRangeConfiguration_t *channelRangeConfiguration = &masterConfig.rxConfig.channelRanges[i];
+            printf("rxrange %u %u %u\r\n", i, channelRangeConfiguration->min, channelRangeConfiguration->max);
+        }
+    } else if (strcasecmp(cmdline, "reset") == 0) {
+        resetAllRxChannelRangeConfigurations(masterConfig.rxConfig.channelRanges);
+    } else {
+        ptr = cmdline;
+        i = atoi(ptr);
+        if (i >= 0 && i < NON_AUX_CHANNEL_COUNT) {
+            int rangeMin, rangeMax;
+
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                rangeMin = atoi(++ptr);
+                validArgumentCount++;
+            }
+
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                rangeMax = atoi(++ptr);
+                validArgumentCount++;
+            }
+
+            if (validArgumentCount != 2) {
+                cliShowParseError();
+            } else if (rangeMin < PWM_PULSE_MIN || rangeMin > PWM_PULSE_MAX || rangeMax < PWM_PULSE_MIN || rangeMax > PWM_PULSE_MAX || rangeMin >= rangeMax) {
+                cliShowParseError();
+            } else {
+                rxChannelRangeConfiguration_t *channelRangeConfiguration = &masterConfig.rxConfig.channelRanges[i];
+                channelRangeConfiguration->min = rangeMin;
+                channelRangeConfiguration->max = rangeMax;
+            }
+        } else {
+            cliShowArgumentRangeError("channel", 0, NON_AUX_CHANNEL_COUNT - 1);
+        }
+    }
 }
 
 #ifdef LED_STRIP
@@ -1379,6 +1495,9 @@ static void cliDump(char *cmdline)
 #endif
         printSectionBreak();
         dumpValues(MASTER_VALUE);
+
+        cliPrint("\r\n# rxfail\r\n");
+        cliRxFail("");
     }
 
     if (dumpMask & DUMP_PROFILE) {
@@ -1394,6 +1513,10 @@ static void cliDump(char *cmdline)
         cliPrint("\r\n# adjrange\r\n");
 
         cliAdjustmentRange("");
+
+        printf("\r\n# rxrange\r\n");
+
+        cliRxRange("");
 
         cliPrint("\r\n# servo\r\n");
 
@@ -1919,8 +2042,8 @@ static void cliStatus(char *cmdline)
 {
     UNUSED(cmdline);
 
-    printf("System Uptime: %d seconds, Voltage: %d * 0.1V (%dS battery)\r\n",
-        millis() / 1000, vbat, batteryCellCount);
+    printf("System Uptime: %d seconds, Voltage: %d * 0.1V (%dS battery - %s)\r\n",
+        millis() / 1000, vbat, batteryCellCount, getBatteryStateString());
 
 
     printf("CPU Clock=%dMHz", (SystemCoreClock / 1000000));
