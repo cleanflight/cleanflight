@@ -65,6 +65,7 @@ void calculateEstimatedAltitude(uint32_t currentTime);
 void imuUpdate(rollAndPitchTrims_t *accelerometerTrims, uint8_t mixerMode);
 float calculateThrottleAngleScale(uint16_t throttle_correction_angle);
 int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value);
+int16_t calculateThrottleAngleCorrectionAxis(uint8_t throttle_hovering_percent, uint8_t axis);
 float calculateAccZLowPassFilterRCTimeConstant(float accz_lpf_cutoff);
 
 int16_t imuCalculateHeading(t_fp_vector *vec);
