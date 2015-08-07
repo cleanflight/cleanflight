@@ -349,7 +349,6 @@ int16_t calculateThrottleAngleCorrectionAxis(uint8_t throttle_hovering_percent, 
         return 0; //if upside down don't increase correction
 
     uint16_t liftOffTrust = throttle_hovering_percent * 10; //to bring from 0-100 range to 0-1000 range (thrust input is in the 1000-2000 range)
-    int16_t throttleCompensation = lrintf( liftOffTrust / cosf( ABS(anglerad[axis]) ) - liftOffTrust );
-    throttleCompensation = fmin(throttleCompensation, 1000);
-    return throttleCompensation;
+
+    return lrintf( constrainf(  liftOffTrust / cosf( ABS(anglerad[axis]) ) - liftOffTrust, 0, 1000 ) );
 }

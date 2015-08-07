@@ -68,6 +68,41 @@ TEST(FlightImuTest, TestCalculateHeading)
     EXPECT_EQ(imuCalculateHeading(&north_east), 45);
 }
 
+extern float anglerad[];
+
+TEST(FlightImuTest, TestCalculateThrottleAngleCorrectionAxis)
+{
+    const uint16_t TRUST = 3;
+    float testAnglesAndResults[][2] = {
+        {0, 0}, //at 0 deg, no compensation
+
+        {M_PIf/6, 5},            //at 30 deg, compensantion sould be about 0.464101791
+        {M_PIf/4, 12},             //at 45 deg compesantion shuld be about 1.242640972
+        {M_PIf/2-M_PIf/6, 30.00000477f},    //at 60 deg compesantion shuld be about 3.000000477
+        {M_PIf/2, 1000},                    //at 90 deg compesantion shuld be 1000 becuse function should limit to that
+
+        {-M_PIf/6, 5},           //at -30 deg, compensantion sould be about 0.464101791
+        {-M_PIf/4, 12},            //at -45 deg compesantion shuld be about 1.242640972
+        {-M_PIf/2+M_PIf/6, 30.00000477f},   //at -60 deg compesantion shuld be about 3.000000477
+        {-M_PIf/2, 1000},                   //at -90 deg compesantion shuld be 1000 becuse function should limit to that
+
+    }; //test value
+
+    const float MAX_ERROR = 0.000001f;
+
+    const size_t SIZE_OF_TEST_ARRAY = sizeof(testAnglesAndResults)/sizeof(testAnglesAndResults[0]);
+
+    size_t test_angle = 0;
+    int16_t result;
+    for (size_t i=0; i < SIZE_OF_TEST_ARRAY; i++){
+        anglerad[test_angle] = testAnglesAndResults[i][0];
+        result = calculateThrottleAngleCorrectionAxis(TRUST, test_angle);
+
+        EXPECT_LT( ABS(result), testAnglesAndResults[i][1]+MAX_ERROR );
+    }
+}
+
+
 // STUBS
 
 extern "C" {
