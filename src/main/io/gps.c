@@ -127,7 +127,7 @@ static const gpsInitData_t gpsInitData[] = {
 
 #define MTK_INIT_STRINGS_COUNT 8
 static const char *MTK_Init[] = {
-   "$PMTK314,0,1,0,1,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0*2D\r\n",                      // NMEA strings frequency (=output respective NMEA string every Nth fix)
+   "$PMTK314,3,1,3,1,5,3,0,0,0,0,0,0,0,0,0,0,0,0,0*2E\r\n",                      // NMEA strings frequency (=output respective NMEA string every Nth fix)
    "$PMTK220,1000*1F\r\n",                                                       // Interval between fixes 1s -> 1 Hz update
    "$PMTK220,500*2B\r\n",                                                        // Interval between fixes 0.5s -> 2 Hz update
    "$PMTK220,200*2C\r\n",                                                        // Interval between fixes 0.2s -> 5 Hz update

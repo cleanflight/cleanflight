@@ -312,7 +312,7 @@ static void sendFakeLatLong(void)
 {
     // Heading is only displayed on OpenTX if non-zero lat/long is also sent
     int32_t coord[2] = {0,0};
-    
+
     coord[LAT] = (telemetryConfig->gpsNoFixLatitude * GPS_DEGREES_DIVIDER);
     coord[LON] = (telemetryConfig->gpsNoFixLongitude * GPS_DEGREES_DIVIDER);
 
@@ -489,9 +489,10 @@ void checkFrSkyTelemetryState(void)
     else
         freeFrSkyTelemetryPort();
 }
+
 #define textTransmitBufferSize 5  // max pos+char duplets
 #define telemetryTextSize 22 // size of text buffer
-static char telemetryText[telemetryTextSize+1]; // Telemetry text buffer + trailing 0
+static char telemetryText[telemetryTextSize+1]; // Telemetry text buffer + trailing 0 -- Note: if memory is a problem than lineBuffer (from display.c) could be used instead. However status line must be recreated every time again before sending
 static uint8_t textTransmitBuffer[2*textTransmitBufferSize]; // lower byte pos, upper byte char - "FIFO"
 static uint8_t countTextTransmitBuffer = 0; // number of pairs of pos+char in buffer
 static uint8_t lastTransmittedCharPos = 0; // position of last char from text buffer which was added to transmit buffer - in fact it is next char to be transmitted :)
