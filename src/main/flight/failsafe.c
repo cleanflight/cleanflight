@@ -199,7 +199,7 @@ void failsafeUpdateState(void)
 
                 // This will prevent the automatic rearm if failsafe shuts it down and prevents
                 // to restart accidently by just reconnect to the tx - you will have to switch off first to rearm
-//CT STOP THIS                ENABLE_ARMING_FLAG(PREVENT_ARMING);
+                ENABLE_ARMING_FLAG(PREVENT_ARMING);
                 failsafeState.active = false;
                 mwDisarm();
                 break;
