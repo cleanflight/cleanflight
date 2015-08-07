@@ -363,9 +363,6 @@ static void resetConf(void)
 #if defined(CJMCU) || defined(SPARKY) || defined(COLIBRI_RACE)
     featureSet(FEATURE_RX_PPM);
 #endif
-//#if defined(COLIBRI_RACE)
-//    featureSet(FEATURE_GPS);
-//#endif
 
 #ifdef BOARD_HAS_VOLTAGE_DIVIDER
     // only enable the VBAT feature by default if the board has a voltage divider otherwise

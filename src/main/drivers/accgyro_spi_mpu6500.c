@@ -99,14 +99,11 @@ static bool mpu6500Detect(void)
     uint8_t tmp;
 
     mpu6500ReadRegister(MPU6500_RA_WHOAMI, &tmp, 1);
-#ifdef COLIBRI_RACE
-    return true; //true anyway.
-#else
+
     if (tmp != MPU6500_WHO_AM_I_CONST)
         return false;
 
     return true;
-#endif
 }
 
 bool mpu6500SpiAccDetect(acc_t *acc)
