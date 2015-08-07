@@ -100,7 +100,7 @@ static const char* const pageTitles[] = {
 
 #define PAGE_COUNT (PAGE_RX + 1)
 
-const uint8_t cyclePageIds[] = {
+const pageId_e cyclePageIds[] = {
     PAGE_PROFILE,
 #ifdef GPS
     PAGE_GPS,
@@ -475,9 +475,8 @@ void showWelcomePage(void)
     i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
-    tfp_sprintf(lineBuffer, "Target: %s", targetName);
     i2c_OLED_set_line(rowIndex++);
-    i2c_OLED_send_string(lineBuffer);
+    i2c_OLED_send_string(targetName);
 }
 
 void showArmedPage(void)

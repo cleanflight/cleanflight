@@ -26,6 +26,8 @@
 #include "system.h"
 #include "bus_i2c.h"
 
+#include "build_config.h"
+
 // MS5611, Standard address 0x77
 #define MS5611_ADDR                 0x77
 
@@ -44,17 +46,17 @@
 
 static void ms5611_reset(void);
 static uint16_t ms5611_prom(int8_t coef_num);
-static int8_t ms5611_crc(uint16_t *prom);
+STATIC_UNIT_TESTED int8_t ms5611_crc(uint16_t *prom);
 static uint32_t ms5611_read_adc(void);
 static void ms5611_start_ut(void);
 static void ms5611_get_ut(void);
 static void ms5611_start_up(void);
 static void ms5611_get_up(void);
-static void ms5611_calculate(int32_t *pressure, int32_t *temperature);
+STATIC_UNIT_TESTED void ms5611_calculate(int32_t *pressure, int32_t *temperature);
 
-static uint32_t ms5611_ut;  // static result of temperature measurement
-static uint32_t ms5611_up;  // static result of pressure measurement
-static uint16_t ms5611_c[PROM_NB];  // on-chip ROM
+STATIC_UNIT_TESTED uint32_t ms5611_ut;  // static result of temperature measurement
+STATIC_UNIT_TESTED uint32_t ms5611_up;  // static result of pressure measurement
+STATIC_UNIT_TESTED uint16_t ms5611_c[PROM_NB];  // on-chip ROM
 static uint8_t ms5611_osr = CMD_ADC_4096;
 
 bool ms5611Detect(baro_t *baro)
@@ -102,7 +104,7 @@ static uint16_t ms5611_prom(int8_t coef_num)
     return rxbuf[0] << 8 | rxbuf[1];
 }
 
-static int8_t ms5611_crc(uint16_t *prom)
+STATIC_UNIT_TESTED int8_t ms5611_crc(uint16_t *prom)
 {
     int32_t i, j;
     uint32_t res = 0;
@@ -159,12 +161,12 @@ static void ms5611_get_up(void)
     ms5611_up = ms5611_read_adc();
 }
 
-static void ms5611_calculate(int32_t *pressure, int32_t *temperature)
+STATIC_UNIT_TESTED void ms5611_calculate(int32_t *pressure, int32_t *temperature)
 {
     uint32_t press;
     int64_t temp;
     int64_t delt;
-    int32_t dT = (int64_t)ms5611_ut - ((uint64_t)ms5611_c[5] * 256);
+    int64_t dT = (int64_t)ms5611_ut - ((uint64_t)ms5611_c[5] * 256);
     int64_t off = ((int64_t)ms5611_c[2] << 16) + (((int64_t)ms5611_c[4] * dT) >> 7);
     int64_t sens = ((int64_t)ms5611_c[1] << 15) + (((int64_t)ms5611_c[3] * dT) >> 8);
     temp = 2000 + ((dT * (int64_t)ms5611_c[6]) >> 23);
@@ -180,8 +182,10 @@ static void ms5611_calculate(int32_t *pressure, int32_t *temperature)
             off -= 7 * delt;
             sens -= (11 * delt) >> 1;
         }
+    temp -= ((dT * dT) >> 31);
     }
     press = ((((int64_t)ms5611_up * sens) >> 21) - off) >> 15;
+
 
     if (pressure)
         *pressure = press;
