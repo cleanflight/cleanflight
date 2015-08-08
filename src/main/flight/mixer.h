@@ -70,7 +70,7 @@ typedef struct mixer_t {
 
 typedef struct mixerConfig_s {
     uint8_t pid_at_min_throttle;            // when enabled pids are used at minimum throttle
-    int8_t yaw_direction;
+    int8_t yaw_motor_direction;
     uint16_t yaw_jump_prevention_limit;      // make limit configurable (original fixed value was 100)
 #ifdef USE_SERVOS
     uint8_t tri_unarmed_servo;              // send tail servo correction pulses even when unarmed
@@ -114,6 +114,42 @@ enum {
     INPUT_SOURCE_COUNT
 } inputSource_e;
 
+// target servo channels
+typedef enum {
+    SERVO_GIMBAL_PITCH = 0,
+    SERVO_GIMBAL_ROLL = 1,
+    SERVO_FLAPS = 2,
+    SERVO_FLAPPERON_1 = 3,
+    SERVO_FLAPPERON_2 = 4,
+    SERVO_RUDDER = 5,
+    SERVO_ELEVATOR = 6,
+    SERVO_THROTTLE = 7, // for internal combustion (IC) planes
+
+    SERVO_BICOPTER_LEFT = 4,
+    SERVO_BICOPTER_RIGHT = 5,
+
+    SERVO_DUALCOPTER_LEFT = 4,
+    SERVO_DUALCOPTER_RIGHT = 5,
+
+    SERVO_SINGLECOPTER_1 = 3,
+    SERVO_SINGLECOPTER_2 = 4,
+    SERVO_SINGLECOPTER_3 = 5,
+    SERVO_SINGLECOPTER_4 = 6,
+
+} servoIndex_e; // FIXME rename to servoChannel_e
+
+#define SERVO_PLANE_INDEX_MIN SERVO_FLAPS
+#define SERVO_PLANE_INDEX_MAX SERVO_THROTTLE
+
+#define SERVO_DUALCOPTER_INDEX_MIN SERVO_DUALCOPTER_LEFT
+#define SERVO_DUALCOPTER_INDEX_MAX SERVO_DUALCOPTER_RIGHT
+
+#define SERVO_SINGLECOPTER_INDEX_MIN SERVO_SINGLECOPTER_1
+#define SERVO_SINGLECOPTER_INDEX_MAX SERVO_SINGLECOPTER_4
+
+#define SERVO_FLAPPERONS_MIN SERVO_FLAPPERON_1
+#define SERVO_FLAPPERONS_MAX SERVO_FLAPPERON_2
+
 typedef struct servoMixer_t {
     uint8_t targetChannel;                  // servo that receives the output of the rule
     uint8_t inputSource;                    // input channel for this rule
@@ -138,12 +174,12 @@ typedef struct servoParam_t {
     int16_t min;                            // servo min
     int16_t max;                            // servo max
     int16_t middle;                         // servo middle
-    int8_t rate;                           // range [-125;+125] ; can be used to adjust a rate 0-125% and a direction
-    uint32_t reversedSources;              // the direction of servo movement for each input source of the servo mixer, bit set=inverted
+    int8_t rate;                            // range [-125;+125] ; can be used to adjust a rate 0-125% and a direction
     uint8_t angleAtMin;                     // range [0;180] the measured angle in degrees from the middle when the servo is at the 'min' value.
     uint8_t angleAtMax;                     // range [0;180] the measured angle in degrees from the middle when the servo is at the 'max' value.
     int8_t forwardFromChannel;              // RX channel index, 0 based.  See CHANNEL_FORWARDING_DISABLED
-} servoParam_t;
+    uint32_t reversedSources;               // the direction of servo movement for each input source of the servo mixer, bit set=inverted
+} __attribute__ ((__packed__)) servoParam_t;
 
 struct gimbalConfig_s;
 struct escAndServoConfig_s;

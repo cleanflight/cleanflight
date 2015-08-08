@@ -3,7 +3,7 @@
 filename=Manual
 doc_files=(
 	'Introduction.md'
-    'Getting Started.md'
+	'Getting Started.md'
 	'Safety.md'
 	'Installation.md'
 	'Configuration.md'
@@ -41,15 +41,16 @@ if which gimli >/dev/null; then
 	echo "Building ${filename}.pdf"
 	pushd . >/dev/null
 	cd docs
-	
+
 	rm -f ${filename}.md
 	for i in "${doc_files[@]}"
 	do
 		cat "$i" >> ${filename}.md
 	done
 	rm -f ${filename}.pdf
-	gimli -f ${filename}.md -stylesheet override.css
-	rm ${filename}.md 
+	gimli -f ${filename}.md -stylesheet override.css \
+	  -w '--toc --title "Cleanflight Manual" --footer-right "[page]" --toc-depth 1'
+	rm ${filename}.md
 	popd >/dev/null
 else
 	echo -e "\nFAILED"
@@ -57,7 +58,3 @@ else
 	echo -e "https://github.com/walle/gimli\n"
 	exit 1
 fi
-
-
-
-

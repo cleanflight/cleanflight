@@ -46,13 +46,25 @@
 #define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
 #define INVERTER_USART USART2
 
-#define MPU6000_CS_GPIO       GPIOB
-#define MPU6000_CS_PIN        GPIO_Pin_12
-#define MPU6000_SPI_INSTANCE  SPI2
+#define USE_SPI
+#define USE_SPI_DEVICE_2
 
-#define MPU6500_CS_GPIO       GPIOB
-#define MPU6500_CS_PIN        GPIO_Pin_12
-#define MPU6500_SPI_INSTANCE  SPI2
+#define PORT103R_SPI_INSTANCE     SPI2
+#define PORT103R_SPI_CS_GPIO      GPIOB
+#define PORT103R_SPI_CS_PIN       GPIO_Pin_12
+
+// We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
+#define M25P16_CS_GPIO        PORT103R_SPI_CS_GPIO
+#define M25P16_CS_PIN         PORT103R_SPI_CS_PIN
+#define M25P16_SPI_INSTANCE   PORT103R_SPI_INSTANCE
+
+#define MPU6000_CS_GPIO       PORT103R_SPI_CS_GPIO
+#define MPU6000_CS_PIN        PORT103R_SPI_CS_PIN
+#define MPU6000_SPI_INSTANCE  PORT103R_SPI_INSTANCE
+
+#define MPU6500_CS_GPIO       PORT103R_SPI_CS_GPIO
+#define MPU6500_CS_PIN        PORT103R_SPI_CS_PIN
+#define MPU6500_SPI_INSTANCE  PORT103R_SPI_INSTANCE
 
 #define GYRO
 #define USE_FAKE_GYRO
@@ -60,8 +72,8 @@
 //#define USE_GYRO_L3GD20
 //#define USE_GYRO_MPU3050
 #define USE_GYRO_MPU6050
-//#define USE_GYRO_SPI_MPU6000
-//#define USE_GYRO_SPI_MPU6500
+#define USE_GYRO_SPI_MPU6000
+#define USE_GYRO_SPI_MPU6500
 
 #define ACC
 #define USE_FAKE_ACC
@@ -69,8 +81,8 @@
 //#define USE_ACC_BMA280
 //#define USE_ACC_MMA8452
 #define USE_ACC_MPU6050
-//#define USE_ACC_SPI_MPU6000
-//#define USE_ACC_SPI_MPU6500
+#define USE_ACC_SPI_MPU6000
+#define USE_ACC_SPI_MPU6500
 
 #define BARO
 #define USE_BARO_MS5611
@@ -80,6 +92,10 @@
 #define MAG
 #define USE_MAG_HMC5883
 #define USE_MAG_AK8975
+
+#define USE_FLASHFS
+#define USE_FLASHTOOLS
+#define USE_FLASH_M25P16
 
 #define SONAR
 #define BEEPER
