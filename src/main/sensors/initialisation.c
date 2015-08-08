@@ -36,6 +36,7 @@
 #include "drivers/accgyro_l3gd20.h"
 #include "drivers/accgyro_lsm303dlhc.h"
 
+#include "drivers/bus_spi.h"
 #include "drivers/accgyro_spi_mpu6000.h"
 #include "drivers/accgyro_spi_mpu6500.h"
 
@@ -72,6 +73,28 @@ extern baro_t baro;
 extern acc_t acc;
 
 uint8_t detectedSensors[MAX_SENSORS_TO_DETECT] = { GYRO_NONE, ACC_NONE, BARO_NONE, MAG_NONE };
+
+#ifdef COLIBRI_RACE
+static void mpu6500SpiInit(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	RCC_AHBPeriphClockCmd(MPU6500_CS_GPIO_CLK_PERIPHERAL, ENABLE);
+
+	GPIO_InitStructure.GPIO_Pin = MPU6500_CS_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+
+	GPIO_Init(MPU6500_CS_GPIO, &GPIO_InitStructure);
+
+	GPIO_SetBits(MPU6500_CS_GPIO,   MPU6500_CS_PIN);
+
+	spiSetDivisor(MPU6500_SPI, SPI_9MHZ_CLOCK_DIVIDER);
+}
+#endif
+
 
 const mpu6050Config_t *selectMPU6050Config(void)
 {
@@ -224,6 +247,9 @@ bool detectGyro(uint16_t gyroLpf)
 
         case GYRO_SPI_MPU6500:
 #ifdef USE_GYRO_SPI_MPU6500
+#ifdef COLIBRI_RACE
+		  mpu6500SpiInit();
+#endif
 #ifdef NAZE
             if (hardwareRevision == NAZE32_SP && mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
 #ifdef GYRO_SPI_MPU6500_ALIGN

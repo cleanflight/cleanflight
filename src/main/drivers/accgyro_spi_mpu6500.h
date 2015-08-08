@@ -26,11 +26,7 @@
 #define MPU6500_RA_LPF                      (0x1A)
 #define MPU6500_RA_RATE_DIV                 (0x19)
 
-#ifdef COLIBRI_RACE
-	#define MPU6500_WHO_AM_I_CONST              (0x00)
-#else
-	#define MPU6500_WHO_AM_I_CONST              (0x70)
-#endif
+#define MPU6500_WHO_AM_I_CONST              (0x70)
 
 #define MPU6500_BIT_RESET                   (0x80)
 
