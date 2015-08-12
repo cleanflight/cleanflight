@@ -326,29 +326,27 @@ static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
 
 static uint16_t getRxfailValue(uint8_t channel)
 {
+    rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &rxConfig->failsafe_channel_configurations[channel];
+
+    if(channelFailsafeConfiguration->mode != RX_FAILSAFE_MODE_SET)
+        return rcData[channel];
+
+    // (mode == RX_FAILSAFE_MODE_SET)
     switch (channel) {
         case ROLL:
         case PITCH:
         case YAW:
             return rxConfig->midrc;
+
         case THROTTLE:
             if (feature(FEATURE_3D))
                 return rxConfig->midrc;
             else
                 return rxConfig->rx_min_usec;
-    }
 
-    rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &rxConfig->failsafe_aux_channel_configurations[channel - NON_AUX_CHANNEL_COUNT];
-
-    switch(channelFailsafeConfiguration->mode) {
         default:
-        case RX_FAILSAFE_MODE_HOLD:
-            return rcData[channel];
-
-        case RX_FAILSAFE_MODE_SET:
             return RXFAIL_STEP_TO_CHANNEL_VALUE(channelFailsafeConfiguration->step);
     }
-
 }
 
 STATIC_UNIT_TESTED uint16_t applyRxChannelRangeConfiguraton(int sample, rxChannelRangeConfiguration_t range)

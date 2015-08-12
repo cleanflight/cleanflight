@@ -405,11 +405,27 @@ static void resetConf(void)
     masterConfig.rxConfig.rx_min_usec = 885;          // any of first 4 channels below this value will trigger rx loss detection
     masterConfig.rxConfig.rx_max_usec = 2115;         // any of first 4 channels above this value will trigger rx loss detection
 
-    for (i = 0; i < MAX_AUX_CHANNEL_COUNT; i++) {
-        rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[i];
+    for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
+        rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_channel_configurations[i];
 
-        channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_HOLD;
-        channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+        switch (i) {
+            case ROLL:
+            case PITCH:
+            case YAW:
+                channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_SET;
+                channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+                break;
+
+            case THROTTLE:
+                channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_SET;
+                channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP( (feature(FEATURE_3D)) ?  masterConfig.rxConfig.midrc: masterConfig.rxConfig.rx_min_usec );
+                break;
+
+            default:
+                channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_HOLD;
+                channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+                break;
+        }
     }
 
     masterConfig.rxConfig.rssi_channel = 0;
