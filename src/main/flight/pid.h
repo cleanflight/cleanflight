@@ -67,6 +67,19 @@ typedef struct pidProfile_s {
     uint8_t gyro_cut_hz;                    // Used for soft gyro filtering
 } pidProfile_t;
 
+struct controlRateConfig_s;
+struct rollAndPitchTrims_s;
+union rollAndPitchTrims_u;
+struct rxConfig_s;
+struct tiltArmConfig_s;
+
+typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, struct controlRateConfig_s *controlRateConfig,
+        uint16_t max_angle_inclination, union rollAndPitchTrims_u *angleTrim, struct rxConfig_s *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , struct tiltArmConfig_s *tiltArm
+#endif
+        );            // pid controller function prototype
+
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)
 

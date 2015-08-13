@@ -128,6 +128,10 @@ int scaleRange(int x, int srcMin, int srcMax, int destMin, int destMax) {
     return ((a / b) - (destMax - destMin)) + destMax;
 }
 
+float scaleRangef(float x, float in_min, float in_max, float out_min, float out_max){
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // Normalize a vector
 void normalizeV(struct fp_vector *src, struct fp_vector *dest)
 {
@@ -206,7 +210,7 @@ int32_t quickMedianFilter5(int32_t * v)
 
     QMF_SORT(p[0], p[1]); QMF_SORT(p[3], p[4]); QMF_SORT(p[0], p[3]);
     QMF_SORT(p[1], p[4]); QMF_SORT(p[1], p[2]); QMF_SORT(p[2], p[3]);
-    QMF_SORT(p[1], p[2]); 
+    QMF_SORT(p[1], p[2]);
     return p[2];
 }
 

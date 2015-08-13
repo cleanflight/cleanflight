@@ -44,6 +44,7 @@ extern "C" {
     #include "io/escservo.h"
     #include "io/gimbal.h"
     #include "io/rc_controls.h"
+	#include "io/tilt_arm_control.h"
 
     extern uint8_t servoCount;
     void forwardAuxChannelsToServos(uint8_t firstServoIndex);
@@ -160,6 +161,7 @@ protected:
     gimbalConfig_t gimbalConfig = {
         .mode = GIMBAL_MODE_NORMAL
     };
+    tiltArmConfig_t tiltArmConfig;
 
     motorMixer_t customMotorMixer[MAX_SUPPORTED_MOTORS];
     servoMixer_t customServoMixer[MAX_SUPPORTED_SERVOS];
@@ -178,6 +180,8 @@ protected:
         memset(axisPID, 0, sizeof(axisPID));
 
         memset(&customMotorMixer, 0, sizeof(customMotorMixer));
+
+        memset(&tiltArmConfig, 0, sizeof(tiltArmConfig));
     }
 
     virtual void withDefaultEscAndServoConfiguration(void) {
@@ -192,6 +196,7 @@ protected:
         mixerUseConfigs(
             servoConf,
             &gimbalConfig,
+            &tiltArmConfig,
             NULL,
             &escAndServoConfig,
             &mixerConfig,

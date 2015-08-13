@@ -37,12 +37,14 @@
 
 #include "io/rc_controls.h"
 #include "io/gps.h"
+#include "io/tilt_arm_control.h"
 
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/navigation.h"
 #include "flight/autotune.h"
 #include "flight/filter.h"
+#include "flight/mixer.h"
 
 #include "config/runtime_config.h"
 
@@ -65,10 +67,11 @@ static int32_t errorAngleI[2] = { 0, 0 };
 static float errorAngleIf[2] = { 0.0f, 0.0f };
 
 static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);
-
-typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+        );
 
 pidControllerFuncPtr pid_controller = pidMultiWii; // which pid controller are we using, defaultMultiWii
 
@@ -103,8 +106,18 @@ bool shouldAutotune(void)
 }
 #endif
 
+#ifdef USE_SERVOS
+bool shouldStabilizePitch(tiltArmConfig_t *tiltArm, uint8_t mixerMode){
+    return (tiltArm->flagEnabled & TILT_ARM_ENABLE_PITCH) && (mixerMode == MIXER_QUADX_TILT || mixerMode == MIXER_OCTOX_TILT);
+}
+#endif
+
 static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+)
 {
     float RateError, errorAngle, AngleRate, gyroRate;
     float ITerm,PTerm,DTerm;
@@ -140,6 +153,12 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         }
     }
 
+    //special case for tilting quad: check if the pitch should say stabilized to 0 (use angle mode)
+    bool stabilizePitch = false;
+#ifdef USE_SERVOS
+    stabilizePitch = shouldStabilizePitch(tiltArm, mixerMode);
+#endif
+
     // ----------PID controller----------
     for (axis = 0; axis < 3; axis++) {
         // -----Get the desired angle rate depending on flight mode
@@ -164,7 +183,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
             }
 #endif
 
-            if (FLIGHT_MODE(ANGLE_MODE)) {
+            if ( (stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE)) {
                 // it's the ANGLE mode - control is angle based, so control loop is needed
                 AngleRate = errorAngle * pidProfile->A_level;
             } else {
@@ -230,7 +249,11 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 }
 
 static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+)
 {
     UNUSED(rxConfig);
 
@@ -247,8 +270,14 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
     // **** PITCH & ROLL & YAW PID ****
     prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 500); // range [0;500]
 
+    //special case for tilting quad: check if the pitch should say stabilized to 0 (use angle mode)
+    bool stabilizePitch = false;
+#ifdef USE_SERVOS
+    stabilizePitch = shouldStabilizePitch(tiltArm, mixerMode);
+#endif
+
     for (axis = 0; axis < 3; axis++) {
-        if ((FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) && (axis == FD_ROLL || axis == FD_PITCH)) { // MODE relying on ACC
+        if ( (stabilizePitch && axis == FD_PITCH) || ((FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) && (axis == FD_ROLL || axis == FD_PITCH)) ) { // MODE relying on ACC
             // observe max inclination
 #ifdef GPS
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
@@ -286,7 +315,7 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
             PTerm = (PTermACC * (500 - prop) + PTermGYRO * prop) / 500;
             ITerm = (ITermACC * (500 - prop) + ITermGYRO * prop) / 500;
         } else {
-            if (FLIGHT_MODE(ANGLE_MODE) && (axis == FD_ROLL || axis == FD_PITCH)) {
+            if ( (stabilizePitch && axis == FD_PITCH) || (FLIGHT_MODE(ANGLE_MODE) && (axis == FD_ROLL || axis == FD_PITCH)) ) {
                 PTerm = PTermACC;
                 ITerm = ITermACC;
             } else {
@@ -325,7 +354,11 @@ static void pidMultiWii(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 }
 
 static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-            rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+            rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+)
 {
     UNUSED(rxConfig);
 
@@ -339,6 +372,12 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     if (FLIGHT_MODE(HORIZON_MODE)) {
         prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 512);
     }
+
+    //special case for tilting quad: check if the pitch should say stabilized to 0 (use angle mode)
+    bool stabilizePitch = false;
+#ifdef USE_SERVOS
+    stabilizePitch = shouldStabilizePitch(tiltArm, mixerMode);
+#endif
 
     // PITCH & ROLL
     for (axis = 0; axis < 2; axis++) {
@@ -356,7 +395,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 
         PTerm = (int32_t)rc * pidProfile->P8[axis] >> 6;
 
-        if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {   // axis relying on ACC
+        if ( (stabilizePitch && axis == FD_PITCH) || (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) ) {   // axis relying on ACC
             // 50 degrees max inclination
 #ifdef GPS
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
@@ -444,7 +483,11 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 }
 
 static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+)
 {
     UNUSED(rxConfig);
 
@@ -458,11 +501,17 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
 
     UNUSED(controlRateConfig);
 
+    //special case for tilting quad: check if the pitch should say stabilized to 0 (use angle mode)
+    bool stabilizePitch = false;
+#ifdef USE_SERVOS
+    stabilizePitch = shouldStabilizePitch(tiltArm, mixerMode);
+#endif
+
     // **** PITCH & ROLL ****
     prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 500); // range [0;500]
 
     for (axis = 0; axis < 2; axis++) {
-        if ((FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE))) { // MODE relying on ACC
+        if ((stabilizePitch && axis == FD_PITCH) || (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE))) { // MODE relying on ACC
             // observe max inclination
 #ifdef GPS
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
@@ -484,7 +533,7 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
             errorAngleI[axis] = constrain(errorAngleI[axis] + errorAngle, -10000, +10000); // WindUp
             ITermACC = (errorAngleI[axis] * pidProfile->I8[PIDLEVEL]) >> 12;
         }
-        if (!FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) { // MODE relying on GYRO
+        if (!(stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) { // MODE relying on GYRO
             error = (int32_t) rcCommand[axis] * 10 * 8 / pidProfile->P8[axis];
             error -= gyroADC[axis] / 4;
 
@@ -500,7 +549,7 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
             PTerm = (PTermACC * (500 - prop) + PTermGYRO * prop) / 500;
             ITerm = (ITermACC * (500 - prop) + ITermGYRO * prop) / 500;
         } else {
-            if (FLIGHT_MODE(ANGLE_MODE)) {
+            if ((stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE)) {
                 PTerm = PTermACC;
                 ITerm = ITermACC;
             } else {
@@ -566,7 +615,11 @@ static void pidMultiWiiHybrid(pidProfile_t *pidProfile, controlRateConfig_t *con
 }
 
 static void pidHarakiri(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+)
 {
     UNUSED(rxConfig);
 
@@ -585,11 +638,17 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
         prop = (float)MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 450) / 450.0f;
     }
 
+    //special case for tilting quad: check if the pitch should say stabilized to 0 (use angle mode)
+    bool stabilizePitch = false;
+#ifdef USE_SERVOS
+    stabilizePitch = shouldStabilizePitch(tiltArm, mixerMode);
+#endif
+
     for (axis = 0; axis < 2; axis++) {
         int32_t tmp = (int32_t)((float)gyroADC[axis] * 0.3125f);              // Multiwii masks out the last 2 bits, this has the same idea
         gyroADCQuant = (float)tmp * 3.2f;                                     // but delivers more accuracy and also reduces jittery flight
         rcCommandAxis = (float)rcCommand[axis];                                // Calculate common values for pid controllers
-        if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
+        if ((stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {
 #ifdef GPS
             error = constrain(2.0f * rcCommandAxis + GPS_angle[axis], -((int) max_angle_inclination), +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
 #else
@@ -608,7 +667,8 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
             ITermACC = errorAngleIf[axis] * (float)pidProfile->I8[PIDLEVEL] * 0.08f;
         }
 
-        if (!FLIGHT_MODE(ANGLE_MODE)) {
+
+        if (!( (stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE) )) {
             if (ABS((int16_t)gyroADC[axis]) > 2560) {
                 errorGyroIf[axis] = 0.0f;
             } else {
@@ -700,7 +760,11 @@ rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
 }
 
 static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig, uint16_t max_angle_inclination,
-        rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
+        rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig, uint8_t mixerMode
+#ifdef USE_SERVOS
+        , tiltArmConfig_t *tiltArm
+#endif
+)
 {
     UNUSED(rxConfig);
 
@@ -711,7 +775,6 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
     int32_t PTerm, ITerm, DTerm;
     static int32_t lastError[3] = { 0, 0, 0 };
     int32_t AngleRateTmp, RateError;
-
     int8_t horizonLevelStrength = 100;
     int32_t stickPosAil, stickPosEle, mostDeflectedPos;
 
@@ -735,6 +798,11 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
         // For more rate mode increase D and slower flips and rolls will be possible
        	horizonLevelStrength = constrain((10 * (horizonLevelStrength - 100) * (10 * pidProfile->D8[PIDLEVEL] / 80) / 100) + 100, 0, 100);
     }
+    //special case for tilting quad: check if the pitch should say stabilized to 0 (use angle mode)
+    bool stabilizePitch = false;
+#ifdef USE_SERVOS
+    stabilizePitch = shouldStabilizePitch(tiltArm, mixerMode);
+#endif
 
     // ----------PID controller----------
     for (axis = 0; axis < 3; axis++) {
@@ -759,7 +827,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
             }
 #endif
 
-            if (!FLIGHT_MODE(ANGLE_MODE)) { //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
+            if (!( (stabilizePitch && axis == FD_PITCH) || FLIGHT_MODE(ANGLE_MODE) )) { //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
                 AngleRateTmp = ((int32_t)(rate + 27) * rcCommand[axis]) >> 4;
                 if (FLIGHT_MODE(HORIZON_MODE)) {
                     // mix up angle error to desired AngleRateTmp to add a little auto-level feel. horizonLevelStrength is scaled to the stick input
@@ -847,6 +915,7 @@ void pidSetController(pidControllerType_e type)
             break;
         case PID_CONTROLLER_HARAKIRI:
             pid_controller = pidHarakiri;
+            break;
     }
 }
 

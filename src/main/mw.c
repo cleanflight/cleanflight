@@ -58,6 +58,7 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 #include "rx/msp.h"
@@ -106,9 +107,6 @@ int16_t telemTemperature1;      // gyro sensor temperature
 static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
 extern uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
-
-typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
 
 extern pidControllerFuncPtr pid_controller;
 
@@ -796,13 +794,27 @@ void loop(void)
         }
 #endif
 
+#ifdef USE_SERVOS
+        //TODO: is good here?
+        if ( (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT) && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH) ) {
+            // compensate the pitch if in dynamic mode to be less aggressive; we use 0 for now
+            if (rcData[currentProfile->tiltArm.channel] < masterConfig.rxConfig.midrc) {
+       	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior;
+       	    }
+       	}
+#endif
         // PID - note this is function pointer set by setPIDController()
         pid_controller(
             &currentProfile->pidProfile,
             currentControlRateProfile,
             masterConfig.max_angle_inclination,
             &currentProfile->accelerometerTrims,
-            &masterConfig.rxConfig
+            &masterConfig.rxConfig,
+            masterConfig.mixerMode
+#ifdef USE_SERVOS
+            ,
+            &currentProfile->tiltArm
+#endif
         );
 
         mixTable();

@@ -52,6 +52,7 @@
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
+#include "io/tilt_arm_control.h"
 
 #include "telemetry/telemetry.h"
 
@@ -277,6 +278,8 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SERVO_CONFIGURATIONS 120    //out message         All servo configurations.
 #define MSP_NAV_STATUS           121    //out message         Returns navigation status
 #define MSP_NAV_CONFIG           122    //out message         Returns navigation parameters
+#define MSP_TILT_ARM_CONFIG      123    //out message         Returns tilting arm parameters
+#define MSP_SET_SERVO_ANGLE   124    //out message         Returns tilting arm parameters
 
 #define MSP_SET_RAW_RC           200    //in message          8 rc chan
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
@@ -293,6 +296,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SET_SERVO_CONFIGURATION 212    //in message          Servo settings
 #define MSP_SET_MOTOR            214    //in message          PropBalance function
 #define MSP_SET_NAV_CONFIG       215    //in message          Sets nav config parameters - write to the eeprom
+#define MSP_SET_TILT_ARM         216    //in message          Tilt arm settings
 
 // #define MSP_BIND                 240    //in message          no param
 
@@ -309,7 +313,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SERVO_MIX_RULES      241    //out message         Returns servo mixer configuration
 #define MSP_SET_SERVO_MIX_RULE   242    //in message          Sets servo mixer configuration
 
-#define INBUF_SIZE 64
+#define INBUF_SIZE 64 // FIXME See MSP_SET_SERVO_CONFIG, ideally we want this to be smaller.
 
 typedef struct box_e {
     const uint8_t boxId;         // see boxId_e
@@ -857,6 +861,14 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize8(currentProfile->servoConf[i].forwardFromChannel);
             serialize32(currentProfile->servoConf[i].reversedSources);
         }
+        break;
+    case MSP_TILT_ARM_CONFIG:
+        headSerialReply(5);
+        serialize8( currentProfile->tiltArm.flagEnabled );
+        serialize8( currentProfile->tiltArm.pitchDivisior );
+        serialize8( currentProfile->tiltArm.thrustLiftoff );
+        serialize8( currentProfile->tiltArm.gearRatioPercent );
+        serialize8( currentProfile->tiltArm.channel );
         break;
     case MSP_SERVO_MIX_RULES:
         headSerialReply(MAX_SERVO_RULES * sizeof(servoMixer_t));
