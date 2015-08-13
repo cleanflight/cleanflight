@@ -196,7 +196,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     { TIM3,  GPIOB, Pin_1,  TIM_Channel_4, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource1,  GPIO_AF_2}, // PWM7  - PB1  - *TIM3_CH4, TIM1_CH3N, TIM8_CH3N
     { TIM17, GPIOA, Pin_7,  TIM_Channel_1, TIM1_TRG_COM_TIM17_IRQn, 1, Mode_AF_PP, GPIO_PinSource7,  GPIO_AF_1}, // PWM8  - PA7  - !TIM3_CH2, *TIM17_CH1, TIM1_CH1N, TIM8_CH1
     { TIM3,  GPIOA, Pin_4,  TIM_Channel_2, TIM3_IRQn,               0, Mode_AF_PP, GPIO_PinSource4,  GPIO_AF_2}, // PWM9  - PA4  - *TIM3_CH2
-    { TIM2,  GPIOA, Pin_1,  TIM_Channel_2, TIM2_IRQn,               0, Mode_AF_PP, GPIO_PinSource1,  GPIO_AF_1}, // PWM10 - PA1  - *TIM2_CH2, TIM15_CH1N
+    { TIM2,  GPIOA, Pin_1,  TIM_Channel_2, TIM2_IRQn,               0, Mode_AF_PP_PD, GPIO_PinSource1,  GPIO_AF_1}, // PWM10 - PA1  - *TIM2_CH2, TIM15_CH1N
 
     //
     // PPM PORT - Also USART2 RX (AF5)
