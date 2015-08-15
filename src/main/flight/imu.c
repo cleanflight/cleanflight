@@ -302,7 +302,7 @@ void imuUpdate(rollAndPitchTrims_t *accelerometerTrims)
     gyroUpdate();
 
     if (sensors(SENSOR_ACC)) {
-        updateAccelerationReadings(accelerometerTrims); // TODO rename to accelerometerUpdate and rename many other 'Acceleration' references to be 'Accelerometer'
+        accelerometerUpdate(accelerometerTrims);
         imuCalculateEstimatedAttitude();
     } else {
         accADC[X] = 0;

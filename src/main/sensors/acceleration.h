@@ -52,5 +52,5 @@ typedef union {
 bool isAccelerationCalibrationComplete(void);
 void accSetCalibrationCycles(uint16_t calibrationCyclesRequired);
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims);
-void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims);
+void accelerometerUpdate(rollAndPitchTrims_t *rollAndPitchTrims);
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse);

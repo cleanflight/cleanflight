@@ -169,7 +169,7 @@ void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
     accADC[Z] -= accelerationTrims->raw[Z];
 }
 
-void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
+void accelerometerUpdate(rollAndPitchTrims_t *rollAndPitchTrims)
 {
     if (!acc.read(accADC)) {
         return;

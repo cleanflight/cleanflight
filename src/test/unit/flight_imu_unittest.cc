@@ -113,7 +113,7 @@ bool sensors(uint32_t mask)
     UNUSED(mask);
     return false;
 };
-void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
+void accelerometerUpdate(rollAndPitchTrims_t *rollAndPitchTrims)
 {
     UNUSED(rollAndPitchTrims);
 }
