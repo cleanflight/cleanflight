@@ -124,6 +124,19 @@ TEST(FlightImuTest, TestEulerAngleCalculation)
     EXPECT_FLOAT_EQ(attitude.values.yaw, 2700);
 }
 
+TEST(FlightImuTest, TestCalculateThrottleAngleScale)
+{
+    ASSERT_TRUE(isinf(calculateThrottleAngleScale(0)));
+
+    EXPECT_FLOAT_EQ(calculateThrottleAngleScale(1), 515662.0f);
+
+    EXPECT_FLOAT_EQ(calculateThrottleAngleScale(450), (1800.0f / M_PIf) * 2);
+
+    EXPECT_FLOAT_EQ(calculateThrottleAngleScale(900), 1800.0f / M_PIf);
+
+    EXPECT_FLOAT_EQ(calculateThrottleAngleScale(901), 572.32184f);
+}
+
 // STUBS
 
 extern "C" {
