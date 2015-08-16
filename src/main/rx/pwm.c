@@ -40,23 +40,17 @@ static uint16_t pwmReadRawRC(rxRuntimeConfig_t *rxRuntimeConfigPtr, uint8_t chan
     return pwmRead(channel);
 }
 
-static uint16_t ppmReadRawRC(rxRuntimeConfig_t *rxRuntimeConfigPtr, uint8_t channel)
-{
-    UNUSED(rxRuntimeConfigPtr);
-    return ppmRead(channel);
-}
-
 void rxPwmInit(rxRuntimeConfig_t *rxRuntimeConfigPtr, rcReadRawDataPtr *callback)
 {
     UNUSED(rxRuntimeConfigPtr);
     // configure PWM/CPPM read function and max number of channels. serial rx below will override both of these, if enabled
+    *callback = pwmReadRawRC;
+
     if (feature(FEATURE_RX_PARALLEL_PWM)) {
         rxRuntimeConfigPtr->channelCount = MAX_SUPPORTED_RC_PARALLEL_PWM_CHANNEL_COUNT;
-        *callback = pwmReadRawRC;
     }
     if (feature(FEATURE_RX_PPM)) {
         rxRuntimeConfigPtr->channelCount = MAX_SUPPORTED_RC_PPM_CHANNEL_COUNT;
-        *callback = ppmReadRawRC;
     }
 }
 
