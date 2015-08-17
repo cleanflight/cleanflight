@@ -457,6 +457,7 @@ static void resetConf(void)
 
     masterConfig.looptime = 3500;
     masterConfig.emf_avoidance = 0;
+    masterConfig.syncGyroToLoop = 0;
 
     resetPidProfile(&currentProfile->pidProfile);
 
@@ -548,6 +549,7 @@ static void resetConf(void)
     masterConfig.escAndServoConfig.maxthrottle = 2000;
     masterConfig.motor_pwm_rate = 32000;
     masterConfig.looptime = 2000;
+    masterConfig.syncGyroToLoop = 0;
     currentProfile->pidProfile.pidController = 3;
     currentProfile->pidProfile.P8[ROLL] = 36;
     currentProfile->pidProfile.P8[PITCH] = 36;
