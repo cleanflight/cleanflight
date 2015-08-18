@@ -106,7 +106,6 @@ ppmDevice_t ppmDev;
 #define PPM_STABLE_FRAMES_REQUIRED_COUNT    25
 #define PPM_IN_MIN_NUM_CHANNELS     4
 #define PPM_IN_MAX_NUM_CHANNELS     PWM_PORTS_OR_PPM_CAPTURE_COUNT
-#define PPM_RCVR_TIMEOUT            0
 
 
 bool isPPMDataBeingReceived(void)
@@ -340,8 +339,15 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
 }
 
-uint16_t pwmRead(uint8_t channel)
+uint16_t ppmRead(uint8_t channel)
 {
     return captures[channel];
+}
+
+uint16_t pwmRead(uint8_t channel)
+{
+    uint16_t capture = captures[channel];
+    captures[channel] = PPM_RCVR_TIMEOUT;
+    return capture;
 }
 

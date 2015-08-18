@@ -230,7 +230,7 @@ static void sendSatalliteSignalQualityAsTemperature2(void)
     if (telemetryConfig->frsky_unit == FRSKY_UNIT_METRICS) {
         serialize16(satellite);
     } else {
-        float tmp = (satellite - 32) / 1.8;
+        float tmp = (satellite - 32) / 1.8f;
         //Round the value
         tmp += (tmp < 0) ? -0.5f : 0.5f;
         serialize16(tmp);
@@ -245,7 +245,7 @@ static void sendSpeed(void)
     //Speed should be sent in knots (GPS speed is in cm/s)
     sendDataHead(ID_GPS_SPEED_BP);
     //convert to knots: 1cm/s = 0.0194384449 knots
-    serialize16(GPS_speed * 1944 / 10000);
+    serialize16(GPS_speed * 1944 / 100000);
     sendDataHead(ID_GPS_SPEED_AP);
     serialize16((GPS_speed * 1944 / 100) % 100);
 }
@@ -472,7 +472,7 @@ bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
 
 void checkFrSkyTelemetryState(void)
 {
-    bool newTelemetryEnabledValue = determineNewTelemetryEnabledState(frskyPortSharing);
+    bool newTelemetryEnabledValue = telemetryDetermineEnabledState(frskyPortSharing);
 
     if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
         return;
