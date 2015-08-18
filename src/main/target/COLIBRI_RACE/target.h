@@ -18,9 +18,10 @@
 #pragma once
 
 #define TARGET_BOARD_IDENTIFIER "CLBR"
+#define USE_HARDWARE_REVISION_DETECTION
 
 #define LED0_GPIO   GPIOC
-#define LED0_PIN    Pin_13
+#define LED0_PIN    Pin_15
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOC
 
 #define LED1_GPIO   GPIOC
@@ -28,12 +29,13 @@
 #define LED1_PERIPHERAL RCC_AHBPeriph_GPIOC
 
 #define LED2_GPIO   GPIOC
-#define LED2_PIN    Pin_15
+#define LED2_PIN    Pin_13
 #define LED2_PERIPHERAL RCC_AHBPeriph_GPIOC
 
 #define BEEP_GPIO   GPIOB
 #define BEEP_PIN    Pin_13
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOB
+#define BEEPER_INVERTED
 
 #define MPU6500_SPI           		 SPI1
 #define MPU6500_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOA
@@ -56,7 +58,7 @@
 #define SPI1_MOSI_PIN_SOURCE    GPIO_PinSource5
 #define SPI1_MOSI_CLK           RCC_AHBPeriph_GPIOB
 
-#define USABLE_TIMER_CHANNEL_COUNT 9
+#define USABLE_TIMER_CHANNEL_COUNT 11
 
 #define GYRO
 #define USE_GYRO_SPI_MPU6500
