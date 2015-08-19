@@ -585,18 +585,21 @@ static void cliRxFail(char *cmdline)
             rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[channel];
 
             uint16_t value;
-            rxFailsafeChannelMode_e mode;
+            char modeCharacter = '?';
 
             ptr = strchr(ptr, ' ');
             if (ptr) {
                 switch (*(++ptr)) {
                     case 'h':
-                        mode = RX_FAILSAFE_MODE_HOLD;
+                        channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_HOLD;
+                        modeCharacter = 'h';
                         break;
 
                     case 's':
-                        mode = RX_FAILSAFE_MODE_SET;
+                        channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_SET;
+                        modeCharacter = 's';
                         break;
+
                     default:
                         cliShowParseError();
                         return;
@@ -612,11 +615,9 @@ static void cliRxFail(char *cmdline)
                     return;
                 }
 
-                channelFailsafeConfiguration->mode = mode;
                 channelFailsafeConfiguration->step = value;
             }
 
-            char modeCharacter = channelFailsafeConfiguration->mode == RX_FAILSAFE_MODE_SET ? 's' : 'h';
             // triple use of printf below
             // 1. acknowledge interpretation on command,
             // 2. query current setting on single item,
