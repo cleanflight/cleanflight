@@ -274,16 +274,15 @@ void updateRx(uint32_t currentTime)
         }
     }
 
-    if ((feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived)
-          || feature(FEATURE_RX_PARALLEL_PWM)) {
+    if (feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived) {
         needRxSignalBefore = currentTime + DELAY_10_HZ;
     }
 
-    if (feature(FEATURE_RX_PPM)) {
-        if (isPPMDataBeingReceived()) {
+    if (feature(FEATURE_RX_PPM | FEATURE_RX_PARALLEL_PWM)) {
+        if (isPXMDataBeingReceived()) {
             rxSignalReceived = true;
             needRxSignalBefore = currentTime + DELAY_10_HZ;
-            resetPPMDataReceivedState();
+            resetPXMDataReceivedState();
         }
         shouldCheckPulse = rxSignalReceived;
     }
