@@ -34,6 +34,7 @@
 #include "sensor.h"
 #include "accgyro.h"
 #include "accgyro_mpu6050.h"
+ #include "flight/synclooptime.h"
 
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 
@@ -193,6 +194,8 @@ void MPU_DATA_READY_EXTI_Handler(void)
     }
 
     EXTI_ClearITPendingBit(mpu6050Config->exti_line);
+
+    lastGyroReadTime = micros();
 
 #ifdef DEBUG_MPU_DATA_READY_INTERRUPT
     // Measure the delta in micro seconds between calls to the interrupt handler

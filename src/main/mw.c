@@ -79,6 +79,7 @@
 #include "config/config.h"
 #include "config/config_profile.h"
 #include "config/config_master.h"
+#include "flight/synclooptime.h"
 
 // June 2013     V2.2-dev
 
@@ -726,7 +727,10 @@ void loop(void)
     }
 
     currentTime = micros();
-    if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
+    if (masterConfig.looptime == 0  || 
+            (int32_t)(currentTime - loopTime) >= 0 || 
+            ( currentProfile->pidProfile.sync_looptime && previousTime < lastGyroReadTime)) {
+        
         loopTime = currentTime + masterConfig.looptime;
 
         imuUpdate(&currentProfile->accelerometerTrims);
