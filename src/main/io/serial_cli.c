@@ -573,16 +573,16 @@ static void cliRxFail(char *cmdline)
 
     if (isEmpty(cmdline)) {
         // print out rxConfig failsafe settings
-        for (channel = 0; channel < MAX_AUX_CHANNEL_COUNT; channel++) {
+        for (channel = 0; channel < MAX_SUPPORTED_RC_CHANNEL_COUNT; channel++) {
             cliRxFail(itoa(channel, buf, 10));
         }
     } else {
         char *ptr = cmdline;
 
         channel = atoi(ptr++);
-        if ((channel < MAX_AUX_CHANNEL_COUNT)) {
+        if ((channel < MAX_SUPPORTED_RC_CHANNEL_COUNT)) {
 
-            rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[channel];
+            rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_channel_configurations[channel];
 
             uint16_t value;
             rxFailsafeChannelMode_e mode;
@@ -628,7 +628,7 @@ static void cliRxFail(char *cmdline)
                 RXFAIL_STEP_TO_CHANNEL_VALUE(channelFailsafeConfiguration->step)
             );
         } else {
-            printf("channel must be < %u\r\n", MAX_AUX_CHANNEL_COUNT);
+            printf("channel must be < %u\r\n", MAX_SUPPORTED_RC_CHANNEL_COUNT);
         }
     }
 }
