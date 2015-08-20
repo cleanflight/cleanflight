@@ -348,7 +348,7 @@ void mixerUseConfigs(
 }
 
 #ifdef USE_SERVOS
-int16_t determineServoMiddleOrForwardFromChannel(servoIndex_e servoIndex)
+int16_t determineServoMiddleOrForwardFromChannel(servoChannel_e servoIndex)
 {
     uint8_t channelToForwardFrom = servoConf[servoIndex].forwardFromChannel;
 
