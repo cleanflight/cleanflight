@@ -66,6 +66,9 @@ static pidProfile_t *pidProfile;
 // true if arming is done via the sticks (as opposed to a switch)
 static bool isUsingSticksToArm = true;
 
+// true if arming switch is used to ENABLE arming via sticks
+static bool isUsingStickArmEnableSwitch = false;
+
 int16_t rcCommand[4];           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 
 uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
@@ -157,7 +160,6 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
             }
         } else {
             // Disarming via ARM BOX
-
             if (ARMING_FLAG(ARMED) && rxIsReceivingSignal() && !failsafeIsActive()  ) {
                 if (disarm_kill_switch) {
                     mwDisarm();
@@ -166,6 +168,9 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
                 }
             }
         }
+    } else if (isUsingStickArmEnableSwitch && ARMING_FLAG(ARMED) && !IS_RC_MODE_ACTIVE(BOXARM)) {
+        //  Disarming via ARM BOX, independently of throttle stick position
+        mwDisarm();
     }
 
     if (rcDelayCommand != 20) {
@@ -244,7 +249,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
         saveConfigAndNotify();
     }
 
-    if (isUsingSticksToArm) {
+    if (isUsingSticksToArm && !(isUsingStickArmEnableSwitch && !IS_RC_MODE_ACTIVE(BOXARM))) {
 
         if (rcSticks == THR_LO + YAW_HI + PIT_CE + ROL_CE) {
             // Arm via YAW
@@ -745,12 +750,23 @@ int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {
     return MIN(ABS(rcData[axis] - midrc), 500);
 }
 
-void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse)
+void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions,
+                         escAndServoConfig_t *escAndServoConfigToUse,
+                         pidProfile_t *pidProfileToUse,
+                         bool stick_arm_enable_switch)
 {
     escAndServoConfig = escAndServoConfigToUse;
     pidProfile = pidProfileToUse;
+    isUsingSticksToArm = true;
+    isUsingStickArmEnableSwitch = false;
 
-    isUsingSticksToArm = !isModeActivationConditionPresent(modeActivationConditions, BOXARM);
+    if (isModeActivationConditionPresent(modeActivationConditions, BOXARM)) {
+        if (stick_arm_enable_switch) {
+            isUsingStickArmEnableSwitch = true;
+        } else {
+            isUsingSticksToArm = false;
+        }
+    }
 }
 
 void resetAdjustmentStates(void)

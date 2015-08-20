@@ -333,6 +333,7 @@ const clivalue_t valueTable[] = {
 
     { "retarded_arm",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.retarded_arm, 0, 1 },
     { "disarm_kill_switch",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.disarm_kill_switch, 0, 1 },
+    { "stick_arm_enable_switch",    VAR_UINT8  | MASTER_VALUE,  &masterConfig.stick_arm_enable_switch, 0, 1 },
     { "auto_disarm_delay",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.auto_disarm_delay, 0, 60 },
     { "small_angle",                VAR_UINT8  | MASTER_VALUE,  &masterConfig.small_angle, 0, 180 },
 

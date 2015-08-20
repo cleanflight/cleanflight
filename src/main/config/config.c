@@ -73,7 +73,10 @@
 #define BRUSHED_MOTORS_PWM_RATE 16000
 #define BRUSHLESS_MOTORS_PWM_RATE 400
 
-void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
+void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions,
+                         escAndServoConfig_t *escAndServoConfigToUse,
+                         pidProfile_t *pidProfileToUse,
+                         bool stick_arm_enable_switch);
 
 #define FLASH_TO_RESERVE_FOR_CONFIG 0x800
 
@@ -421,6 +424,7 @@ static void resetConf(void)
 
     masterConfig.retarded_arm = 0;
     masterConfig.disarm_kill_switch = 1;
+    masterConfig.stick_arm_enable_switch = 1;
     masterConfig.auto_disarm_delay = 5;
     masterConfig.small_angle = 25;
 
@@ -665,7 +669,8 @@ void activateConfig(void)
     useRcControlsConfig(
         currentProfile->modeActivationConditions,
         &masterConfig.escAndServoConfig,
-        &currentProfile->pidProfile
+        &currentProfile->pidProfile,
+        masterConfig.stick_arm_enable_switch
     );
 
     useGyroConfig(&masterConfig.gyroConfig);
