@@ -23,7 +23,6 @@
 #include "system.h"
 #include "gpio.h"
 #include "nvic.h"
-
 #include "sonar_hcsr04.h"
 
 #ifdef SONAR
@@ -52,7 +51,9 @@ static bool SonarIsLidarLite = false;
 static void ECHO_EXTI_IRQHandler(void)
 {
     static uint32_t timing_start;
+    static uint32_t previous_measurement=0;
     uint32_t timing_stop;
+    uint32_t diff_timing;
 
     if (digitalIn(GPIOB, sonarHardware->echo_pin) != 0) {
         timing_start = micros();
@@ -60,6 +61,24 @@ static void ECHO_EXTI_IRQHandler(void)
         timing_stop = micros();
         if (timing_stop > timing_start) {
             measurement = timing_stop - timing_start;
+
+            // there are some spurious values arriving but always almost
+            // 1ms over or under (don't know why at the moment)
+            // we detect them and remove the suspect ones
+            if(SonarIsLidarLite == true) {
+                // calculate difference
+                if(measurement>previous_measurement ) {
+                    diff_timing = measurement - previous_measurement;
+                } else {
+                    diff_timing = previous_measurement - measurement;
+                }
+                // remove it if in the filter
+                if(diff_timing>900 && diff_timing<1100) {
+                    measurement = previous_measurement;
+                } else {
+                    previous_measurement = measurement;
+                }
+            }
         }
     }
 
@@ -137,7 +156,7 @@ void hcsr04_init(const sonarHardware_t *initialSonarHardware)
     NVIC_Init(&NVIC_InitStructure);
 
     // Lidar Lite Detection
-    digitalLo(GPIOB, sonarHardware->trigger_pin);	// ensure that HCsr04 stopped or LIDAR running
+    digitalLo(GPIOB, sonarHardware->trigger_pin);    // ensure that HCsr04 stopped or LIDAR running
     delay(10);  // case of spurious on hcsr04 (seen on the scope)
     measurement = -1;
     delay(100); // wait for 100 milliseconds (may be as low as 50ms)
@@ -179,7 +198,7 @@ int32_t hcsr04_get_distance(void)
 {
     int32_t distance;
 
-	if(SonarIsLidarLite == false) {
+    if(SonarIsLidarLite == false) {
         // HCRS04 side
         // The speed of sound is 340 m/s or approx. 29 microseconds per centimeter.
         // The ping travels out and back, so to find the distance of the
@@ -191,15 +210,15 @@ int32_t hcsr04_get_distance(void)
         // this sonar range is up to 4meter , but 3meter is the safe working range (+tilted and roll)
         if (distance > 300)
             distance = -1;
-	}
-	else {
-		// Lidar Lite side
-		// conversion is 10µs per centimeter
-		distance = measurement / 10;
+    }
+    else {
+        // Lidar Lite side
+        // conversion is 10µs per centimeter
+        distance = measurement / 10;
 
-		if (distance > 3000) // max is 40m, clamped to 30m for security
-			distance = -1;
-	}
+        if (distance > 3000) // max is 40m, clamped to 30m for security
+            distance = -1;
+    }
 
     return distance;
 }
