@@ -759,15 +759,15 @@ STATIC_UNIT_TESTED void servoMixer(void)
 void radiantWriteServo(uint8_t index, float angle){
     // normalize angle to range -PI to PI
     while (angle > M_PIf)
-        angle -= M_PIf;
+        angle -= M_PIf * 2;
     while (angle < -M_PIf)
-            angle += M_PIf;
+        angle += M_PIf * 2;
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
     if (angle > 0){
-        angle = scaleRangef(angle, 0, +M_PIf, servoConf[index].middle, servoConf[index].max);
+        angle = scaleRangef(angle, 0, +M_PIf/2, servoConf[index].middle, servoConf[index].max);
     }else{
-        angle = scaleRangef(angle, -M_PIf, 0, servoConf[index].min, servoConf[index].middle);
+        angle = scaleRangef(angle, 0, -M_PIf/2, servoConf[index].middle, servoConf[index].min);
     }
 
     //just to be sure
@@ -795,7 +795,11 @@ float requestedTiltServoAngle() {
     }
 
     //convert to radiant, keep eventual non-linearity of range
-    float servoAngle = scaleRangef(userInput, 1000, 2000, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax) );
+    float servoAngle;
+    if (userInput > 1500)
+        servoAngle = scaleRangef(userInput, 1500, 2000, 0, degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax) );
+    else
+        servoAngle = scaleRangef(userInput, 1000, 1500, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), 0 );
 
     return (servoAngle * tiltArmConfig->gearRatioPercent)/100.0f;
 }
@@ -816,18 +820,30 @@ void mixTilting(void) {
 
     //do heavy math only one time
     float tmpCosine = cosf(angleTilt);
-    float tmpSine = sinf(angleTilt);
 
     if ( hasTiltingMotor() && (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) ) {
         // compensate the throttle because motor orientation
-    	float pitchToCompensate = tmpSine;
+    	float pitchToCompensate = angleTilt;
+
+    	float bodyPitch = degreesToRadians(inclination.values.pitchDeciDegrees);
     	if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
-    		pitchToCompensate += degreesToRadians(inclination.values.pitchDeciDegrees);
+    		pitchToCompensate += bodyPitch;
     	}
-    	uint16_t liftOffTrust = ( (rxConfig->maxcheck - rxConfig->mincheck) * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
-    	float compensation = liftOffTrust * ABS(pitchToCompensate); //absolute value because we want to increase power even if breaking
-    	if (compensation > 0){//prevent oveload
-    		rcCommand[THROTTLE] += compensation;
+
+    	pitchToCompensate = ABS(pitchToCompensate); //we compensate in the same way if up or down.
+
+    	if ( pitchToCompensate > 0 && angleTilt+bodyPitch < M_PIf/2){ //if there is something to compensate, and only from 0 to 90, otherwise it will push you into the ground
+            uint16_t liftOffTrust = ( (rxConfig->maxcheck - rxConfig->mincheck) * tiltArmConfig->thrustLiftoff) / 100; //force this order so we don't need float!
+            uint16_t liftOffLimit = ( (rxConfig->maxcheck - rxConfig->mincheck) * 80) / 100; //we will artificially limit the trust compensation to 80%
+
+            float tmp_cos_compensate = cosf(pitchToCompensate);
+            if (tmp_cos_compensate != 0){ //it may be zero if the pitchToCOmpensate is 90°, also if it is very close due to float approximation.
+                float compensation = liftOffTrust / tmp_cos_compensate; //absolute value because we want to increase power even if breaking
+
+                if (compensation > 0){//prevent overflow
+                    rcCommand[THROTTLE] += fmin(compensation, liftOffLimit);
+                }
+            }
     	}
     }
 
