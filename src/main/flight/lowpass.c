@@ -56,7 +56,7 @@ void generateLowpassCoeffs2(int16_t freq, lowpass_t *filter)
         filter->a[i] = LPF_ROUND(filter->af[i] * fixedScaler);
         filter->b[i] = LPF_ROUND(filter->bf[i] * fixedScaler);
 #if defined(UNIT_TEST) && defined(DEBUG_LOWPASS)
-        printf("(%d) bf: %f af: %f b: %ld a: %ld\n", i, 
+        printf("(%d) bf: %f af: %f b: %lld a: %lld\n", i,
                 filter->bf[i], filter->af[i], filter->b[i], filter->a[i]);
 #endif
     }
