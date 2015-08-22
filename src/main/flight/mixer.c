@@ -711,7 +711,7 @@ STATIC_UNIT_TESTED void servoMixer(void)
     for (i = 0; i < servoRuleCount; i++) {
         // consider rule if no box assigned or box is active
         if (currentServoMixer[i].box == 0 || IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[i].box - 1)) {
-            uint8_t target = currentServoMixer[i].targetChannel;
+            servoChannel_e target = currentServoMixer[i].targetChannel;
             uint8_t from = currentServoMixer[i].inputSource;
             uint16_t servo_width = servoConf[target].max - servoConf[target].min;
             int16_t min = currentServoMixer[i].min * servo_width / 100 - servo_width / 2;
