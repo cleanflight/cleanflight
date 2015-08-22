@@ -348,15 +348,15 @@ void mixerUseConfigs(
 }
 
 #ifdef USE_SERVOS
-int16_t determineServoMiddleOrForwardFromChannel(servoChannel_e servoIndex)
+int16_t determineServoMiddleOrForwardFromChannel(servoChannel_e servoChannel)
 {
-    uint8_t channelToForwardFrom = servoConf[servoIndex].forwardFromChannel;
+    uint8_t channelToForwardFrom = servoConf[servoChannel].forwardFromChannel;
 
     if (channelToForwardFrom != CHANNEL_FORWARDING_DISABLED && channelToForwardFrom < rxRuntimeConfig.channelCount) {
         return rcData[channelToForwardFrom];
     }
 
-    return servoConf[servoIndex].middle;
+    return servoConf[servoChannel].middle;
 }
 
 
