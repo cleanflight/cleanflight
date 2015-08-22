@@ -213,7 +213,7 @@ void mixerLoadMix(int index, motorMixer_t *customMixers);
 #ifdef USE_SERVOS
 void servoMixerLoadMix(int index, servoMixer_t *customServoMixers);
 void loadCustomServoMixer(void);
-int servoDirection(int servoIndex, int fromChannel);
+int servoDirection(servoChannel_e servoChannel, int fromChannel);
 #endif
 void mixerResetDisarmedMotors(void);
 void mixTable(void);

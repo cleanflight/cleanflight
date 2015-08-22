@@ -360,10 +360,10 @@ int16_t determineServoMiddleOrForwardFromChannel(servoChannel_e servoChannel)
 }
 
 
-int servoDirection(int servoIndex, int inputSource)
+int servoDirection(servoChannel_e servoChannel, int inputSource)
 {
     // determine the direction (reversed or not) from the direction bitfield of the servo
-    if (servoConf[servoIndex].reversedSources & (1 << inputSource))
+    if (servoConf[servoChannel].reversedSources & (1 << inputSource))
         return -1;
     else
         return 1;
