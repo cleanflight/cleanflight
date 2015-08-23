@@ -51,7 +51,7 @@ static bool SonarIsLidarLite = false;
 static void ECHO_EXTI_IRQHandler(void)
 {
     static uint32_t timing_start;
-    static uint32_t previous_measurement=0;
+    static int32_t previous_measurement=0;
     uint32_t timing_stop;
     uint32_t diff_timing;
 
@@ -63,8 +63,9 @@ static void ECHO_EXTI_IRQHandler(void)
             measurement = timing_stop - timing_start;
 
             // there are some spurious values arriving but always almost
-            // 1ms over or under (don't know why at the moment)
-            // we detect them and remove the suspect ones
+            // 1ms over or under (comes from LidarLite when has false detections)
+            // we detect them and remove the suspect ones (not dangerous as they
+            // are always surrounded by two good values
             if(SonarIsLidarLite == true) {
                 // calculate difference
                 if(measurement>previous_measurement ) {
@@ -216,10 +217,26 @@ int32_t hcsr04_get_distance(void)
         // conversion is 10µs per centimeter
         distance = measurement / 10;
 
-        if (distance > 3000) // max is 40m, clamped to 30m for security
+        if (distance > 3000 || distance==0) // max is 40m, clamped to 30m for security and out of range (0) set to -1
             distance = -1;
     }
 
     return distance;
+}
+
+/**
+ * returns the maximum distance readable by the device
+ */
+ int32_t hcsr04_get_max_distance(void)
+{
+    return SonarIsLidarLite?4000:300;
+}
+
+/**
+ * returns the transition distance chosen for the device
+ */
+int32_t hcsr04_get_transition_distance(void)
+{
+    return SonarIsLidarLite?3000:200;
 }
 #endif

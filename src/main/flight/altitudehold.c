@@ -265,13 +265,13 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     sonarAlt = sonarCalculateAltitude(sonarAlt, tiltAngle);
 #endif
 
-    if (sonarAlt > 0 && sonarAlt < 200) {
+    if (sonarAlt > 0 && sonarAlt < sonarGetTransitionDistance()) {
         baroAlt_offset = BaroAlt - sonarAlt;
         BaroAlt = sonarAlt;
     } else {
         BaroAlt -= baroAlt_offset;
         if (sonarAlt > 0) {
-            sonarTransition = (300 - sonarAlt) / 100.0f;
+            sonarTransition = (sonarGetMaxDistance() - sonarAlt) / 100.0f;
             BaroAlt = sonarAlt * sonarTransition + BaroAlt * (1.0f - sonarTransition);
         }
     }
@@ -305,7 +305,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     }
 #endif
 
-    if (sonarAlt > 0 && sonarAlt < 200) {
+    if (sonarAlt > 0 && sonarAlt < sonarGetTransitionDistance()) {
         // the sonar has the best range
         EstAlt = BaroAlt;
     } else {

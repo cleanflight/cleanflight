@@ -31,3 +31,5 @@ void hcsr04_init(const sonarHardware_t *sonarHardware);
 
 void hcsr04_start_reading(void);
 int32_t hcsr04_get_distance(void);
+int32_t hcsr04_get_max_distance(void);
+int32_t hcsr04_get_transition_distance(void);
