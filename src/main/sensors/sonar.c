@@ -38,17 +38,17 @@
 
 static int32_t calculatedAltitude;
 
-void sonarInit(batteryConfig_t *batteryConfig)
+const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig) 
 {
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
-    static const sonarHardware_t const sonarPWM56 = {
+    static const sonarHardware_t sonarPWM56 = {
         .trigger_pin = Pin_8,   // PWM5 (PB8) - 5v tolerant
         .echo_pin = Pin_9,      // PWM6 (PB9) - 5v tolerant
         .exti_line = EXTI_Line9,
         .exti_pin_source = GPIO_PinSource9,
         .exti_irqn = EXTI9_5_IRQn
     };
-    static const sonarHardware_t const sonarRC78 = {
+    static const sonarHardware_t sonarRC78 = {
         .trigger_pin = Pin_0,   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
         .echo_pin = Pin_1,      // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
         .exti_line = EXTI_Line1,
@@ -57,9 +57,9 @@ void sonarInit(batteryConfig_t *batteryConfig)
     };
     // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
     if (feature(FEATURE_RX_PARALLEL_PWM ) || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC) ) {
-        hcsr04_init(&sonarPWM56);
+        return &sonarPWM56;
     } else {
-        hcsr04_init(&sonarRC78);
+        return &sonarRC78;
     }
 #elif defined(OLIMEXINO)
     UNUSED(batteryConfig);
@@ -70,7 +70,17 @@ void sonarInit(batteryConfig_t *batteryConfig)
         .exti_pin_source = GPIO_PinSource1,
         .exti_irqn = EXTI1_IRQn
     };
-    hcsr04_init(&sonarHardware);
+    return &sonarHardware;
+#elif defined(CC3D)
+    UNUSED(batteryConfig);
+    static const sonarHardware_t const sonarHardware = {
+        .trigger_pin = Pin_5,   // (PB5)
+        .echo_pin = Pin_0,      // (PB0) - only 3.3v ( add a 1K Ohms resistor )
+        .exti_line = EXTI_Line0,
+        .exti_pin_source = GPIO_PinSource0,
+        .exti_irqn = EXTI0_IRQn
+    };
+    return &sonarHardware;
 #elif defined(SPRACINGF3)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
@@ -80,11 +90,15 @@ void sonarInit(batteryConfig_t *batteryConfig)
         .exti_pin_source = EXTI_PinSource1,
         .exti_irqn = EXTI1_IRQn
     };
-    hcsr04_init(&sonarHardware);
+    return &sonarHardware;
 #else
 #error Sonar not defined for target
 #endif
+}
 
+void sonarInit(const sonarHardware_t *sonarHardware)
+{
+    hcsr04_init(sonarHardware);
     sensorsSet(SENSOR_SONAR);
     calculatedAltitude = -1;
 }

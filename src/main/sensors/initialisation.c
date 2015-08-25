@@ -36,6 +36,7 @@
 #include "drivers/accgyro_l3gd20.h"
 #include "drivers/accgyro_lsm303dlhc.h"
 
+#include "drivers/bus_spi.h"
 #include "drivers/accgyro_spi_mpu6000.h"
 #include "drivers/accgyro_spi_mpu6500.h"
 
@@ -60,6 +61,7 @@
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/sonar.h"
+#include "sensors/initialisation.h"
 
 #ifdef NAZE
 #include "hardware_revision.h"
@@ -73,27 +75,28 @@ extern acc_t acc;
 
 uint8_t detectedSensors[MAX_SENSORS_TO_DETECT] = { GYRO_NONE, ACC_NONE, BARO_NONE, MAG_NONE };
 
+
 const mpu6050Config_t *selectMPU6050Config(void)
 {
 #ifdef NAZE
     // MPU_INT output on rev4 PB13
     static const mpu6050Config_t nazeRev4MPU6050Config = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOB,
-            .gpioPort = GPIOB,
             .gpioPin = Pin_13,
+            .gpioPort = GPIOB,
             .exti_port_source = GPIO_PortSourceGPIOB,
-            .exti_pin_source = GPIO_PinSource13,
             .exti_line = EXTI_Line13,
+            .exti_pin_source = GPIO_PinSource13,
             .exti_irqn = EXTI15_10_IRQn
     };
     // MPU_INT output on rev5 hardware PC13
     static const mpu6050Config_t nazeRev5MPU6050Config = {
             .gpioAPB2Peripherals = RCC_APB2Periph_GPIOC,
-            .gpioPort = GPIOC,
             .gpioPin = Pin_13,
+            .gpioPort = GPIOC,
             .exti_port_source = GPIO_PortSourceGPIOC,
-            .exti_pin_source = GPIO_PinSource13,
             .exti_line = EXTI_Line13,
+            .exti_pin_source = GPIO_PinSource13,
             .exti_irqn = EXTI15_10_IRQn
     };
 
@@ -122,8 +125,8 @@ const mpu6050Config_t *selectMPU6050Config(void)
 
 #ifdef USE_FAKE_GYRO
 static void fakeGyroInit(void) {}
-static void fakeGyroRead(int16_t *gyroData) {
-    memset(gyroData, 0, sizeof(int16_t[XYZ_AXIS_COUNT]));
+static void fakeGyroRead(int16_t *gyroADC) {
+    memset(gyroADC, 0, sizeof(int16_t[XYZ_AXIS_COUNT]));
 }
 static void fakeGyroReadTemp(int16_t *tempData) {
     UNUSED(tempData);
@@ -224,6 +227,9 @@ bool detectGyro(uint16_t gyroLpf)
 
         case GYRO_SPI_MPU6500:
 #ifdef USE_GYRO_SPI_MPU6500
+#ifdef USE_HARDWARE_REVISION_DETECTION
+		  spiBusInit();
+#endif
 #ifdef NAZE
             if (hardwareRevision == NAZE32_SP && mpu6500SpiGyroDetect(&gyro, gyroLpf)) {
 #ifdef GYRO_SPI_MPU6500_ALIGN
@@ -478,9 +484,6 @@ static void detectMag(magSensor_e magHardwareToUse)
             .gpioPin = Pin_12,
             .gpioPort = GPIOB,
 
-            .exti_port_source = 0,
-            .exti_pin_source = 0
-
             /* Disabled for v4 needs more work.
             .exti_port_source = GPIO_PortSourceGPIOB,
             .exti_pin_source = GPIO_PinSource12,
@@ -493,8 +496,8 @@ static void detectMag(magSensor_e magHardwareToUse)
             .gpioPin = Pin_14,
             .gpioPort = GPIOC,
             .exti_port_source = GPIO_PortSourceGPIOC,
-            .exti_pin_source = GPIO_PinSource14,
             .exti_line = EXTI_Line14,
+            .exti_pin_source = GPIO_PinSource14,
             .exti_irqn = EXTI15_10_IRQn
     };
     if (hardwareRevision < NAZE32_REV5) {
@@ -588,8 +591,8 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint16_t 
 {
     int16_t deg, min;
 
-    memset(&acc, sizeof(acc), 0);
-    memset(&gyro, sizeof(gyro), 0);
+    memset(&acc, 0, sizeof(acc));
+    memset(&gyro, 0, sizeof(gyro));
 
     if (!detectGyro(gyroLpf)) {
         return false;

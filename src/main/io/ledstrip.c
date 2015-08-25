@@ -74,8 +74,6 @@ static uint32_t nextRotationUpdateAt = 0;
 #error "Led strip length must match driver"
 #endif
 
-hsvColor_t *colors;
-
 //                          H    S    V
 #define LED_BLACK        {  0,   0,   0}
 #define LED_WHITE        {  0, 255, 255}
@@ -658,7 +656,7 @@ void applyLedWarningLayer(uint8_t updateNow)
 
     if (updateNow && warningFlashCounter == 0) {
         warningFlags = WARNING_FLAG_NONE;
-        if (feature(FEATURE_VBAT) && calculateBatteryState() != BATTERY_OK) {
+        if (feature(FEATURE_VBAT) && getBatteryState() != BATTERY_OK) {
             warningFlags |= WARNING_FLAG_LOW_BATTERY;
         }
         if (feature(FEATURE_FAILSAFE) && failsafeIsActive()) {
@@ -827,13 +825,14 @@ void applyLedThrustRingLayer(void)
 }
 
 #ifdef USE_LED_ANIMATION
+static uint8_t previousRow;
+static uint8_t currentRow;
+static uint8_t nextRow;
+
 void updateLedAnimationState(void)
 {
     static uint8_t frameCounter = 0;
 
-    static uint8_t previousRow;
-    static uint8_t currentRow;
-    static uint8_t nextRow;
     uint8_t animationFrames = ledGridHeight;
 
     previousRow = (frameCounter + animationFrames - 1) % animationFrames;
@@ -857,13 +856,13 @@ static void applyLedAnimationLayer(void)
         ledConfig = &ledConfigs[ledIndex];
 
         if (GET_LED_Y(ledConfig) == previousRow) {
-            setLedHsv(ledIndex, &white);
-            setLedBrightness(ledIndex, 50);
+            setLedHsv(ledIndex, &hsv_white);
+            scaleLedValue(ledIndex, 50);
 
         } else if (GET_LED_Y(ledConfig) == currentRow) {
-            setLedHsv(ledIndex, &white);
+            setLedHsv(ledIndex, &hsv_white);
         } else if (GET_LED_Y(ledConfig) == nextRow) {
-            setLedBrightness(ledIndex, 50);
+            scaleLedValue(ledIndex, 50);
         }
     }
 }
@@ -892,11 +891,11 @@ void updateLedStrip(void)
 
     uint32_t now = micros();
 
-    bool indicatorFlashNow = indicatorFlashNow = (int32_t)(now - nextIndicatorFlashAt) >= 0L;
-    bool warningFlashNow = warningFlashNow = (int32_t)(now - nextWarningFlashAt) >= 0L;
+    bool indicatorFlashNow = (int32_t)(now - nextIndicatorFlashAt) >= 0L;
+    bool warningFlashNow = (int32_t)(now - nextWarningFlashAt) >= 0L;
     bool rotationUpdateNow = (int32_t)(now - nextRotationUpdateAt) >= 0L;
 #ifdef USE_LED_ANIMATION
-    bool animationUpdateNow = animationUpdateNow = (int32_t)(now - nextAnimationUpdateAt) >= 0L;
+    bool animationUpdateNow = (int32_t)(now - nextAnimationUpdateAt) >= 0L;
 #endif
     if (!(
             indicatorFlashNow ||

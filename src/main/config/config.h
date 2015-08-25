@@ -19,6 +19,7 @@
 
 #define MAX_PROFILE_COUNT 3
 #define MAX_CONTROL_RATE_PROFILE_COUNT 3
+#define ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS 1500
 
 
 typedef enum {
@@ -41,9 +42,13 @@ typedef enum {
     FEATURE_LED_STRIP = 1 << 16,
     FEATURE_DISPLAY = 1 << 17,
     FEATURE_ONESHOT125 = 1 << 18,
-    FEATURE_BLACKBOX = 1 << 19
+    FEATURE_BLACKBOX = 1 << 19,
+    FEATURE_CHANNEL_FORWARDING = 1 << 20
 } features_e;
 
+void handleOneshotFeatureChangeOnRestart(void);
+void latchActiveFeatures(void);
+bool featureConfigured(uint32_t mask);
 bool feature(uint32_t mask);
 void featureSet(uint32_t mask);
 void featureClear(uint32_t mask);

@@ -72,6 +72,7 @@
 #include "flight/failsafe.h"
 #include "flight/autotune.h"
 #include "flight/navigation.h"
+#include "flight/filter.h"
 
 
 #include "config/runtime_config.h"
@@ -87,8 +88,10 @@ enum {
     ALIGN_MAG = 2
 };
 
-/* for VBAT monitoring frequency */
-#define VBATFREQ 6        // to read battery voltage - nth number of loop iterations
+/* VBAT monitoring interval (in microseconds) - 1s*/
+#define VBATINTERVAL (6 * 3500)       
+/* IBat monitoring interval (in microseconds) - 6 default looptimes */
+#define IBATINTERVAL (6 * 3500)       
 
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
@@ -97,10 +100,12 @@ uint16_t cycleTime = 0;         // this is the number in micro second to achieve
 int16_t magHold;
 int16_t headFreeModeHold;
 
+uint8_t motorControlEnable = false;
+
 int16_t telemTemperature1;      // gyro sensor temperature
 static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
 
-extern uint8_t dynP8[3], dynI8[3], dynD8[3];
+extern uint8_t dynP8[3], dynI8[3], dynD8[3], PIDweight[3];
 
 typedef void (*pidControllerFuncPtr)(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
         uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
@@ -171,10 +176,8 @@ void annexCode(void)
     int32_t tmp, tmp2;
     int32_t axis, prop1 = 0, prop2;
 
-    static batteryState_e batteryState = BATTERY_OK;
-    static uint8_t vbatTimer = 0;
-    static int32_t vbatCycleTime = 0;
-
+    static uint32_t vbatLastServiced = 0;
+    static uint32_t ibatLastServiced = 0;
     // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
         prop2 = 100;
@@ -218,6 +221,14 @@ void annexCode(void)
         dynI8[axis] = (uint16_t)currentProfile->pidProfile.I8[axis] * prop1 / 100;
         dynD8[axis] = (uint16_t)currentProfile->pidProfile.D8[axis] * prop1 / 100;
 
+        // non coupled PID reduction scaler used in PID controller 1 and PID controller 2. YAW TPA disabled. 100 means 100% of the pids
+        if (axis == YAW) {
+            PIDweight[axis] = 100;
+        }
+        else {
+            PIDweight[axis] = prop2;
+        }
+
         if (rcData[axis] < masterConfig.rxConfig.midrc)
             rcCommand[axis] = -rcCommand[axis];
     }
@@ -229,31 +240,26 @@ void annexCode(void)
 
     if (FLIGHT_MODE(HEADFREE_MODE)) {
         float radDiff = degreesToRadians(heading - headFreeModeHold);
-        float cosDiff = cosf(radDiff);
-        float sinDiff = sinf(radDiff);
+        float cosDiff = cos_approx(radDiff);
+        float sinDiff = sin_approx(radDiff);
         int16_t rcCommand_PITCH = rcCommand[PITCH] * cosDiff + rcCommand[ROLL] * sinDiff;
         rcCommand[ROLL] = rcCommand[ROLL] * cosDiff - rcCommand[PITCH] * sinDiff;
         rcCommand[PITCH] = rcCommand_PITCH;
     }
 
-    if (feature(FEATURE_VBAT | FEATURE_CURRENT_METER)) {
-        vbatCycleTime += cycleTime;
-        if (!(++vbatTimer % VBATFREQ)) {
+    if (feature(FEATURE_VBAT)) {
+        if ((int32_t)(currentTime - vbatLastServiced) >= VBATINTERVAL) {
+            vbatLastServiced = currentTime;
+            updateBattery();
+        }
+    }
 
-            if (feature(FEATURE_VBAT)) {
-                updateBatteryVoltage();
-                batteryState = calculateBatteryState();
-                //handle beepers for battery levels
-                if (batteryState == BATTERY_CRITICAL)
-                    beeper(BEEPER_BAT_CRIT_LOW);    //critically low battery
-                else if (batteryState == BATTERY_WARNING)
-                    beeper(BEEPER_BAT_LOW);         //low battery
-            }
+    if (feature(FEATURE_CURRENT_METER)) {
+        int32_t ibatTimeSinceLastServiced = (int32_t) (currentTime - ibatLastServiced);
 
-            if (feature(FEATURE_CURRENT_METER)) {
-                updateCurrentMeter(vbatCycleTime, &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
-            }
-            vbatCycleTime = 0;
+        if (ibatTimeSinceLastServiced >= IBATINTERVAL) {
+            ibatLastServiced = currentTime;
+            updateCurrentMeter((ibatTimeSinceLastServiced / 1000), &masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
         }
     }
 
@@ -266,11 +272,6 @@ void annexCode(void)
             ENABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
-        if (isCalibrating()) {
-            LED0_TOGGLE;
-            DISABLE_ARMING_FLAG(OK_TO_ARM);
-        }
-
         if (!STATE(SMALL_ANGLE)) {
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
@@ -279,17 +280,22 @@ void annexCode(void)
             DISABLE_ARMING_FLAG(OK_TO_ARM);
         }
 
-        if (ARMING_FLAG(OK_TO_ARM)) {
-            disableWarningLed();
+        if (isCalibrating()) {
+            warningLedFlash();
+            DISABLE_ARMING_FLAG(OK_TO_ARM);
         } else {
-            enableWarningLed(currentTime);
+            if (ARMING_FLAG(OK_TO_ARM)) {
+                warningLedDisable();
+            } else {
+                warningLedFlash();
+            }
         }
 
-        updateWarningLed(currentTime);
+        warningLedUpdate();
     }
 
 #ifdef TELEMETRY
-    checkTelemetryState();
+    telemetryCheckState();
 #endif
 
     handleSerial();
@@ -310,14 +316,6 @@ void mwDisarm(void)
     if (ARMING_FLAG(ARMED)) {
         DISABLE_ARMING_FLAG(ARMED);
 
-#ifdef TELEMETRY
-        if (feature(FEATURE_TELEMETRY)) {
-            // the telemetry state must be checked immediately so that shared serial ports are released.
-            checkTelemetryState();
-            mspAllocateSerialPorts(&masterConfig.serialConfig);
-        }
-#endif
-
 #ifdef BLACKBOX
         if (feature(FEATURE_BLACKBOX)) {
             finishBlackbox();
@@ -330,6 +328,14 @@ void mwDisarm(void)
 
 #define TELEMETRY_FUNCTION_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_MSP | FUNCTION_TELEMETRY_SMARTPORT)
 
+void releaseSharedTelemetryPorts(void) {
+    serialPort_t *sharedPort = findSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
+    while (sharedPort) {
+        mspReleasePortIfAllocated(sharedPort);
+        sharedPort = findNextSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
+    }
+}
+
 void mwArm(void)
 {
     if (ARMING_FLAG(OK_TO_ARM)) {
@@ -339,18 +345,6 @@ void mwArm(void)
         if (!ARMING_FLAG(PREVENT_ARMING)) {
             ENABLE_ARMING_FLAG(ARMED);
             headFreeModeHold = heading;
-
-#ifdef TELEMETRY
-            if (feature(FEATURE_TELEMETRY)) {
-
-
-                serialPort_t *sharedPort = findSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
-                while (sharedPort) {
-                    mspReleasePortIfAllocated(sharedPort);
-                    sharedPort = findNextSharedSerialPort(TELEMETRY_FUNCTION_MASK, FUNCTION_MSP);
-                }
-            }
-#endif
 
 #ifdef BLACKBOX
             if (feature(FEATURE_BLACKBOX)) {
@@ -378,7 +372,7 @@ void mwArm(void)
     }
 
     if (!ARMING_FLAG(ARMED)) {
-        blinkLedAndSoundBeeper(2, 255, 1);
+        beeperConfirmationBeeps(1);
     }
 }
 
@@ -670,6 +664,21 @@ void processRx(void)
     if (masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_AIRPLANE) {
         DISABLE_FLIGHT_MODE(HEADFREE_MODE);
     }
+
+#ifdef TELEMETRY
+    if (feature(FEATURE_TELEMETRY)) {
+        if ((!masterConfig.telemetryConfig.telemetry_switch && ARMING_FLAG(ARMED)) ||
+                (masterConfig.telemetryConfig.telemetry_switch && IS_RC_MODE_ACTIVE(BOXTELEMETRY))) {
+
+            releaseSharedTelemetryPorts();
+        } else {
+            // the telemetry state must be checked immediately so that shared serial ports are released.
+            telemetryCheckState();
+            mspAllocateSerialPorts(&masterConfig.serialConfig);
+        }
+    }
+#endif
+
 }
 
 void loop(void)
@@ -720,12 +729,22 @@ void loop(void)
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        imuUpdate(&currentProfile->accelerometerTrims, masterConfig.mixerMode);
+        imuUpdate(&currentProfile->accelerometerTrims);
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();
         cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
+
+        // Gyro Low Pass
+        if (currentProfile->pidProfile.gyro_cut_hz) {
+            int axis;
+            static filterStatePt1_t gyroADCState[XYZ_AXIS_COUNT];
+
+            for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        	    gyroADC[axis] = filterApplyPt1(gyroADC[axis], &gyroADCState[axis], currentProfile->pidProfile.gyro_cut_hz);
+            }
+        }
 
         annexCode();
 #if defined(BARO) || defined(SONAR)
@@ -756,7 +775,7 @@ void loop(void)
         // Allow yaw control for tricopters if the user wants the servo to move even when unarmed.
         if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck
 #ifndef USE_QUAD_MIXER_ONLY
-                && !(masterConfig.mixerMode == MIXER_TRI && masterConfig.mixerConfig.tri_unarmed_servo)
+                && !((masterConfig.mixerMode == MIXER_TRI || masterConfig.mixerMode == MIXER_CUSTOM_TRI) && masterConfig.mixerConfig.tri_unarmed_servo)
                 && masterConfig.mixerMode != MIXER_AIRPLANE
                 && masterConfig.mixerMode != MIXER_FLYING_WING
 #endif
@@ -793,7 +812,9 @@ void loop(void)
         writeServos();
 #endif
 
-        writeMotors();
+        if (motorControlEnable) {
+            writeMotors();
+        }
 
 #ifdef BLACKBOX
         if (!cliMode && feature(FEATURE_BLACKBOX)) {
@@ -804,7 +825,7 @@ void loop(void)
 
 #ifdef TELEMETRY
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
-        handleTelemetry(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
+        telemetryProcess(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
     }
 #endif
 

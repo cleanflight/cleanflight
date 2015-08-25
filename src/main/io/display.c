@@ -83,7 +83,7 @@ static char lineBuffer[SCREEN_CHARACTER_COLUMN_COUNT + 1];
 #define HALF_SCREEN_CHARACTER_COLUMN_COUNT (SCREEN_CHARACTER_COLUMN_COUNT / 2)
 #define IS_SCREEN_CHARACTER_COLUMN_COUNT_ODD (SCREEN_CHARACTER_COLUMN_COUNT & 1)
 
-const char* pageTitles[] = {
+static const char* const pageTitles[] = {
     "CLEANFLIGHT",
     "ARMED",
     "BATTERY",
@@ -100,7 +100,7 @@ const char* pageTitles[] = {
 
 #define PAGE_COUNT (PAGE_RX + 1)
 
-const uint8_t cyclePageIds[] = {
+const pageId_e cyclePageIds[] = {
     PAGE_PROFILE,
 #ifdef GPS
     PAGE_GPS,
@@ -206,7 +206,13 @@ void updateTicker(void)
 void updateRxStatus(void)
 {
     i2c_OLED_set_xy(SCREEN_CHARACTER_COLUMN_COUNT - 2, 0);
-    i2c_OLED_send_char(rxIsReceivingSignal() ? 'R' : '!');
+    char rxStatus = '!';
+    if (rxIsReceivingSignal()) {
+        rxStatus = 'r';
+    } if (rxAreFlightChannelsValid()) {
+        rxStatus = 'R';
+    }
+    i2c_OLED_send_char(rxStatus);
 }
 
 void updateFailsafeStatus(void)
@@ -281,9 +287,8 @@ void showWelcomePage(void)
     i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
-    tfp_sprintf(lineBuffer, "Target: %s", targetName);
     i2c_OLED_set_line(rowIndex++);
-    i2c_OLED_send_string(lineBuffer);
+    i2c_OLED_send_string(targetName);
 }
 
 void showArmedPage(void)

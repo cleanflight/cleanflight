@@ -21,6 +21,8 @@
 
 #include "platform.h"
 
+#include "common/utils.h"
+
 #include "gpio.h"
 
 #include "light_led.h"
@@ -43,11 +45,17 @@ void ledInit(void)
         {
             .gpio = LED1_GPIO,
             .cfg = { LED1_PIN, Mode_Out_PP, Speed_2MHz }
+        },
+#endif
+#ifdef LED2
+        {
+        	.gpio = LED2_GPIO,
+        	.cfg = { LED2_PIN, Mode_Out_PP, Speed_2MHz }
         }
 #endif
     };
 
-    uint8_t gpio_count = sizeof(gpio_setup) / sizeof(gpio_setup[0]);
+    uint8_t gpio_count = ARRAYLEN(gpio_setup);
 
 #ifdef LED0
     RCC_AHBPeriphClockCmd(LED0_PERIPHERAL, ENABLE);
@@ -55,9 +63,13 @@ void ledInit(void)
 #ifdef LED1
     RCC_AHBPeriphClockCmd(LED1_PERIPHERAL, ENABLE);
 #endif
+#ifdef LED2
+    RCC_AHBPeriphClockCmd(LED2_PERIPHERAL, ENABLE);
+#endif
 
     LED0_OFF;
     LED1_OFF;
+    LED2_OFF;
 
     for (i = 0; i < gpio_count; i++) {
         gpioInit(gpio_setup[i].gpio, &gpio_setup[i].cfg);

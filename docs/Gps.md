@@ -1,5 +1,11 @@
 # GPS
 
+GPS features in Cleanflight are experimental.  Please share your findings with the developers.
+
+GPS works best if the GPS receiver is mounted above and away from other sources of interference.
+
+The compass/mag sensor should be well away from sources of magnetic interference, e.g. keep it away from power wires, motors, ESCs.
+
 Two GPS protocols are supported. NMEA text and UBLOX binary.
 
 ## Configuration
@@ -151,7 +157,7 @@ Module | Comments
 -------|--------
 U-blox Neo-7M w/Compass | [HobbyKing](http://www.hobbyking.com/hobbyking/store/__55558__Ublox_Neo_7M_GPS_with_Compass_and_Pedestal_Mount.html)
 
-#### NEO-7
+#### NEO-6
 Module | Comments
 -------|--------
 Ublox NEO-6M GPS with Compass | [eBay](http://www.ebay.com/itm/111585855757)
