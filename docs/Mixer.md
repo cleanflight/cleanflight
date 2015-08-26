@@ -78,10 +78,10 @@ Custom motor mixing allows for completely customized motor configurations. Each 
 Steps to configure custom mixer in the CLI:
 
 1. Use `mixer custom` to enable the custom mixing.
-2. Use `mmix reset` to erase the any existing custom mixing. 
-3. Issue a `mmix` statement for each motor. 
+2. Use `cmix reset` to erase the any existing custom mixing. 
+3. Issue a `cmix` statement for each motor. 
 
-The mmix statement has the following syntax: `mmix n THROTTLE ROLL PITCH YAW` 
+The mmix statement has the following syntax: `cmix n THROTTLE ROLL PITCH YAW` 
 
 | Mixing table parameter | Definition | 
 | ---------------------- | ---------- |
@@ -91,7 +91,7 @@ The mmix statement has the following syntax: `mmix n THROTTLE ROLL PITCH YAW`
 | PITCH	| Indicates the pitch authority this motor has over the flight controller. Also accepts values nominally from 1.0 to -1.0. |
 | YAW	| Indicates the direction of the motor rotation in relationship with the flight controller. 1.0 = CCW -1.0 = CW. |
 
-Note: the `mmix` command may show a motor mix that is not active, custom motor mixes are only active for models that use custom mixers. 
+Note: the `cmix` command may show a motor mix that is not active, custom motor mixes are only active for models that use custom mixers. 
 
 ## Custom Servo Mixing
 
