@@ -78,10 +78,10 @@ Custom motor mixing allows for completely customized motor configurations. Each 
 Steps to configure custom mixer in the CLI:
 
 1. Use `mixer custom` to enable the custom mixing.
-2. Use `mmix reset` to erase the any existing custom mixing. 
-3. Issue a `mmix` statement for each motor. 
+2. Use `cmix reset` to erase the any existing custom mixing. 
+3. Issue a `cmix` statement for each motor. 
 
-The mmix statement has the following syntax: `mmix n THROTTLE ROLL PITCH YAW` 
+The mmix statement has the following syntax: `cmix n THROTTLE ROLL PITCH YAW` 
 
 | Mixing table parameter | Definition | 
 | ---------------------- | ---------- |
@@ -91,7 +91,7 @@ The mmix statement has the following syntax: `mmix n THROTTLE ROLL PITCH YAW`
 | PITCH	| Indicates the pitch authority this motor has over the flight controller. Also accepts values nominally from 1.0 to -1.0. |
 | YAW	| Indicates the direction of the motor rotation in relationship with the flight controller. 1.0 = CCW -1.0 = CW. |
 
-Note: the `mmix` command may show a motor mix that is not active, custom motor mixes are only active for models that use custom mixers. 
+Note: the `cmix` command may show a motor mix that is not active, custom motor mixes are only active for models that use custom mixers. 
 
 ## Custom Servo Mixing
 
@@ -141,11 +141,11 @@ KK2.0 Motor Layout
 ```
 
 1. Use `mixer custom`
-2. Use `mmix reset`
-3. Use `mmix 0 1.0,  1.0, -1.0, -1.0` for the Front Left motor. It tells the flight controller the #1 motor is used, provides positive roll, provides negative pitch and is turning CW.  
-4. Use `mmix 1 1.0, -1.0, -1.0,  1.0` for the Front Right motor. It still provides a negative pitch authority, but unlike the front left, it provides negative roll authority and turns CCW.
-5. Use `mmix 2 1.0, -1.0,  1.0, -1.0` for the Rear Right motor. It has negative roll, provides positive pitch when the speed is increased and turns CW.
-6. Use `mmix 3 1.0,  1.0,  1.0,  1.0` for the Rear Left motor. Increasing motor speed imparts positive roll, positive pitch and turns CCW.
+2. Use `cmix reset`
+3. Use `cmix 1 1.0,  1.0, -1.0, -1.0` for the Front Left motor. It tells the flight controller the #1 motor is used, provides positive roll, provides negative pitch and is turning CW.  
+4. Use `cmix 2 1.0, -1.0, -1.0,  1.0` for the Front Right motor. It still provides a negative pitch authority, but unlike the front left, it provides negative roll authority and turns CCW.
+5. Use `cmix 3 1.0, -1.0,  1.0, -1.0` for the Rear Right motor. It has negative roll, provides positive pitch when the speed is increased and turns CW.
+6. Use `cmix 4 1.0,  1.0,  1.0,  1.0` for the Rear Left motor. Increasing motor speed imparts positive roll, positive pitch and turns CCW.
 
 ### Example 2: A HEX-U Copter 
 
@@ -163,21 +163,21 @@ HEX6-U
 
 |Command| Roll | Pitch | Yaw |
 | ----- | ---- | ----- | --- | 
-| Use `mmix 0 1.0, -0.5,  1.0, -1.0` | half negative | full positive | CW |
-| Use `mmix 1 1.0, -1.0,  0.0,  1.0` | full negative | none | CCW | 
-| Use `mmix 2 1.0, -1.0, -1.0, -1.0` | full negative | full negative | CW | 
-| Use `mmix 3 1.0,  1.0, -1.0,  1.0` | full positive | full negative | CCW  | 
-| Use `mmix 4 1.0,  1.0,  0.0, -1.0` | full positive | none | CW | 
-| Use `mmix 5 1.0,  0.5,  1.0,  1.0` | half positive | full positive | CCW | 
+| Use `cmix 1 1.0, -0.5,  1.0, -1.0` | half negative | full positive | CW |
+| Use `cmix 2 1.0, -1.0,  0.0,  1.0` | full negative | none | CCW | 
+| Use `cmix 3 1.0, -1.0, -1.0, -1.0` | full negative | full negative | CW | 
+| Use `cmix 4 1.0,  1.0, -1.0,  1.0` | full positive | full negative | CCW  | 
+| Use `cmix 5 1.0,  1.0,  0.0, -1.0` | full positive | none | CW | 
+| Use `cmix 6 1.0,  0.5,  1.0,  1.0` | half positive | full positive | CCW | 
 
 ### Example 3: Custom tricopter
 
 ```
 mixer CUSTOMTRI
-mmix reset
-mmix 0 1.000 0.000 1.333 0.000
-mmix 1 1.000 -1.000 -0.667 0.000
-mmix 2 1.000 1.000 -0.667 0.000
+cmix reset
+cmix 1 1.000 0.000 1.333 0.000
+cmix 2 1.000 -1.000 -0.667 0.000
+cmix 3 1.000 1.000 -0.667 0.000
 smix reset
 smix 0 6 3 100 0 0 100 0
 ```
