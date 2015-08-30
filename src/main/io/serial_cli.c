@@ -2129,7 +2129,7 @@ void cliProcess(void)
         return;
     }
 
-    while (serialTotalBytesWaiting(cliPort)) {
+    while (serialRxBytesWaiting(cliPort)) {
         uint8_t c = serialRead(cliPort);
         if (c == '\t' || c == '?') {
             // do tab completion
