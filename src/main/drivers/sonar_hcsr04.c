@@ -65,7 +65,9 @@ static void ECHO_EXTI_IRQHandler(void)
             // there are some spurious values arriving but always almost
             // 1ms over or under (comes from LidarLite when has false detections)
             // we detect them and remove the suspect ones (not dangerous as they
-            // are always surrounded by two good values
+            // are always surrounded by two good values)
+            // we detect them and remove the suspect ones
+
             if(SonarIsLidarLite == true) {
                 // calculate difference
                 if(measurement>previous_measurement ) {
