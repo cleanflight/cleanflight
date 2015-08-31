@@ -46,7 +46,7 @@
 static uint32_t lastMeasurementAt;
 static volatile int32_t measurement = -1;
 static sonarHardware_t const *sonarHardware;
-static bool SonarIsLidarLite = false;
+static bool sonarIsLidarLite = false;
 
 static void ECHO_EXTI_IRQHandler(void)
 {
@@ -68,7 +68,7 @@ static void ECHO_EXTI_IRQHandler(void)
             // are always surrounded by two good values)
             // we detect them and remove the suspect ones
 
-            if(SonarIsLidarLite == true) {
+            if(sonarIsLidarLite) {
                 // calculate difference
                 if(measurement>previous_measurement ) {
                     diff_timing = measurement - previous_measurement;
@@ -165,7 +165,7 @@ void hcsr04_init(const sonarHardware_t *initialSonarHardware)
     delay(100); // wait for 100 milliseconds (may be as low as 50ms)
 
     if(measurement>-1) {
-        SonarIsLidarLite = true;
+        sonarIsLidarLite = true;
     }
 
     lastMeasurementAt = millis() - 60; // force 1st measurement in hcsr04_start_reading
@@ -174,8 +174,6 @@ void hcsr04_init(const sonarHardware_t *initialSonarHardware)
 // measurement reading is done asynchronously, using interrupt
 void hcsr04_start_reading(void)
 {
-    //if(SonarIsLidarLite == true) return; // not used for Lidar
-
     uint32_t now = millis();
 
     if (now < (lastMeasurementAt + 60)) {
@@ -201,7 +199,7 @@ int32_t hcsr04_get_distance(void)
 {
     int32_t distance;
 
-    if(SonarIsLidarLite == false) {
+    if(!sonarIsLidarLite) {
         // HCRS04 side
         // The speed of sound is 340 m/s or approx. 29 microseconds per centimeter.
         // The ping travels out and back, so to find the distance of the
@@ -217,13 +215,14 @@ int32_t hcsr04_get_distance(void)
     else {
         // Lidar Lite side
         // conversion is 10µs per centimeter
-        distance = measurement / 10;
+		
+        distance = measurement / 10; // to get it in centimeters
 
         if (distance > 3000 || distance==0) // max is 40m, clamped to 30m for security and out of range (0) set to -1
             distance = -1;
     }
 
-    return distance;
+    return distance; // in centimeters
 }
 
 /**
@@ -231,7 +230,7 @@ int32_t hcsr04_get_distance(void)
  */
  int32_t hcsr04_get_max_distance(void)
 {
-    return SonarIsLidarLite?4000:300;
+    return sonarIsLidarLite?4000:300;
 }
 
 /**
@@ -239,6 +238,6 @@ int32_t hcsr04_get_distance(void)
  */
 int32_t hcsr04_get_transition_distance(void)
 {
-    return SonarIsLidarLite?3000:200;
+    return sonarIsLidarLite?3000:200;
 }
 #endif
