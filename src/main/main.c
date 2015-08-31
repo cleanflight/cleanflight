@@ -47,7 +47,7 @@
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 #include "drivers/flash_m25p16.h"
-#include "drivers/sonar_hcsr04.h"
+#include "drivers/pwm_rangers.h"
 
 #include "rx/rx.h"
 

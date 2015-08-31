@@ -23,7 +23,7 @@
 #include "system.h"
 #include "gpio.h"
 #include "nvic.h"
-#include "sonar_hcsr04.h"
+#include "pwm_rangers.h"
 
 #ifdef SONAR
 
