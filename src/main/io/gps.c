@@ -284,7 +284,7 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
     portMode_t mode = MODE_RXTX;
     // only RX is needed for NMEA-style GPS
     if (gpsConfig->provider == GPS_NMEA)
-        mode &= ~MODE_TX;
+	    mode &= ~MODE_TX;
     if (gpsConfig->provider == GPS_NAZA)
         mode &= ~MODE_TX;
 

@@ -243,9 +243,12 @@ static const blackboxSimpleFieldDefinition_t blackboxGpsHFields[] = {
 
 // Rarely-updated fields
 static const blackboxSimpleFieldDefinition_t blackboxSlowFields[] = {
-    {"flightModeFlags",   -1, UNSIGNED, PREDICT(0),          ENCODING(UNSIGNED_VB)},
-    {"stateFlags",        -1, UNSIGNED, PREDICT(0),          ENCODING(UNSIGNED_VB)},
-    {"failsafePhase",     -1, UNSIGNED, PREDICT(0),          ENCODING(UNSIGNED_VB)}
+    {"flightModeFlags",       -1, UNSIGNED, PREDICT(0),      ENCODING(UNSIGNED_VB)},
+    {"stateFlags",            -1, UNSIGNED, PREDICT(0),      ENCODING(UNSIGNED_VB)},
+
+    {"failsafePhase",         -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)},
+    {"rxSignalReceived",      -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)},
+    {"rxFlightChannelsValid", -1, UNSIGNED, PREDICT(0),      ENCODING(TAG2_3S32)}
 };
 
 typedef enum BlackboxState {
@@ -298,6 +301,8 @@ typedef struct blackboxSlowState_t {
     uint16_t flightModeFlags;
     uint8_t stateFlags;
     uint8_t failsafePhase;
+    bool rxSignalReceived;
+    bool rxFlightChannelsValid;
 } __attribute__((__packed__)) blackboxSlowState_t; // We pack this struct so that padding doesn't interfere with memcmp()
 
 //From mixer.c:
@@ -352,6 +357,10 @@ static blackboxMainState_t blackboxHistoryRing[3];
 static blackboxMainState_t* blackboxHistory[3];
 
 static bool blackboxModeActivationConditionPresent = false;
+
+static bool blackboxIsOnlyLoggingIntraframes() {
+    return masterConfig.blackbox_rate_num == 1 && masterConfig.blackbox_rate_denom == 32;
+}
 
 static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
 {
@@ -680,11 +689,20 @@ static void writeInterframe(void)
  * infrequently, delta updates are not reasonable, so we log independent frames. */
 static void writeSlowFrame(void)
 {
+    int32_t values[3];
+
     blackboxWrite('S');
 
     blackboxWriteUnsignedVB(slowHistory.flightModeFlags);
     blackboxWriteUnsignedVB(slowHistory.stateFlags);
-    blackboxWriteUnsignedVB(slowHistory.failsafePhase);
+
+    /*
+     * Most of the time these three values will be able to pack into one byte for us:
+     */
+    values[0] = slowHistory.failsafePhase;
+    values[1] = slowHistory.rxSignalReceived ? 1 : 0;
+    values[2] = slowHistory.rxFlightChannelsValid ? 1 : 0;
+    blackboxWriteTag2_3S32(values);
 
     blackboxSlowFrameIterationTimer = 0;
 }
@@ -697,6 +715,8 @@ static void loadSlowState(blackboxSlowState_t *slow)
     slow->flightModeFlags = flightModeFlags;
     slow->stateFlags = stateFlags;
     slow->failsafePhase = failsafePhase();
+    slow->rxSignalReceived = rxIsReceivingSignal();
+    slow->rxFlightChannelsValid = rxAreFlightChannelsValid();
 }
 
 /**
@@ -1206,9 +1226,9 @@ static void blackboxLogIteration()
     if (blackboxShouldLogIFrame()) {
         /*
          * Don't log a slow frame if the slow data didn't change ("I" frames are already large enough without adding
-         * an additional item to write at the same time)
+         * an additional item to write at the same time). Unless we're *only* logging "I" frames, then we have no choice.
          */
-        writeSlowFrameIfNeeded(false);
+        writeSlowFrameIfNeeded(blackboxIsOnlyLoggingIntraframes());
 
         loadMainState();
         writeIntraframe();
@@ -1317,7 +1337,15 @@ void handleBlackbox(void)
 
             //Keep writing chunks of the system info headers until it returns true to signal completion
             if (blackboxWriteSysinfo()) {
-                blackboxSetState(BLACKBOX_STATE_RUNNING);
+
+                /*
+                 * Wait for header buffers to drain completely before data logging begins to ensure reliable header delivery
+                 * (overflowing circular buffers causes all data to be discarded, so the first few logged iterations
+                 * could wipe out the end of the header if we weren't careful)
+                 */
+                if (blackboxDeviceFlush()) {
+                    blackboxSetState(BLACKBOX_STATE_RUNNING);
+                }
             }
         break;
         case BLACKBOX_STATE_PAUSED:
