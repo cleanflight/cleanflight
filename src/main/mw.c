@@ -313,6 +313,9 @@ void annexCode(void)
 
 void mwDisarm(void)
 {
+    if (ARMING_FLAG(PREVENT_ARMING)) {
+    	DISABLE_ARMING_FLAG(PREVENT_ARMING);
+	}
     if (ARMING_FLAG(ARMED)) {
         DISABLE_ARMING_FLAG(ARMED);
 
