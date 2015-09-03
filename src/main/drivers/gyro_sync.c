@@ -54,12 +54,10 @@ void gyroUpdateSampleRate(uint32_t looptime, uint8_t lpf, uint8_t syncGyroToLoop
 
             if(!sensors(SENSOR_ACC)) {
                 minLooptime = 500;   // Max refresh 2khz
-            }
-            else {
+            } else {
                 minLooptime = 625;   // Max refresh 1,6khz
             }
-        }
-        else {
+        } else {
             gyroSamplePeriod = 1000;
             minLooptime = 1000;      // Full sampling
         }
@@ -68,18 +66,15 @@ void gyroUpdateSampleRate(uint32_t looptime, uint8_t lpf, uint8_t syncGyroToLoop
             gyroSamplePeriod = 125;
 
             if(!sensors(SENSOR_ACC)) {
-                minLooptime = 625;   // Max refresh 1,33khz
-            }
-            else {
+                minLooptime = 625;   // Max refresh 1,6khz
+            } else {
                 minLooptime = 1625;  // Max refresh 615hz
             }
-        }
-        else {
+        } else {
             gyroSamplePeriod = 1000;
             if(!sensors(SENSOR_ACC)) {
                 minLooptime = 1000;  // Full sampling without ACC
-            }
-            else {
+            } else {
                 minLooptime = 2000;
             }
         }
@@ -87,8 +82,7 @@ void gyroUpdateSampleRate(uint32_t looptime, uint8_t lpf, uint8_t syncGyroToLoop
         looptime = constrain(looptime, minLooptime, 4000);
         mpuDivider  = (looptime + gyroSamplePeriod -1 ) / gyroSamplePeriod - 1;
         targetLooptime = (mpuDivider + 1) * gyroSamplePeriod;
-    }
-    else {
+    } else {
     	mpuDivider = 0;
     	targetLooptime = looptime;
     }

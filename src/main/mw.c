@@ -93,7 +93,7 @@ enum {
 #define VBATINTERVAL (6 * 3500)       
 /* IBat monitoring interval (in microseconds) - 6 default looptimes */
 #define IBATINTERVAL (6 * 3500)
-#define GYRO_WATCHDOG_DELAY 500  // Watchdog for boards without interrupt for gyro
+#define GYRO_WATCHDOG_DELAY 150  // Watchdog for boards without interrupt for gyro
 
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
@@ -691,18 +691,10 @@ bool runLoop(uint32_t loopTime) {
 	bool loopTrigger = false;
 
     if (masterConfig.syncGyroToLoop) {
-        if (ARMING_FLAG(ARMED)) {
-            if (gyroSyncCheckUpdate() || (int32_t)(currentTime - (loopTime + GYRO_WATCHDOG_DELAY)) >= 0) {
-            	loopTrigger = true;
-            }
+        if (gyroSyncCheckUpdate() || (int32_t)(currentTime - (loopTime + GYRO_WATCHDOG_DELAY)) >= 0) {
+            loopTrigger = true;
         }
-        // Blheli arming workaround (stable looptime prior to arming)
-        else if (!ARMING_FLAG(ARMED) && ((int32_t)(currentTime - loopTime) >= 0)) {
-        	loopTrigger = true;
-        }
-    }
-
-    else if ((int32_t)(currentTime - loopTime) >= 0){
+    } else if ((int32_t)(currentTime - loopTime) >= 0){
     	loopTrigger = true;
     }
 
