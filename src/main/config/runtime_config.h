@@ -70,5 +70,7 @@ bool sensors(uint32_t mask);
 void sensorsSet(uint32_t mask);
 void sensorsClear(uint32_t mask);
 uint32_t sensorsMask(void);
+void sensorsVisible(uint32_t mask);
+void sensorsHidden(uint32_t mask);
 
 void mwDisarm(void);

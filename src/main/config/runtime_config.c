@@ -26,6 +26,7 @@ uint8_t stateFlags = 0;
 uint16_t flightModeFlags = 0;
 
 static uint32_t enabledSensors = 0;
+static uint32_t visibleSensors = 0xffffffff;    // all sensors visible by default
 
 /**
  * Enables the given flight mode.  A beep is sounded if the flight mode
@@ -57,7 +58,7 @@ uint16_t disableFlightMode(flightModeFlags_e mask)
 
 bool sensors(uint32_t mask)
 {
-    return enabledSensors & mask;
+    return enabledSensors & visibleSensors & mask;
 }
 
 void sensorsSet(uint32_t mask)
@@ -73,4 +74,14 @@ void sensorsClear(uint32_t mask)
 uint32_t sensorsMask(void)
 {
     return enabledSensors;
+}
+
+void sensorsVisible(uint32_t mask)
+{
+    visibleSensors |= mask;
+}
+
+void sensorsHidden(uint32_t mask)
+{
+    visibleSensors &= ~(mask);
 }

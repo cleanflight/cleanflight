@@ -596,6 +596,18 @@ void processRx(void)
 
     bool canUseHorizonMode = true;
 
+    // dynamic (mode dependent) ACC on/off switching
+    if (ARMING_FLAG(ARMED)) {
+        if (IS_RC_MODE_ACTIVE(BOXANGLE) || IS_RC_MODE_ACTIVE(BOXHORIZON) || (feature(FEATURE_FAILSAFE) && failsafeIsActive())) {
+            sensorsVisible(SENSOR_ACC);
+        } else {
+            // acro mode - ACC sensor OFF to speed up the mainloop
+            sensorsHidden(SENSOR_ACC);
+        }
+    } else {
+        sensorsVisible(SENSOR_ACC);
+    }
+
     if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeIsActive())) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
     	canUseHorizonMode = false;
