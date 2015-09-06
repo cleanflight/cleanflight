@@ -376,6 +376,11 @@ static void setControlRateProfile(uint8_t profileIndex)
     currentControlRateProfile = &masterConfig.controlRateProfiles[profileIndex];
 }
 
+uint16_t getCurrentMinthrottle(void)
+{
+    return masterConfig.escAndServoConfig.minthrottle;
+}
+
 // Default settings
 static void resetConf(void)
 {
@@ -435,8 +440,8 @@ static void resetConf(void)
 
     for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
         rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_channel_configurations[i];
-        channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_AUTO;
-        channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+        channelFailsafeConfiguration->mode = (i < NON_AUX_CHANNEL_COUNT) ? RX_FAILSAFE_MODE_AUTO : RX_FAILSAFE_MODE_HOLD;
+        channelFailsafeConfiguration->step = (i == THROTTLE) ? masterConfig.rxConfig.rx_min_usec : CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
     }
 
     masterConfig.rxConfig.rssi_channel = 0;
@@ -512,6 +517,8 @@ static void resetConf(void)
     masterConfig.failsafeConfig.failsafe_delay = 10;              // 1sec
     masterConfig.failsafeConfig.failsafe_off_delay = 200;         // 20sec
     masterConfig.failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
+    masterConfig.failsafeConfig.failsafe_kill_switch = 0;         // default failsafe switch action is identical to rc link loss
+    masterConfig.failsafeConfig.failsafe_throttle_low_delay = 100; // default throttle low delay for "just disarm" on failsafe condition
 
 #ifdef USE_SERVOS
     // servos
@@ -861,6 +868,8 @@ void readEEPROM(void)
     if (!isEEPROMContentValid())
         failureMode(10);
 
+    suspendRxSignal();
+
     // Read flash
     memcpy(&masterConfig, (char *) CONFIG_START_FLASH_ADDRESS, sizeof(master_t));
 
@@ -876,6 +885,8 @@ void readEEPROM(void)
 
     validateAndFixConfig();
     activateConfig();
+
+    resumeRxSignal();
 }
 
 void readEEPROMAndNotify(void)
@@ -893,6 +904,8 @@ void writeEEPROM(void)
     FLASH_Status status = 0;
     uint32_t wordOffset;
     int8_t attemptsRemaining = 3;
+
+    suspendRxSignal();
 
     // prepare checksum/version constants
     masterConfig.version = EEPROM_CONF_VERSION;
@@ -939,6 +952,8 @@ void writeEEPROM(void)
     if (status != FLASH_COMPLETE || !isEEPROMContentValid()) {
         failureMode(10);
     }
+
+    resumeRxSignal();
 }
 
 void ensureEEPROMContainsValidData(void)
