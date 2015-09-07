@@ -547,18 +547,7 @@ static void resetConf(void)
     masterConfig.rxConfig.rcmap[7] = 7;
 
     featureSet(FEATURE_ONESHOT125);
-    masterConfig.escAndServoConfig.minthrottle = 1025;
-    masterConfig.rxConfig.midrc = 1500;
-    masterConfig.escAndServoConfig.maxthrottle = 1980;
-    masterConfig.escAndServoConfig.mincommand = 1000;
-    masterConfig.failsafeConfig.failsafe_throttle = 1000;
-
     featureSet(FEATURE_VBAT);
-    masterConfig.batteryConfig.vbatscale = 110;
-    masterConfig.batteryConfig.vbatmincellvoltage = 33;
-    masterConfig.batteryConfig.vbatmaxcellvoltage = 43;
-    masterConfig.batteryConfig.vbatwarningcellvoltage = 35;
-
     featureSet(FEATURE_LED_STRIP);
     featureSet(FEATURE_FAILSAFE);
 #endif
@@ -853,8 +842,6 @@ void validateAndFixConfig(void)
     masterConfig.serialConfig.portConfigs[0].functionMask = FUNCTION_MSP;
     if(featureConfigured(FEATURE_RX_SERIAL)) {
 	    masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
-    } else {
-	    masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_NONE;
     }
 #endif
 
