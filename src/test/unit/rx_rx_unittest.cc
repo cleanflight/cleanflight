@@ -25,17 +25,23 @@ extern "C" {
 
     #include "rx/rx.h"
 
+    uint32_t rcModeActivationMask;
+
     void rxInit(rxConfig_t *rxConfig);
     void rxResetFlightChannelStatus(void);
     bool rxHaveValidFlightChannels(void);
+    bool isPulseValid(uint16_t pulseDuration);
     void rxUpdateFlightChannelStatus(uint8_t channel, uint16_t pulseDuration);
 }
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
+#define DE_ACTIVATE_ALL_BOXES   0
+
 typedef struct testData_s {
     bool isPPMDataBeingReceived;
+    bool isPWMDataBeingReceived;
 } testData_t;
 
 static testData_t testData;
@@ -44,6 +50,7 @@ TEST(RxTest, TestValidFlightChannels)
 {
     // given
     memset(&testData, 0, sizeof(testData));
+    rcModeActivationMask = DE_ACTIVATE_ALL_BOXES;   // BOXFAILSAFE must be OFF
 
     // and
     rxConfig_t rxConfig;
@@ -58,7 +65,8 @@ TEST(RxTest, TestValidFlightChannels)
     rxResetFlightChannelStatus();
 
     for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
-        rxUpdateFlightChannelStatus(channelIndex, 1500);
+        bool validPulse = isPulseValid(1500);
+        rxUpdateFlightChannelStatus(channelIndex, validPulse);
     }
 
     // then
@@ -98,7 +106,8 @@ TEST(RxTest, TestInvalidFlightChannels)
 
         // when
         for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
-            rxUpdateFlightChannelStatus(channelIndex, channelPulses[channelIndex]);
+            bool validPulse = isPulseValid(channelPulses[channelIndex]);
+            rxUpdateFlightChannelStatus(channelIndex, validPulse);
         }
 
         // then
@@ -114,7 +123,8 @@ TEST(RxTest, TestInvalidFlightChannels)
 
         // when
         for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
-            rxUpdateFlightChannelStatus(channelIndex, channelPulses[channelIndex]);
+            bool validPulse = isPulseValid(channelPulses[channelIndex]);
+            rxUpdateFlightChannelStatus(channelIndex, validPulse);
         }
 
         // then
@@ -126,7 +136,7 @@ TEST(RxTest, TestInvalidFlightChannels)
 // STUBS
 
 extern "C" {
-    void failsafeOnRxCycleStarted() {}
+    void failsafeOnValidDataFailed() {}
     void failsafeOnValidDataReceived() {}
 
     bool feature(uint32_t mask) {
@@ -136,6 +146,10 @@ extern "C" {
 
     bool isPPMDataBeingReceived(void) {
         return testData.isPPMDataBeingReceived;
+    }
+
+    bool isPWMDataBeingReceived(void) {
+        return testData.isPWMDataBeingReceived;
     }
 
     void resetPPMDataReceivedState(void) {}

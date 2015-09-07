@@ -44,6 +44,8 @@ TEST(BatteryTest, BatteryADCToVoltage)
     // batteryInit() reads a bunch of fields including vbatscale, so set up the config with useful initial values:
     batteryConfig_t batteryConfig = {
         .vbatscale = VBAT_SCALE_DEFAULT,
+        .vbatresdivval = VBAT_RESDIVVAL_DEFAULT,
+        .vbatresdivmultiplier = VBAT_RESDIVMULTIPLIER_DEFAULT,
         .vbatmaxcellvoltage = 43,
         .vbatmincellvoltage = 33,
         .vbatwarningcellvoltage = 35,
@@ -102,6 +104,8 @@ TEST(BatteryTest, BatteryState)
     // batteryInit() reads a bunch of fields including vbatscale, so set up the config with useful initial values:
     batteryConfig_t batteryConfig = {
         .vbatscale = VBAT_SCALE_DEFAULT,
+        .vbatresdivval = VBAT_RESDIVVAL_DEFAULT,
+        .vbatresdivmultiplier = VBAT_RESDIVMULTIPLIER_DEFAULT,
         .vbatmaxcellvoltage = 43,
         .vbatmincellvoltage = 33,
         .vbatwarningcellvoltage = 35,
@@ -159,6 +163,8 @@ TEST(BatteryTest, CellCount)
     // batteryInit() reads a bunch of fields including vbatscale, so set up the config with useful initial values:
     batteryConfig_t batteryConfig = {
         .vbatscale = VBAT_SCALE_DEFAULT,
+        .vbatresdivval = VBAT_RESDIVVAL_DEFAULT,
+        .vbatresdivmultiplier = VBAT_RESDIVMULTIPLIER_DEFAULT,
         .vbatmaxcellvoltage = 43,
         .vbatmincellvoltage = 33,
         .vbatwarningcellvoltage = 35,
@@ -187,6 +193,7 @@ TEST(BatteryTest, CellCount)
     }
 }
 
+//#define DEBUG_ROLLOVER_PATTERNS
 /**
  * These next two tests do not test any production code (!) but serves as an example of how to use a signed variable for timing purposes.
  *
@@ -210,7 +217,7 @@ TEST(BatteryTest, RollOverPattern1)
             }
 
             servicedAt = now;
-#if 1
+#ifdef DEBUG_ROLLOVER_PATTERNS
             printf("servicedAt: %d, diff: %d\n", servicedAt, diff);
 #endif
             serviceCount++;
@@ -243,7 +250,7 @@ TEST(BatteryTest, RollOverPattern2)
             }
 
             serviceAt = now + serviceInterval; // this can rollover
-#if 1
+#ifdef DEBUG_ROLLOVER_PATTERNS
             printf("servicedAt: %d, nextServiceAt: %d, diff: %d\n", now, serviceAt, diff);
 #endif
 

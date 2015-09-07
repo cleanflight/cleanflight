@@ -133,7 +133,7 @@ The software has signal loss detection which is always enabled.  Signal loss det
 
 The `rx_min_usec` and `rx_max_usec` settings helps detect when your RX stops sending any data, enters failsafe mode or when the RX looses signal.
 
-By default, when the signal loss is detected the FC will set pitch/roll/yaw to the value configured for `mid_rc`. The throttle will be set to the value configured for `rx_min_usec`.
+By default, when the signal loss is detected the FC will set pitch/roll/yaw to the value configured for `mid_rc`. The throttle will be set to the value configured for `rx_min_usec` or `mid_rc` if using 3D feature.
 
 Signal loss can be detected when:
 
@@ -141,29 +141,48 @@ Signal loss can be detected when:
 2. using Serial RX and receiver indicates failsafe condition.
 3. using any of the first 4 stick channels do not have a value in the range specified by `rx_min_usec` and `rx_max_usec`.
 
-#### `rxfail`
+### RX loss configuration
 
-The `rxfail` command is used to configure per-aux-channel rx-loss behaviour.  Unless otherwise configured all AUX channels will HOLD the last value received.  You can use the `rxfail` cli command to change this behaviour, a channel can either HOLD it's last value or be SET to a specific value.
+The `rxfail` cli command is used to configure per-channel rx-loss behaviour.
+You can use the `rxfail` command to change this behaviour.
+A flight channel can either be AUTOMATIC or HOLD, an AUX channel can either be SET or HOLD.  
+
+* AUTOMATIC - Flight channels are set to safe values (low throttle, mid position for yaw/pitch/roll).
+* HOLD - Channel holds the last value.
+* SET - Channel is set to a specific configured value. 
+
+The default mode is AUTOMATIC for flight channels and HOLD for AUX channels. 
 
 The rxfail command can be used in conjunction with mode ranges to trigger various actions.
 
-The `rxfail` command takes 3 arguments.
-* Index of aux channel (AUX1 = 0, AUX2 = 1,...)
-* A mode ('h' = HOLD, 's' = SET)
-* A value to use when in SET mode. (always required, even if using HOLD mode).
+The `rxfail` command takes 2 or 3 arguments.
+* Index of channel (See below)
+* Mode ('a' = AUTOMATIC, 'h' = HOLD, 's' = SET)
+* A value to use when in SET mode.
+
+Channels are always specified in the same order, regardless of your channel mapping.
+
+* Roll is 0
+* Pitch is 1
+* Yaw is 2
+* Throttle is 3.
+* Aux channels are 4 onwards.
 
 Examples:
 
+To make Throttle channel have an automatic value when RX loss is detected:
+
+`rxfail 3 a`
+
 To make AUX4 have a value of 2000 when RX loss is detected:
 
-`rxfail 3 s 2000`
+`rxfail 7 s 2000`
 
 To make AUX8 hold it's value when RX loss is detected:
 
-`rxfail 7 h 1500`
+`rxfail 11 h`
 
-In the above example the '1500' will be ignored.
-
+WARNING: Always make sure you test the behavior is as expected after configuring rxfail settings!
 
 #### `rx_min_usec`
 
@@ -214,8 +233,12 @@ Set the RX for 'No Pulses'.  Turn OFF TX and RX, Turn ON RX.  Press and release 
 
 ### Graupner GR-24 PWM
 
-Set failsafe on channels 1-4 set to OFF in the receiver settings (via transmitter menu).
+Set failsafe on the throttle channel in the receiver settings (via transmitter menu) to a value below `rx_min_usec` using channel mode FAILSAFE.
+This is the prefered way, since this is *much faster* detected by the FC then a channel that sends no pulses (OFF).
 
+__NOTE:__
+One or more control channels may be set to OFF to signal a failsafe condition to the FC, all other channels *must* be set to either HOLD or OFF. 
+Do __NOT USE__ the mode indicated with FAILSAFE instead, as this combination is NOT handled correctly by the FC.
 
 ## Receiver Channel Range Configuration.
 
@@ -251,3 +274,5 @@ the CLI. Be sure to enter the `save` command to save the settings.
 
 After configuring channel ranges use the sub-trim on your transmitter to set the middle point of pitch, roll, yaw and throttle.
 
+
+You can also use rxrange to reverse the direction of an input channel, e.g. `rxrange 0 2000 1000`.

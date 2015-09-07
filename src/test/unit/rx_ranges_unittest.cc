@@ -31,7 +31,11 @@ extern "C" {
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
+#define DE_ACTIVATE_ALL_BOXES   0
+
 extern "C" {
+uint32_t rcModeActivationMask;
+
 extern uint16_t applyRxChannelRangeConfiguraton(int sample, rxChannelRangeConfiguration_t range);
 }
 
@@ -39,6 +43,8 @@ extern uint16_t applyRxChannelRangeConfiguraton(int sample, rxChannelRangeConfig
 
 TEST(RxChannelRangeTest, TestRxChannelRanges)
 {
+    rcModeActivationMask = DE_ACTIVATE_ALL_BOXES;   // BOXFAILSAFE must be OFF
+
     // No signal, special condition
     EXPECT_EQ(applyRxChannelRangeConfiguraton(0, RANGE_CONFIGURATION(1000, 2000)), 0);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(0, RANGE_CONFIGURATION(1300, 1700)), 0);
@@ -50,6 +56,11 @@ TEST(RxChannelRangeTest, TestRxChannelRanges)
     EXPECT_EQ(applyRxChannelRangeConfiguraton(2000, RANGE_CONFIGURATION(1000, 2000)), 2000);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(700, RANGE_CONFIGURATION(1000, 2000)), 750);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(2500, RANGE_CONFIGURATION(1000, 2000)), 2250);
+
+    // Reversed channel
+    EXPECT_EQ(applyRxChannelRangeConfiguraton(1000, RANGE_CONFIGURATION(2000, 1000)), 2000);
+    EXPECT_EQ(applyRxChannelRangeConfiguraton(1500, RANGE_CONFIGURATION(2000, 1000)), 1500);
+    EXPECT_EQ(applyRxChannelRangeConfiguraton(2000, RANGE_CONFIGURATION(2000, 1000)), 1000);
 
     // Shifted range
     EXPECT_EQ(applyRxChannelRangeConfiguraton(900, RANGE_CONFIGURATION(900, 1900)), 1000);
@@ -162,6 +173,11 @@ bool isPPMDataBeingReceived(void)
     return false;
 }
 
+bool isPWMDataBeingReceived(void)
+{
+    return false;
+}
+
 void resetPPMDataReceivedState(void)
 {
 }
@@ -174,7 +190,7 @@ void failsafeOnValidDataReceived(void)
 {
 }
 
-void failsafeOnRxCycleStarted(void)
+void failsafeOnValidDataFailed(void)
 {
 }
 

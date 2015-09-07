@@ -206,7 +206,13 @@ void updateTicker(void)
 void updateRxStatus(void)
 {
     i2c_OLED_set_xy(SCREEN_CHARACTER_COLUMN_COUNT - 2, 0);
-    i2c_OLED_send_char(rxIsReceivingSignal() ? 'R' : '!');
+    char rxStatus = '!';
+    if (rxIsReceivingSignal()) {
+        rxStatus = 'r';
+    } if (rxAreFlightChannelsValid()) {
+        rxStatus = 'R';
+    }
+    i2c_OLED_send_char(rxStatus);
 }
 
 void updateFailsafeStatus(void)
@@ -224,6 +230,12 @@ void updateFailsafeStatus(void)
             break;
         case FAILSAFE_LANDED:
             failsafeIndicator = 'L';
+            break;
+        case FAILSAFE_RX_LOSS_MONITORING:
+            failsafeIndicator = 'M';
+            break;
+        case FAILSAFE_RX_LOSS_RECOVERED:
+            failsafeIndicator = 'r';
             break;
     }
     i2c_OLED_set_xy(SCREEN_CHARACTER_COLUMN_COUNT - 3, 0);

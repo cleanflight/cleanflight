@@ -111,8 +111,12 @@ static void cliRateProfile(char *cmdline);
 static void cliReboot(void);
 static void cliSave(char *cmdline);
 static void cliSerial(char *cmdline);
+
+#ifdef USE_SERVOS
 static void cliServo(char *cmdline);
 static void cliServoMix(char *cmdline);
+#endif
+
 static void cliSet(char *cmdline);
 static void cliGet(char *cmdline);
 static void cliStatus(char *cmdline);
@@ -167,6 +171,14 @@ static const char * const featureNames[] = {
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
     "BLACKBOX", "CHANNEL_FORWARDING", NULL
+};
+
+// sync this with rxFailsafeChannelMode_e
+static const char rxFailsafeModeCharacters[] = "ahs";
+
+static const rxFailsafeChannelMode_e rxFailsafeModesTable[RX_FAILSAFE_TYPE_COUNT][RX_FAILSAFE_MODE_COUNT] = {
+    { RX_FAILSAFE_MODE_AUTO, RX_FAILSAFE_MODE_HOLD, RX_FAILSAFE_MODE_INVALID },
+    { RX_FAILSAFE_MODE_INVALID, RX_FAILSAFE_MODE_HOLD, RX_FAILSAFE_MODE_SET }
 };
 
 #ifndef CJMCU
@@ -430,6 +442,8 @@ const clivalue_t valueTable[] = {
     { "failsafe_delay",             VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_delay, 0, 200 },
     { "failsafe_off_delay",         VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_off_delay, 0, 200 },
     { "failsafe_throttle",          VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle, PWM_RANGE_MIN, PWM_RANGE_MAX },
+    { "failsafe_kill_switch",       VAR_UINT8  | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_kill_switch, 0, 1 },
+    { "failsafe_throttle_low_delay",VAR_UINT16 | MASTER_VALUE,  &masterConfig.failsafeConfig.failsafe_throttle_low_delay, 0, 300 },
 
     { "rx_min_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_min_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
     { "rx_max_usec",                VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.rx_max_usec, PWM_PULSE_MIN, PWM_PULSE_MAX },
@@ -503,6 +517,10 @@ const clivalue_t valueTable[] = {
     { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, 1, 32 },
     { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, 0, 1 },
 #endif
+
+    { "magzero_x",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[X], -32768, 32767 },
+    { "magzero_y",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[Y], -32768, 32767 },
+    { "magzero_z",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[Z], -32768, 32767 },
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
@@ -569,62 +587,80 @@ static void cliRxFail(char *cmdline)
 
     if (isEmpty(cmdline)) {
         // print out rxConfig failsafe settings
-        for (channel = 0; channel < MAX_AUX_CHANNEL_COUNT; channel++) {
+        for (channel = 0; channel < MAX_SUPPORTED_RC_CHANNEL_COUNT; channel++) {
             cliRxFail(itoa(channel, buf, 10));
         }
     } else {
         char *ptr = cmdline;
-
         channel = atoi(ptr++);
-        if ((channel < MAX_AUX_CHANNEL_COUNT)) {
+        if ((channel < MAX_SUPPORTED_RC_CHANNEL_COUNT)) {
 
-            rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[channel];
+            rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_channel_configurations[channel];
 
             uint16_t value;
-            rxFailsafeChannelMode_e mode;
+            rxFailsafeChannelType_e type = (channel < NON_AUX_CHANNEL_COUNT) ? RX_FAILSAFE_TYPE_FLIGHT : RX_FAILSAFE_TYPE_AUX;
+            rxFailsafeChannelMode_e mode = channelFailsafeConfiguration->mode;
+            bool requireValue = channelFailsafeConfiguration->mode == RX_FAILSAFE_MODE_SET;
 
             ptr = strchr(ptr, ' ');
             if (ptr) {
-                switch (*(++ptr)) {
-                    case 'h':
-                        mode = RX_FAILSAFE_MODE_HOLD;
-                        break;
-
-                    case 's':
-                        mode = RX_FAILSAFE_MODE_SET;
-                        break;
-                    default:
-                        cliShowParseError();
-                        return;
+                char *p = strchr(rxFailsafeModeCharacters, *(++ptr));
+                if (p) {
+                    uint8_t requestedMode = p - rxFailsafeModeCharacters;
+                    mode = rxFailsafeModesTable[type][requestedMode];
+                } else {
+                    mode = RX_FAILSAFE_MODE_INVALID;
                 }
-            }
-
-            ptr = strchr(ptr, ' ');
-            if (ptr) {
-                value = atoi(++ptr);
-                value = CHANNEL_VALUE_TO_RXFAIL_STEP(value);
-                if (value > MAX_RXFAIL_RANGE_STEP) {
-                    cliPrint("Value out of range\r\n");
+                if (mode == RX_FAILSAFE_MODE_INVALID) {
+                    cliShowParseError();
                     return;
                 }
 
+                requireValue = mode == RX_FAILSAFE_MODE_SET;
+
+                ptr = strchr(ptr, ' ');
+                if (ptr) {
+                    if (!requireValue) {
+                        cliShowParseError();
+                        return;
+                    }
+                    value = atoi(++ptr);
+                    value = CHANNEL_VALUE_TO_RXFAIL_STEP(value);
+                    if (value > MAX_RXFAIL_RANGE_STEP) {
+                        cliPrint("Value out of range\r\n");
+                        return;
+                    }
+
+                    channelFailsafeConfiguration->step = value;
+                } else if (requireValue) {
+                    cliShowParseError();
+                    return;
+                }
                 channelFailsafeConfiguration->mode = mode;
-                channelFailsafeConfiguration->step = value;
+
             }
 
-            char modeCharacter = channelFailsafeConfiguration->mode == RX_FAILSAFE_MODE_SET ? 's' : 'h';
+            char modeCharacter = rxFailsafeModeCharacters[channelFailsafeConfiguration->mode];
+
             // triple use of printf below
             // 1. acknowledge interpretation on command,
             // 2. query current setting on single item,
             // 3. recursive use for full list.
 
-            printf("rxfail %u %c %d\r\n",
-                channel,
-                modeCharacter,
-                RXFAIL_STEP_TO_CHANNEL_VALUE(channelFailsafeConfiguration->step)
-            );
+            if (requireValue) {
+                printf("rxfail %u %c %d\r\n",
+                    channel,
+                    modeCharacter,
+                    RXFAIL_STEP_TO_CHANNEL_VALUE(channelFailsafeConfiguration->step)
+                );
+            } else {
+                printf("rxfail %u %c\r\n",
+                    channel,
+                    modeCharacter
+                );
+            }
         } else {
-            printf("channel must be < %u\r\n", MAX_AUX_CHANNEL_COUNT);
+            cliShowArgumentRangeError("channel", 0, MAX_SUPPORTED_RC_CHANNEL_COUNT - 1);
         }
     }
 }
@@ -961,7 +997,7 @@ static void cliRxRange(char *cmdline)
 
             if (validArgumentCount != 2) {
                 cliShowParseError();
-            } else if (rangeMin < PWM_PULSE_MIN || rangeMin > PWM_PULSE_MAX || rangeMax < PWM_PULSE_MIN || rangeMax > PWM_PULSE_MAX || rangeMin >= rangeMax) {
+            } else if (rangeMin < PWM_PULSE_MIN || rangeMin > PWM_PULSE_MAX || rangeMax < PWM_PULSE_MIN || rangeMax > PWM_PULSE_MAX) {
                 cliShowParseError();
             } else {
                 rxChannelRangeConfiguration_t *channelRangeConfiguration = &masterConfig.rxConfig.channelRanges[i];
@@ -1029,11 +1065,9 @@ static void cliColor(char *cmdline)
 }
 #endif
 
+#ifdef USE_SERVOS
 static void cliServo(char *cmdline)
 {
-#ifndef USE_SERVOS
-    UNUSED(cmdline);
-#else
     enum { SERVO_ARGUMENT_COUNT = 8 };
     int16_t arguments[SERVO_ARGUMENT_COUNT];
 
@@ -1103,7 +1137,7 @@ static void cliServo(char *cmdline)
             arguments[MAX] < PWM_PULSE_MIN || arguments[MAX] > PWM_PULSE_MAX ||
             arguments[MIDDLE] < arguments[MIN] || arguments[MIDDLE] > arguments[MAX] ||
             arguments[MIN] > arguments[MAX] || arguments[MAX] < arguments[MIN] ||
-            arguments[RATE] < 100 || arguments[RATE] > 100 ||
+            arguments[RATE] < -100 || arguments[RATE] > 100 ||
             arguments[FORWARD] >= MAX_SUPPORTED_RC_CHANNEL_COUNT ||
             arguments[ANGLE_AT_MIN] < 0 || arguments[ANGLE_AT_MIN] > 180 ||
             arguments[ANGLE_AT_MAX] < 0 || arguments[ANGLE_AT_MAX] > 180
@@ -1120,14 +1154,12 @@ static void cliServo(char *cmdline)
         servo->rate = arguments[6];
         servo->forwardFromChannel = arguments[7];
     }
-#endif
 }
+#endif
 
+#ifdef USE_SERVOS
 static void cliServoMix(char *cmdline)
 {
-#ifndef USE_SERVOS
-    UNUSED(cmdline);
-#else
     int i;
     uint8_t len;
     char *ptr;
@@ -1255,8 +1287,8 @@ static void cliServoMix(char *cmdline)
             cliShowParseError();
         }
     }
-#endif
 }
+#endif
 
 
 #ifdef USE_FLASHFS
@@ -1376,7 +1408,7 @@ static const char* const sectionBreak = "\r\n";
 
 static void cliDump(char *cmdline)
 {
-    unsigned int i, channel;
+    unsigned int i;
     char buf[16];
     uint32_t mask;
 
@@ -1450,15 +1482,6 @@ static void cliDump(char *cmdline)
             );
         }
 
-        // print servo directions
-        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
-            for (channel = 0; channel < INPUT_SOURCE_COUNT; channel++) {
-                if (servoDirection(i, channel) < 0) {
-                    printf("smix reverse %d %d r\r\n", i , channel);
-                }
-            }
-        }
-
 #endif
 
         cliPrint("\r\n\r\n# feature\r\n");
@@ -1518,9 +1541,22 @@ static void cliDump(char *cmdline)
 
         cliRxRange("");
 
+#ifdef USE_SERVOS
         cliPrint("\r\n# servo\r\n");
 
         cliServo("");
+
+        // print servo directions
+        unsigned int channel;
+
+        for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+            for (channel = 0; channel < INPUT_SOURCE_COUNT; channel++) {
+                if (servoDirection(i, channel) < 0) {
+                    printf("smix reverse %d %d r\r\n", i , channel);
+                }
+            }
+        }
+#endif
 
         printSectionBreak();
 
@@ -1546,6 +1582,7 @@ void cliEnter(serialPort_t *serialPort)
     setPrintfSerialPort(cliPort);
     cliPrint("\r\nEntering CLI Mode, type 'exit' to return, or 'help'\r\n");
     cliPrompt();
+    ENABLE_ARMING_FLAG(PREVENT_ARMING);
 }
 
 static void cliExit(char *cmdline)

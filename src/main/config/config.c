@@ -128,7 +128,7 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 103;
+static const uint8_t EEPROM_CONF_VERSION = 104;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -248,6 +248,8 @@ void resetTelemetryConfig(telemetryConfig_t *telemetryConfig)
 void resetBatteryConfig(batteryConfig_t *batteryConfig)
 {
     batteryConfig->vbatscale = VBAT_SCALE_DEFAULT;
+    batteryConfig->vbatresdivval = VBAT_RESDIVVAL_DEFAULT;
+    batteryConfig->vbatresdivmultiplier = VBAT_RESDIVMULTIPLIER_DEFAULT;
     batteryConfig->vbatmaxcellvoltage = 43;
     batteryConfig->vbatmincellvoltage = 33;
     batteryConfig->vbatwarningcellvoltage = 35;
@@ -346,6 +348,11 @@ static void setControlRateProfile(uint8_t profileIndex)
     currentControlRateProfile = &masterConfig.controlRateProfiles[profileIndex];
 }
 
+uint16_t getCurrentMinthrottle(void)
+{
+    return masterConfig.escAndServoConfig.minthrottle;
+}
+
 // Default settings
 static void resetConf(void)
 {
@@ -359,7 +366,7 @@ static void resetConf(void)
     masterConfig.version = EEPROM_CONF_VERSION;
     masterConfig.mixerMode = MIXER_QUADX;
     featureClearAll();
-#if defined(CJMCU) || defined(SPARKY)
+#if defined(CJMCU) || defined(SPARKY) || defined(COLIBRI_RACE)
     featureSet(FEATURE_RX_PPM);
 #endif
 
@@ -403,11 +410,10 @@ static void resetConf(void)
     masterConfig.rxConfig.rx_min_usec = 885;          // any of first 4 channels below this value will trigger rx loss detection
     masterConfig.rxConfig.rx_max_usec = 2115;         // any of first 4 channels above this value will trigger rx loss detection
 
-    for (i = 0; i < MAX_AUX_CHANNEL_COUNT; i++) {
-        rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_aux_channel_configurations[i];
-
-        channelFailsafeConfiguration->mode = RX_FAILSAFE_MODE_HOLD;
-        channelFailsafeConfiguration->step = CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+    for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
+        rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_channel_configurations[i];
+        channelFailsafeConfiguration->mode = (i < NON_AUX_CHANNEL_COUNT) ? RX_FAILSAFE_MODE_AUTO : RX_FAILSAFE_MODE_HOLD;
+        channelFailsafeConfiguration->step = (i == THROTTLE) ? masterConfig.rxConfig.rx_min_usec : CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
     }
 
     masterConfig.rxConfig.rssi_channel = 0;
@@ -482,6 +488,8 @@ static void resetConf(void)
     masterConfig.failsafeConfig.failsafe_delay = 10;              // 1sec
     masterConfig.failsafeConfig.failsafe_off_delay = 200;         // 20sec
     masterConfig.failsafeConfig.failsafe_throttle = 1000;         // default throttle off.
+    masterConfig.failsafeConfig.failsafe_kill_switch = 0;         // default failsafe switch action is identical to rc link loss
+    masterConfig.failsafeConfig.failsafe_throttle_low_delay = 100; // default throttle low delay for "just disarm" on failsafe condition
 
 #ifdef USE_SERVOS
     // servos
@@ -828,6 +836,8 @@ void readEEPROM(void)
     if (!isEEPROMContentValid())
         failureMode(10);
 
+    suspendRxSignal();
+
     // Read flash
     memcpy(&masterConfig, (char *) CONFIG_START_FLASH_ADDRESS, sizeof(master_t));
 
@@ -843,6 +853,8 @@ void readEEPROM(void)
 
     validateAndFixConfig();
     activateConfig();
+
+    resumeRxSignal();
 }
 
 void readEEPROMAndNotify(void)
@@ -860,6 +872,8 @@ void writeEEPROM(void)
     FLASH_Status status = 0;
     uint32_t wordOffset;
     int8_t attemptsRemaining = 3;
+
+    suspendRxSignal();
 
     // prepare checksum/version constants
     masterConfig.version = EEPROM_CONF_VERSION;
@@ -902,6 +916,8 @@ void writeEEPROM(void)
     if (status != FLASH_COMPLETE || !isEEPROMContentValid()) {
         failureMode(10);
     }
+
+    resumeRxSignal();
 }
 
 void ensureEEPROMContainsValidData(void)
