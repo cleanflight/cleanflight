@@ -244,6 +244,15 @@ void i2c_OLED_send_string(const char *string)
     }
 }
 
+void i2c_OLED_send_bitmap(uint16_t length, uint8_t *bitmap)
+{
+    while(length > 0) {
+        i2c_OLED_send_byte(*bitmap);
+        bitmap++;
+        length--;
+    }
+}
+
 /**
 * according to http://www.adafruit.com/datasheets/UG-2864HSWEG01.pdf Chapter 4.4 Page 15
 */
