@@ -118,11 +118,11 @@ enum {
 typedef enum {
     SERVO_GIMBAL_PITCH = 0,
     SERVO_GIMBAL_ROLL = 1,
-    SERVO_FLAPS = 2,
-    SERVO_FLAPPERON_1 = 3,
-    SERVO_FLAPPERON_2 = 4,
-    SERVO_RUDDER = 5,
-    SERVO_ELEVATOR = 6,
+    //SERVO_FLAPS = 2,
+    SERVO_FLAPPERON_1 = 2,
+    SERVO_FLAPPERON_2 = 3,
+    SERVO_RUDDER = 4,
+    SERVO_ELEVATOR = 5,
     SERVO_THROTTLE = 7, // for internal combustion (IC) planes
 
     SERVO_BICOPTER_LEFT = 4,
