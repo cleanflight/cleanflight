@@ -175,7 +175,7 @@ static bool i2c_OLED_send_cmd(uint8_t command)
     return i2cWrite(OLED_address, 0x80, command);
 }
 
-static bool i2c_OLED_send_byte(uint8_t val)
+bool i2c_OLED_send_byte(uint8_t val)
 {
     return i2cWrite(OLED_address, 0x40, val);
 }
@@ -241,15 +241,6 @@ void i2c_OLED_send_string(const char *string)
     while (*string) {
         i2c_OLED_send_char(*string);
         string++;
-    }
-}
-
-void i2c_OLED_send_bitmap(uint16_t length, uint8_t *bitmap)
-{
-    while(length > 0) {
-        i2c_OLED_send_byte(*bitmap);
-        bitmap++;
-        length--;
     }
 }
 
