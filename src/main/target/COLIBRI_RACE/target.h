@@ -65,10 +65,13 @@
 
 #define BARO
 #define USE_BARO_MS5611
+#define MS5611_BUS I2C_DEVICE_INT
 
 #define MAG
 #define USE_MAG_HMC5883
+#define HMC5883_BUS I2C_DEVICE_INT
 #define USE_MAG_AK8975
+#define AK8975_BUS I2C_DEVICE_INT
 
 #define BEEPER
 #define LED0
@@ -102,8 +105,11 @@
 #define UART3_TX_PINSOURCE  GPIO_PinSource10
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
 
+#define USE_ESCSERIAL
+#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+
 #define USE_I2C
-#define I2C_DEVICE (I2CDEV_2)
+#define I2C_DEVICE_INT (I2CDEV_2)
 
 #define I2C2_SCL_GPIO        GPIOA
 #define I2C2_SCL_GPIO_AF     GPIO_AF_4
@@ -160,3 +166,4 @@
 #define AUTOTUNE
 #define USE_SERVOS
 #define USE_CLI
+#define UG2864_BUS I2C_DEVICE_INT

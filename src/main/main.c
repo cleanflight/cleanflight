@@ -355,8 +355,8 @@ void init(void)
         i2cInit(I2C_DEVICE);
     }
 #else
-#if defined(ANYFC) || defined(COLIBRI) || defined(REVO)
     i2cInit(I2C_DEVICE_INT);
+#if defined(ANYFC) || defined(COLIBRI) || defined(REVO)
     if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
 #ifdef I2C_DEVICE_EXT
         i2cInit(I2C_DEVICE_EXT);

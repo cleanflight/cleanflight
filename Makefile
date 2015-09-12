@@ -128,6 +128,10 @@ ifeq ($(TARGET),MASSIVEF3)
 TARGET_FLAGS := $(TARGET_FLAGS) -DSTM32F3DISCOVERY
 endif
 
+ifeq ($(TARGET),COLIBRI_RACE)
+.DEFAULT_GOAL := binary
+endif
+
 else ifeq ($(TARGET),$(filter $(TARGET),ANYFC REVO COLIBRI))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F4xx_StdPeriph_Driver
@@ -694,6 +698,7 @@ COLIBRI_RACE_SRC        = \
 		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/serial_usb_vcp.c \
+		   drivers/serial_escserial.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
