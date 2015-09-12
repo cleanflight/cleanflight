@@ -51,10 +51,25 @@ EXTI_InitTypeDef EXTI_InitStructure;
 __IO uint32_t packetSent;                                     // HJI
 extern __IO uint32_t receiveLength;                          // HJI
 
-uint8_t receiveBuffer[64];                                   // HJI
-uint32_t sendLength;                                          // HJI
+//uint8_t receiveBuffer[64];                                   // HJI
+//uint32_t sendLength;                                          // HJI
 static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len);
 /* Extern variables ----------------------------------------------------------*/
+
+// state
+uint8_t started=0;        // 1 if active
+uint8_t transmitting=0;   // 1 if wait for byte to be sent
+uint8_t bputbusy=0;       // 1 while vcomPutc fiddles
+uint8_t terminal=0;       // 1 if host terminal is active
+
+packet bput[BPUTSIZE]; // ring of buffers
+packet *bputread;      // next packet to send
+packet *bputwrite;     // packet being filled
+
+// vcomGetC circular buffer
+uint8_t bget[BGETSIZE];   // input buffer
+uint8_t *bgetread;        // next-to-read pointer
+uint8_t *bgetwrite;       // next-to-write pointer
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -140,6 +155,15 @@ void Set_System(void)
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
+
+    // set up bget and bput, and zero latter's counts
+    int i;
+    bgetread=bget;
+    bgetwrite=bget;
+    bputread=bput;
+    bputwrite=bput;
+    for (i=0; i<BPUTSIZE; i++) bput[i].count=0;
+    started=1;
 }
 
 /*******************************************************************************
@@ -275,6 +299,41 @@ static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len)
     }
 }
 
+/* --------------------------------------------------------------- */
+/* vcomPutcIO -- send character to virtal com port                 */
+/*                                                                 */
+/*   ch -- character to send                                       */
+/*                                                                 */
+/*   returns 0 if OK, or -1 if vcom has not been initialized, or   */
+/*   -2 if there is a data overrun (bytes have been queued faster  */
+/*   than they could be sent to the host)                          */
+/*                                                                 */
+/* This function does not block.                                   */
+/*                                                                 */
+/* Note that this must not be called from an interrupt handler     */
+/* that has a higher priority than USB.                            */
+/* --------------------------------------------------------------- */
+int vcomPutcIO(int ch) {
+  if (!started)
+	  return -1;
+
+  if (bputwrite->count==PACKETSIZE) {        // packet is full
+    packet *next=bputwrite+1;
+    if (next==&bput[BPUTSIZE])
+    	next=bput;    // wrap
+    if (next->count!=0)
+    	return -2;           // overrun
+    bputwrite=next;                          // clear to use next
+    }
+
+  bputbusy=1;                 // prevent handler from meddling
+  bputwrite->data[bputwrite->count]=(uint8_t)ch;     // place data
+  bputwrite->count++;                             // and account for it
+  bputbusy=0;                 // release lock
+
+  return 0;
+} // vcomPutcIO
+
 /*******************************************************************************
  * Function Name  : Send DATA .
  * Description    : send the data received from the STM32 to the PC through USB  
@@ -284,26 +343,40 @@ static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len)
  *******************************************************************************/
 uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
 {
-    /* Last transmission hasn't finished, abort */
-    if (packetSent) {
-        return 0;
-    }
-
-    // We can only put 64 bytes in the buffer
-    if (sendLength > 64 / 2) {
-        sendLength = 64 / 2;
-    }
-
-    // Try to load some bytes if we can
-    if (sendLength) {
-        UserToPMABufferCopy(ptrBuffer, ENDP1_TXADDR, sendLength);
-        SetEPTxCount(ENDP1, sendLength);
-        packetSent += sendLength;
-        SetEPTxValid(ENDP1);
-    }
-
-    return sendLength;
+	int i;
+	if (transmitting)
+		return 0;
+	for(i=0;i<sendLength;i++)
+	{
+		if(vcomPutcIO(ptrBuffer[i]) != 0)
+			return i;
+	}
+	delayMicroseconds(20);
+	return sendLength;
 }
+
+/* --------------------------------------------------------------- */
+/* vcomGetcIO -- get character                                     */
+/*                                                                 */
+/*   returns character read from host, or -1 if none there         */
+/*                                                                 */
+/* This function does not block.                                   */
+/* --------------------------------------------------------------- */
+int vcomGetcIO(void) {
+  uint8_t b;                               // work
+
+  if ((bgetread==bgetwrite) || !started)
+	  return -1; // nothing to send
+
+  b=*bgetread;                          // save usable byte
+
+  // bump read point to show byte used
+  bgetread++;
+  if (bgetread==bget+BGETSIZE)
+	  bgetread=bget; // wrap
+
+  return b;
+} // vcomGetcIO
 
 /*******************************************************************************
  * Function Name  : Receive DATA .
@@ -314,28 +387,22 @@ uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
  *******************************************************************************/
 uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len)
 {
-    static uint8_t offset = 0;
-    uint8_t i;
+	int ch;
+	uint32_t i;
+	if (len > receiveLength) {
+		len = receiveLength;
+	}
 
-    if (len > receiveLength) {
-        len = receiveLength;
-    }
-
-    for (i = 0; i < len; i++) {
-        recvBuf[i] = (uint8_t)(receiveBuffer[i + offset]);
-    }
-
-    receiveLength -= len;
-    offset += len;
-
-    /* re-enable the rx endpoint which we had set to receive 0 bytes */
-    if (receiveLength == 0) {
-        SetEPRxCount(ENDP3, 64);
-        SetEPRxStatus(ENDP3, EP_RX_VALID);
-        offset = 0;
-    }
-
-    return len;
+	for (i = 0; i < len; i++) {
+		ch = vcomGetcIO();
+		if(ch==-1)
+		{
+			return i;
+		}
+		receiveLength--;
+		recvBuf[i] = (uint8_t)ch;
+	}
+	return len;
 }
 
 /*******************************************************************************
