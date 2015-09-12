@@ -137,7 +137,7 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 104;
+static const uint8_t EEPROM_CONF_VERSION = 105;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -425,6 +425,7 @@ static void resetConf(void)
     masterConfig.gyroConfig.gyroMovementCalibrationThreshold = 32;
 
     masterConfig.mag_hardware = MAG_DEFAULT;     // default/autodetect
+    masterConfig.baro_hardware = BARO_DEFAULT;   // default/autodetect
 
     resetBatteryConfig(&masterConfig.batteryConfig);
 
@@ -835,6 +836,11 @@ void validateAndFixConfig(void)
     }
 #endif
 
+#ifdef STM32F303xC
+    // hardware supports serial port inversion, make users life easier for those that want to connect SBus RX's
+    masterConfig.telemetryConfig.telemetry_inversion = 1;
+#endif
+
     /*
      * The retarded_arm setting is incompatible with pid_at_min_throttle because full roll causes the craft to roll over on the ground.
      * The pid_at_min_throttle implementation ignores yaw on the ground, but doesn't currently ignore roll when retarded_arm is enabled.
@@ -866,7 +872,7 @@ void readEEPROM(void)
 {
     // Sanity check
     if (!isEEPROMContentValid())
-        failureMode(10);
+        failureMode(FAILURE_INVALID_EEPROM_CONTENTS);
 
     suspendRxSignal();
 
@@ -950,7 +956,7 @@ void writeEEPROM(void)
 
     // Flash write failed - just die now
     if (status != FLASH_COMPLETE || !isEEPROMContentValid()) {
-        failureMode(10);
+        failureMode(FAILURE_FLASH_WRITE_FAILED);
     }
 
     resumeRxSignal();
