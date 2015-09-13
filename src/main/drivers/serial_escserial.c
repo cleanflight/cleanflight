@@ -253,6 +253,28 @@ serialPort_t *openEscSerial(escSerialPortIndex_e portIndex, serialReceiveCallbac
     return &escSerial->port;
 }
 
+
+void serialInputPortDeConfig(const timerHardware_t *timerHardwarePtr)
+{
+    timerChClearCCFlag(timerHardwarePtr);
+    timerChITConfig(timerHardwarePtr,DISABLE);
+    escSerialGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, Mode_IPU);
+}
+
+
+void closeEscSerial(escSerialPortIndex_e portIndex, uint16_t output)
+{
+    escSerial_t *escSerial = &(escSerialPorts[portIndex]);
+
+    escSerial->rxTimerHardware = &(timerHardware[output]);
+    escSerial->txTimerHardware = &(timerHardware[ESCSERIAL_TIMER_TX_HARDWARE]);
+    serialInputPortDeConfig(escSerial->rxTimerHardware);
+    timerChConfigCallbacks(escSerial->txTimerHardware,NULL,NULL);
+    timerChConfigCallbacks(escSerial->rxTimerHardware,NULL,NULL);
+    TIM_DeInit(escSerial->txTimerHardware->tim);
+    TIM_DeInit(escSerial->rxTimerHardware->tim);
+}
+
 /*********************************************/
 
 void processTxState(escSerial_t *escSerial)
@@ -698,15 +720,112 @@ const struct serialPortVTable escSerialVTable[] = {
     }
 };
 
+void escSerialInitialize()
+{
+   StopPwmAllMotors();
+   for (volatile uint8_t i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+	   // set outputs to pullup
+	   if(timerHardware[i].outputEnable==1)
+	   {
+		   escSerialGPIOConfig(timerHardware[i].gpio,timerHardware[i].pin, Mode_IPU); //GPIO_Mode_IPU
+	   }
+   }
+}
+
+typedef enum {
+    IDLE,
+    HEADER_START,
+    HEADER_M,
+    HEADER_ARROW,
+    HEADER_SIZE,
+    HEADER_CMD,
+    COMMAND_RECEIVED
+} mspState_e;
+
+typedef struct mspPort_s {
+    uint8_t offset;
+    uint8_t dataSize;
+    uint8_t checksum;
+    uint8_t indRX;
+    uint8_t inBuf[10];
+    mspState_e c_state;
+    uint8_t cmdMSP;
+} mspPort_t;
+
+static mspPort_t currentPort;
+
+static bool ProcessExitCommand(uint8_t c)
+{
+    if (currentPort.c_state == IDLE) {
+        if (c == '$') {
+            currentPort.c_state = HEADER_START;
+        } else {
+            return false;
+        }
+    } else if (currentPort.c_state == HEADER_START) {
+        currentPort.c_state = (c == 'M') ? HEADER_M : IDLE;
+    } else if (currentPort.c_state == HEADER_M) {
+        currentPort.c_state = (c == '<') ? HEADER_ARROW : IDLE;
+    } else if (currentPort.c_state == HEADER_ARROW) {
+        if (c > 10) {
+            currentPort.c_state = IDLE;
+
+        } else {
+            currentPort.dataSize = c;
+            currentPort.offset = 0;
+            currentPort.checksum = 0;
+            currentPort.indRX = 0;
+            currentPort.checksum ^= c;
+            currentPort.c_state = HEADER_SIZE;
+        }
+    } else if (currentPort.c_state == HEADER_SIZE) {
+        currentPort.cmdMSP = c;
+        currentPort.checksum ^= c;
+        currentPort.c_state = HEADER_CMD;
+    } else if (currentPort.c_state == HEADER_CMD && currentPort.offset < currentPort.dataSize) {
+        currentPort.checksum ^= c;
+        currentPort.inBuf[currentPort.offset++] = c;
+    } else if (currentPort.c_state == HEADER_CMD && currentPort.offset >= currentPort.dataSize) {
+        if (currentPort.checksum == c) {
+            currentPort.c_state = COMMAND_RECEIVED;
+
+            if((currentPort.cmdMSP == 0xF4) && (currentPort.dataSize==0))
+            {
+            	currentPort.c_state = IDLE;
+            	return true;
+            }
+        } else {
+            currentPort.c_state = IDLE;
+        }
+    }
+    return false;
+}
+
 
 // mode 0=sk, mode 1=bl output=timerHardware PWM channel.
 void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output, uint8_t mode)
 {
+	bool exitEsc = false;
     LED0_OFF;
     LED1_OFF;
     StopPwmAllMotors();
     passPort = escPassthroughPort;
-    escPort = openEscSerial(ESCSERIAL1, NULL, output, 19200, 0, mode);
+
+    uint8_t first_output = 0;
+    for (volatile uint8_t i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+ 	   if(timerHardware[i].outputEnable==1)
+ 	   {
+ 		   first_output=i;
+ 		   break;
+ 	   }
+    }
+
+    //doesn't work with messy timertable
+    uint8_t motor_output=first_output+output-1;
+    if(motor_output >=USABLE_TIMER_CHANNEL_COUNT)
+    	return;
+
+    escPort = openEscSerial(ESCSERIAL1, NULL, motor_output, 19200, 0, mode);
     uint8_t ch;
     while(1) {
         if (serialTotalBytesWaiting(escPort)) {
@@ -723,6 +842,18 @@ void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output, uin
             while(serialTotalBytesWaiting(escPassthroughPort))
             {
             	ch = serialRead(escPassthroughPort);
+            	exitEsc = ProcessExitCommand(ch);
+            	if(exitEsc)
+            	{
+            		serialWrite(escPassthroughPort, 0x24);
+            		serialWrite(escPassthroughPort, 0x4D);
+            		serialWrite(escPassthroughPort, 0x3E);
+            		serialWrite(escPassthroughPort, 0x00);
+            		serialWrite(escPassthroughPort, 0xF4);
+            		serialWrite(escPassthroughPort, 0xF4);
+            	    closeEscSerial(ESCSERIAL1, output);
+            		return;
+            	}
             	if(mode){
             		serialWrite(escPassthroughPort, ch); // blheli loopback
             	}

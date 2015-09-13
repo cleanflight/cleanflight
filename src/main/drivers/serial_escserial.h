@@ -32,5 +32,5 @@ uint8_t escSerialTotalBytesWaiting(serialPort_t *instance);
 uint8_t escSerialReadByte(serialPort_t *instance);
 void escSerialSetBaudRate(serialPort_t *s, uint32_t baudRate);
 bool isEscSerialTransmitBufferEmpty(serialPort_t *s);
-
+void escSerialInitialize();
 void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output, uint8_t mode);
