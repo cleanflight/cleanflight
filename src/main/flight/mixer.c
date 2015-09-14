@@ -770,8 +770,6 @@ uint8_t hasTiltingMotor() {
 float requestedTiltServoAngle() {
 	float requestedAngle = 0;
 
-
-
 	uint16_t userInput = 0;
 
 	//get wanted position of the tilting servo
@@ -784,15 +782,14 @@ float requestedTiltServoAngle() {
 	//convert to radiant, keep eventual non-linearity of range
 	float servoAngle;
 	if (userInput > 1500)
-		servoAngle = scaleRangef(userInput, 1500, 2000, 0,
-				degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax));
+		servoAngle = scaleRangef(userInput, 1500, 2000, 0, degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMax));
 	else
-		servoAngle = scaleRangef(userInput, 1000, 1500,
-				-degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), 0);
+		servoAngle = scaleRangef(userInput, 1000, 1500, -degreesToRadians(servoConf[SERVO_TILT_ARM].angleAtMin), 0);
 
 	requestedAngle = (servoAngle * tiltArmConfig->gearRatioPercent) / 100.0f;
 	if (FLIGHT_MODE(ANGLE_MODE)) {
 		requestedAngle += lastServoOutputTiltAngleMode;
+		lastServoOutputTiltAngleMode = requestedAngle;
 	} else {
 		lastServoOutputTiltAngleMode = 0; //reset
 	}
