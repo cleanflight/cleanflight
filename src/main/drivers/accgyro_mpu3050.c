@@ -28,6 +28,7 @@
 #include "sensor.h"
 #include "accgyro.h"
 #include "accgyro_mpu3050.h"
+#include "gyro_sync.h"
 
 
 
@@ -42,6 +43,7 @@
 #define MPU3050_GYRO_OUT        0x1D
 #define MPU3050_USER_CTRL       0x3D
 #define MPU3050_PWR_MGM         0x3E
+#define MPU3050_INT_STATUS      0x1A
 
 // Bits
 #define MPU3050_FS_SEL_2000DPS  0x18
@@ -60,6 +62,7 @@ static uint8_t mpuLowPassFilter = MPU3050_DLPF_42HZ;
 static void mpu3050Init(void);
 static bool mpu3050Read(int16_t *gyroADC);
 static bool mpu3050ReadTemp(int16_t *tempData);
+static void checkMPU3050Interrupt(bool *gyroIsUpdated);
 
 bool mpu3050Detect(gyro_t *gyro, uint16_t lpf)
 {
@@ -74,6 +77,7 @@ bool mpu3050Detect(gyro_t *gyro, uint16_t lpf)
     gyro->init = mpu3050Init;
     gyro->read = mpu3050Read;
     gyro->temperature = mpu3050ReadTemp;
+    gyro->intStatus = checkMPU3050Interrupt;
 
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;
@@ -146,4 +150,12 @@ static bool mpu3050ReadTemp(int16_t *tempData)
     *tempData = 35 + ((int32_t)(buf[0] << 8 | buf[1]) + 13200) / 280;
 
     return true;
+}
+
+void checkMPU3050Interrupt(bool *gyroIsUpdated) {
+	uint8_t mpuIntStatus;
+
+	i2cRead(MPU3050_ADDRESS, MPU3050_INT_STATUS, 1, &mpuIntStatus);
+
+	(mpuIntStatus) ? (*gyroIsUpdated= true) : (*gyroIsUpdated= false);
 }

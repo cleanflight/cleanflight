@@ -39,6 +39,8 @@
 #include "accgyro.h"
 #include "accgyro_spi_mpu6000.h"
 
+#include "gyro_sync.h"
+
 static bool mpuSpi6000InitDone = false;
 
 // Registers
@@ -127,6 +129,7 @@ static bool mpuSpi6000InitDone = false;
 
 bool mpu6000SpiGyroRead(int16_t *gyroADC);
 bool mpu6000SpiAccRead(int16_t *gyroADC);
+void checkMPU6000Interrupt(bool *gyroIsUpdated);
 
 static void mpu6000WriteRegister(uint8_t reg, uint8_t data)
 {
@@ -202,7 +205,7 @@ bool mpu6000SpiDetect(void)
     return false;
 }
 
-void mpu6000AccAndGyroInit() {
+void mpu6000AccAndGyroInit(void) {
 
     if (mpuSpi6000InitDone) {
         return;
@@ -294,6 +297,10 @@ bool mpu6000SpiGyroDetect(gyro_t *gyro, uint16_t lpf)
 
     spiSetDivisor(MPU6000_SPI_INSTANCE, SPI_0_5625MHZ_CLOCK_DIVIDER);
 
+    // Determine the new sample divider
+    mpu6000WriteRegister(MPU6000_SMPLRT_DIV, gyroMPU6xxxGetDivider());
+    delayMicroseconds(1);
+
     // Accel and Gyro DLPF Setting
     mpu6000WriteRegister(MPU6000_CONFIG, mpuLowPassFilter);
     delayMicroseconds(1);
@@ -306,6 +313,7 @@ bool mpu6000SpiGyroDetect(gyro_t *gyro, uint16_t lpf)
     }
     gyro->init = mpu6000SpiGyroInit;
     gyro->read = mpu6000SpiGyroRead;
+    gyro->intStatus = checkMPU6000Interrupt;
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;
     //gyro->scale = (4.0f / 16.4f) * (M_PIf / 180.0f) * 0.000001f;
@@ -341,4 +349,12 @@ bool mpu6000SpiAccRead(int16_t *gyroData)
     gyroData[Z] = (int16_t)((buf[4] << 8) | buf[5]);
 
     return true;
+}
+
+void checkMPU6000Interrupt(bool *gyroIsUpdated) {
+	uint8_t mpuIntStatus;
+
+	mpu6000ReadRegister(MPU6000_INT_STATUS, &mpuIntStatus, 1);
+
+	(mpuIntStatus) ? (*gyroIsUpdated= true) : (*gyroIsUpdated= false);
 }

@@ -128,7 +128,7 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 105;
+static const uint8_t EEPROM_CONF_VERSION = 106;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -457,6 +457,7 @@ static void resetConf(void)
 
     masterConfig.looptime = 3500;
     masterConfig.emf_avoidance = 0;
+    masterConfig.syncGyroToLoop = 0;
 
     resetPidProfile(&currentProfile->pidProfile);
 
@@ -548,6 +549,7 @@ static void resetConf(void)
     masterConfig.escAndServoConfig.maxthrottle = 2000;
     masterConfig.motor_pwm_rate = 32000;
     masterConfig.looptime = 2000;
+    masterConfig.syncGyroToLoop = 0;
     currentProfile->pidProfile.pidController = 3;
     currentProfile->pidProfile.P8[ROLL] = 36;
     currentProfile->pidProfile.P8[PITCH] = 36;
@@ -1009,4 +1011,3 @@ uint32_t featureMask(void)
 {
     return masterConfig.enabledFeatures;
 }
-
