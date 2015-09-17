@@ -206,7 +206,7 @@ STATIC_UNIT_TESTED void bmp280_calculate(int32_t *pressure, int32_t *temperature
     if (pressure)
         *pressure = (int32_t)p;
     if (temperature)
-        *temperature = (int32_t)t * 100;
+        *temperature = (int32_t)(t * 100);
 }
 
 #endif
