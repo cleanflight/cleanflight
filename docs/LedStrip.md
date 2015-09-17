@@ -28,7 +28,12 @@ but only the first 32 are used.
 
 WS2812 LEDs require an 800khz signal and precise timings and thus requires the use of a dedicated hardware timer.
 
-Note: Not all WS2812 ICs use the same timings, some batches use different timings.  
+Note: Not all WS2812 ICs use the same timings, some batches use different timings. In order to get the correct timings 
+from the Datasheet and in case your strip does not work, change this Values in light_ws2811strip.h: 
+```
+#define BIT_COMPARE_1 13
+#define BIT_COMPARE_0 6
+```
 
 It could be possible to be able to specify the timings required via CLI if users request it.
 
