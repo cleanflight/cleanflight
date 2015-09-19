@@ -309,8 +309,8 @@ bool hmc5883lRead(int16_t *magData)
 {
     uint8_t buf[6];
 
-    bool ack = i2cRead(MAG_ADDRESS, MAG_DATA_REGISTER, 6, buf);
-    if (ack) {
+    if (!i2cRead(MAG_ADDRESS, MAG_DATA_REGISTER, 6, buf)) {
+        // Read failed
         return false;
     }
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.
