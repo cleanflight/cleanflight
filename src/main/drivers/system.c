@@ -28,6 +28,7 @@
 #include "light_led.h"
 #include "sound_beeper.h"
 #include "nvic.h"
+#include "adc.h"
 
 #include "system.h"
 
@@ -90,6 +91,8 @@ static void cycleCounterInit(void)
 void SysTick_Handler(void)
 {
     sysTickUptime++;
+    // trigger ADC conversion from here
+    adcTriggerConversion();
 }
 
 // Return system uptime in microseconds (rollover in 70minutes)

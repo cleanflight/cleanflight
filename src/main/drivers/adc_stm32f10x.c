@@ -130,7 +130,7 @@ void adcInit(drv_adc_config_t *init)
 
     adc.ADC_Mode = ADC_Mode_Independent;
     adc.ADC_ScanConvMode = configuredAdcChannels > 1 ? ENABLE : DISABLE;
-    adc.ADC_ContinuousConvMode = ENABLE;
+    adc.ADC_ContinuousConvMode = DISABLE;
     adc.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
     adc.ADC_DataAlign = ADC_DataAlign_Right;
     adc.ADC_NbrOfChannel = configuredAdcChannels;
@@ -152,5 +152,11 @@ void adcInit(drv_adc_config_t *init)
     ADC_StartCalibration(ADC1);
     while(ADC_GetCalibrationStatus(ADC1));
 
+    ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+}
+
+// start conversion scan on all channels. Called from systick handler now
+void adcTriggerConversion(void)
+{
     ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 }

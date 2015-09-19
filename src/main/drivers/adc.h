@@ -43,3 +43,4 @@ typedef struct drv_adc_config_t {
 
 void adcInit(drv_adc_config_t *init);
 uint16_t adcGetChannel(uint8_t channel);
+void adcTriggerConversion(void);
