@@ -18,12 +18,12 @@
 
 extern "C" {
 
-int8_t ms5611_crc(uint16_t *prom);
+int8_t ms56xx_crc(uint16_t *prom);
 void ms5611_calculate(int32_t *pressure, int32_t *temperature);
 
-extern uint16_t ms5611_c[8];
-extern uint32_t ms5611_up;
-extern uint32_t ms5611_ut;
+extern uint16_t ms56xx_c[8];
+extern uint32_t ms56xx_up;
+extern uint32_t ms56xx_ut;
 
 }
 
@@ -36,10 +36,10 @@ TEST(baroMS5611Test, TestValidMs5611Crc)
 {
 
     // given
-    uint16_t ms5611_prom[] = {0x3132,0x3334,0x3536,0x3738,0x3940,0x4142,0x4344,0x450B};
+    uint16_t ms56xx_prom[] = {0x3132,0x3334,0x3536,0x3738,0x3940,0x4142,0x4344,0x450B};
 
     // when
-    int8_t result = ms5611_crc(ms5611_prom);
+    int8_t result = ms56xx_crc(ms56xx_prom);
 
     // then
     EXPECT_EQ(0, result);
@@ -50,10 +50,10 @@ TEST(baroMS5611Test, TestInvalidMs5611Crc)
 {
 
     // given
-    uint16_t ms5611_prom[] = {0x3132,0x3334,0x3536,0x3738,0x3940,0x4142,0x4344,0x4500};
+    uint16_t ms56xx_prom[] = {0x3132,0x3334,0x3536,0x3738,0x3940,0x4142,0x4344,0x4500};
 
     // when
-    int8_t result = ms5611_crc(ms5611_prom);
+    int8_t result = ms56xx_crc(ms56xx_prom);
 
     // then
     EXPECT_EQ(-1, result);
@@ -64,10 +64,10 @@ TEST(baroMS5611Test, TestMs5611AllZeroProm)
 {
 
     // given
-    uint16_t ms5611_prom[] = {0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
+    uint16_t ms56xx_prom[] = {0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
 
     // when
-    int8_t result = ms5611_crc(ms5611_prom);
+    int8_t result = ms56xx_crc(ms56xx_prom);
 
     // then
     EXPECT_EQ(-1, result);
@@ -78,10 +78,10 @@ TEST(baroMS5611Test, TestMs5611AllOnesProm)
 {
 
     // given
-    uint16_t ms5611_prom[] = {0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF};
+    uint16_t ms56xx_prom[] = {0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF};
 
     // when
-    int8_t result = ms5611_crc(ms5611_prom);
+    int8_t result = ms56xx_crc(ms56xx_prom);
 
     // then
     EXPECT_EQ(-1, result);
@@ -93,11 +93,11 @@ TEST(baroMS5611Test, TestMs5611CalculatePressureGT20Deg)
 
     // given
     int32_t pressure, temperature;
-    uint16_t ms5611_c_test[] = {0x0000, 40127, 36924, 23317, 23282, 33464, 28312, 0x0000}; // calibration data from MS5611 datasheet 
-    memcpy(&ms5611_c, &ms5611_c_test, sizeof(ms5611_c_test));
+    uint16_t ms56xx_c_test[] = {0x0000, 40127, 36924, 23317, 23282, 33464, 28312, 0x0000}; // calibration data from MS5611 datasheet 
+    memcpy(&ms56xx_c, &ms56xx_c_test, sizeof(ms56xx_c_test));
 
-    ms5611_up = 9085466; // Digital pressure value from MS5611 datasheet
-    ms5611_ut = 8569150; // Digital temperature value from MS5611 datasheet
+    ms56xx_up = 9085466; // Digital pressure value from MS5611 datasheet
+    ms56xx_ut = 8569150; // Digital temperature value from MS5611 datasheet
 
     // when
     ms5611_calculate(&pressure, &temperature);
@@ -113,11 +113,11 @@ TEST(baroMS5611Test, TestMs5611CalculatePressureLT20Deg)
 
     // given
     int32_t pressure, temperature;
-    uint16_t ms5611_c_test[] = {0x0000, 40127, 36924, 23317, 23282, 33464, 28312, 0x0000}; // calibration data from MS5611 datasheet 
-    memcpy(&ms5611_c, &ms5611_c_test, sizeof(ms5611_c_test));
+    uint16_t ms56xx_c_test[] = {0x0000, 40127, 36924, 23317, 23282, 33464, 28312, 0x0000}; // calibration data from MS5611 datasheet 
+    memcpy(&ms56xx_c, &ms56xx_c_test, sizeof(ms56xx_c_test));
 
-    ms5611_up = 9085466; // Digital pressure value from MS5611 datasheet
-    ms5611_ut = 8069150; // Digital temperature value
+    ms56xx_up = 9085466; // Digital pressure value from MS5611 datasheet
+    ms56xx_ut = 8069150; // Digital temperature value
 
     // when
     ms5611_calculate(&pressure, &temperature);
@@ -133,11 +133,11 @@ TEST(baroMS5611Test, TestMs5611CalculatePressureLTMinus15Deg)
 
     // given
     int32_t pressure, temperature;
-    uint16_t ms5611_c_test[] = {0x0000, 40127, 36924, 23317, 23282, 33464, 28312, 0x0000}; // calibration data from MS5611 datasheet 
-    memcpy(&ms5611_c, &ms5611_c_test, sizeof(ms5611_c_test));
+    uint16_t ms56xx_c_test[] = {0x0000, 40127, 36924, 23317, 23282, 33464, 28312, 0x0000}; // calibration data from MS5611 datasheet 
+    memcpy(&ms56xx_c, &ms56xx_c_test, sizeof(ms56xx_c_test));
 
-    ms5611_up = 9085466; // Digital pressure value from MS5611 datasheet
-    ms5611_ut = 7369150; // Digital temperature value
+    ms56xx_up = 9085466; // Digital pressure value from MS5611 datasheet
+    ms56xx_ut = 7369150; // Digital temperature value
 
     // when
     ms5611_calculate(&pressure, &temperature);

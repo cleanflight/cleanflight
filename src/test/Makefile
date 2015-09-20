@@ -466,25 +466,25 @@ $(OBJECT_DIR)/rx_ranges_unittest : \
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
-$(OBJECT_DIR)/drivers/barometer_ms5611.o : \
-    $(USER_DIR)/drivers/barometer_ms5611.c \
-    $(USER_DIR)/drivers/barometer_ms5611.h \
+$(OBJECT_DIR)/drivers/barometer_ms56xx.o : \
+    $(USER_DIR)/drivers/barometer_ms56xx.c \
+    $(USER_DIR)/drivers/barometer_ms56xx.h \
     $(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/drivers/barometer_ms5611.c -o $@
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/drivers/barometer_ms56xx.c -o $@
 
-$(OBJECT_DIR)/baro_ms5611_unittest.o : \
-	$(TEST_DIR)/baro_ms5611_unittest.cc \
-	$(USER_DIR)/drivers/barometer_ms5611.h \
+$(OBJECT_DIR)/baro_ms56xx_unittest.o : \
+	$(TEST_DIR)/baro_ms56xx_unittest.cc \
+	$(USER_DIR)/drivers/barometer_ms56xx.h \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/baro_ms5611_unittest.cc -o $@
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/baro_ms56xx_unittest.cc -o $@
 
-$(OBJECT_DIR)/baro_ms5611_unittest : \
-	$(OBJECT_DIR)/drivers/barometer_ms5611.o \
-	$(OBJECT_DIR)/baro_ms5611_unittest.o \
+$(OBJECT_DIR)/baro_ms56xx_unittest : \
+	$(OBJECT_DIR)/drivers/barometer_ms56xx.o \
+	$(OBJECT_DIR)/baro_ms56xx_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
