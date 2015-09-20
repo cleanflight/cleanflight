@@ -298,7 +298,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
@@ -339,7 +339,7 @@ EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
 		   drivers/compass_ak8975.c \
@@ -433,7 +433,7 @@ CC3D_SRC	 = \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
@@ -502,7 +502,7 @@ STM32F3DISCOVERY_SRC	 = \
 		   drivers/accgyro_mpu3050.c \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/accgyro_l3g4200d.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/compass_ak8975.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -516,7 +516,7 @@ COLIBRI_RACE_SRC        = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/display_ug2864hsweg01.c \
 		   drivers/accgyro_spi_mpu6500.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/serial_usb_vcp.c \
@@ -528,7 +528,7 @@ SPARKY_SRC	 = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/display_ug2864hsweg01.c \
 		   drivers/accgyro_mpu6050.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/compass_ak8975.c \
 		   drivers/serial_usb_vcp.c \
 		   $(HIGHEND_SRC) \
@@ -540,7 +540,7 @@ ALIENWIIF3_SRC	 = $(SPARKY_SRC)
 SPRACINGF3_SRC	 = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/accgyro_mpu6050.c \
-		   drivers/barometer_ms5611.c \
+		   drivers/barometer_ms56xx.c \
 		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
