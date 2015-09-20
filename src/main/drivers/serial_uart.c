@@ -141,27 +141,27 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     if (mode & MODE_RX) {
 #ifdef STM32F40_41xxx
         if (s->rxDMAStream) {
-			DMA_StructInit(&DMA_InitStructure);
-			DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
-			DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-			DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-			DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-			DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-			DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-			DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Disable ;
-			DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull ;
-			DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single ;
-			DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+            DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Disable ;
+            DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull ;
+            DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single ;
+            DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
 #else
-	    if (s->rxDMAChannel) {
-			DMA_StructInit(&DMA_InitStructure);
-			DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
-			DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-			DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-			DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-			DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-			DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-			DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+        if (s->rxDMAChannel) {
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
 #endif
 
             DMA_InitStructure.DMA_BufferSize = s->port.rxBufferSize;
@@ -195,27 +195,27 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     if (mode & MODE_TX) {
 #ifdef STM32F40_41xxx
         if (s->txDMAStream) {
-			DMA_StructInit(&DMA_InitStructure);
-			DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
-			DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-			DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-			DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-			DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-			DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-			DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Disable ;
-			DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull ;
-			DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single ;
-			DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+            DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Disable ;
+            DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull ;
+            DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single ;
+            DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
 #else
-        if (s->rxDMAChannel) {
-			DMA_StructInit(&DMA_InitStructure);
-			DMA_InitStructure.DMA_PeripheralBaseAddr = s->rxDMAPeripheralBaseAddr;
-			DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
-			DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-			DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-			DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-			DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-			DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+        if (s->txDMAChannel) {
+            DMA_StructInit(&DMA_InitStructure);
+            DMA_InitStructure.DMA_PeripheralBaseAddr = s->txDMAPeripheralBaseAddr;
+            DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+            DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+            DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+            DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+            DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+            DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
 #endif
 
             DMA_InitStructure.DMA_BufferSize = s->port.txBufferSize;
@@ -265,7 +265,7 @@ void uartStartTxDMA(uartPort_t *s)
 {
 #ifdef STM32F40_41xxx
     DMA_Cmd(s->txDMAStream, DISABLE);
-	DMA_MemoryTargetConfig(s->txDMAStream,(uint32_t)&s->port.txBuffer[s->port.txBufferTail],DMA_Memory_0);
+    DMA_MemoryTargetConfig(s->txDMAStream,(uint32_t)&s->port.txBuffer[s->port.txBufferTail],DMA_Memory_0);
     //s->txDMAStream->M0AR = (uint32_t)&s->port.txBuffer[s->port.txBufferTail];
     if (s->port.txBufferHead > s->port.txBufferTail) {
         s->txDMAStream->NDTR = s->port.txBufferHead - s->port.txBufferTail;
