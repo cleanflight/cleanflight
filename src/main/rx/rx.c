@@ -70,6 +70,7 @@ uint16_t rssi = 0;                  // range: [0;1023]
 static bool rxDataReceived = false;
 static bool rxSignalReceived = false;
 static bool rxFlightChannelsValid = false;
+static uint8_t rxNoDataTimeoutFrames = 0;
 
 static uint32_t rxUpdateAt = 0;
 static uint32_t needRxSignalBefore = 0;
@@ -425,6 +426,22 @@ static void readRxChannelsApplyRanges(void)
     }
 }
 
+static void noSignalReceivedUpdateRxDataTimeout(void)
+{
+    if (rxDataReceived) {
+        rxNoDataTimeoutFrames = RXDATA_TIMEOUT_ON_NO_SERIALRX_SIGNAL_IN_FRAMES;
+    } else {
+        if (rxNoDataTimeoutFrames > 0) {
+            rxNoDataTimeoutFrames--;
+        }
+    }
+}
+
+static bool isRxDataRecentlyReceived(void)
+{
+    return rxNoDataTimeoutFrames > 0;
+}
+
 static void detectAndApplySignalLossBehaviour(void)
 {
     int channel;
@@ -433,7 +450,8 @@ static void detectAndApplySignalLossBehaviour(void)
     bool rxIsDataDriven = isRxDataDriven();
 
     if (!rxSignalReceived) {
-        if (rxIsDataDriven && rxDataReceived) {
+        noSignalReceivedUpdateRxDataTimeout();
+        if (rxIsDataDriven && isRxDataRecentlyReceived()) {
             // use the values from the RX
         } else {
             useValueFromRx = false;
