@@ -33,6 +33,7 @@ typedef struct failsafeConfig_s {
     uint16_t failsafe_throttle;             // Throttle level used for landing - specify value between 1000..2000 (pwm pulse width for slightly below hover). center throttle = 1500.
     uint8_t failsafe_kill_switch;           // failsafe switch action is 0: identical to rc link loss, 1: disarms instantly
     uint16_t failsafe_throttle_low_delay;   // Time throttle stick must have been below 'min_check' to "JustDisarm" instead of "full failsafe procedure".
+    uint8_t failsafe_ignore_serialrx;       // 1: When the serial rx indicates failsafe, ignore it's channels and use the configured ones, 0: Always read serial rx channels when available
 } failsafeConfig_t;
 
 typedef enum {
@@ -65,6 +66,8 @@ typedef struct failsafeState_s {
 } failsafeState_t;
 
 void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse);
+
+bool shouldIgnoreSerialRxOnFailsafe(void);
 
 void failsafeStartMonitoring(void);
 void failsafeUpdateState(void);

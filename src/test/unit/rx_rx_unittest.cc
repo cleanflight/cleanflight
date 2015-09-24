@@ -165,4 +165,10 @@ extern "C" {
     void rxMspInit(rxConfig_t *, rxRuntimeConfig_t *, rcReadRawDataPtr *) {}
 
     void rxPwmInit(rxRuntimeConfig_t *, rcReadRawDataPtr *) {}
+
+    bool shouldIgnoreSerialRxOnFailsafe(void)
+    {
+        return false;
+    }
+
 }
