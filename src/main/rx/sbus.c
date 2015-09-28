@@ -78,6 +78,9 @@ static uint16_t sbusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 static uint32_t sbusChannelData[SBUS_MAX_CHANNEL];
 
+static uint16_t frameLostCnt = 0;
+static uint16_t frameCnt = 0;
+
 bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     int b;
@@ -91,6 +94,9 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
     if (!portConfig) {
         return false;
     }
+
+    frameLostCnt = 0;
+    frameCnt = 0;
 
     serialPort_t *sBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sbusDataReceive, SBUS_BAUDRATE, MODE_RX, SBUS_PORT_OPTIONS);
 
@@ -138,6 +144,24 @@ typedef union {
 } sbusFrame_t;
 
 static sbusFrame_t sbusFrame;
+
+uint16_t fetchSbusFrameLossPctAndResetCounters(void)
+{
+    uint16_t frameLossPct = frameCnt > 0 ? 100 - (frameLostCnt * 100 / frameCnt) : 0;
+
+    frameCnt = 0;
+    frameLostCnt = 0;
+
+    return frameLossPct;
+}
+
+static void sbusCountFramesAndLost(void)
+{
+    frameCnt++;
+    if (sbusFrame.frame.flags & SBUS_FLAG_SIGNAL_LOSS) {
+        frameLostCnt++;
+    }
+}
 
 // Receive ISR callback
 static void sbusDataReceive(uint16_t c)
@@ -214,6 +238,8 @@ uint8_t sbusFrameStatus(void)
     } else {
         sbusChannelData[17] = SBUS_DIGITAL_CHANNEL_MIN;
     }
+
+    sbusCountFramesAndLost();
 
     if (sbusFrame.frame.flags & SBUS_FLAG_SIGNAL_LOSS) {
 #ifdef DEBUG_SBUS_PACKETS

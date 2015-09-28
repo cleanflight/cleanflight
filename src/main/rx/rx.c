@@ -555,6 +555,19 @@ void parseRcChannels(const char *input, rxConfig_t *rxConfig)
     }
 }
 
+void updateRSSISbus(uint32_t currentTime)
+{
+    static uint32_t rssiUpdateAt = 0;
+
+    if ((int32_t)(currentTime - rssiUpdateAt) < 0) {
+        return;
+    }
+    rssiUpdateAt = currentTime + DELAY_5_HZ;
+
+    uint16_t currentRssiPct = fetchSbusFrameLossPctAndResetCounters();
+    rssi = (uint16_t)constrain(currentRssiPct, 0, 100) * 1023 / 100;
+}
+
 void updateRSSIPWM(void)
 {
     int16_t pwmRssi = 0;
@@ -614,6 +627,8 @@ void updateRSSI(uint32_t currentTime)
         updateRSSIPWM();
     } else if (feature(FEATURE_RSSI_ADC)) {
         updateRSSIADC(currentTime);
+    } else if (feature(FEATURE_RX_SERIAL) && rxConfig->serialrx_provider == 2) {
+         updateRSSISbus(currentTime);
     }
 }
 

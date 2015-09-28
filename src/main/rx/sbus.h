@@ -18,3 +18,4 @@
 #pragma once
 
 uint8_t sbusFrameStatus(void);
+uint16_t fetchSbusFrameLossPctAndResetCounters(void);

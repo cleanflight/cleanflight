@@ -2,11 +2,12 @@
 
 RSSI is a measurement of signal strength and is very handy so you know when your aircraft isw going out of range or if it is suffering RF interference.
 
-Some receivers have RSSI outputs.  3 types are supported.
+Some receivers have RSSI outputs.  4 types are supported.
 
 1. RSSI via PPM channel
 1. RSSI via Parallel PWM channel
 1. RSSI via ADC with PPM RC that has an RSSI output - aka RSSI ADC
+1. Frame loss from S.BUS receivers converted to RSSI
 
 ## RSSI via PPM
 
@@ -42,3 +43,8 @@ Under CLI :
 FrSky D4R-II and X8R supported.
 
 The feature can not be used when RX_PARALLEL_PWM is enabled.
+
+## RSSI from S.BUS frame loss
+
+When no RSSI channel is configured, RSSI ADC is not activated and S.BUS protocol is used, the frame loss will be converted to RSSI without any further configuration.
+
