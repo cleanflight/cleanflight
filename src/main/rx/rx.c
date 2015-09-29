@@ -51,6 +51,7 @@
 
 #include "rx/rx.h"
 
+#define DEBUG_RXDATARECEIVED_HOLES
 
 //#define DEBUG_RX_SIGNAL_LOSS
 
@@ -428,12 +429,28 @@ static void readRxChannelsApplyRanges(void)
 
 static void noSignalReceivedUpdateRxDataTimeout(void)
 {
+#ifdef DEBUG_RXDATARECEIVED_HOLES
+    static uint32_t frames = 0;
+    static uint32_t noDataFrames = 0;
+    static uint8_t mostNoDataFrames = 0;
+    frames++;
+    debug[0] = frames;
+#endif
     if (rxDataReceived) {
         rxNoDataTimeoutFrames = RXDATA_TIMEOUT_ON_NO_SERIALRX_SIGNAL_IN_FRAMES;
     } else {
         if (rxNoDataTimeoutFrames > 0) {
             rxNoDataTimeoutFrames--;
         }
+#ifdef DEBUG_RXDATARECEIVED_HOLES
+        noDataFrames++;
+        uint8_t currentFramesNoData = RXDATA_TIMEOUT_ON_NO_SERIALRX_SIGNAL_IN_FRAMES - rxNoDataTimeoutFrames;
+        if (currentFramesNoData > mostNoDataFrames) {
+            mostNoDataFrames = currentFramesNoData;
+        }
+        debug[1] = noDataFrames;
+        debug[2] = mostNoDataFrames;
+#endif
     }
 }
 
