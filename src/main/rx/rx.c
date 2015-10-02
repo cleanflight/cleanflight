@@ -69,6 +69,7 @@ uint16_t rssi = 0;                  // range: [0;1023]
 
 static bool rxDataReceived = false;
 static bool rxSignalReceived = false;
+static bool rxSignalReceivedNotDataDriven = false;
 static bool rxFlightChannelsValid = false;
 
 static uint32_t rxUpdateAt = 0;
@@ -272,6 +273,7 @@ static void resetRxSignalReceivedFlagIfNeeded(uint32_t currentTime)
 
     if (((int32_t)(currentTime - needRxSignalBefore) >= 0)) {
         rxSignalReceived = false;
+        rxSignalReceivedNotDataDriven = false;
 #ifdef DEBUG_RX_SIGNAL_LOSS
         debug[0]++;
 #endif
@@ -324,7 +326,7 @@ void updateRx(uint32_t currentTime)
 
     if (feature(FEATURE_RX_PPM)) {
         if (isPPMDataBeingReceived()) {
-            rxSignalReceived = true;
+            rxSignalReceivedNotDataDriven = true;
             needRxSignalBefore = currentTime + DELAY_10_HZ;
             resetPPMDataReceivedState();
         }
@@ -332,7 +334,7 @@ void updateRx(uint32_t currentTime)
 
     if (feature(FEATURE_RX_PARALLEL_PWM)) {
         if (isPWMDataBeingReceived()) {
-            rxSignalReceived = true;
+            rxSignalReceivedNotDataDriven = true;
             needRxSignalBefore = currentTime + DELAY_10_HZ;
         }
     }
@@ -441,6 +443,10 @@ static void detectAndApplySignalLossBehaviour(void)
     uint16_t sample;
     bool useValueFromRx = true;
     bool rxIsDataDriven = isRxDataDriven();
+
+    if (!rxIsDataDriven) {
+        rxSignalReceived = rxSignalReceivedNotDataDriven;
+    }
 
     if (!rxSignalReceived) {
         if (rxIsDataDriven && rxDataReceived) {
