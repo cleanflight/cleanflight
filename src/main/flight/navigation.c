@@ -493,8 +493,8 @@ static void GPS_calc_velocity(void)
 {
     static int16_t speed_old[2] = { 0, 0 };
 
-	actual_speed[GPS_X] = (float)(GPS_VELNED[1]); //mm/s
-	actual_speed[GPS_Y] = (float)(GPS_VELNED[0]); //mm/s
+	actual_speed[GPS_X] = (float)(GPS_VELNED[1]); //cm/s
+	actual_speed[GPS_Y] = (float)(GPS_VELNED[0]); //cm/s
 
 	// average with previous sample
 	actual_speed[GPS_X] = (actual_speed[GPS_X] + speed_old[GPS_X]) / 2;
