@@ -749,7 +749,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
 
         // Using Level D as a Sensitivity for Horizon. 0 more level to 255 more rate. Default value of 100 seems to work fine.
         // For more rate mode increase D and slower flips and rolls will be possible
-       	horizonLevelStrength = constrain((10 * (horizonLevelStrength - 100) * (10 * pidProfile->D8[PIDLEVEL] / 80) / 100) + 100, 0, 100);
+        horizonLevelStrength = constrain((10 * (horizonLevelStrength - 100) * (10 * pidProfile->D8[PIDLEVEL] / 80) / 100) + 100, 0, 100);
     }
 
     // ----------PID controller----------
@@ -773,7 +773,7 @@ static void pidRewrite(pidProfile_t *pidProfile, controlRateConfig_t *controlRat
                 AngleRateTmp = ((int32_t)(rate + 27) * rcCommand[axis]) >> 4;
                 if (FLIGHT_MODE(HORIZON_MODE)) {
                     // mix up angle error to desired AngleRateTmp to add a little auto-level feel. horizonLevelStrength is scaled to the stick input
-                	AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL] * horizonLevelStrength / 100) >> 4;
+                    AngleRateTmp += (errorAngle * pidProfile->I8[PIDLEVEL] * horizonLevelStrength / 100) >> 4;
                 }
             } else { // it's the ANGLE mode - control is angle based, so control loop is needed
                 AngleRateTmp = (errorAngle * pidProfile->P8[PIDLEVEL]) >> 4;

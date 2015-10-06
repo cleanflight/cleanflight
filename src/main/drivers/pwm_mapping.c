@@ -243,17 +243,17 @@ static const uint16_t airPWM[] = {
 
 #ifdef COLIBRI_RACE
 static const uint16_t multiPPM[] = {
-    PWM1  | (MAP_TO_PPM_INPUT << 8),			// PPM input
+    PWM1  | (MAP_TO_PPM_INPUT << 8),             // PPM input
     PWM2  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM3  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM4  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM5  | (MAP_TO_MOTOR_OUTPUT << 8),
-    PWM6  | (MAP_TO_MOTOR_OUTPUT << 8),			// Swap to servo if needed
-    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),			// Swap to servo if needed
-    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
-    PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
-    PWM10  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
-    PWM11  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
+    PWM6  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM10  | (MAP_TO_MOTOR_OUTPUT << 8),         // Swap to servo if needed
+    PWM11  | (MAP_TO_MOTOR_OUTPUT << 8),         // Swap to servo if needed
     0xFFFF
 };
 
@@ -263,17 +263,17 @@ static const uint16_t multiPWM[] = {
 };
 
 static const uint16_t airPPM[] = {
-    PWM1  | (MAP_TO_PPM_INPUT << 8),			// PPM input
+    PWM1  | (MAP_TO_PPM_INPUT << 8),             // PPM input
     PWM2  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM3  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM4  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM5  | (MAP_TO_MOTOR_OUTPUT << 8),
-    PWM6  | (MAP_TO_MOTOR_OUTPUT << 8),			// Swap to servo if needed
-    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),			// Swap to servo if needed
-    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
-    PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
-    PWM10  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
-    PWM11  | (MAP_TO_MOTOR_OUTPUT << 8),      	// Swap to servo if needed
+    PWM6  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),          // Swap to servo if needed
+    PWM10  | (MAP_TO_MOTOR_OUTPUT << 8),         // Swap to servo if needed
+    PWM11  | (MAP_TO_MOTOR_OUTPUT << 8),         // Swap to servo if needed
     0xFFFF
 };
 
@@ -559,7 +559,7 @@ pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init)
         if (init->useChannelForwarding && !init->airplane) {
 #if defined(NAZE) && defined(LED_STRIP_TIMER)
             // if LED strip is active, PWM5-8 are unavailable, so map AUX1+AUX2 to PWM13+PWM14
-            if (init->useLEDStrip) { 
+            if (init->useLEDStrip) {
                 if (timerIndex >= PWM13 && timerIndex <= PWM14) {
                   type = MAP_TO_SERVO_OUTPUT;
                 }

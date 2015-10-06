@@ -192,7 +192,7 @@ bool bmp085Detect(const bmp085Config_t *config, baro_t *baro)
 
     delay(20); // datasheet says 10ms, we'll be careful and do 20.
 
-    ack = i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */ 
+    ack = i2cRead(BMP085_I2C_ADDR, BMP085_CHIP_ID__REG, 1, &data); /* read Chip Id */
     if (ack) {
         bmp085.chip_id = BMP085_GET_BITSLICE(data, BMP085_CHIP_ID);
         bmp085.oversampling_setting = 3;
@@ -388,7 +388,7 @@ bool bmp085TestEOCConnected(const bmp085Config_t *config)
         if (status) {
             return true;
         }
-    } 
+    }
     return false; // assume EOC is not connected
 }
 #endif

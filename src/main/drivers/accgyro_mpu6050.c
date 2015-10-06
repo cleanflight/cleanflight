@@ -106,7 +106,7 @@ static void mpu6050GyroInit(uint16_t lpf)
     delay(100);
     ack = mpuConfiguration.write(MPU_RA_SMPLRT_DIV, 0x00); //SMPLRT_DIV    -- SMPLRT_DIV = 0  Sample Rate = Gyroscope Output Rate / (1 + SMPLRT_DIV)
     ack = mpuConfiguration.write(MPU_RA_PWR_MGMT_1, 0x03); //PWR_MGMT_1    -- SLEEP 0; CYCLE 0; TEMP_DIS 0; CLKSEL 3 (PLL with Z Gyro reference)
-    delay(15); //PLL Settling time when changing CLKSEL is max 10ms.  Use 15ms to be sure 
+    delay(15); //PLL Settling time when changing CLKSEL is max 10ms.  Use 15ms to be sure
     ack = mpuConfiguration.write(MPU_RA_CONFIG, mpuLowPassFilter); //CONFIG        -- EXT_SYNC_SET 0 (disable input pin for data sync) ; default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
     ack = mpuConfiguration.write(MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
 

@@ -206,7 +206,7 @@ int32_t quickMedianFilter5(int32_t * v)
 
     QMF_SORT(p[0], p[1]); QMF_SORT(p[3], p[4]); QMF_SORT(p[0], p[3]);
     QMF_SORT(p[1], p[4]); QMF_SORT(p[1], p[2]); QMF_SORT(p[2], p[3]);
-    QMF_SORT(p[1], p[2]); 
+    QMF_SORT(p[1], p[2]);
     return p[2];
 }
 

@@ -44,7 +44,9 @@ install:
   - export PATH=$PATH:$PWD/gcc-arm-none-eabi-4_9-2015q2/bin
 
 before_script: arm-none-eabi-gcc --version
-script: ./.travis.sh
+script:
+  - ./.checkformatting.sh
+  - ./.travis.sh
 
 cache: apt
 

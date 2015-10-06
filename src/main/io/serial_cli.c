@@ -517,9 +517,9 @@ const clivalue_t valueTable[] = {
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], 0, 200 },
 
     { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX },
-	{ "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, 0, 200 },
-	{ "pterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pterm_cut_hz, 0, 200 },
-	{ "gyro_cut_hz",                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.gyro_cut_hz, 0, 200 },
+    { "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, 0, 200 },
+    { "pterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pterm_cut_hz, 0, 200 },
+    { "gyro_cut_hz",                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.gyro_cut_hz, 0, 200 },
 
     { "pid5_oldyw",                 VAR_UINT8  | PROFILE_VALUE,  &masterConfig.profile[0].pidProfile.pid5_oldyw, 0, 1 },
 
@@ -2071,7 +2071,7 @@ static void cliSet(char *cmdline)
         cliPrint("Invalid name\r\n");
     } else {
         // no equals, check for matching variables.
-    	cliGet(cmdline);
+        cliGet(cmdline);
     }
 }
 
@@ -2094,7 +2094,7 @@ static void cliGet(char *cmdline)
 
 
     if (matchedCommands) {
-    	return;
+        return;
     }
 
     cliPrint("Invalid name\r\n");

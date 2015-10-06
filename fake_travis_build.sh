@@ -23,6 +23,8 @@ export TRAVIS_BUILD_NUMBER=$(date +%s)
 export BUILDNAME=${BUILDNAME:=fake_travis}
 export TRAVIS_REPO_SLUG=${TRAVIS_REPO_SLUG:=$USER/simulated}
 
+./.checkformatting.sh || exit 1
+
 for target in "${targets[@]}"
 do
 	unset RUNTESTS PUBLISHMETA TARGET

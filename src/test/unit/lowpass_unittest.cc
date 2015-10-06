@@ -20,7 +20,7 @@
 //#define DEBUG_LOWPASS
 
 extern "C" {
-    #include "flight/lowpass.h" 
+    #include "flight/lowpass.h"
 }
 
 static lowpass_t lowpassFilterReference;
@@ -103,7 +103,7 @@ TEST(LowpassTest, Lowpass)
         printf("*** Testing freq: %d (%f)\n", freq, ((float)freq * 0.001f));
 #endif
         // Run tests
-        for (sampleIdx = 0; sampleIdx < sampleCount; sampleIdx++) 
+        for (sampleIdx = 0; sampleIdx < sampleCount; sampleIdx++)
         {
             // Filter under test
             filterOut = (int16_t)lowpassFixed(&lowpassFilter, servoCmds[sampleIdx], freq);

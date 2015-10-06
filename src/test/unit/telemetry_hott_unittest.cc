@@ -238,7 +238,7 @@ portSharing_e determinePortSharing(serialPortConfig_t *, serialPortFunction_e) {
 }
 
 batteryState_e getBatteryState(void) {
-	return BATTERY_OK;
+    return BATTERY_OK;
 }
 
 }

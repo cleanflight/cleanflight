@@ -332,8 +332,8 @@ static const uint16_t functionMappings[FUNCTION_COUNT] = {
     LED_FUNCTION_FLIGHT_MODE,
     LED_FUNCTION_ARM_STATE,
     LED_FUNCTION_THROTTLE,
-	LED_FUNCTION_THRUST_RING,
-	LED_FUNCTION_COLOR
+    LED_FUNCTION_THRUST_RING,
+    LED_FUNCTION_COLOR
 };
 
 // grid offsets
@@ -871,7 +871,7 @@ static void applyLedAnimationLayer(void)
 void updateLedStrip(void)
 {
 
-	if (!(ledStripInitialised && isWS2811LedStripReady())) {
+    if (!(ledStripInitialised && isWS2811LedStripReady())) {
         return;
     }
 
@@ -883,11 +883,11 @@ void updateLedStrip(void)
     } else {
         ledStripEnabled = true;
     }
-    
+
     if (!ledStripEnabled){
         return;
     }
-    
+
 
     uint32_t now = micros();
 
@@ -1048,8 +1048,8 @@ void ledStripEnable(void)
 
 static void ledStripDisable(void)
 {
-	setStripColor(&hsv_black);
-    
-	ws2811UpdateStrip();
+    setStripColor(&hsv_black);
+
+    ws2811UpdateStrip();
 }
 #endif

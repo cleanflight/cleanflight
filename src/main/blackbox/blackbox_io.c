@@ -472,7 +472,7 @@ void blackboxWriteFloat(float value)
 
 /**
  * If there is data waiting to be written to the blackbox device, attempt to write (a portion of) that now.
- * 
+ *
  * Returns true if all data has been flushed to the device.
  */
 bool blackboxDeviceFlush(void)

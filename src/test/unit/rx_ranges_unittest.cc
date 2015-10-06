@@ -68,7 +68,7 @@ TEST(RxChannelRangeTest, TestRxChannelRanges)
     EXPECT_EQ(applyRxChannelRangeConfiguraton(1900, RANGE_CONFIGURATION(900, 1900)), 2000);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(600, RANGE_CONFIGURATION(900, 1900)), 750);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(2500, RANGE_CONFIGURATION(900, 1900)), 2250);
-    
+
     // Narrower range than expected
     EXPECT_EQ(applyRxChannelRangeConfiguraton(1300, RANGE_CONFIGURATION(1300, 1700)), 1000);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(1500, RANGE_CONFIGURATION(1300, 1700)), 1500);
@@ -82,7 +82,7 @@ TEST(RxChannelRangeTest, TestRxChannelRanges)
     EXPECT_EQ(applyRxChannelRangeConfiguraton(2100, RANGE_CONFIGURATION(900, 2100)), 2000);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(600, RANGE_CONFIGURATION(900, 2100)), 750);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(2700, RANGE_CONFIGURATION(900, 2100)), 2250);
-    
+
     // extreme out of range
     EXPECT_EQ(applyRxChannelRangeConfiguraton(1, RANGE_CONFIGURATION(1000, 2000)), 750);
     EXPECT_EQ(applyRxChannelRangeConfiguraton(1, RANGE_CONFIGURATION(1300, 1700)), 750);

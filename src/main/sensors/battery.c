@@ -81,14 +81,14 @@ static void updateBatteryVoltage(void)
 void updateBattery(void)
 {
     updateBatteryVoltage();
-    
+
     /* battery has just been connected*/
     if (batteryState == BATTERY_NOT_PRESENT && vbat > VBATT_PRESENT_THRESHOLD_MV)
     {
         /* Actual battery state is calculated below, this is really BATTERY_PRESENT */
         batteryState = BATTERY_OK;
         /* wait for VBatt to stabilise then we can calc number of cells
-        (using the filtered value takes a long time to ramp up) 
+        (using the filtered value takes a long time to ramp up)
         We only do this on the ground so don't care if we do block, not
         worse than original code anyway*/
         delay(VBATTERY_STABLE_DELAY);
@@ -110,7 +110,7 @@ void updateBattery(void)
         batteryCellCount = 0;
         batteryWarningVoltage = 0;
         batteryCriticalVoltage = 0;
-    }    
+    }
 
     switch(batteryState)
     {

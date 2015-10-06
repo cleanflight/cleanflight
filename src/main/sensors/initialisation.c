@@ -479,7 +479,7 @@ static void detectBaro(baroSensor_e baroHardwareToUse)
                 break;
             }
 #endif
-	    ; // fallthough
+            ; // fallthough
         case BARO_BMP280:
 #ifdef USE_BARO_BMP280
             if (bmp280Detect(&baro)) {

@@ -90,9 +90,9 @@ enum {
 };
 
 /* VBAT monitoring interval (in microseconds) - 1s*/
-#define VBATINTERVAL (6 * 3500)       
+#define VBATINTERVAL (6 * 3500)
 /* IBat monitoring interval (in microseconds) - 6 default looptimes */
-#define IBATINTERVAL (6 * 3500)       
+#define IBATINTERVAL (6 * 3500)
 
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
@@ -141,7 +141,7 @@ void updateGtuneState(void)
         }
     } else {
         if (FLIGHT_MODE(GTUNE_MODE) && ARMING_FLAG(ARMED)) {
-    	    DISABLE_FLIGHT_MODE(GTUNE_MODE);
+            DISABLE_FLIGHT_MODE(GTUNE_MODE);
         }
     }
 }
@@ -584,7 +584,7 @@ void processRx(void)
 
     if ((IS_RC_MODE_ACTIVE(BOXANGLE) || (feature(FEATURE_FAILSAFE) && failsafeIsActive())) && (sensors(SENSOR_ACC))) {
         // bumpless transfer to Level mode
-    	canUseHorizonMode = false;
+        canUseHorizonMode = false;
 
         if (!FLIGHT_MODE(ANGLE_MODE)) {
             pidResetErrorAngle();
@@ -675,14 +675,14 @@ void filterRc(void){
     uint16_t rxRefreshRate, filteredCycleTime;
 
     // Set RC refresh rate for sampling and channels to filter
-   	initRxRefreshRate(&rxRefreshRate);
+    initRxRefreshRate(&rxRefreshRate);
 
     filteredCycleTime = filterApplyPt1(cycleTime, &filteredCycleTimeState, 1);
     rcInterpolationFactor = rxRefreshRate / filteredCycleTime + 1;
 
     if (isRXDataNew) {
         for (int channel=0; channel < 4; channel++) {
-        	deltaRC[channel] = rcCommand[channel] -  (lastCommand[channel] - deltaRC[channel] * factor / rcInterpolationFactor);
+            deltaRC[channel] = rcCommand[channel] -  (lastCommand[channel] - deltaRC[channel] * factor / rcInterpolationFactor);
             lastCommand[channel] = rcCommand[channel];
         }
 
@@ -764,7 +764,7 @@ void loop(void)
             static filterStatePt1_t gyroADCState[XYZ_AXIS_COUNT];
 
             for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-        	    gyroADC[axis] = filterApplyPt1(gyroADC[axis], &gyroADCState[axis], currentProfile->pidProfile.gyro_cut_hz);
+                gyroADC[axis] = filterApplyPt1(gyroADC[axis], &gyroADCState[axis], currentProfile->pidProfile.gyro_cut_hz);
             }
         }
 
@@ -780,7 +780,7 @@ void loop(void)
 
 #ifdef MAG
         if (sensors(SENSOR_MAG)) {
-        	updateMagHold();
+            updateMagHold();
         }
 #endif
 
