@@ -73,6 +73,11 @@ void useFailsafeConfig(failsafeConfig_t *failsafeConfigToUse)
     failsafeReset();
 }
 
+bool shouldIgnoreSerialRxOnFailsafe(void)
+{
+    return feature(FEATURE_FAILSAFE) && failsafeConfig->failsafe_ignore_serialrx == 1;
+}
+
 void failsafeInit(rxConfig_t *intialRxConfig, uint16_t deadband3d_throttle)
 {
     rxConfig = intialRxConfig;

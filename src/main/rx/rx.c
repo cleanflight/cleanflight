@@ -441,10 +441,15 @@ static void detectAndApplySignalLossBehaviour(void)
     uint16_t sample;
     bool useValueFromRx = true;
     bool rxIsDataDriven = isRxDataDriven();
+    bool useRxFailValues = false;
 
     if (!rxSignalReceived) {
         if (rxIsDataDriven && rxDataReceived) {
-            // use the values from the RX
+            if (shouldIgnoreSerialRxOnFailsafe()) {
+                useRxFailValues = true;
+            } else {
+                // use the values from the RX
+            }
         } else {
             useValueFromRx = false;
         }
@@ -458,7 +463,7 @@ static void detectAndApplySignalLossBehaviour(void)
 
         bool validPulse = isPulseValid(sample);
 
-        if (!validPulse) {
+        if (!validPulse || useRxFailValues) {
             sample = getRxfailValue(channel);
         }
 

@@ -180,5 +180,10 @@ void failsafeOnValidDataFailed(void)
 {
 }
 
+bool shouldIgnoreSerialRxOnFailsafe(void)
+{
+    return false;
+}
+
 }
 
