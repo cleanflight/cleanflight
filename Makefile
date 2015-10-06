@@ -305,6 +305,7 @@ NAZE_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/barometer_bmp280.c \
 		   drivers/bus_spi.c \
@@ -348,6 +349,7 @@ EUSTM32F103RC_SRC	 = startup_stm32f10x_hd_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
@@ -383,6 +385,7 @@ OLIMEXINO_SRC	 = startup_stm32f10x_md_gcc.S \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/bus_spi.c \
 		   drivers/compass_hmc5883l.c \
@@ -445,6 +448,7 @@ CC3D_SRC	 = \
 		   drivers/adc.c \
 		   drivers/adc_stm32f10x.c \
 		   drivers/barometer_bmp085.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/bus_spi.c \
 		   drivers/bus_i2c_stm32f10x.c \
@@ -516,6 +520,7 @@ STM32F3DISCOVERY_SRC	 = \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/accgyro_l3g4200d.c \
 		   drivers/barometer_ms5611.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/compass_ak8975.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
@@ -544,6 +549,7 @@ SPARKY_SRC	 = \
 		   drivers/accgyro_mpu.c \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/barometer_ms5611.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/compass_ak8975.c \
 		   drivers/serial_usb_vcp.c \
 		   $(HIGHEND_SRC) \
@@ -570,6 +576,7 @@ SPRACINGF3_SRC	 = \
 		   drivers/accgyro_mpu.c \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/barometer_ms5611.c \
+		   drivers/barometer_bmp280.c \
 		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
