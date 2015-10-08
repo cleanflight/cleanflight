@@ -1070,38 +1070,41 @@ static bool blackboxWriteSysinfo()
             xmitState.u.serialBudget -= blackboxPrintf("H Firmware date:%s %s\n", buildDate, buildTime);
         break;
         case 4:
-            xmitState.u.serialBudget -= blackboxPrintf("H P interval:%d/%d\n", masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
+            xmitState.u.serialBudget -= blackboxPrintf("H Device UID:0x%x%x%x\n", U_ID_0, U_ID_1, U_ID_2);
         break;
         case 5:
-            xmitState.u.serialBudget -= blackboxPrintf("H rcRate:%d\n", masterConfig.controlRateProfiles[masterConfig.current_profile_index].rcRate8);
+            xmitState.u.serialBudget -= blackboxPrintf("H P interval:%d/%d\n", masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
         break;
         case 6:
-            xmitState.u.serialBudget -= blackboxPrintf("H minthrottle:%d\n", masterConfig.escAndServoConfig.minthrottle);
+            xmitState.u.serialBudget -= blackboxPrintf("H rcRate:%d\n", masterConfig.controlRateProfiles[masterConfig.current_profile_index].rcRate8);
         break;
         case 7:
-            xmitState.u.serialBudget -= blackboxPrintf("H maxthrottle:%d\n", masterConfig.escAndServoConfig.maxthrottle);
+            xmitState.u.serialBudget -= blackboxPrintf("H minthrottle:%d\n", masterConfig.escAndServoConfig.minthrottle);
         break;
         case 8:
-            xmitState.u.serialBudget -= blackboxPrintf("H gyro.scale:0x%x\n", castFloatBytesToInt(gyro.scale));
+            xmitState.u.serialBudget -= blackboxPrintf("H maxthrottle:%d\n", masterConfig.escAndServoConfig.maxthrottle);
         break;
         case 9:
-            xmitState.u.serialBudget -= blackboxPrintf("H acc_1G:%u\n", acc_1G);
+            xmitState.u.serialBudget -= blackboxPrintf("H gyro.scale:0x%x\n", castFloatBytesToInt(gyro.scale));
         break;
         case 10:
+            xmitState.u.serialBudget -= blackboxPrintf("H acc_1G:%u\n", acc_1G);
+        break;
+        case 11:
             if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_VBAT)) {
                 xmitState.u.serialBudget -= blackboxPrintf("H vbatscale:%u\n", masterConfig.batteryConfig.vbatscale);
             } else {
                 xmitState.headerIndex += 2; // Skip the next two vbat fields too
             }
         break;
-        case 11:
+        case 12:
             xmitState.u.serialBudget -= blackboxPrintf("H vbatcellvoltage:%u,%u,%u\n", masterConfig.batteryConfig.vbatmincellvoltage,
                 masterConfig.batteryConfig.vbatwarningcellvoltage, masterConfig.batteryConfig.vbatmaxcellvoltage);
         break;
-        case 12:
+        case 13:
             xmitState.u.serialBudget -= blackboxPrintf("H vbatref:%u\n", vbatReference);
         break;
-        case 13:
+        case 14:
             //Note: Log even if this is a virtual current meter, since the virtual meter uses these parameters too:
             if (feature(FEATURE_CURRENT_METER)) {
                 xmitState.u.serialBudget -= blackboxPrintf("H currentMeter:%d,%d\n", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
