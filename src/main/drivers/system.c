@@ -72,6 +72,39 @@ void EXTI15_10_IRQHandler(void)
     }
 }
 
+void EXTI9_5_IRQHandler(void)
+{
+    for (int index = 0; index < EXTI15_10_CALLBACK_HANDLER_COUNT; index++) {
+        extiCallbackHandler *fn = exti15_10_handlers[index];
+        if (!fn) {
+            continue;
+        }
+        fn();
+    }
+}
+
+void EXTI4_IRQHandler(void)
+{
+    for (int index = 0; index < EXTI15_10_CALLBACK_HANDLER_COUNT; index++) {
+        extiCallbackHandler *fn = exti15_10_handlers[index];
+        if (!fn) {
+            continue;
+        }
+        fn();
+    }
+}
+
+void EXTI0_IRQHandler(void)
+{
+    for (int index = 0; index < EXTI15_10_CALLBACK_HANDLER_COUNT; index++) {
+        extiCallbackHandler *fn = exti15_10_handlers[index];
+        if (!fn) {
+            continue;
+        }
+        fn();
+    }
+}
+
 // cycles per microsecond
 static uint32_t usTicks = 0;
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.

@@ -160,12 +160,12 @@
 #define WS2811_DMA_CHANNEL              DMA1_Channel2
 #define WS2811_IRQ                      DMA1_Channel2_IRQn
 
-#define GPS
 #define BLACKBOX
-#define TELEMETRY
-#define SERIAL_RX
-#define AUTOTUNE
 #define DISPLAY
+#define GPS
+#define GTUNE
+#define SERIAL_RX
+#define TELEMETRY
 #define UG2864_BUS I2C_DEVICE_INT
 
 #define USE_SERVOS

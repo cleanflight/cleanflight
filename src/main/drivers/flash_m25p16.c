@@ -202,11 +202,7 @@ static bool m25p16_readIdentification()
 bool m25p16_init()
 {
     //Maximum speed for standard READ command is 20mHz, other commands tolerate 25mHz
-#ifdef STM32F40_41xxx
-    spiSetDivisor(M25P16_SPI_INSTANCE, SPI_21MHZ_CLOCK_DIVIDER);
-#else
-    spiSetDivisor(M25P16_SPI_INSTANCE, SPI_18MHZ_CLOCK_DIVIDER);
-#endif
+    spiSetDivisor(M25P16_SPI_INSTANCE, HIGH_SPEED_SPI);
 
     return m25p16_readIdentification();
 }

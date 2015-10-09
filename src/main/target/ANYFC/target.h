@@ -46,6 +46,7 @@
 
 #define BEEPER_INVERTED
 
+#define USE_MPU_DATA_READY_SIGNAL
 #define ACC
 #define USE_ACC_SPI_MPU6000
 #define ACC_SPI_MPU6000_ALIGN CW270_DEG
@@ -161,6 +162,6 @@
 #define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
-#define AUTOTUNE
+#define GTUNE
 #define USE_SERVOS
 #define USE_CLI
