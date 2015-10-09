@@ -331,7 +331,7 @@ void handleSmartPortTelemetry(void)
                 break;
             case FSSP_DATAID_CURRENT    :
                 if (feature(FEATURE_CURRENT_METER)) {
-                    smartPortSendPackage(id, amperage); // given in 10mA steps, unknown requested unit
+                    smartPortSendPackage(id, amperage / 10); // given in 10mA steps, unknown requested unit
                     smartPortHasRequest = 0;
                 }
                 break;
@@ -421,7 +421,7 @@ void handleSmartPortTelemetry(void)
                     tmpi += 10;
                 if (FLIGHT_MODE(HORIZON_MODE))
                     tmpi += 20;
-                if (FLIGHT_MODE(AUTOTUNE_MODE))
+                if (FLIGHT_MODE(UNUSED_MODE))
                     tmpi += 40;
                 if (FLIGHT_MODE(PASSTHRU_MODE))
                     tmpi += 40;

@@ -47,7 +47,7 @@
 #define L3GD20_CS_GPIO                  GPIOE
 #define L3GD20_CS_PIN                   GPIO_Pin_3
 
-#define GYRO_L3GD20_ALIGN CW90_DEG
+#define GYRO_L3GD20_ALIGN CW270_DEG
 
 #define ACC
 #define USE_ACC_LSM303DLHC
@@ -91,10 +91,10 @@
 
 #define BLACKBOX
 #define GPS
+#define GTUNE
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM16
 #define TELEMETRY
 #define SERIAL_RX
-#define AUTOTUNE
 #define USE_SERVOS
 #define USE_CLI

@@ -75,8 +75,6 @@
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, escAndServoConfig_t *escAndServoConfigToUse, pidProfile_t *pidProfileToUse);
 
-#define FLASH_TO_RESERVE_FOR_CONFIG 0x800
-
 #if !defined(FLASH_SIZE)
 #error "Flash size not defined for target. (specify in KB)"
 #endif
@@ -118,6 +116,12 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #error "Flash page count not defined for target."
 #endif
 
+#if FLASH_SIZE <= 128
+#define FLASH_TO_RESERVE_FOR_CONFIG 0x800
+#else
+#define FLASH_TO_RESERVE_FOR_CONFIG 0x1000
+#endif
+
 // use the last flash pages for storage
 #define CONFIG_START_FLASH_ADDRESS (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG))
 
@@ -128,7 +132,7 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const uint8_t EEPROM_CONF_VERSION = 104;
+static const uint8_t EEPROM_CONF_VERSION = 106;
 
 static void resetAccelerometerTrims(flightDynamicsTrims_t *accelerometerTrims)
 {
@@ -175,18 +179,32 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->pterm_cut_hz = 0;
     pidProfile->gyro_cut_hz = 0;
 
-    pidProfile->P_f[ROLL] = 2.5f;     // new PID with preliminary defaults test carefully
-    pidProfile->I_f[ROLL] = 0.6f;
-    pidProfile->D_f[ROLL] = 0.06f;
-    pidProfile->P_f[PITCH] = 2.5f;
-    pidProfile->I_f[PITCH] = 0.6f;
-    pidProfile->D_f[PITCH] = 0.06f;
-    pidProfile->P_f[YAW] = 8.0f;
-    pidProfile->I_f[YAW] = 0.5f;
-    pidProfile->D_f[YAW] = 0.05f;
+    pidProfile->P_f[ROLL] = 1.5f;     // new PID with preliminary defaults test carefully
+    pidProfile->I_f[ROLL] = 0.4f;
+    pidProfile->D_f[ROLL] = 0.03f;
+    pidProfile->P_f[PITCH] = 1.5f;
+    pidProfile->I_f[PITCH] = 0.4f;
+    pidProfile->D_f[PITCH] = 0.03f;
+    pidProfile->P_f[YAW] = 2.5f;
+    pidProfile->I_f[YAW] = 1.0f;
+    pidProfile->D_f[YAW] = 0.00f;
     pidProfile->A_level = 5.0f;
     pidProfile->H_level = 3.0f;
     pidProfile->H_sensitivity = 75;
+
+    pidProfile->pid5_oldyw = 0;
+
+#ifdef GTUNE
+    pidProfile->gtune_lolimP[ROLL] = 10;          // [0..200] Lower limit of ROLL P during G tune.
+    pidProfile->gtune_lolimP[PITCH] = 10;         // [0..200] Lower limit of PITCH P during G tune.
+    pidProfile->gtune_lolimP[YAW] = 10;           // [0..200] Lower limit of YAW P during G tune.
+    pidProfile->gtune_hilimP[ROLL] = 100;         // [0..200] Higher limit of ROLL P during G tune. 0 Disables tuning for that axis.
+    pidProfile->gtune_hilimP[PITCH] = 100;        // [0..200] Higher limit of PITCH P during G tune. 0 Disables tuning for that axis.
+    pidProfile->gtune_hilimP[YAW] = 100;          // [0..200] Higher limit of YAW P during G tune. 0 Disables tuning for that axis.
+    pidProfile->gtune_pwr = 0;                    // [0..10] Strength of adjustment
+    pidProfile->gtune_settle_time = 450;          // [200..1000] Settle time in ms
+    pidProfile->gtune_average_cycles = 16;        // [8..128] Number of looptime cycles used for gyro average calculation
+#endif
 }
 
 #ifdef GPS
@@ -397,6 +415,7 @@ static void resetConf(void)
     masterConfig.gyroConfig.gyroMovementCalibrationThreshold = 32;
 
     masterConfig.mag_hardware = MAG_DEFAULT;     // default/autodetect
+    masterConfig.baro_hardware = BARO_DEFAULT;   // default/autodetect
 
     resetBatteryConfig(&masterConfig.batteryConfig);
 
@@ -413,12 +432,13 @@ static void resetConf(void)
     for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
         rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &masterConfig.rxConfig.failsafe_channel_configurations[i];
         channelFailsafeConfiguration->mode = (i < NON_AUX_CHANNEL_COUNT) ? RX_FAILSAFE_MODE_AUTO : RX_FAILSAFE_MODE_HOLD;
-        channelFailsafeConfiguration->step = (i == THROTTLE) ? masterConfig.rxConfig.rx_min_usec : CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
+        channelFailsafeConfiguration->step = (i == THROTTLE) ? CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.rx_min_usec) : CHANNEL_VALUE_TO_RXFAIL_STEP(masterConfig.rxConfig.midrc);
     }
 
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
     masterConfig.rxConfig.rssi_ppm_invert = 0;
+    masterConfig.rxConfig.rcSmoothing = 1;
 
     resetAllRxChannelRangeConfigurations(masterConfig.rxConfig.channelRanges);
 
@@ -824,6 +844,11 @@ void validateAndFixConfig(void)
     }
 #endif
 
+#ifdef STM32F303xC
+    // hardware supports serial port inversion, make users life easier for those that want to connect SBus RX's
+    masterConfig.telemetryConfig.telemetry_inversion = 1;
+#endif
+
     /*
      * The retarded_arm setting is incompatible with pid_at_min_throttle because full roll causes the craft to roll over on the ground.
      * The pid_at_min_throttle implementation ignores yaw on the ground, but doesn't currently ignore roll when retarded_arm is enabled.
@@ -862,7 +887,7 @@ void readEEPROM(void)
 {
     // Sanity check
     if (!isEEPROMContentValid())
-        failureMode(10);
+        failureMode(FAILURE_INVALID_EEPROM_CONTENTS);
 
     suspendRxSignal();
 
@@ -942,7 +967,7 @@ void writeEEPROM(void)
 
     // Flash write failed - just die now
     if (status != FLASH_COMPLETE || !isEEPROMContentValid()) {
-        failureMode(10);
+        failureMode(FAILURE_FLASH_WRITE_FAILED);
     }
 
     resumeRxSignal();

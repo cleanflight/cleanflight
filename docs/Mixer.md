@@ -42,6 +42,10 @@ You can also use the Command Line Interface (CLI) to set the mixer type:
 | CUSTOM AIRPLANE  | User-defined airplane     |                |                  |
 | CUSTOM TRICOPTER | User-defined tricopter    |                |                  |
 
+## Servo configuration
+
+The cli `servo` command defines the settings for the servo outputs. 
+The cli mixer `smix` command controllers how the mixer maps internal FC data (RC input, PID stabilisation output, channel forwarding, etc) to servo outputs.
 
 ## Servo filtering
 
@@ -98,6 +102,7 @@ Note: the `mmix` command may show a motor mix that is not active, custom motor m
 Custom servo mixing rules can be applied to each servo.  Rules are applied in the order they are defined.
 
 | id | Servo slot |
+|----|--------------|
 | 0  | GIMBAL PITCH |
 | 1  | GIMBAL ROLL |
 | 2  | FLAPS |
@@ -109,13 +114,13 @@ Custom servo mixing rules can be applied to each servo.  Rules are applied in th
 
 
 | id | Input sources |
-| -- | ------------- |
+|----|-----------------|
 | 0  | Stabilised ROLL |
 | 1  | Stabilised PITCH |
 | 2  | Stabilised YAW |
 | 3  | Stabilised THROTTLE |
 | 4  | RC ROLL |
-| 5  | RC ITCH |
+| 5  | RC PITCH |
 | 6  | RC YAW |
 | 7  | RC THROTTLE |
 | 8  | RC AUX 1 |
@@ -198,5 +203,65 @@ profile 1
 smix reverse 5 2 r
 profile 2
 smix reverse 5 2 r
+
+```
+
+### Example 4: Custom Airplane for 6 Pinout Boards like [Afromini Amaze rev3 (Mini Naze32)](http://abusemark.com/store/index.php?main_page=product_info&cPath=1&products_id=45)
+Here is an example of a custom single engine plane.
+Servo control has been moved from pins 3,4,5,6 to 2,3,4,5 to acomidate only 6 pinouts.
+
+| Pins | Outputs          |
+|------|------------------|
+| 1    | Main Motor       |
+| 2    | [EMPTY]          |
+| 3    | Roll / Aileron   |
+| 4    | Roll / Aileron   |
+| 5    | Yaw / Rudder     |
+| 6    | Pitch / Elevator |
+
+```
+mixer CUSTOMAIRPLANE
+mmix reset
+mmix 0 1.0 0.0 0.0 0.0  # Engine
+
+smix reset
+# Rule	Servo	Source	Rate	Speed	Min	Max	Box
+smix 0 2 0 100 0 0 100 0  # Roll / Aileron
+smix 1 3 0 100 0 0 100 0  # Roll / Aileron
+smix 3 4 2 100 0 0 100 0  # Yaw / Rudder
+smix 2 5 1 100 0 0 100 0  # Pitch / Elevator
+
+```
+
+
+### Example 5: Custom Airplane with Differential Thrust
+Here is an example of a custom twin engine plane with [Differential Thrust](http://rcvehicles.about.com/od/rcairplanes/ss/RCAirplaneBasic.htm#step8)
+Motors take the first 2 pins, the servos take pins as indicated in the [Servo slot] chart above.
+Settings bellow have motor yaw influence at "0.3", you can change this nuber to have more or less differential thrust over the two motors.
+Note: You can look at the Motors tab in [Cleanflight Cofigurator](https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb?hl=en) to see motor and servo outputs.
+
+| Pins | Outputs          |
+|------|------------------|
+| 1    | Left Engine      |
+| 2    | Right Engine     |
+| 3    | [EMPTY]          |
+| 4    | Roll / Aileron   |
+| 5    | Roll / Aileron   |
+| 6    | Yaw / Rudder     |
+| 7    | Pitch / Elevator |
+| 8    | [EMPTY]          |
+
+```
+mixer CUSTOMAIRPLANE
+mmix reset
+mmix 0 1.0 0.0 0.0 0.3  # Left Engine
+mmix 1 1.0 0.0 0.0 -0.3  # Right Engine
+
+smix reset
+# Rule	Servo	Source	Rate	Speed	Min	Max	Box
+smix 0 3 0 100 0 0 100 0  # Roll / Aileron
+smix 1 4 0 100 0 0 100 0  # Roll / Aileron
+smix 3 5 2 100 0 0 100 0  # Yaw / Rudder
+smix 2 6 1 100 0 0 100 0  # Pitch / Elevator
 
 ```

@@ -54,12 +54,10 @@
 #define L3G4200D_DLPF_78HZ       0x80
 #define L3G4200D_DLPF_93HZ       0xC0
 
-static uint8_t mpuLowPassFilter = L3G4200D_DLPF_32HZ;
+static void l3g4200dInit(uint16_t lpf);
+static bool l3g4200dRead(int16_t *gyroADC);
 
-static void l3g4200dInit(void);
-static void l3g4200dRead(int16_t *gyroADC);
-
-bool l3g4200dDetect(gyro_t *gyro, uint16_t lpf)
+bool l3g4200dDetect(gyro_t *gyro)
 {
     uint8_t deviceid;
 
@@ -75,7 +73,15 @@ bool l3g4200dDetect(gyro_t *gyro, uint16_t lpf)
     // 14.2857dps/lsb scalefactor
     gyro->scale = 1.0f / 14.2857f;
 
-    // default LPF is set to 32Hz
+    return true;
+}
+
+static void l3g4200dInit(uint16_t lpf)
+{
+    bool ack;
+
+    uint8_t mpuLowPassFilter = L3G4200D_DLPF_32HZ;
+
     switch (lpf) {
         default:
             case 32:
@@ -92,31 +98,28 @@ bool l3g4200dDetect(gyro_t *gyro, uint16_t lpf)
             break;
     }
 
-    return true;
-}
-
-static void l3g4200dInit(void)
-{
-    bool ack;
-
     delay(100);
 
     ack = i2cWrite(L3G4200D_ADDRESS, L3G4200D_CTRL_REG4, L3G4200D_FS_SEL_2000DPS);
     if (!ack)
-        failureMode(3);
+        failureMode(FAILURE_ACC_INIT);
 
     delay(5);
     i2cWrite(L3G4200D_ADDRESS, L3G4200D_CTRL_REG1, L3G4200D_POWER_ON | mpuLowPassFilter);
 }
 
 // Read 3 gyro values into user-provided buffer. No overrun checking is done.
-static void l3g4200dRead(int16_t *gyroADC)
+static bool l3g4200dRead(int16_t *gyroADC)
 {
     uint8_t buf[6];
 
-    i2cRead(L3G4200D_ADDRESS, L3G4200D_AUTOINCR | L3G4200D_GYRO_OUT, 6, buf);
+    if (!i2cRead(L3G4200D_ADDRESS, L3G4200D_AUTOINCR | L3G4200D_GYRO_OUT, 6, buf)) {
+        return false;
+    }
 
     gyroADC[X] = (int16_t)((buf[0] << 8) | buf[1]);
     gyroADC[Y] = (int16_t)((buf[2] << 8) | buf[3]);
     gyroADC[Z] = (int16_t)((buf[4] << 8) | buf[5]);
+
+    return true;
 }
