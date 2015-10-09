@@ -192,5 +192,7 @@ int constrain(int amt, int low, int high)
     UNUSED(high);
     return 0;
 }
+int32_t sonarGetMaxDistance(void) { return 400; }
 
+int32_t sonarGetTransitionDistance(void) { return 300; }
 }

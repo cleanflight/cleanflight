@@ -24,7 +24,7 @@
 #include "common/maths.h"
 #include "common/axis.h"
 
-#include "drivers/sonar_hcsr04.h"
+#include "drivers/pwm_rangers.h"
 #include "drivers/gpio.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
@@ -142,4 +142,19 @@ int32_t sonarGetLatestAltitude(void)
     return calculatedAltitude;
 }
 
+/**
+ * returns the maximum distance readable by the sonar
+ */
+ int32_t sonarGetMaxDistance(void)
+{
+    return hcsr04_get_max_distance();
+}
+
+/**
+ * returns the transition distance chosen for the sonar
+ */
+int32_t sonarGetTransitionDistance(void)
+{
+    return hcsr04_get_transition_distance();
+}
 #endif

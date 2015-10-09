@@ -55,7 +55,7 @@
 #include "drivers/compass_hmc5883l.h"
 #include "drivers/compass_ak8975.h"
 
-#include "drivers/sonar_hcsr04.h"
+#include "drivers/pwm_rangers.h"
 
 #include "config/runtime_config.h"
 

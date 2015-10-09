@@ -23,8 +23,7 @@
 #include "system.h"
 #include "gpio.h"
 #include "nvic.h"
-
-#include "sonar_hcsr04.h"
+#include "pwm_rangers.h"
 
 #ifdef SONAR
 
@@ -36,15 +35,25 @@
  * *** Warning: HC-SR04 operates at +5V ***
  *
  */
+/* Lidar Lite V2 is a laser range measurement using flight time
+ * when enabled (trigger low) it run continuously until disabled.
+ * The distance between the unit and the object is calculated
+ * by measuring the traveling time of light and output it as the width of a TTL pulse
+ * of 10µs per centimeter.
+ * *** Warning: Lidar Lite V2  operates at +5V (4.5v to 6v)***
+ */
 
 static uint32_t lastMeasurementAt;
 static volatile int32_t measurement = -1;
 static sonarHardware_t const *sonarHardware;
+static bool sonarIsLidarLite = false;
 
 static void ECHO_EXTI_IRQHandler(void)
 {
     static uint32_t timing_start;
+    static int32_t previous_measurement=0;
     uint32_t timing_stop;
+    uint32_t diff_timing;
 
     if (digitalIn(GPIOB, sonarHardware->echo_pin) != 0) {
         timing_start = micros();
@@ -52,6 +61,27 @@ static void ECHO_EXTI_IRQHandler(void)
         timing_stop = micros();
         if (timing_stop > timing_start) {
             measurement = timing_stop - timing_start;
+
+            // there are some spurious values arriving but always almost
+            // 1ms over or under (comes from LidarLite when has false detections)
+            // we detect them and remove the suspect ones (not dangerous as they
+            // are always surrounded by two good values)
+            // we detect them and remove the suspect ones
+
+            if(sonarIsLidarLite) {
+                // calculate difference
+                if(measurement>previous_measurement ) {
+                    diff_timing = measurement - previous_measurement;
+                } else {
+                    diff_timing = previous_measurement - measurement;
+                }
+                // remove it if in the filter
+                if(diff_timing>900 && diff_timing<1100) {
+                    measurement = previous_measurement;
+                } else {
+                    previous_measurement = measurement;
+                }
+            }
         }
     }
 
@@ -128,7 +158,17 @@ void hcsr04_init(const sonarHardware_t *initialSonarHardware)
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    lastMeasurementAt = millis() - 60; // force 1st measurement in hcsr04_get_distance()
+    // Lidar Lite Detection
+    digitalLo(GPIOB, sonarHardware->trigger_pin);    // ensure that HCsr04 stopped or LIDAR running
+    delay(10);  // case of spurious on hcsr04 (seen on the scope)
+    measurement = -1;
+    delay(100); // wait for 100 milliseconds (may be as low as 50ms)
+
+    if(measurement>-1) {
+        sonarIsLidarLite = true;
+    }
+
+    lastMeasurementAt = millis() - 60; // force 1st measurement in hcsr04_start_reading
 }
 
 // measurement reading is done asynchronously, using interrupt
@@ -144,6 +184,7 @@ void hcsr04_start_reading(void)
 
     lastMeasurementAt = now;
 
+    // start HCRS04
     digitalHi(GPIOB, sonarHardware->trigger_pin);
     //  The width of trig signal must be greater than 10us
     delayMicroseconds(11);
@@ -156,17 +197,47 @@ void hcsr04_start_reading(void)
  */
 int32_t hcsr04_get_distance(void)
 {
-    // The speed of sound is 340 m/s or approx. 29 microseconds per centimeter.
-    // The ping travels out and back, so to find the distance of the
-    // object we take half of the distance traveled.
-    //
-    // 340 m/s = 0.034 cm/microsecond = 29.41176471 *2 = 58.82352941 rounded to 59
-    int32_t distance = measurement / 59;
+    int32_t distance;
 
-    // this sonar range is up to 4meter , but 3meter is the safe working range (+tilted and roll)
-    if (distance > 300)
-        distance = -1;
+    if(!sonarIsLidarLite) {
+        // HCRS04 side
+        // The speed of sound is 340 m/s or approx. 29 microseconds per centimeter.
+        // The ping travels out and back, so to find the distance of the
+        // object we take half of the distance traveled.
+        //
+        // 340 m/s = 0.034 cm/microsecond = 29.41176471 *2 = 58.82352941 rounded to 59
+        distance = measurement / 59;
 
-    return distance;
+        // this sonar range is up to 4meter , but 3meter is the safe working range (+tilted and roll)
+        if (distance > 300)
+            distance = -1;
+    }
+    else {
+        // Lidar Lite side
+        // conversion is 10µs per centimeter
+		
+        distance = measurement / 10; // to get it in centimeters
+
+        if (distance > 3000 || distance==0) // max is 40m, clamped to 30m for security and out of range (0) set to -1
+            distance = -1;
+    }
+
+    return distance; // in centimeters
+}
+
+/**
+ * returns the maximum distance readable by the device
+ */
+ int32_t hcsr04_get_max_distance(void)
+{
+    return sonarIsLidarLite?4000:300;
+}
+
+/**
+ * returns the transition distance chosen for the device
+ */
+int32_t hcsr04_get_transition_distance(void)
+{
+    return sonarIsLidarLite?3000:200;
 }
 #endif
