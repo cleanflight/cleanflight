@@ -161,7 +161,18 @@ See Sparky schematic for CONN2 pinouts.
 
 ## TauLabs bootloader
 
-Flashing cleanflight will erase the TauLabs bootloader, this is not a problem and can easily be restored using the st flashloader tool.
+Flashing cleanflight will erase the TauLabs bootloader, this is not a problem and can easily be restored using the st flashloader tool or Cleanflight Configurator as detailed below.
+
+### Restoring Tau Labs Bootloader
+To restore the Tau Labs bootloader:
+* Download a bootloader image, click [bl_sparky.hex](assets/binary/bl_sparky.hex), right click `Raw` button and save as a hex file.
+* Flash the bootloader image using the Cleanflight Configurator app firmware flasher, choosing to load a local firmware (or by another method of your choice should you so desire). 
+* Unplug the board.
+* Open Tau Labs GCS and switch to the Firmware tab.
+* Click Rescue and replug the board. 
+* You can now flash Tau Labs as usual.
+
+Note: the hex file provided was compiled from the Tau Labs "Endomorphism" release source using the command `make bl_sparky_hex`.
 
 # Serial Ports
 
