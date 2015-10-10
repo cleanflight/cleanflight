@@ -81,6 +81,7 @@ void mpu6500GyroInit(uint16_t lpf)
         gpioInit(GPIOC, &gpio);
     }
 #endif
+    mpuIntExtiInit();
 
     uint8_t mpuLowPassFilter = determineMPULPF(lpf);
 
