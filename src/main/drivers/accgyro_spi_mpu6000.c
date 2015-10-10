@@ -200,8 +200,9 @@ static void mpu6000AccAndGyroInit(void) {
     if (mpuSpi6000InitDone) {
         return;
     }
-    spiSetDivisor(MPU6000_SPI_INSTANCE, LOW_SPEED_SPI);
+    mpuIntExtiInit();
 
+    spiSetDivisor(MPU6000_SPI_INSTANCE, LOW_SPEED_SPI);
 
     // Device Reset
     mpu6000WriteRegister(MPU6000_PWR_MGMT_1, BIT_H_RESET);
@@ -233,6 +234,14 @@ static void mpu6000AccAndGyroInit(void) {
     // Gyro +/- 1000 DPS Full Scale
     mpu6000WriteRegister(MPU6000_GYRO_CONFIG, BITS_FS_2000DPS);
     delayMicroseconds(1);
+
+    mpu6000WriteRegister(MPU6000_INT_PIN_CFG, 0 << 7 | 0 << 6 | 0 << 5 | 1 << 4 | 0 << 3 | 0 << 2 | 0 << 1 | 0 << 0);  // INT_ANYRD_2CLEAR
+    delayMicroseconds(1);
+
+#ifdef USE_MPU_DATA_READY_SIGNAL
+    mpu6000WriteRegister(MPU6000_INT_ENABLE, 0x01); // RAW_RDY_EN interrupt enable
+    delayMicroseconds(1);
+#endif
 
     spiSetDivisor(MPU6000_SPI_INSTANCE, HIGH_SPEED_SPI);  // High speed SPI clock
 
