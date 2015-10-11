@@ -464,6 +464,7 @@ CC3D_SRC = \
 		   drivers/serial_softserial.c \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f10x.c \
+		   drivers/serial_escserial.c \
 		   drivers/sonar_hcsr04.c \
 		   drivers/sound_beeper_stm32f10x.c \
 		   drivers/system_stm32f10x.c \
@@ -536,6 +537,7 @@ COLIBRI_RACE_SRC = \
 		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/serial_usb_vcp.c \
+		   drivers/serial_escserial.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)

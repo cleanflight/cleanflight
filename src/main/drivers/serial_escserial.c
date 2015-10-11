@@ -112,7 +112,11 @@ static void escSerialGPIOConfig(GPIO_TypeDef *gpio, uint16_t pin, GPIO_Mode mode
 
 void serialInputPortConfig(const timerHardware_t *timerHardwarePtr)
 {
+#ifdef STM32F10X
+    escSerialGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, Mode_IPU);
+#else
     escSerialGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, Mode_AF_PP_PU);
+#endif
     //escSerialGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, timerHardwarePtr->gpioInputMode);
     timerChClearCCFlag(timerHardwarePtr);
     timerChITConfig(timerHardwarePtr,ENABLE);
