@@ -110,7 +110,7 @@ uint32_t hwVersion = 0;
 static serialConfig_t *serialConfig;
 static serialPort_t *gpsPort;
 
-typedef struct gpsInitData_t {
+typedef struct gpsInitData_s {
     uint8_t index;
     uint8_t baudrateIndex; // see baudRate_e
     const char *ubx;
@@ -457,7 +457,7 @@ void gpsThread(void)
 {
     // read out available GPS bytes
     if (gpsPort) {
-        while (serialTotalBytesWaiting(gpsPort))
+        while (serialRxBytesWaiting(gpsPort))
             gpsNewData(serialRead(gpsPort));
     }
 
@@ -1479,14 +1479,14 @@ void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort)
 #endif
     char c;
     while(1) {
-        if (serialTotalBytesWaiting(gpsPort)) {
+        if (serialRxBytesWaiting(gpsPort)) {
             LED0_ON;
             c = serialRead(gpsPort);
             gpsNewData(c);
             serialWrite(gpsPassthroughPort, c);
             LED0_OFF;
         }
-        if (serialTotalBytesWaiting(gpsPassthroughPort)) {
+        if (serialRxBytesWaiting(gpsPassthroughPort)) {
             LED1_ON;
             serialWrite(gpsPort, serialRead(gpsPassthroughPort));
             LED1_OFF;
