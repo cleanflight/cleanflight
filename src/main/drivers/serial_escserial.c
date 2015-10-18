@@ -713,10 +713,24 @@ bool isEscSerialTransmitBufferEmpty(serialPort_t *instance)
     return instance->txBufferHead == instance->txBufferTail;
 }
 
+uint8_t escSerialTxBytesFree(serialPort_t *instance)
+{
+    if ((instance->mode & MODE_TX) == 0) {
+        return 0;
+    }
+
+    escSerial_t *s = (escSerial_t *)instance;
+
+    uint8_t bytesUsed = (s->port.txBufferHead - s->port.txBufferTail) & (s->port.txBufferSize - 1);
+
+    return (s->port.txBufferSize - 1) - bytesUsed;
+}
+
 const struct serialPortVTable escSerialVTable[] = {
     {
         escSerialWriteByte,
         escSerialTotalBytesWaiting,
+        escSerialTxBytesFree,
         escSerialReadByte,
         escSerialSetBaudRate,
         isEscSerialTransmitBufferEmpty,
@@ -832,18 +846,18 @@ void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output, uin
     escPort = openEscSerial(ESCSERIAL1, NULL, motor_output, 19200, 0, mode);
     uint8_t ch;
     while(1) {
-        if (serialTotalBytesWaiting(escPort)) {
+        if (serialRxBytesWaiting(escPort)) {
             LED0_ON;
-            while(serialTotalBytesWaiting(escPort))
+            while(serialRxBytesWaiting(escPort))
             {
             	ch = serialRead(escPort);
             	serialWrite(escPassthroughPort, ch);
             }
             LED0_OFF;
         }
-        if (serialTotalBytesWaiting(escPassthroughPort)) {
+        if (serialRxBytesWaiting(escPassthroughPort)) {
             LED1_ON;
-            while(serialTotalBytesWaiting(escPassthroughPort))
+            while(serialRxBytesWaiting(escPassthroughPort))
             {
             	ch = serialRead(escPassthroughPort);
             	exitEsc = ProcessExitCommand(ch);

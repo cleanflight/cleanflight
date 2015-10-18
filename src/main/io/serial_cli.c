@@ -204,9 +204,10 @@ static const char * const sensorHardwareNames[4][11] = {
 
 typedef struct {
     const char *name;
+#ifndef SKIP_CLI_COMMAND_HELP
     const char *description;
     const char *args;
-
+#endif
     void (*func)(char *cmdline);
 } clicmd_t;
 
@@ -222,8 +223,6 @@ typedef struct {
 #define CLI_COMMAND_DEF(name, description, args, method) \
 { \
     name, \
-    NULL, \
-    NULL, \
     method \
 }
 #endif
@@ -1763,12 +1762,14 @@ static void cliHelp(char *cmdline)
 
     for (i = 0; i < CMD_COUNT; i++) {
         cliPrint(cmdTable[i].name);
+#ifndef SKIP_CLI_COMMAND_HELP
         if (cmdTable[i].description) {
             printf(" - %s", cmdTable[i].description);
         }
         if (cmdTable[i].args) {
             printf("\r\n\t%s", cmdTable[i].args);
         }
+#endif
         cliPrint("\r\n");
     }
 }
@@ -2214,7 +2215,7 @@ void cliProcess(void)
         return;
     }
 
-    while (serialTotalBytesWaiting(cliPort)) {
+    while (serialRxBytesWaiting(cliPort)) {
         uint8_t c = serialRead(cliPort);
         if (c == '\t' || c == '?') {
             // do tab completion

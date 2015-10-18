@@ -44,6 +44,9 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 12
 
+#define DEBUG_MPU_DATA_READY_INTERRUPT
+#define USE_MPU_DATA_READY_SIGNAL
+
 #define GYRO
 #define USE_GYRO_SPI_MPU6000
 
@@ -114,14 +117,6 @@
 #define SONAR
 #define USE_SERVOS
 #define USE_CLI
-
-#if defined(OPBL)
-// disabled some features for OPBL build due to code size.
-#undef DISPLAY
-#undef SONAR
-#define SKIP_CLI_COMMAND_HELP
-#endif
-
 
 #define SPEKTRUM_BIND
 // USART3, PB11 (Flexport)
