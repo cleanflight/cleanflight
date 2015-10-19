@@ -34,40 +34,35 @@
 
 uint16_t calibratingG = 0;
 int16_t gyroADC[XYZ_AXIS_COUNT];
-int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
+int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = {0, 0, 0};
+int16_t gyroZeroRemainder[FLIGHT_DYNAMICS_INDEX_COUNT] = {0, 0, 0};
 
 static gyroConfig_t *gyroConfig;
 
-gyro_t gyro;                      // gyro access functions
+gyro_t gyro; // gyro access functions
 sensor_align_e gyroAlign = 0;
 
-void useGyroConfig(gyroConfig_t *gyroConfigToUse)
-{
+void useGyroConfig(gyroConfig_t *gyroConfigToUse) {
     gyroConfig = gyroConfigToUse;
 }
 
-void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired)
-{
+void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired) {
     calibratingG = calibrationCyclesRequired;
 }
 
-bool isGyroCalibrationComplete(void)
-{
+bool isGyroCalibrationComplete(void) {
     return calibratingG == 0;
 }
 
-bool isOnFinalGyroCalibrationCycle(void)
-{
+bool isOnFinalGyroCalibrationCycle(void) {
     return calibratingG == 1;
 }
 
-bool isOnFirstGyroCalibrationCycle(void)
-{
+bool isOnFirstGyroCalibrationCycle(void) {
     return calibratingG == CALIBRATING_GYRO_CYCLES;
 }
 
-static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThreshold)
-{
+static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThreshold) {
     int8_t axis;
     static int32_t g[3];
     static stdev_t var[3];
@@ -95,7 +90,8 @@ static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThresho
                 gyroSetCalibrationCycles(CALIBRATING_GYRO_CYCLES);
                 return;
             }
-            gyroZero[axis] = (g[axis] + (CALIBRATING_GYRO_CYCLES / 2)) / CALIBRATING_GYRO_CYCLES;
+            gyroZero[axis] = g[axis] / CALIBRATING_GYRO_CYCLES;
+            gyroZeroRemainder[axis] = g[axis] - (gyroZero[axis] * CALIBRATING_GYRO_CYCLES);
         }
     }
 
@@ -106,16 +102,25 @@ static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThresho
 
 }
 
-static void applyGyroZero(void)
-{
+static void applyGyroZero(void) {
     int8_t axis;
+    static int16_t gyroZeroRemainderCount = 0;
+    // offset
     for (axis = 0; axis < 3; axis++) {
         gyroADC[axis] -= gyroZero[axis];
     }
+    
+    gyroZeroRemainderCount++;
+    if (gyroZeroRemainderCount >= CALIBRATING_GYRO_CYCLES) {
+        // remainder offset
+        for (axis = 0; axis < 3; axis++) {
+            gyroADC[axis] -= gyroZeroRemainder[axis];
+        }
+        gyroZeroRemainderCount = 0;
+    }
 }
 
-void gyroUpdate(void)
-{
+void gyroUpdate(void) {
     // range: +/- 8192; +/- 2000 deg/sec
     if (!gyro.read(gyroADC)) {
         return;
