@@ -104,3 +104,8 @@ For Smartport on F3 based boards, enable the telemetry inversion setting.
 ```
 set telemetry_inversion = 1
 ```
+If your controller has a STM32F1 and you don't want to mod your receiver, you can try to build this interface: https://github.com/sguarin/sguarin/wiki
+And put the following setting.
+```
+set telemetry_smart_port_2wire = 1
+```
