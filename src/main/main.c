@@ -294,6 +294,12 @@ void init(void)
     }
 #endif
 
+#ifdef MFBC
+    // MFBFC uses PP to NPN for Buzzer.
+    beeperConfig.gpioMode = Mode_Out_PP;
+    beeperConfig.isInverted = true;
+#endif
+
     beeperInit(&beeperConfig);
 #endif
 
