@@ -117,11 +117,13 @@
 
 typedef bool (*mpuReadRegisterFunc)(uint8_t reg, uint8_t length, uint8_t* data);
 typedef bool (*mpuWriteRegisterFunc)(uint8_t reg, uint8_t data);
+typedef bool (*mpuWriteBytesFunc)(uint8_t reg, uint8_t length,uint8_t *data);
 
 typedef struct mpuConfiguration_s {
     uint8_t gyroReadXRegister; // Y and Z must registers follow this, 2 words each
     mpuReadRegisterFunc read;
     mpuWriteRegisterFunc write;
+    mpuWriteBytesFunc writeBytes;
 } mpuConfiguration_t;
 
 extern mpuConfiguration_t mpuConfiguration;

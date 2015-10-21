@@ -296,14 +296,61 @@ static void imuCalculateEstimatedAttitude(void)
 
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
 }
-
+extern uint8_t packet[42];
 void imuUpdate(rollAndPitchTrims_t *accelerometerTrims)
 {
+    int16_t data[4];
+    float w,x,y,z,gx,gy,gz,yaw,pitch,roll;
+    uint32_t currentT = micros();
     gyroUpdate();
+    
+    
+    
+    data[0] = ((packet[0] << 8) | packet[1]);
+    data[1] = ((packet[4] << 8) | packet[5]);
+    data[2] = ((packet[8] << 8) | packet[9]);
+    data[3] = ((packet[12] << 8) | packet[13]);
+    
+ 
+    
+    x = (float)data[0] / 16384.0f;
+    y = (float)data[1] / 16384.0f;
+    z = (float)data[2] / 16384.0f;
+    w = (float)data[3] / 16384.0f;
+        
+        //gravity
+   // gx = 2 * (x*z - w*y);
+   // gy = 2 * (w*x + y*z);
+   // gz = w*w - x*x - y*y + z*z;
+   
 
+    roll =  atan2(2*(x*y+z*w),1-2*(y*y+z*z));
+    pitch = (0.5f * M_PIf) - acos(-(2.0f * (y*w - x*z)));
+    yaw = atan2(2*(x*w + y*z),1-2*(z*z + w*w));
+        
+    inclination.values.pitchDeciDegrees = pitch * (1800.0f / M_PIf);
+    inclination.values.rollDeciDegrees = roll * (1800.0f / M_PIf);
+    heading= yaw* (180.0f / M_PIf);
+    
+    if (heading < 0) heading += 360;
+    
+    debug[1]= (micros() - currentT);
+//                // display Euler angles in degrees
+//            mpu.dmpGetQuaternion(&q, fifoBuffer);
+//            mpu.dmpGetGravity(&gravity, &q);
+//            mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+//            Serial.print("ypr\t");
+//            Serial.print(ypr[0] * 180/M_PI);
+//            Serial.print("\t");
+//            Serial.print(ypr[1] * 180/M_PI);
+//            Serial.print("\t");
+//            Serial.println(ypr[2] * 180/M_PI);
+    
+    
+    
     if (sensors(SENSOR_ACC)) {
         updateAccelerationReadings(accelerometerTrims); // TODO rename to accelerometerUpdate and rename many other 'Acceleration' references to be 'Accelerometer'
-        imuCalculateEstimatedAttitude();
+       // imuCalculateEstimatedAttitude();
     } else {
         accADC[X] = 0;
         accADC[Y] = 0;

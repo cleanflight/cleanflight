@@ -748,7 +748,11 @@ void loop(void)
     }
 
     currentTime = micros();
-    if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
+    extern bool imuNewData;
+    if (imuNewData==true)   {
+        imuNewData=false;
+    
+   // if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
         imuUpdate(&currentProfile->accelerometerTrims);

@@ -34,7 +34,8 @@
 
 uint16_t calibratingG = 0;
 int16_t gyroADC[XYZ_AXIS_COUNT];
-int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
+int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = {0, 0, 0};
+int16_t gyroZeroRemainder[FLIGHT_DYNAMICS_INDEX_COUNT] = {0, 0, 0};
 
 static gyroConfig_t *gyroConfig;
 
@@ -95,7 +96,8 @@ static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThresho
                 gyroSetCalibrationCycles(CALIBRATING_GYRO_CYCLES);
                 return;
             }
-            gyroZero[axis] = (g[axis] + (CALIBRATING_GYRO_CYCLES / 2)) / CALIBRATING_GYRO_CYCLES;
+            gyroZero[axis] = g[axis] / CALIBRATING_GYRO_CYCLES;
+            gyroZeroRemainder[axis] = g[axis] - (gyroZero[axis] * CALIBRATING_GYRO_CYCLES);
         }
     }
 
@@ -109,8 +111,19 @@ static void performAcclerationCalibration(uint8_t gyroMovementCalibrationThresho
 static void applyGyroZero(void)
 {
     int8_t axis;
+    static int16_t gyroZeroRemainderCount = 0;
+    // offset
     for (axis = 0; axis < 3; axis++) {
         gyroADC[axis] -= gyroZero[axis];
+    }
+    
+    gyroZeroRemainderCount++;
+    if (gyroZeroRemainderCount >= CALIBRATING_GYRO_CYCLES) {
+        // remainder offset
+        for (axis = 0; axis < 3; axis++) {
+            gyroADC[axis] -= gyroZeroRemainder[axis];
+        }
+        gyroZeroRemainderCount = 0;
     }
 }
 

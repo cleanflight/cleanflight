@@ -47,8 +47,11 @@
 
 static bool mpuReadRegisterI2C(uint8_t reg, uint8_t length, uint8_t* data);
 static bool mpuWriteRegisterI2C(uint8_t reg, uint8_t data);
+static bool mpuWriteBytesI2C(uint8_t reg, uint8_t length,uint8_t *data);
 
 static void mpu6050FindRevision(void);
+
+bool imuNewData=false;
 
 #ifdef USE_SPI
 static bool detectSPISensorsAndUpdateDetectionResult(void);
@@ -85,6 +88,7 @@ mpuDetectionResult_t *detectMpu(const extiConfig_t *configToUse)
     if (ack) {
         mpuConfiguration.read = mpuReadRegisterI2C;
         mpuConfiguration.write = mpuWriteRegisterI2C;
+        mpuConfiguration.writeBytes = mpuWriteBytesI2C;
     } else {
 #ifdef USE_SPI
         bool detectedSpiSensor = detectSPISensorsAndUpdateDetectionResult();
@@ -204,6 +208,7 @@ void MPU_DATA_READY_EXTI_Handler(void)
 
     lastCalledAt = now;
 #endif
+    imuNewData=true;
 }
 
 void configureMPUDataReadyInterruptHandling(void)
@@ -323,6 +328,13 @@ static bool mpuWriteRegisterI2C(uint8_t reg, uint8_t data)
     return ack;
 }
 
+static bool mpuWriteBytesI2C(uint8_t reg, uint8_t length,uint8_t *data)
+{
+    return i2cWriteBuffer(MPU_ADDRESS, reg, length, data);
+}
+
+uint8_t packet[42];
+
 bool mpuAccRead(int16_t *accData)
 {
     uint8_t data[6];
@@ -335,22 +347,45 @@ bool mpuAccRead(int16_t *accData)
     accData[0] = (int16_t)((data[0] << 8) | data[1]);
     accData[1] = (int16_t)((data[2] << 8) | data[3]);
     accData[2] = (int16_t)((data[4] << 8) | data[5]);
-
+//    accData[0] = ((uint16_t)packet[28] << 8) + packet[29];
+//    accData[1] = ((uint16_t)packet[32] << 8) + packet[33];
+//    accData[2] = ((uint16_t)packet[36] << 8) + packet[37];               
     return true;
 }
 
 bool mpuGyroRead(int16_t *gyroADC)
 {
-    uint8_t data[6];
+//    uint8_t data[6];
+   
 
-    bool ack = mpuConfiguration.read(mpuConfiguration.gyroReadXRegister, 6, data);
-    if (!ack) {
-        return false;
+//    bool ack = mpuConfiguration.read(mpuConfiguration.gyroReadXRegister, 6, data);
+//    if (!ack) {
+//        return false;
+//    }
+//
+//    gyroADC[0] = (int16_t)((data[0] << 8) | data[1]);
+//    gyroADC[1] = (int16_t)((data[2] << 8) | data[3]);
+//    gyroADC[2] = (int16_t)((data[4] << 8) | data[5]);
+
+
+    
+    extern uint16_t getFIFOCount(void);
+    ;
+    
+    if (getFIFOCount()>=42)
+    {
+        mpuConfiguration.read(MPU_RA_FIFO_R_W,42, packet);   
+        gyroADC[0] = ((uint16_t)packet[16] << 8) + packet[17];
+        gyroADC[1] = ((uint16_t)packet[20] << 8) + packet[21];
+        gyroADC[2] = ((uint16_t)packet[24] << 8) + packet[25];
+
     }
-
-    gyroADC[0] = (int16_t)((data[0] << 8) | data[1]);
-    gyroADC[1] = (int16_t)((data[2] << 8) | data[3]);
-    gyroADC[2] = (int16_t)((data[4] << 8) | data[5]);
-
+    
+    if ((getFIFOCount()%42)!=0)
+    {
+         extern void SetBits(uint8_t reg, uint8_t bits);
+         #define MPU6050_USERCTRL_FIFO_RESET_BIT         2
+         SetBits(MPU_RA_USER_CTRL, 1<<MPU6050_USERCTRL_FIFO_RESET_BIT);
+    }
     return true;
 }
