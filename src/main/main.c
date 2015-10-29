@@ -59,6 +59,7 @@
 #include "io/gimbal.h"
 #include "io/ledstrip.h"
 #include "io/display.h"
+#include "io/tilt_arm_control.h"
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"

@@ -48,9 +48,11 @@ typedef enum mixerMode
     MIXER_DUALCOPTER = 20,
     MIXER_SINGLECOPTER = 21,
     MIXER_ATAIL4 = 22,
-    MIXER_CUSTOM = 23,
-    MIXER_CUSTOM_AIRPLANE = 24,
-    MIXER_CUSTOM_TRI = 25
+    MIXER_QUADX_TILT = 23,
+	MIXER_OCTOX_TILT = 24,
+    MIXER_CUSTOM = 25,
+    MIXER_CUSTOM_AIRPLANE = 26,
+    MIXER_CUSTOM_TRI = 27
 } mixerMode_e;
 
 // Custom mixer data per motor
@@ -110,6 +112,7 @@ enum {
     INPUT_RC_AUX4,
     INPUT_GIMBAL_PITCH,
     INPUT_GIMBAL_ROLL,
+    INPUT_TILT_PITCH,
 
     INPUT_SOURCE_COUNT
 } inputSource_e;
@@ -136,6 +139,7 @@ typedef enum {
     SERVO_SINGLECOPTER_3 = 5,
     SERVO_SINGLECOPTER_4 = 6,
 
+    SERVO_TILTING = 0,
 } servoIndex_e; // FIXME rename to servoChannel_e
 
 #define SERVO_PLANE_INDEX_MIN SERVO_FLAPS
@@ -184,6 +188,7 @@ typedef struct servoParam_t {
 struct gimbalConfig_s;
 struct escAndServoConfig_s;
 struct rxConfig_s;
+struct tiltArmConfig_s;
 
 extern int16_t servo[MAX_SUPPORTED_SERVOS];
 bool isMixerUsingServos(void);
@@ -198,6 +203,7 @@ void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         struct gimbalConfig_s *gimbalConfigToUse,
+        struct tiltArmConfig_s *tiltArmConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
 		struct escAndServoConfig_s *escAndServoConfigToUse,

@@ -43,6 +43,7 @@
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
+#include "io/tilt_arm_control.h"
 #include "rx/msp.h"
 #include "telemetry/telemetry.h"
 #include "common/printf.h"

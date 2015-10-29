@@ -244,3 +244,7 @@ void arraySubInt32(int32_t *dest, int32_t *array1, int32_t *array2, int count)
         dest[i] = array1[i] - array2[i];
     }
 }
+
+float scaleRangef(float x, float in_min, float in_max, float out_min, float out_max){
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}

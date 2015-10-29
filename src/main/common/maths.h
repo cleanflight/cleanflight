@@ -97,3 +97,5 @@ float cos_approx(float x);
 #endif
 
 void arraySubInt32(int32_t *dest, int32_t *array1, int32_t *array2, int count);
+
+float scaleRangef(float x, float in_min, float in_max, float out_min, float out_max);

@@ -52,6 +52,7 @@
 #include "io/rc_curves.h"
 #include "io/ledstrip.h"
 #include "io/gps.h"
+#include "io/tilt_arm_control.h"
 
 #include "rx/rx.h"
 
@@ -321,6 +322,14 @@ void resetMixerConfig(mixerConfig_t *mixerConfig) {
     mixerConfig->servo_lowpass_freq = 400;
     mixerConfig->servo_lowpass_enable = 0;
 #endif
+}
+
+void resetTiltArmProfile(tiltArmConfig_t *tiltConfig){
+    tiltConfig->flagEnabled = 0;
+    tiltConfig->pitchDivisior = 1;
+    tiltConfig->thrustLiftoffPercent = 0;
+    tiltConfig->gearRatioPercent = 100;
+    tiltConfig->channel = AUX1;
 }
 
 uint8_t getCurrentProfile(void)
@@ -697,6 +706,7 @@ void activateConfig(void)
 #ifdef USE_SERVOS
         currentProfile->servoConf,
         &currentProfile->gimbalConfig,
+        &currentProfile->tiltArm,
 #endif
         &masterConfig.flight3DConfig,
         &masterConfig.escAndServoConfig,
@@ -733,6 +743,12 @@ void activateConfig(void)
 
 void validateAndFixConfig(void)
 {
+
+    if (masterConfig.mixerMode == MIXER_QUADX_TILT ){
+        //prevent conflict; tilting quad and camstab/trig share Servo
+        featureClear(FEATURE_SERVO_TILT);
+    }
+
     if (!(featureConfigured(FEATURE_RX_PARALLEL_PWM) || featureConfigured(FEATURE_RX_PPM) || featureConfigured(FEATURE_RX_SERIAL) || featureConfigured(FEATURE_RX_MSP))) {
         featureSet(FEATURE_RX_PARALLEL_PWM); // Consider changing the default to PPM
     }
