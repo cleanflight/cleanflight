@@ -199,7 +199,11 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
     uint8_t index;
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
         serialPortConfig_t *portConfig = &serialConfigToCheck->portConfigs[index];
-
+#ifdef USE_VCP
+	   if(index == USE_VCP) {
+		   portConfig->functionMask = FUNCTION_MSP;
+	   }
+#endif
         if (portConfig->functionMask & FUNCTION_MSP) {
             mspPortCount++;
         }

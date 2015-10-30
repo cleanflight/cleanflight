@@ -45,10 +45,10 @@
 
 #define BRUSHED_MOTORS
 
-#define USE_USART1
-#define USE_USART2
+#define USE_USART1			0
+#define USE_USART2			1
 
-#define SERIAL_PORT_COUNT 2
+#define SERIAL_PORT_COUNT 	2
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
