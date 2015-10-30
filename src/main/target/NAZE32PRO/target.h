@@ -32,10 +32,10 @@
 #define GYRO
 #define ACC
 
-#define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define SERIAL_PORT_COUNT 3
+#define USE_VCP			0
+#define USE_USART1			1
+#define USE_USART2			2
+#define SERIAL_PORT_COUNT 	3
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)

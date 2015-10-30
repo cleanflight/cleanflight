@@ -58,11 +58,11 @@
 
 #define LED0
 
-#define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
-#define SERIAL_PORT_COUNT 4
+#define USE_VCP			0
+#define USE_USART1			1
+#define USE_USART2			2
+#define USE_USART3			3
+#define SERIAL_PORT_COUNT 	4
 
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
 #define UART1_RX_PIN        GPIO_Pin_7 // PB7

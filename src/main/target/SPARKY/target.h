@@ -50,11 +50,11 @@
 #define LED0
 #define LED1
 
-#define USE_VCP
-#define USE_USART1 // Conn 1 - TX (PB6) RX PB7 (AF7)
-#define USE_USART2 // Input - RX (PA3)
-#define USE_USART3 // Servo out - 10/RX (PB11) 11/TX (PB10)
-#define SERIAL_PORT_COUNT 4
+#define USE_VCP			0
+#define USE_USART1 			1// Conn 1 - TX (PB6) RX PB7 (AF7)
+#define USE_USART2 			2// Input - RX (PA3)
+#define USE_USART3 			3// Servo out - 10/RX (PB11) 11/TX (PB10)
+#define SERIAL_PORT_COUNT 	4
 
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
 #define UART1_RX_PIN        GPIO_Pin_7 // PB7
