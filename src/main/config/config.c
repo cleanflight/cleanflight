@@ -302,7 +302,7 @@ void resetSerialConfig(serialConfig_t *serialConfig)
 
 #ifdef CC3D
     // This allows MSP connection via USART & VCP so the board can be reconfigured.
-    serialConfig->portConfigs[1].functionMask = FUNCTION_MSP;
+    serialConfig->portConfigs[USE_USART1].functionMask = FUNCTION_MSP;
 #endif
 
     serialConfig->reboot_character = 'R';
@@ -577,10 +577,10 @@ static void resetConf(void)
     featureSet(FEATURE_RX_SERIAL);
     featureSet(FEATURE_MOTOR_STOP);
 #ifdef ALIENWIIF3
-    masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
+    masterConfig.serialConfig.portConfigs[USE_USART2].functionMask = FUNCTION_RX_SERIAL;
     masterConfig.batteryConfig.vbatscale = 20;
 #else
-    masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
+    masterConfig.serialConfig.portConfigs[USE_USART1].functionMask = FUNCTION_RX_SERIAL;
 #endif
     masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
@@ -864,9 +864,8 @@ void validateAndFixConfig(void)
 #endif
 
 #if defined(COLIBRI_RACE)
-    masterConfig.serialConfig.portConfigs[0].functionMask = FUNCTION_MSP;
     if(featureConfigured(FEATURE_RX_SERIAL)) {
-	    masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
+	    masterConfig.serialConfig.portConfigs[USE_USART2].functionMask = FUNCTION_RX_SERIAL;
     }
 #endif
 

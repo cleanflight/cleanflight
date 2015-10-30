@@ -70,11 +70,11 @@
 #define BEEPER
 #define DISPLAY
 
-#define USE_VCP
-#define USE_USART1
-#define USE_USART3
-#define USE_SOFTSERIAL1
-#define SERIAL_PORT_COUNT 4
+#define USE_VCP			0
+#define USE_USART1			1
+#define USE_USART3			2
+#define USE_SOFTSERIAL1		3
+#define SERIAL_PORT_COUNT 	4
 
 #define SOFTSERIAL_1_TIMER TIM3
 #define SOFTSERIAL_1_TIMER_TX_HARDWARE 1 // PWM 2

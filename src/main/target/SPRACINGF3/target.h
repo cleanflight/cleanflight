@@ -62,12 +62,12 @@
 #define BEEPER
 #define LED0
 
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
-#define USE_SOFTSERIAL1
-#define USE_SOFTSERIAL2
-#define SERIAL_PORT_COUNT 5
+#define USE_USART1			0
+#define USE_USART2			1
+#define USE_USART3			2
+#define USE_SOFTSERIAL1		3
+#define USE_SOFTSERIAL2		4
+#define SERIAL_PORT_COUNT 	5
 
 #ifndef UART1_GPIO
 #define UART1_TX_PIN        GPIO_Pin_9  // PA9
