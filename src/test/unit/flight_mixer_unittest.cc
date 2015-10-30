@@ -364,11 +364,11 @@ TEST_F(CustomMixerIntegrationTest, TestCustomMixer)
 
     EXPECT_EQ(EXPECTED_SERVOS_TO_MIX_COUNT, updatedServoCount);
 
-    EXPECT_EQ(2000, servos[0].value); // Flaps
+    EXPECT_EQ(TEST_SERVO_MID, servos[0].value);
     EXPECT_EQ(TEST_SERVO_MID, servos[1].value);
     EXPECT_EQ(TEST_SERVO_MID, servos[2].value);
     EXPECT_EQ(TEST_SERVO_MID, servos[3].value);
-    EXPECT_EQ(TEST_SERVO_MID, servos[4].value);
+    EXPECT_EQ(2000, servos[4].value); // Flaps
     EXPECT_EQ(1000, servos[5].value); // Throttle
 
 }
