@@ -203,6 +203,10 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
         if (portConfig->functionMask & FUNCTION_MSP) {
             mspPortCount++;
         }
+#ifdef USE_VCP
+	   if(index == 0)
+		   portConfig->functionMask = FUNCTION_MSP;
+#endif
 
         uint8_t bitCount = BITCOUNT(portConfig->functionMask);
         if (bitCount > 1) {

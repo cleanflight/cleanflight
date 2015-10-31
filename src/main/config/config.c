@@ -864,7 +864,6 @@ void validateAndFixConfig(void)
 #endif
 
 #if defined(COLIBRI_RACE)
-    masterConfig.serialConfig.portConfigs[0].functionMask = FUNCTION_MSP;
     if(featureConfigured(FEATURE_RX_SERIAL)) {
 	    masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
     }
