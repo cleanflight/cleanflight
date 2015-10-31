@@ -83,6 +83,13 @@ void EXTI15_10_IRQHandler(void)
     extiHandler(EXTI15_10_IRQn);
 }
 
+#ifndef SONAR
+void EXTI9_5_IRQHandler(void)
+{
+    extiHandler(EXTI9_5_IRQn);
+}
+#endif
+
 void EXTI3_IRQHandler(void)
 {
     extiHandler(EXTI3_IRQn);
