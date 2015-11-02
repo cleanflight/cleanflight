@@ -29,6 +29,7 @@
 #include "sound_beeper.h"
 #include "nvic.h"
 
+#include "drivers/sonar_hcsr04.h"
 #include "system.h"
 
 #ifndef EXTI_CALLBACK_HANDLER_COUNT
@@ -83,16 +84,24 @@ void EXTI15_10_IRQHandler(void)
     extiHandler(EXTI15_10_IRQn);
 }
 
-#ifndef SONAR
 void EXTI9_5_IRQHandler(void)
 {
     extiHandler(EXTI9_5_IRQn);
 }
-#endif
 
 void EXTI3_IRQHandler(void)
 {
     extiHandler(EXTI3_IRQn);
+}
+
+void EXTI1_IRQHandler(void)
+{
+    extiHandler(EXTI1_IRQn);
+}
+
+void EXTI0_IRQHandler(void)
+{
+    extiHandler(EXTI0_IRQn);
 }
 
 // cycles per microsecond
