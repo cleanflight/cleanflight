@@ -27,7 +27,7 @@ typedef struct sonarHardware_s {
 
 #define SONAR_GPIO GPIOB
 
-void Call_HCSR04_IRQHandler(void);
+void ECHO_HCSR04_EXTI_IRQHandler(void);
 
 void hcsr04_init(const sonarHardware_t *sonarHardware);
 

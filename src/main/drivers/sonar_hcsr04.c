@@ -41,7 +41,7 @@ static uint32_t lastMeasurementAt;
 static volatile int32_t measurement = -1;
 static sonarHardware_t const *sonarHardware;
 
-static void ECHO_EXTI_IRQHandler(void)
+void ECHO_HCSR04_EXTI_IRQHandler(void)
 {
     static uint32_t timing_start;
     uint32_t timing_stop;
@@ -58,25 +58,20 @@ static void ECHO_EXTI_IRQHandler(void)
     EXTI_ClearITPendingBit(sonarHardware->exti_line);
 }
 
-void Call_HCSR04_IRQHandler(void)
-{
-	ECHO_EXTI_IRQHandler();
-}
-
 void hcsr04_init(const sonarHardware_t *initialSonarHardware)
 {
     gpio_config_t gpio;
     EXTI_InitTypeDef EXTIInit;
 
 #if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
-	registerExtiCallbackHandler(EXTI9_5_IRQn, Call_HCSR04_IRQHandler);
-	registerExtiCallbackHandler(EXTI1_IRQn, Call_HCSR04_IRQHandler);
+	registerExtiCallbackHandler(EXTI9_5_IRQn, ECHO_HCSR04_EXTI_IRQHandler);
+	registerExtiCallbackHandler(EXTI1_IRQn, ECHO_HCSR04_EXTI_IRQHandler);
 #elif defined(OLIMEXINO)
-	registerExtiCallbackHandler(EXTI1_IRQn, Call_HCSR04_IRQHandler);
+	registerExtiCallbackHandler(EXTI1_IRQn, ECHO_HCSR04_EXTI_IRQHandler);
 #elif defined(CC3D)
-	registerExtiCallbackHandler(EXTI0_IRQn, Call_HCSR04_IRQHandler);
+	registerExtiCallbackHandler(EXTI0_IRQn, ECHO_HCSR04_EXTI_IRQHandler);
 #elif defined(SPRACINGF3)
-	registerExtiCallbackHandler(EXTI1_IRQn, Call_HCSR04_IRQHandler);
+	registerExtiCallbackHandler(EXTI1_IRQn, ECHO_HCSR04_EXTI_IRQHandler);
 #else
 #error Sonar not defined for target
 #endif
