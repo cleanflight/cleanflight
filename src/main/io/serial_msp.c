@@ -86,6 +86,9 @@
 
 #include "serial_msp.h"
 
+#ifdef USE_SERIAL_1WIRE
+#include "io/serial_1wire.h"
+#endif
 #ifdef USE_ESCSERIAL
 #include "drivers/serial_escserial.h"
 #endif
@@ -312,6 +315,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
 #define MSP_SERVO_MIX_RULES      241    //out message         Returns servo mixer configuration
 #define MSP_SET_SERVO_MIX_RULE   242    //in message          Sets servo mixer configuration
+#define MSP_SET_1WIRE            243    //in message          Sets 1Wire paththrough 
 #define MSP_SET_ESCSERIAL        244    //in message          Sets escserial paththrough
 
 #define INBUF_SIZE 64
@@ -1736,6 +1740,45 @@ static bool processInCommand(void)
         isRebootScheduled = true;
         break;
 
+#ifdef USE_SERIAL_1WIRE
+    case MSP_SET_1WIRE:
+        // get channel number
+        i = read8();
+        // we do not give any data back, assume channel number is transmitted OK
+        if (i == 0xFF) {
+            // 0xFF -> preinitialize the Passthrough
+            // switch all motor lines HI
+            usb1WireInitialize();
+            // and come back right afterwards
+            // rem: App: Wait at least appx. 500 ms for BLHeli to jump into
+            // bootloader mode before try to connect any ESC
+        }
+        else {
+            // Check for channel number 0..ESC_COUNT-1
+            if (i < ESC_COUNT) {
+                // because we do not come back after calling usb1WirePassthrough
+                // proceed with a success reply first
+                headSerialReply(0);
+                tailSerialReply();
+                // wait for all data to send
+                while (!isSerialTransmitBufferEmpty(mspSerialPort)) {
+                    delay(50);
+                }
+                // Start to activate here
+                // motor 1 => index 0
+                usb1WirePassthrough(i);
+                // MPS uart is active again
+            } else {
+                // ESC channel higher than max. allowed
+                // rem: BLHeliSuite will not support more than 8
+                headSerialError(0);
+            }
+            // proceed as usual with MSP commands
+            // and wait to switch to next channel
+            // rem: App needs to call MSP_BOOT to deinitialize Passthrough
+        }
+        break;
+#endif
 
 #ifdef USE_ESCSERIAL
     case MSP_SET_ESCSERIAL:
@@ -1871,10 +1914,7 @@ void mspProcess(void)
         }
 
         if (isRebootScheduled) {
-            // pause a little while to allow response to be sent
-            while (!isSerialTransmitBufferEmpty(candidatePort->port)) {
-                delay(50);
-            }
+            waitForSerialPortToFinishTransmitting(candidatePort->port);
             stopMotors();
             handleOneshotFeatureChangeOnRestart();
             systemReset();

@@ -35,7 +35,7 @@ FLASH_SIZE ?=
 
 FORKNAME			 = cleanflightF4
 
-VALID_TARGETS	 = ALIENWIIF1 ALIENWIIF3 CC3D CHEBUZZF3 CJMCU COLIBRI_RACE EUSTM32F103RC NAZE NAZE32PRO OLIMEXINO PORT103R RMDO SPARKY SPRACINGF3 STM32F3DISCOVERY 
+VALID_TARGETS	 = ALIENWIIF1 ALIENWIIF3 CC3D CHEBUZZF3 CJMCU COLIBRI_RACE EUSTM32F103RC MOTOLAB NAZE NAZE32PRO OLIMEXINO PORT103R RMDO SPARKY SPRACINGF3 STM32F3DISCOVERY 
 VALID_TARGETS	 += ANYFC REVO COLIBRI
 
 # Configure default flash sizes for the targets
@@ -44,7 +44,7 @@ ifeq ($(TARGET),$(filter $(TARGET),CJMCU))
 FLASH_SIZE = 64
 else ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF1 CC3D NAZE OLIMEXINO RMDO))
 FLASH_SIZE = 128
-else ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC NAZE32PRO PORT103R SPARKY SPRACINGF3 STM32F3DISCOVERY))
+else ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC MOTOLAB NAZE32PRO PORT103R SPARKY SPRACINGF3 STM32F3DISCOVERY))
 FLASH_SIZE = 256
 else ifeq ($(TARGET),$(filter $(TARGET),ANYFC REVO COLIBRI))
 FLASH_SIZE = 256
@@ -71,7 +71,7 @@ USBPERIPH_SRC = $(notdir $(wildcard $(USBFS_DIR)/src/*.c))
 
 CSOURCES        := $(shell find $(SRC_DIR) -name '*.c')
 
-ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE NAZE32PRO RMDO SPARKY SPRACINGF3 STM32F3DISCOVERY))
+ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE MOTOLAB NAZE32PRO RMDO SPARKY SPRACINGF3 STM32F3DISCOVERY))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
 
@@ -312,6 +312,7 @@ COMMON_SRC = build_config.c \
 		   io/rc_controls.c \
 		   io/rc_curves.c \
 		   io/serial.c \
+		   io/serial_1wire.c \
 		   io/serial_cli.c \
 		   io/serial_msp.c \
 		   io/statusindicator.c \
@@ -746,6 +747,20 @@ SPRACINGF3_SRC = \
 		   io/flashfs.c \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
+
+MOTOLAB_SRC = \
+		   $(STM32F30x_COMMON_SRC) \
+		   drivers/accgyro_mpu.c \
+		   drivers/accgyro_mpu6050.c \
+		   drivers/barometer_ms5611.c \
+		   drivers/compass_hmc5883l.c \
+		   drivers/display_ug2864hsweg01.c \
+		   drivers/serial_usb_vcp.c \
+		   drivers/flash_m25p16.c \
+		   io/flashfs.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC) \
+		   $(VCP_SRC)
 
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
