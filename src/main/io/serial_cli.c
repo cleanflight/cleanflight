@@ -1605,7 +1605,6 @@ void cliEnter(serialPort_t *serialPort)
     setPrintfSerialPort(cliPort);
     cliPrint("\r\nEntering CLI Mode, type 'exit' to return, or 'help'\r\n");
     cliPrompt();
-    ENABLE_ARMING_FLAG(PREVENT_ARMING);
 }
 
 static void cliExit(char *cmdline)
@@ -2183,6 +2182,15 @@ static void cliVersion(char *cmdline)
 void cliProcess(void)
 {
     if (!cliPort) {
+        return;
+    }
+
+    // prevent any cli activity when ARMED
+    if (ARMING_FLAG(ARMED)) {
+        // flush the port.
+        while (serialRxBytesWaiting(cliPort)) {
+            serialRead(cliPort);
+        }
         return;
     }
 
