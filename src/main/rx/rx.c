@@ -502,9 +502,9 @@ static void readRxChannelsApplyRanges(void)
     }
     // filter through buddy-box
     for(channel = 0; channel < rxRuntimeConfig.channelCount; channel++){
-        if((channel < 2 || channel == 3) && RC_channels[4] > 1500){ // allow RC override if sticks are moved
+        if((channel < 3 ) && RC_channels[4] > 1500){ // allow RC override if sticks are moved
             rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 100) ? MSP_channels[channel] : RC_channels[channel];
-        }else if(channel == 2){ // take minimum thrust
+        }else if(channel == 3){ // take minimum thrust
             rcRaw[channel] = (RC_channels[channel] > MSP_channels[channel]) ? MSP_channels[channel] : RC_channels[channel];
         }else{
             rcRaw[channel]  = RC_channels[channel];     
