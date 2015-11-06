@@ -178,3 +178,66 @@ For PID Controllers 1 and 2, this is an multiplier on overall stick sensitivity,
 ### Yaw Rate
 
 In PID Controllers 0 and 5, it acts as a PID reduction as explained above. In PID Controllers 1-4, it acts as a stick sensitivity multiplier, as explained above.
+
+### Tuning checklist
+This is a text based on Oscar Liang http://blog.oscarliang.net/ text about the subject. In order to help out the CF user we have tried to make small checklist out of it.
+
+When you start to go through the list you it is good if you are outside and that you got an area large enough to do punch-outs with full visual and ability to listen to the motor and propeller sound. Make sure you can do a soft landing in case of emergency. 
+
+
+1. Balance your props.
+Start out here because it will effect the rest of the process.
+
+
+2. Balance your motors.
+
+
+3. Calibrate your ESC.
+
+
+4. Find a good looptiming as a starting point.
+Changes here results in re-tuning of all PIDs.
+A to low looptime can cause "jittering" reaction.
+Looptime is not a static value so a bit tweaking can be done in order not to go over the thresholds for different ESCs.
+
++ Low looptime more sensitive and responsive.
++ Low looptime can give higher PID gains depending on pid controller chosen.
+- sensitive to vibrations.
+
+3500 - 286Hz
+3000 - 333Hz
+2500 - 400Hz
+2000 - 500Hz
+1600 - 600Hz
+
+
+5. motor_pwm_rate
+Some ESC have a bad sync in the default value of 400hz. Raising this might help but stay under 500hz.
+
+
+6. acc_lpf_factor - Horizon/Angle only modes.
+With the modes in action "noise" is introduced. Higher value here filters this but makes it less responsive. It is sensitive to vibrations so make sure it runs smoths first. 
+
+
+7. PID-controller 0-5
+Read up on them and try them out to see what you like before starting to tweak the values.
+
+
+8. 'P'
+Raise P and find vibration and then lower slowly
+Hover and punch out
+
+
+9. 'I'
+Raise I until oscillations occurs
+
+Slow Wobble on Decent = Raise I
+Slow Oscillation/Wobble on accent = Lower I 
+
+
+10. Repeat 8 and 9 for pitch
+Pitch P will probably be slightly higher
+
+
+TODO
+Write about Yaw, TPA and rates.
