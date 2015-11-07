@@ -53,29 +53,33 @@ static uint32_t sumhChannels[SUMH_MAX_CHANNEL_COUNT];
 static void sumhDataReceive(uint16_t c);
 static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
-static serialPort_t *sumhPort;
-
-
-static void sumhDataReceive(uint16_t c);
-static uint16_t sumhReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
-
-
-
 bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     UNUSED(rxConfig);
 
+    rxRuntimeConfig->channelCount = SUMH_MAX_CHANNEL_COUNT;
+
     if (callback)
         *callback = sumhReadRawRC;
-
-    rxRuntimeConfig->channelCount = SUMH_MAX_CHANNEL_COUNT;
 
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
         return false;
     }
 
-    sumhPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sumhDataReceive, SUMH_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    portMode_t serialPortMode;
+    portSharing_e serialPortSharing = determinePortSharing(portConfig, FUNCTION_RX_SERIAL);
+    if (serialPortSharing == PORTSHARING_SHARED){
+    	if (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL)
+            serialPortMode = MODE_RXTX;
+    	else
+    		return false;
+    	}
+    else {
+        serialPortMode = MODE_RX;
+    }
+
+    serialPort_t *sumhPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sumhDataReceive, SUMH_BAUDRATE, serialPortMode, SERIAL_NOT_INVERTED);
 
     return sumhPort != NULL;
 }

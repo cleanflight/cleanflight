@@ -63,6 +63,9 @@ typedef enum {
 
 extern const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT];
 
+#define ALL_FUNCTIONS_SHARABLE_WITH_BLACKBOX (FUNCTION_RX_SERIAL)
+#define ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL (FUNCTION_BLACKBOX)
+
 //
 // runtime
 //
@@ -74,6 +77,7 @@ typedef struct serialPortUsage_s {
 
 serialPort_t *findSharedSerialPort(uint16_t functionMask, serialPortFunction_e sharedWithFunction);
 serialPort_t *findNextSharedSerialPort(uint16_t functionMask, serialPortFunction_e sharedWithFunction);
+serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier);
 
 //
 // configuration
@@ -107,7 +111,6 @@ serialPortConfig_t *findNextSerialPortConfig(serialPortFunction_e function);
 
 portSharing_e determinePortSharing(serialPortConfig_t *portConfig, serialPortFunction_e function);
 bool isSerialPortShared(serialPortConfig_t *portConfig, uint16_t functionMask, serialPortFunction_e sharedWithFunction);
-
 
 
 //
