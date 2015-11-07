@@ -87,7 +87,19 @@ bool spektrumInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcRe
         return false;
     }
 
-    serialPort_t *spektrumPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, spektrumDataReceive, SPEKTRUM_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    portMode_t serialPortMode;
+    portSharing_e serialPortSharing = determinePortSharing(portConfig, FUNCTION_RX_SERIAL);
+    if (serialPortSharing == PORTSHARING_SHARED){
+    	if (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL)
+            serialPortMode = MODE_RXTX;
+    	else
+    		return false;
+    	}
+    else {
+        serialPortMode = MODE_RX;
+    }
+
+    serialPort_t *spektrumPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, spektrumDataReceive, SPEKTRUM_BAUDRATE, serialPortMode, SERIAL_NOT_INVERTED);
 
     return spektrumPort != NULL;
 }

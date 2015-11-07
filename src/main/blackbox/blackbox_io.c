@@ -501,28 +501,36 @@ bool blackboxDeviceOpen(void)
         case BLACKBOX_DEVICE_SERIAL:
             {
                 serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
-                baudRate_e baudRateIndex;
-                portOptions_t portOptions = SERIAL_PARITY_NO | SERIAL_NOT_INVERTED;
-
                 if (!portConfig) {
-                    return false;
-                }
+					return false;
+				}
+				portOptions_t portOptions = SERIAL_PARITY_NO | SERIAL_NOT_INVERTED;
 
-                blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
-                baudRateIndex = portConfig->blackbox_baudrateIndex;
+				baudRate_e baudRateIndex = portConfig->blackbox_baudrateIndex;
+				baudRateIndex = masterConfig.serialConfig.portConfigs[portConfig->identifier].blackbox_baudrateIndex;
 
-                if (baudRates[baudRateIndex] == 230400) {
-                    /*
-                     * OpenLog's 230400 baud rate is very inaccurate, so it requires a larger inter-character gap in
-                     * order to maintain synchronization.
-                     */
-                    portOptions |= SERIAL_STOPBITS_2;
-                } else {
-                    portOptions |= SERIAL_STOPBITS_1;
-                }
+				if (baudRates[baudRateIndex] == 230400) {
+					/*
+					 * OpenLog's 230400 baud rate is very inaccurate, so it requires a larger inter-character gap in
+					 * order to maintain synchronization.
+					 */
+					portOptions |= SERIAL_STOPBITS_2;
+				} else {
+					portOptions |= SERIAL_STOPBITS_1;
+				}
 
-                blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, NULL, baudRates[baudRateIndex],
-                    BLACKBOX_SERIAL_PORT_MODE, portOptions);
+				blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
+				if (blackboxPortSharing == PORTSHARING_SHARED){ // ^port is already opened
+					if (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_BLACKBOX){
+						serialPortUsage_t * serialPortUsage = findSerialPortUsageByIdentifier(portConfig->identifier);
+						blackboxPort = serialPortUsage->serialPort;
+					}
+					else
+						return false;
+				}
+				else
+					blackboxPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, NULL, baudRates[baudRateIndex],
+					BLACKBOX_SERIAL_PORT_MODE, portOptions);
 
                 /*
                  * The slowest MicroSD cards have a write latency approaching 150ms. The OpenLog's buffer is about 900
@@ -562,17 +570,21 @@ void blackboxDeviceClose(void)
 {
     switch (masterConfig.blackbox_device) {
         case BLACKBOX_DEVICE_SERIAL:
-            closeSerialPort(blackboxPort);
+        {
+            serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+        	if (!(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_BLACKBOX)){
+                closeSerialPort(blackboxPort);
+        	}
             blackboxPort = NULL;
-
             /*
              * Normally this would be handled by mw.c, but since we take an unknown amount
              * of time to shut down asynchronously, we're the only ones that know when to call it.
              */
-            if (blackboxPortSharing == PORTSHARING_SHARED) {
+            if ((blackboxPortSharing == PORTSHARING_SHARED) && !(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_BLACKBOX)) {
                 mspAllocateSerialPorts(&masterConfig.serialConfig);
             }
-            break;
+        }
+        break;
 #ifdef USE_FLASHFS
         case BLACKBOX_DEVICE_FLASH:
             // No-op since the flash doesn't have a "close" and there's nobody else to hand control of it to.
