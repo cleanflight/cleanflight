@@ -2106,8 +2106,9 @@ static void cliStatus(char *cmdline)
 
     printf("System Uptime: %d seconds, Voltage: %d * 0.1V (%dS battery - %s)\r\n",
         millis() / 1000, vbat, batteryCellCount, getBatteryStateString());
-
-
+#ifdef DISABLE_SBUS_INVERSION
+    printf("SBUS inversion disabled\r\n");
+#endif
     printf("CPU Clock=%dMHz", (SystemCoreClock / 1000000));
 
 #ifndef CJMCU
