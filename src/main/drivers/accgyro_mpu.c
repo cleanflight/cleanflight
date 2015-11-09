@@ -32,6 +32,7 @@
 #include "gpio.h"
 #include "exti.h"
 #include "bus_i2c.h"
+#include "gyro_sync.h"
 
 #include "sensor.h"
 #include "accgyro.h"
@@ -44,11 +45,12 @@
 
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 
-
 static bool mpuReadRegisterI2C(uint8_t reg, uint8_t length, uint8_t* data);
 static bool mpuWriteRegisterI2C(uint8_t reg, uint8_t data);
 
 static void mpu6050FindRevision(void);
+
+static volatile bool mpuDataReady;
 
 #ifdef USE_SPI
 static bool detectSPISensorsAndUpdateDetectionResult(void);
@@ -190,6 +192,8 @@ void MPU_DATA_READY_EXTI_Handler(void)
     }
 
     EXTI_ClearITPendingBit(mpuIntExtiConfig->exti_line);
+
+    mpuDataReady = true;
 
 #ifdef DEBUG_MPU_DATA_READY_INTERRUPT
     // Measure the delta in micro seconds between calls to the interrupt handler
@@ -353,4 +357,13 @@ bool mpuGyroRead(int16_t *gyroADC)
     gyroADC[2] = (int16_t)((data[4] << 8) | data[5]);
 
     return true;
+}
+
+void checkMPUDataReady(bool *mpuDataReadyPtr) {
+    if (mpuDataReady) {
+        *mpuDataReadyPtr = true;
+        mpuDataReady= false;
+    } else {
+        *mpuDataReadyPtr = false;
+    }
 }

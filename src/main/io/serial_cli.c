@@ -158,7 +158,7 @@ static char cliBuffer[48];
 static uint32_t bufferIndex = 0;
 
 #ifndef USE_QUAD_MIXER_ONLY
-// sync this with mixerMode_e
+//  this with mixerMode_e
 static const char * const mixerNames[] = {
     "TRI", "QUADP", "QUADX", "BI",
     "GIMBAL", "Y6", "HEX6",
@@ -325,6 +325,7 @@ typedef struct {
 const clivalue_t valueTable[] = {
     { "looptime",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.looptime, 0, 9000 },
     { "emf_avoidance",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.emf_avoidance, 0, 1 },
+    { "gyro_sync",                  VAR_UINT8  | MASTER_VALUE,  &masterConfig.syncGyroToLoop, 0, 1 },
 
     { "mid_rc",                     VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.midrc, 1200, 1700 },
     { "min_check",                  VAR_UINT16 | MASTER_VALUE,  &masterConfig.rxConfig.mincheck, PWM_RANGE_ZERO, PWM_RANGE_MAX },
