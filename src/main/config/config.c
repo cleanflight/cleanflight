@@ -551,6 +551,8 @@ static void resetConf(void)
     masterConfig.blackbox_rate_denom = 1;
 #endif
 
+    masterConfig.beeper_mode = 1;    // 1 = mode normal ; 0 = inverted
+
     // alternative defaults settings for COLIBRI RACE targets
 #if defined(COLIBRI_RACE)
     masterConfig.looptime = 1000;
