@@ -551,7 +551,17 @@ static void resetConf(void)
     masterConfig.blackbox_rate_denom = 1;
 #endif
 
-    masterConfig.beeper_mode = 1;    // 1 = mode normal ; 0 = inverted
+#ifdef BEEPER
+#ifdef BEEPER_INVERTED
+    masterConfig.beeper_mode = 1;    // normal operation for NPN transistor (PP output)
+#else
+    masterConfig.beeper_mode = 0;    // normal operation for PNP transistor (OD output)
+#endif
+#ifdef NAZE
+    if (hardwareRevision >= NAZE32_REV5)
+        masterConfig.beeper_mode = 1;
+#endif
+#endif
 
     // alternative defaults settings for COLIBRI RACE targets
 #if defined(COLIBRI_RACE)

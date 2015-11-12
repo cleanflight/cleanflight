@@ -99,7 +99,7 @@ typedef struct master_t {
     uint8_t blackbox_device;
 #endif
 
-    uint8_t beeper_mode;    // 1 = mode normal ; 0 = inverted
+    uint8_t beeper_mode;
 
     uint8_t magic_ef;                       // magic number, should be 0xEF
     uint8_t chk;                            // XOR checksum
