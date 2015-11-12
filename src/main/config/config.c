@@ -70,6 +70,10 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
+#ifdef NAZE
+#include "hardware_revision.h"
+#endif
+
 #define BRUSHED_MOTORS_PWM_RATE 16000
 #define BRUSHLESS_MOTORS_PWM_RATE 400
 
