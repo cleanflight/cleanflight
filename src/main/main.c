@@ -281,10 +281,10 @@ void init(void)
         .gpioPort = BEEP_GPIO,
 #ifdef BEEPER_INVERTED
         .gpioMode = Mode_Out_PP,
-        .isInverted = true
+        .isInverted = true,
 #else
         .gpioMode = Mode_Out_OD,
-        .isInverted = false
+        .isInverted = false,
 #endif
     };
 #ifdef NAZE
@@ -294,6 +294,10 @@ void init(void)
         beeperConfig.isInverted = true;
     }
 #endif
+
+    if (masterConfig.beeper_output_inversion){
+    	beeperConfig.isInverted = !beeperConfig.isInverted;
+    }
 
     beeperInit(&beeperConfig);
 #endif
