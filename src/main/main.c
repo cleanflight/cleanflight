@@ -59,6 +59,7 @@
 #include "io/gimbal.h"
 #include "io/ledstrip.h"
 #include "io/display.h"
+#include "io/dataEdition.h"
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
@@ -365,6 +366,8 @@ void init(void)
 
 
     initBoardAlignment(&masterConfig.boardAlignment);
+
+    initDataEditionStructures();
 
 #ifdef DISPLAY
     if (feature(FEATURE_DISPLAY)) {

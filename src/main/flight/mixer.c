@@ -76,7 +76,7 @@ static servoMixer_t currentServoMixer[MAX_SERVO_RULES];
 static gimbalConfig_t *gimbalConfig;
 int16_t servo[MAX_SUPPORTED_SERVOS];
 static int useServo;
-STATIC_UNIT_TESTED uint8_t servoCount;
+/*STATIC_UNIT_TESTED*/ uint8_t servoCount;
 static servoParam_t *servoConf;
 static lowpass_t lowpassFilters[MAX_SUPPORTED_SERVOS];
 #endif

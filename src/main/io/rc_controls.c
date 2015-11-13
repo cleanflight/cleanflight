@@ -49,6 +49,7 @@
 #include "io/rc_controls.h"
 #include "io/rc_curves.h"
 
+#include "io/dataEdition.h"
 #include "io/display.h"
 
 #include "flight/pid.h"
@@ -106,7 +107,6 @@ bool isUsingSticksForArming(void)
     return isUsingSticksToArm;
 }
 
-
 bool areSticksInApModePosition(uint16_t ap_mode)
 {
     return ABS(rcCommand[ROLL]) < ap_mode && ABS(rcCommand[PITCH]) < ap_mode;
@@ -122,6 +122,41 @@ throttleStatus_e calculateThrottleStatus(rxConfig_t *rxConfig, uint16_t deadband
     return THROTTLE_HIGH;
 }
 
+void setCommandForDataEditionWithSticks(uint8_t rcSticks)
+{
+	commandFromSticks = 0;
+
+	switch (rcSticks){
+		case THR_LO + YAW_CE + PIT_LO + ROL_LO : {
+			onGoingDataEditionWithSticks = false;
+			return;
+		}
+		case THR_LO + YAW_CE + PIT_LO + ROL_HI : {
+			onGoingDataEditionWithSticks = true;
+			return;
+		}
+		case THR_LO + YAW_CE + PIT_HI + ROL_CE : {
+			commandFromSticks= INC_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_LO + ROL_CE : {
+			commandFromSticks= DEC_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_CE + ROL_HI : {
+			commandFromSticks= NEXT_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_CE + ROL_LO : {
+			commandFromSticks= PREV_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_HI + PIT_HI + ROL_CE : {// Selection  or  Exit
+			commandFromSticks= SET_COMMAND;
+			break;
+		}
+	}
+}
 void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStatus, bool retarded_arm, bool disarm_kill_switch)
 {
     static uint8_t rcDelayCommand;      // this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
@@ -146,6 +181,9 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     rcSticks = stTmp;
 
     // perform actions
+    if (!ARMING_FLAG(ARMED))
+    	setCommandForDataEditionWithSticks(rcSticks);
+
     if (!isUsingSticksToArm) {
 
         if (IS_RC_MODE_ACTIVE(BOXARM)) {

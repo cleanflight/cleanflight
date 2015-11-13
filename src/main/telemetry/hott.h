@@ -26,18 +26,20 @@
 #ifndef HOTT_TELEMETRY_H_
 #define HOTT_TELEMETRY_H_
 
+#define HOTT_BINARY_MODE_REQUEST_ID 	0x80
+#define HOTT_TELEMETRY_NO_SENSOR_ID     0x80	// no sensor has been found during the bus scan
+#define HOTT_TELEMETRY_VARIO_SENSOR_ID  0x89	// Graupner #33601 Vario Module
+#define HOTT_TELEMETRY_GPS_SENSOR_ID    0x8a	// Graupner #33600 GPS Module
+#define HOTT_TELEMETRY_AIRESC_SENSOR_ID 0x8c	// Graupner #337xx Air ESC
+#define HOTT_TELEMETRY_GAM_SENSOR_ID    0x8d	// Graupner #33611 General Air Module
+#define HOTT_TELEMETRY_EAM_SENSOR_ID    0x8e	// Graupner #33620 Electric Air Module
 
-#define HOTTV4_RXTX 4
-
-#define HOTTV4_TEXT_MODE_REQUEST_ID       0x7f
-#define HOTTV4_BINARY_MODE_REQUEST_ID     0x80
-
-#define HOTTV4_BUTTON_DEC    0xEB
-#define HOTTV4_BUTTON_INC    0xED
-#define HOTTV4_BUTTON_SET    0xE9
-#define HOTTV4_BUTTON_NIL    0x0F
-#define HOTTV4_BUTTON_NEXT   0xEE
-#define HOTTV4_BUTTON_PREV   0xE7
+#define HOTT_TEXT_MODE_REQUEST_ID   	0x7F
+#define HOTT_RECEIVER_ID				0x00		// "Receiver" selected on TX for text mode
+#define HOTT_VARIO_SENSOR_TEXT_ID		0x90		// "Vario Module"     --      --
+#define HOTT_GPS_SENSOR_TEXT_ID  		0xA0		// "GPS Module"       --      --
+#define HOTT_GAM_SENSOR_TEXT_ID			0xD0		// "General Air Module"       --
+#define HOTT_EAM_SENSOR_TEXT_ID			0xE0		// "Electric Air Module"      --
 
 #define HOTT_EAM_OFFSET_HEIGHT       500
 #define HOTT_EAM_OFFSET_M2S           72
@@ -45,6 +47,10 @@
 #define HOTT_EAM_OFFSET_TEMPERATURE   20
 
 #define HOTT_GPS_ALTITUDE_OFFSET 500
+
+
+//FIXME : Inc and Dec arrows are switched when any part of the TX display is reversed
+// this is known by Graupner but not corrected in v1.185 MX20 firmware
 
 typedef enum {
     HOTT_EAM_ALARM1_FLAG_NONE = 0,
@@ -69,51 +75,6 @@ typedef enum {
     HOTT_EAM_ALARM2_FLAG_UNKNOWN_2 = (1 << 6),
     HOTT_EAM_ALARM2_FLAG_ON_SIGN_OR_TEXT_ACTIVE = (1 << 7),
 } hottEamAlarm2Flag_e;
-
-
-//
-// Messages
-//
-
-#define HOTT_TEXT_MODE_REQUEST_ID   0x7f
-#define HOTT_BINARY_MODE_REQUEST_ID 0x80
-//Sensor Ids
-
-//Id 0x80 is used when no sensor has been found during the bus scan
-// additionaly meaning?
-#define HOTT_TELEMETRY_NO_SENSOR_ID     0x80
-
-//Graupner #33601 Vario Module
-#define HOTT_TELEMETRY_VARIO_SENSOR_ID  0x89
-
-//Graupner #33600 GPS Module
-#define HOTT_TELEMETRY_GPS_SENSOR_ID    0x8a
-
-//Graupner #337xx Air ESC
-#define HOTT_TELEMETRY_AIRESC_SENSOR_ID 0x8c
-
-//Graupner #33611 General Air Module
-#define HOTT_TELEMETRY_GAM_SENSOR_ID    0x8d
-
-//Graupner #33620 Electric Air Module
-#define HOTT_TELEMETRY_EAM_SENSOR_ID    0x8e
-
-
-#define HOTT_EAM_SENSOR_TEXT_ID  0xE0 // Electric Air Module ID
-#define HOTT_GPS_SENSOR_TEXT_ID  0xA0 // GPS Module ID
-
-
-#define HOTT_TEXTMODE_MSG_TEXT_LEN 168
-//Text mode msgs type
-struct HOTT_TEXTMODE_MSG {
-    uint8_t start_byte;  //#01 constant value 0x7b
-    uint8_t fill1;       //#02 constant value 0x00
-    uint8_t warning_beeps;//#03 1=A 2=B ...
-    uint8_t msg_txt[HOTT_TEXTMODE_MSG_TEXT_LEN]; //#04 ASCII text to display to
-                        // Bit 7 = 1 -> Inverse character display
-                        // Display 21x8
-    uint8_t stop_byte;   //#171 constant value 0x7d
-};
 
 typedef struct HOTT_GAM_MSG_s {
     uint8_t start_byte;          //#01 start uint8_t constant value 0x7c
@@ -486,6 +447,8 @@ typedef struct HOTT_AIRESC_MSG_s {
     uint8_t version;        //#43   Version number (highest current motor 1-x)
     uint8_t stop_byte;      //#44 constant value 0x7d
 } HOTT_AIRESC_MSG_t;
+
+bool hottTelemetryEnabled;
 
 void handleHoTTTelemetry(void);
 void checkHoTTTelemetryState(void);

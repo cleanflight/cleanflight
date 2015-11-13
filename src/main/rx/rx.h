@@ -113,6 +113,7 @@ typedef struct rxConfig_s {
     uint8_t spektrum_sat_bind;              // number of bind pulses for Spektrum satellite receivers
     uint8_t rssi_channel;
     uint8_t rssi_scale;
+    uint8_t rssi_warningLevel;
     uint8_t rssi_ppm_invert;
     uint8_t rcSmoothing;                    // Enable/Disable RC filtering
     uint16_t midrc;                         // Some radios have not a neutral point centered on 1500. can be changed here

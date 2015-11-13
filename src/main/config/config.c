@@ -1,5 +1,5 @@
 /*
- * This file is part of Cleanflight.
+  * This file is part of Cleanflight.
  *
  * Cleanflight is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -351,6 +351,11 @@ static void setProfile(uint8_t profileIndex)
     currentProfile = &masterConfig.profile[profileIndex];
 }
 
+void setCurrentPIDprofileConfig(uint8_t profileIndex) {
+    masterConfig.current_profile_index = profileIndex;
+    currentProfile = &masterConfig.profile[profileIndex];
+}
+
 uint8_t getCurrentControlRateProfile(void)
 {
     return currentControlRateProfileIndex;
@@ -360,7 +365,7 @@ controlRateConfig_t *getControlRateConfig(uint8_t profileIndex) {
     return &masterConfig.controlRateProfiles[profileIndex];
 }
 
-static void setControlRateProfile(uint8_t profileIndex)
+void setControlRateProfile(uint8_t profileIndex)
 {
     currentControlRateProfileIndex = profileIndex;
     currentControlRateProfile = &masterConfig.controlRateProfiles[profileIndex];
@@ -437,6 +442,7 @@ static void resetConf(void)
 
     masterConfig.rxConfig.rssi_channel = 0;
     masterConfig.rxConfig.rssi_scale = RSSI_SCALE_DEFAULT;
+    masterConfig.rxConfig.rssi_warningLevel = 50;
     masterConfig.rxConfig.rssi_ppm_invert = 0;
     masterConfig.rxConfig.rcSmoothing = 1;
 
@@ -583,7 +589,6 @@ static void resetConf(void)
 #else
     masterConfig.serialConfig.portConfigs[1].functionMask = FUNCTION_RX_SERIAL;
 #endif
-    masterConfig.rxConfig.serialrx_provider = 1;
     masterConfig.rxConfig.spektrum_sat_bind = 5;
     masterConfig.escAndServoConfig.minthrottle = 1000;
     masterConfig.escAndServoConfig.maxthrottle = 2000;
