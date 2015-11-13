@@ -546,7 +546,7 @@ const clivalue_t valueTable[] = {
     { "magzero_z",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[Z], -32768, 32767 },
 
 #ifdef BEEPER
-    { "beeper_mode",                VAR_UINT8  | MASTER_VALUE, &masterConfig.beeper_mode, 0, 1 },
+    { "beeper_output_inversion",    VAR_UINT8  | MASTER_VALUE, &masterConfig.beeper_output_inversion, 0, 1 },
 #endif
 };
 

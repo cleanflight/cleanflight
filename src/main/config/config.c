@@ -70,10 +70,6 @@
 #include "config/config_profile.h"
 #include "config/config_master.h"
 
-#ifdef NAZE
-#include "hardware_revision.h"
-#endif
-
 #define BRUSHED_MOTORS_PWM_RATE 16000
 #define BRUSHLESS_MOTORS_PWM_RATE 400
 
@@ -556,15 +552,7 @@ static void resetConf(void)
 #endif
 
 #ifdef BEEPER
-#ifdef BEEPER_INVERTED
-    masterConfig.beeper_mode = 1;    // normal operation for NPN transistor (PP output)
-#else
-    masterConfig.beeper_mode = 0;    // normal operation for PNP transistor (OD output)
-#endif
-#ifdef NAZE
-    if (hardwareRevision >= NAZE32_REV5)
-        masterConfig.beeper_mode = 1;
-#endif
+    masterConfig.beeper_output_inversion = false;    // normal beeping
 #endif
 
     // alternative defaults settings for COLIBRI RACE targets
