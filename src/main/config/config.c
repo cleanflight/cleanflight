@@ -122,8 +122,12 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #define FLASH_TO_RESERVE_FOR_CONFIG 0x1000
 #endif
 
+#ifndef CONFIG_FLASH_ADDRESS
+	#define CONFIG_FLASH_ADDRESS 0x08000000
+#endif
+
 // use the last flash pages for storage
-#define CONFIG_START_FLASH_ADDRESS (0x08000000 + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG))
+#define CONFIG_START_FLASH_ADDRESS (CONFIG_FLASH_ADDRESS + (uint32_t)((FLASH_PAGE_SIZE * FLASH_PAGE_COUNT) - FLASH_TO_RESERVE_FOR_CONFIG))
 
 master_t masterConfig;                 // master config struct with data independent from profiles
 profile_t *currentProfile;
