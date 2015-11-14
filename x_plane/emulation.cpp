@@ -19,39 +19,37 @@ extern "C"{
 	#include "drivers/sound_beeper.h"
 	#include "drivers/flash_m25p16.h"
 	#include "drivers/serial.h"
-	#include "drivers/sensor.h"
 	#include "drivers/exti.h"
-	#include "drivers/accgyro.h"
-	#include "drivers/accgyro_mpu.h"
-	#include "drivers/accgyro_mpu6500.h"
-	#include "drivers/barometer.h"
-	#include "drivers/barometer_bmp280.h"
-	#include "drivers/compass.h"
-	#include "drivers/compass_hmc5883l.h"
-	#include "drivers/sonar_hcsr04.h"
+
 	#include "drivers/display_ug2864hsweg01.h"
 	#include "drivers/light_led.h"
 	#include "drivers/light_ws2811strip.h"
-	#include "drivers/serial.h"
-	#include "drivers/serial_softserial.h"
-	#include "drivers/serial_uart.h"
+
 	#include "drivers/pwm_output.h"
 
-
+	#include "gui.h"
+	#include "xplane.h"
 }
 
-char CONFIG_FLASH[ FLASH_SIZE * 1024 ];
 
+
+
+
+
+
+
+void systemInit(){
+
+}
 
 
 void SetSysClock( bool overclock ){
 	UNUSED(overclock);
-	puts( "SetSysClock" );
 }
 
 
-void systemInit(){
-}
+
+
 
 bool isMPUSoftReset(void){
 	return false;
@@ -97,10 +95,11 @@ uint16_t adcGetChannel(uint8_t channel){
 
 
 
+
 extern "C" pwmOutputConfiguration_t *pwmInit( drv_pwm_config_t* init ){
 	static pwmOutputConfiguration_t pwm;
-	pwm.motorCount = 16;
-	pwm.servoCount = 16;
+	pwm.motorCount = 8;
+	pwm.servoCount = 8;
 	return &pwm;
 }
 
@@ -154,13 +153,22 @@ void failureMode(uint8_t mode){
 	exit(-1000 - mode);
 }
 
-void digitalHi(GPIO_TypeDef *p, int i){
+void digitalHi( GPIO_TypeDef* p , int i ){
+	UNUSED(p);
+	gui_toggle_led( i - 10 , +1 );
 }
-void digitalLo(GPIO_TypeDef *p, int i){
+
+void digitalLo( GPIO_TypeDef* p , int i ){
+	UNUSED(p);
+	gui_toggle_led( i - 10 , -1 );
 }
-void digitalToggle(GPIO_TypeDef *p, int i){
+
+void digitalToggle( GPIO_TypeDef* p , int i ){
+	UNUSED(p);
+	gui_toggle_led( i - 10 , 0 );
 }
-//int  digitalIn(GPIO_TypeDef *p, int i){}
+
+
 
 
 bool m25p16_init(){
@@ -196,163 +204,41 @@ const flashGeometry_t* m25p16_getGeometry(){
 }
 
 
-serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options){
-}
-
-void serialWrite(serialPort_t *instance, uint8_t ch){
-}
-uint8_t serialRxBytesWaiting(serialPort_t *instance){
-}
-uint8_t serialTxBytesFree(serialPort_t *instance){
-}
-uint8_t serialRead(serialPort_t *instance){
-}
-void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate){
-}
-void serialSetMode(serialPort_t *instance, portMode_t mode){
-}
-bool isSerialTransmitBufferEmpty(serialPort_t *instance){
-}
-void serialPrint(serialPort_t *instance, const char *str){
-}
-uint32_t serialGetBaudRate(serialPort_t *instance){
-}
 
 
-serialPort_t *openSoftSerial(softSerialPortIndex_e portIndex, serialReceiveCallbackPtr callback, uint32_t baud, portOptions_t options){
-}
 
-// serialPort API
-void softSerialWriteByte(serialPort_t *instance, uint8_t ch){
-}
+static int OLED_x;
+static int OLED_y;
 
-uint8_t softSerialRxBytesWaiting(serialPort_t *instance){
-}
-
-uint8_t softSerialTxBytesFree(serialPort_t *instance){
-}
-
-uint8_t softSerialReadByte(serialPort_t *instance){
-}
-
-void softSerialSetBaudRate(serialPort_t *s, uint32_t baudRate){
-}
-
-bool isSoftSerialTransmitBufferEmpty(serialPort_t *s){
-}
-
-
-static void acc_init( ){
-}
-static bool acc_read( int16_t* data ){
-}
-
-
-static void gyro_init( uint16_t lpf ){
-	UNUSED(lpf);
-}
-
-static bool gyro_read( int16_t* data ){
-
-}
-
-static bool gyro_temp( int16_t* data ){
-
-}
-
-bool mpu6500AccDetect(acc_t *acc){
-	acc->init = acc_init;
-	acc->read = acc_read;
-	acc->revisionCode = 0;
-	acc_1G = 4096;
+bool ug2864hsweg01InitI2C(){
 	return true;
 }
 
-
-bool mpu6500GyroDetect(gyro_t *gyro){
-	gyro->init        = gyro_init;
-	gyro->read        = gyro_read;
-	gyro->temperature = gyro_temp;
-	gyro->scale       = 1.0 / 16.0;
-	return true;
+void i2c_OLED_set_xy( uint8_t col , uint8_t row ){
+	OLED_x = col;
+	OLED_y = row;
 }
 
-mpuDetectionResult_t *detectMpu( const extiConfig_t *configToUse ){
-	UNUSED(configToUse);
-
-	static mpuDetectionResult_t r;
-	r.resolution = MPU_FULL_RESOLUTION;
-	r.sensor     = MPU_65xx_I2C;
-	return &r;
+void i2c_OLED_set_line( uint8_t row ){
+	OLED_x = 0;
+	OLED_y = row;
 }
 
-//void mpu6500AccInit(void);
-//void mpu6500GyroInit(uint16_t lpf);
-
-
-static void baro_nop(){
-}
-static void baro_calculate(int32_t *pressure, int32_t *temperature){
+void i2c_OLED_send_char( unsigned char ascii ){
+	gui_lcd_put( OLED_x , OLED_y , ascii );
+	OLED_x++;
 }
 
-bool bmp280Detect(baro_t *baro){
-	baro->get_up    = baro_nop;
-	baro->get_ut    = baro_nop;
-	baro->start_up  = baro_nop;
-	baro->start_ut  = baro_nop;
-	baro->calculate = baro_calculate;
-}
-
-static void mag_init( ){
-
-}
-
-static bool mag_read( int16_t* data ){
-
-}
-
-
-bool hmc5883lDetect(mag_t* mag, const hmc5883Config_t *hmc5883ConfigToUse){
-	UNUSED(hmc5883ConfigToUse);
-	mag->init = mag_init;
-	mag->read = mag_read;
-	return true;
-}
-
-
-
-void hcsr04_init( const sonarHardware_t* sonarHardware ){
-	UNUSED( sonarHardware );
-}
-
-void hcsr04_start_reading( ){
-}
-
-int32_t hcsr04_get_distance( ){
-}
-
-
-
-bool ug2864hsweg01InitI2C(void){
-}
-
-void i2c_OLED_set_xy(uint8_t col, uint8_t row){
-}
-
-void i2c_OLED_set_line(uint8_t row){
-}
-
-void i2c_OLED_send_char(unsigned char ascii){
-}
-
-void i2c_OLED_send_string(const char *string){
-}
-
-void i2c_OLED_clear_display(void){
+void i2c_OLED_send_string( const char* string ){
+	for( const char* c = string ; *c ; c++ ){
+		i2c_OLED_send_char( *c );
+	}
 }
 
 void i2c_OLED_clear_display_quick(void){
+	gui_lcd_clear( );
 }
+
 
 
 
@@ -385,13 +271,16 @@ void systemResetToBootloader(void){
 
 
 void pwmWriteMotor(uint8_t index, uint16_t value){
+	xplane_write_motor( index , value );
 }
+
 void pwmShutdownPulsesForAllMotors(uint8_t motorCount){
 }
 void pwmCompleteOneshotMotorUpdate(uint8_t motorCount){
 }
 
 void pwmWriteServo(uint8_t index, uint16_t value){
+	xplane_write_servo( index , value );
 }
 
 bool isMotorBrushed(uint16_t motorPwmRate){
