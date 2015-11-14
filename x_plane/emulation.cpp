@@ -57,17 +57,6 @@ bool isMPUSoftReset(void){
 	return false;
 }
 
-void delayMicroseconds(uint32_t us){
-}
-
-void delay(uint32_t ms){
-}
-
-uint32_t micros(){
-}
-
-uint32_t millis(){
-}
 
 void ledInit( ){
 }
@@ -80,6 +69,10 @@ void timerStart( ){
 
 void i2cInit(I2CDevice index){
 	UNUSED(index);
+}
+
+void i2cSetOverclock(uint8_t OverClock){
+	UNUSED(OverClock);
 }
 /*
 bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data){
@@ -249,12 +242,38 @@ bool isSoftSerialTransmitBufferEmpty(serialPort_t *s){
 }
 
 
+static void acc_init( ){
+}
+static bool acc_read( int16_t* data ){
+}
 
+
+static void gyro_init( uint16_t lpf ){
+	UNUSED(lpf);
+}
+
+static bool gyro_read( int16_t* data ){
+
+}
+
+static bool gyro_temp( int16_t* data ){
+
+}
 
 bool mpu6500AccDetect(acc_t *acc){
+	acc->init = acc_init;
+	acc->read = acc_read;
+	acc->revisionCode = 0;
+	acc_1G = 4096;
 	return true;
 }
+
+
 bool mpu6500GyroDetect(gyro_t *gyro){
+	gyro->init        = gyro_init;
+	gyro->read        = gyro_read;
+	gyro->temperature = gyro_temp;
+	gyro->scale       = 1.0 / 16.0;
 	return true;
 }
 
@@ -270,14 +289,35 @@ mpuDetectionResult_t *detectMpu( const extiConfig_t *configToUse ){
 //void mpu6500AccInit(void);
 //void mpu6500GyroInit(uint16_t lpf);
 
-bool bmp280Detect(baro_t *baro){
+
+static void baro_nop(){
 }
+static void baro_calculate(int32_t *pressure, int32_t *temperature){
+}
+
+bool bmp280Detect(baro_t *baro){
+	baro->get_up    = baro_nop;
+	baro->get_ut    = baro_nop;
+	baro->start_up  = baro_nop;
+	baro->start_ut  = baro_nop;
+	baro->calculate = baro_calculate;
+}
+
+static void mag_init( ){
+
+}
+
+static bool mag_read( int16_t* data ){
+
+}
+
 
 bool hmc5883lDetect(mag_t* mag, const hmc5883Config_t *hmc5883ConfigToUse){
+	UNUSED(hmc5883ConfigToUse);
+	mag->init = mag_init;
+	mag->read = mag_read;
+	return true;
 }
-
-void hmc5883lInit(void);
-bool hmc5883lRead(int16_t *magData);
 
 
 
@@ -355,20 +395,4 @@ void pwmWriteServo(uint8_t index, uint16_t value){
 }
 
 bool isMotorBrushed(uint16_t motorPwmRate){
-}
-
-
-void FLASH_Unlock(void){
-}
-
-void FLASH_ClearFlag(uint32_t FLASH_FLAG){
-}
-
-FLASH_Status FLASH_ErasePage(uint32_t Page_Address){
-}
-
-FLASH_Status FLASH_ProgramWord(uint32_t Address, uint32_t Data){
-}
-
-void FLASH_Lock(void){
 }

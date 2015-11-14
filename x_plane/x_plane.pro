@@ -1,5 +1,8 @@
 CONFIG += c++11
 CONFIG += object_parallel_to_source
+CONFIG += console
+CONFIG += qt
+QT     += core gui widgets serialport
 QMAKE_CFLAGS += -std=c99
 
 INCLUDEPATH += \
@@ -11,8 +14,6 @@ DEFINES += \
     _USE_MATH_DEFINES \
     NAZE \
     STM32F10X
-
-
 
 HEADERS += \
     ../src/main/build_config.h \
@@ -142,4 +143,6 @@ SOURCES += \
     ../src/main/blackbox/blackbox.c \
     ../src/main/blackbox/blackbox_io.c \
     emulation.cpp \
-    hardware_revision.c
+    hardware_revision.c \
+    flash.c \
+    time.c
