@@ -144,70 +144,84 @@ static const uint8_t multiWiiFont[][5] = { // Refer to "Times New Roman" Font Da
 
 
 cLcdDisplay::cLcdDisplay( QWidget* parent ) : QWidget(parent) {
-	buf.resize( SCREEN_WIDTH * SCREEN_HEIGHT );
+	updated = false;
 
-	setMinimumSize( SCREEN_WIDTH , SCREEN_HEIGHT );
-	setMaximumSize( SCREEN_WIDTH , SCREEN_HEIGHT );
+	scale = 2;
+
+	buf.resize( SCREEN_CHARACTER_ROW_COUNT * SCREEN_CHARACTER_COLUMN_COUNT );
+
+	setMinimumSize( SCREEN_WIDTH*scale , SCREEN_HEIGHT*scale );
+	setMaximumSize( SCREEN_WIDTH*scale , SCREEN_HEIGHT*scale );
+
+	QObject::connect( &timer , &QTimer::timeout , this , &cLcdDisplay::validate );
+
+	timer.start( 50 );
+}
+
+
+
+void cLcdDisplay::validate( ){
+	if( updated ){
+		updated = false;
+		repaint();
+	}
 }
 
 
 
 void cLcdDisplay::put( int x , int y , char ch ){
-	if( x < 0 || y < 0 || x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT ){
+	if( x < 0 || y < 0 || x >= SCREEN_CHARACTER_COLUMN_COUNT || y >= SCREEN_CHARACTER_ROW_COUNT ){
 		return;
 	}
 
-	buf[x + y * SCREEN_WIDTH] = ch;
+	buf[x + y * SCREEN_CHARACTER_COLUMN_COUNT] = ch;
+
+	updated = true;
 }
 
 
-void cLcdDisplay::paintEvent( QPaintEvent* event ){
+void cLcdDisplay::clear( ){
+	memset( buf.data() , 0 , buf.size() );
+
+	updated = true;
+}
+
+
+void cLcdDisplay::paintEvent( QPaintEvent* ){
 	QPainter p(this);
 
-	QImage img( SCREEN_WIDTH , SCREEN_HEIGHT , QImage::Format_RGB32 );
+	QImage img( SCREEN_WIDTH * scale , SCREEN_HEIGHT * scale , QImage::Format_RGB32 );
 	img.fill( 0x00000000 );
 
 	uchar* data = img.bits();
 
+	for( int cy=0 ; cy < SCREEN_CHARACTER_ROW_COUNT    ; cy++ )
+	for( int cx=0 ; cx < SCREEN_CHARACTER_COLUMN_COUNT ; cx++ ){
 
-	for( int cx=0 ; cx < SCREEN_CHARACTER_COLUMN_COUNT ; cx++ )
-	for( int cy=0 ; cy < SCREEN_CHARACTER_ROW_COUNT    ; cy++ ){
-		int ch = buf[ cx + cy*SCREEN_CHARACTER_COLUMN_COUNT ];
+		int ch = buf[ cx + cy*SCREEN_CHARACTER_COLUMN_COUNT ] - 32;
 
-		int offset = ((char*)&multiWiiFont[ch]) - (char*)&multiWiiFont;
-
-		if( offset >= (int)sizeof(multiWiiFont) ){
+		if( ch < 0 || ch >= 135 ){
 			continue;
 		}
 
-		for( int sx=0 ; sx < FONT_WIDTH                    ; sx++ )
-		for( int sy=0 ; sy < FONT_HEIGHT                   ; sy++ ){
 
-			if( multiWiiFont[ch][sx] & (1<<sy) ){
-				*(int*)(data + cx*CHARACTER_WIDTH_TOTAL*4 + cy*CHARACTER_HEIGHT_TOTAL*img.bytesPerLine() ) = 0xFFFFFF;
+		for( int fx=0 ; fx < FONT_WIDTH  ; fx++ )
+		for( int fy=0 ; fy < FONT_HEIGHT ; fy++ ){
+
+			if( multiWiiFont[ch][fx] & (1<<fy) ){
+				for( int sx=0 ; sx < scale ; sx++ )
+				for( int sy=0 ; sy < scale ; sy++ ){
+					int dx = sx + (fx + cx*CHARACTER_WIDTH_TOTAL)*scale;
+					int dy = sy + (fy + cy*CHARACTER_HEIGHT_TOTAL)*scale;
+
+					*(int*)(data + dx*4 + dy*img.bytesPerLine() ) = 0xFFFFFF;
+				}
 			}
+
 		}
 	}
 
 	p.drawImage( 0 , 0, img );
-/*
 
-	int n = SCREEN_WIDTH * SCREEN_HEIGHT;
-	for( int c=0 ; c < n ; c++ ){
-
-		int x = c % SCREEN_WIDTH;
-		int y = c / SCREEN_WIDTH;
-
-		int cx = x / CHARACTER_WIDTH_TOTAL;
-		int cy = y / CHARACTER_HEIGHT_TOTAL;
-
-		int px = x % CHARACTER_WIDTH_TOTAL;
-		int py = y % CHARACTER_HEIGHT_TOTAL;
-
-		char ch =
-
-		data[c] =
-	}
-*/
 }
 
