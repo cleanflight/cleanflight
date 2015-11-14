@@ -5,8 +5,11 @@ CONFIG += qt
 QT     += core gui widgets serialport network
 QMAKE_CFLAGS += -std=c99
 
+LIBS += -lwinmm
+
 INCLUDEPATH += \
     ../src/main
+
 
 
 
@@ -156,7 +159,8 @@ SOURCES += \
     serial.cpp \
     xplane.cpp \
     sensors.c \
-    cLcdDisplay.cpp
+    cLcdDisplay.cpp \
+    input.c
 
 FORMS += \
     cMainWindow.ui
