@@ -9,13 +9,13 @@
 #define BOARD_HAS_VOLTAGE_DIVIDER
 
 #define LED0_GPIO        0
-#define LED0_PIN         0
+#define LED0_PIN         10
 #define LED0_PERIPHERAL  0
 #define LED1_GPIO        0
-#define LED1_PIN         0
+#define LED1_PIN         11
 #define LED1_PERIPHERAL  0
 #define LED2_GPIO        0
-#define LED2_PIN         0
+#define LED2_PIN         12
 #define LED2_PERIPHERAL  0
 
 #define BEEP_GPIO       0
@@ -142,8 +142,8 @@
 #define GPIO_PinSource14 0
 
 #define USART1 (void*)0
-#define USART2 (void*)0
-#define USART3 (void*)0
+#define USART2 (void*)1
+#define USART3 (void*)2
 #define SystemCoreClock 100000000
 
 
@@ -170,6 +170,7 @@ typedef enum{
 #define FLASH_FLAG_OPTERR   0
 
 
+void         FLASH_Read(void);
 void         FLASH_Unlock(void);
 void         FLASH_Lock(void);
 FLASH_Status FLASH_ErasePage(uint32_t Page_Address);
@@ -181,3 +182,15 @@ extern char CONFIG_FLASH[];
 
 #define FLASH_SIZE       4096
 #define FLASH_PAGE_SIZE  1024
+
+
+#undef U_ID_0
+#undef U_ID_1
+#undef U_ID_2
+
+#define U_ID_0 0x12345678
+#define U_ID_1 0x12345678
+#define U_ID_2 0x12345678
+
+
+#define main cf_main

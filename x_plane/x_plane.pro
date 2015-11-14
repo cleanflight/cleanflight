@@ -2,11 +2,12 @@ CONFIG += c++11
 CONFIG += object_parallel_to_source
 CONFIG += console
 CONFIG += qt
-QT     += core gui widgets serialport
+QT     += core gui widgets serialport network
 QMAKE_CFLAGS += -std=c99
 
 INCLUDEPATH += \
     ../src/main
+
 
 DEFINES += \
     __TARGET__=\\\"X_PLANE\\\" \
@@ -83,7 +84,10 @@ HEADERS += \
     ../src/main/blackbox/blackbox.h \
     ../src/main/blackbox/blackbox_fielddefs.h \
     ../src/main/blackbox/blackbox_io.h \
-    hardware_revision.h
+    hardware_revision.h \
+    cMainWindow.h \
+    target.h \
+    cLcdDisplay.h
 
 SOURCES += \
     ../src/main/build_config.c \
@@ -145,4 +149,13 @@ SOURCES += \
     emulation.cpp \
     hardware_revision.c \
     flash.c \
-    time.c
+    time.c \
+    cMainWindow.cpp \
+    gui.cpp \
+    serial.cpp \
+    xplane.cpp \
+    sensors.c \
+    cLcdDisplay.cpp
+
+FORMS += \
+    cMainWindow.ui
