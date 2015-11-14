@@ -9,6 +9,7 @@ INCLUDEPATH += \
     ../src/main
 
 
+
 DEFINES += \
     __TARGET__=\\\"X_PLANE\\\" \
     __REVISION__=\\\"1.0.0\\\" \
