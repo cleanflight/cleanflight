@@ -675,7 +675,7 @@ void filterRc(void){
     uint16_t rxRefreshRate, filteredCycleTime;
 
     // Set RC refresh rate for sampling and channels to filter
-   	initRxRefreshRate(&rxRefreshRate);
+    initRxRefreshRate(&rxRefreshRate);
 
     filteredCycleTime = filterApplyPt1(cycleTime, &filteredCycleTimeState, 1);
     rcInterpolationFactor = rxRefreshRate / filteredCycleTime + 1;
@@ -704,7 +704,6 @@ void filterRc(void){
 
 void loop(void)
 {
-    static uint32_t loopTime;
 #if defined(BARO) || defined(SONAR)
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
@@ -748,8 +747,7 @@ void loop(void)
     }
 
     currentTime = micros();
-    if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
-        loopTime = currentTime + masterConfig.looptime;
+    if ((int32_t)(currentTime - previousTime) >= masterConfig.looptime) {
 
         imuUpdate(&currentProfile->accelerometerTrims);
 
