@@ -1,21 +1,7 @@
-/*
- * This file is part of Cleanflight.
- *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #pragma once
+#include <stdint.h>
+
+
 
 #define TARGET_BOARD_IDENTIFIER "AFNA" // AFroNAze - NAZE might be considered misleading on Naze clones like the flip32.
 #define USE_HARDWARE_REVISION_DETECTION
@@ -63,9 +49,8 @@
 #define MPU6500_SPI_INSTANCE             NAZE_SPI_INSTANCE
 
 
-#define USE_FLASHFS
-
-#define USE_FLASH_M25P16
+//#define USE_FLASHFS
+//#define USE_FLASH_M25P16
 
 #define EXTI_CALLBACK_HANDLER_COUNT 3 // MPU data ready, MAG data ready, BMP085 EOC
 
@@ -170,8 +155,7 @@ int  digitalIn(GPIO_TypeDef *p, int i);
 
 
 
-typedef enum
-{
+typedef enum{
   FLASH_BUSY = 1,
   FLASH_ERROR_PG,
   FLASH_ERROR_WRP,
@@ -179,44 +163,21 @@ typedef enum
   FLASH_TIMEOUT
 }FLASH_Status;
 
-#define FLASH_FLAG_BSY                 ((uint32_t)0x00000001)  /*!< FLASH Busy flag */
-#define FLASH_FLAG_EOP                 ((uint32_t)0x00000020)  /*!< FLASH End of Operation flag */
-#define FLASH_FLAG_PGERR               ((uint32_t)0x00000004)  /*!< FLASH Program error flag */
-#define FLASH_FLAG_WRPRTERR            ((uint32_t)0x00000010)  /*!< FLASH Write protected error flag */
-#define FLASH_FLAG_OPTERR              ((uint32_t)0x00000001)  /*!< FLASH Option Byte error flag */
+#define FLASH_FLAG_BSY      0
+#define FLASH_FLAG_EOP      0
+#define FLASH_FLAG_PGERR    0
+#define FLASH_FLAG_WRPRTERR 0
+#define FLASH_FLAG_OPTERR   0
 
-#include <stdint.h>
 
-void FLASH_SetLatency(uint32_t FLASH_Latency);
-void FLASH_HalfCycleAccessCmd(uint32_t FLASH_HalfCycleAccess);
-void FLASH_PrefetchBufferCmd(uint32_t FLASH_PrefetchBuffer);
-void FLASH_Unlock(void);
-void FLASH_Lock(void);
+void         FLASH_Unlock(void);
+void         FLASH_Lock(void);
 FLASH_Status FLASH_ErasePage(uint32_t Page_Address);
-FLASH_Status FLASH_EraseAllPages(void);
-FLASH_Status FLASH_EraseOptionBytes(void);
 FLASH_Status FLASH_ProgramWord(uint32_t Address, uint32_t Data);
-FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data);
-FLASH_Status FLASH_ProgramOptionByteData(uint32_t Address, uint8_t Data);
-FLASH_Status FLASH_EnableWriteProtection(uint32_t FLASH_Pages);
-FLASH_Status FLASH_ReadOutProtection(FunctionalState NewState);
-FLASH_Status FLASH_UserOptionByteConfig(uint16_t OB_IWDG, uint16_t OB_STOP, uint16_t OB_STDBY);
-uint32_t FLASH_GetUserOptionByte(void);
-uint32_t FLASH_GetWriteProtectionOptionByte(void);
-void FLASH_ITConfig(uint32_t FLASH_IT, FunctionalState NewState);
-void FLASH_ClearFlag(uint32_t FLASH_FLAG);
-FLASH_Status FLASH_GetStatus(void);
-FLASH_Status FLASH_WaitForLastOperation(uint32_t Timeout);
-
-/*------------ New function used for all STM32F10x devices -----*/
-void FLASH_UnlockBank1(void);
-void FLASH_LockBank1(void);
-FLASH_Status FLASH_EraseAllBank1Pages(void);
-FLASH_Status FLASH_GetBank1Status(void);
-FLASH_Status FLASH_WaitForLastBank1Operation(uint32_t Timeout);
+void         FLASH_ClearFlag(uint32_t FLASH_FLAG);
 
 extern char CONFIG_FLASH[];
-#define CONFIG_START_FLASH ((int)(CONFIG_FLASH))
+#define CONFIG_FLASH_ADDRESS ((int)(CONFIG_FLASH))
 
 #define FLASH_SIZE       4096
 #define FLASH_PAGE_SIZE  1024
