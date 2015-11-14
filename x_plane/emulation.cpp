@@ -14,8 +14,6 @@ extern "C"{
 	#include "drivers/timer.h"
 	#include "drivers/bus_i2c.h"
 	#include "drivers/adc.h"
-	#include "drivers/pwm_rx.h"
-	#include "drivers/pwm_mapping.h"
 	#include "drivers/sound_beeper.h"
 	#include "drivers/flash_m25p16.h"
 	#include "drivers/serial.h"
@@ -95,48 +93,6 @@ uint16_t adcGetChannel(uint8_t channel){
 
 
 
-
-extern "C" pwmOutputConfiguration_t *pwmInit( drv_pwm_config_t* init ){
-	static pwmOutputConfiguration_t pwm;
-	pwm.motorCount = 8;
-	pwm.servoCount = 8;
-	return &pwm;
-}
-
-void ppmInConfig(const timerHardware_t *timerHardwarePtr){
-	UNUSED(timerHardwarePtr);
-}
-
-void ppmAvoidPWMTimerClash(const timerHardware_t *timerHardwarePtr, TIM_TypeDef *sharedPwmTimer){
-	UNUSED(timerHardwarePtr);
-	UNUSED(sharedPwmTimer);
-}
-
-uint16_t ppmRead(uint8_t channel){
-	UNUSED(channel);
-	return 0;
-}
-
-
-uint16_t pwmRead(uint8_t channel){
-	UNUSED(channel);
-	return 0;
-}
-
-bool isPPMDataBeingReceived(void){
-	return true;
-}
-
-void resetPPMDataReceivedState(void){
-}
-
-void pwmRxInit(inputFilteringMode_e initialInputFilteringMode){
-	UNUSED(initialInputFilteringMode);
-}
-
-bool isPWMDataBeingReceived(void){
-	return false;
-}
 
 
 void systemBeep(bool onoff){
