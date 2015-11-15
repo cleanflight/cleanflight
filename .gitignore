@@ -17,3 +17,6 @@ startup_stm32f10x_md_gcc.s
 docs/Manual.pdf
 README.pdf
 
+
+x_plane/bin/eeprom.bin
+x_plane/x_plane.pro.user*

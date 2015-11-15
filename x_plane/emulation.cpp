@@ -24,11 +24,11 @@ extern "C"{
 	#include "drivers/light_ws2811strip.h"
 
 	#include "drivers/pwm_output.h"
-
-	#include "gui.h"
-	#include "xplane.h"
+	#include "drivers/flash_m25p16.h"
+	#include "drivers/serial.h"
 }
 
+#include "main.h"
 
 
 
@@ -127,6 +127,32 @@ void digitalToggle( GPIO_TypeDef* p , int i ){
 
 
 
+void FLASH_Unlock(void){
+}
+
+
+void FLASH_Lock(void){
+	flash_save();
+}
+
+
+FLASH_Status FLASH_ErasePage( uint32_t Page_Address ){
+	UNUSED(Page_Address);
+	return FLASH_COMPLETE;
+}
+
+
+FLASH_Status FLASH_ProgramWord( uint32_t Address , uint32_t Data ){
+	*(uint32_t*)Address = Data;
+	return FLASH_COMPLETE;
+}
+
+
+void FLASH_ClearFlag( uint32_t FLASH_FLAG ){
+	UNUSED(FLASH_FLAG);
+}
+
+
 bool m25p16_init(){
 	return true;
 }
@@ -213,17 +239,6 @@ void getLedHsv(uint16_t index, hsvColor_t *color){
 
 void setStripColor(const hsvColor_t *color){
 }
-
-
-
-void systemReset(void){
-	throw 0;
-}
-
-void systemResetToBootloader(void){
-	throw 0;
-}
-
 
 
 void pwmWriteMotor(uint8_t index, uint16_t value){

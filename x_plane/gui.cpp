@@ -2,13 +2,10 @@
 #include <qthread.h>
 #include <qtimer.h>
 #include <vector>
+#include "main.h"
+extern "C" int  cf_main   (void);
 
-extern "C"{
-	#include "gui.h"
-	#include "xplane.h"
-	void FLASH_Read(void);
-	int  cf_main   (void);
-}
+
 
 namespace{
 
@@ -57,13 +54,15 @@ int main( int argc , char* argv[] ){
 
 	QApplication app( argc , argv );
 
+	QApplication::setApplicationName ( "Cleanflight" );
+	QApplication::setOrganizationName( "Cleanflight" );
 
-	mw = new cMainWindow;
+
+	mw = new cMainWindow();
 	mw->show();
 
-	FLASH_Read();
-
-	xplane_init();
+	flash_load  ( );
+	xplane_start( );
 
 	CleanflightLoop cf;
 	cf.start();
@@ -72,6 +71,11 @@ int main( int argc , char* argv[] ){
 
 	cf.terminate();
 	cf.wait();
+
+	xplane_stop();
+	serial_stop();
+
+	delete mw;
 
 	return 0;
 }
