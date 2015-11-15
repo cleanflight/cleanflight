@@ -51,6 +51,7 @@ namespace{
 	class PortThread : public QThread{
 	public:
 		serialPort_t cfg;
+		int          index;
 		bool         terminate_flag;
 		Fifo         recv_buf;
 		Fifo         send_buf;
@@ -61,7 +62,7 @@ namespace{
 			while( !terminate_flag ){
 
 				if( !s.isOpen() ){
-					s.setPortName( QString("COM%1").arg( 20 + cfg.identifier ) );
+					s.setPortName( QString("COM%1").arg( index ) );
 					s.setBaudRate( cfg.baudRate );
 
 					if( cfg.options & SERIAL_STOPBITS_2 ){
@@ -79,8 +80,9 @@ namespace{
 					s.open( QIODevice::ReadWrite );
 
 					if( s.isOpen() ){
-						printf( "Serial %d opened (baud=%d)\n" , cfg.identifier , cfg.baudRate );
+						printf( "Serial %d opened (baud=%d,parity=%d,stop=%d)\n" , index , cfg.baudRate , s.parity() , s.stopBits() );
 					}else{
+						printf( "Serial %d failed (%s)\n" , index , s.errorString().toLocal8Bit().data() );
 						msleep(1000);
 					}
 				}else{
@@ -90,7 +92,7 @@ namespace{
 
 					len = 0;
 
-					while( len < sizeof(buf) ){
+					while( len < (int)sizeof(buf) ){
 						if( !send_buf.pop( &buf[len] ) ){
 							break;
 						}
@@ -125,47 +127,66 @@ namespace{
 			}
 		}
 
-		void restart( ){
+		void stop( ){
 			terminate_flag = true;
 			wait();
+		}
 
+		void start( ){
 			terminate_flag = false;
-			start();
+			QThread::start();
 		}
 	};
 }
 
+
 static PortThread threads[SERIAL_PORT_COUNT];
 
+
+static PortThread* find( serialPort_t* instance ){
+	for( PortThread& p : threads ){
+		if( &p.cfg == instance ){
+			return &p;
+		}
+	}
+	return 0;
+}
+
+void serial_stop(){
+	for( PortThread& p : threads ){
+		p.stop();
+	}
+}
 
 
 serialPort_t* uartOpen( USART_TypeDef* USARTx , serialReceiveCallbackPtr callback , uint32_t baudRate , portMode_t mode , portOptions_t options ){
 	int id = (int)USARTx;
 
-	if( id < 0 || id >= 3 ){
+	if( id < 0 || id >= 5 ){
 		return 0;
 	}
 
 	PortThread* p = &threads[id];
-	p->cfg.identifier = id;
+	p->index          = 20 + id;
 	p->cfg.callback   = callback;
 	p->cfg.baudRate   = baudRate;
 	p->cfg.mode       = mode;
 	p->cfg.options    = options;
-	p->restart();
+	p->stop ();
+	p->start();
 	return &p->cfg;
 }
 
 
 
 void serialWrite( serialPort_t* instance , uint8_t ch ){
-	PortThread* p = &threads[ instance->identifier ];
+	PortThread* p = find(instance);
 	p->send_buf.push( ch );
 }
 
 
 uint8_t serialRxBytesWaiting( serialPort_t* instance ){
-	PortThread* p = &threads[ instance->identifier ];
+	PortThread* p = find(instance);
 	return std::min( p->recv_buf.length() , 255 );
 }
 
@@ -177,7 +198,7 @@ uint8_t serialTxBytesFree( serialPort_t* instance ){
 
 
 uint8_t serialRead( serialPort_t* instance ){
-	PortThread* p = &threads[ instance->identifier ];
+	PortThread* p = find(instance);
 
 	char r = 0;
 	p->recv_buf.pop( &r );
@@ -186,9 +207,11 @@ uint8_t serialRead( serialPort_t* instance ){
 
 
 void serialSetBaudRate( serialPort_t* instance , uint32_t baudRate ){
-	PortThread* p = &threads[ instance->identifier ];
+	PortThread* p = find(instance);
 	p->cfg.baudRate = baudRate;
-	p->restart();
+	p->stop ();
+	p->start();
+
 }
 
 

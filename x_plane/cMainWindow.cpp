@@ -1,11 +1,20 @@
 #include "cMainWindow.h"
+#include <qsettings.h>
 
 cMainWindow::cMainWindow( ){
     ui.setupUi( this );
+
+	QRect window = QSettings().value("window").toRect();
+	this->resize( window.size()    );
+	this->move  ( window.topLeft() );
 }
 
 
 cMainWindow::~cMainWindow( ){
+	QRect window;
+	window.setTopLeft( this->pos()  );
+	window.setSize   ( this->size() );
+	QSettings().setValue("window",window);
 }
 
 
@@ -21,12 +30,12 @@ void cMainWindow::toggle_leds( int id , int direction ){
 
     case 1:
         widget = ui.LED1;
-        color  = Qt::blue;
+		color  = Qt::blue;
         break;
 
     case 2:
         widget = ui.LED2;
-        color  = Qt::red;
+		color  = Qt::red;
         break;
 
     default:

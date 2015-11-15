@@ -91,7 +91,8 @@ HEADERS += \
     hardware_revision.h \
     cMainWindow.h \
     target.h \
-    cLcdDisplay.h
+    cLcdDisplay.h \
+    main.h
 
 SOURCES += \
     ../src/main/build_config.c \
@@ -152,15 +153,17 @@ SOURCES += \
     ../src/main/blackbox/blackbox_io.c \
     emulation.cpp \
     hardware_revision.c \
-    flash.c \
-    time.c \
     cMainWindow.cpp \
     gui.cpp \
     serial.cpp \
     xplane.cpp \
-    sensors.c \
     cLcdDisplay.cpp \
-    input.c
+    reset.cpp \
+    time.cpp \
+    sensors.cpp \
+    input.cpp \
+    flash.cpp
 
 FORMS += \
     cMainWindow.ui
+
