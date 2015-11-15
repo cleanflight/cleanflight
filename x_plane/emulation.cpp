@@ -13,7 +13,7 @@ extern "C"{
 	#include "drivers/light_led.h"
 	#include "drivers/timer.h"
 	#include "drivers/bus_i2c.h"
-	#include "drivers/adc.h"
+
 	#include "drivers/sound_beeper.h"
 	#include "drivers/flash_m25p16.h"
 	#include "drivers/serial.h"
@@ -22,8 +22,6 @@ extern "C"{
 	#include "drivers/display_ug2864hsweg01.h"
 	#include "drivers/light_led.h"
 	#include "drivers/light_ws2811strip.h"
-
-	#include "drivers/pwm_output.h"
 	#include "drivers/flash_m25p16.h"
 	#include "drivers/serial.h"
 }
@@ -84,12 +82,6 @@ uint16_t i2cGetErrorCounter(void){
 }
 */
 
-void adcInit(drv_adc_config_t *init){
-	UNUSED(init);
-}
-
-uint16_t adcGetChannel(uint8_t channel){
-}
 
 
 
@@ -241,18 +233,3 @@ void setStripColor(const hsvColor_t *color){
 }
 
 
-void pwmWriteMotor(uint8_t index, uint16_t value){
-	xplane_write_motor( index , value );
-}
-
-void pwmShutdownPulsesForAllMotors(uint8_t motorCount){
-}
-void pwmCompleteOneshotMotorUpdate(uint8_t motorCount){
-}
-
-void pwmWriteServo(uint8_t index, uint16_t value){
-	xplane_write_servo( index , value );
-}
-
-bool isMotorBrushed(uint16_t motorPwmRate){
-}

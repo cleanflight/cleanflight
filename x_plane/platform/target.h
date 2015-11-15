@@ -150,8 +150,6 @@
 void digitalHi(GPIO_TypeDef *p, int i);
 void digitalLo(GPIO_TypeDef *p, int i);
 void digitalToggle(GPIO_TypeDef *p, int i);
-int  digitalIn(GPIO_TypeDef *p, int i);
-
 
 
 typedef enum{

@@ -32,6 +32,7 @@ void ppmAvoidPWMTimerClash(const timerHardware_t *timerHardwarePtr, TIM_TypeDef 
 uint16_t ppmRead(uint8_t channel){
 	static JOYINFOEX joy;
 	static int       pov;
+	static int       button;
 
 	if( channel == 0 ){
 		joy.dwSize  = sizeof(joy);
@@ -72,6 +73,20 @@ uint16_t ppmRead(uint8_t channel){
 		}
 
 		v = pov * 0xFFFF / 35900;
+		break;
+
+	case 7:
+		if( joy.dwButtons ){
+			button = 0;
+
+			for( int c=0 ; c < 32 ; c++ ){
+				if( joy.dwButtons & (1<<c) ){
+					button = 1 + c;
+				}
+			}
+		}
+
+		v = button * 0xFFFF / 16;
 		break;
 	}
 

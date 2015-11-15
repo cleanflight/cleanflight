@@ -4,12 +4,28 @@
 
 
 
+extern "C"{
+	#include "platform.h"
+	#include "drivers/exti.h"
+	#include "drivers/sensor.h"
+	#include "drivers/accgyro.h"
+	#include "drivers/accgyro_mpu.h"
+	#include "drivers/accgyro_mpu6500.h"
+	#include "drivers/barometer.h"
+	#include "drivers/barometer_bmp280.h"
+	#include "drivers/compass.h"
+	#include "drivers/compass_hmc5883l.h"
+	#include "drivers/sonar_hcsr04.h"
+	#include "drivers/pwm_output.h"
+	#include "drivers/adc.h"
+	#include "sensors/battery.h"
+}
+
+
 
 
 namespace{
-
 	float        acc_data[3];
-	float        gyro_prev[3];
 	float        gyro_data[3];
 	float        bar_pres;
 	float        bar_temp;
@@ -20,6 +36,8 @@ namespace{
 	int          send_port;
 	char         send_buf[8192];
 	int          send_len;
+	float        baterry_voltage;
+	float        baterry_amperage;
 	bool         terminate_flag;
 
 
@@ -88,24 +106,18 @@ namespace{
 						pos += 8*4;
 						len -= 8*4;
 
-						if( len <= 0 ){
+						if( len < 0 ){
 							break;
 						}
 
-						//printf( "XPlane: received #%d\n" , *id );
+						//printf( "id %d  (len%d)\n" , *id , len );
 
 						switch( *id ){
-			//			case 3:
-			//				pos.spd=fv[2];
-			//				break;
-
-
 						case 4:
 							acc_data[0] = args[5];
 							acc_data[1] = -args[6];
 							acc_data[2] = args[4];
 							break;
-
 
 						case 6:
 							bar_pres = args[0];
@@ -118,22 +130,13 @@ namespace{
 							gyro_data[2] = -args[2];
 							break;
 
-			//			case 17:
-			//				pos.pt =fv[0];
-			//				pos.rl =fv[1];
-			//				pos.hdg=fv[2];
-			//				break;
+						case 53:
+							baterry_amperage = args[0];
+							break;
 
-			//			case 18:
-			//				pos.hpath=fv[2];
-			//				pos.vpath=fv[3];
-			//				break;
-
-			//			case 20:
-			//				pos.lat =fv[0];
-			//				pos.lon =fv[1];
-			//				pos.alt =fv[2];
-			//				break;
+						case 54:
+							baterry_voltage = args[0];
+							break;
 						}
 					}
 
@@ -164,52 +167,10 @@ namespace{
 
 
 
-bool xplane_acc_read( int16_t* data ){
-	data[0] = acc_data[0] * 4096;
-	data[1] = acc_data[1] * 4096;
-	data[2] = acc_data[2] * 4096;
-	return true;
-}
 
 
 
 
-bool xplane_gyro_read( int16_t* data ){
-	data[0] = gyro_data[0] * 180 / M_PI * 16.4 ;
-	data[1] = gyro_data[1] * 180 / M_PI * 16.4;
-	data[2] = gyro_data[2] * 180 / M_PI * 16.4;
-	return true;
-}
-
-
-bool xplane_gyro_temp( int16_t* data ){
-	data[0] = 0;
-	return true;
-}
-
-
-void xplane_baro_read( int32_t* pressure , int32_t* temperature ){
-	*pressure    = bar_pres * 3386.389;
-	*temperature = bar_temp * 10;
-}
-
-
-bool xplane_mag_read( int16_t* data ){
-	data[0] = 0;
-	data[1] = 0;
-	data[2] = 0;
-	return true;
-}
-
-
-void xplane_write_motor( int index , int value ){
-	motor_data[index] = value;
-}
-
-
-void xplane_write_servo( int index , int value ){
-	servo_data[index] = value;
-}
 
 
 void xplane_start( ){
@@ -232,46 +193,165 @@ void xplane_stop( ){
 
 
 
+bool mpu6500AccDetect(acc_t *acc){
+	acc->init = [](){
+	};
+
+	acc->read = []( int16_t* data ){
+		data[0] = acc_data[0] * 4096;
+		data[1] = acc_data[1] * 4096;
+		data[2] = acc_data[2] * 4096;
+		return true;
+	};
+
+	acc->revisionCode = 0;
+
+	acc_1G = 4096;
+
+	return true;
+}
 
 
 
+bool mpu6500GyroDetect(gyro_t *gyro){
+	gyro->init = []( uint16_t lpf ){
+		UNUSED(lpf);
+	};
+
+	gyro->read = []( int16_t* data ){
+		data[0] = gyro_data[0] * 180 / M_PI * 16.4 ;
+		data[1] = gyro_data[1] * 180 / M_PI * 16.4;
+		data[2] = gyro_data[2] * 180 / M_PI * 16.4;
+		return true;
+	};
+
+	gyro->temperature = []( int16_t* data ){
+		data[0] = 0;
+		return true;
+	};
+
+	gyro->scale = 1.0 / 16.4;
+
+	return true;
+}
 
 
+bool bmp280Detect(baro_t *baro){
+	baro->get_up = [](){
+	};
 
+	baro->get_ut = [](){
+	};
 
-/*
+	baro->start_up = [](){
+	};
 
-void xplane_stop( ){
-	duplex.stop();
+	baro->start_ut = [](){
+	};
+
+	baro->calculate = []( int32_t* pressure , int32_t* temperature ){
+		*pressure    = bar_pres * 3386.389;
+		*temperature = bar_temp * 10;
+	};
+
+	return true;
 }
 
 
 
 
+bool hmc5883lDetect(mag_t* mag, const hmc5883Config_t *hmc5883ConfigToUse){
+	UNUSED(hmc5883ConfigToUse);
 
-void xplane_respawn( ){
-	begin("USEL");
-	for( int c=0 ; c<=128 ; c++){
-		g_stream<<(qint32)c;
+	mag->init = [](){
+	};
+
+	mag->read = []( int16_t* data ){
+		data[0] = 0;
+		data[1] = 0;
+		data[2] = 0;
+		return false;
+	};
+
+	return false;
+}
+
+
+
+
+void hcsr04_init( const sonarHardware_t* sonarHardware ){
+	UNUSED( sonarHardware );
+}
+
+
+void hcsr04_start_reading( ){
+}
+
+
+int32_t hcsr04_get_distance( ){
+	return 0;
+}
+
+
+mpuDetectionResult_t *detectMpu( const extiConfig_t *configToUse ){
+	UNUSED(configToUse);
+
+	static mpuDetectionResult_t r;
+	r.resolution = MPU_FULL_RESOLUTION;
+	r.sensor     = MPU_65xx_I2C;
+	return &r;
+}
+
+
+
+
+void pwmWriteMotor( uint8_t index , uint16_t value ){
+	motor_data[index] = value;
+}
+
+
+void pwmShutdownPulsesForAllMotors( uint8_t motorCount ){
+	UNUSED(motorCount);
+}
+
+
+void pwmCompleteOneshotMotorUpdate( uint8_t motorCount ){
+	UNUSED(motorCount);
+}
+
+
+void pwmWriteServo(uint8_t index, uint16_t value){
+	servo_data[index] = value;
+}
+
+
+bool isMotorBrushed( uint16_t motorPwmRate ){
+	UNUSED(motorPwmRate);
+	return false;
+}
+
+
+
+void adcInit( drv_adc_config_t* init ){
+	UNUSED(init);
+}
+
+
+uint16_t adcGetChannel( uint8_t channel ){
+	int r = 0;
+
+	switch( channel ){
+	case ADC_BATTERY:
+		r = (baterry_voltage * 10 * VBAT_RESDIVMULTIPLIER_DEFAULT * VBAT_RESDIVVAL_DEFAULT * 0xFFF - 0xFFF * 5) / 33 / VBAT_SCALE_DEFAULT;
+		break;
+
+	case ADC_CURRENT:
+		r = -baterry_amperage * 0.040 * 4095 / 3.3;
+		break;
 	}
-	end();
 
-	begin("DSEL");
-	g_stream<<(qint32)3;
-	g_stream<<(qint32)4;
-	g_stream<<(qint32)16;
-	g_stream<<(qint32)17;
-	g_stream<<(qint32)18;
-	g_stream<<(qint32)19;
-	g_stream<<(qint32)20;
-	end();
-
-	begin("CHAR");
-	g_stream<<(qint8)'r';
-	g_stream<<(qint8)'a';
-	g_stream<<(qint8)'b';
-	g_stream<<(qint8)'3';
-	g_stream<<(qint8)'3';
-	end();
+	if( r < 0 ){
+		return 0;
+	}
+	return r;
 }
-*/

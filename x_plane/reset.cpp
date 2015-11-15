@@ -2,14 +2,23 @@
 #include <qprocess.h>
 #include <qdir.h>
 
-extern "C" void systemReset( ){
+extern "C"{
+	#include "platform.h"
+	#include "drivers/gpio.h"
+	#include "drivers/exti.h"
+	#include "drivers/system.h"
+}
+
+
+void systemReset( ){
 	QString exe = QApplication::applicationFilePath();
 
 	QProcess::startDetached( exe , QStringList() , QDir::currentPath() );
 	exit(0);
 }
 
-extern "C" void systemResetToBootloader( ){
+
+void systemResetToBootloader( ){
 	systemReset();
 }
 

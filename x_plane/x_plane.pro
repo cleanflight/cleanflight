@@ -8,7 +8,8 @@ QMAKE_CFLAGS += -std=c99
 LIBS += -lwinmm
 
 INCLUDEPATH += \
-    ../src/main
+    ../src/main \
+    ./platform
 
 
 
@@ -88,9 +89,12 @@ HEADERS += \
     ../src/main/blackbox/blackbox.h \
     ../src/main/blackbox/blackbox_fielddefs.h \
     ../src/main/blackbox/blackbox_io.h \
-    hardware_revision.h \
     cMainWindow.h \
-    target.h \
+    platform/core_cm3.h \
+    platform/hardware_revision.h \
+    platform/stm32f10x_conf.h \
+    platform/stm32f10x_gpio.h \
+    platform/target.h \
     cLcdDisplay.h \
     main.h
 
@@ -152,7 +156,6 @@ SOURCES += \
     ../src/main/blackbox/blackbox.c \
     ../src/main/blackbox/blackbox_io.c \
     emulation.cpp \
-    hardware_revision.c \
     cMainWindow.cpp \
     gui.cpp \
     serial.cpp \
@@ -160,9 +163,9 @@ SOURCES += \
     cLcdDisplay.cpp \
     reset.cpp \
     time.cpp \
-    sensors.cpp \
     input.cpp \
-    flash.cpp
+    flash.cpp \
+    platform/hardware_revision.c
 
 FORMS += \
     cMainWindow.ui
