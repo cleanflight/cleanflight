@@ -167,7 +167,7 @@ serialPort_t* uartOpen( USART_TypeDef* USARTx , serialReceiveCallbackPtr callbac
 	}
 
 	PortThread* p = &threads[id];
-	p->index          = 20 + id;
+	p->index          = 10 + id;
 	p->cfg.callback   = callback;
 	p->cfg.baudRate   = baudRate;
 	p->cfg.mode       = mode;
@@ -208,9 +208,11 @@ uint8_t serialRead( serialPort_t* instance ){
 
 void serialSetBaudRate( serialPort_t* instance , uint32_t baudRate ){
 	PortThread* p = find(instance);
-	p->cfg.baudRate = baudRate;
-	p->stop ();
-	p->start();
+	if( p->cfg.baudRate != baudRate ){
+		p->cfg.baudRate = baudRate;
+		p->stop ();
+		p->start();
+	}
 
 }
 

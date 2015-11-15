@@ -198,12 +198,11 @@ void cLcdDisplay::paintEvent( QPaintEvent* ){
 	for( int cy=0 ; cy < SCREEN_CHARACTER_ROW_COUNT    ; cy++ )
 	for( int cx=0 ; cx < SCREEN_CHARACTER_COLUMN_COUNT ; cx++ ){
 
-		int ch = buf[ cx + cy*SCREEN_CHARACTER_COLUMN_COUNT ] - 32;
+		int ch = (buf[ cx + cy*SCREEN_CHARACTER_COLUMN_COUNT ] & 0xFF) - 32;
 
 		if( ch < 0 || ch >= 135 ){
 			continue;
 		}
-
 
 		for( int fx=0 ; fx < FONT_WIDTH  ; fx++ )
 		for( int fy=0 ; fy < FONT_HEIGHT ; fy++ ){
@@ -211,7 +210,7 @@ void cLcdDisplay::paintEvent( QPaintEvent* ){
 			if( multiWiiFont[ch][fx] & (1<<fy) ){
 				for( int sx=0 ; sx < scale ; sx++ )
 				for( int sy=0 ; sy < scale ; sy++ ){
-					int dx = sx + (fx + cx*CHARACTER_WIDTH_TOTAL)*scale;
+					int dx = sx + (fx + cx*CHARACTER_WIDTH_TOTAL )*scale;
 					int dy = sy + (fy + cy*CHARACTER_HEIGHT_TOTAL)*scale;
 
 					*(int*)(data + dx*4 + dy*img.bytesPerLine() ) = 0xFFFFFF;

@@ -77,6 +77,16 @@ namespace{
 			send_port = 49000;
 			send_len  = 0;
 
+
+
+			begin("DSEL");
+			put(  4 );
+			put(  6 );
+			put( 16 );
+			put( 53 );
+			put( 54 );
+			end();
+
 			while( !terminate_flag ){
 				sock.waitForReadyRead(5);
 
