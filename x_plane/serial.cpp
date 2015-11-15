@@ -1,5 +1,3 @@
-#include <stdbool.h>
-
 extern "C"{
 	#include "platform.h"
 	#include "drivers/system.h"
@@ -7,9 +5,11 @@ extern "C"{
 	#include "drivers/serial_softserial.h"
 	#include "drivers/serial_uart.h"
 }
+
 #include <qserialport.h>
 #include <qmutex.h>
 #include <qthread.h>
+#include "main.h"
 
 namespace{
 
@@ -19,6 +19,14 @@ namespace{
 		char buf[mask+1];
 		int  rpos;
 		int  wpos;
+		int  total;
+
+		Fifo( ){
+			rpos  = 0;
+			wpos  = 0;
+			total = 0;
+		}
+
 
 		bool push( char v ){
 			if( ((wpos + 1) & mask) == rpos ){
@@ -27,6 +35,8 @@ namespace{
 
 			buf[ wpos & mask ] = v;
 			wpos++;
+
+			total++;
 
 			return true;
 		}
@@ -56,13 +66,18 @@ namespace{
 		Fifo         recv_buf;
 		Fifo         send_buf;
 
+		QString      status_text;
+		QMutex       status_mutex;
+
 		void run( ) override{
 			QSerialPort s;
 
 			while( !terminate_flag ){
 
 				if( !s.isOpen() ){
-					s.setPortName( QString("COM%1").arg( index ) );
+					int num = 10 + index;
+
+					s.setPortName( QString("COM%1").arg( num ) );
 					s.setBaudRate( cfg.baudRate );
 
 					if( cfg.options & SERIAL_STOPBITS_2 ){
@@ -79,10 +94,15 @@ namespace{
 
 					s.open( QIODevice::ReadWrite );
 
-					if( s.isOpen() ){
-						printf( "Serial %d opened (baud=%d,parity=%d,stop=%d)\n" , index , cfg.baudRate , s.parity() , s.stopBits() );
-					}else{
-						printf( "Serial %d failed (%s)\n" , index , s.errorString().toLocal8Bit().data() );
+					status_mutex.lock();
+						if( s.isOpen() ){
+							status_text = "ok";
+						}else{
+							status_text = s.errorString();
+						}
+					status_mutex.unlock();
+
+					if( !s.isOpen() ){
 						msleep(1000);
 					}
 				}else{
@@ -159,6 +179,22 @@ void serial_stop(){
 }
 
 
+
+void serial_get_info( int index , cSerialInfo* info ){
+	PortThread* p = &threads[index];
+	info->baud     = p->cfg.baudRate;
+	info->stop     = (p->cfg.options & SERIAL_STOPBITS_2 ) ? 2 : 1;
+	info->parity   = (p->cfg.options & SERIAL_PARITY_EVEN) ? 2 : 0;
+	info->sent     = p->send_buf.total;
+	info->received = p->recv_buf.total;
+
+	p->status_mutex.lock();
+	info->status = p->status_text;
+	p->status_mutex.unlock();
+}
+
+
+
 serialPort_t* uartOpen( USART_TypeDef* USARTx , serialReceiveCallbackPtr callback , uint32_t baudRate , portMode_t mode , portOptions_t options ){
 	int id = (int)USARTx;
 
@@ -167,7 +203,7 @@ serialPort_t* uartOpen( USART_TypeDef* USARTx , serialReceiveCallbackPtr callbac
 	}
 
 	PortThread* p = &threads[id];
-	p->index          = 10 + id;
+	p->index          = id;
 	p->cfg.callback   = callback;
 	p->cfg.baudRate   = baudRate;
 	p->cfg.mode       = mode;

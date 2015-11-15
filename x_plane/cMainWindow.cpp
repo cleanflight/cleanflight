@@ -1,5 +1,6 @@
 #include "cMainWindow.h"
 #include <qsettings.h>
+#include "main.h"
 
 cMainWindow::cMainWindow( ){
     ui.setupUi( this );
@@ -7,6 +8,17 @@ cMainWindow::cMainWindow( ){
 	QRect window = QSettings().value("window").toRect();
 	this->resize( window.size()    );
 	this->move  ( window.topLeft() );
+
+
+	for( int c=0 ; c < ui.ports->columnCount() ; c++ ){
+		ui.ports->header()->setSectionResizeMode( c , QHeaderView::ResizeToContents );
+	}
+
+	ui.ports->header()->setSectionResizeMode( 1 , QHeaderView::Stretch );
+
+	connect( &serial_timer , &QTimer::timeout , this , &cMainWindow::update_serial );
+
+	serial_timer.start(500);
 }
 
 
@@ -16,6 +28,25 @@ cMainWindow::~cMainWindow( ){
 	window.setSize   ( this->size() );
 	QSettings().setValue("window",window);
 }
+
+
+
+void cMainWindow::update_serial( ){
+	for( int c=0 ; c < ui.ports->topLevelItemCount() ; c++ ){
+		QTreeWidgetItem* item = ui.ports->topLevelItem(c);
+
+		cSerialInfo info;
+		serial_get_info( c , &info );
+
+		item->setText( 1 , info.status                     );
+		item->setText( 2 , QString::number(info.baud)      );
+		item->setText( 3 , info.parity ? "even" : "none"   );
+		item->setText( 4 , QString::number(info.stop)      );
+		item->setText( 5 , QString::number(info.received)  );
+		item->setText( 6 , QString::number(info.sent)      );
+	}
+}
+
 
 
 void cMainWindow::toggle_leds( int id , int direction ){

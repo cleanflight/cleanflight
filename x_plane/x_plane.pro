@@ -164,8 +164,8 @@ SOURCES += \
     reset.cpp \
     time.cpp \
     input.cpp \
-    flash.cpp \
-    platform/hardware_revision.c
+    platform/hardware_revision.c \
+    eeprom.cpp
 
 FORMS += \
     cMainWindow.ui
