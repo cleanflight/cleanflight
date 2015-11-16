@@ -12,6 +12,7 @@ void gui_lcd_clear     ( );
 
 struct cSerialInfo{
 	QString status;
+	QString path;
 	int     baud;
 	int     parity;
 	int     stop;

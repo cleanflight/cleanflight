@@ -65,9 +65,9 @@ namespace{
 		bool         terminate_flag;
 		Fifo         recv_buf;
 		Fifo         send_buf;
-
-		QString      status_text;
-		QMutex       status_mutex;
+		QString      status;
+		QString      path;
+		QMutex       mutex;
 
 		void run( ) override{
 			QSerialPort s;
@@ -75,9 +75,11 @@ namespace{
 			while( !terminate_flag ){
 
 				if( !s.isOpen() ){
-					int num = 10 + index;
+					mutex.lock();
+					path = QString("COM%1").arg( 20 + index );
+					mutex.unlock();
 
-					s.setPortName( QString("COM%1").arg( num ) );
+					s.setPortName( path );
 					s.setBaudRate( cfg.baudRate );
 
 					if( cfg.options & SERIAL_STOPBITS_2 ){
@@ -94,13 +96,13 @@ namespace{
 
 					s.open( QIODevice::ReadWrite );
 
-					status_mutex.lock();
+					mutex.lock();
 						if( s.isOpen() ){
-							status_text = "ok";
+							status = "ok";
 						}else{
-							status_text = s.errorString();
+							status = s.errorString();
 						}
-					status_mutex.unlock();
+					mutex.unlock();
 
 					if( !s.isOpen() ){
 						msleep(1000);
@@ -188,9 +190,10 @@ void serial_get_info( int index , cSerialInfo* info ){
 	info->sent     = p->send_buf.total;
 	info->received = p->recv_buf.total;
 
-	p->status_mutex.lock();
-	info->status = p->status_text;
-	p->status_mutex.unlock();
+	p->mutex.lock();
+	info->status = p->status;
+	info->path   = p->path;
+	p->mutex.unlock();
 }
 
 

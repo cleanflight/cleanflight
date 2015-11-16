@@ -192,19 +192,6 @@
       </layout>
      </widget>
     </item>
-    <item row="0" column="3">
-     <spacer name="horizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>40</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
     <item row="3" column="1">
      <spacer name="verticalSpacer_2">
       <property name="orientation">
@@ -231,7 +218,7 @@
       </property>
      </spacer>
     </item>
-    <item row="2" column="0" colspan="2">
+    <item row="2" column="0" colspan="3">
      <widget class="QGroupBox" name="groupBox_3">
       <property name="title">
        <string>Serial</string>
@@ -251,9 +238,6 @@
          <attribute name="headerDefaultSectionSize">
           <number>50</number>
          </attribute>
-         <attribute name="headerStretchLastSection">
-          <bool>false</bool>
-         </attribute>
          <column>
           <property name="text">
            <string>Port</string>
@@ -261,7 +245,7 @@
          </column>
          <column>
           <property name="text">
-           <string>Status</string>
+           <string>Path</string>
           </property>
          </column>
          <column>
@@ -289,9 +273,17 @@
            <string>Tx</string>
           </property>
          </column>
+         <column>
+          <property name="text">
+           <string>Status</string>
+          </property>
+         </column>
          <item>
           <property name="text">
            <string>UART1</string>
+          </property>
+          <property name="text">
+           <string/>
           </property>
           <property name="text">
            <string/>
@@ -334,10 +326,16 @@
           <property name="text">
            <string/>
           </property>
+          <property name="text">
+           <string/>
+          </property>
          </item>
          <item>
           <property name="text">
            <string>UART3</string>
+          </property>
+          <property name="text">
+           <string/>
           </property>
           <property name="text">
            <string/>
@@ -380,10 +378,16 @@
           <property name="text">
            <string/>
           </property>
+          <property name="text">
+           <string/>
+          </property>
          </item>
          <item>
           <property name="text">
            <string>SOFTSERIAL2</string>
+          </property>
+          <property name="text">
+           <string/>
           </property>
           <property name="text">
            <string/>
@@ -408,6 +412,19 @@
        </item>
       </layout>
      </widget>
+    </item>
+    <item row="0" column="2">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
     </item>
    </layout>
   </widget>

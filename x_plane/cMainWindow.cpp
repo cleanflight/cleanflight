@@ -10,11 +10,9 @@ cMainWindow::cMainWindow( ){
 	this->move  ( window.topLeft() );
 
 
-	for( int c=0 ; c < ui.ports->columnCount() ; c++ ){
+	for( int c=0 ; c < ui.ports->columnCount() - 1 ; c++ ){
 		ui.ports->header()->setSectionResizeMode( c , QHeaderView::ResizeToContents );
 	}
-
-	ui.ports->header()->setSectionResizeMode( 1 , QHeaderView::Stretch );
 
 	connect( &serial_timer , &QTimer::timeout , this , &cMainWindow::update_serial );
 
@@ -38,12 +36,13 @@ void cMainWindow::update_serial( ){
 		cSerialInfo info;
 		serial_get_info( c , &info );
 
-		item->setText( 1 , info.status                     );
+		item->setText( 1 , info.path                       );
 		item->setText( 2 , QString::number(info.baud)      );
 		item->setText( 3 , info.parity ? "even" : "none"   );
 		item->setText( 4 , QString::number(info.stop)      );
 		item->setText( 5 , QString::number(info.received)  );
 		item->setText( 6 , QString::number(info.sent)      );
+		item->setText( 7 , info.status                     );
 	}
 }
 
