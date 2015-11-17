@@ -61,7 +61,8 @@ void imuConfigure(
 );
 
 void calculateEstimatedAltitude(uint32_t currentTime);
-void imuUpdate(rollAndPitchTrims_t *accelerometerTrims);
+void imuUpdateAcc(rollAndPitchTrims_t *accelerometerTrims);
+void imuUpdateGyro(void);
 float calculateThrottleAngleScale(uint16_t throttle_correction_angle);
 int16_t calculateThrottleAngleCorrection(uint8_t throttle_correction_value);
 float calculateAccZLowPassFilterRCTimeConstant(float accz_lpf_cutoff);
