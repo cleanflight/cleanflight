@@ -29,3 +29,4 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data, I2
 bool i2cWrite(uint8_t addr_, uint8_t reg, uint8_t data, I2CDevice bus);
 bool i2cRead(uint8_t addr_, uint8_t reg, uint8_t len, uint8_t* buf, I2CDevice bus);
 uint16_t i2cGetErrorCounter(void);
+void i2cSetOverclock(uint8_t OverClock);

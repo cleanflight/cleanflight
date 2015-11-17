@@ -177,6 +177,7 @@ void init(void)
 #ifdef STM32F40_41xxx
     SetSysClock();
 #endif
+    i2cSetOverclock(masterConfig.i2c_overclock);
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();

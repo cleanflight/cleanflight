@@ -101,6 +101,11 @@ static volatile uint8_t writing;
 static volatile uint8_t reading;
 static volatile uint8_t* write_p;
 static volatile uint8_t* read_p;
+static bool i2cOverClock;
+
+void i2cSetOverclock(uint8_t OverClock) {
+    i2cOverClock = (OverClock) ? true : false;
+}
 
 static bool i2cHandleHardwareFailure(I2CDevice bus)
 {
