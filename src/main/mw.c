@@ -754,6 +754,7 @@ void loop(void)
         // Measure loop rate just after reading the sensors
         cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
+        currentTime = micros();
 
         // Gyro Low Pass
         if (currentProfile->pidProfile.gyro_cut_hz) {
