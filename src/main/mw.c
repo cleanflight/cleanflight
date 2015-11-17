@@ -775,9 +775,9 @@ void loop(void)
         imuUpdate(&currentProfile->accelerometerTrims);
 
         // Measure loop rate just after reading the sensors
+        currentTime = micros();
         cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
-        currentTime = micros();
 
         dT = (float)cycleTime * 0.000001f;
 
