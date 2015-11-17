@@ -97,6 +97,7 @@ enum {
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
+uint32_t loopTime = 0;
 
 int16_t magHold;
 int16_t headFreeModeHold;
@@ -747,14 +748,15 @@ void loop(void)
     }
 
     currentTime = micros();
-    if ((int32_t)(currentTime - previousTime) >= masterConfig.looptime) {
+    if ((int32_t)(currentTime - loopTime) >= masterConfig.looptime) {
+        loopTime = currentTime;
 
         imuUpdate(&currentProfile->accelerometerTrims);
 
         // Measure loop rate just after reading the sensors
+        currentTime = micros();
         cycleTime = (int32_t)(currentTime - previousTime);
         previousTime = currentTime;
-        currentTime = micros();
 
         // Gyro Low Pass
         if (currentProfile->pidProfile.gyro_cut_hz) {

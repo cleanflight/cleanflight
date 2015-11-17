@@ -91,6 +91,7 @@
 #include "build_config.h"
 #include "debug.h"
 
+extern uint32_t loopTime;
 extern uint32_t previousTime;
 extern uint8_t motorControlEnable;
 
@@ -459,6 +460,7 @@ void init(void)
 #endif
 
     previousTime = micros();
+    loopTime     = micros();
 
     if (masterConfig.mixerMode == MIXER_GIMBAL) {
         accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
