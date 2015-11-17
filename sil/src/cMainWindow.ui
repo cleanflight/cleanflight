@@ -225,7 +225,7 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0" colspan="2">
-        <widget class="QTreeWidget" name="ports">
+        <widget class="cSerialPortsWidget" name="ports">
          <property name="indentation">
           <number>0</number>
          </property>
@@ -238,176 +238,6 @@
          <attribute name="headerDefaultSectionSize">
           <number>50</number>
          </attribute>
-         <column>
-          <property name="text">
-           <string>Port</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Path</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Baud</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Parity</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Stop</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Rx</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Tx</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Status</string>
-          </property>
-         </column>
-         <item>
-          <property name="text">
-           <string>UART1</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>UART2</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>UART3</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>SOFTSERIAL1</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>SOFTSERIAL2</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
@@ -435,6 +265,11 @@
    <extends>QWidget</extends>
    <header>cLcdDisplay.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>cSerialPortsWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>cSerialPortsWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

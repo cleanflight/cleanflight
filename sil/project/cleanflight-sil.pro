@@ -13,8 +13,6 @@ INCLUDEPATH += \
     ../../src/main
 
 
-
-
 DEFINES += \
     __TARGET__=\\\"X_PLANE\\\" \
     __REVISION__=\\\"1.0.0\\\" \
@@ -98,7 +96,8 @@ HEADERS += \
     ../src/platform/stm32f10x_gpio.h \
     ../src/platform/target.h \
     ../src/cLcdDisplay.h \
-    ../src/main.h
+    ../src/main.h \
+    ../src/cSerialPortsWidget.h
 
 SOURCES += \
     ../../src/main/build_config.c \
@@ -167,7 +166,8 @@ SOURCES += \
     ../src/time.cpp \
     ../src/input.cpp \
     ../src/platform/hardware_revision.c \
-    ../src/eeprom.cpp
+    ../src/eeprom.cpp \
+    ../src/cSerialPortsWidget.cpp
 
 FORMS += \
     ../src/cMainWindow.ui

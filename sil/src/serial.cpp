@@ -68,16 +68,23 @@ namespace{
 		QString      status;
 		QString      path;
 		QMutex       mutex;
+		bool         reopen;
+
+		PortThread( ){
+			reopen = false;
+		}
 
 		void run( ) override{
 			QSerialPort s;
 
 			while( !terminate_flag ){
 
-				if( !s.isOpen() ){
+				if( !s.isOpen() || reopen ){
+					s.close();
+
+					reopen = false;
+
 					mutex.lock();
-					path = QString("COM%1").arg( 20 + index );
-					mutex.unlock();
 
 					s.setPortName( path );
 					s.setBaudRate( cfg.baudRate );
@@ -93,6 +100,8 @@ namespace{
 					}else{
 						s.setParity( QSerialPort::NoParity );
 					}
+
+					mutex.unlock();
 
 					s.open( QIODevice::ReadWrite );
 
@@ -196,6 +205,15 @@ void serial_get_info( int index , cSerialInfo* info ){
 	p->mutex.unlock();
 }
 
+
+void serial_set_path( int index , QString path ){
+	PortThread* p = &threads[index];
+
+	p->mutex.lock();
+	p->path   = path;
+	p->reopen = true;
+	p->mutex.unlock();
+}
 
 
 serialPort_t* uartOpen( USART_TypeDef* USARTx , serialReceiveCallbackPtr callback , uint32_t baudRate , portMode_t mode , portOptions_t options ){

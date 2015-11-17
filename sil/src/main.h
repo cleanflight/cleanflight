@@ -22,6 +22,7 @@ struct cSerialInfo{
 
 void serial_stop();
 void serial_get_info( int index , cSerialInfo* info );
+void serial_set_path( int index , QString path );
 
 void flash_load( );
 void flash_save( );

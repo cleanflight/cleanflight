@@ -1,5 +1,7 @@
 #include "cMainWindow.h"
 #include <qsettings.h>
+#include <qcombobox.h>
+#include <qserialportinfo.h>
 #include "main.h"
 
 cMainWindow::cMainWindow( ){
@@ -10,13 +12,6 @@ cMainWindow::cMainWindow( ){
 	this->move  ( window.topLeft() );
 
 
-	for( int c=0 ; c < ui.ports->columnCount() - 1 ; c++ ){
-		ui.ports->header()->setSectionResizeMode( c , QHeaderView::ResizeToContents );
-	}
-
-	connect( &serial_timer , &QTimer::timeout , this , &cMainWindow::update_serial );
-
-	serial_timer.start(500);
 }
 
 
@@ -25,25 +20,6 @@ cMainWindow::~cMainWindow( ){
 	window.setTopLeft( this->pos()  );
 	window.setSize   ( this->size() );
 	QSettings().setValue("window",window);
-}
-
-
-
-void cMainWindow::update_serial( ){
-	for( int c=0 ; c < ui.ports->topLevelItemCount() ; c++ ){
-		QTreeWidgetItem* item = ui.ports->topLevelItem(c);
-
-		cSerialInfo info;
-		serial_get_info( c , &info );
-
-		item->setText( 1 , info.path                       );
-		item->setText( 2 , QString::number(info.baud)      );
-		item->setText( 3 , info.parity ? "even" : "none"   );
-		item->setText( 4 , QString::number(info.stop)      );
-		item->setText( 5 , QString::number(info.received)  );
-		item->setText( 6 , QString::number(info.sent)      );
-		item->setText( 7 , info.status                     );
-	}
 }
 
 
