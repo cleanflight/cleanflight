@@ -92,7 +92,7 @@ Recommended software
 
 Building
 ------------------------
-- Open "x_plane/xplane.pro" file with Qt Creator.
+- Open "sil/project/cleanflight-sil.pro" file with Qt Creator.
 
 - If promted to configure project, enter directories where to put files. Recommended to use directory outside of Cleanflight (temp directory for example).
 
