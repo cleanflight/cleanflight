@@ -96,6 +96,9 @@ enum {
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
+#if defined(BARO) || defined(SONAR)
+    static bool haveProcessedAnnexCodeOnce = false;
+#endif
 float dT;
 
 int16_t magHold;
@@ -431,67 +434,11 @@ typedef enum {
 #if defined(BARO) || defined(SONAR)
     CALCULATE_ALTITUDE_TASK,
 #endif
+    UPDATE_RX,
     UPDATE_DISPLAY_TASK
 } periodicTasks;
 
 #define PERIODIC_TASK_COUNT (UPDATE_DISPLAY_TASK + 1)
-
-
-void executePeriodicTasks(void)
-{
-    static int periodicTaskIndex = 0;
-
-    switch (periodicTaskIndex++) {
-#ifdef MAG
-    case UPDATE_COMPASS_TASK:
-        if (sensors(SENSOR_MAG)) {
-            updateCompass(&masterConfig.magZero);
-        }
-        break;
-#endif
-
-#ifdef BARO
-    case UPDATE_BARO_TASK:
-        if (sensors(SENSOR_BARO)) {
-            baroUpdate(currentTime);
-        }
-        break;
-#endif
-
-#if defined(BARO) || defined(SONAR)
-    case CALCULATE_ALTITUDE_TASK:
-        if (false
-#if defined(BARO)
-            || (sensors(SENSOR_BARO) && isBaroReady())
-#endif
-#if defined(SONAR)
-            || sensors(SENSOR_SONAR)
-#endif
-            ) {
-            calculateEstimatedAltitude(currentTime);
-        }
-        break;
-#endif
-#ifdef SONAR
-    case UPDATE_SONAR_TASK:
-        if (sensors(SENSOR_SONAR)) {
-            sonarUpdate();
-        }
-        break;
-#endif
-#ifdef DISPLAY
-    case UPDATE_DISPLAY_TASK:
-        if (feature(FEATURE_DISPLAY)) {
-            updateDisplay();
-        }
-        break;
-#endif
-    }
-
-    if (periodicTaskIndex >= PERIODIC_TASK_COUNT) {
-        periodicTaskIndex = 0;
-    }
-}
 
 void processRx(void)
 {
@@ -667,6 +614,88 @@ void processRx(void)
 
 }
 
+void executePeriodicTasks(void)
+{
+    static int periodicTaskIndex = 0;
+
+    switch (periodicTaskIndex++) {
+#ifdef MAG
+    case UPDATE_COMPASS_TASK:
+        if (sensors(SENSOR_MAG)) {
+            updateCompass(&masterConfig.magZero);
+        }
+        break;
+#endif
+
+#ifdef BARO
+    case UPDATE_BARO_TASK:
+        if (sensors(SENSOR_BARO)) {
+            baroUpdate(currentTime);
+        }
+        break;
+#endif
+
+#if defined(BARO) || defined(SONAR)
+    case CALCULATE_ALTITUDE_TASK:
+        if (false
+#if defined(BARO)
+            || (sensors(SENSOR_BARO) && isBaroReady())
+#endif
+#if defined(SONAR)
+            || sensors(SENSOR_SONAR)
+#endif
+            ) {
+            calculateEstimatedAltitude(currentTime);
+        }
+        break;
+#endif
+#ifdef SONAR
+    case UPDATE_SONAR_TASK:
+        if (sensors(SENSOR_SONAR)) {
+            sonarUpdate();
+        }
+        break;
+#endif
+#ifdef DISPLAY
+    case UPDATE_DISPLAY_TASK:
+        if (feature(FEATURE_DISPLAY)) {
+            updateDisplay();
+        }
+        break;
+#endif
+
+    case UPDATE_RX:
+        if (shouldProcessRx(currentTime)) {
+            processRx();
+            isRXDataNew = true;
+
+#ifdef BARO
+        // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
+        if (haveProcessedAnnexCodeOnce) {
+            if (sensors(SENSOR_BARO)) {
+                updateAltHoldState();
+            }
+        }
+#endif
+
+#ifdef SONAR
+       // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
+       if (haveProcessedAnnexCodeOnce) {
+           if (sensors(SENSOR_SONAR)) {
+               updateSonarAltHoldState();
+           }
+       }
+#endif
+
+    }
+        break;
+    }
+
+    if (periodicTaskIndex >= PERIODIC_TASK_COUNT) {
+        periodicTaskIndex = 0;
+    }
+}
+
 void filterRc(void){
     static int16_t lastCommand[4] = { 0, 0, 0, 0 };
     static int16_t deltaRC[4] = { 0, 0, 0, 0 };
@@ -726,53 +755,33 @@ void filterGyro(void) {
 void loop(void)
 {
     static uint32_t loopTime;
-#if defined(BARO) || defined(SONAR)
-    static bool haveProcessedAnnexCodeOnce = false;
-#endif
+    static bool haveProcessedTasksBeforeLoop = false;    //  Used for single tasks execution before loop
 
     updateRx(currentTime);
 
-    if (shouldProcessRx(currentTime)) {
-        processRx();
-        isRXDataNew = true;
-
-#ifdef BARO
-        // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
-        if (haveProcessedAnnexCodeOnce) {
-            if (sensors(SENSOR_BARO)) {
-                updateAltHoldState();
-            }
-        }
-#endif
-
-#ifdef SONAR
-        // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
-        if (haveProcessedAnnexCodeOnce) {
-            if (sensors(SENSOR_SONAR)) {
-                updateSonarAltHoldState();
-            }
-        }
-#endif
-
-    } else {
-        // not processing rx this iteration
+    if (!haveProcessedTasksBeforeLoop) {
         executePeriodicTasks();
+        haveProcessedTasksBeforeLoop = true;
 
-        // if GPS feature is enabled, gpsThread() will be called at some intervals to check for stuck
-        // hardware, wrong baud rates, init GPS if needed, etc. Don't use SENSOR_GPS here as gpsThread() can and will
-        // change this based on available hardware
+        imuUpdateAcc(&currentProfile->accelerometerTrims);
+    }
+
+    // if GPS feature is enabled, gpsThread() will be called at some intervals to check for stuck
+    // hardware, wrong baud rates, init GPS if needed, etc. Don't use SENSOR_GPS here as gpsThread() can and will
+    // change this based on available hardware
 #ifdef GPS
         if (feature(FEATURE_GPS)) {
             gpsThread();
         }
 #endif
-    }
 
     currentTime = micros();
     if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
         loopTime = currentTime + masterConfig.looptime;
 
-        imuUpdate(&currentProfile->accelerometerTrims);
+        haveProcessedTasksBeforeLoop = false;
+
+        imuUpdateGyro();
 
         // Measure loop rate just after reading the sensors
         currentTime = micros();

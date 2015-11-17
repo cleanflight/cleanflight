@@ -297,12 +297,15 @@ static void imuCalculateEstimatedAttitude(void)
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
 }
 
-void imuUpdate(rollAndPitchTrims_t *accelerometerTrims)
+void imuUpdateGyro(void)
 {
-    gyroUpdate();
+        gyroUpdate();
+}
 
+void imuUpdateAcc(rollAndPitchTrims_t *accelerometerTrims)
+{
     if (sensors(SENSOR_ACC)) {
-        updateAccelerationReadings(accelerometerTrims); // TODO rename to accelerometerUpdate and rename many other 'Acceleration' references to be 'Accelerometer'
+        updateAccelerationReadings(accelerometerTrims);
         imuCalculateEstimatedAttitude();
     } else {
         accADC[X] = 0;
