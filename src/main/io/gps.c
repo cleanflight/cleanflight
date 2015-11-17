@@ -1366,11 +1366,12 @@ void nazaGPSInit()
     UNUSED(ack);
 }
 
-void nazaGPSRead(int16_t *magData)
+bool nazaGPSRead(int16_t *magData)
 {
     magData[X] = GPS_MAG[0];
     magData[Y] = GPS_MAG[1];
     magData[Z] = GPS_MAG[2];
+    return true;
 }
 
 bool nazaGPSdetect(mag_t *mag)
