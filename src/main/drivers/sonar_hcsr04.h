@@ -26,6 +26,7 @@ typedef struct sonarHardware_s {
 } sonarHardware_t;
 
 #define SONAR_GPIO GPIOB
+#define SONAR_MAX_RANGE 300
 
 void hcsr04_init(const sonarHardware_t *sonarHardware);
 

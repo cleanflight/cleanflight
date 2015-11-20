@@ -127,9 +127,10 @@ int32_t sonarCalculateAltitude(int32_t sonarAlt, int16_t tiltAngle)
     // calculate sonar altitude only if the sonar is facing downwards(<25deg)
     if (tiltAngle > 250)
         calculatedAltitude = -1;
-    else
-        calculatedAltitude = sonarAlt * (900.0f - tiltAngle) / 900.0f;
-
+    else {
+        float angleRadians = 0.0174f * (tiltAngle / 10.0f);
+        calculatedAltitude = sonarAlt * cos_approx(angleRadians);
+    }
     return calculatedAltitude;
 }
 
