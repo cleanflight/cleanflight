@@ -178,7 +178,7 @@ uint8_t sbusFrameStatus(void)
         sbusChannelData[ch] = value & 0x07FF;
     }
 
-    uint8_t flags = sbufFrame[23];
+    uint8_t flags = sbusFrame[23];
 
     if (flags & SBUS_FLAG_CHANNEL_17) {
         sbusChannelData[16] = SBUS_DIGITAL_CHANNEL_MAX;
