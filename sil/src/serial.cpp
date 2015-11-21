@@ -29,14 +29,14 @@ namespace{
 
 
 		bool push( char v ){
+			total++;
+
 			if( ((wpos + 1) & mask) == rpos ){
 				return false;
 			}
 
 			buf[ wpos & mask ] = v;
 			wpos++;
-
-			total++;
 
 			return true;
 		}
@@ -146,12 +146,17 @@ namespace{
 					if( len ){
 						s.read(buf,len);
 
-						//printf( "recv %d\n" , len );
+						if( cfg.callback ){
+							for( int c=0 ; c < len ; c++ ){
+								cfg.callback( buf[c] & 0xFF );
+							}
 
-						for( int c=0 ; c < len ; c++ ){
-							recv_buf.push( buf[c] );
+							recv_buf.total += len;
+						}else{
+							for( int c=0 ; c < len ; c++ ){
+								recv_buf.push( buf[c] );
+							}
 						}
-
 
 					}
 				}
