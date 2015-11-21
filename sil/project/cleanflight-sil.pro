@@ -7,10 +7,13 @@ QMAKE_CFLAGS += -std=c99
 
 LIBS += -lwinmm
 
+
 INCLUDEPATH += \
     ../src \
     ../src/platform \
-    ../../src/main
+    ../../src/main \
+    ../3rd_party/WMM/src
+
 
 
 DEFINES += \
@@ -65,7 +68,6 @@ HEADERS += \
     ../../src/main/io/statusindicator.h \
     ../../src/main/flight/altitudehold.h \
     ../../src/main/flight/failsafe.h \
-    ../../src/main/flight/filter.h \
     ../../src/main/flight/gps_conversion.h \
     ../../src/main/flight/gtune.h \
     ../../src/main/flight/imu.h \
@@ -97,7 +99,8 @@ HEADERS += \
     ../src/platform/target.h \
     ../src/cLcdDisplay.h \
     ../src/main.h \
-    ../src/cSerialPortsWidget.h
+    ../src/cSerialPortsWidget.h \
+    ../../src/main/common/filter.h
 
 SOURCES += \
     ../../src/main/build_config.c \
@@ -138,7 +141,6 @@ SOURCES += \
     ../../src/main/io/statusindicator.c \
     ../../src/main/flight/altitudehold.c \
     ../../src/main/flight/failsafe.c \
-    ../../src/main/flight/filter.c \
     ../../src/main/flight/gps_conversion.c \
     ../../src/main/flight/gtune.c \
     ../../src/main/flight/imu.c \
@@ -167,7 +169,10 @@ SOURCES += \
     ../src/input.cpp \
     ../src/platform/hardware_revision.c \
     ../src/eeprom.cpp \
-    ../src/cSerialPortsWidget.cpp
+    ../src/cSerialPortsWidget.cpp \
+    ../../src/main/common/filter.c \
+    ../3rd_party/WMM/src/GeomagnetismLibrary.c \
+    ../src/geomag.cpp
 
 FORMS += \
     ../src/cMainWindow.ui

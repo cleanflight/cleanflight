@@ -26,3 +26,5 @@ void serial_set_path( int index , QString path );
 
 void flash_load( );
 void flash_save( );
+
+void geomag_get( float lat , float lon , float alt , float* mag_x , float* mag_y , float* mag_z );

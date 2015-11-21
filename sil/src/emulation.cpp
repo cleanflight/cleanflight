@@ -88,9 +88,11 @@ uint16_t i2cGetErrorCounter(void){
 
 
 void systemBeep(bool onoff){
+	UNUSED(onoff);
 }
 
 void beeperInit(beeperConfig_t *beeperConfig){
+	UNUSED(beeperConfig);
 }
 
 //void initBeeperHardware(beeperConfig_t *config){}
@@ -150,31 +152,44 @@ bool m25p16_init(){
 }
 
 void m25p16_eraseSector(uint32_t address){
+	UNUSED(address);
 }
 void m25p16_eraseCompletely(){
 }
 
 void m25p16_pageProgram(uint32_t address, const uint8_t *data, int length){
+	UNUSED(address);
+	UNUSED(data);
+	UNUSED(length);
 }
 
 void m25p16_pageProgramBegin(uint32_t address){
+	UNUSED(address);
 }
 void m25p16_pageProgramContinue(const uint8_t *data, int length){
+	UNUSED(data);
+	UNUSED(length);
 }
 void m25p16_pageProgramFinish(){
 }
 
 int m25p16_readBytes(uint32_t address, uint8_t *buffer, int length){
+	UNUSED(address);
+	UNUSED(buffer);
+	UNUSED(length);
+	return 0;
 }
 
 bool m25p16_isReady(){
 	return true;
 }
 bool m25p16_waitForReady(uint32_t timeoutMillis){
+	UNUSED(timeoutMillis);
 	return true;
 }
 
 const flashGeometry_t* m25p16_getGeometry(){
+	return 0;
 }
 
 
@@ -222,14 +237,21 @@ void ws2811UpdateStrip(void){
 }
 
 bool isWS2811LedStripReady(void){
+	return false;
 }
 
 void setLedHsv(uint16_t index, const hsvColor_t *color){
+	UNUSED(index);
+	UNUSED(color);
 }
+
 void getLedHsv(uint16_t index, hsvColor_t *color){
+	UNUSED(index);
+	UNUSED(color);
 }
 
 void setStripColor(const hsvColor_t *color){
+	UNUSED(color);
 }
 
 

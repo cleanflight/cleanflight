@@ -1,5 +1,7 @@
 #include <qudpsocket.h>
 #include <qthread.h>
+#include <qvector4d.h>
+#include <qmatrix4x4.h>
 #include "main.h"
 
 
@@ -39,6 +41,13 @@ namespace{
 	float        baterry_voltage;
 	float        baterry_amperage;
 	bool         terminate_flag;
+	float        xpl_pitch;
+	float        xpl_yaw;
+	float        xpl_roll;
+	float        xpl_lat;
+	float        xpl_lon;
+	float        xpl_alt;
+
 
 
 	void begin( const char* type ){
@@ -83,6 +92,8 @@ namespace{
 			put(  4 );
 			put(  6 );
 			put( 16 );
+			put( 17 );
+			put( 20 );
 			put( 53 );
 			put( 54 );
 			end();
@@ -138,6 +149,18 @@ namespace{
 							gyro_data[0] = args[1];
 							gyro_data[1] = -args[0];
 							gyro_data[2] = -args[2];
+							break;
+
+						case 17:
+							xpl_pitch = args[0];
+							xpl_roll  = args[1];
+							xpl_yaw   = args[2];
+							break;
+
+						case 20:
+							xpl_lat = args[0];
+							xpl_lon = args[1];
+							xpl_alt = args[2] * 0.3048;
 							break;
 
 						case 53:
@@ -277,13 +300,37 @@ bool hmc5883lDetect(mag_t* mag, const hmc5883Config_t *hmc5883ConfigToUse){
 	};
 
 	mag->read = []( int16_t* data ){
-		data[0] = 0;
-		data[1] = 0;
-		data[2] = 0;
-		return false;
+		float mx;
+		float my;
+		float mz;
+
+		geomag_get( xpl_lat , xpl_lon , xpl_alt , &mx , &my , & mz );
+
+		QVector4D vec;
+		vec.setX( -mx * 660.0 / 100000.0 );
+		vec.setY( -my * 660.0 / 100000.0 );
+		vec.setZ( -mz * 660.0 / 100000.0 );
+		vec.setW( 1.0 );
+
+		QMatrix4x4 mat;
+		mat.setToIdentity();
+		mat.rotate( xpl_yaw   , 0 , 0 , 1 );
+		mat.rotate( xpl_pitch , 1 , 0 , 0 );
+		mat.rotate( xpl_roll  , 0 , 1 , 0 );
+
+
+
+		vec = mat * vec;
+
+		printf( "%8.3f %8.3f %8.3f  %8.3f %8.3f %8.3f\n" , mx , my , mz , vec.x() , vec.y() , vec.z() );
+
+		data[0] = vec.x();
+		data[1] = vec.y();
+		data[2] = vec.z();
+		return true;
 	};
 
-	return false;
+	return true;
 }
 
 
