@@ -96,7 +96,7 @@ Building
 
 - If promted to configure project, enter directories where to put files. Recommended to use directory outside of Cleanflight (temp directory for example).
 
-- Open "Projects" tab, select "Run" tab, set "Working directory" to full path of "x_plane/data" directory.
+- Open "Projects" tab, select "Run" tab, set "Working directory" to full path of "sil/data" directory.
 
 ![screenshot](assets/qt_creator_run_tab.png)
 
@@ -163,7 +163,8 @@ X-Plane (currently) must be launched on same PC.
 
 ![screenshot](assets/xplane_nmea_config.png)
 
-
+You can copy provided "data/QRO_X/*" quadrocopter model somewehere to "X-Plane/Extra Aircraft" folder.
+(model based on https://github.com/diydrones/apm_planner/tree/master/files/xplane/QRO_X)
 
 Configuring Cleanflight
 -----------------------------
