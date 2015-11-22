@@ -111,7 +111,8 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
  */
 
 static uint8_t sbusFrame[SBUS_FRAME_SIZE];
-
+static bool    sbusFrameProccessing;
+static bool    sbusFrameIgnore;
 
 // Receive ISR callback
 static void sbusDataReceive(uint16_t c)
@@ -124,9 +125,20 @@ static void sbusDataReceive(uint16_t c)
 
     if (sbusFrameTime > (long)(SBUS_TIME_NEEDED_PER_FRAME + 500)) {
         sbusFramePosition = 0;
+        sbusFrameIgnore   = false;
     }
 
-	sbusFrame[sbusFramePosition] = (uint8_t)c;
+    if (sbusFrameProccessing) {
+        sbusFrameIgnore = true;
+    }
+
+    if (!sbusFrameIgnore) {
+        if( sbusFramePosition >= 25 ){
+            printf("!\n");
+        }
+        sbusFrame[sbusFramePosition] = (uint8_t)c;
+    }
+
 
     if (sbusFramePosition == 0) {
         if (c != SBUS_FRAME_BEGIN_BYTE) {
@@ -139,7 +151,10 @@ static void sbusDataReceive(uint16_t c)
 
     if (sbusFramePosition == SBUS_FRAME_SIZE) {
         // endByte currently ignored
-        sbusFrameDone = true;
+
+        sbusFramePosition = 0;
+        sbusFrameDone     = true;
+
 #ifdef DEBUG_SBUS_PACKETS
         debug[2] = sbusFrameTime;
 #endif
@@ -153,12 +168,13 @@ uint8_t sbusFrameStatus(void)
     if (!sbusFrameDone) {
         return SERIAL_RX_FRAME_PENDING;
     }
-    sbusFrameDone = false;
 
 #ifdef DEBUG_SBUS_PACKETS
     sbusStateFlags = 0;
     debug[1] = sbusFrame.frame.flags;
 #endif
+
+    sbusFrameProccessing = true;
 
     for( uint8_t bit=8 , ch=0 ; ch < 16 ; ch++ ){
         uint16_t value  = 0;
@@ -179,6 +195,9 @@ uint8_t sbusFrameStatus(void)
     }
 
     uint8_t flags = sbusFrame[23];
+
+    sbusFrameProccessing = false;
+    sbusFrameDone        = false;
 
     if (flags & SBUS_FLAG_CHANNEL_17) {
         sbusChannelData[16] = SBUS_DIGITAL_CHANNEL_MAX;
