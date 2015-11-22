@@ -318,11 +318,9 @@ bool hmc5883lDetect(mag_t* mag, const hmc5883Config_t *hmc5883ConfigToUse){
 		mat.rotate( xpl_pitch , 1 , 0 , 0 );
 		mat.rotate( xpl_roll  , 0 , 1 , 0 );
 
-
-
 		vec = mat * vec;
 
-		printf( "%8.3f %8.3f %8.3f  %8.3f %8.3f %8.3f\n" , mx , my , mz , vec.x() , vec.y() , vec.z() );
+		//printf( "%8.3f %8.3f %8.3f  %8.3f %8.3f %8.3f\n" , mx , my , mz , vec.x() , vec.y() , vec.z() );
 
 		data[0] = vec.x();
 		data[1] = vec.y();

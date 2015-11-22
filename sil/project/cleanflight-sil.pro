@@ -1,6 +1,5 @@
 CONFIG += c++11
 CONFIG += object_parallel_to_source
-CONFIG += console
 CONFIG += qt
 QT     += core gui widgets serialport network
 QMAKE_CFLAGS += -std=c99
@@ -165,14 +164,14 @@ SOURCES += \
     ../src/xplane.cpp \
     ../src/cLcdDisplay.cpp \
     ../src/reset.cpp \
-    ../src/time.cpp \
     ../src/input.cpp \
     ../src/platform/hardware_revision.c \
     ../src/eeprom.cpp \
     ../src/cSerialPortsWidget.cpp \
     ../../src/main/common/filter.c \
     ../3rd_party/WMM/src/GeomagnetismLibrary.c \
-    ../src/geomag.cpp
+    ../src/geomag.cpp \
+    ../src/execution.cpp
 
 FORMS += \
     ../src/cMainWindow.ui
