@@ -35,6 +35,8 @@
 #include "rx/rx.h"
 #include "rx/sbus.h"
 
+#include "common/bitstream.h"
+
 /*
  * Observations
  *
@@ -114,6 +116,7 @@ static uint8_t sbusFrame[SBUS_FRAME_SIZE];
 static bool    sbusFrameProccessing;
 static bool    sbusFrameIgnore;
 
+
 // Receive ISR callback
 static void sbusDataReceive(uint16_t c)
 {
@@ -133,9 +136,6 @@ static void sbusDataReceive(uint16_t c)
     }
 
     if (!sbusFrameIgnore) {
-        if( sbusFramePosition >= 25 ){
-            printf("!\n");
-        }
         sbusFrame[sbusFramePosition] = (uint8_t)c;
     }
 
@@ -176,25 +176,15 @@ uint8_t sbusFrameStatus(void)
 
     sbusFrameProccessing = true;
 
-    for( uint8_t bit=8 , ch=0 ; ch < 16 ; ch++ ){
-        uint16_t value  = 0;
-        uint8_t  length = 0;
+    bitstream_t b;
+    bitstream_init( &b , sbusFrame );
+    bitstream_read( &b , 8 );
 
-        do{
-            value  |=  (sbusFrame[bit>>3] >> (bit&7)) << length;
-
-            uint8_t step = 8 - (bit&7);
-            length += step;
-            bit    += step;
-
-        }while( length < 11 );
-
-        bit -= length - 11;
-
-        sbusChannelData[ch] = value & 0x07FF;
+    for( uint8_t ch=0 ; ch < 16 ; ch++ ){
+        sbusChannelData[ch] = bitstream_read( &b , 11 );
     }
 
-    uint8_t flags = sbusFrame[23];
+    uint8_t flags = bitstream_read( &b , 8 );
 
     sbusFrameProccessing = false;
     sbusFrameDone        = false;
