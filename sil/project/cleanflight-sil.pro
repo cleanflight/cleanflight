@@ -171,7 +171,8 @@ SOURCES += \
     ../../src/main/common/filter.c \
     ../3rd_party/WMM/src/GeomagnetismLibrary.c \
     ../src/geomag.cpp \
-    ../src/execution.cpp
+    ../src/execution.cpp \
+    ../../src/main/common/bitstream.c
 
 FORMS += \
     ../src/cMainWindow.ui
