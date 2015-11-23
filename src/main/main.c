@@ -91,6 +91,7 @@
 #include "build_config.h"
 #include "debug.h"
 
+extern uint32_t loopTime;
 extern uint32_t previousTime;
 extern uint8_t motorControlEnable;
 
@@ -105,7 +106,7 @@ void serialInit(serialConfig_t *initialSerialConfig, bool softserialEnabled);
 void mspInit(serialConfig_t *serialConfig);
 void cliInit(serialConfig_t *serialConfig);
 void failsafeInit(rxConfig_t *intialRxConfig, uint16_t deadband3d_throttle);
-pwmOutputConfiguration_t *pwmInit(drv_pwm_config_t *init);
+
 #ifdef USE_SERVOS
 void mixerInit(mixerMode_e mixerMode, motorMixer_t *customMotorMixers, servoMixer_t *customServoMixers);
 #else
@@ -459,6 +460,7 @@ void init(void)
 #endif
 
     previousTime = micros();
+    loopTime     = micros();
 
     if (masterConfig.mixerMode == MIXER_GIMBAL) {
         accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);

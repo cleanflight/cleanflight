@@ -20,6 +20,8 @@
 // only set_BASEPRI is implemented in device library. It does always create memory barrirer
 // missing versions are implemented here
 
+#ifdef __arm__
+
 // set BASEPRI and BASEPRI_MAX register, but do not create memory barrier
 __attribute__( ( always_inline ) ) static inline void __set_BASEPRI_nb(uint32_t basePri)
 {
@@ -104,6 +106,7 @@ static inline uint8_t __basepriSetRetVal(uint8_t prio)
     typeof(data)  __attribute__((__cleanup__(__UNIQL(__barrierEnd)))) *__UNIQL(__barrier) = &data; \
     __asm__ volatile ("\t# barier (" #data ") start\n" : "=m" (*__UNIQL(__barrier)))
 
+#endif
 
 // define these wrappers for atomic operations, use gcc buildins
 #define ATOMIC_OR(ptr, val) __sync_fetch_and_or(ptr, val)

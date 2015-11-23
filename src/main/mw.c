@@ -96,6 +96,7 @@ enum {
 uint32_t currentTime = 0;
 uint32_t previousTime = 0;
 uint16_t cycleTime = 0;         // this is the number in micro second to achieve a full loop, it can differ a little and is taken into account in the PID loop
+uint32_t loopTime = 0;
 float dT;
 
 int16_t magHold;
@@ -725,7 +726,6 @@ void filterGyro(void) {
 
 void loop(void)
 {
-    static uint32_t loopTime;
 #if defined(BARO) || defined(SONAR)
     static bool haveProcessedAnnexCodeOnce = false;
 #endif
@@ -769,8 +769,8 @@ void loop(void)
     }
 
     currentTime = micros();
-    if (masterConfig.looptime == 0 || (int32_t)(currentTime - loopTime) >= 0) {
-        loopTime = currentTime + masterConfig.looptime;
+    if ((int32_t)(currentTime - loopTime) >= masterConfig.looptime) {
+        loopTime = currentTime;
 
         imuUpdate(&currentProfile->accelerometerTrims);
 
