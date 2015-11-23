@@ -26,7 +26,7 @@ OBJECT_DIR = ../../obj/test
 COMMON_FLAGS = \
 	-g \
 	-Wall \
-	-pthread \
+	-lpthread \
 	-Wextra \
 	-ggdb3 \
 	-O0 \
@@ -555,6 +555,29 @@ $(OBJECT_DIR)/alignsensor_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/sensors/boardalignment.o \
 	$(OBJECT_DIR)/alignsensor_unittest.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
+$(OBJECT_DIR)/common/bitstream.o : \
+	$(USER_DIR)/common/bitstream.c \
+	$(USER_DIR)/common/bitstream.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/common/bitstream.c -o $@
+
+$(OBJECT_DIR)/bitstream_unittest.o : \
+	$(TEST_DIR)/bitstream_unittest.cc \
+	$(USER_DIR)/common/bitstream.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/bitstream_unittest.cc -o $@
+
+$(OBJECT_DIR)/bitstream_unittest : \
+	$(OBJECT_DIR)/common/bitstream.o \
+	$(OBJECT_DIR)/bitstream_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
