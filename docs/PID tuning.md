@@ -1,12 +1,12 @@
 # Controller introduction
 
-The model of a controller as used by Cleanflight can be descriped as a pice of software that is designed to minimize errors. In general the controller compares the desired value which is given by the RC inputs against the actual value which is sensed by the numerous sensors. Thereby it calculates the deviation - further called Error. This error is then fed into a algorithm that has some knowledge of the system it controls (the aircraft). The end-product or rather the output of the controller is the control value that is designated to correct the error. So the parameters given in the configurator screen (also often referenced as "PIDs") can be imagined as the "knowledge" of the system by the controller. That means that the optimal PID settings to use are different on every craft.
+The model of a controller as used by Cleanflight can be descriped as a piece of software that is designed to minimize errors. In general the controller compares the desired value which is given by the RC inputs against the actual value which is sensed by the numerous sensors. Thereby it calculates the deviation - further called Error. This error is then fed into a algorithm that has some knowledge of the system it controls (the aircraft). The end-product or rather the output of the controller is the control value that is designated to correct the error. So the parameters given in the configurator screen (also often referenced as "PIDs") can be imagined as the "knowledge" of the system by the controller. That means that the optimal PID settings to use are different on every craft.
 
 ##PIDs
 
 The acronym PID stands for the three main components of the controller: Proportional, Integral and Derivative. These components further called Terms are complete controllers by itself but work together to find the best possible output value to correct the sensed error. Each term uses the tuning factor as a gain for its algorithm. Therefore the terms can be disabled to isolate problems by setting the corresponding gain to 0.
 
-**The P term** is a simple controller. It only does a multiplication of the error with its gain. Therefore it is not time variant and gives the fastest possible response to an error. On the other hand the P term is unprecise. There must be an error for the P term to become active. The maximum error in steady state can be reduced by increasing the P gain but at some point the system will get instable. P oszillations will generally manifest as higher frequency (quicker) oscillation around the affected axis.
+**The P term** is a simple controller. It only does a multiplication of the error with its gain. Therefore it is not time variant and gives the fastest possible response to an error. On the other hand the P term is unprecise. There must be an error for the P term to become active. The maximum error in steady state can be reduced by increasing the P gain but at some point the system will get instable. P oscillations will generally manifest as higher frequency (quicker) oscillation around the affected axis.
 
 **The I term** also multiplies the error with its gain but in addition sums the product over time. This time variant behaviour causes the I term to be more susceptible to overshooting and oscillations. Hence the I term is tuned much lower than the P term in most cases. The gain is that even small errors can lead to great output values after some time making the I term good for slow, precise corrections. I oscillations a generally distinctively slower than P oscillations (low frequency).
 
@@ -24,31 +24,31 @@ Every controller has to deal with two problems.
 
 **The second** is delay. Meant is the delay between action (controller output) and reaction (sensor input). The more delay the looser the controller is conected to its environment and therefore can not be tuned as aggressively. Imagine a radiator thermostat as a highly delayed controller.
 
-These two evils are best eliminated at the causer. Balance your props and other fast rotating parts. Make shure the axles are strait and the bearings are still good. Dampening the sensors (flightcontrol) might also help. A detailed discussion about vibration cancellation technics [here](http://diydrones.com/forum/topics/vibration-isolation-and-dampening-of-apm-px4-for-version-2-9).
+These two evils are best eliminated at the causer. Balance your props and other fast rotating parts. Make sure the axles are strait and the bearings are still good. Dampening the sensors (flightcontrol) might also help. A detailed discussion about vibration cancellation technics [here](http://diydrones.com/forum/topics/vibration-isolation-and-dampening-of-apm-px4-for-version-2-9).
 
-Nevertheless noise is everywhere. Even at a vibration optimised system. To cope with this Cleanflight (1.10.0.0) has a new feature generally referenced to as software filtering. Some sensor hardware comes with its own filtering features (MPU6050 etc.) but all of them have there own drawbacks. See this #1028 Issue for more information. My personal advice to everyone is to use software filtering instead of hardware filtering or even no filtering. Overall flight performance is significally improved.
+Nevertheless noise is everywhere. Even at a vibration optimised system. To cope with this Cleanflight (1.10.0) has a new feature generally referenced to as software filtering. Some sensor hardware comes with its own internal filtering features (MPU6050 etc.) but all of them have their own drawbacks. See this #1028 Issue for more information. My personal advice to everyone is to use software filtering instead of hardware filtering or even no filtering. Overall flight performance is significally improved.
 
 ### Filter setup
 
 ![Filter Topology](https://cloud.githubusercontent.com/assets/10757508/10247075/99aeafe2-6916-11e5-9b48-6d1edcb23542.jpg)
 
-Cleanfligth implements three independent filters. The first one directly filters the gyroscopes outputs. The second and third ones filter the P term output and D term input seperatly. By default software filtering is disabled (except for PIDC 5 "Harakiri"). Software filtering is controled by three [CLI parameters](https://github.com/cleanflight/cleanflight/blob/master/docs/Cli.md) which control the three filters available:
+Cleanfligth implements three independent filters. The first one directly filters the gyroscopes outputs. The second and third ones filter the P term output and D term input separately. By default software filtering is disabled (except for PIDC 5 "Harakiri"). Software filtering is controled by three [CLI parameters](https://github.com/cleanflight/cleanflight/blob/master/docs/Cli.md) which control the three filters available:
 
-**Attention!** The suggested values are subject to change.
+**Warning!** The suggested values are subject to change.
 
-**Attention!** Too low cutoffs will lead to instabillity if PID gains are to high. This is caused by delay induced by the filter.
+**Warning!** Too low cutoffs will lead to instability if PID gains are too high. This is caused by delay induced by the filter.
 * **gyro_cut_hz** controls the cut off frequency of the general gyro output. For a good balanced quad a reasonable setting is 100 or above. Settings can go as low as 20 for bad vibration problems but gains must be reduced significantly (explanation see above).
 * **pterm_cut_hz** filters the output to the P term separately. Reasonable values range down to 20 starting at the gyro value.
-* **dterm_cut_hz** does the same for the input of the D term. The D term is usually the most problematic controller regarding noise. Noise on gyro input is typically high pitched and since the D term generates its output proportional to input change noise gets heavyly amplified. Reasonable values range from 20 to 10.
+* **dterm_cut_hz** does the same for the input of the D term. The D term is usually the most problematic controller regarding noise. Noise on gyro input is typically high pitched and since the D term generates its output proportional to input change noise gets heavily amplified. Reasonable values range from 20 to 10.
 
-To start tuning one must distinguish oszillation and random agitation. The first is caused by too high PIDs. The second by noise getting to the controllers. A general approach is this gradual guide:
+To start tuning one must distinguish oscillation and random agitation. The first is caused by too high PIDs. The second by noise getting to the controllers. A general approach is this gradual guide:
 
 1. Set your PID gains as low as you would fly it normaly.
 2. Set filters to 50/20/10.
-3. Do a test flight and watch your craft carefully. You shoulde immediatly be impressed by how silky smooth level modes are now.
+3. Do a test flight and watch your craft carefully. You should immediately be impressed by how silky smooth level modes are now.
 4. You should now try higher PID gains.
-5. Most likely your craft will get instable pretty soon. You now can try 100/50/20 cutoffs. Oszillations should disappear with these cutoffs.
-6. Watch your craft carfully again and check for noise. If there is any: Lower dterm to 10. If this does not help lower pterm and gyro incrementally (pterm usually half of gyro).
+5. Most likely your craft will get instable pretty soon. You now can try 100/50/20 cutoffs. Oscillations should disappear with these cutoffs.
+6. Watch your craft carfully again and check for noise. If there is any: Lower dterm_cut_hz to 10. If this does not help lower ptermm_cut_hz and gyrom_cut_hz incrementally (ptermm_cut_hz usually half of gyro).
 7. If no noise is visible you could even higher cutoffs. Try what works best for you.
 
 ##TPA and TPA Breakpoint
@@ -187,7 +187,7 @@ Yaw authority is also quite good.
 
 ### RC Rate
 
-An overall multiplier on the RC stick inputs for pitch and rol. 
+An overall multiplier on the RC stick inputs for pitch and roll.
 
 On PID Controllers 0, and 3-5 can be used to set the "feel" around center stick for small control movements. (RC Expo also affects this).For PID Controllers 1 and 2, this basically sets the baseline stick sensitivity
 
