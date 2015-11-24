@@ -55,6 +55,8 @@
 
 #include "rx/rx.h"
 
+#include "blackbox/blackbox_io.h"
+
 #include "telemetry/telemetry.h"
 
 #include "flight/mixer.h"
@@ -175,9 +177,9 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->D8[PIDVEL] = 1;
 
     pidProfile->yaw_p_limit = YAW_P_LIMIT_MAX;
-    pidProfile->dterm_cut_hz = 0;
-    pidProfile->pterm_cut_hz = 0;
     pidProfile->gyro_cut_hz = 0;
+    pidProfile->pterm_cut_hz = 0;
+    pidProfile->dterm_cut_hz = 0;
 
     pidProfile->P_f[ROLL] = 1.4f;     // new PID with preliminary defaults test carefully
     pidProfile->I_f[ROLL] = 0.4f;
@@ -540,11 +542,11 @@ static void resetConf(void)
 #endif
 
 #ifdef BLACKBOX
-#ifdef SPRACINGF3
+#ifdef ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
     featureSet(FEATURE_BLACKBOX);
-    masterConfig.blackbox_device = 1;
+    masterConfig.blackbox_device = BLACKBOX_DEVICE_FLASH;
 #else
-    masterConfig.blackbox_device = 0;
+    masterConfig.blackbox_device = BLACKBOX_DEVICE_SERIAL;
 #endif
     masterConfig.blackbox_rate_num = 1;
     masterConfig.blackbox_rate_denom = 1;
