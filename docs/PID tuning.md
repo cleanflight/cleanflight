@@ -1,6 +1,6 @@
 # Controller introduction
 
-The model of a controller as used by Cleanflight can be descriped as a piece of software that is designed to minimize errors. In general the controller compares the desired value which is given by the RC inputs against the actual value which is sensed by the numerous sensors. Thereby it calculates the deviation - further called Error. This error is then fed into a algorithm that has some knowledge of the system it controls (the aircraft). The end-product or rather the output of the controller is the control value that is designated to correct the error. So the parameters given in the configurator screen (also often referenced as "PIDs") can be imagined as the "knowledge" of the system by the controller. That means that the optimal PID settings to use are different on every craft.
+The model of a controller as used by Cleanflight can be described as a piece of software that is designed to minimize errors. In general the controller compares the desired value which is given by the RC inputs against the actual value which is sensed by the numerous sensors. Thereby it calculates the deviation - further called Error. This error is then fed into a algorithm that has some knowledge of the system it controls (the aircraft). The end-product or rather the output of the controller is the control value that is designated to correct the error. So the parameters given in the configurator screen (also often referenced as "PIDs") can be imagined as the "knowledge" of the system by the controller. That means that the optimal PID settings to use are different on every craft.
 
 ##PIDs
 
@@ -45,10 +45,10 @@ To start tuning one must distinguish oscillation and random agitation. The first
 
 1. Set your PID gains as low as you would fly it normaly.
 2. Set filters to 50/20/10.
-3. Do a test flight and watch your craft carefully. You should immediately be impressed by how silky smooth level modes are now.
+3. Do a test flight and watch your craft carefully. You shoulde immediately be impressed by how silky smooth level modes are now.
 4. You should now try higher PID gains.
 5. Most likely your craft will get instable pretty soon. You now can try 100/50/20 cutoffs. Oscillations should disappear with these cutoffs.
-6. Watch your craft carfully again and check for noise. If there is any: Lower dterm_cut_hz to 10. If this does not help lower ptermm_cut_hz and gyrom_cut_hz incrementally (ptermm_cut_hz usually half of gyro).
+6. Watch your craft carfully again and check for noise. If there is any: Lower dterm_cut_hz to 10. If this does not help lower pterm_cut_hz and gyro_cut_hz incrementally (pterm_cut_hz usually half of gyro).
 7. If no noise is visible you could even higher cutoffs. Try what works best for you.
 
 ##TPA and TPA Breakpoint
