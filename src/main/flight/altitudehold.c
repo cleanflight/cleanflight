@@ -24,6 +24,9 @@
 
 #include "platform.h"
 #include "debug.h"
+#include "build_config.h"
+#define SRC_MAIN_FLIGHT_ALTITUDEHOLD_C_
+#include "config/config_unittest.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -212,10 +215,10 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
 void calculateEstimatedAltitude(uint32_t currentTime)
 {
-    static uint32_t previousTime;
-    uint32_t dTime;
-    int32_t baroVel;
-    float dt;
+    static uint32_t previousTime = 0; // microseconds
+    uint32_t dTime; // microseconds
+    int32_t baroVel; // cm/s
+    float dt; // seconds
     float vel_acc;
     int32_t vel_tmp;
     float accZ_tmp;
@@ -228,6 +231,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     static int32_t baroAlt_offset = 0;
     float sonarTransition;
 
+    SET_CALCULATED_ESTIMATED_ALTITUDE_LOCALS();
     dTime = currentTime - previousTime;
     if (dTime < BARO_UPDATE_FREQUENCY_40HZ)
         return;
@@ -289,6 +293,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
 #ifdef BARO
     if (!isBaroCalibrationComplete()) {
+        GET_CALCULATED_ESTIMATED_ALTITUDE_LOCALS();
         return;
     }
 #endif
@@ -317,6 +322,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
 
     accZ_old = accZ_tmp;
+    GET_CALCULATED_ESTIMATED_ALTITUDE_LOCALS();
 }
 
 int32_t altitudeHoldGetEstimatedAltitude(void)

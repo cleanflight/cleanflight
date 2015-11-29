@@ -122,4 +122,5 @@ uint32_t micros(void) { return 0; }
 bool isBaroCalibrationComplete(void) { return true; }
 void performBaroCalibrationCycle(void) {}
 int32_t baroCalculateAltitude(void) { return 0; }
+void sensorsSet(uint32_t mask) {UNUSED(mask);}
 }
