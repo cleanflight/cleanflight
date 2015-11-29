@@ -17,9 +17,9 @@
 
 #pragma once
 
-#ifdef UNIT_TEST
 
 #ifdef SRC_MAIN_FLIGHT_ALTITUDEHOLD_C_
+#ifdef UNIT_TEST
 uint32_t unittest_calculateEstimatedAltitude_previousTime;
 float unittest_calculateEstimatedAltitude_vel;
 float unittest_calculateEstimatedAltitude_accAlt;
@@ -40,7 +40,9 @@ float unittest_calculateEstimatedAltitude_vel_acc;
         unittest_calculateEstimatedAltitude_accAlt = accAlt; \
         unittest_calculateEstimatedAltitude_vel_acc = vel_acc; \
     }
-#endif // SRC_MAIN_FLIGHT_ALTITUDEHOLD_C_
-
+#else
+#define SET_CALCULATED_ESTIMATED_ALTITUDE_LOCALS() {}
+#define GET_CALCULATED_ESTIMATED_ALTITUDE_LOCALS() {}
 #endif // UNIT_TEST
+#endif // SRC_MAIN_FLIGHT_ALTITUDEHOLD_C_
 
