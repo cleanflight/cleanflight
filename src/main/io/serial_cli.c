@@ -149,7 +149,7 @@ static void cliFlashRead(char *cmdline);
 #endif
 #endif
 
-#ifdef USE_SERIAL_1WIRE
+#ifdef USE_SERIAL_1WIRE_CLI
 static void cliUSB1Wire(char *cmdline);
 #endif
 
@@ -229,7 +229,7 @@ typedef struct {
 
 // should be sorted a..z for bsearch()
 const clicmd_t cmdTable[] = {
-#ifdef USE_SERIAL_1WIRE
+#ifdef USE_SERIAL_1WIRE_CLI
     CLI_COMMAND_DEF("1wire", "1-wire interface to escs", "<esc index>", cliUSB1Wire),
 #endif
     CLI_COMMAND_DEF("adjrange", "configure adjustment ranges", NULL, cliAdjustmentRange),
@@ -337,7 +337,11 @@ static const char * const lookupTableGimbalMode[] = {
 };
 
 static const char * const lookupTablePidController[] = {
-    "MULTIWII", "REWRITE", "LUX", "MULTIWII23", "HARAKIRI"
+    "MW23", "MWREWRITE", "LUX"
+};
+
+static const char * const lookupTableBlackboxDevice[] = {
+    "SERIAL", "SPIFLASH"
 };
 
 static const char * const lookupTableSerialRX[] = {
@@ -364,10 +368,13 @@ typedef enum {
     TABLE_GPS_PROVIDER,
     TABLE_GPS_SBAS_MODE,
 #endif
+#ifdef BLACKBOX
+    TABLE_BLACKBOX_DEVICE,
+#endif
     TABLE_CURRENT_SENSOR,
     TABLE_GIMBAL_MODE,
     TABLE_PID_CONTROLLER,
-    TABLE_SERIAL_RX
+    TABLE_SERIAL_RX,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -377,6 +384,9 @@ static const lookupTableEntry_t lookupTables[] = {
 #ifdef GPS
     { lookupTableGPSProvider, sizeof(lookupTableGPSProvider) / sizeof(char *) },
     { lookupTableGPSSBASMode, sizeof(lookupTableGPSSBASMode) / sizeof(char *) },
+#endif
+#ifdef BLACKBOX
+    { lookupTableBlackboxDevice, sizeof(lookupTableBlackboxDevice) / sizeof(char *) },
 #endif
     { lookupTableCurrentSensor, sizeof(lookupTableCurrentSensor) / sizeof(char *) },
     { lookupTableGimbalMode, sizeof(lookupTableGimbalMode) / sizeof(char *) },
@@ -582,9 +592,9 @@ const clivalue_t valueTable[] = {
     { "acc_trim_roll",              VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].accelerometerTrims.values.roll, .config.minmax = { -300,  300 } },
 
     { "baro_tab_size",              VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_sample_count, .config.minmax = { 0,  BARO_SAMPLE_COUNT_MAX } },
-    { "baro_noise_lpf",             VAR_FLOAT  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].barometerConfig.baro_noise_lpf, .config.lookup = { TABLE_OFF_ON } },
-    { "baro_cf_vel",                VAR_FLOAT  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].barometerConfig.baro_cf_vel, .config.lookup = { TABLE_OFF_ON } },
-    { "baro_cf_alt",                VAR_FLOAT  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].barometerConfig.baro_cf_alt, .config.lookup = { TABLE_OFF_ON } },
+    { "baro_noise_lpf",             VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_noise_lpf, .config.minmax = { 0 , 1 } },
+    { "baro_cf_vel",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_vel, .config.minmax = { 0 , 1 } },
+    { "baro_cf_alt",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].barometerConfig.baro_cf_alt, .config.minmax = { 0 , 1 } },
     { "baro_hardware",              VAR_UINT8  | MASTER_VALUE,  &masterConfig.baro_hardware, .config.minmax = { 0,  BARO_MAX } },
 
     { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, .config.minmax = { 0,  MAG_MAX } },
@@ -612,6 +622,7 @@ const clivalue_t valueTable[] = {
     { "i_yawf",                     VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I_f[YAW], .config.minmax = { 0,  100 } },
     { "d_yawf",                     VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D_f[YAW], .config.minmax = { 0,  100 } },
 
+    { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, .config.minmax = { YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX } },
     { "level_horizon",              VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_level, .config.minmax = { 0,  10 } },
     { "level_angle",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.A_level, .config.minmax = { 0,  10 } },
     { "sensitivity_horizon",        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.H_sensitivity, .config.minmax = { 0,  250 } },
@@ -628,12 +639,9 @@ const clivalue_t valueTable[] = {
     { "i_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.I8[PIDVEL], .config.minmax = { 0,  200 } },
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], .config.minmax = { 0,  200 } },
 
-    { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, .config.minmax = { YAW_P_LIMIT_MIN,  YAW_P_LIMIT_MAX } },
-	{ "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, .config.minmax = { 0,  200 } },
-	{ "pterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pterm_cut_hz, .config.minmax = { 0,  200 } },
-	{ "gyro_cut_hz",                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.gyro_cut_hz, .config.minmax = { 0,  200 } },
-
-    { "pid5_oldyw",                 VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP,  &masterConfig.profile[0].pidProfile.pid5_oldyw, .config.lookup = { TABLE_OFF_ON } },
+	{ "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, .config.minmax = {0, 200 } },
+	{ "pterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pterm_cut_hz, .config.minmax = {0, 200 } },
+	{ "gyro_cut_hz",                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.gyro_cut_hz, .config.minmax = {0, 200 } },
 
 #ifdef GTUNE
     { "gtune_loP_rll",              VAR_UINT8  | PROFILE_VALUE,  &masterConfig.profile[0].pidProfile.gtune_lolimP[FD_ROLL], .config.minmax = { 10,  200 } },
@@ -650,7 +658,7 @@ const clivalue_t valueTable[] = {
 #ifdef BLACKBOX
     { "blackbox_rate_num",          VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_num, .config.minmax = { 1,  32 } },
     { "blackbox_rate_denom",        VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_rate_denom, .config.minmax = { 1,  32 } },
-    { "blackbox_device",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.blackbox_device, .config.lookup = { TABLE_OFF_ON } },
+    { "blackbox_device",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP,  &masterConfig.blackbox_device, .config.lookup = { TABLE_BLACKBOX_DEVICE } },
 #endif
 
     { "magzero_x",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[X], .config.minmax = { -32768,  32767 } },
@@ -1094,7 +1102,7 @@ static void cliMotorMix(char *cmdline)
                 cliMotorMix("");
             }
         } else {
-            cliShowArgumentRangeError("index", 1, MAX_SUPPORTED_MOTORS);
+            cliShowArgumentRangeError("index", 0, MAX_SUPPORTED_MOTORS - 1);
         }
     }
 #endif
@@ -1927,7 +1935,7 @@ static void cliMotor(char *cmdline)
     }
 
     if (motor_index < 0 || motor_index >= MAX_SUPPORTED_MOTORS) {
-        cliShowArgumentRangeError("index", 0, MAX_SUPPORTED_MOTORS);
+        cliShowArgumentRangeError("index", 0, MAX_SUPPORTED_MOTORS - 1);
         return;
     }
 
@@ -2157,15 +2165,20 @@ static void cliSet(char *cmdline)
             cliPrint("\r\n");
         }
     } else if ((eqptr = strstr(cmdline, "=")) != NULL) {
-        // has equal, set var
+        // has equals
+
         char *lastNonSpaceCharacter = eqptr;
         while (*(lastNonSpaceCharacter - 1) == ' ') {
             lastNonSpaceCharacter--;
         }
         uint8_t variableNameLength = lastNonSpaceCharacter - cmdline;
 
+        // skip the '=' and any ' ' characters
         eqptr++;
-        len--;
+        while (*(eqptr) == ' ') {
+            eqptr++;
+        }
+
         for (i = 0; i < VALUE_COUNT; i++) {
             val = &valueTable[i];
             // ensure exact match when setting to prevent setting variables with shorter names
@@ -2296,25 +2309,24 @@ static void cliStatus(char *cmdline)
     printf("Cycle Time: %d, I2C Errors: %d, config size: %d\r\n", cycleTime, i2cErrorCounter, sizeof(master_t));
 }
 
-#ifdef USE_SERIAL_1WIRE
+#ifdef USE_SERIAL_1WIRE_CLI
 static void cliUSB1Wire(char *cmdline)
 {
-    int i;
-
     if (isEmpty(cmdline)) {
-        cliPrint("Please specify a ouput channel. e.g. `1wire 2` to connect to motor 2\r\n");
+        cliShowParseError();
         return;
     } else {
+        usb1WireInitialize();
+
+        int i;
         i = atoi(cmdline);
-        if (i >= 0 && i <= ESC_COUNT) {
+        if (i >= 0 && i < escCount) {
             printf("Switching to BlHeli mode on motor port %d\r\n", i);
-        }
-        else {
-            printf("Invalid motor port, valid range: 1 to %d\r\n", ESC_COUNT);
+            usb1WirePassthrough(i);
+        } else {
+            cliShowArgumentRangeError("motor", 0, escCount - 1);
         }
     }
-    // motor 1 => index 0
-    usb1WirePassthrough(i-1);
 }
 #endif
 

@@ -112,6 +112,8 @@
 #define LED_STRIP_TIMER TIM3
 
 #define BLACKBOX
+#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+
 #define TELEMETRY
 #define SERIAL_RX
 #define SONAR
@@ -119,8 +121,7 @@
 #define USE_CLI
 
 #define USE_SERIAL_1WIRE
-// How many escs does this board support?
-#define ESC_COUNT 6
+#define USE_SERIAL_1WIRE_CLI
 
 // FlexPort (pin 21/22, TX/RX respectively):
 // Note, FlexPort has 10k pullups on both TX and RX

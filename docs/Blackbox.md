@@ -92,7 +92,7 @@ the best chance of writing at high speed. You must format it with either FAT, or
 
 ### Choosing a serial port for the OpenLog
 First, tell the Blackbox to log using a serial port (rather than to an onboard dataflash chip). Go to the
-Configurator's CLI tab, enter `set blackbox_device=0` to switch logging to serial (this is the default setting), and
+Configurator's CLI tab, enter `set blackbox_device=SERIAL` to switch logging to serial, and
 save.
 
 You need to let Cleanflight know which of [your serial ports][] you connect your OpenLog to (i.e. the Blackbox port),
@@ -124,9 +124,7 @@ telemetry pins.
 
 Pin RC3 on the side of the board is UART2's Tx pin. If Blackbox is configured on UART2, MSP can still be used on UART1
 when the board is armed, which means that the Configurator will continue to work simultaneously with Blackbox logging.
-However, the RC3 pin is only available for use by UART2 if the receiver mode is _not_ `PARALLEL_PWM`. In other words, a
-PPM or Serial receiver must be used. If a PWM receiver is used, the RC3 and RC4 pins are used for channel input from the
-receiver. Sharing UART1 between Blackbox and MSP is the only way to use Blackbox on a Naze32 with a PWM receiver.
+Note that in `PARALLEL_PWM` mode this leaves the board with 6 input channels as RC3 and RC4 pins are used by UART2 as Tx and Rx. Cleanflight automatically shifts logical channel mapping for you when UART2 is enabled in `Ports` tab so you'll have to shift receiver pins that are connected to Naze32 pins 3 to 6 by two.
 
 The OpenLog tolerates a power supply of between 3.3V and 12V. If you are powering your Naze32 with a standard 5V BEC,
 then you can use a spare motor header's +5V and GND pins to power the OpenLog with.
@@ -190,7 +188,7 @@ These chips are also supported:
 * Winbond W25Q128 - 128 Mbit / 16 MByte
 
 #### Enable recording to dataflash
-On the Configurator's CLI tab, you must enter `set blackbox_device=1` to switch to logging to an onboard dataflash chip,
+On the Configurator's CLI tab, you must enter `set blackbox_device=SPIFLASH` to switch to logging to an onboard dataflash chip,
 then save.
 
 [your serial ports]: https://github.com/cleanflight/cleanflight/blob/master/docs/Serial.md
