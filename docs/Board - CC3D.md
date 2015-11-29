@@ -126,7 +126,19 @@ The following features are not available:
  * Display
  * Sonar
 
-# Restoring OpenPilot bootloader
+## Restoring Tau Labs Bootloader
+To restore the Tau Labs bootloader:
+* Download a bootloader image, click [bl_coptercontrol.hex](assets/binary/bl_coptercontrol.hex), right click `Raw` button and save as a hex file.
+* Flash the bootloader image using the Cleanflight Configurator app firmware flasher, choosing to load a local firmware (or by another method of your choice should you so desire). 
+* Unplug the board.
+* Open Tau Labs GCS and switch to the Firmware tab.
+* Click Rescue and replug the board. 
+* You can now flash Tau Labs as usual.
+
+Note: this section is only applicable if you have overwritten the bootloader, e.g. by flashing using the "Single binary image mode" instructions above.
+Note: the hex file provided was compiled from the Tau Labs "Endomorphism" release source using the command `make bl_coptercontrol_hex`.
+
+## Restoring OpenPilot bootloader
 
 If you have a JLink debugger, you can use JLinkExe to flash the open pilot bootloader.
 
