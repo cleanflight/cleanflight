@@ -35,10 +35,12 @@ extern "C" {
 
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
+    #include "drivers/sonar_hcsr04.h"
 
     #include "sensors/sensors.h"
     #include "sensors/acceleration.h"
     #include "sensors/barometer.h"
+    #include "sensors/sonar.h"
 
     #include "io/escservo.h"
     #include "io/rc_controls.h"
@@ -54,6 +56,8 @@ extern "C" {
 
     void calculateEstimatedAltitude(uint32_t currentTime);
     int32_t altitudeHoldGetEstimatedAltitude(void);
+    void sonarInit(const sonarHardware_t *sonarHardware);
+    extern int32_t hcsr04SonarPulseTravelTime;
     extern uint32_t unittest_calculateEstimatedAltitude_previousTime;
     extern float unittest_calculateEstimatedAltitude_vel;
     extern float unittest_calculateEstimatedAltitude_accAlt;
@@ -164,6 +168,33 @@ TEST(AltitudeHoldTest, TestCalculateEstimatedAltitudeIntegrator)
     EXPECT_FLOAT_EQ(1875, unittest_calculateEstimatedAltitude_accAlt);
     // and finally, altitude has increased from 0 to accAlt
     EXPECT_EQ(unittest_calculateEstimatedAltitude_accAlt, altitudeHoldGetEstimatedAltitude());
+}
+
+TEST(AltitudeHoldTest, TestCalculateEstimatedAltitudeSonar)
+{
+    sonarInit(0);
+
+    barometerConfig_t barometerConfig;
+    pidProfile_t pidProfile;
+
+    configureAltitudeHold(&pidProfile, &barometerConfig, 0, 0);
+    resetBarometerConfig(&barometerConfig);
+
+    testCalculateEstimatedAltitudeReset();
+    accSumCount = 0;
+    // force sonar to return altitude of 100cm
+    hcsr04SonarPulseTravelTime =  SOUND_SPEED_MICROSECONDS_PER_CM * 100;
+    // altitude should be updated with sonar altitude
+    calculateEstimatedAltitude(UPDATE_INTERVAL_MICROS);
+    EXPECT_EQ(100, altitudeHoldGetEstimatedAltitude());
+
+    testCalculateEstimatedAltitudeReset();
+    accSumCount = 0;
+    // force sonar to return out of range altitude
+    hcsr04SonarPulseTravelTime =  SOUND_SPEED_MICROSECONDS_PER_CM * (HCSR04_MAX_RANGE_CM + 1);
+    // sonar out of range, so altitude should not be updated
+    calculateEstimatedAltitude(UPDATE_INTERVAL_MICROS);
+    EXPECT_EQ(0, altitudeHoldGetEstimatedAltitude());
 }
 
 
