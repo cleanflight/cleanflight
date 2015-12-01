@@ -266,11 +266,13 @@ bool detectGyro(void)
 
         case GYRO_MPU6500:
 #ifdef USE_GYRO_MPU6500
+            bool test;
 #ifdef USE_GYRO_SPI_MPU6500
-            if (mpu6500GyroDetect(&gyro) || mpu6500SpiGyroDetect(&gyro))
+            test = mpu6500GyroDetect(&gyro) || mpu6500SpiGyroDetect(&gyro);
 #else
-            if (mpu6500GyroDetect(&gyro))
+            test = mpu6500GyroDetect(&gyro);
 #endif
+            if (test)
             {
                 gyroHardware = GYRO_MPU6500;
 #ifdef GYRO_MPU6500_ALIGN
@@ -397,11 +399,13 @@ retry:
             ; // fallthrough
         case ACC_MPU6500:
 #ifdef USE_ACC_MPU6500
+            bool test;
 #ifdef USE_ACC_SPI_MPU6500
-            if (mpu6500AccDetect(&acc) || mpu6500SpiAccDetect(&acc))
+            test = mpu6500AccDetect(&acc) || mpu6500SpiAccDetect(&acc);
 #else
-            if (mpu6500AccDetect(&acc))
+            test = mpu6500AccDetect(&acc);
 #endif
+            if (test)
             {
 #ifdef ACC_MPU6500_ALIGN
                 accAlign = ACC_MPU6500_ALIGN;
