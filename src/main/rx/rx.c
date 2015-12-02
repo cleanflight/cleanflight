@@ -48,6 +48,7 @@
 #include "rx/sumh.h"
 #include "rx/msp.h"
 #include "rx/xbus.h"
+#include "rx/srxl.h"
 
 #include "rx/rx.h"
 
@@ -60,6 +61,7 @@ bool sbusInit(rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig, r
 bool spektrumInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 bool sumdInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
+bool srxlInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
 void rxMspInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
@@ -223,7 +225,10 @@ void serialRxInit(rxConfig_t *rxConfig)
             rxRefreshRate = 11000;
             enabled = sumhInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
-        case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_SRXL:
+		    rxRefreshRate = 11000;
+            enabled = srxlInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
+            break;
         case SERIALRX_XBUS_MODE_B_RJ01:
             rxRefreshRate = 11000;
             enabled = xBusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
@@ -257,7 +262,8 @@ uint8_t serialRxFrameStatus(rxConfig_t *rxConfig)
             return sumdFrameStatus();
         case SERIALRX_SUMH:
             return sumhFrameStatus();
-        case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_SRXL:
+			return srxlFrameStatus();
         case SERIALRX_XBUS_MODE_B_RJ01:
             return xBusFrameStatus();
     }

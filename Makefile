@@ -251,6 +251,7 @@ COMMON_SRC = build_config.c \
 		   rx/sumh.c \
 		   rx/spektrum.c \
 		   rx/xbus.c \
+		   rx/srxl.c \
 		   sensors/acceleration.c \
 		   sensors/battery.c \
 		   sensors/boardalignment.c \
