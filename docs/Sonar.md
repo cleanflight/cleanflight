@@ -37,7 +37,7 @@ Current meter cannot be used in conjunction with Sonar.
 
 | Trigger       | Echo          | Inline 1k resistors |
 | ------------- | ------------- | ------------------- |
-| PB5           | PB0           | YES (3.3v input)    |
+| PB5 / RC4     | PB0 / RC5     | YES (3.3v input)    |
 
 #### Constraints
 
