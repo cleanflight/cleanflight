@@ -120,8 +120,12 @@
 #define USE_SERVOS
 #define USE_CLI
 
-#define USE_SERIAL_1WIRE
-#define USE_SERIAL_1WIRE_CLI
+#if defined(OPBL)
+// disabled some features for OPBL build due to code size.
+#undef AUTOTUNE
+#undef BLACKBOX
+#undef ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+#endif
 
 // FlexPort (pin 21/22, TX/RX respectively):
 // Note, FlexPort has 10k pullups on both TX and RX
