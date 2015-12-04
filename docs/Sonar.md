@@ -3,8 +3,8 @@
 A sonar sensor can be used to measure altitude for use with BARO and SONAR altitude
 hold modes.
 
-The sonar sensor is used instead of the pressure sensor (barometer) at low altitudes.
-The sonar sensor is only used when the aircraft inclination angle (attitude) is small.
+The sonar sensor is used instead of the pressure sensor (barometer) at low altitudes (less than about 3.5 meters above the ground).
+The sonar sensor is only used when the aircraft inclination angle (attitude) is small (less than 22.5 degrees).
 
 ## Hardware
 
