@@ -42,3 +42,14 @@ Current meter cannot be used in conjunction with Sonar.
 #### Constraints
 
 Sonar cannot be used in conjuction with SoftSerial or Parallel PWM.
+
+### SPRacingF3
+
+| Trigger       | Echo          | Inline 1k resistors |
+| ------------- | ------------- | ------------------- |
+| PB0 / RC7     | PB1 / RC8     | YES (3.3v input)    |
+
+#### Constraints
+
+Sonar cannot be used in conjuction with SoftSerial2 or Parallel PWM.
+
