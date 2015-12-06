@@ -847,11 +847,11 @@ void loop(void)
         //pitch divider for drone with tilt arm, needed to tell PID that we want to be horizontal
         int16_t tmpPitch = rcCommand[PITCH];
         if ( (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT) && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH_DIVIDER) ) {
-            // compensate the pitch if in dynamic mode to be less aggressive
-            if (rcData[currentProfile->tiltArm.channel] < masterConfig.rxConfig.midrc) {
-       	        rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior;
-       	    }
-       	}
+            // compensate the pitch to be less aggressive
+            rcCommand[PITCH] /= currentProfile->tiltArm.pitchDivisior;
+            rcCommand[PITCH] += scaleRange(rcData[currentProfile->tiltArm.channel], 1000, 2000, -500, 500);
+            rcCommand[PITCH] = constrain(rcCommand[PITCH], -500, 500);   
+        }
 #endif
         // PID - note this is function pointer set by setPIDController()
         pid_controller(
