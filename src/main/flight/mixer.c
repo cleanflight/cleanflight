@@ -502,32 +502,14 @@ static void updateGimbalServos(uint8_t firstServoIndex) {
     pwmWriteServo(firstServoIndex + 1, servo[SERVO_GIMBAL_ROLL]);
 }
 
-uint16_t radiantToServoPwm(uint8_t servo_index, float angle_radians) {
+static uint16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
     // normalize angle to range -PI to PI
     while (angle_radians > M_PIf)
         angle_radians -= M_PIf * 2;
     while (angle_radians < -M_PIf)
         angle_radians += M_PIf * 2;
 
-    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
-    if (angle_radians > 0) {
-        angle_radians = scaleRangef(angle_radians, 0, degreesToRadians( servoConf[servo_index].angleAtMax), servoConf[servo_index].middle, servoConf[servo_index].max);
-    } else {
-        angle_radians = scaleRangef(angle_radians, 0, degreesToRadians(-servoConf[servo_index].angleAtMin), servoConf[servo_index].middle, servoConf[servo_index].min);
-    }
-
-    //just to be sure it is in range
-    return constrain(angle_radians, servoConf[servo_index].min, servoConf[servo_index].max);
-}
-
-uint16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
-    // normalize angle to range -PI to PI
-    while (angle_radians > M_PIf)
-        angle_radians -= M_PIf * 2;
-    while (angle_radians < -M_PIf)
-        angle_radians += M_PIf * 2;
-
-    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the full range
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the two half range
     if (angle_radians > 0) {
         angle_radians = scaleRangef(angle_radians, 0, degreesToRadians( servoConf[servo_index].angleAtMax), 0, 500);
     } else {
@@ -538,7 +520,7 @@ uint16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
     return constrain(angle_radians, -500, 500);
 }
 
-float channelToRadians(uint8_t servo_index, uint16_t channel) {
+static float channelToRadians(uint8_t servo_index, uint16_t channel) {
     //check input
     channel = constrain(channel, -500, 500);
 
