@@ -561,7 +561,7 @@ uint8_t hasTiltingMotor() {
  * return a float in range [-PI/2:+PI/2] witch represent the actual servo inclination wanted
  */
 float requestedTiltServoAngle() {
-    uint16_t userInput = 0;
+    int16_t userInput = 0;
     uint8_t isFixedPitch = false;
     //get wanted position of the tilting servo
     if (rcData[tiltArmConfig->channel] >= rxConfig->midrc) {
