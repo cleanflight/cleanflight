@@ -534,7 +534,7 @@ uint16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
         angle_radians = scaleRangef(angle_radians, 0, degreesToRadians(-servoConf[servo_index].angleAtMin), 0, -500);
     }
 
-    //just to be sure it is in range
+    //just to be sure it is in range, because float
     return constrain(angle_radians, -500, 500);
 }
 
@@ -544,7 +544,7 @@ float channelToRadians(uint8_t servo_index, uint16_t channel) {
 
     float angle;
     //take into account eventual non-linearity of the range
-    if (channel > 1500){
+    if (channel > 0){
         angle = scaleRangef(channel, 0, 500, 0,  degreesToRadians(servoConf[servo_index].angleAtMax) );
     }else{
         angle = scaleRangef(channel, 0, -500, 0, -degreesToRadians(servoConf[servo_index].angleAtMin) );
@@ -565,44 +565,38 @@ float requestedTiltServoAngle() {
     uint8_t isFixedPitch = false;
     //get wanted position of the tilting servo
     if (rcData[tiltArmConfig->channel] >= rxConfig->midrc) {
-        userInput = rcData[tiltArmConfig->channel];
+        userInput = rcData[tiltArmConfig->channel] - 1500;
         isFixedPitch = true;
     } else {
-        userInput = rcData[PITCH];
+        userInput = rcCommand[PITCH]; //use rcCommand so we get expo and deadband
     }
 
     float servoAngle = 0;
-    if (!FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE) && !isFixedPitch) {
-        //we are in Rate mode and Dynamic Pitch.
+
+    if ( !FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE) && !isFixedPitch ) {
 
         //TODO: change this hardcoded value to something user can select; those affect the speed of the servo in rate mode
-        //user input is from 1000 to 2000, we want to scale it from -10deg to +10deg
-        if (userInput > 1500) {
-            servoAngle = scaleRangef(userInput, 1600, 2000, 0, 0.017f);
-            if (servoAngle < 0) { //dead band
-                servoAngle = 0;
-            }
+        //user input is from -500 to 500, we want to scale it from -10deg to +10deg
+        float servoSpeed;
+        if (userInput > 0) {
+            servoSpeed = scaleRangef( userInput, 0, 500, 0, 0.017f );
         } else {
-            servoAngle = scaleRangef(userInput, 1400, 1000, 0, -0.017f);
-            if (servoAngle > 0) { //dead band
-                servoAngle = 0;
-            }
+            servoSpeed = scaleRangef( userInput, 0, -500, 0, -0.017f);
         }
 
-        lastServoAngleTilt += servoAngle;
+        lastServoAngleTilt += (servoSpeed * tiltArmConfig->gearRatioPercent) / 100.0f;
 
-        // just to be sure
+        // prevent overshot and overflow/windup
         lastServoAngleTilt = constrainf(lastServoAngleTilt, -degreesToRadians(servoConf[SERVO_TILTING].angleAtMin), degreesToRadians(servoConf[SERVO_TILTING].angleAtMax));
 
         servoAngle = lastServoAngleTilt;
     } else {
         lastServoAngleTilt = 0; //reset
 
-        //use input is in range [1000,2000], we want it in range [-500, 500]
-        servoAngle = channelToRadians(SERVO_TILTING, userInput - 1500);
-    }
+        servoAngle = channelToRadians(SERVO_TILTING, userInput);
 
-    servoAngle = (servoAngle * tiltArmConfig->gearRatioPercent) / 100.0f;
+        servoAngle = (servoAngle * tiltArmConfig->gearRatioPercent) / 100.0f;
+    }
 
     return servoAngle;
 }

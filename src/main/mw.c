@@ -844,6 +844,8 @@ void loop(void)
 
 #ifdef USE_SERVOS
         //TODO: is good here?
+        //pitch divider for drone with tilt arm, needed to tell PID that we want to be horizontal
+        int16_t tmpPitch = rcCommand[PITCH];
         if ( (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT) && (currentProfile->tiltArm.flagEnabled & TILT_ARM_ENABLE_PITCH) ) {
             // compensate the pitch if in dynamic mode to be less aggressive
             if (rcData[currentProfile->tiltArm.channel] < masterConfig.rxConfig.midrc) {
@@ -864,6 +866,11 @@ void loop(void)
             //&currentProfile->tiltArm
 #endif
         );
+
+#ifdef USE_SERVOS
+        // set back PITCH to original value before pitch divider
+        rcCommand[PITCH] = tmpPitch;
+#endif
 
         mixTable();
 
