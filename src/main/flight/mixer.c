@@ -613,7 +613,7 @@ uint8_t hasTiltingMotor() {
  */
 float requestedTiltServoAngle() {
 
-    const uint16_t userInput = rcCommand[PITCH];
+    const int16_t userInput = rcCommand[PITCH];
     float servoAngle = 0;
     
     if ( !FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE)) {
