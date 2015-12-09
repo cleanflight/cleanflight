@@ -281,7 +281,7 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_NAV_STATUS           121    //out message         Returns navigation status
 #define MSP_NAV_CONFIG           122    //out message         Returns navigation parameters
 #define MSP_3D                   124    //out message         Settings needed for reversible ESCs
-#define MSP_RC_CONTROLS          125    //out message          deadbands for yaw alt pitch roll
+#define MSP_RC_CONTROLS          125    //out message         deadbands for yaw alt pitch roll
 
 #define MSP_SET_RAW_RC           200    //in message          8 rc chan
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
