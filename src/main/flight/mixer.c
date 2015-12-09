@@ -571,7 +571,7 @@ static void updateGimbalServos(uint8_t firstServoIndex)
     pwmWriteServo(firstServoIndex + 1, servo[SERVO_GIMBAL_ROLL]);
 }
 
-static uint16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
+static int16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
     // normalize angle to range -PI to PI
     while (angle_radians > M_PIf)
         angle_radians -= M_PIf * 2;
@@ -589,7 +589,7 @@ static uint16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
     return constrain(angle_radians, -500, 500);
 }
 
-static float channelToRadians(uint8_t servo_index, uint16_t channel) {
+static float channelToRadians(uint8_t servo_index, int16_t channel) {
     //check input
     channel = constrain(channel, -500, 500);
 
@@ -624,7 +624,7 @@ float requestedTiltServoAngle() {
 
     float servoAngle = 0;
 
-    if ( !FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE) && !isFixedPitch ) {
+    if ( !FLIGHT_MODE(ANGLE_MODE) && !FLIGHT_MODE(HORIZON_MODE) && !isFixedPitch) {
 
         //TODO: change this hardcoded value to something user can select; those affect the speed of the servo in rate mode
         //user input is from -500 to 500, we want to scale it from -10deg to +10deg
@@ -648,7 +648,7 @@ float requestedTiltServoAngle() {
 
         servoAngle = (servoAngle * tiltArmConfig->gearRatioPercent) / 100.0f;
     }
-
+    
     return servoAngle;
 }
 
@@ -834,7 +834,6 @@ STATIC_UNIT_TESTED void servoMixer(void)
         float actualTilt = requestedTiltServoAngle();
 
         input[INPUT_TILT_PITCH] = radiansToChannel(SERVO_TILTING, actualTilt);
-    
     } else {
         input[INPUT_TILT_PITCH] = 0;
     }
