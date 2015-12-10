@@ -1091,7 +1091,7 @@ static void cliTiltArm(char *cmdline)
         printf("tilt_arm");
 
         printf("\r\npitch compensation");
-        if (tilt->flagEnabled & TILT_ARM_ENABLE_PITCH){
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_PITCH_DIVIDER){
         	printf(" ENABLED");
         }else{
         	printf(" DISABLED");
@@ -1101,7 +1101,7 @@ static void cliTiltArm(char *cmdline)
         );
 
         printf("\r\nthrust compensation");
-        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST){
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST_COMPENSATION){
             printf(" ENABLED");
         }else{
             printf(" DISABLED");
@@ -1110,14 +1110,14 @@ static void cliTiltArm(char *cmdline)
             tilt->thrustLiftoffPercent
         );
         printf("\r\nbody thrust compensation");
-        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY){
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY_COMPENSATION){
             printf(" ENABLED");
         }else{
             printf(" DISABLED");
         }
 
         printf("\r\nyaw-roll compensation");
-        if (tilt->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL){
+        if (tilt->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL_COMPENSATION){
             printf(" ENABLED");
         }else{
             printf(" DISABLED");
@@ -1181,16 +1181,16 @@ static void cliTiltArm(char *cmdline)
 
         tilt->flagEnabled = 0;
         if (arguments[0]){
-        	tilt->flagEnabled |= TILT_ARM_ENABLE_PITCH;
+        	tilt->flagEnabled |= TILT_ARM_ENABLE_PITCH_DIVIDER;
         }
         if (arguments[1]){
-            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST;
+            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST_COMPENSATION;
         }
         if (arguments[2]){
-            tilt->flagEnabled |= TILT_ARM_ENABLE_YAW_ROLL;
+            tilt->flagEnabled |= TILT_ARM_ENABLE_YAW_ROLL_COMPENSATION;
         }
         if (arguments[3]){
-            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST_BODY;
+            tilt->flagEnabled |= TILT_ARM_ENABLE_THRUST_BODY_COMPENSATION;
         }
         tilt->pitchDivisior = arguments[4];
         tilt->thrustLiftoffPercent = arguments[5];

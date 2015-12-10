@@ -656,12 +656,12 @@ void mixTilting(void) {
     float angleTilt = requestedTiltServoAngle();
     float tmpCosine = cos_approx(angleTilt);
 
-    if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST) {
+    if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_COMPENSATION) {
         // compensate the throttle because motor orientation
         float pitchToCompensate = angleTilt;
 
         float bodyPitch = degreesToRadians(inclination.values.pitchDeciDegrees);
-        if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY) {
+        if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_THRUST_BODY_COMPENSATION) {
             pitchToCompensate += bodyPitch;
         }
 
@@ -683,7 +683,7 @@ void mixTilting(void) {
     }
 
     //compensate the roll and yaw because motor orientation
-    if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL) {
+    if (tiltArmConfig->flagEnabled & TILT_ARM_ENABLE_YAW_ROLL_COMPENSATION) {
 
         // ***** quick and dirty compensation to test *****
         float rollCompensation = axisPID[ROLL] * tmpCosine;
