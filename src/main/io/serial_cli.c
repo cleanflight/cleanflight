@@ -1607,7 +1607,7 @@ static void cliDump(char *cmdline)
 
         // print custom servo mixer if exists
         printf("smix reset\r\n");
-
+#ifdef USE_SERVOS
         for (i = 0; i < MAX_SERVO_RULES; i++) {
 
             if (masterConfig.customServoMixer[i].rate == 0)
@@ -1625,6 +1625,7 @@ static void cliDump(char *cmdline)
             );
         }
 
+#endif
 #endif
 
         cliPrint("\r\n\r\n# feature\r\n");
