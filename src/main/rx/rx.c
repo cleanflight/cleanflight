@@ -48,6 +48,7 @@
 #include "rx/sumh.h"
 #include "rx/msp.h"
 #include "rx/xbus.h"
+#include "rx/jetiexbus.h"
 
 #include "rx/rx.h"
 
@@ -228,6 +229,11 @@ void serialRxInit(rxConfig_t *rxConfig)
             rxRefreshRate = 11000;
             enabled = xBusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
+		case SERIALRX_JETIEXBUS:
+			rxRefreshRate = 11000;
+            enabled = jetiExBusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
+			break;
+		
     }
 
     if (!enabled) {
@@ -260,7 +266,9 @@ uint8_t serialRxFrameStatus(rxConfig_t *rxConfig)
         case SERIALRX_XBUS_MODE_B:
         case SERIALRX_XBUS_MODE_B_RJ01:
             return xBusFrameStatus();
-    }
+		case SERIALRX_JETIEXBUS:
+			return jetiExBusFrameStatus();
+			}
     return SERIAL_RX_FRAME_PENDING;
 }
 #endif
