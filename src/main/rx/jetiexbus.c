@@ -44,6 +44,10 @@
 #define JETIEXBUS_START_STICK_FRAME (0x3E)
 #define JETIEXBUS_START_REQUEST_FRAME (0x3D)
 
+#define EXBUS_CHANNELDATA (0x3E01)						//Frame contains only channeldata
+#define EXBUS_CHANNELDATA_TELEMETRY_REQUEST (0x3E03)	//Frame contains only channeldata, but with a request for telemetry data
+#define EXBUS_DATA_REQUEST (0x3D01)						//Request for telemetry data or jetibox menu
+
 static bool jetiExBusFrameReceived = false;
 static bool jetiExBusDataIncoming = false;
 static bool jetiExBusHeaderReady = false;
@@ -123,8 +127,7 @@ uint16_t calcCRC16(volatile uint8_t *pt, uint8_t msgLen)
 {
     uint16_t crc16_data=0;
    	uint8_t mlen=0;
-	
-    while(mlen<=msgLen) {
+    while(mlen<msgLen) {
         crc16_data = updateCRC16(crc16_data, pt[mlen]);
         mlen++;
     }
@@ -139,8 +142,8 @@ void jetiExBusDecodeFrame()
 
 	// Decode header
 	switch (((uint16_t)jetiExBusFrame[0] << 8)+((uint16_t)jetiExBusFrame[1])){
-		case (0x3E01):
-		case (0x3E03):
+		case (EXBUS_CHANNELDATA):
+		case (EXBUS_CHANNELDATA_TELEMETRY_REQUEST):
 			// Exctract the channeldata
 			for (uint8_t i = 0; i < jetiExBusChannelCount; i++){
 				frameAddr = JETIEXBUS_HEADER_LEN + i * 2;
@@ -151,10 +154,9 @@ void jetiExBusDecodeFrame()
 				}
 			jetiExBusFrameReceived = true;
 			break;
-		case (0x3D01):
-			// Request for Telemetry or JETIBOX menu
+		case (EXBUS_DATA_REQUEST):
+			// Request for telemetry or JETIBOX menu
 			break;
-
 	}
 }
 
@@ -203,8 +205,7 @@ static void jetiExBusDataReceive(uint16_t c)
     	
     // Done?
     if (jetiExBusFrameLength == jetiExBusFramePosition) {
-		crc = ((uint16_t)jetiExBusFrame[jetiExBusFramePosition - 1] << 8) + (jetiExBusFrame[jetiExBusFramePosition - 2]);
-		if(crc == calcCRC16(jetiExBusFrame, jetiExBusFrameLength - 3)){
+		if(calcCRC16(jetiExBusFrame, jetiExBusFrameLength)==0){
 			jetiExBusDecodeFrame();
 		}
         jetiExBusFrameReset();
