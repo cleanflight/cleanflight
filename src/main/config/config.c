@@ -516,6 +516,8 @@ static void resetConf(void)
 
     // gimbal
     currentProfile->gimbalConfig.mode = GIMBAL_MODE_NORMAL;
+
+    resetTiltArmProfile(&currentProfile->tiltArm);
 #endif
 
 #ifdef GPS
@@ -744,7 +746,7 @@ void activateConfig(void)
 void validateAndFixConfig(void)
 {
 
-    if (masterConfig.mixerMode == MIXER_QUADX_TILT ){
+    if (masterConfig.mixerMode == MIXER_QUADX_TILT || masterConfig.mixerMode == MIXER_OCTOX_TILT){
         //prevent conflict; tilting quad and camstab/trig share Servo
         featureClear(FEATURE_SERVO_TILT);
     }
