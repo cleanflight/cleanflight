@@ -724,6 +724,8 @@ static bool processOutCommand(uint8_t cmdMSP)
     int32_t lat = 0, lon = 0;
 #endif
 
+    currentPort->cmdMSP = cmdMSP;
+
     switch (cmdMSP) {
     case MSP_API_VERSION:
         headSerialReply(
