@@ -554,6 +554,39 @@ STATIC_UNIT_TESTED void forwardAuxChannelsToServos(uint8_t firstServoIndex)
     }
 }
 
+static int16_t radiansToChannel(uint8_t servo_index, float angle_radians) {
+    // normalize angle to range -PI to PI
+    while (angle_radians > M_PIf)
+        angle_radians -= M_PIf * 2;
+    while (angle_radians < -M_PIf)
+        angle_radians += M_PIf * 2;
+
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the two half range
+    if (angle_radians > 0) {
+        angle_radians = scaleRangef(angle_radians, 0, degreesToRadians(servoConf[servo_index].angleAtMax), 0, 500);
+    } else {
+        angle_radians = scaleRangef(angle_radians, 0, -degreesToRadians(servoConf[servo_index].angleAtMin), 0, -500);
+    }
+
+    //just to be sure it is in range, because float
+    return constrain(angle_radians, -500, 500);
+}
+
+static float channelToRadians(uint8_t servo_index, int16_t channel) {
+    //check input
+    channel = constrain(channel, -500, 500);
+
+    float angle;
+    //take into account eventual non-linearity of the range
+    if (channel > 0){
+        angle = scaleRangef(channel, 0, 500, 0,  degreesToRadians(servoConf[servo_index].angleAtMax) );
+    }else{
+        angle = scaleRangef(channel, 0, -500, 0, -degreesToRadians(servoConf[servo_index].angleAtMin) );
+    }
+
+    return angle;
+}
+
 static void updateGimbalServos(uint8_t firstServoIndex)
 {
     pwmWriteServo(firstServoIndex + 0, servo[SERVO_GIMBAL_PITCH]);
