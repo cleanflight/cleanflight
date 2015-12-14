@@ -1930,6 +1930,7 @@ static const uint8_t mspTelemetryCommandSequence[] = {
 };
 
 #define TELEMETRY_MSP_COMMAND_SEQUENCE_ENTRY_COUNT (sizeof(mspTelemetryCommandSequence) / sizeof(mspTelemetryCommandSequence[0]))
+#define TELEMETRY_MSP_COMMAND_CYCLE_MS  25	// send next command after this amount of ms
 
 static mspPort_t *mspTelemetryPort = NULL;
 
@@ -1966,6 +1967,22 @@ void mspSetTelemetryPort(serialPort_t *serialPort)
     resetMspPort(mspTelemetryPort, serialPort, FOR_TELEMETRY);
 }
 
+static bool isTimeForMspTelemetryItem()
+{
+    static uint32_t lastCommand_ms = 0;
+
+    uint32_t now_ms = millis();
+    int32_t diff_ms = (int32_t)(now_ms - lastCommand_ms);
+
+    if (diff_ms > TELEMETRY_MSP_COMMAND_CYCLE_MS || diff_ms < 0)
+    {
+        lastCommand_ms = now_ms;
+        return true;
+    }
+
+    return false;
+}
+
 void sendMspTelemetry(void)
 {
     static uint32_t sequenceIndex = 0;
@@ -1973,6 +1990,14 @@ void sendMspTelemetry(void)
     if (!mspTelemetryPort) {
         return;
     }
+
+    /* synchronize time */
+    if (!isTimeForMspTelemetryItem())
+    	return;
+
+    /* adjust for low serial rates - never overflow, always use most recent data */
+    if (!isSerialTransmitBufferEmpty(mspTelemetryPort->port))
+    	return;
 
     setCurrentPort(mspTelemetryPort);
 
