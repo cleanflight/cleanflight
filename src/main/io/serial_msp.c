@@ -1926,7 +1926,8 @@ static const uint8_t mspTelemetryCommandSequence[] = {
     MSP_RC,
     MSP_MOTOR_PINS,
     MSP_ATTITUDE,
-    MSP_SERVO
+    MSP_SERVO,
+    MSP_ANALOG
 };
 
 #define TELEMETRY_MSP_COMMAND_SEQUENCE_ENTRY_COUNT (sizeof(mspTelemetryCommandSequence) / sizeof(mspTelemetryCommandSequence[0]))
