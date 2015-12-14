@@ -233,8 +233,8 @@ const mixer_t mixers[] = {
     { 2, true,  mixerDualcopter },     // MIXER_DUALCOPTER
     { 1, true,  NULL },                // MIXER_SINGLECOPTER
     { 4, false, mixerAtail4 },         // MIXER_ATAIL4
-    { 4, true, mixerAtail4 },          // MIXER_TILT_OCTOX4
-    { 8, true, mixerAtail4 },          // MIXER_TILT_OCTOX8
+    { 4, true,  mixerQuadX },          // MIXER_TILT_OCTOX4
+    { 8, true,  mixerOctoX8 },         // MIXER_TILT_OCTOX8
     { 0, false, NULL },                // MIXER_CUSTOM
     { 2, true,  NULL },                // MIXER_CUSTOM_AIRPLANE
     { 3, true,  NULL },                // MIXER_CUSTOM_TRI
