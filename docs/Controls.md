@@ -79,3 +79,25 @@ default). If you are having issues with your tail rotor contacting the ground du
         <td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td>
     </tr>
 </table>
+
+
+## Throttle settings and there meaning
+
+MIN_COMMAND -
+With motor stop enabled this is the command sent to the esc's when the throttle is below min_check or disarmed. With motor stop disabled, this is the command sent only when the copter is disarmed. This must be set well below motors spinning for safty. 
+
+MIN_CHECK - 
+With switch arming mode is in use, lowering your throttle below min_check will result in motors spining at min_throttle. When using the default stick arming, lowering your throttle below min_check will result in motors spinning at min_throttle and yaw being disabled so that you may disarm. With motor stop enabled, lowering your throttle below min_check will also result in motors off and the ESC being sent min_command. This must be set to a level that is 100% reliably met by the throttle throw. A setting too low may result in a dangerous condition where the copter can not be disarmed.
+
+MIN_THROTTLE -
+Typically set to just above relaiable spin up of all motors. Sometimes this is set slightly higher for prop stall provention during advanced manovers or sometimes considerably higher to produce a desired result. When armed with motor stop off, your motors will spin at this command so keep that in mind from a safety stand point.  
+
+MAX_CHECK -
+Throttle positions above this level will invoke max_command. 
+
+MAX_COMMAND -
+This is the max command to the esc from the flight controller. It is typically set to the max throw of the throttle  
+
+In depth videos explaining these terms are avalible from Joshua Bardwell here:
+https://www.youtube.com/watch?v=WFU3VewGbbA
+https://www.youtube.com/watch?v=YNRl0OTKRGA
