@@ -95,7 +95,7 @@ Typically set to just above reliable spin up of all motors. Sometimes this is se
 `max_check` -
 Throttle positions above this level will send max_command to the esc's. 
 
-`max_command` -
+`max_throttle` -
 This is the max command to the esc's from the flight controller. 
 
 In depth videos explaining these terms are available from Joshua Bardwell here:
