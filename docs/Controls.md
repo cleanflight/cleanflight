@@ -81,7 +81,7 @@ default). If you are having issues with your tail rotor contacting the ground du
 </table>
 
 
-## Throttle settings and there meaning
+## Throttle settings and there interaction
 
 MIN_COMMAND -
 With motor stop enabled this is the command sent to the esc's when the throttle is below min_check or disarmed. With motor stop disabled, this is the command sent only when the copter is disarmed. This must be set well below motors spinning for safty. 
