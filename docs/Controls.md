@@ -93,7 +93,7 @@ MIN_THROTTLE -
 Typically set to just above relaiable spin up of all motors. Sometimes this is set slightly higher for prop stall provention during advanced manovers or sometimes considerably higher to produce a desired result. When armed with motor stop off, your motors will spin at this command so keep that in mind from a safety stand point.  
 
 MAX_CHECK -
-Throttle positions above this level will invoke max_command. 
+Throttle positions above this level will send max_command to the esc's. 
 
 MAX_COMMAND -
 This is the max command to the esc from the flight controller. It is typically set to the max throw of the throttle  
