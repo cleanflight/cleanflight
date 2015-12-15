@@ -96,7 +96,7 @@ MAX_CHECK -
 Throttle positions above this level will send max_command to the esc's. 
 
 MAX_COMMAND -
-This is the max command to the esc's from the flight controller. It is typically set to the max throw of the throttle  
+This is the max command to the esc's from the flight controller. 
 
 In depth videos explaining these terms are available from Joshua Bardwell here:
 
