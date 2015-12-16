@@ -878,4 +878,8 @@ void loop(void)
         updateLedStrip();
     }
 #endif
+
+#ifdef USE_LLIGHTS
+    updateLlights();
+#endif
 }

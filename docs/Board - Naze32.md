@@ -42,6 +42,11 @@ When SOFTSERIAL is enabled, LED_STRIP and CURRENT_METER are unavailable, but two
 | 9   | 7          | SOFTSERIAL2 RX |                                  |
 | 10  | 8          | SOFTSERIAL2 TX |                                  |
 
+Some boards have two additional GPIO pads connected internally to PB5 and PA15 pins (see the board manual). 
+The PA15 pin is driven by the LLIGHTS "mode" allowing to remotely control the Landing Lights (or whatever else).
+Note that the pin uses positive logic (is high when the mode is on) and to actually control a 12V LED a serial resistor and 
+NPN transistor in an open collector cirtuit (or equivalent) is necessary.
+
 ## Recovery
 
 ### Board

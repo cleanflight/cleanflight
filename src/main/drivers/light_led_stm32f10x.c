@@ -26,12 +26,14 @@
 #include "system.h"
 #include "gpio.h"
 
+#include "io/rc_controls.h"
+
 #include "light_led.h"
 
 
 void ledInit(void)
 {
-#if defined(LED0) || defined(LED1) || defined(LED2)
+#if defined(LED0) || defined(LED1) || defined(LED2) || defined(USE_LLIGHTS)
     uint32_t i;
 
     struct {
@@ -56,6 +58,12 @@ void ledInit(void)
             .cfg = { LED2_PIN, Mode_Out_PP, Speed_2MHz }
         }
 #endif
+#ifdef USE_LLIGHTS
+        {
+            .gpio = LLIGHTS_GPIO,
+            .cfg = { LLIGHTS_PIN, Mode_Out_PP, Speed_2MHz }
+        }
+#endif
     };
 
     uint8_t gpio_count = ARRAYLEN(gpio_setup);
@@ -69,10 +77,14 @@ void ledInit(void)
 #ifdef LED2
     RCC_APB2PeriphClockCmd(LED2_PERIPHERAL, ENABLE);
 #endif
+#ifdef USE_LLIGHTS
+    RCC_APB2PeriphClockCmd(LLIGHTS_PERIPHERAL, ENABLE);
+#endif
 
     LED0_OFF;
     LED1_OFF;
     LED2_OFF;
+    LLIGHTS_OFF;
 
     for (i = 0; i < gpio_count; i++) {
         gpioInit(gpio_setup[i].gpio, &gpio_setup[i].cfg);
@@ -81,3 +93,14 @@ void ledInit(void)
 #endif
 }
 
+#ifdef USE_LLIGHTS
+void updateLlights(void)
+{
+	if (IS_RC_MODE_ACTIVE(BOXLLIGHTS)) {
+		LLIGHTS_ON;
+	}
+	else {
+		LLIGHTS_OFF;
+	}
+}
+#endif

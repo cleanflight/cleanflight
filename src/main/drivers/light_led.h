@@ -64,4 +64,15 @@
 #define LED2_ON                  do {} while(0)
 #endif
 
+
+#ifdef USE_LLIGHTS
+#define LLIGHTS_OFF             digitalLo(LLIGHTS_GPIO, LLIGHTS_PIN)
+#define LLIGHTS_ON              digitalHi(LLIGHTS_GPIO, LLIGHTS_PIN)
+#else
+#define LLIGHTS_OFF             do {} while(0)
+#define LLIGHTS_ON              do {} while(0)
+#endif
+
+
 void ledInit(void);
+void updateLlights(void);

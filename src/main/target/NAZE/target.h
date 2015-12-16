@@ -29,6 +29,11 @@
 #define LED1_PIN    Pin_4 // PB4 (LED)
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOB
 
+#define USE_LLIGHTS
+#define LLIGHTS_GPIO   GPIOA
+#define LLIGHTS_PIN    Pin_15 // PA15 (general purpose GPIO pad)
+#define LLIGHTS_PERIPHERAL RCC_APB2Periph_GPIOA
+
 #define BEEP_GPIO   GPIOA
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
