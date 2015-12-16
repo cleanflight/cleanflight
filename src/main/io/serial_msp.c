@@ -673,6 +673,10 @@ void mspInit(serialConfig_t *serialConfig)
     }
 #endif
 
+#ifdef USE_LLIGHTS
+    activeBoxIds[activeBoxIdCount++] = BOXLLIGHTS;
+#endif
+
     if (feature(FEATURE_INFLIGHT_ACC_CAL))
         activeBoxIds[activeBoxIdCount++] = BOXCALIB;
 
