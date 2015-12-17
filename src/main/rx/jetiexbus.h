@@ -22,3 +22,11 @@
 bool jetiExBusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 uint8_t jetiExBusFrameStatus(void);
 
+#ifdef TELEMETRY
+#include "telemetry/telemetry.h"
+
+void initJetiExBusTelemetry(telemetryConfig_t *initialTelemetryConfig);
+void checkJetiExBusTelemetryState(void);
+void handleJetiExBusTelemetry(void);
+
+#endif

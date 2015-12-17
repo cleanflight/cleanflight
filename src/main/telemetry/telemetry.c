@@ -40,6 +40,7 @@
 #include "telemetry/hott.h"
 #include "telemetry/msp.h"
 #include "telemetry/smartport.h"
+#include "rx/jetiexbus.h"                // receiver with telemetrie capability
 
 static telemetryConfig_t *telemetryConfig;
 
@@ -54,7 +55,7 @@ void telemetryInit(void)
     initHoTTTelemetry(telemetryConfig);
     initMSPTelemetry(telemetryConfig);
     initSmartPortTelemetry(telemetryConfig);
-
+    initJetiExBusTelemetry(telemetryConfig);
     telemetryCheckState();
 }
 
@@ -78,6 +79,7 @@ void telemetryCheckState(void)
     checkHoTTTelemetryState();
     checkMSPTelemetryState();
     checkSmartPortTelemetryState();
+    checkJetiExBusTelemetryState();
 }
 
 void telemetryProcess(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
@@ -86,6 +88,7 @@ void telemetryProcess(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
     handleHoTTTelemetry();
     handleMSPTelemetry();
     handleSmartPortTelemetry();
+    handleJetiExBusTelemetry();
 }
 
 #endif
