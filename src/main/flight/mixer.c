@@ -699,48 +699,48 @@ int16_t getMix(uint8_t rule_index)
     bool needScale = true;
 
     int16_t responseRange; //in range [-500:500] if needScale = true, else is [min:max]
+    int16_t input_from = currentServoMixer[rule_index].inputSource;
 
-    switch (currentServoMixer[rule_index].inputSource) {
+    switch (input_from) {
+        case INPUT_STABILIZED_ROLL:
+        case INPUT_STABILIZED_PITCH:
+        case INPUT_STABILIZED_YAW:
+            //WARINING: this list of case works only if the order in rcData index enum is the same of inputSource_e
+            if (FLIGHT_MODE(PASSTHRU_MODE)) {
+                responseRange = rcCommand[input_from - INPUT_STABILIZED_ROLL];
+            } else {
+                responseRange = axisPID[input_from - INPUT_STABILIZED_ROLL];
+            }
+            // Reverse yaw servo when inverted in 3D mode
+            if (rule_index == INPUT_STABILIZED_YAW && feature(FEATURE_3D) && (rcData[THROTTLE] < rxConfig->midrc)) {
+                responseRange *= -1;
+            }
+            break;
 
-    case INPUT_STABILIZED_ROLL:
-    case INPUT_STABILIZED_PITCH:
-    case INPUT_STABILIZED_YAW:
-        //WARINING: this list of case works only if the order in rcData index enum is the same of inputSource_e
-        if (FLIGHT_MODE(PASSTHRU_MODE)) {
-            responseRange = rcCommand[rule_index - INPUT_STABILIZED_ROLL];
-        } else {
-            responseRange = axisPID[rule_index - INPUT_STABILIZED_ROLL];
-        }
-        // Reverse yaw servo when inverted in 3D mode
-        if (rule_index == INPUT_STABILIZED_YAW && feature(FEATURE_3D) && (rcData[THROTTLE] < rxConfig->midrc)) {
-            responseRange *= -1;
-        }
-        break;
+        case INPUT_STABILIZED_THROTTLE:
+            responseRange = motor[0] - 1000 - 500;  // Since it derives from rcCommand or mincommand and must be [-500:+500]
+            break;
 
-    case INPUT_STABILIZED_THROTTLE:
-        responseRange = motor[0] - 1000 - 500;  // Since it derives from rcCommand or mincommand and must be [-500:+500]
-        break;
+        case INPUT_RC_ROLL:
+        case INPUT_RC_PITCH:
+        case INPUT_RC_YAW:
+        case INPUT_RC_THROTTLE:
+        case INPUT_RC_AUX1:
+        case INPUT_RC_AUX2:
+        case INPUT_RC_AUX3:
+        case INPUT_RC_AUX4:
+            //WARINING: this list of case works only if the order in rcData index enum is the same of inputSource_e
+            responseRange = rcData[input_from - INPUT_RC_ROLL] - rxConfig->midrc;
+            break;
 
-    case INPUT_RC_ROLL:
-    case INPUT_RC_PITCH:
-    case INPUT_RC_YAW:
-    case INPUT_RC_THROTTLE:
-    case INPUT_RC_AUX1:
-    case INPUT_RC_AUX2:
-    case INPUT_RC_AUX3:
-    case INPUT_RC_AUX4:
-        //WARINING: this list of case works only if the order in rcData index enum is the same of inputSource_e
-        responseRange = rcData[rule_index - INPUT_RC_ROLL] - rxConfig->midrc;
-        break;
-
-    case INPUT_GIMBAL_PITCH:
-        needScale = false;
-        responseRange = decidegreeToServoPulse(servo_index, inclination.values.pitchDeciDegrees);
-        break;
-    case INPUT_GIMBAL_ROLL:
-        needScale = false;
-        responseRange = decidegreeToServoPulse(servo_index, inclination.values.rollDeciDegrees);
-        break;
+        case INPUT_GIMBAL_PITCH:
+            needScale = false;
+            responseRange = decidegreeToServoPulse(servo_index, inclination.values.pitchDeciDegrees);
+            break;
+        case INPUT_GIMBAL_ROLL:
+            needScale = false;
+            responseRange = decidegreeToServoPulse(servo_index, inclination.values.rollDeciDegrees);
+            break;
     }
 
     //now, if the input, for coinvenience, has been mapped from [-500:500], we have to scale it to [min:max]
@@ -761,7 +761,7 @@ int16_t getMix(uint8_t rule_index)
         currentOutput[rule_index] = responseRange;
     }
 
-    responseRange = servoDirection(servo_index, currentServoMixer[rule_index].inputSource) * constrain(((int32_t) currentOutput[rule_index] * currentServoMixer[rule_index].rate) / 100, min, max);
+    responseRange = servoDirection(servo_index, input_from) * constrain(((int32_t) currentOutput[rule_index] * currentServoMixer[rule_index].rate) / 100, min, max);
 
     return responseRange;
 }
