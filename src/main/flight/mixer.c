@@ -661,6 +661,130 @@ void StopPwmAllMotors()
 }
 
 #ifndef USE_QUAD_MIXER_ONLY
+static int16_t decidegreeToServoPulse(uint8_t servo_index, int16_t angle_deci_degree)
+{
+    // normalize angle to range -180 to 180 (degree)
+    while (angle_deci_degree > 1800)
+        angle_deci_degree -= 3600;
+    while (angle_deci_degree < -1800)
+        angle_deci_degree += 3600;
+
+    //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the two half range
+    if (angle_deci_degree > 0) {
+        angle_deci_degree = scaleRange(angle_deci_degree, 0, servoConf[servo_index].angleAtMax * 10, 0, servoConf[servo_index].max);
+    } else {
+        angle_deci_degree = scaleRange(angle_deci_degree, 0, servoConf[servo_index].angleAtMin * 10, 0, servoConf[servo_index].min);
+    }
+
+    return angle_deci_degree;
+}
+
+int16_t getMix(uint8_t rule_index)
+{
+
+    static int16_t currentOutput[MAX_SERVO_RULES];
+
+    uint8_t servo_index = currentServoMixer[rule_index].targetChannel;
+
+    // consider rule only if no box assigned or box is active
+    if (!currentServoMixer[rule_index].box == 0 && !IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[rule_index].box - 1)) {
+        currentOutput[servo_index] = 0;
+        return rxConfig->midrc;
+    }
+
+    uint16_t servo_width = servoConf[servo_index].max - servoConf[servo_index].min;
+    int16_t min = currentServoMixer[rule_index].min * servo_width / 100 - servo_width / 2;
+    int16_t max = currentServoMixer[rule_index].max * servo_width / 100 - servo_width / 2;
+
+    bool needScale = true;
+
+    int16_t responseRange; //in range [-500:500] if needScale = true, else is [min:max]
+
+    switch (currentServoMixer[rule_index].inputSource) {
+
+    case INPUT_STABILIZED_ROLL:
+    case INPUT_STABILIZED_PITCH:
+    case INPUT_STABILIZED_YAW:
+        //WARINING: this list of case works only if the order in rcData index enum is the same of inputSource_e
+        if (FLIGHT_MODE(PASSTHRU_MODE)) {
+            responseRange = rcCommand[rule_index - INPUT_STABILIZED_ROLL];
+        } else {
+            responseRange = axisPID[rule_index - INPUT_STABILIZED_ROLL];
+        }
+        // Reverse yaw servo when inverted in 3D mode
+        if (rule_index == INPUT_STABILIZED_YAW && feature(FEATURE_3D) && (rcData[THROTTLE] < rxConfig->midrc)) {
+            responseRange *= -1;
+        }
+        break;
+
+    case INPUT_STABILIZED_THROTTLE:
+        responseRange = motor[0] - 1000 - 500;  // Since it derives from rcCommand or mincommand and must be [-500:+500]
+        break;
+
+    case INPUT_RC_ROLL:
+    case INPUT_RC_PITCH:
+    case INPUT_RC_YAW:
+    case INPUT_RC_THROTTLE:
+    case INPUT_RC_AUX1:
+    case INPUT_RC_AUX2:
+    case INPUT_RC_AUX3:
+    case INPUT_RC_AUX4:
+        //WARINING: this list of case works only if the order in rcData index enum is the same of inputSource_e
+        responseRange = rcData[rule_index - INPUT_RC_ROLL] - rxConfig->midrc;
+        break;
+
+    case INPUT_GIMBAL_PITCH:
+        needScale = false;
+        responseRange = decidegreeToServoPulse(servo_index, inclination.values.pitchDeciDegrees);
+        break;
+    case INPUT_GIMBAL_ROLL:
+        needScale = false;
+        responseRange = decidegreeToServoPulse(servo_index, inclination.values.rollDeciDegrees);
+        break;
+    }
+
+    //now, if the input, for coinvenience, has been mapped from [-500:500], we have to scale it to [min:max]
+    if (needScale){
+        if (responseRange > 0) {
+            responseRange = scaleRange(responseRange, 0, 500, 0, max);
+        } else {
+            responseRange = scaleRange(responseRange, 0, -500, 0, min);
+        }
+    }
+
+    if (currentServoMixer[rule_index].speed != 0){
+        if (currentOutput[rule_index] < responseRange)
+            currentOutput[rule_index] = constrain(currentOutput[rule_index] + currentServoMixer[rule_index].speed, currentOutput[rule_index], responseRange);
+        else if (currentOutput[rule_index] > responseRange)
+            currentOutput[rule_index] = constrain(currentOutput[rule_index] - currentServoMixer[rule_index].speed, responseRange, currentOutput[rule_index]);
+    }else{
+        currentOutput[rule_index] = responseRange;
+    }
+
+    responseRange = servoDirection(servo_index, currentServoMixer[rule_index].inputSource) * constrain(((int32_t) currentOutput[rule_index] * currentServoMixer[rule_index].rate) / 100, min, max);
+
+    return responseRange;
+}
+
+STATIC_UNIT_TESTED void servoMixer(void)
+{
+    uint8_t i;
+
+    for (i = 0; i < MAX_SUPPORTED_SERVOS; i++)
+        servo[i] = 0;
+
+    // mix servos according to rules
+    for (i = 0; i < servoRuleCount; i++) {
+        uint8_t servo_index = currentServoMixer[i].targetChannel;
+        servo[servo_index] += getMix(i);
+    }
+
+    for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
+        servo[i] = ((int32_t)servoConf[i].rate * servo[i]) / 100L;
+        servo[i] += determineServoMiddleOrForwardFromChannel(i);
+    }
+}
+/*
 STATIC_UNIT_TESTED void servoMixer(void)
 {
     int16_t input[INPUT_SOURCE_COUNT]; // Range [-500:+500]
@@ -737,7 +861,7 @@ STATIC_UNIT_TESTED void servoMixer(void)
         servo[i] += determineServoMiddleOrForwardFromChannel(i);
     }
 }
-
+*/
 #endif
 
 void mixTable(void)
