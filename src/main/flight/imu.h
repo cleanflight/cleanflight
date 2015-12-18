@@ -27,6 +27,7 @@ extern int32_t accSum[XYZ_AXIS_COUNT];
 #define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
 #define DECIDEGREES_TO_DEGREES(angle) (angle / 10)
 #define DECIDEGREES_TO_RADIANS(angle) ((angle / 10.0f) * 0.0174532925f)
+#define RADIANS_TO_DECIDEGREES(angle) (((angle) * 10.0f) / 0.0174532925f)
 #define DEGREES_TO_RADIANS(angle) ((angle) * 0.0174532925f)
 
 typedef union {
@@ -49,8 +50,10 @@ typedef struct accDeadband_s {
 typedef struct imuRuntimeConfig_s {
     uint8_t acc_cut_hz;
     uint8_t acc_unarmedcal;
-    float dcm_ki;
-    float dcm_kp;
+    float dcm_ki_acc;
+    float dcm_kp_acc;
+    float dcm_ki_mag;
+    float dcm_kp_mag;
     uint8_t small_angle;
 } imuRuntimeConfig_t;
 

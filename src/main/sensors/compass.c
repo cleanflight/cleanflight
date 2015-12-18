@@ -47,6 +47,7 @@ int16_t magADC[XYZ_AXIS_COUNT];
 sensor_align_e magAlign = 0;
 #ifdef MAG
 static uint8_t magInit = 0;
+static uint8_t magUpdatedAtLeastOnce = 0;
 
 void compassInit(void)
 {
@@ -55,6 +56,11 @@ void compassInit(void)
     mag.init();
     LED1_OFF;
     magInit = 1;
+}
+
+bool isCompassReady(void)
+{
+    return magUpdatedAtLeastOnce;
 }
 
 #define COMPASS_UPDATE_FREQUENCY_10HZ (1000 * 100)
@@ -108,5 +114,7 @@ void updateCompass(flightDynamicsTrims_t *magZero)
             saveConfigAndNotify();
         }
     }
+
+    magUpdatedAtLeastOnce = 1;
 }
 #endif

@@ -53,29 +53,7 @@ extern float q0, q1, q2, q3;
 extern "C" { 
 void imuComputeRotationMatrix(void);
 void imuUpdateEulerAngles(void);
-}
-
-void imuComputeQuaternionFromRPY(int16_t initialRoll, int16_t initialPitch, int16_t initialYaw)
-{
-    if (initialRoll > 1800) initialRoll -= 3600;
-    if (initialPitch > 1800) initialPitch -= 3600;
-    if (initialYaw > 1800) initialYaw -= 3600;
-
-    float cosRoll = cos_approx(DECIDEGREES_TO_RADIANS(initialRoll) * 0.5f);
-    float sinRoll = sin_approx(DECIDEGREES_TO_RADIANS(initialRoll) * 0.5f);
-
-    float cosPitch = cos_approx(DECIDEGREES_TO_RADIANS(initialPitch) * 0.5f);
-    float sinPitch = sin_approx(DECIDEGREES_TO_RADIANS(initialPitch) * 0.5f);
-
-    float cosYaw = cos_approx(DECIDEGREES_TO_RADIANS(-initialYaw) * 0.5f);
-    float sinYaw = sin_approx(DECIDEGREES_TO_RADIANS(-initialYaw) * 0.5f);
-
-    q0 = cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw;
-    q1 = sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw;
-    q2 = cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw;
-    q3 = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
-
-    imuComputeRotationMatrix();
+void imuComputeQuaternionFromRPY(int16_t initialRoll, int16_t initialPitch, int16_t initialYaw);
 }
 
 TEST(FlightImuTest, TestEulerAngleCalculation)
@@ -174,6 +152,7 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     UNUSED(rollAndPitchTrims);
 }
 
+bool isCompassReady(void) { return 1; }
 uint32_t micros(void) { return 0; }
 uint32_t millis(void) { return 0; }
 bool isBaroCalibrationComplete(void) { return true; }

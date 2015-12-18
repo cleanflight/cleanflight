@@ -534,8 +534,10 @@ const clivalue_t valueTable[] = {
 
     { "gyro_lpf",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.gyro_lpf, .config.minmax = { 0,  256 } },
     { "moron_threshold",            VAR_UINT8  | MASTER_VALUE,  &masterConfig.gyroConfig.gyroMovementCalibrationThreshold, .config.minmax = { 0,  128 } },
-    { "imu_dcm_kp",                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.dcm_kp, .config.minmax = { 0,  20000 } },
-    { "imu_dcm_ki",                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.dcm_ki, .config.minmax = { 0,  20000 } },
+    { "imu_dcm_kp_acc",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.dcm_kp_acc, .config.minmax = { 0,  20000 } },
+    { "imu_dcm_ki_acc",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.dcm_ki_acc, .config.minmax = { 0,  20000 } },
+    { "imu_dcm_kp_mag",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.dcm_kp_mag, .config.minmax = { 0,  20000 } },
+    { "imu_dcm_ki_mag",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.dcm_ki_mag, .config.minmax = { 0,  20000 } },
 
     { "alt_hold_deadband",          VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].rcControlsConfig.alt_hold_deadband, .config.minmax = { 1,  250 } },
     { "alt_hold_fast_change",       VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].rcControlsConfig.alt_hold_fast_change, .config.lookup = { TABLE_OFF_ON } },

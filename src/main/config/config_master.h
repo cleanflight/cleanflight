@@ -48,8 +48,10 @@ typedef struct master_t {
     int8_t yaw_control_direction;           // change control direction of yaw (inverted, normal)
     uint8_t acc_hardware;                   // Which acc hardware to use on boards with more than one device
     uint16_t gyro_lpf;                      // gyro LPF setting - values are driver specific, in case of invalid number, a reasonable default ~30-40HZ is chosen.
-    uint16_t dcm_kp;                        // DCM filter proportional gain ( x 10000)
-    uint16_t dcm_ki;                        // DCM filter integral gain ( x 10000)
+    uint16_t dcm_kp_acc;                    // DCM filter proportional gain ( x 10000)
+    uint16_t dcm_ki_acc;                    // DCM filter integral gain ( x 10000)
+    uint16_t dcm_kp_mag;                    // DCM filter proportional gain ( x 10000)
+    uint16_t dcm_ki_mag;                    // DCM filter integral gain ( x 10000)
 
     gyroConfig_t gyroConfig;
 
