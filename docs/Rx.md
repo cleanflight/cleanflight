@@ -50,6 +50,7 @@ http://www.lemon-rx.com/shop/index.php?route=product/product&product_id=118
 16 channels via serial currently supported.  See below how to set up your transmitter.
 
 * You probably need an inverter between the receiver output and the flight controller. However, some flight controllers have this built in (the main port on CC3D, for example), and doesn't need one.
+* The compile option `OPTIONS=DISABLE_SBUS_INVERSION` may be used to disable the sbus inverter on F3 targets. This is intended for receivers that have been modified to bypass the inverter and thus producing an uninverted signal.
 * Softserial ports cannot be used with SBUS because it runs at too high of a bitrate (1Mbps).  Refer to the chapter specific to your board to determine which port(s) may be used.
 * You will need to configure the channel mapping in the GUI (Receiver tab) or CLI (`map` command). Note that channels above 8 are mapped "straight", with no remapping.
 
