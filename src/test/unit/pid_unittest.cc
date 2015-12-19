@@ -179,7 +179,7 @@ TEST(PIDUnittest, TestLuxFloat)
     EXPECT_FLOAT_EQ(2 * pidProfile.I_f[PITCH] * rateErrorRoll * dT * 10.0, axisPID_I[FD_PITCH]);
     EXPECT_FLOAT_EQ(pidProfile.D_f[PITCH] * rateErrorRoll * 10.0, axisPID_D[FD_PITCH]);
 
-    // run the PID controller a second time. Error rates unchanged, so expect P and D unchanged, I integrated
+    // run the PID controller a third time. Error rates unchanged, so expect P and D unchanged, I integrated
     pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
     EXPECT_FLOAT_EQ(pidProfile.P_f[ROLL] * rateErrorRoll, axisPID_P[FD_ROLL]);
     EXPECT_FLOAT_EQ(3 * pidProfile.I_f[ROLL] * rateErrorRoll * dT * 10.0, axisPID_I[FD_ROLL]); // I values are multiplied by 10
