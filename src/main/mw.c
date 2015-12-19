@@ -702,27 +702,6 @@ void filterRc(void){
     }
 }
 
-// Gyro Low Pass
-void filterGyro(void) {
-    int axis;
-    static filterStatePt1_t gyroADCState[XYZ_AXIS_COUNT];
-
-    for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-        if (masterConfig.looptime > 0) {
-            // Static dT calculation based on configured looptime
-            if (!gyroADCState[axis].constdT) {
-                gyroADCState[axis].constdT = (float)masterConfig.looptime * 0.000001f;
-            }
-
-            gyroADC[axis] = filterApplyPt1(gyroADC[axis], &gyroADCState[axis], currentProfile->pidProfile.gyro_cut_hz, gyroADCState[axis].constdT);
-        }
-
-        else {
-            gyroADC[axis] = filterApplyPt1(gyroADC[axis], &gyroADCState[axis], currentProfile->pidProfile.gyro_cut_hz, dT);
-        }
-    }
-}
-
 void loop(void)
 {
     static uint32_t loopTime;
@@ -781,10 +760,6 @@ void loop(void)
 
         dT = (float)cycleTime * 0.000001f;
 
-        if (currentProfile->pidProfile.gyro_cut_hz) {
-            filterGyro();
-        }
-
         annexCode();
 
         if (masterConfig.rxConfig.rcSmoothing) {
@@ -819,7 +794,9 @@ void loop(void)
         // Allow yaw control for tricopters if the user wants the servo to move even when unarmed.
         if (isUsingSticksForArming() && rcData[THROTTLE] <= masterConfig.rxConfig.mincheck
 #ifndef USE_QUAD_MIXER_ONLY
+#ifdef USE_SERVOS
                 && !((masterConfig.mixerMode == MIXER_TRI || masterConfig.mixerMode == MIXER_CUSTOM_TRI) && masterConfig.mixerConfig.tri_unarmed_servo)
+#endif
                 && masterConfig.mixerMode != MIXER_AIRPLANE
                 && masterConfig.mixerMode != MIXER_FLYING_WING
 #endif

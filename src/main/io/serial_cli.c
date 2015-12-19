@@ -51,7 +51,6 @@
 #include "io/gimbal.h"
 #include "io/rc_controls.h"
 #include "io/serial.h"
-#include "io/serial_1wire.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
 #include "io/beeper.h"
@@ -149,10 +148,6 @@ static void cliFlashRead(char *cmdline);
 #endif
 #endif
 
-#ifdef USE_SERIAL_1WIRE_CLI
-static void cliUSB1Wire(char *cmdline);
-#endif
-
 // buffer
 static char cliBuffer[48];
 static uint32_t bufferIndex = 0;
@@ -229,9 +224,6 @@ typedef struct {
 
 // should be sorted a..z for bsearch()
 const clicmd_t cmdTable[] = {
-#ifdef USE_SERIAL_1WIRE_CLI
-    CLI_COMMAND_DEF("1wire", "1-wire interface to escs", "<esc index>", cliUSB1Wire),
-#endif
     CLI_COMMAND_DEF("adjrange", "configure adjustment ranges", NULL, cliAdjustmentRange),
     CLI_COMMAND_DEF("aux", "configure modes", NULL, cliAux),
 #ifdef LED_STRIP
@@ -351,7 +343,12 @@ static const char * const lookupTableSerialRX[] = {
     "SUMD",
     "SUMH",
     "XB-B",
-    "XB-B-RJ01"
+    "XB-B-RJ01",
+    "IBUS"
+};
+
+static const char * const lookupTableGyroFilter[] = {
+    "OFF", "LOW", "MEDIUM", "HIGH"
 };
 
 
@@ -375,6 +372,7 @@ typedef enum {
     TABLE_GIMBAL_MODE,
     TABLE_PID_CONTROLLER,
     TABLE_SERIAL_RX,
+    TABLE_GYRO_FILTER,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -391,7 +389,8 @@ static const lookupTableEntry_t lookupTables[] = {
     { lookupTableCurrentSensor, sizeof(lookupTableCurrentSensor) / sizeof(char *) },
     { lookupTableGimbalMode, sizeof(lookupTableGimbalMode) / sizeof(char *) },
     { lookupTablePidController, sizeof(lookupTablePidController) / sizeof(char *) },
-    { lookupTableSerialRX, sizeof(lookupTableSerialRX) / sizeof(char *) }
+    { lookupTableSerialRX, sizeof(lookupTableSerialRX) / sizeof(char *) },
+	{ lookupTableGyroFilter, sizeof(lookupTableGyroFilter) / sizeof(char *) }
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -641,9 +640,9 @@ const clivalue_t valueTable[] = {
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.D8[PIDVEL], .config.minmax = { 0,  200 } },
 
     { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, .config.minmax = { YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX } },
-	{ "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, .config.minmax = {0, 200 } },
-	{ "pterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.pterm_cut_hz, .config.minmax = {0, 200 } },
-	{ "gyro_cut_hz",                VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.gyro_cut_hz, .config.minmax = {0, 200 } },
+    { "gyro_soft_lpf",              VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].pidProfile.gyro_soft_lpf, .config.lookup = { TABLE_GYRO_FILTER } },
+    { "dterm_cut_hz",               VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.dterm_cut_hz, .config.minmax = {0, 200 } },
+    { "yaw_pterm_cut_hz",           VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_pterm_cut_hz, .config.minmax = {0, 200 } },
 
 #ifdef GTUNE
     { "gtune_loP_rll",              VAR_UINT8  | PROFILE_VALUE,  &masterConfig.profile[0].pidProfile.gtune_lolimP[FD_ROLL], .config.minmax = { 10,  200 } },
@@ -1609,7 +1608,7 @@ static void cliDump(char *cmdline)
 
         // print custom servo mixer if exists
         printf("smix reset\r\n");
-
+#ifdef USE_SERVOS
         for (i = 0; i < MAX_SERVO_RULES; i++) {
 
             if (masterConfig.customServoMixer[i].rate == 0)
@@ -1627,6 +1626,7 @@ static void cliDump(char *cmdline)
             );
         }
 
+#endif
 #endif
 
         cliPrint("\r\n\r\n# feature\r\n");
@@ -2310,27 +2310,6 @@ static void cliStatus(char *cmdline)
 
     printf("Cycle Time: %d, I2C Errors: %d, config size: %d\r\n", cycleTime, i2cErrorCounter, sizeof(master_t));
 }
-
-#ifdef USE_SERIAL_1WIRE_CLI
-static void cliUSB1Wire(char *cmdline)
-{
-    if (isEmpty(cmdline)) {
-        cliShowParseError();
-        return;
-    } else {
-        usb1WireInitialize();
-
-        int i;
-        i = atoi(cmdline);
-        if (i >= 0 && i < escCount) {
-            printf("Switching to BlHeli mode on motor port %d\r\n", i);
-            usb1WirePassthrough(i);
-        } else {
-            cliShowArgumentRangeError("motor", 0, escCount - 1);
-        }
-    }
-}
-#endif
 
 static void cliVersion(char *cmdline)
 {
