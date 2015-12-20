@@ -34,7 +34,7 @@
 #define BEEP_GPIO   GPIOB
 #define BEEP_PIN    Pin_13
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOB
-#define BEEPER_INVERTED
+#define BEEPER_OUTPUT_NPN
 
 #define MPU6500_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOA
 #define MPU6500_CS_GPIO                  GPIOA

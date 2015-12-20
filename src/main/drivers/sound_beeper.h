@@ -27,6 +27,13 @@
 #define BEEP_ON
 #endif
 
+typedef enum {
+    NORMAL_PP_OUTPUT = 0,
+    INVERTED_PP_OUTPUT,
+    NORMAL_OD_OUTPUT,
+    INVERTED_OD_OUTPUT
+} beeperOutputModeIndex_e;
+
 typedef struct beeperConfig_s {
     uint32_t gpioPeripheral;
     uint16_t gpioPin;

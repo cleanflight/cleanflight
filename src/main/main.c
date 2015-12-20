@@ -279,21 +279,26 @@ void init(void)
         .gpioPeripheral = BEEP_PERIPHERAL,
         .gpioPin = BEEP_PIN,
         .gpioPort = BEEP_GPIO,
-#ifdef BEEPER_INVERTED
-        .gpioMode = Mode_Out_PP,
-        .isInverted = true
-#else
-        .gpioMode = Mode_Out_OD,
-        .isInverted = false
-#endif
     };
-#ifdef NAZE
-    if (hardwareRevision >= NAZE32_REV5) {
-        // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
-        beeperConfig.gpioMode = Mode_Out_PP;
-        beeperConfig.isInverted = true;
+
+    switch (masterConfig.beeper_output_mode){
+		case NORMAL_PP_OUTPUT:
+			beeperConfig.gpioMode = Mode_Out_PP;
+			beeperConfig.isInverted = false;
+			break;
+		case INVERTED_PP_OUTPUT:
+			beeperConfig.gpioMode = Mode_Out_PP;
+			beeperConfig.isInverted = true;
+			break;
+		case NORMAL_OD_OUTPUT:
+			beeperConfig.gpioMode = Mode_Out_OD;
+			beeperConfig.isInverted = false;
+			break;
+		case INVERTED_OD_OUTPUT:
+			beeperConfig.gpioMode = Mode_Out_OD;
+			beeperConfig.isInverted = true;
+			break;
     }
-#endif
 
     beeperInit(&beeperConfig);
 #endif
