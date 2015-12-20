@@ -32,6 +32,7 @@
 #define BEEP_GPIO   GPIOA
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
+#define BEEPER_OUTPUT_NPN
 
 #define BARO_XCLR_GPIO   GPIOC
 #define BARO_XCLR_PIN    Pin_13

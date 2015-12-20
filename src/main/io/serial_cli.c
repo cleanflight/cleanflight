@@ -351,6 +351,12 @@ static const char * const lookupTableGyroFilter[] = {
     "OFF", "LOW", "MEDIUM", "HIGH"
 };
 
+static const char * const lookupTableBeeperOutput[] = {
+    "N-PP",
+    "I-PP",
+    "N-OD",
+    "I-OD",
+};
 
 typedef struct lookupTableEntry_s {
     const char * const *values;
@@ -373,6 +379,7 @@ typedef enum {
     TABLE_PID_CONTROLLER,
     TABLE_SERIAL_RX,
     TABLE_GYRO_FILTER,
+    TABLE_BEEPER_OUTPUT,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -390,7 +397,8 @@ static const lookupTableEntry_t lookupTables[] = {
     { lookupTableGimbalMode, sizeof(lookupTableGimbalMode) / sizeof(char *) },
     { lookupTablePidController, sizeof(lookupTablePidController) / sizeof(char *) },
     { lookupTableSerialRX, sizeof(lookupTableSerialRX) / sizeof(char *) },
-	{ lookupTableGyroFilter, sizeof(lookupTableGyroFilter) / sizeof(char *) }
+	{ lookupTableGyroFilter, sizeof(lookupTableGyroFilter) / sizeof(char *) },
+    { lookupTableBeeperOutput, sizeof(lookupTableBeeperOutput) / sizeof(char *) }
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -665,6 +673,10 @@ const clivalue_t valueTable[] = {
     { "magzero_x",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[X], .config.minmax = { -32768,  32767 } },
     { "magzero_y",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[Y], .config.minmax = { -32768,  32767 } },
     { "magzero_z",                  VAR_INT16  | MASTER_VALUE, &masterConfig.magZero.raw[Z], .config.minmax = { -32768,  32767 } },
+
+#ifdef BEEPER
+    { "beeper_output_mode",         VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, &masterConfig.beeper_output_mode, .config.lookup = {TABLE_BEEPER_OUTPUT }},
+#endif
 };
 
 #define VALUE_COUNT (sizeof(valueTable) / sizeof(clivalue_t))
