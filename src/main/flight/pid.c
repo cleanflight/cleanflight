@@ -492,6 +492,7 @@ static void pidMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfig_t *co
         axisPID_I[axis] = ITerm;
         axisPID_D[axis] = DTerm;
 #endif
+    GET_PID_MULTI_WII_REWRITE_LOCALS(axis);
     }
 }
 

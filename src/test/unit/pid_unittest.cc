@@ -50,9 +50,13 @@ extern "C" {
     extern pidControllerFuncPtr pid_controller;
     extern uint8_t PIDweight[3];
     float dT = 0.1f; // values in pidLuxFloat seem to be normalised around this value
+    int32_t cycleTime = 2048; // normalised cycle time for pidMultiWiiRewrite
     float unittest_pidLuxFloat_PTerm[3];
     float unittest_pidLuxFloat_ITerm[3];
     float unittest_pidLuxFloat_DTerm[3];
+    int32_t unittest_pidMultiWiiRewrite_PTerm[3];
+    int32_t unittest_pidMultiWiiRewrite_ITerm[3];
+    int32_t unittest_pidMultiWiiRewrite_DTerm[3];
 }
 
 void resetPidProfile(pidProfile_t *pidProfile)
@@ -119,8 +123,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
 #endif
 }
 
-
-TEST(PIDUnittest, TestLuxFloat)
+TEST(PIDUnittest, TestPidLuxFloat)
 {
     pidProfile_t pidProfile;
     resetPidProfile(&pidProfile);
@@ -146,30 +149,30 @@ TEST(PIDUnittest, TestLuxFloat)
     rcCommand[FD_YAW] = 0;
     controlRate.rates[YAW] = 0;
     pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
-    EXPECT_EQ(0, axisPID_P[FD_ROLL]);
-    EXPECT_EQ(0, axisPID_I[FD_ROLL]);
-    EXPECT_EQ(0, axisPID_D[FD_ROLL]);
-    EXPECT_EQ(0, axisPID_P[FD_PITCH]);
-    EXPECT_EQ(0, axisPID_I[FD_PITCH]);
-    EXPECT_EQ(0, axisPID_D[FD_PITCH]);
-    EXPECT_EQ(0, axisPID_P[FD_YAW]);
-    EXPECT_EQ(0, axisPID_I[FD_YAW]);
-    EXPECT_EQ(0, axisPID_D[FD_YAW]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_PTerm[FD_ROLL]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_ITerm[FD_ROLL]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_DTerm[FD_ROLL]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_PTerm[FD_PITCH]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_ITerm[FD_PITCH]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_DTerm[FD_PITCH]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_PTerm[FD_YAW]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_ITerm[FD_YAW]);
+    EXPECT_EQ(0, unittest_pidLuxFloat_DTerm[FD_YAW]);
 
-    // set up an RateError of 100 on the yaw axis
+    // set up an rateError of 100 on the roll axis
     rcCommand[FD_ROLL] = 50;
     controlRate.rates[ROLL] = 80;
-    float rateErrorRoll = ((controlRate.rates[FD_ROLL] + 20) * rcCommand[FD_ROLL]) / 50.0f; // for FD_ROLL and FD_PITCH
+    const float rateErrorRoll = ((controlRate.rates[FD_ROLL] + 20) * rcCommand[FD_ROLL]) / 50.0f;
     EXPECT_EQ(100, rateErrorRoll);
-    // set up an RateError of 100 on the pitch axis
+    // set up an rateError of 100 on the pitch axis
     rcCommand[FD_PITCH] = 50;
     controlRate.rates[FD_PITCH] = 80;
-    float rateErrorPitch = ((controlRate.rates[FD_PITCH] + 20) * rcCommand[FD_PITCH]) / 50.0f; // for FD_ROLL and FD_PITCH
+    const float rateErrorPitch = ((controlRate.rates[FD_PITCH] + 20) * rcCommand[FD_PITCH]) / 50.0f;
     EXPECT_EQ(100, rateErrorPitch);
-    // set up an RateError of 100 on the yaw axis
+    // set up an rateError of 100 on the yaw axis
     rcCommand[FD_YAW] = 50;
     controlRate.rates[YAW] = 90;
-    float rateErrorYaw = ((controlRate.rates[FD_YAW] + 10) * rcCommand[FD_YAW]) / 50.0f; // for FD_YAW
+    const float rateErrorYaw = ((controlRate.rates[FD_YAW] + 10) * rcCommand[FD_YAW]) / 50.0f;
     EXPECT_EQ(100, rateErrorYaw);
 
     // run the PID controller. Check expected PID values
@@ -216,12 +219,76 @@ TEST(PIDUnittest, TestLuxFloat)
     EXPECT_FLOAT_EQ(0, unittest_pidLuxFloat_DTerm[FD_PITCH]);
 }
 
+TEST(PIDUnittest, TestPidMultiWiiRewrite)
+{
+    pidProfile_t pidProfile;
+    resetPidProfile(&pidProfile);
+
+    controlRateConfig_t controlRate;
+
+    const uint16_t max_angle_inclination = 500; // 50 degrees
+    rollAndPitchTrims_t rollAndPitchTrims;
+    resetRollAndPitchTrims(&rollAndPitchTrims);
+    rxConfig_t rxConfig;
+    pidSetController(PID_CONTROLLER_MWREWRITE);
+
+    // set up the PIDWeights to 100%, so they are neutral in the tests
+    PIDweight[FD_ROLL] = 100;
+    PIDweight[FD_PITCH] = 100;
+    PIDweight[FD_YAW] = 100;
+
+    // set up for rateError of zero on all axes
+    rcCommand[FD_ROLL] = 0;
+    controlRate.rates[ROLL] = 0;
+    rcCommand[FD_PITCH] = 0;
+    controlRate.rates[PITCH] = 0;
+    rcCommand[FD_YAW] = 0;
+    controlRate.rates[YAW] = 0;
+    pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_PTerm[FD_ROLL]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_ITerm[FD_ROLL]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_DTerm[FD_ROLL]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_PTerm[FD_PITCH]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_ITerm[FD_PITCH]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_DTerm[FD_PITCH]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_PTerm[FD_YAW]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_ITerm[FD_YAW]);
+    EXPECT_EQ(0, unittest_pidMultiWiiRewrite_DTerm[FD_YAW]);
+
+    // set up an rateError of 1000 on the roll axis
+    rcCommand[FD_ROLL] = 160;
+    controlRate.rates[ROLL] = 73;
+    const int32_t rateErrorRoll = ((int32_t)(controlRate.rates[ROLL] + 27) * rcCommand[FD_ROLL]) >> 4;
+    EXPECT_EQ(1000, rateErrorRoll);
+    // set up an rateError of 1000 on the pitch axis
+    rcCommand[FD_PITCH] = 160;
+    controlRate.rates[FD_PITCH] = 73;
+    const int32_t rateErrorPitch = ((int32_t)(controlRate.rates[PITCH] + 27) * rcCommand[FD_PITCH]) >> 4;
+    EXPECT_EQ(1000, rateErrorPitch);
+    // set up an rateError of 1000 on the yaw axis
+    rcCommand[FD_YAW] = 320;
+    controlRate.rates[YAW] = 73;
+    const int32_t rateErrorYaw = ((int32_t)(controlRate.rates[YAW] + 27) * rcCommand[FD_YAW]) >> 5;
+    EXPECT_EQ(1000, rateErrorYaw);
+
+    // run the PID controller. Check expected PID values
+    pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
+    EXPECT_EQ((pidProfile.P8[ROLL] * rateErrorRoll) / 128, unittest_pidMultiWiiRewrite_PTerm[FD_ROLL]);
+    EXPECT_EQ(pidProfile.I8[ROLL]  * (rateErrorRoll * cycleTime / 2048) / 8192, unittest_pidMultiWiiRewrite_ITerm[FD_ROLL]);
+    EXPECT_EQ((pidProfile.D8[ROLL] * (rateErrorRoll * ((uint16_t) 0xFFFF / (cycleTime / 16))) / 64) / 256, unittest_pidMultiWiiRewrite_DTerm[FD_ROLL]);
+    EXPECT_EQ((pidProfile.P8[PITCH] * rateErrorRoll) / 128, unittest_pidMultiWiiRewrite_PTerm[FD_PITCH]);
+    EXPECT_EQ(pidProfile.I8[PITCH]  * (rateErrorRoll * cycleTime / 2048) / 8192, unittest_pidMultiWiiRewrite_ITerm[FD_PITCH]);
+    EXPECT_EQ((pidProfile.D8[PITCH] * (rateErrorRoll * ((uint16_t) 0xFFFF / (cycleTime / 16))) / 64) / 256, unittest_pidMultiWiiRewrite_DTerm[FD_PITCH]);
+    EXPECT_EQ((pidProfile.P8[YAW] * rateErrorRoll) / 128, unittest_pidMultiWiiRewrite_PTerm[FD_YAW]);
+    EXPECT_EQ(pidProfile.I8[YAW]  * (rateErrorRoll * cycleTime / 2048) / 8192, unittest_pidMultiWiiRewrite_ITerm[FD_YAW]);
+    EXPECT_EQ((pidProfile.D8[YAW] * (rateErrorRoll * ((uint16_t) 0xFFFF / (cycleTime / 16))) / 64) / 256, unittest_pidMultiWiiRewrite_DTerm[FD_YAW]);
+}
+
 extern "C" {
 int16_t GPS_angle[ANGLE_INDEX_COUNT] = { 0, 0 };
 int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {return MIN(ABS(rcData[axis] - midrc), 500);}
 attitudeEulerAngles_t attitude = { { 0, 0, 0 } };
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims) {rollAndPitchTrims->values.roll = 0;rollAndPitchTrims->values.pitch = 0;};
-int32_t cycleTime = 1000; //microseconds
 uint16_t flightModeFlags = 0; // acro mode
 uint8_t motorCount = 4;
 gyro_t gyro;

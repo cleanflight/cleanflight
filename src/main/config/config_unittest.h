@@ -20,6 +20,7 @@
 
 #ifdef SRC_MAIN_FLIGHT_PID_C_
 #ifdef UNIT_TEST
+
 float unittest_pidLuxFloat_PTerm[3];
 float unittest_pidLuxFloat_ITerm[3];
 float unittest_pidLuxFloat_DTerm[3];
@@ -30,8 +31,23 @@ float unittest_pidLuxFloat_DTerm[3];
         unittest_pidLuxFloat_ITerm[axis] = ITerm; \
         unittest_pidLuxFloat_DTerm[axis] = DTerm; \
     }
+
+int32_t unittest_pidMultiWiiRewrite_PTerm[3];
+int32_t unittest_pidMultiWiiRewrite_ITerm[3];
+int32_t unittest_pidMultiWiiRewrite_DTerm[3];
+
+#define GET_PID_MULTI_WII_REWRITE_LOCALS(axis) \
+    { \
+        unittest_pidMultiWiiRewrite_PTerm[axis] = PTerm; \
+        unittest_pidMultiWiiRewrite_ITerm[axis] = ITerm; \
+        unittest_pidMultiWiiRewrite_DTerm[axis] = DTerm; \
+    }
+
 #else
-#define GET_PID_LUX_FLOAT_LOCALS() {}
+
+#define GET_PID_LUX_FLOAT_LOCALS(axis) {}
+#define GET_PID_MULTI_WII_REWRITE_LOCALS(axis) {};
+
 #endif // UNIT_TEST
 #endif // SRC_MAIN_FLIGHT_PID_C_
 
