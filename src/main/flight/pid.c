@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define SRC_MAIN_FLIGHT_PID_C_
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
@@ -45,6 +47,7 @@
 #include "flight/gtune.h"
 
 #include "config/runtime_config.h"
+#include "config/config_unittest.h"
 
 extern uint16_t cycleTime;
 extern uint8_t motorCount;
@@ -224,6 +227,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         axisPID_I[axis] = ITerm;
         axisPID_D[axis] = DTerm;
 #endif
+        GET_PID_LUX_FLOAT_LOCALS(axis);
     }
 }
 
