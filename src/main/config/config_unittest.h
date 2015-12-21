@@ -21,12 +21,19 @@
 #ifdef SRC_MAIN_FLIGHT_PID_C_
 #ifdef UNIT_TEST
 
+float unittest_pidLuxFloat_lastError[3];
 float unittest_pidLuxFloat_PTerm[3];
 float unittest_pidLuxFloat_ITerm[3];
 float unittest_pidLuxFloat_DTerm[3];
 
+#define SET_PID_LUX_FLOAT_LOCALS(axis) \
+    { \
+        lastError[axis] = unittest_pidLuxFloat_lastError[axis]; \
+    }
+
 #define GET_PID_LUX_FLOAT_LOCALS(axis) \
     { \
+        unittest_pidLuxFloat_lastError[axis] = lastError[axis]; \
         unittest_pidLuxFloat_PTerm[axis] = PTerm; \
         unittest_pidLuxFloat_ITerm[axis] = ITerm; \
         unittest_pidLuxFloat_DTerm[axis] = DTerm; \

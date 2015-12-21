@@ -135,6 +135,7 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
 
     // ----------PID controller----------
     for (axis = 0; axis < 3; axis++) {
+        SET_PID_LUX_FLOAT_LOCALS(axis);
         // -----Get the desired angle rate depending on flight mode
         uint8_t rate = controlRateConfig->rates[axis];
 
