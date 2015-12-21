@@ -52,8 +52,9 @@ int32_t unittest_pidMultiWiiRewrite_DTerm[3];
 
 #else
 
+#define SET_PID_LUX_FLOAT_LOCALS(axis) {}
 #define GET_PID_LUX_FLOAT_LOCALS(axis) {}
-#define GET_PID_MULTI_WII_REWRITE_LOCALS(axis) {};
+#define GET_PID_MULTI_WII_REWRITE_LOCALS(axis) {}
 
 #endif // UNIT_TEST
 #endif // SRC_MAIN_FLIGHT_PID_C_
