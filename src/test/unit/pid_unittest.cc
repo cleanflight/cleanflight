@@ -311,7 +311,6 @@ TEST(PIDUnittest, TestPidLuxFloatIntegrationForLinearFunction)
     EXPECT_FLOAT_EQ(ITerm, unittest_pidLuxFloat_ITerm[FD_ROLL]);
 
     const float epsilon = 0.0001;// to allow for rounding errors in float comparisons
-    float ITermErrorPrevious = 0.0f;
     for (int ii = 1; ii <= 10;++ii) {
         t += dT;
         rcCommand[ROLL] = calcRcCommandRoll(k * t, &controlRate);
