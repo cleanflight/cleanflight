@@ -103,16 +103,17 @@ You cannot use USART3 and I2C at the same time.
 
 # Flashing
 
-Since 1.11.0 release there is only one way to get Cleanflight onto a CC3D board: flash it to board using an FTDI USB-TTL converter and "STM Flash Loader Demonstrator" software.
+Since 1.11.0 release there is only one way to get Cleanflight onto a CC3D board: flash it to board using an FTDI USB-TTL converter and special software:
+* Windows only: (STM Flash Loader Demonstrator)[http://www.st.com/web/en/catalog/tools/PF257525]
+* Windows/Linux/OS X: (stm32flash utility)[http://sourceforge.net/projects/stm32flash/]. Here is a (manual online)[http://manpages.ubuntu.com/manpages/wily/man1/stm32flash.1.html]
 
 Please not that some user have issues with flashing CC3D via non-FTDI adapter. In that case "STM Flash Loader Demonstrator" just cannot connect to the target. Also, Arduino's embedded FTDIs may not work too.
 
-The entire flash ram on the target processor is flashed with a single image.
-
-The image can be flashed by using a USB to UART adapter connected to the main port when the CC3D is put into the STM32 bootloader mode, achieved by powering on the CC3D with the SBL/3.3v pads bridged.  
+The image can be flashed by an USB to UART adapter connected to the main port when the CC3D is put into the STM32 bootloader mode by powering on the CC3D with the SBL/3.3v pads bridged. You can than upgrade cleanflight with USB-Serial adapter via Cleanflight configurator without shorting boot pins.
 
 ## Flashing process
 
+### Flashing with "STM Flash Loader Demonstrator"
 Here is a [blogpost about it](http://dronehitech.com/flash-cleanflight-cc3d-arduino/)
 
 1. Obtain an USB-TTL adapter. FTDI is recommended.
@@ -127,6 +128,28 @@ Here is a [blogpost about it](http://dronehitech.com/flash-cleanflight-cc3d-ardu
 10. On flashing page select "Erase", "All" checkboxes (is selected by default). Press next and wait for finish.
 11. Press "Back". Select downloaded cleanflight_CC3D.hex, check "Verify after download". Press "Next" and wait for finish.
 12. Done. Software may fail on verification stage with error like "Failed to verify, check flash protection". It is okay, you still can use it.
+
+### Flashing with stm32flash
+
+Flashing in boot mode (shorted boot pads)
+```bash
+#!/bin/bash
+
+SPEED=${1:-115200}
+stty -F /dev/ttyUSB0 raw speed $SPEED -crtscts cs8 -parenb -cstopb -ixon
+stm32flash -w cleanflight/obj/cleanflight_CC3D.hex -v -g 0x0 -b $SPEED /dev/ttyUSB0
+```
+
+Normal flashing after bootloader installed
+Is equal to run `make TARGET=CC3D flash` on cleanflight repository.
+```bash
+#!/bin/bash
+
+SPEED=${1:-115200}
+stty -F /dev/ttyUSB0 raw speed $SPEED -crtscts cs8 -parenb -cstopb -ixon
+echo -n 'R' >/dev/ttyUSB0
+stm32flash -w cleanflight/obj/cleanflight_CC3D.hex -v -g 0x0 -b $SPEED /dev/ttyUSB0
+```
 
 # Upgrading
 
