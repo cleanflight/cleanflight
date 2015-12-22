@@ -120,7 +120,7 @@ Here is a [blogpost about it](http://dronehitech.com/flash-cleanflight-cc3d-ardu
 3. Download and install ("STM Flash Loader Demonstrator")[http://www.st.com/web/en/catalog/tools/PF257525#]
 4. Download and store somewhere cleanflight_CC3D.hex from (release you want to flash)[https://github.com/cleanflight/cleanflight/releases].
 5. Connect Tx with Rx, Rx with Tx, Gnd with Gnd, Vcc with Vcc from FTDI to Main CC3D port.
-6. Short SBL and 3.3 contacts on top of the CC3D board. Contacts should be shorted while booting only, then you can release it.
+6. Short SBL and 3.3 pads on top of the CC3D board. Pads should be shorted while booting only, then you can release it.
 7. Connect FTDI to USB port. Blue LED should not blink - it means the CC3D is in bootloader mode.
 8. Run "STM Flash Loader Demonstrator". Select COM port with FTDI on it.
 9. Press "Next", "Next", "Next" and get to flashing page. If software freezes after first "Next" you have to disconnect board from power and try again.
@@ -130,7 +130,7 @@ Here is a [blogpost about it](http://dronehitech.com/flash-cleanflight-cc3d-ardu
 
 # Upgrading
 
-You can connect CC3D to cleanflight configurator by USB, but you cannot upgrade board by USB. You have to use FTDI connected to Main port and upgrade firmware via cleanflight configurator "Firmware" tab.
+You can connect CC3D to cleanflight configurator by USB, but you cannot upgrade board by USB. You have to use FTDI connected to Main port and upgrade firmware via cleanflight configurator "Firmware" tab. You don't have to short 3.3 and SBL pads to do that.
 
 
 # Restoring OpenPilot bootloader
