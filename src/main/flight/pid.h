@@ -60,8 +60,8 @@ typedef struct pidProfile_s {
 
     uint16_t yaw_p_limit;                   // set P term limit (fixed value was 300)
     uint8_t dterm_cut_hz;                   // (default 17Hz, Range 1-50Hz) Used for PT1 element in PID1, PID2 and PID5
-    uint8_t pterm_cut_hz;                   // Used for fitlering Pterm noise on noisy frames
-    uint8_t gyro_cut_hz;                    // Used for soft gyro filtering
+    uint8_t yaw_pterm_cut_hz;               // Used for filering Pterm noise on noisy frames
+    uint8_t gyro_soft_lpf;
 
 #ifdef GTUNE
     uint8_t  gtune_lolimP[3];               // [0..200] Lower limit of P during G tune
@@ -71,9 +71,6 @@ typedef struct pidProfile_s {
     uint8_t  gtune_average_cycles;          // [8..128] Number of looptime cycles used for gyro average calculation
 #endif
 } pidProfile_t;
-
-#define DEGREES_TO_DECIDEGREES(angle) (angle * 10)
-#define DECIDEGREES_TO_DEGREES(angle) (angle / 10.0f)
 
 extern int16_t axisPID[XYZ_AXIS_COUNT];
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];

@@ -1278,25 +1278,25 @@ static bool NAZA_parse_gps(void)
         *gpsPacketLogChar = LOG_UBLOX_POSLLH;
         uint8_t mask = _buffernaza.nav.mask;
 
-        uint32_t time = decodeLong(_buffernaza.nav.time, mask);
-        uint32_t second = time & 0b00111111; time >>= 6;
-        uint32_t minute = time & 0b00111111; time >>= 6;
-        uint32_t hour = time & 0b00001111; time >>= 4;
-        uint32_t day = time & 0b00011111; time >>= 5;
-        uint32_t month = time & 0b00001111; time >>= 4;
-        uint32_t year = time & 0b01111111;
+        //uint32_t time = decodeLong(_buffernaza.nav.time, mask);
+        //uint32_t second = time & 0b00111111; time >>= 6;
+        //uint32_t minute = time & 0b00111111; time >>= 6;
+        //uint32_t hour = time & 0b00001111; time >>= 4;
+        //uint32_t day = time & 0b00011111; time >>= 5;
+        //uint32_t month = time & 0b00001111; time >>= 4;
+        //uint32_t year = time & 0b01111111;
 
         GPS_coord[LON] = decodeLong(_buffernaza.nav.longitude, mask);
         GPS_coord[LAT] = decodeLong(_buffernaza.nav.latitude, mask);
         GPS_altitude = decodeLong(_buffernaza.nav.altitude_msl, mask) / 1000.0f;  //alt in m
 
         uint8_t fixType = _buffernaza.nav.fix_type ^ mask;
-        uint8_t fixFlags = _buffernaza.nav.fix_status ^ mask;
+        //uint8_t fixFlags = _buffernaza.nav.fix_status ^ mask;
 
-        uint8_t r3 = _buffernaza.nav.reserved3 ^ mask;
-        uint8_t r4 = _buffernaza.nav.reserved4 ^ mask;
-        uint8_t r5 = _buffernaza.nav.reserved5 ^ mask;
-        uint8_t r6 = _buffernaza.nav.reserved6 ^ mask;
+        //uint8_t r3 = _buffernaza.nav.reserved3 ^ mask;
+        //uint8_t r4 = _buffernaza.nav.reserved4 ^ mask;
+        //uint8_t r5 = _buffernaza.nav.reserved5 ^ mask;
+        //uint8_t r6 = _buffernaza.nav.reserved6 ^ mask;
 
         next_fix = (fixType == FIX_3D);
         if (next_fix) {
@@ -1304,26 +1304,27 @@ static bool NAZA_parse_gps(void)
         } else {
             DISABLE_STATE(GPS_FIX);
         }
-        uint32_t h_acc = decodeLong(_buffernaza.nav.h_acc, mask); // mm
-        uint32_t v_acc = decodeLong(_buffernaza.nav.v_acc, mask); // mm
-        uint32_t test = decodeLong(_buffernaza.nav.reserved, mask);
+        //uint32_t h_acc = decodeLong(_buffernaza.nav.h_acc, mask); // mm
+        //uint32_t v_acc = decodeLong(_buffernaza.nav.v_acc, mask); // mm
+        //uint32_t test = decodeLong(_buffernaza.nav.reserved, mask);
 
-        GPS_VELNED[0]=decodeLong(_buffernaza.nav.ned_north, mask);  // cm/s
-        GPS_VELNED[1]=decodeLong(_buffernaza.nav.ned_east, mask);   // cm/s
-        GPS_VELNED[2]=decodeLong(_buffernaza.nav.ned_down, mask);   // cm/s
+        GPS_VELNED[X]=decodeLong(_buffernaza.nav.ned_north, mask);  // cm/s
+        GPS_VELNED[Y]=decodeLong(_buffernaza.nav.ned_east, mask);   // cm/s
+        GPS_VELNED[Z]=decodeLong(_buffernaza.nav.ned_down, mask);   // cm/s
 
 
-        uint16_t pdop = decodeShort(_buffernaza.nav.pdop, mask); // pdop
-        uint16_t vdop = decodeShort(_buffernaza.nav.vdop, mask); // vdop
+        //uint16_t pdop = decodeShort(_buffernaza.nav.pdop, mask); // pdop
+        //uint16_t vdop = decodeShort(_buffernaza.nav.vdop, mask); // vdop
         uint16_t ndop = decodeShort(_buffernaza.nav.ndop, mask);
         uint16_t edop = decodeShort(_buffernaza.nav.edop, mask);
 
         GPS_numSat = _buffernaza.nav.satellites;
         GPS_hdop = sqrtf(powf(ndop,2)+powf(edop,2));
-        GPS_speed = sqrtf(powf(GPS_VELNED[0],2)+powf(GPS_VELNED[1],2)); //cm/s
-        //GPS_ground_course = (uint16_t) (_buffer.pvt.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
-        //GPS_numSat = _buffer.pvt.satellites;
-        //GPS_hdop = _buffer.pvt.position_DOP;
+        GPS_speed = sqrtf(powf(GPS_VELNED[X],2)+powf(GPS_VELNED[Y],2)); //cm/s
+
+        // calculate gps heading from VELNE
+        //GPS_ground_course = (uint16_t) (fmod(RADIANS_TO_DECIDEGREES(atan2_approx(GPS_VELNED[Y], GPS_VELNED[X]))*10.0f+3600.0f,3600.0f));
+
         _new_position = true;
         _new_speed = true;
         break;

@@ -50,7 +50,6 @@ extern uint16_t cycleTime;
 extern uint8_t motorCount;
 extern float dT;
 
-int16_t heading;
 int16_t axisPID[3];
 
 #ifdef BLACKBOX
@@ -95,7 +94,7 @@ void pidResetErrorGyro(void)
 
 const angle_index_t rcAliasToAngleIndexMap[] = { AI_ROLL, AI_PITCH };
 
-static filterStatePt1_t PTermState[3], DTermState[3];
+static filterStatePt1_t yawPTermState, DTermState[3];
 
 static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRateConfig,
         uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig)
@@ -143,10 +142,10 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
             // calculate error and limit the angle to the max inclination
 #ifdef GPS
             errorAngle = (constrain(rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
-                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]) / 10.0f; // 16 bits is ok here
+                    +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis]) / 10.0f; // 16 bits is ok here
 #else
             errorAngle = (constrain(rcCommand[axis], -((int) max_angle_inclination),
-                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]) / 10.0f; // 16 bits is ok here
+                    +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis]) / 10.0f; // 16 bits is ok here
 #endif
 
             if (FLIGHT_MODE(ANGLE_MODE)) {
@@ -173,9 +172,9 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         // -----calculate P component
         PTerm = RateError * pidProfile->P_f[axis] * PIDweight[axis] / 100;
 
-        // Pterm low pass
-        if (pidProfile->pterm_cut_hz) {
-            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz, dT);
+        // Yaw Pterm low pass
+        if (axis == YAW && pidProfile->yaw_pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &yawPTermState, pidProfile->yaw_pterm_cut_hz, dT);
         }
 
         // -----calculate I component.
@@ -192,17 +191,24 @@ static void pidLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *controlRa
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
         delta *= (1.0f / dT);
-        // add moving average here to reduce noise
-        deltaSum = delta1[axis] + delta2[axis] + delta;
-        delta2[axis] = delta1[axis];
-        delta1[axis] = delta;
+
+        // In case of soft gyro lpf combined with dterm_cut_hz we don't need the old 3 point averaging
+        if (pidProfile->gyro_soft_lpf && pidProfile->dterm_cut_hz) {
+            deltaSum = delta;
+        } else {
+            // add moving average here to reduce noise
+            deltaSum = delta1[axis] + delta2[axis] + delta;
+            delta2[axis] = delta1[axis];
+            delta1[axis] = delta;
+            deltaSum /= 3.0f;
+        }
 
         // Dterm low pass
         if (pidProfile->dterm_cut_hz) {
             deltaSum = filterApplyPt1(deltaSum, &DTermState[axis], pidProfile->dterm_cut_hz, dT);
         }
 
-        DTerm = constrainf((deltaSum / 3.0f) * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
+        DTerm = constrainf(deltaSum * pidProfile->D_f[axis] * PIDweight[axis] / 100, -300.0f, 300.0f);
 
         // -----calculate total PID output
         axisPID[axis] = constrain(lrintf(PTerm + ITerm + DTerm), -1000, 1000);
@@ -257,10 +263,10 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
             // 50 degrees max inclination
 #ifdef GPS
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
-                +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
+                +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis];
 #else
             errorAngle = constrain(2 * rcCommand[axis], -((int) max_angle_inclination),
-                +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis];
+                +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis];
 #endif
 
             errorAngleI[axis]  = constrain(errorAngleI[axis] + errorAngle, -10000, +10000);                                                // WindUp     //16 bits is ok here
@@ -278,16 +284,22 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
 
         PTerm -= ((int32_t)(gyroADC[axis] / 4) * dynP8[axis]) >> 6;   // 32 bits is needed for calculation
 
-        // Pterm low pass
-        if (pidProfile->pterm_cut_hz) {
-            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz, dT);
+        // Yaw Pterm low pass
+        if (axis == YAW && pidProfile->yaw_pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &yawPTermState, pidProfile->yaw_pterm_cut_hz, dT);
         }
 
         delta = (gyroADC[axis] - lastGyro[axis]) / 4;   // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
         lastGyro[axis] = gyroADC[axis];
-        DTerm = delta1[axis] + delta2[axis] + delta;
-        delta2[axis] = delta1[axis];
-        delta1[axis] = delta;
+
+        // In case of soft gyro lpf combined with dterm_cut_hz we don't need the old 3 point averaging
+        if (pidProfile->gyro_soft_lpf && pidProfile->dterm_cut_hz) {
+            DTerm = delta * 3; // Scaling to match the old pid values
+        } else {
+            DTerm = delta1[axis] + delta2[axis] + delta;
+            delta2[axis] = delta1[axis];
+            delta1[axis] = delta;
+        }
 
         // Dterm low pass
         if (pidProfile->dterm_cut_hz) {
@@ -394,10 +406,10 @@ static void pidMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfig_t *co
             // calculate error and limit the angle to max configured inclination
 #ifdef GPS
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
-                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]; // 16 bits is ok here
+                    +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis]; // 16 bits is ok here
 #else
             errorAngle = constrain(2 * rcCommand[axis], -((int) max_angle_inclination),
-                    +max_angle_inclination) - inclination.raw[axis] + angleTrim->raw[axis]; // 16 bits is ok here
+                    +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis]; // 16 bits is ok here
 #endif
 
             if (!FLIGHT_MODE(ANGLE_MODE)) { //control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
@@ -420,9 +432,9 @@ static void pidMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfig_t *co
         // -----calculate P component
         PTerm = (RateError * pidProfile->P8[axis] * PIDweight[axis] / 100) >> 7;
 
-        // Pterm low pass
-        if (pidProfile->pterm_cut_hz) {
-            PTerm = filterApplyPt1(PTerm, &PTermState[axis], pidProfile->pterm_cut_hz, dT);
+        // Yaw Pterm low pass
+        if (axis == YAW && pidProfile->yaw_pterm_cut_hz) {
+            PTerm = filterApplyPt1(PTerm, &yawPTermState, pidProfile->yaw_pterm_cut_hz, dT);
         }
 
         // -----calculate I component
@@ -444,10 +456,16 @@ static void pidMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfig_t *co
         // Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
         // would be scaled by different dt each time. Division by dT fixes that.
         delta = (delta * ((uint16_t) 0xFFFF / (cycleTime >> 4))) >> 6;
-        // add moving average here to reduce noise
-        deltaSum = delta1[axis] + delta2[axis] + delta;
-        delta2[axis] = delta1[axis];
-        delta1[axis] = delta;
+
+        // In case of soft gyro lpf combined with dterm_cut_hz we don't need the old 3 point averaging
+        if (pidProfile->gyro_soft_lpf && pidProfile->dterm_cut_hz) {
+            deltaSum = delta * 3;  // Scaling to approximately match the old D values
+        } else {
+            // add moving average here to reduce noise
+            deltaSum = delta1[axis] + delta2[axis] + delta;
+            delta2[axis] = delta1[axis];
+            delta1[axis] = delta;
+        }
 
         // Dterm delta low pass
         if (pidProfile->dterm_cut_hz) {
@@ -487,4 +505,3 @@ void pidSetController(pidControllerType_e type)
             pid_controller = pidMultiWii23;
     }
 }
-
