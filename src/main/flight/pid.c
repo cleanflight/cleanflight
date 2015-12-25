@@ -402,6 +402,7 @@ static void pidMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfig_t *co
 
     // ----------PID controller----------
     for (axis = 0; axis < 3; axis++) {
+        SET_PID_MULTI_WII_REWRITE_LOCALS(axis);
         uint8_t rate = controlRateConfig->rates[axis];
 
         // -----Get the desired angle rate depending on flight mode
