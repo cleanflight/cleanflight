@@ -308,27 +308,32 @@ TEST(PIDUnittest, TestPidLuxFloatIntegrationForLinearFunction)
     //    IrateError = 0.5 * k * t ^ 2
     // dT = 0.1s, t ranges from 0.0 to 1.0 in steps of 0.1s
 
-    // set up an rateError of 0 on the roll axis
     const float k = 100; // arbitrary value of k
     float t = 0.0f;
+    // set rateError to k * t
     rcCommand[ROLL] = calcLuxRcCommandRoll(k * t, &controlRate);
     EXPECT_FLOAT_EQ(k * t, calcLuxAngleRateRoll(&controlRate)); // cross check
     pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
-    float ITermRaw = 0.5 * k * t * t; // calculate integral
-    float ITerm = ITermRaw * pidProfile.I_f[ROLL] * 10; // scale using PID value
-    EXPECT_FLOAT_EQ(ITerm, unittest_pidLuxFloat_ITerm[FD_ROLL]);
+    float pidITerm = unittest_pidLuxFloat_ITerm[FD_ROLL]; // integral as estimated by PID
+    float actITerm = 0.5 * k * t * t * pidProfile.I_f[ROLL] * 10; // actual value of integral
+    EXPECT_FLOAT_EQ(actITerm, pidITerm); // both are zero at this point
 
-    const float epsilon = 0.0001;// to allow for rounding errors in float comparisons
-    for (int ii = 1; ii <= 10;++ii) {
+    for (int ii = 0; ii < 10; ++ii) {
+        const float actITermPrev = actITerm;
+        const float pidITermPrev = pidITerm;
         t += dT;
+        // set rateError to k * t
         rcCommand[ROLL] = calcLuxRcCommandRoll(k * t, &controlRate);
         EXPECT_FLOAT_EQ(k * t, calcLuxAngleRateRoll(&controlRate)); // cross check
         pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
-        ITermRaw = 0.5 * k * t * t; // calculate integral
-        ITerm =  ITermRaw * pidProfile.I_f[FD_ROLL] * 10; // scale using PID value
-        // pidLuxFloat uses rectangular method of integration, so for an monotonically increasing function (eg rateError = k * t) it overestimates the integral
-        const float ITermError = unittest_pidLuxFloat_ITerm[FD_ROLL] - ITerm;
-        EXPECT_LE(0 - epsilon, ITermError);
+        pidITerm = unittest_pidLuxFloat_ITerm[FD_ROLL];
+        actITerm = 0.5 * k * t * t * pidProfile.I_f[ROLL] * 10;
+        const float pidITermDelta = pidITerm - pidITermPrev;
+        const float actITermDelta = actITerm - actITermPrev;
+        const float error = fabs(actITermDelta - pidITermDelta);
+        // error is limited by rectangle of height k * dT and width dT (then multiplied by pidProfile)
+        const float errorLimit = k * dT * dT * pidProfile.I_f[ROLL] * 10;
+        EXPECT_GE(errorLimit, error); // ie expect errorLimit >= error
     }
 }
 
