@@ -19,6 +19,8 @@
 
 #define SONAR_OUT_OF_RANGE (-1)
 
+#define SOUND_SPEED_MICROSECONDS_PER_CM 59
+
 extern int16_t sonarMaxRangeCm;
 extern int16_t sonarCfAltCm;
 extern int16_t sonarMaxAltWithTiltCm;
