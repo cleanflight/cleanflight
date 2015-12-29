@@ -112,10 +112,8 @@ void serialInputPortConfig(const timerHardware_t *timerHardwarePtr)
 {
 #ifdef STM32F10X
     softSerialGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, Mode_IPU);
-#else
-#ifdef STM32F303xC
+#elif STM32F303xC
     softSerialGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, Mode_AF_PP_PU);
-#endif
 #endif
 }
 
