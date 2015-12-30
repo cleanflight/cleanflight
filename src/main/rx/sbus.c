@@ -83,6 +83,7 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
     int b;
     for (b = 0; b < SBUS_MAX_CHANNEL; b++)
         sbusChannelData[b] = (16 * rxConfig->midrc) / 10 - 1408;
+
     if (callback)
         *callback = sbusReadRawRC;
     rxRuntimeConfig->channelCount = SBUS_MAX_CHANNEL;
@@ -92,7 +93,19 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
         return false;
     }
 
-    serialPort_t *sBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sbusDataReceive, SBUS_BAUDRATE, MODE_RX, SBUS_PORT_OPTIONS);
+    portMode_t serialPortMode;
+    portSharing_e serialPortSharing = determinePortSharing(portConfig, FUNCTION_RX_SERIAL);
+    if (serialPortSharing == PORTSHARING_SHARED){
+    	if (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL)
+            serialPortMode = MODE_RXTX;
+    	else
+    		return false;
+    	}
+    else {
+        serialPortMode = MODE_RX;
+    }
+
+    serialPort_t *sBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sbusDataReceive, SBUS_BAUDRATE, serialPortMode, SBUS_PORT_OPTIONS);
 
     return sBusPort != NULL;
 }
