@@ -1,16 +1,19 @@
 # Board - Sparky
 
-The Sparky is a very low cost and very powerful board.
+The [Sparky](https://github.com/TauLabs/TauLabs/wiki/Sparky2) is a very low cost and very powerful board.
 
 * 3 hardware serial ports.
 * Built-in serial port inverters which allows S.BUS receivers to be used without external inverters.
 * USB (can be used at the same time as the serial ports).
-* 10 PWM outputs.
+* 10 PWM outputs,
+* including 4 [buffered PWM outputs](https://github.com/TauLabs/TauLabs/wiki/Sparky2#using-buffered-pwm-outputs). These are passed through an N-channel FET and can directly power brushed motors (rated for 3A).
 * Dedicated PPM/SerialRX input pin.
 * MPU9150 I2C Acc/Gyro/Mag
 * Baro
 
 Tested with revision 1 & 2 boards. 
+
+4 buffered PWM outputs. These are passed through an N-channel FET. Can power external LEDs or brushed motors (rated for 3A)
 
 ## TODO
 
