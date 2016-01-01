@@ -36,6 +36,7 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 #include "drivers/serial.h"
+#include "drivers/sound_beeper.h"
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
@@ -553,6 +554,14 @@ static void resetConf(void)
 #endif
     masterConfig.blackbox_rate_num = 1;
     masterConfig.blackbox_rate_denom = 1;
+#endif
+
+#ifdef BEEPER
+#ifdef BEEPER_OUTPUT_NPN
+    masterConfig.beeper_output_mode = NORMAL_PP_OUTPUT;
+#else
+    masterConfig.beeper_output_mode = NORMAL_OD_OUTPUT;
+#endif
 #endif
 
     // alternative defaults settings for COLIBRI RACE targets

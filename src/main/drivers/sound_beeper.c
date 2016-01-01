@@ -33,7 +33,7 @@
 
 void (*systemBeepPtr)(bool onoff) = NULL;
 
-static void beepNormal(bool onoff)
+static void beepInverted(bool onoff)
 {
     if (onoff) {
         digitalLo(BEEP_GPIO, BEEP_PIN);
@@ -42,7 +42,7 @@ static void beepNormal(bool onoff)
     }
 }
 
-static void beepInverted(bool onoff)
+static void beepNormal(bool onoff)
 {
     if (onoff) {
         digitalHi(BEEP_GPIO, BEEP_PIN);
