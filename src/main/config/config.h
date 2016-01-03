@@ -67,9 +67,11 @@ void saveConfigAndNotify(void);
 
 uint8_t getCurrentProfile(void);
 void changeProfile(uint8_t profileIndex);
+void setCurrentPIDprofileConfig(uint8_t profileIndex);
 
 uint8_t getCurrentControlRateProfile(void);
 void changeControlRateProfile(uint8_t profileIndex);
+void setControlRateProfile(uint8_t profileIndex);
 
 bool canSoftwareSerialBeUsed(void);
 
