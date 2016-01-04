@@ -435,6 +435,7 @@ static void initializeItemsOfTheSelectedPage(void)
 		    break;
 	    }
 		case GPS_PAGE : {
+#ifdef GPS
 			defineOnOffItem(3, 19, 19);
 			defineActiveItem (6, 15, 19, 0, sizeof(lookupTableGPSProvider) / sizeof(char *) - 1);
 			defineActiveItem (9, 14, 19, 0, numberOfBaudrateValues - 1);
@@ -443,6 +444,7 @@ static void initializeItemsOfTheSelectedPage(void)
 			defineActiveItem (16, 13, 15, 0, 180);
 			defineActiveItem (17, 17, 18, 0, 59);
 			structureOfPage.displayLine[5].itemsOnLine = 3;
+#endif
 			break;
 		}
 		case RECEIVER_PAGE : {
@@ -617,6 +619,7 @@ static void updateValuesForThatPage(void)
 		    break;
 	    }
 		case GPS_PAGE : {
+#ifdef GPS
 			structureOfPage.editField[3].data = featureConfigured(FEATURE_GPS) ;
 			structureOfPage.editField[6].data = masterConfig.gpsConfig.provider;
 			structureOfPage.editField[9].data = gpsData.baudrateIndex;
@@ -625,6 +628,7 @@ static void updateValuesForThatPage(void)
 			structureOfPage.editField[15].data = (masterConfig.profile[index].mag_declination >= 0);
 			structureOfPage.editField[16].data = abs(masterConfig.profile[index].mag_declination / 100);
 			structureOfPage.editField[17].data = abs(masterConfig.profile[index].mag_declination) % 100;
+#endif
 			break;
 		}
 		case RECEIVER_PAGE : {
@@ -771,6 +775,7 @@ static void applyNewValuesOnThatPage(void)
 		    break;
 	    }
 	    case GPS_PAGE : {
+#ifdef GPS
 	    	testAndPositionThatBit(structureOfPage.editField[3].data, FEATURE_GPS);
 	    	masterConfig.gpsConfig.provider = structureOfPage.editField[6].data;
 	    	gpsData.baudrateIndex = structureOfPage.editField[9].data;
@@ -783,7 +788,8 @@ static void applyNewValuesOnThatPage(void)
 	    		masterConfig.profile[index].mag_declination = 18000;
 	    	masterConfig.profile[index].mag_declination = (2 * structureOfPage.editField[15].data -1)
 	    			                                      * masterConfig.profile[index].mag_declination;
-	        break;
+#endif
+	    	break;
 	    }
 	    case RECEIVER_PAGE : {
 			if (selectedItem == 18)
@@ -1001,13 +1007,15 @@ static void prepareLinesOfTextForThatPage(void)
 	    	break;
 	    }
 	    case GPS_PAGE : {
-			snprintf(contentOfPage.lineOfText[1],CHARS_PER_LINE, staticGPSPage[0], charForSelectionBox(structureOfPage.editField[3].data));
+#ifdef GPS
+	    	snprintf(contentOfPage.lineOfText[1],CHARS_PER_LINE, staticGPSPage[0], charForSelectionBox(structureOfPage.editField[3].data));
 			snprintf(contentOfPage.lineOfText[2],CHARS_PER_LINE, staticGPSPage[1], lookupTableGPSProvider[structureOfPage.editField[6].data]);
 			snprintf(contentOfPage.lineOfText[3],CHARS_PER_LINE, staticGPSPage[2], baudRates[structureOfPage.editField[9].data]);
 			snprintf(contentOfPage.lineOfText[4],CHARS_PER_LINE, staticGPSPage[3], lookupTableGPSSBASMode[structureOfPage.editField[12].data]);
 			snprintf(contentOfPage.lineOfText[5],CHARS_PER_LINE, staticGPSPage[4], (0x2B * structureOfPage.editField[15].data + 0x2D * (1 - structureOfPage.editField[15].data)),
 																	structureOfPage.editField[16].data, structureOfPage.editField[17].data);
 			includeEmptyLine(6);
+#endif
 			break;
 	    }
         case RECEIVER_PAGE : {
