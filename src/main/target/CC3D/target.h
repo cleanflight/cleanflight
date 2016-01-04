@@ -89,6 +89,37 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
 
+#define USE_RX_NRF24
+#define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
+#define USE_RX_V202
+#define NRF24_DEFAULT_PROTOCOL NRF24RX_V202_1M
+
+#define USE_SOFTSPI
+#define USE_NRF24_SOFTSPI
+
+// RC pinouts
+// RC3  PB6/TIM4    RX_PPM
+// RC4  PB5/TIM3    SCK / softserial1 TX / sonar trigger
+// RC5  PB0/TIM3    MISO /Softserial1 RX / sonar echo
+// RC6  PB1/TIM3    MOSI / current
+// RC7  PA0/TIM2    CSN / battery voltage
+// RC8  PA1/TIM2    CE / RSSI
+
+// Nordic Semiconductor uses 'CSN', STM uses 'NSS'
+#define NRF24_CE_GPIO                   GPIOA
+#define NRF24_CE_PIN                    GPIO_Pin_1
+#define NRF24_CE_GPIO_CLK_PERIPHERAL    RCC_APB2Periph_GPIOA
+#define NRF24_CSN_GPIO                  GPIOA
+#define NRF24_CSN_PIN                   GPIO_Pin_0
+#define NRF24_CSN_GPIO_CLK_PERIPHERAL   RCC_APB2Periph_GPIOA
+#define NRF24_SCK_GPIO                  GPIOB
+#define NRF24_SCK_PIN                   GPIO_Pin_5
+#define NRF24_MOSI_GPIO                 GPIOB
+#define NRF24_MOSI_PIN                  GPIO_Pin_1
+#define NRF24_MISO_GPIO                 GPIOB
+#define NRF24_MISO_PIN                  GPIO_Pin_0
+
+
 #define USE_ADC
 
 #define CURRENT_METER_ADC_GPIO      GPIOB

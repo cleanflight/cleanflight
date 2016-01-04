@@ -17,21 +17,20 @@
 
 #pragma once
 
-#define TARGET_BOARD_IDENTIFIER "CJM1" // CJMCU
-#define USE_HARDWARE_REVISION_DETECTION
+#define TARGET_BOARD_IDENTIFIER "CPM1" // CrazePony MINI
 
-#define LED0_GPIO       GPIOC
-#define LED0_PIN        Pin_14 // PC14 (LED)
+#define LED0_GPIO       GPIOA
+#define LED0_PIN        Pin_11 // PA11 (M1 LED)
 #define LED0
-#define LED0_PERIPHERAL RCC_APB2Periph_GPIOC
-#define LED1_GPIO       GPIOC
-#define LED1_PIN        Pin_13 // PC13 (LED)
+#define LED0_PERIPHERAL RCC_APB2Periph_GPIOA
+#define LED1_GPIO       GPIOA
+#define LED1_PIN        Pin_8 // PA8  (M2 LED)
 #define LED1
-#define LED1_PERIPHERAL RCC_APB2Periph_GPIOC
-#define LED2_GPIO       GPIOC
-#define LED2_PIN        Pin_15 // PC15 (LED)
+#define LED1_PERIPHERAL RCC_APB2Periph_GPIOA
+#define LED2_GPIO       GPIOB
+#define LED2_PIN        (Pin_1 | Pin_3) // PB1  (M3+M4 LED)
 #define LED2
-#define LED2_PERIPHERAL RCC_APB2Periph_GPIOC
+#define LED2_PERIPHERAL RCC_APB2Periph_GPIOB
 
 
 #define ACC
@@ -40,24 +39,31 @@
 #define GYRO
 #define USE_GYRO_MPU6050
 
+#define BARO
+#define USE_BARO_MS5611
+
 #define MAG
 #define USE_MAG_HMC5883
 
 #define BRUSHED_MOTORS
 
 #define USE_UART1
-#define USE_UART2
 
-#define SERIAL_PORT_COUNT 2
+#define SERIAL_PORT_COUNT 1
+
+#define USE_ADC
+
+#define BOARD_HAS_VOLTAGE_DIVIDER
+#define VBAT_ADC_GPIO               GPIOB
+#define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
+#define VBAT_ADC_CHANNEL            ADC_Channel_8
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
-//#define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
+#define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
 #define USE_RX_NRF24
 #define USE_RX_V202
-//#define USE_RX_SYMA
-//#define USE_RX_CX10
 #define NRF24_DEFAULT_PROTOCOL NRF24RX_V202_1M
 
 #define USE_SPI
@@ -68,35 +74,28 @@
 
 // Nordic Semiconductor uses 'CSN', STM uses 'NSS'
 #define NRF24_CE_GPIO                   GPIOA
-#define NRF24_CE_PIN                    GPIO_Pin_4
+#define NRF24_CE_PIN                    GPIO_Pin_12
 #define NRF24_CE_GPIO_CLK_PERIPHERAL    RCC_APB2Periph_GPIOA
 #define NRF24_CSN_GPIO                  GPIOA
-#define NRF24_CSN_PIN                   GPIO_Pin_11
+#define NRF24_CSN_PIN                   GPIO_Pin_4
 #define NRF24_CSN_GPIO_CLK_PERIPHERAL   RCC_APB2Periph_GPIOA
 #define NRF24_IRQ_GPIO                  GPIOA
-#define NRF24_IRQ_PIN                   GPIO_Pin_8
+#define NRF24_IRQ_PIN                   GPIO_Pin_15
 #define NRF24_IRQ_GPIO_CLK_PERIPHERAL   RCC_APB2Periph_GPIOA
 
-#define DEFAULT_RX_FEATURE FEATURE_RX_PPM
-
-#define SERIAL_RX
-//#define SKIP_RX_PWM
-
-#define SPEKTRUM_BIND
-// UART2, PA3
-#define BIND_PORT  GPIOA
-#define BIND_PIN   Pin_3
-
+#define SKIP_RX_PWM
+#define SKIP_PID_LUXFLOAT
+#define SKIP_PID_MW23
 #define USE_CLI
 //#define GTUNE
 
-// Since the CJMCU PCB has holes for 4 motors in each corner we can save same flash space by disabling support for other mixers.
+// Since the CrazePony MINI PCB has holes for 4 motors in each corner we can save same flash space by disabling support for other mixers.
 #define USE_QUAD_MIXER_ONLY
 
 #if (FLASH_SIZE > 64)
 #define BLACKBOX
 #else
-#define SKIP_TASK_STATISTICS
+//#define SKIP_TASK_STATISTICS
 #define SKIP_CLI_COMMAND_HELP
 #endif
 

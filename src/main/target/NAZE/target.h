@@ -58,6 +58,40 @@
 #define NAZE_SPI_CS_PIN       GPIO_Pin_12
 #define NAZE_CS_GPIO_CLK_PERIPHERAL RCC_APB2Periph_GPIOB
 
+
+#define USE_RX_NRF24
+#define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
+#define USE_RX_V202
+#define NRF24_DEFAULT_PROTOCOL NRF24RX_V202_1M
+
+#define USE_SOFTSPI
+#define USE_NRF24_SOFTSPI
+
+// RC pinouts
+// RC3              RX_PPM
+// RC4  PA1         CE / RSSI_ADC
+// RC5  PA2         USART2 TX
+// RC6  PA3         USART2 RX
+// RC7  PA6/TIM3    CSN / softserial1 RX / LED_STRIP
+// RC8  PA7         SCK / softserial1 TX
+// RC9  PB0         MISO / softserial2 RX / sonar trigger
+// RC10 PB1         MOSI /softserial2 TX / sonar echo / current
+
+// Nordic Semiconductor uses 'CSN', STM uses 'NSS'
+#define NRF24_CE_GPIO                   GPIOA
+#define NRF24_CE_PIN                    GPIO_Pin_1
+#define NRF24_CE_GPIO_CLK_PERIPHERAL    RCC_APB2Periph_GPIOA
+#define NRF24_CSN_GPIO                  GPIOA
+#define NRF24_CSN_PIN                   GPIO_Pin_6
+#define NRF24_CSN_GPIO_CLK_PERIPHERAL   RCC_APB2Periph_GPIOA
+#define NRF24_SCK_GPIO                  GPIOA
+#define NRF24_SCK_PIN                   GPIO_Pin_7
+#define NRF24_MOSI_GPIO                 GPIOB
+#define NRF24_MOSI_PIN                  GPIO_Pin_1
+#define NRF24_MISO_GPIO                 GPIOB
+#define NRF24_MISO_PIN                  GPIO_Pin_0
+
+
 // We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
 #define M25P16_CS_GPIO        NAZE_SPI_CS_GPIO
 #define M25P16_CS_PIN         NAZE_SPI_CS_PIN

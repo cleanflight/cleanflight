@@ -36,7 +36,7 @@ FLASH_SIZE ?=
 
 FORKNAME			 = cleanflight
 
-64K_TARGETS  = CJMCU
+64K_TARGETS  = CJMCU CRAZEPONYMINI
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB NAZE32PRO PORT103R SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY
 
@@ -262,6 +262,7 @@ COMMON_SRC = build_config.c \
 		   drivers/dma.c \
 		   drivers/buf_writer.c \
 		   drivers/gyro_sync.c \
+		   drivers/rx_nrf24l01.c \
 		   io/beeper.c \
 		   io/gimbal.c \
 		   io/motor_and_servo.c \
@@ -286,6 +287,10 @@ COMMON_SRC = build_config.c \
 		   rx/spektrum.c \
 		   rx/xbus.c \
 		   rx/ibus.c \
+		   rx/nrf24.c \
+		   rx/nrf24_cx10.c \
+		   rx/nrf24_syma.c \
+		   rx/nrf24_v202.c \
 		   sensors/sensors.c \
 		   sensors/acceleration.c \
 		   sensors/battery.c \
@@ -342,6 +347,7 @@ NAZE_SRC = startup_stm32f10x_md_gcc.S \
 		   drivers/barometer_ms5611.c \
 		   drivers/barometer_bmp280.c \
 		   drivers/bus_spi.c \
+		   drivers/bus_spi_soft.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.h \
@@ -446,6 +452,7 @@ CJMCU_SRC = \
 		   drivers/accgyro_mpu.c \
 		   drivers/accgyro_mpu6050.c \
 		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/bus_spi.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/gpio_stm32f10x.c \
 		   drivers/light_led_stm32f10x.c \
@@ -464,6 +471,34 @@ CJMCU_SRC = \
 		   blackbox/blackbox_io.c \
 		   $(COMMON_SRC)
 
+CRAZEPONYMINI_SRC = \
+		   startup_stm32f10x_md_gcc.S \
+		   drivers/adc.c \
+		   drivers/adc_stm32f10x.c \
+		   drivers/accgyro_mpu.c \
+		   drivers/accgyro_mpu6050.c \
+		   drivers/barometer_ms5611.c \
+		   drivers/bus_i2c_stm32f10x.c \
+		   drivers/compass_hmc5883l.c \
+		   drivers/gpio_stm32f10x.c \
+		   drivers/light_led_stm32f10x.c \
+		   drivers/rx_nrf24l01.c \
+		   drivers/pwm_mapping.c \
+		   drivers/pwm_output.c \
+		   drivers/pwm_rx.c \
+		   drivers/serial_uart.c \
+		   drivers/serial_uart_stm32f10x.c \
+		   drivers/sound_beeper_stm32f10x.c \
+		   drivers/bus_spi.c \
+		   drivers/system_stm32f10x.c \
+		   drivers/timer.c \
+		   drivers/timer_stm32f10x.c \
+		   flight/gtune.c \
+		   blackbox/blackbox.c \
+		   blackbox/blackbox_io.c \
+		   sensors/barometer.c \
+		   $(COMMON_SRC)
+
 CC3D_SRC = \
 		   startup_stm32f10x_md_gcc.S \
 		   drivers/accgyro_mpu.c \
@@ -473,6 +508,7 @@ CC3D_SRC = \
 		   drivers/barometer_bmp085.c \
 		   drivers/barometer_ms5611.c \
 		   drivers/bus_spi.c \
+		   drivers/bus_spi_soft.c \
 		   drivers/bus_i2c_stm32f10x.c \
 		   drivers/compass_hmc5883l.c \
 		   drivers/display_ug2864hsweg01.c \
