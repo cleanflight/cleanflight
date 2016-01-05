@@ -114,16 +114,27 @@ bool xBusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
             break;
     }
 
-    if (callback) {
+    if (callback)
         *callback = xBusReadRawRC;
-    }
 
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
         return false;
     }
 
-    serialPort_t *xBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, xBusDataReceive, baudRate, MODE_RX, SERIAL_NOT_INVERTED);
+    portMode_t serialPortMode;
+    portSharing_e serialPortSharing = determinePortSharing(portConfig, FUNCTION_RX_SERIAL);
+    if (serialPortSharing == PORTSHARING_SHARED){
+    	if (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL)
+            serialPortMode = MODE_RXTX;
+    	else
+    		return false;
+    	}
+    else {
+        serialPortMode = MODE_RX;
+    }
+
+    serialPort_t *xBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, xBusDataReceive, baudRate, serialPortMode, SERIAL_NOT_INVERTED);
 
     return xBusPort != NULL;
 }
