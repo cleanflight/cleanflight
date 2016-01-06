@@ -234,6 +234,9 @@ COMMON_SRC = build_config.c \
 		   flight/mixer.c \
 		   flight/lowpass.c \
 		   drivers/bus_i2c_soft.c \
+		   drivers/exti.c \
+		   drivers/io.c \
+		   drivers/rcc.c \
 		   drivers/serial.c \
 		   drivers/sound_beeper.c \
 		   drivers/system.c \

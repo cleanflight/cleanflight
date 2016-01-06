@@ -50,6 +50,8 @@
 #include "drivers/flash_m25p16.h"
 #include "drivers/sonar_hcsr04.h"
 #include "drivers/gyro_sync.h"
+#include "drivers/exti.h"
+#include "drivers/io.h"
 
 #include "rx/rx.h"
 
@@ -176,9 +178,15 @@ void init(void)
 #endif
 
     systemInit();
-
     // Latch active features to be used for feature() in the remainder of init().
     latchActiveFeatures();
+
+    // initialize IO (needed for all IO operations)
+    IOInitGlobal();
+
+#ifdef USE_EXTI
+    EXTIInit();
+#endif
 
     ledInit();
 

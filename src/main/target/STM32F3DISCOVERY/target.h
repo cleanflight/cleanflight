@@ -121,3 +121,11 @@
 // STM32F3DISCOVERY RX - PD6 connects to UART TX
 #define S1W_RX_GPIO         GPIOD
 #define S1W_RX_PIN          GPIO_Pin_6
+
+// IO - 303 in 100pin package
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD 0xffff
+#define TARGET_IO_PORTE 0xffff
+#define TARGET_IO_PORTF 0x00ff
