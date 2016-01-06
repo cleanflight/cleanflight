@@ -36,6 +36,7 @@
 #include "drivers/gpio.h"
 #include "drivers/system.h"
 #include "drivers/serial.h"
+#include "drivers/bus_bst.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 #include "drivers/gyro_sync.h"
@@ -58,6 +59,7 @@
 #include "io/gps.h"
 #include "io/ledstrip.h"
 #include "io/serial.h"
+#include "io/i2c_bst.h"
 #include "io/serial_cli.h"
 #include "io/serial_msp.h"
 #include "io/statusindicator.h"
@@ -865,6 +867,11 @@ void loop(void)
     if (!cliMode && feature(FEATURE_TELEMETRY)) {
         telemetryProcess(&masterConfig.rxConfig, masterConfig.flight3DConfig.deadband3d_throttle);
     }
+#endif
+
+#ifdef USE_BST
+    bstProcess();
+    bstMasterWriteLoop();
 #endif
 
 #ifdef LED_STRIP
