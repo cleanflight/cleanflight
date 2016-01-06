@@ -169,6 +169,7 @@
 #define SERIAL_RX
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 // IO - assuming 303 in 64pin package, TODO
 #define TARGET_IO_PORTA 0xffff

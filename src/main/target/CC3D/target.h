@@ -119,6 +119,7 @@
 #define SONAR
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 #define USE_SERIAL_1WIRE
 

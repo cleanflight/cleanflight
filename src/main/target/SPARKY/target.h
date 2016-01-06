@@ -116,6 +116,7 @@
 #define USE_SERVOS
 #define USE_CLI
 #define SONAR
+#define USE_EXTI
 
 #define LED_STRIP
 #if 1
