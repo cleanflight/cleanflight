@@ -287,6 +287,7 @@ VCP_SRC = \
 		   vcp/usb_istr.c \
 		   vcp/usb_prop.c \
 		   vcp/usb_pwr.c \
+		   vcp/usb_cdc.c \
 		   drivers/serial_usb_vcp.c
 
 NAZE_SRC = startup_stm32f10x_md_gcc.S \

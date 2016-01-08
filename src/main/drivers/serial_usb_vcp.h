@@ -19,13 +19,11 @@
 
 #include "serial.h"
 
-#define VCP_BUFFER_SIZE 256
-
-typedef struct {
-    serialPort_t port;
-    uint8_t rxBuffer[VCP_BUFFER_SIZE];
-    uint8_t txBuffer[VCP_BUFFER_SIZE];
-    bool txPending;
-} usbVcpPort_t;
-
 serialPort_t *usbVcpOpen(void);
+
+struct usbVcpPort_s;
+extern struct usbVcpPort_s vcpPort;  // linking with CDC is 1:1 now, so export this
+int vcpGetTxData(struct usbVcpPort_s *self, uint8_t* *dataPtr);
+void vcpAckTxData(struct usbVcpPort_s *self, int txLen);
+int vcpGetRxDataBuffer(struct usbVcpPort_s *self, uint8_t* *dataPtr);
+void vcpAckRxData(struct usbVcpPort_s *self, int len);
