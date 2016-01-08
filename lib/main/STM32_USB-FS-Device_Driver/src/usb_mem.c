@@ -64,7 +64,7 @@ void UserToPMABufferCopy(uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNByt
 
 /*******************************************************************************
 * Function Name  : PMAToUserBufferCopy
-* Description    : Copy a buffer from user memory area to packet memory area (PMA)
+* Description    : Copy a buffer from packet memory area (PMA) to user memory area
 * Input          : - pbUsrBuf    = pointer to user memory area.
 *                  - wPMABufAddr = address into PMA.
 *                  - wNBytes     = no. of bytes to be copied.

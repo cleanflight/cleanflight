@@ -48,11 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 ErrorStatus HSEStartUpStatus;
 EXTI_InitTypeDef EXTI_InitStructure;
-__IO uint32_t packetSent;                                     // HJI
-extern __IO uint32_t receiveLength;                          // HJI
 
-uint8_t receiveBuffer[64];                                   // HJI
-uint32_t sendLength;                                          // HJI
 static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len);
 /* Extern variables ----------------------------------------------------------*/
 
@@ -274,70 +270,6 @@ static void IntToUnicode(uint32_t value, uint8_t *pbuf, uint8_t len)
         pbuf[2 * idx + 1] = 0;
     }
 }
-
-/*******************************************************************************
- * Function Name  : Send DATA .
- * Description    : send the data received from the STM32 to the PC through USB  
- * Input          : None.
- * Output         : None.
- * Return         : None.
- *******************************************************************************/
-uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
-{
-    /* Last transmission hasn't finished, abort */
-    if (packetSent) {
-        return 0;
-    }
-
-    // We can only put 64 bytes in the buffer
-    if (sendLength > 64 / 2) {
-        sendLength = 64 / 2;
-    }
-
-    // Try to load some bytes if we can
-    if (sendLength) {
-        UserToPMABufferCopy(ptrBuffer, ENDP1_TXADDR, sendLength);
-        SetEPTxCount(ENDP1, sendLength);
-        packetSent += sendLength;
-        SetEPTxValid(ENDP1);
-    }
-
-    return sendLength;
-}
-
-/*******************************************************************************
- * Function Name  : Receive DATA .
- * Description    : receive the data from the PC to STM32 and send it through USB
- * Input          : None.
- * Output         : None.
- * Return         : None.
- *******************************************************************************/
-uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len)
-{
-    static uint8_t offset = 0;
-    uint8_t i;
-
-    if (len > receiveLength) {
-        len = receiveLength;
-    }
-
-    for (i = 0; i < len; i++) {
-        recvBuf[i] = (uint8_t)(receiveBuffer[i + offset]);
-    }
-
-    receiveLength -= len;
-    offset += len;
-
-    /* re-enable the rx endpoint which we had set to receive 0 bytes */
-    if (receiveLength == 0) {
-        SetEPRxCount(ENDP3, 64);
-        SetEPRxStatus(ENDP3, EP_RX_VALID);
-        offset = 0;
-    }
-
-    return len;
-}
-
 /*******************************************************************************
  * Function Name  : usbIsConfigured.
  * Description    : Determines if USB VCP is configured or not
