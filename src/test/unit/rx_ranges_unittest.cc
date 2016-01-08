@@ -180,5 +180,9 @@ void failsafeOnValidDataFailed(void)
 {
 }
 
+void fetchSbusFrameLossPctAndResetCounters(void)
+{
+}
+
 }
 
