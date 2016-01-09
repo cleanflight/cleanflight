@@ -20,7 +20,7 @@ auxillary receiver channels and other events such as failsafe detection.
 | 13      | 12     | BEEPERON   | Enable beeping - useful for locating a crashed aircraft              |
 | 14      | 13     | LEDMAX     |                                                                      |
 | 15      | 14     | LEDLOW     |                                                                      |
-| 16      | 15     | LLIGHTS    |                                                                      |
+| 16      | 15     | LLIGHTS    | Enable landing lights (extra GPIO binary output)                     |
 | 17      | 16     | CALIB      |                                                                      |
 | 18      | 17     | GOV        |                                                                      |
 | 19      | 18     | OSD        | Enable/Disable On-Screen-Display (OSD)                               |
