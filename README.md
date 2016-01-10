@@ -96,12 +96,24 @@ Contributions are welcome and encouraged.  You can contribute in many ways:
 * New features.
 * Telling us your ideas and suggestions.
 
+## Reporting Issues
+
+Please use the support forums (see below) if you are having trouble flashing, setting up, configuring etc.  Issues requesting support divert developers time and create unnecessary "clutter" in the github issue tracker.
+
 The best place to start is the IRC channel on freenode (see above), drop in, say hi. Next place is the github issue tracker:
 
 https://github.com/cleanflight/cleanflight/issues
 https://github.com/cleanflight/cleanflight-configurator/issues
 
 Before creating new issues please check to see if there is an existing one, search first otherwise you waste peoples time when they could be coding instead!
+
+## Support Forums
+
+The below list is a non-exhaustive list of some of the support forums available:
+
+* [RCGroups](http://www.rcgroups.com/forums/showthread.php?t=2249574)
+* [Multi Rotor UK](http://www.multi-rotor.co.uk/index.php?board=161.0)
+* [MultiWii](http://www.multiwii.com/forum/viewtopic.php?f=23&t=5149)
 
 ## Developers
 
