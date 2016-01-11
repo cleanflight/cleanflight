@@ -47,6 +47,7 @@
 #include "io/serial.h"
 #include "io/rc_controls.h"
 #include "io/gps.h"
+#include "io/display.h"
 
 #include "rx/rx.h"
 
@@ -119,6 +120,11 @@ extern int16_t telemTemperature1; // FIXME dependency on mw.c
 #define ID_GYRO_Z             0x42
 
 #define ID_VERT_SPEED         0x30 //opentx vario
+
+#define ID_TEXT               0x50 // text stream (parity 0)
+#define ID_TEXT_1             0x51 // text stream (parity 1)
+#define ID_TEXT_2             0x52 // text stream (parity 2)
+#define ID_TEXT_3             0x53 // text stream (parity 3)
 
 #define GPS_BAD_QUALITY       300
 #define GPS_MAX_HDOP_VAL      9999
@@ -486,6 +492,197 @@ void checkFrSkyTelemetryState(void)
         freeFrSkyTelemetryPort();
 }
 
+#define textTransmitBufferSize 5  // max pos+char duplets
+#define telemetryTextSize 22 // size of text buffer
+static char telemetryText[telemetryTextSize+1]; // Telemetry text buffer + trailing 0 -- Note: if memory is a problem than lineBuffer (from display.c) could be used instead. However status line must be recreated every time again before sending
+static uint8_t textTransmitBuffer[2*textTransmitBufferSize]; // lower byte pos, upper byte char - "FIFO"
+static uint8_t countTextTransmitBuffer = 0; // number of pairs of pos+char in buffer
+static uint8_t lastTransmittedCharPos = 0; // position of last char from text buffer which was added to transmit buffer - in fact it is next char to be transmitted :)
+
+unsigned char getOddParity(uint8_t p)
+{
+      p = p ^ (p >> 4 | p << 4);
+      p = p ^ (p >> 2);
+      p = p ^ (p >> 1);
+      return p & 1;
+}
+
+static void sendTelemetryTextTransmitBuffer(void)
+{
+    uint8_t i;
+    i = 0;
+    uint8_t parity;
+    while (countTextTransmitBuffer) {
+      parity = (getOddParity(textTransmitBuffer[2*i]) << 1) | getOddParity(textTransmitBuffer[2*i+1]);
+      sendDataHead(ID_TEXT+parity);
+      serializeFrsky(textTransmitBuffer[2*i]);
+      serializeFrsky(textTransmitBuffer[2*i+1]);
+      countTextTransmitBuffer--;
+      i++;
+    }
+}
+
+static void fillUpTelemetryTextTransmitBuffer(void)
+{
+    while (countTextTransmitBuffer < textTransmitBufferSize) {
+      if (lastTransmittedCharPos>= telemetryTextSize) lastTransmittedCharPos = 0;
+      textTransmitBuffer[2*countTextTransmitBuffer] = lastTransmittedCharPos+1; // 1 based position of char in text
+      textTransmitBuffer[2*countTextTransmitBuffer+1] = telemetryText[lastTransmittedCharPos]; // char itself
+      countTextTransmitBuffer++;
+      lastTransmittedCharPos++;
+    }
+}
+
+static void clearTelemetryText(void)
+{
+  countTextTransmitBuffer = 1; //whatever was in transmit buffer discard it
+  textTransmitBuffer[0] = 0; // command prefix
+  textTransmitBuffer[1] = 0; // clear command
+  telemetryText[telemetryTextSize] = 0; // string termination just to be sure
+  lastTransmittedCharPos = telemetryTextSize;
+  while(lastTransmittedCharPos) {
+    lastTransmittedCharPos--;
+    telemetryText[lastTransmittedCharPos] = ' '; // fill up text buffer with spaces
+  }
+
+}
+
+static void createTelemetryText(void)
+{
+  uint8_t count;
+  count = 0;
+  if (ARMING_FLAG(ARMED)) {
+    // armed
+    // flight mode
+    telemetryText[0]='A';
+    telemetryText[1]='R';
+    telemetryText[2]='M';
+    telemetryText[3]='E';
+    telemetryText[4]='D';
+    telemetryText[5]=' ';
+    telemetryText[6]=' ';
+    telemetryText[7]=' ';
+    telemetryText[8]=' ';
+    count = 5;
+  } else {
+    // disarmed
+    // why?
+    telemetryText[0]='D';
+    telemetryText[1]='I';
+    telemetryText[2]='S';
+    telemetryText[3]='A';
+    telemetryText[4]='R';
+    telemetryText[5]='M';
+    telemetryText[6]='E';
+    telemetryText[7]='D';
+    telemetryText[8]=' ';
+    count = 8;
+  }
+
+  /*
+  ANGLE_MODE
+  HORIZON_MODE
+  MAG_MODE
+  BARO_MODE
+  GPS_HOME_MODE
+  GPS_HOLD_MODE
+  HEADFREE_MODE
+  AUTOTUNE_MODE
+  PASSTHRU_MODE
+  SONAR_MODE
+  */
+
+  if ((flightModeFlags==0) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='N';
+    telemetryText[count+2]='O';
+    telemetryText[count+3]='N';
+    count += 4;
+  }
+
+  if (FLIGHT_MODE(ANGLE_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='A';
+    telemetryText[count+2]='N';
+    telemetryText[count+3]='G';
+    count += 4;
+  }
+
+  if (FLIGHT_MODE(HORIZON_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='H';
+    telemetryText[count+2]='O';
+    telemetryText[count+3]='R';
+    count += 4;
+  }
+
+  if (FLIGHT_MODE(MAG_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='M';
+    telemetryText[count+2]='A';
+    telemetryText[count+3]='G';
+    count += 4;
+  }
+
+  if (FLIGHT_MODE(BARO_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='B';
+    telemetryText[count+2]='A';
+    telemetryText[count+3]='R';
+    count += 4;
+  }
+
+  if (FLIGHT_MODE(GPS_HOME_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='G';
+    telemetryText[count+2]='H';
+    telemetryText[count+3]='M';
+    count += 4;
+  }
+
+  if (FLIGHT_MODE(GPS_HOLD_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='G';
+    telemetryText[count+2]='H';
+    telemetryText[count+3]='L';
+    count += 4;
+  }
+  if (FLIGHT_MODE(HEADFREE_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='H';
+    telemetryText[count+2]='F';
+    telemetryText[count+3]='R';
+    count += 4;
+  }
+  if (FLIGHT_MODE(AUTOTUNE_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='A';
+    telemetryText[count+2]='T';
+    telemetryText[count+3]='N';
+    count += 4;
+  }
+  if (FLIGHT_MODE(PASSTHRU_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='P';
+    telemetryText[count+2]='A';
+    telemetryText[count+3]='S';
+    count += 4;
+  }
+  if (FLIGHT_MODE(SONAR_MODE) && (count+4<=telemetryTextSize)) {
+    telemetryText[count]=' ';
+    telemetryText[count+1]='S';
+    telemetryText[count+2]='O';
+    telemetryText[count+3]='N';
+    count += 4;
+  }
+
+ while (count<=telemetryTextSize) {
+   telemetryText[count]=' ';
+   count++;
+ }
+
+}
+
 void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 {
     if (!frskyTelemetryEnabled) {
@@ -541,6 +738,38 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 #endif
 
         sendTelemetryTail();
+    } else {
+
+    /* Telemetry text stream
+
+    Added to the HUB stream as last item (if there is a buffer
+    overrun the text is disposable)
+
+    Sends all chars from a small FIFO every transmission cycle.
+
+    FIFO is (could be) filled up elsewhere by high priority text.
+    If FIFO is not fully filled then spare place is filled up
+    by the text from buffer. This way the display is gradually
+    refreshed.
+
+    Note: the speed of text link is 5 chars per transmittion.
+    Approximately 40 chars a second at maximum.
+
+    Telemetry text stream is not beeing send when long 1/1s message
+    has already been composed and put into queue
+
+    */
+
+    // temporary hack - create text here (should be moved elsewhere)
+    /*
+    createTelemetryText();
+    */
+    composeStatus(telemetryText,sizeof(telemetryText)); // hijack status creation from display
+    telemetryText[sizeof(telemetryText)-1]=0;
+
+    fillUpTelemetryTextTransmitBuffer();
+    sendTelemetryTextTransmitBuffer();
+    sendTelemetryTail();
     }
 
     if (cycleNum == 40) {     //Frame 3: Sent every 5s
@@ -548,6 +777,8 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
         sendTime();
         sendTelemetryTail();
     }
+
+
 }
 
 #endif

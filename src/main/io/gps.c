@@ -122,6 +122,24 @@ static const gpsInitData_t gpsInitData[] = {
 
 #define DEFAULT_BAUD_RATE_INDEX 0
 
+// MTK init string
+// sets: NMEA strings frequency (=output respective NMEA string every Nth fix)
+//       goes 1 Hz -> 2 Hz -> 5 Hz refresh rate (silently expects that if refresh rate is not supported the GPS will ignore it)
+//       disables nav speed treshold (e.g. all movements reported)
+//       SBAS and WAAS enabled
+
+#define MTK_INIT_STRINGS_COUNT 8
+static const char *MTK_Init[] = {
+   "$PMTK314,3,1,3,1,5,3,0,0,0,0,0,0,0,0,0,0,0,0,0*2E\r\n",                      // NMEA strings frequency (=output respective NMEA string every Nth fix)
+   "$PMTK220,1000*1F\r\n",                                                       // Interval between fixes 1s -> 1 Hz update
+   "$PMTK220,500*2B\r\n",                                                        // Interval between fixes 0.5s -> 2 Hz update
+   "$PMTK220,200*2C\r\n",                                                        // Interval between fixes 0.2s -> 5 Hz update
+   "$PMTK397,0*23\r\n",                                                          // Set Sta Nav Treshold (min speed) to 0 -> any movement reported
+   "$PMTK313,1*2E\r\n",                                                          // Set SBAS On
+   "$PMTK319,0*25\r\n",                                                          // Set WAAS On
+   "$PMTK301,2*2E\r\n",                                                          // Enable use of sbas satelite in test mode
+   "\r\n"};                                                                      // Extra new line
+
 static const uint8_t ubloxInit[] = {
 
     0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x03, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
@@ -345,6 +363,76 @@ void gpsInitUblox(void)
     }
 }
 
+void gpsInitMTK(void)
+{
+    uint32_t now;
+
+    // Wait until GPS transmit buffer is empty
+    if (!isSerialTransmitBufferEmpty(gpsPort))
+        return;
+
+
+    switch (gpsData.state) {
+        case GPS_INITIALIZING:
+            now = millis();
+            if (now - gpsData.state_ts < GPS_BAUDRATE_CHANGE_DELAY)
+                return;
+
+            if (gpsData.state_position < GPS_INIT_ENTRIES) {
+                // try different speed to INIT
+                baudRate_e newBaudRateIndex = gpsInitData[gpsData.state_position].baudrateIndex;
+
+                gpsData.state_ts = now;
+
+                if (lookupBaudRateIndex(serialGetBaudRate(gpsPort)) != newBaudRateIndex) {
+                    // change the rate if needed and wait a little
+                    serialSetBaudRate(gpsPort, baudRates[newBaudRateIndex]);
+                    return;
+                }
+
+                // print our FIXED init string for the baudrate we want to be at
+                serialPrint(gpsPort, gpsInitData[gpsData.baudrateIndex].mtk);
+
+                gpsData.state_position++;
+            } else {
+                // we're now (hopefully) at the correct rate, next state will switch to it
+                gpsSetState(GPS_CHANGE_BAUD);
+            }
+            break;
+
+        case GPS_CHANGE_BAUD:
+            serialSetBaudRate(gpsPort, baudRates[gpsInitData[gpsData.baudrateIndex].baudrateIndex]);
+            gpsSetState(GPS_CONFIGURE);
+            break;
+
+        case GPS_CONFIGURE:
+            if (gpsData.messageState == GPS_MESSAGE_STATE_IDLE) {
+                gpsData.messageState++;
+            }
+
+            if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
+
+                if (gpsData.state_position < MTK_INIT_STRINGS_COUNT) {
+                    serialPrint(gpsPort, MTK_Init[gpsData.state_position]); // MTK init command
+                    serialPrint(gpsPort, MTK_Init[MTK_INIT_STRINGS_COUNT]); // extra new line
+                    gpsData.state_position++;
+                } else {
+                    // finished
+                    gpsData.state_position = 0;
+                    gpsData.messageState = GPS_MESSAGE_STATE_MAX + 1;
+                }
+            }
+
+
+            if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
+                // GPS should be initialised, try receiving
+                gpsSetState(GPS_RECEIVING_DATA);
+            }
+            break;
+    }
+}
+
+
 void gpsInitHardware(void)
 {
     switch (gpsConfig->provider) {
@@ -354,6 +442,10 @@ void gpsInitHardware(void)
 
         case GPS_UBLOX:
             gpsInitUblox();
+            break;
+
+        case GPS_MTK:
+            gpsInitMTK();
             break;
     }
 }
@@ -428,6 +520,7 @@ bool gpsNewFrame(uint8_t c)
 {
     switch (gpsConfig->provider) {
         case GPS_NMEA:          // NMEA
+        case GPS_MTK:          // NMEA
             return gpsNewFrameNMEA(c);
         case GPS_UBLOX:         // UBX binary
             return gpsNewFrameUBLOX(c);

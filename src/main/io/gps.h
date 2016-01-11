@@ -24,10 +24,11 @@
 
 typedef enum {
     GPS_NMEA = 0,
-    GPS_UBLOX
+    GPS_UBLOX,
+    GPS_MTK
 } gpsProvider_e;
 
-#define GPS_PROVIDER_MAX GPS_UBLOX
+#define GPS_PROVIDER_MAX GPS_MTK
 
 typedef enum {
     SBAS_AUTO = 0,

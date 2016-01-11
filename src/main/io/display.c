@@ -141,6 +141,80 @@ typedef struct pageState_s {
 
 static pageState_t pageState;
 
+typedef struct armingFlagDescription_t {
+    const char *longDescription;
+    const char *shortDescription; // used for status line
+    const uint8_t inverted;
+} armingFlagDescription_t;
+
+// armingFlagDescription - must be kept synced with armingFlags
+/*
+OK_TO_ARM       = (1 << 0),
+PREVENT_ARMING  = (1 << 1),
+ARMED           = (1 << 2)
+*/
+static const armingFlagDescription_t armingFlagDescription[] = {
+    { "READY TO ARM", "RDY",0 },
+    { "PREVENT ARMING", "PARM",1 },
+    { "ARMED", "ARM",1} // set MSB to indicate inverted chars
+};
+
+typedef struct flightFlagDescription_t {
+    const char *longDescription;
+    const char *shortDescription; // used for status line
+    const uint8_t inverted;
+} flightFlagDescription_t;
+
+// flightFlagDescription - must be kept synced with flightFlags
+/*
+ANGLE_MODE      = (1 << 0),
+HORIZON_MODE    = (1 << 1),
+MAG_MODE        = (1 << 2),
+BARO_MODE       = (1 << 3),
+GPS_HOME_MODE   = (1 << 4),
+GPS_HOLD_MODE   = (1 << 5),
+HEADFREE_MODE   = (1 << 6),
+AUTOTUNE_MODE   = (1 << 7),
+PASSTHRU_MODE   = (1 << 8),
+SONAR_MODE      = (1 << 9),
+*/
+static const flightFlagDescription_t flightFlagDescription[] = {
+    { "ANGLE MODE", "ANG", 0 },
+    { "HORIZON MODE", "HOR", 0 },
+    { "MAG MODE", "MAG", 0 },
+    { "BARO MODE", "BAR", 0 },
+    { "GPS HOME MODE", "GHM", 0 },
+    { "GPS HOLD MODE", "GHL", 0 },
+    { "HEADFREE MODE", "HFR", 0 },
+    { "AUTOTUNE MODE", "ATU", 0 },
+    { "PASSTHEU MODE", "PAS", 0 },
+    { "SONAR MODE", "SON", 0 }
+};
+
+typedef struct stateFlagDescription_t {
+    const char *longDescription;
+    const char *shortDescription; // used for status line
+    const uint8_t inverted;
+} stateFlagDescription_t;
+
+// stateFlagDescription - must be kept synced with stateFlags
+/*
+GPS_FIX_HOME   = (1 << 0),
+GPS_FIX        = (1 << 1),
+CALIBRATE_MAG  = (1 << 2),
+SMALL_ANGLE    = (1 << 3),
+FIXED_WING     = (1 << 4),
+*/
+static const stateFlagDescription_t stateFlagDescription[] = {
+    { "GPS FIX HOME", "GFH", 1 },    // inverted to remaind that home is not fixed
+    { "GPS FIX", "GPS", 1},        // inverted to remaind that GPS position is not fixed
+    { "CALIBRATE MAG", "CMG", 1 }, // inverted as it is an error
+    { "SMALL ANGLE", "SAN", 0 },
+    { "FIXED WING", "FWG", 0 }
+};
+
+
+
 void resetDisplay(void) {
     displayPresent = ug2864hsweg01InitI2C();
 }
@@ -199,7 +273,116 @@ void fillScreenWithCharacters()
 }
 #endif
 
+void strcpyi(char* dst, char* src)
+{
+  // warning - no boundary checks!
+  uint8_t i = 0;
+  while (src[i]) {
+    dst[i] = src[i] | 0x80;
+    i++;
+  }
+}
 
+void composeStatus(char * buffer, uint8_t size)
+{
+  // let's compose status message
+  // inverted characters are used to reporte
+  // errors or warnings
+
+  // let's start with failsafe
+
+  uint8_t length = size;
+  uint8_t statusTooLong = 0;
+  buffer[length-1] = 0x00;
+  buffer[0] = '?' | 0x80;
+  switch (failsafePhase()) {
+      case FAILSAFE_IDLE:
+          buffer[0] = '-';
+          break;
+      case FAILSAFE_RX_LOSS_DETECTED:
+          buffer[0] = 'R' | 0x80;
+          break;
+      case FAILSAFE_LANDING:
+          buffer[0] = 'l' | 0x80;
+          break;
+      case FAILSAFE_LANDED:
+          buffer[0] = 'L' | 0x80;
+          break;
+  }
+
+  // receive status
+  buffer[1] = rxIsReceivingSignal() ? 'R' : ('!' | 0x80);
+
+  // now is time check for ARMING status
+  length = 2;
+  uint8_t i;
+  // iterate trough the flags
+  for (i=0;i<3;i++) {
+    // check if flag is set
+    if ((1<<i) & (armingFlags)) {
+      // check if we have enough space in line
+      if ((length+1+strlen(armingFlagDescription[i].shortDescription))<(size-1)) {
+        buffer[length] = ' ';
+        if (armingFlagDescription[i].inverted)
+          strcpyi(buffer+length+1,(char *)armingFlagDescription[i].shortDescription);
+          else strcpy(buffer+length+1,armingFlagDescription[i].shortDescription);
+        length += strlen(armingFlagDescription[i].shortDescription)+1;
+      } else {
+        // set too long flag
+        statusTooLong = 1;
+      }
+    }
+  }
+
+  // now is time to report flight modes
+  // iterate trough the flags
+  for (i=0;i<10;i++) {
+    // check if flag is set
+    if ((1<<i) & (flightModeFlags)) {
+      // check if we have enough space in line
+      if ((length+1+strlen(flightFlagDescription[i].shortDescription))<(size-1)) {
+        buffer[length] = ' ';
+        if (flightFlagDescription[i].inverted)
+          strcpyi(buffer+length+1,(char *)flightFlagDescription[i].shortDescription);
+          else strcpy(buffer+length+1,flightFlagDescription[i].shortDescription);
+        length += strlen(flightFlagDescription[i].shortDescription)+1;
+      } else {
+        // set too long flag
+        statusTooLong = 1;
+      }
+    }
+  }
+
+  // ..and state flags
+  // iterate trough the flags
+  for (i=0;i<5;i++) {
+    // check if flag is set
+    if ((1<<i) & (stateFlags)) {
+      // check if we have enough space in line
+      if ((length+1+strlen(stateFlagDescription[i].shortDescription))<(size-1)) {
+        buffer[length] = ' ';
+        if (stateFlagDescription[i].inverted)
+          strcpyi(buffer+length+1,(char *)stateFlagDescription[i].shortDescription);
+          else strcpy(buffer+length+1,stateFlagDescription[i].shortDescription);
+        length += strlen(stateFlagDescription[i].shortDescription)+1;
+      } else {
+        // set too long flag
+        statusTooLong = 1;
+      }
+    }
+  }
+
+  while (length < size - 1) {
+      buffer[length++] = ' ';
+  }
+  buffer[length] = 0;
+
+  // check for too long status line and report it
+  if (statusTooLong) {
+    buffer[length-1] = '~' | 0x80;
+  }
+
+}
 void updateTicker(void)
 {
     static uint8_t tickerIndex = 0;
@@ -254,6 +437,17 @@ void showTitle()
     i2c_OLED_send_string(pageTitles[pageState.pageId]);
 }
 
+void showStatus()
+{
+    // line buffer is hijacked for staus line
+    padLineBuffer();
+    composeStatus(lineBuffer,sizeof(lineBuffer));
+    // temporarily put on first line (covers whateveris there such as page title)
+    // and gets covered by ticker
+    i2c_OLED_set_line(0);
+    i2c_OLED_send_string_formatted(lineBuffer);
+}
+
 void handlePageChange(void)
 {
     i2c_OLED_clear_display_quick();
@@ -305,6 +499,7 @@ void showWelcomePage(void)
 
 void showArmedPage(void)
 {
+    showStatus();
 }
 
 void showProfilePage(void)
@@ -653,9 +848,12 @@ void updateDisplay(void)
 #endif
     }
     if (!armedState) {
+        /* part of status line now
         updateFailsafeStatus();
         updateRxStatus();
-        updateTicker();
+        */
+        showStatus(); // fixme status covers page title
+        updateTicker(); // fixme ticker covers status overwflow flag
     }
 
 }
