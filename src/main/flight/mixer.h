@@ -136,7 +136,7 @@ typedef enum {
     SERVO_SINGLECOPTER_3 = 5,
     SERVO_SINGLECOPTER_4 = 6,
 
-} servoIndex_e; // FIXME rename to servoChannel_e
+} servoChannel_e;
 
 #define SERVO_PLANE_INDEX_MIN SERVO_ELEVATOR
 #define SERVO_PLANE_INDEX_MAX SERVO_FLAPS
@@ -213,7 +213,7 @@ void mixerLoadMix(int index, motorMixer_t *customMixers);
 #ifdef USE_SERVOS
 void servoMixerLoadMix(int index, servoMixer_t *customServoMixers);
 void loadCustomServoMixer(void);
-int servoDirection(int servoIndex, int fromChannel);
+int servoDirection(servoChannel_e servoChannel, int fromChannel);
 #endif
 void mixerResetDisarmedMotors(void);
 void mixTable(void);

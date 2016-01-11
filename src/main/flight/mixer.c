@@ -348,22 +348,22 @@ void mixerUseConfigs(
 }
 
 #ifdef USE_SERVOS
-int16_t determineServoMiddleOrForwardFromChannel(servoIndex_e servoIndex)
+int16_t determineServoMiddleOrForwardFromChannel(servoChannel_e servoChannel)
 {
-    uint8_t channelToForwardFrom = servoConf[servoIndex].forwardFromChannel;
+    uint8_t channelToForwardFrom = servoConf[servoChannel].forwardFromChannel;
 
     if (channelToForwardFrom != CHANNEL_FORWARDING_DISABLED && channelToForwardFrom < rxRuntimeConfig.channelCount) {
         return rcData[channelToForwardFrom];
     }
 
-    return servoConf[servoIndex].middle;
+    return servoConf[servoChannel].middle;
 }
 
 
-int servoDirection(int servoIndex, int inputSource)
+int servoDirection(servoChannel_e servoChannel, int inputSource)
 {
     // determine the direction (reversed or not) from the direction bitfield of the servo
-    if (servoConf[servoIndex].reversedSources & (1 << inputSource))
+    if (servoConf[servoChannel].reversedSources & (1 << inputSource))
         return -1;
     else
         return 1;
@@ -714,7 +714,7 @@ STATIC_UNIT_TESTED void servoMixer(void)
     for (i = 0; i < servoRuleCount; i++) {
         // consider rule if no box assigned or box is active
         if (currentServoMixer[i].box == 0 || IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[i].box - 1)) {
-            uint8_t target = currentServoMixer[i].targetChannel;
+            servoChannel_e target = currentServoMixer[i].targetChannel;
             uint8_t from = currentServoMixer[i].inputSource;
             uint16_t servo_width = servoConf[target].max - servoConf[target].min;
             int16_t min = currentServoMixer[i].min * servo_width / 100 - servo_width / 2;
