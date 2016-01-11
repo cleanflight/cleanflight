@@ -29,6 +29,7 @@
 #include "common/axis.h"
 #include "common/color.h"
 #include "common/maths.h"
+#include "common/utils.h"
 
 #include "drivers/system.h"
 
@@ -469,44 +470,41 @@ void mspInit(serialConfig_t *serialConfig)
 
 static uint32_t packFlightModeFlags(void)
 {
-    uint32_t i, junk, tmp;
 
     // Serialize the flags in the order we delivered them, ignoring BOXNAMES and BOXINDEXES
     // Requires new Multiwii protocol version to fix
     // It would be preferable to setting the enabled bits based on BOXINDEX.
-    junk = 0;
-    tmp = IS_ENABLED(FLIGHT_MODE(ANGLE_MODE)) << BOXANGLE |
-        IS_ENABLED(FLIGHT_MODE(HORIZON_MODE)) << BOXHORIZON |
-        IS_ENABLED(FLIGHT_MODE(BARO_MODE)) << BOXBARO |
-        IS_ENABLED(FLIGHT_MODE(MAG_MODE)) << BOXMAG |
-        IS_ENABLED(FLIGHT_MODE(HEADFREE_MODE)) << BOXHEADFREE |
-        IS_ENABLED(rcModeIsActive(BOXHEADADJ)) << BOXHEADADJ |
-        IS_ENABLED(rcModeIsActive(BOXCAMSTAB)) << BOXCAMSTAB |
-        IS_ENABLED(rcModeIsActive(BOXCAMTRIG)) << BOXCAMTRIG |
-        IS_ENABLED(FLIGHT_MODE(GPS_HOME_MODE)) << BOXGPSHOME |
-        IS_ENABLED(FLIGHT_MODE(GPS_HOLD_MODE)) << BOXGPSHOLD |
-        IS_ENABLED(FLIGHT_MODE(PASSTHRU_MODE)) << BOXPASSTHRU |
-        IS_ENABLED(rcModeIsActive(BOXBEEPERON)) << BOXBEEPERON |
-        IS_ENABLED(rcModeIsActive(BOXLEDMAX)) << BOXLEDMAX |
-        IS_ENABLED(rcModeIsActive(BOXLEDLOW)) << BOXLEDLOW |
-        IS_ENABLED(rcModeIsActive(BOXLLIGHTS)) << BOXLLIGHTS |
-        IS_ENABLED(rcModeIsActive(BOXCALIB)) << BOXCALIB |
-        IS_ENABLED(rcModeIsActive(BOXGOV)) << BOXGOV |
-        IS_ENABLED(rcModeIsActive(BOXOSD)) << BOXOSD |
-        IS_ENABLED(rcModeIsActive(BOXTELEMETRY)) << BOXTELEMETRY |
-        IS_ENABLED(rcModeIsActive(BOXGTUNE)) << BOXGTUNE |
-        IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
-        IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM |
-        IS_ENABLED(rcModeIsActive(BOXBLACKBOX)) << BOXBLACKBOX |
-        IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << BOXFAILSAFE;
 
-    for (i = 0; i < activeBoxIdCount; i++) {
-        int flag = (tmp & (1 << activeBoxIds[i]));
-        if (flag)
-            junk |= 1 << i;
+    uint32_t box_mask=0;
+
+    // copy flight mode bits
+    static const int8_t flightMode_boxId_map[] = FLIGHT_MODE_BOXID_MAP_INITIALIZER;
+
+    for(unsigned i = 0; i < ARRAYLEN(flightMode_boxId_map); i++) {
+        if(flightMode_boxId_map[i] < 0)
+            continue;  // boxId_e does not exist
+        if(FLIGHT_MODE(1 << i))
+            box_mask |= 1 << flightMode_boxId_map[i];
     }
-    
-    return junk;
+
+    // set rcMode bits, mapping is direct. Use mask to copy only correct bits
+#define BM(x) (1 <<(x))
+    const uint32_t rcModeCopyMask = BM(BOXHEADADJ) | BM(BOXCAMSTAB) | BM(BOXCAMTRIG) | BM(BOXBEEPERON)
+        | BM(BOXLEDMAX) | BM(BOXLEDLOW) | BM(BOXLLIGHTS) | BM(BOXCALIB) | BM(BOXGOV) | BM(BOXOSD)
+        | BM(BOXTELEMETRY) | BM(BOXGTUNE) | BM(BOXBLACKBOX);
+    for(unsigned i = 0; i < sizeof(rcModeCopyMask) * 8; i++)
+        if((rcModeCopyMask & BM(i)) && rcModeIsActive(i))
+            box_mask |= 1 << i;
+#undef BM
+    // copy ARM state
+    if(ARMING_FLAG(ARMED))
+        box_mask |= 1 << BOXARM;
+    // map bits to MSP indexes
+    uint32_t msp_mask = 0;
+    for (unsigned i = 0; i < activeBoxIdCount; i++)
+        if(box_mask & (1 << activeBoxIds[i]))
+            msp_mask |= 1 << i;
+    return msp_mask;
 }
 
 static bool processOutCommand(uint8_t cmdMSP)
