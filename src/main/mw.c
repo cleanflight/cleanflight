@@ -183,7 +183,9 @@ void annexCode(void)
     }
 
     for (axis = 0; axis < 3; axis++) {
-        tmp = MIN(ABS(rcData[axis] - masterConfig.rxConfig.midrc), 500);
+        tmp = rcData[axis] - masterConfig.rxConfig.midrc;
+        tmp = ABS(tmp);
+        tmp = MIN(tmp, 500);
         if (axis == ROLL || axis == PITCH) {
             if (currentProfile->rcControlsConfig.deadband) {
                 if (tmp > currentProfile->rcControlsConfig.deadband) {
