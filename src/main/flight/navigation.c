@@ -417,7 +417,8 @@ void gpsUsePIDs(pidProfile_t *pidProfile)
 //
 static void GPS_calc_longitude_scaling(int32_t lat)
 {
-    float rads = (ABS((float)lat) / 10000000.0f) * 0.0174532925f;
+    lat = ABS(lat);
+    float rads = ((float)lat / 10000000.0f) * 0.0174532925f;
     GPS_scaleLonDown = cos_approx(rads);
 }
 
@@ -586,7 +587,8 @@ static void GPS_calc_nav_rate(uint16_t max_speed)
 //
 static void GPS_update_crosstrack(void)
 {
-    if (ABS(wrap_18000(target_bearing - original_target_bearing)) < 4500) {     // If we are too far off or too close we don't do track following
+    int32_t target_bearing_error = wrap_18000(target_bearing - original_target_bearing);
+    if (ABS(target_bearing_error) < 4500) {     // If we are too far off or too close we don't do track following
         float temp = (target_bearing - original_target_bearing) * RADX100;
         crosstrack_error = sin_approx(temp) * (wp_distance * CROSSTRACK_GAIN); // Meters we are off track line
         nav_bearing = target_bearing + constrain(crosstrack_error, -3000, 3000);
