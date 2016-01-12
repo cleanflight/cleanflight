@@ -238,6 +238,7 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     UNUSED(rxConfig);
 
     int axis, prop = 0;
+    int pitch, roll;
     int32_t rc, error, errorAngle;
     int32_t PTerm, ITerm, PTermACC, ITermACC, DTerm;
     static int16_t lastGyro[2] = { 0, 0 };
@@ -245,7 +246,10 @@ static void pidMultiWii23(pidProfile_t *pidProfile, controlRateConfig_t *control
     int32_t delta;
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
-        prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 512);
+        pitch = ABS(rcCommand[PITCH]);
+        roll = ABS(rcCommand[ROLL]);
+        prop = MAX(pitch, roll);
+        prop = MIN(prop, 512);
     }
 
     // PITCH & ROLL

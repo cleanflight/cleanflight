@@ -447,7 +447,8 @@ STATIC_UNIT_TESTED uint16_t applyRxChannelRangeConfiguraton(int sample, rxChanne
     }
 
     sample = scaleRange(sample, range.min, range.max, PWM_RANGE_MIN, PWM_RANGE_MAX);
-    sample = MIN(MAX(PWM_PULSE_MIN, sample), PWM_PULSE_MAX);
+    sample = MAX(sample, PWM_PULSE_MIN);
+    sample = MIN(sample, PWM_PULSE_MAX);
 
     return sample;
 }
