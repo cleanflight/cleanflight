@@ -144,6 +144,20 @@ $(OBJECT_DIR)/encoding_unittest : \
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
+$(OBJECT_DIR)/evil_macro_unittest.o : \
+	$(TEST_DIR)/evil_macro_unittest.cc \
+	$(USER_DIR)/common/maths.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/evil_macro_unittest.cc -o $@
+
+$(OBJECT_DIR)/evil_macro_unittest : \
+	$(OBJECT_DIR)/evil_macro_unittest.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
 $(OBJECT_DIR)/flight/imu.o : \
 	$(USER_DIR)/flight/imu.c \
 	$(USER_DIR)/flight/imu.h \
