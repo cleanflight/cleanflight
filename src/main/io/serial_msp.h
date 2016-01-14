@@ -242,8 +242,8 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_EEPROM_WRITE         250    //in message          no param
 
+#define MSP_DEBUG                252    //out message         debug1,debug2,debug3,debug4
 #define MSP_DEBUGMSG             253    //out message         debug string buffer
-#define MSP_DEBUG                254    //out message         debug1,debug2,debug3,debug4
 
 // Additional commands that are not compatible with MultiWii
 #define MSP_STATUS_EX            150    //out message         cycletime, errors_count, CPU load, sensor present etc
@@ -254,6 +254,10 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_SERVO_MIX_RULES      241    //out message         Returns servo mixer configuration
 #define MSP_SET_SERVO_MIX_RULE   242    //in message          Sets servo mixer configuration
 #define MSP_SET_1WIRE            243    //in message          Sets 1Wire paththrough
+
+// Commands reserved for future expansion
+#define MSP_EXTENSION_ONE_BYTE   254   // reserved for extension to allow extra byte for command
+#define MSP_EXTENSION_TWO_BYTES  255   // reserved for extension to allow two byte commands
 
 // Each MSP port requires state and a receive buffer, revisit this default if someone needs more than 2 MSP ports.
 #define MAX_MSP_PORT_COUNT 2
