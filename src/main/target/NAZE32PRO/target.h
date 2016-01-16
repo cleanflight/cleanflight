@@ -15,23 +15,25 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define TARGET_BOARD_IDENTIFIER "AFF3" // AFro F3
-
 #pragma once
 
+#define TARGET_BOARD_IDENTIFIER "AFF3" // AFro F3
+
+/* LED defines */
+#define LED0
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_12
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOB
+
+/* Buzzer defines */
+#define BEEPER
 #define BEEP_GPIO   GPIOB
 #define BEEP_PIN    Pin_10
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOB
 
-#define BEEPER
-#define LED0
+/* Hardware inverter defines */
 
-#define GYRO
-#define ACC
-
+/* Serial port defines */
 #define USE_VCP
 #define USE_USART1
 #define USE_USART2
@@ -51,17 +53,37 @@
 #define UART2_TX_PINSOURCE  GPIO_PinSource5
 #define UART2_RX_PINSOURCE  GPIO_PinSource6
 
+/* I2C port defines */
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
+/* SPI port defines */
+
+/* ADC port defines */
+
+/* Peripheral defines */
+#define GYRO
+
+#define ACC
+
+/* Feature defines */
+//#define SONAR
 #define BLACKBOX
+//#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+//#define DISPLAY
 #define GPS
 #define GTUNE
 #define SERIAL_RX
 #define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
+//#define BRUSHED_MOTORS
 
+/* Blheli Serial1Wire defines */
+
+/* LED Strip defines */
+
+/* Spektrum defines */
 #define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_PORT  GPIOA
