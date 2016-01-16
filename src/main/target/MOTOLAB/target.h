@@ -59,9 +59,9 @@
 #define LED0
 
 #define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define SERIAL_PORT_COUNT 4
 
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
@@ -172,7 +172,7 @@
 
 
 #define SPEKTRUM_BIND
-// USART2, PB4
+// UART2, PB4
 #define BIND_PORT GPIOB
 #define BIND_PIN Pin_4
 
