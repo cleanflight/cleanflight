@@ -28,7 +28,6 @@
 #include <stdlib.h>
 
 #include "platform.h"
-#include "debug.h"
 
 #include "system.h"
 #include "gpio.h"
@@ -395,7 +394,6 @@ void USART2_IRQHandler(void)
     uartPort_t *s = &uartPort2;
 
     usartIrqHandler(s);
-    debug[2]++;
 }
 #endif
 
