@@ -574,6 +574,86 @@ TEST_F(SerialMspUnitTest, TestMspOutMessageLengthsCommand)
     }
 }
 
+TEST(SerialMspUnittest, Test_MSP_PID_FLOAT)
+{
+    memset(serialBuffer.buf, 0, sizeof(serialBuffer));
+    setCurrentPort(&mspPorts[0]);
+
+    // check the buffer is big enough for the data to read in
+    EXPECT_LE(sizeof(mspHeader_t) + 3 * PID_ITEM_COUNT + 1, MSP_PORT_INBUF_SIZE); // +1 for checksum
+
+    // set up some test data
+    // use test values close to default, but make sure they are all different
+    const float Pf_ROLL = 1.4f;
+    const float If_ROLL = 0.4f;
+    const float Df_ROLL = 0.03f;
+    const float Pf_PITCH = 1.5f; // default 1.4
+    const float If_PITCH = 0.5f; // default 0.4
+    const float Df_PITCH = 0.02f; // default 0.03
+    const float Pf_YAW = 3.5f;
+    const float If_YAW = 0.6f; // default 0.4
+    const float Df_YAW = 0.01;
+    const float A_level = 5.0f;
+    const float H_level = 3.0f;
+    const uint8_t H_sensitivity = 75;
+    currentProfile = &profile;
+    currentProfile->pidProfile.pidController = PID_CONTROLLER_LUX_FLOAT;
+    currentProfile->pidProfile.P_f[PIDROLL] = Pf_ROLL;
+    currentProfile->pidProfile.I_f[PIDROLL] = If_ROLL;
+    currentProfile->pidProfile.D_f[PIDROLL] = Df_ROLL;
+    currentProfile->pidProfile.P_f[PIDPITCH] = Pf_PITCH;
+    currentProfile->pidProfile.I_f[PIDPITCH] = If_PITCH;
+    currentProfile->pidProfile.D_f[PIDPITCH] = Df_PITCH;
+    currentProfile->pidProfile.P_f[PIDYAW] = Pf_YAW;
+    currentProfile->pidProfile.I_f[PIDYAW] = If_YAW;
+    currentProfile->pidProfile.D_f[PIDYAW] = Df_YAW;
+    currentProfile->pidProfile.A_level = A_level;
+    currentProfile->pidProfile.H_level = H_level;
+    currentProfile->pidProfile.H_sensitivity = H_sensitivity;
+
+    // use the MSP to write out the PID values
+    serialWritePos = 0;
+    serialReadPos = 0;
+    currentPort->cmdMSP = MSP_PID_FLOAT;
+    mspProcessReceivedCommand();
+    EXPECT_EQ(3 * sizeof(uint16_t) * PID_ITEM_COUNT, serialBuffer.mspResponse.header.size);
+
+    // reset test values to zero, so we can check if they get read properly
+    memset(&currentProfile->pidProfile, 0, sizeof(currentProfile->pidProfile));
+
+    // now use the MSP to read back the PID values and check they are the same
+    // spoof a change from the written MSP_PID to the readable MSP_SET_PID
+    currentPort->cmdMSP = MSP_SET_PID_FLOAT;
+    serialBuffer.mspResponse.header.direction = '<';
+    serialBuffer.mspResponse.header.type = currentPort->cmdMSP;
+    // force the checksum
+    serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_PID;
+    serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_SET_PID;
+    // copy the command data into the current port inBuf so it can be processed
+    memcpy(currentPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
+
+    // need to reset the controller for values to be read back correctly
+    currentProfile->pidProfile.pidController = PID_CONTROLLER_LUX_FLOAT;
+
+    // set the offset into the payload
+    currentPort->indRX = offsetof(struct mspResonse_s, payload);
+    mspProcessReceivedCommand();
+
+    // check the values are as expected
+    EXPECT_FLOAT_EQ(Pf_ROLL, currentProfile->pidProfile.P_f[PIDROLL]);
+    EXPECT_FLOAT_EQ(If_ROLL, currentProfile->pidProfile.I_f[PIDROLL]);
+    EXPECT_FLOAT_EQ(Df_ROLL, currentProfile->pidProfile.D_f[PIDROLL]);
+    EXPECT_FLOAT_EQ(Pf_PITCH, currentProfile->pidProfile.P_f[PIDPITCH]);
+    EXPECT_FLOAT_EQ(If_PITCH, currentProfile->pidProfile.I_f[PIDPITCH]);
+    EXPECT_FLOAT_EQ(Df_PITCH, currentProfile->pidProfile.D_f[PIDPITCH]);
+    EXPECT_FLOAT_EQ(Pf_YAW, currentProfile->pidProfile.P_f[PIDYAW]);
+    EXPECT_FLOAT_EQ(If_YAW, currentProfile->pidProfile.I_f[PIDYAW]);
+    EXPECT_FLOAT_EQ(Df_YAW, currentProfile->pidProfile.D_f[PIDYAW]);
+    EXPECT_FLOAT_EQ(A_level, currentProfile->pidProfile.A_level);
+    EXPECT_FLOAT_EQ(H_level, currentProfile->pidProfile.H_level);
+    EXPECT_EQ(H_sensitivity, currentProfile->pidProfile.H_sensitivity);
+}
+
 // STUBS
 extern "C" {
 // from acceleration.c

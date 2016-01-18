@@ -249,6 +249,8 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define MSP_STATUS_EX            150    //out message         cycletime, errors_count, CPU load, sensor present etc
 #define MSP_UID                  160    //out message         Unique device ID
 #define MSP_GPSSVINFO            164    //out message         get Signal Strength (only U-Blox)
+#define MSP_PID_FLOAT            237    //out message         P I D coeffients for floating point PID controllers
+#define MSP_SET_PID_FLOAT        238    //in message          P I D coeffients for floating point PID controllers
 #define MSP_ACC_TRIM             240    //out message         get acc angle trim values
 #define MSP_SET_ACC_TRIM         239    //in message          set acc angle trim values
 #define MSP_SERVO_MIX_RULES      241    //out message         Returns servo mixer configuration
