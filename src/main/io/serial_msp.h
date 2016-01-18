@@ -270,7 +270,7 @@ typedef enum {
     COMMAND_RECEIVED
 } mspState_e;
 
-#define MSP_PORT_INBUF_SIZE 64
+#define MSP_PORT_INBUF_SIZE 72
 
 typedef struct mspPort_s {
     serialPort_t *port; // null when port unused.

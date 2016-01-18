@@ -352,6 +352,7 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesInt)
     serialReadPos = 0;
     currentPort->cmdMSP = MSP_PID;
     mspProcessReceivedCommand();
+    EXPECT_GT(MSP_PORT_INBUF_SIZE, serialWritePos); // check command doesn't overflow serial buffer
     EXPECT_EQ(3 * PID_ITEM_COUNT, serialBuffer.mspResponse.header.size);
     // check few values, just to make sure they have been written correctly
     EXPECT_EQ(P8_YAW, serialBuffer.mspResponse.payload[6]);
@@ -446,6 +447,7 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesFloat)
     serialReadPos = 0;
     currentPort->cmdMSP = MSP_PID;
     mspProcessReceivedCommand();
+    EXPECT_GT(MSP_PORT_INBUF_SIZE, serialWritePos); // check command doesn't overflow serial buffer
     EXPECT_EQ(3 * PID_ITEM_COUNT, serialBuffer.mspResponse.header.size);
 
     // reset test values to zero, so we can check if they get read properly
@@ -616,6 +618,7 @@ TEST(SerialMspUnittest, Test_MSP_PID_FLOAT)
     serialReadPos = 0;
     currentPort->cmdMSP = MSP_PID_FLOAT;
     mspProcessReceivedCommand();
+    EXPECT_GT(MSP_PORT_INBUF_SIZE, serialWritePos); // check command doesn't overflow serial buffer
     EXPECT_EQ(3 * sizeof(uint16_t) * PID_ITEM_COUNT, serialBuffer.mspResponse.header.size);
 
     // reset test values to zero, so we can check if they get read properly
