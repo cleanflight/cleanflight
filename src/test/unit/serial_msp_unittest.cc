@@ -457,8 +457,8 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesFloat)
     serialBuffer.mspResponse.header.direction = '<';
     serialBuffer.mspResponse.header.type = currentPort->cmdMSP;
     // force the checksum
-    serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_PID;
-    serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_SET_PID;
+    serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_PID_FLOAT;
+    serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_SET_PID_FLOAT;
     // copy the command data into the current port inBuf so it can be processed
     memcpy(currentPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
 
