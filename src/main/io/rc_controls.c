@@ -22,7 +22,6 @@
 #include <math.h>
 
 #include "platform.h"
-#include "debug.h"
 
 #include "build_config.h"
 
@@ -351,7 +350,6 @@ void updateActivatedModes(modeActivationCondition_t *modeActivationConditions)
             // if the mode WAS active the keep it active if the channel is unstable.
             if (IS_RC_MODE_ACTIVE_IN_MASK(modeActivationCondition->modeId, currentRCModeActivationMask)) {
                 if (rcChannelStability[AUX1 + modeActivationCondition->auxChannelIndex] != RX_CHANNEL_STABILITY_HIGH) {
-                    debug[3]++;
                     ACTIVATE_RC_MODE(modeActivationCondition->modeId);
                 }
             }

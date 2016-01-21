@@ -54,6 +54,7 @@ protected:
 
     virtual void SetUp() {
         memset(&modeActivationConditions, 0, sizeof(modeActivationConditions));
+        memset(&rcChannelStability, RX_CHANNEL_STABILITY_HIGH, sizeof(rcChannelStability));
     }
 };
 
@@ -783,5 +784,6 @@ uint8_t armingFlags = 0;
 int16_t heading;
 uint8_t stateFlags = 0;
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+uint8_t rcChannelStability[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 rxRuntimeConfig_t rxRuntimeConfig;
 }
