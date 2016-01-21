@@ -83,6 +83,8 @@ static uint8_t  skipRxSamples = 0;
 
 int16_t rcRaw[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
+uint8_t rcChannelStability[MAX_SUPPORTED_RC_CHANNEL_COUNT]; // see rxChannelStability_e
+
 uint32_t rcInvalidPulsPeriod[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
 #define MAX_INVALID_PULS_TIME    300
@@ -539,6 +541,52 @@ static void detectAndApplySignalLossBehaviour(void)
 #endif
 }
 
+#define MAX_RC_HISTORY_ITEMS 4
+
+uint16_t rcHistory[MAX_SUPPORTED_RC_CHANNEL_COUNT][MAX_RC_HISTORY_ITEMS];
+
+void updateChannelStability(void)
+{
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+
+        // calculate the maximum absolute delta between the new reading each each of the previous readings.
+        uint16_t maximumDelta = 0;
+        for (int8_t historyIndex = -1; historyIndex < MAX_RC_HISTORY_ITEMS - 1; historyIndex++) {
+
+            uint16_t source;
+            bool first = (historyIndex == -1);
+
+            if (first) {
+                source = rcData[channelIndex];
+            } else {
+                source = rcHistory[channelIndex][historyIndex];
+            }
+
+
+            uint16_t delta = abs(source - rcHistory[channelIndex][historyIndex + 1]);
+            if (delta > maximumDelta) {
+                maximumDelta = delta;
+            }
+        }
+
+        for (int8_t historyIndex = MAX_RC_HISTORY_ITEMS - 1; historyIndex > 0 ; historyIndex--) {
+            rcHistory[channelIndex][historyIndex] = rcHistory[channelIndex][historyIndex - 1];
+        }
+        rcHistory[channelIndex][0] = rcData[channelIndex];
+
+        if (maximumDelta <= 10) {
+            // High Stability means at least one the last 5 channel values has a maximum delta less or equal to 10
+            rcChannelStability[channelIndex] = RX_CHANNEL_STABILITY_HIGH;
+        } else if (maximumDelta <= 25) {
+            // Medium Stability means at least one the last 5 channel values has a maximum delta between 11 and 25
+            rcChannelStability[channelIndex] = RX_CHANNEL_STABILITY_MEDIUM;
+        } else {
+            // Low Stability means at least one the last 5 channel values has a maximum delta over 25
+            rcChannelStability[channelIndex] = RX_CHANNEL_STABILITY_LOW;
+        }
+    }
+}
+
 void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
 {
     rxUpdateAt = currentTime + DELAY_50_HZ;
@@ -552,6 +600,7 @@ void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
     }
 
     readRxChannelsApplyRanges();
+    updateChannelStability();
     detectAndApplySignalLossBehaviour();
 
     rcSampleIndex++;

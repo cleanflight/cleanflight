@@ -20,6 +20,8 @@
 
 #include <limits.h>
 
+#define TEST_MAX_RC_HISTORY_ITEMS 4
+
 extern "C" {
     #include "platform.h"
 
@@ -28,6 +30,10 @@ extern "C" {
     #include "common/maths.h"
 
     uint32_t rcModeActivationMask;
+
+
+    extern uint16_t rcHistory[MAX_SUPPORTED_RC_CHANNEL_COUNT][TEST_MAX_RC_HISTORY_ITEMS];
+
 
     void rxInit(rxConfig_t *rxConfig, modeActivationCondition_t *modeActivationConditions);
     void rxResetFlightChannelStatus(void);
@@ -155,6 +161,75 @@ TEST(RxTest, TestInvalidFlightChannels)
     }
 }
 
+TEST(RxTest, TestChannelStabilityLowToMediumTransition)
+{
+    // given low stability history
+    memset(&rcHistory, 0, sizeof(rcHistory));
+
+    uint16_t lowStabilityRcHistory[TEST_MAX_RC_HISTORY_ITEMS] = { 1474, 1500, 1526, 1500 };
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+        memcpy(rcHistory[channelIndex], lowStabilityRcHistory, sizeof(lowStabilityRcHistory));
+    }
+
+    // given low stability channels
+    memset(&rcChannelStability, 0, sizeof(rcChannelStability));
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+        rcChannelStability[channelIndex] = RX_CHANNEL_STABILITY_LOW;
+    }
+
+    // when rc channel is data unchanged (With MAX_RC_HISTORY_ITEMS set to 4 ( + 1 for the new reading) that works out at 100ms at 50hz, or less with Serial RX receivers.
+    uint16_t rcChannelStream[TEST_MAX_RC_HISTORY_ITEMS + 1] = {1500, 1475, 1500, 1525, 1500};
+
+    for (uint8_t index = 0; index < TEST_MAX_RC_HISTORY_ITEMS + 1; index++) {
+
+        for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+            EXPECT_EQ(RX_CHANNEL_STABILITY_LOW, rcChannelStability[channelIndex]);
+
+            rcData[channelIndex] = rcChannelStream[index];
+        }
+        updateChannelStability();
+    }
+
+    // then
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+        EXPECT_EQ(RX_CHANNEL_STABILITY_MEDIUM, rcChannelStability[channelIndex]);
+    }
+}
+
+TEST(RxTest, TestChannelStabilityMediumToHighTransition)
+{
+    // given medium stability history
+    memset(&rcHistory, 0, sizeof(rcHistory));
+
+    uint16_t mediumStabilityRcHistory[TEST_MAX_RC_HISTORY_ITEMS] = { 1475, 1500, 1525, 1500 };
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+        memcpy(rcHistory[channelIndex], mediumStabilityRcHistory, sizeof(mediumStabilityRcHistory));
+    }
+
+    // given medium stability channels
+    memset(&rcChannelStability, 0, sizeof(rcChannelStability));
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+        rcChannelStability[channelIndex] = RX_CHANNEL_STABILITY_MEDIUM;
+    }
+
+    // when rc channel is data unchanged (With MAX_RC_HISTORY_ITEMS set to 4 ( + 1 for the new reading) that works out at 100ms at 50hz, or less with Serial RX receivers.
+    uint16_t rcChannelStream[TEST_MAX_RC_HISTORY_ITEMS + 1] = {1500, 1490, 1500, 1510, 1500};
+
+    for (uint8_t index = 0; index < TEST_MAX_RC_HISTORY_ITEMS + 1; index++) {
+
+        for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+            EXPECT_EQ(RX_CHANNEL_STABILITY_MEDIUM, rcChannelStability[channelIndex]);
+
+            rcData[channelIndex] = rcChannelStream[index];
+        }
+        updateChannelStability();
+    }
+
+    // then
+    for (uint8_t channelIndex = 0; channelIndex < MAX_SUPPORTED_RC_CHANNEL_COUNT; channelIndex++) {
+        EXPECT_EQ(RX_CHANNEL_STABILITY_HIGH, rcChannelStability[channelIndex]);
+    }
+}
 
 // STUBS
 

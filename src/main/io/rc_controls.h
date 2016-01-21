@@ -53,7 +53,8 @@ typedef enum {
 
 extern uint32_t rcModeActivationMask;
 
-#define IS_RC_MODE_ACTIVE(modeId) ((1 << (modeId)) & rcModeActivationMask)
+#define IS_RC_MODE_ACTIVE_IN_MASK(modeId, mask) ((1 << (modeId)) & mask)
+#define IS_RC_MODE_ACTIVE(modeId) IS_RC_MODE_ACTIVE_IN_MASK(modeId, rcModeActivationMask)
 #define ACTIVATE_RC_MODE(modeId) (rcModeActivationMask |= (1 << modeId))
 
 typedef enum rc_alias {

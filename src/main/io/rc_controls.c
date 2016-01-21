@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "platform.h"
+#include "debug.h"
 
 #include "build_config.h"
 
@@ -161,7 +162,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
             if (ARMING_FLAG(ARMED) && rxIsReceivingSignal() && !failsafeIsActive()  ) {
                 if (disarm_kill_switch) {
                     mwDisarm();
-                } else if (throttleStatus == THROTTLE_LOW) {
+                } else if ((throttleStatus == THROTTLE_LOW) && (rcChannelStability[THROTTLE] == RX_CHANNEL_STABILITY_HIGH)) {
                     mwDisarm();
                 }
             }
@@ -334,6 +335,7 @@ bool isRangeActive(uint8_t auxChannelIndex, channelRange_t *range) {
 
 void updateActivatedModes(modeActivationCondition_t *modeActivationConditions)
 {
+    uint32_t currentRCModeActivationMask = rcModeActivationMask;
     rcModeActivationMask = 0;
 
     uint8_t index;
@@ -342,7 +344,17 @@ void updateActivatedModes(modeActivationCondition_t *modeActivationConditions)
         modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
 
         if (isRangeActive(modeActivationCondition->auxChannelIndex, &modeActivationCondition->range)) {
-            ACTIVATE_RC_MODE(modeActivationCondition->modeId);
+            if (rcChannelStability[AUX1 + modeActivationCondition->auxChannelIndex] == RX_CHANNEL_STABILITY_HIGH) {
+                ACTIVATE_RC_MODE(modeActivationCondition->modeId);
+            }
+        } else {
+            // if the mode WAS active the keep it active if the channel is unstable.
+            if (IS_RC_MODE_ACTIVE_IN_MASK(modeActivationCondition->modeId, currentRCModeActivationMask)) {
+                if (rcChannelStability[AUX1 + modeActivationCondition->auxChannelIndex] != RX_CHANNEL_STABILITY_HIGH) {
+                    debug[3]++;
+                    ACTIVATE_RC_MODE(modeActivationCondition->modeId);
+                }
+            }
         }
     }
 }

@@ -76,6 +76,14 @@ extern const char rcChannelLetters[];
 
 extern int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];       // interval [1000;2000]
 
+typedef enum {
+    RX_CHANNEL_STABILITY_LOW = 0,
+    RX_CHANNEL_STABILITY_MEDIUM,
+    RX_CHANNEL_STABILITY_HIGH,
+} rxChannelStability_e;
+
+extern uint8_t rcChannelStability[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
 #define MAX_MAPPABLE_RX_INPUTS 8
 
 #define RSSI_SCALE_MIN 1
@@ -146,6 +154,7 @@ bool rxIsReceivingSignal(void);
 bool rxAreFlightChannelsValid(void);
 bool shouldProcessRx(uint32_t currentTime);
 void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime);
+void updateChannelStability(void);
 
 void parseRcChannels(const char *input, rxConfig_t *rxConfig);
 uint8_t serialRxFrameStatus(rxConfig_t *rxConfig);
