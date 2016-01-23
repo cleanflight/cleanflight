@@ -126,7 +126,15 @@ The following features are not available:
  * Display
  * Sonar
 
-# Restoring OpenPilot bootloader
+## Restoring dRonin/Tau Labs Bootloader
+To restore the dRonin bootloader (currently Tau Labs compatible):
+* Download a [dRonin release package](https://github.com/d-ronin/dRonin/releases), inside there will be a file called `ef_coptercontrol.hex`. This image includes both the bootloader and the firmware.
+* Flash the `ef_coptercontrol.hex` image using the Cleanflight Configurator app firmware flasher, choosing to load a local firmware (or by another method of your choice should you so desire). 
+* You should now be able to connect to the dRonin GCS.
+
+Note: this section is only applicable if you have overwritten the bootloader, e.g. by flashing using the "Single binary image mode" instructions above.
+
+## Restoring OpenPilot bootloader
 
 If you have a JLink debugger, you can use JLinkExe to flash the open pilot bootloader.
 

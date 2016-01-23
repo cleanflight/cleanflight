@@ -124,3 +124,13 @@ The Colibri RACE is a STM32F3 based flight control designed specifically to work
 	| --- | ----------------- | -------------------------------------------- |
 	| 1   | IR TX             |                                              |
 	| 2   | Ground            |                                              |
+
+## dRonin bootloader
+
+This section is applicable to the Lumenier Lux flight controller, also running the Colibri Race target in Cleanflight. Flashing cleanflight will erase the dRonin bootloader, this is not a problem and can easily be restored using Cleanflight Configurator as detailed below.
+
+### Restoring dRonin Bootloader
+To restore the dRonin bootloader:
+* Download a [dRonin release package](https://github.com/d-ronin/dRonin/releases), inside there will be a file called `ef_lux.hex`. This image includes both the bootloader and the firmware.
+* Flash the `ef_lux.hex` image using the Cleanflight Configurator app firmware flasher, choosing to load a local firmware (or by another method of your choice should you so desire). 
+* You should now be able to connect to the dRonin GCS.
