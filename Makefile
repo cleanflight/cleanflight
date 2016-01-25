@@ -277,6 +277,7 @@ HIGHEND_SRC = \
 		   telemetry/hott.c \
 		   telemetry/smartport.c \
 		   telemetry/ltm.c \
+		   telemetry/ibus.c \
 		   sensors/sonar.c \
 		   sensors/barometer.c \
 		   blackbox/blackbox.c \
