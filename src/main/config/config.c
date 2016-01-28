@@ -571,6 +571,11 @@ static void resetConf(void)
     masterConfig.rxConfig.rcmap[6] = 6;
     masterConfig.rxConfig.rcmap[7] = 7;
 
+    masterConfig.escAndServoConfig.minthrottle = 1025;
+    masterConfig.escAndServoConfig.maxthrottle = 1980;
+    masterConfig.batteryConfig.vbatmaxcellvoltage = 45;
+    masterConfig.batteryConfig.vbatmincellvoltage = 30;
+
     featureSet(FEATURE_ONESHOT125);
     featureSet(FEATURE_VBAT);
     featureSet(FEATURE_LED_STRIP);
@@ -838,6 +843,11 @@ void validateAndFixConfig(void)
 
 #if defined(COLIBRI_RACE)
     masterConfig.serialConfig.portConfigs[0].functionMask = FUNCTION_MSP;
+    if(featureConfigured(FEATURE_RX_PARALLEL_PWM) || featureConfigured(FEATURE_RX_MSP)) {
+	    featureClear(FEATURE_RX_PARALLEL_PWM);
+	    featureClear(FEATURE_RX_MSP);
+	    featureSet(FEATURE_RX_PPM);
+    }
     if(featureConfigured(FEATURE_RX_SERIAL)) {
         masterConfig.serialConfig.portConfigs[2].functionMask = FUNCTION_RX_SERIAL;
     }
