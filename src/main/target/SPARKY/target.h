@@ -116,6 +116,7 @@
 #define USE_SERVOS
 #define USE_CLI
 #define SONAR
+#define USE_EXTI
 
 #define LED_STRIP
 #if 1
@@ -162,3 +163,7 @@
 // USART2, PA3
 #define BIND_PORT GPIOA
 #define BIND_PIN Pin_3
+
+// available IO pins (from schematics)
+#define TARGET_IO_PORTA (BIT(1)|BIT(2)|BIT(3)|BIT(4)|BIT(6)|BIT(7)|BIT(8)|BIT(9)|BIT(10)|BIT(11)|BIT(12)|BIT(13)|BIT(14)|BIT(15))
+#define TARGET_IO_PORTB (BIT(0)|BIT(1)|BIT(10)|BIT(11)|BIT(14)|BIT(15)|BIT(3)|BIT(4)|BIT(5)|BIT(6)|BIT(7)|BIT(8)|BIT(9))

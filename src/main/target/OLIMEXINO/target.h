@@ -112,3 +112,10 @@
 #define BLACKBOX
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
+
+// IO - assuming all IOs on smt32f103rb LQFP64 package
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD (BIT(2))
