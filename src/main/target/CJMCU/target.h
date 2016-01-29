@@ -20,47 +20,71 @@
 #define TARGET_BOARD_IDENTIFIER "CJM1" // CJMCU
 #define USE_HARDWARE_REVISION_DETECTION
 
+/* LED defines */
+#define LED0
 #define LED0_GPIO GPIOC
 #define LED0_PIN Pin_14 // PC14 (LED)
-#define LED0
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOC
+
+#define LED1
 #define LED1_GPIO GPIOC
 #define LED1_PIN Pin_13 // PC13 (LED)
-#define LED1
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOC
+
+#define LED2
 #define LED2_GPIO GPIOC
 #define LED2_PIN Pin_15 // PC15 (LED)
-#define LED2
 #define LED2_PERIPHERAL RCC_APB2Periph_GPIOC
 
+/* Buzzer defines */
+
+/* Hardware inverter defines */
+
+/* Serial port defines */
+#define USE_USART1
+#define USE_USART2
+#define SERIAL_PORT_COUNT 2
+
+/* I2C port defines */
+#define USE_I2C
+#define I2C_DEVICE (I2CDEV_1)
+
+//#define SOFT_I2C // enable to test software i2c
+//#define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
+//#define SOFT_I2C_PB67
+
+/* SPI port defines */
+
+/* ADC port defines */
+
+/* Peripheral defines */
+#define GYRO
+#define USE_GYRO_MPU6050
 
 #define ACC
 #define USE_ACC_MPU6050
 
-#define GYRO
-#define USE_GYRO_MPU6050
-
 #define MAG
 #define USE_MAG_HMC5883
 
-#define BRUSHED_MOTORS
-
-#define USE_USART1
-#define USE_USART2
-
-#define SERIAL_PORT_COUNT 2
-
-#define USE_I2C
-#define I2C_DEVICE (I2CDEV_1)
-
-// #define SOFT_I2C // enable to test software i2c
-// #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
-// #define SOFT_I2C_PB67
-
+/* Feature defines */
+//#define SONAR
+//#define BLACKBOX
+//#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+//#define DISPLAY
+//#define GPS
+#define GTUNE
 #define SERIAL_RX
+//#define TELEMETRY
 //#define USE_SERVOS
 #define USE_CLI
+#define BRUSHED_MOTORS
 
+/* Blheli Serial1Wire defines */
+
+/* LED Strip defines */
+
+/* Spektrum defines */
 #define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_PORT  GPIOA
@@ -77,6 +101,4 @@
 #define SKIP_CLI_COMMAND_HELP
 #endif
 
-//#undef USE_CLI
-#define GTUNE
-//#define BLACKBOX
+

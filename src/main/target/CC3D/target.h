@@ -15,21 +15,54 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #define TARGET_BOARD_IDENTIFIER "CC3D" // CopterControl 3D
 
+/* LED defines */
+#define LED0
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
-#define LED0
 
+/* Buzzer defines */
+#define BEEPER
+#define BEEP_GPIO GPIOA
+#define BEEP_PIN Pin_15 // PA15 (Beeper)
+#define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
+
+/* Hardware inverter defines */
+#define INVERTER
 #define INVERTER_PIN Pin_2 // PB2 (BOOT1) used as inverter select GPIO
 #define INVERTER_GPIO GPIOB
 #define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
 #define INVERTER_USART USART1
 
-#define BEEP_GPIO GPIOA
-#define BEEP_PIN Pin_15 // PA15 (Beeper)
-#define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
+/* Serial port defines */
+#define USE_VCP
+#define USE_USART1
+#define USE_USART3
+#define USE_SOFTSERIAL1
+#define SERIAL_PORT_COUNT 4
+
+#define USART3_RX_PIN Pin_11
+#define USART3_TX_PIN Pin_10
+#define USART3_GPIO GPIOB
+#define USART3_APB1_PERIPHERALS RCC_APB1Periph_USART3
+#define USART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
+
+#define SOFTSERIAL_1_TIMER TIM3
+#define SOFTSERIAL_1_TIMER_TX_HARDWARE 1 // PWM 2
+#define SOFTSERIAL_1_TIMER_RX_HARDWARE 2 // PWM 3
+
+/* I2C port defines */
+#define USE_I2C
+#define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
+
+/* SPI port defines */
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+#define USE_SPI_DEVICE_2
 
 #define MPU6000_CS_GPIO       GPIOA
 #define MPU6000_CS_PIN        GPIO_Pin_4
@@ -39,60 +72,9 @@
 #define M25P16_CS_PIN         GPIO_Pin_12
 #define M25P16_SPI_INSTANCE   SPI2
 
-#define USE_FLASHFS
-#define USE_FLASH_M25P16
+/* SPI port defines */
 
-#define USABLE_TIMER_CHANNEL_COUNT 12
-
-//#define DEBUG_MPU_DATA_READY_INTERRUPT
-#define USE_MPU_DATA_READY_SIGNAL
-
-#define GYRO
-#define USE_GYRO_SPI_MPU6000
-
-#define GYRO_MPU6000_ALIGN CW270_DEG
-
-#define ACC
-#define USE_ACC_SPI_MPU6000
-
-#define ACC_MPU6000_ALIGN CW270_DEG
-
-// External I2C BARO
-#define BARO
-#define USE_BARO_MS5611
-#define USE_BARO_BMP085
-
-// External I2C MAG
-#define MAG
-#define USE_MAG_HMC5883
-
-#define INVERTER
-#define BEEPER
-#define DISPLAY
-
-#define USE_VCP
-#define USE_USART1
-#define USE_USART3
-#define USE_SOFTSERIAL1
-#define SERIAL_PORT_COUNT 4
-
-#define SOFTSERIAL_1_TIMER TIM3
-#define SOFTSERIAL_1_TIMER_TX_HARDWARE 1 // PWM 2
-#define SOFTSERIAL_1_TIMER_RX_HARDWARE 2 // PWM 3
-
-#define USART3_RX_PIN Pin_11
-#define USART3_TX_PIN Pin_10
-#define USART3_GPIO GPIOB
-#define USART3_APB1_PERIPHERALS RCC_APB1Periph_USART3
-#define USART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
-
-#define USE_SPI
-#define USE_SPI_DEVICE_1
-#define USE_SPI_DEVICE_2
-
-#define USE_I2C
-#define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
-
+/* ADC port defines */
 #define USE_ADC
 
 #define CURRENT_METER_ADC_GPIO      GPIOB
@@ -102,36 +84,62 @@
 #define VBAT_ADC_GPIO               GPIOA
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
 #define VBAT_ADC_CHANNEL            ADC_Channel_0
+//#define BOARD_HAS_VOLTAGE_DIVIDER
 
 #define RSSI_ADC_GPIO               GPIOA
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
 #define RSSI_ADC_CHANNEL            ADC_Channel_1
 
-#define GPS
-#define LED_STRIP
-#define LED_STRIP_TIMER TIM3
+/* Peripheral defines */
+#define GYRO
+#define USE_GYRO_SPI_MPU6000
+#define GYRO_MPU6000_ALIGN CW270_DEG
 
+#define ACC
+#define USE_ACC_SPI_MPU6000
+#define ACC_MPU6000_ALIGN CW270_DEG
+
+#define BARO // External I2C BARO
+#define USE_BARO_MS5611
+#define USE_BARO_BMP085
+
+#define MAG // External I2C MAG
+#define USE_MAG_HMC5883
+
+#define USE_FLASHFS
+#define USE_FLASH_M25P16
+
+//#define DEBUG_MPU_DATA_READY_INTERRUPT
+#define USE_MPU_DATA_READY_SIGNAL
+
+/* Feature defines */
+#define SONAR
 #define BLACKBOX
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
-
-#define TELEMETRY
+#define DISPLAY
+#define GPS
+//#define GTUNE
 #define SERIAL_RX
-#define SONAR
+#define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
 
-#define USE_SERIAL_1WIRE
+/* Blheli Serial1Wire defines */
+#define USE_SERIAL_1WIRE // FlexPort (pin 21/22, TX/RX respectively):
 
-// FlexPort (pin 21/22, TX/RX respectively):
-// Note, FlexPort has 10k pullups on both TX and RX
-// JST Pin3 TX - connect to external UART/USB RX
 #define S1W_TX_GPIO         GPIOB
 #define S1W_TX_PIN          GPIO_Pin_10
-// JST Pin4 RX - connect to external UART/USB TX
 #define S1W_RX_GPIO         GPIOB
 #define S1W_RX_PIN          GPIO_Pin_11
 
+/* LED Strip defines */
+#define LED_STRIP
+#define LED_STRIP_TIMER TIM3
+
+/* Spektrum defines */
 #define SPEKTRUM_BIND
 // USART3, PB11 (Flexport)
 #define BIND_PORT  GPIOB
 #define BIND_PIN   Pin_11
+
+#define USABLE_TIMER_CHANNEL_COUNT 12

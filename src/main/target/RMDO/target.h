@@ -19,44 +19,22 @@
 
 #define TARGET_BOARD_IDENTIFIER "RMDO" // Ready Made RC DoDo
 
+/* LED defines */
+#define LED0
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOB
 
+/* Buzzer defines */
+#define BEEPER
 #define BEEP_GPIO   GPIOC
 #define BEEP_PIN    Pin_15
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOC
 #define BEEPER_INVERTED
 
-#define USABLE_TIMER_CHANNEL_COUNT 17
+/* Hardware inverter defines */
 
-#define EXTI_CALLBACK_HANDLER_COUNT 2 // MPU data ready and MAG data ready
-
-#define USE_MPU_DATA_READY_SIGNAL
-#define ENSURE_MPU_DATA_READY_IS_LOW
-
-#define USE_MAG_DATA_READY_SIGNAL
-#define ENSURE_MAG_DATA_READY_IS_HIGH
-
-
-#define GYRO
-#define USE_GYRO_MPU6050
-#define GYRO_MPU6050_ALIGN CW270_DEG
-
-#define ACC
-#define USE_ACC_MPU6050
-#define ACC_MPU6050_ALIGN CW270_DEG
-
-#define BARO
-#define USE_BARO_BMP280
-
-#define USE_FLASHFS
-#define USE_FLASH_M25P16
-
-#define SONAR
-#define BEEPER
-#define LED0
-
+/* Serial port defines */
 #define USE_USART1
 #define USE_USART2
 #define USE_USART3
@@ -96,9 +74,11 @@
 #define SOFTSERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
 #define SOFTSERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
 
+/* I2C port defines */
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1) // PB6/SCL, PB7/SDA
 
+/* SPI port defines */
 #define USE_SPI
 #define USE_SPI_DEVICE_2 // PB12,13,14,15 on AF5
 
@@ -117,9 +97,8 @@
 #define M25P16_CS_PIN           GPIO_Pin_12
 #define M25P16_SPI_INSTANCE     SPI2
 
+/* ADC port defines */
 #define USE_ADC
-#define BOARD_HAS_VOLTAGE_DIVIDER
-
 
 #define ADC_INSTANCE                ADC2
 #define ADC_DMA_CHANNEL             DMA2_Channel1
@@ -128,6 +107,7 @@
 #define VBAT_ADC_GPIO               GPIOA
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
 #define VBAT_ADC_CHANNEL            ADC_Channel_1
+#define BOARD_HAS_VOLTAGE_DIVIDER
 
 #define CURRENT_METER_ADC_GPIO      GPIOA
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_5
@@ -137,6 +117,49 @@
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_2
 #define RSSI_ADC_CHANNEL            ADC_Channel_12
 
+/* Peripheral defines */
+#define GYRO
+#define USE_GYRO_MPU6050
+#define GYRO_MPU6050_ALIGN CW270_DEG
+
+#define ACC
+#define USE_ACC_MPU6050
+#define ACC_MPU6050_ALIGN CW270_DEG
+
+#define BARO
+#define USE_BARO_BMP280
+
+#define USE_FLASHFS
+#define USE_FLASH_M25P16
+
+#define EXTI_CALLBACK_HANDLER_COUNT 2 // MPU data ready and MAG data ready
+#define USE_MPU_DATA_READY_SIGNAL
+#define ENSURE_MPU_DATA_READY_IS_LOW
+#define USE_MAG_DATA_READY_SIGNAL
+#define ENSURE_MAG_DATA_READY_IS_HIGH
+
+/* Feature defines */
+#define SONAR
+#define BLACKBOX
+//#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+#define DISPLAY
+#define GPS
+#define GTUNE
+#define SERIAL_RX
+#define TELEMETRY
+#define USE_SERVOS
+#define USE_CLI
+//#define BRUSHED_MOTORS
+
+/* Blheli Serial1Wire defines */
+#define USE_SERIAL_1WIRE
+
+#define S1W_TX_GPIO         GPIOA
+#define S1W_TX_PIN          GPIO_Pin_9
+#define S1W_RX_GPIO         GPIOA
+#define S1W_RX_PIN          GPIO_Pin_10
+
+/* LED Strip defines */
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM1
 
@@ -151,23 +174,9 @@
 #define WS2811_DMA_CHANNEL              DMA1_Channel2
 #define WS2811_IRQ                      DMA1_Channel2_IRQn
 
-#define GPS
-#define GTUNE
-#define BLACKBOX
-#define TELEMETRY
-#define SERIAL_RX
-#define DISPLAY
-#define USE_SERVOS
-#define USE_CLI
-
+/* Spektrum defines */
 #define SPEKTRUM_BIND
-// USART3,
 #define BIND_PORT  GPIOB
-#define BIND_PIN   Pin_11
+#define BIND_PIN   Pin_11 // USART3,
 
-#define USE_SERIAL_1WIRE
-
-#define S1W_TX_GPIO         GPIOA
-#define S1W_TX_PIN          GPIO_Pin_9
-#define S1W_RX_GPIO         GPIOA
-#define S1W_RX_PIN          GPIO_Pin_10
+#define USABLE_TIMER_CHANNEL_COUNT 17

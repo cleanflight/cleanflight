@@ -19,66 +19,32 @@
 
 #define TARGET_BOARD_IDENTIFIER "CLBR"
 
+/* LED defines */
+#define LED0
 #define LED0_GPIO   GPIOC
 #define LED0_PIN    Pin_15
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOC
 
+#define LED1
 #define LED1_GPIO   GPIOC
 #define LED1_PIN    Pin_14
 #define LED1_PERIPHERAL RCC_AHBPeriph_GPIOC
 
+#define LED2
 #define LED2_GPIO   GPIOC
 #define LED2_PIN    Pin_13
 #define LED2_PERIPHERAL RCC_AHBPeriph_GPIOC
 
+/* Buzzer defines */
+#define BEEPER
 #define BEEP_GPIO   GPIOB
 #define BEEP_PIN    Pin_13
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOB
 #define BEEPER_INVERTED
 
-#define MPU6500_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOA
-#define MPU6500_CS_GPIO                  GPIOA
-#define MPU6500_CS_PIN                   GPIO_Pin_4
-#define MPU6500_SPI_INSTANCE             SPI1
+/* Hardware inverter defines */
 
-#define USE_SPI
-#define USE_SPI_DEVICE_1
-
-#define SPI1_GPIO               GPIOB
-#define SPI1_GPIO_PERIPHERAL    RCC_AHBPeriph_GPIOB
-#define SPI1_SCK_PIN            GPIO_Pin_3
-#define SPI1_SCK_PIN_SOURCE     GPIO_PinSource3
-#define SPI1_MISO_PIN           GPIO_Pin_4
-#define SPI1_MISO_PIN_SOURCE    GPIO_PinSource4
-#define SPI1_MOSI_PIN           GPIO_Pin_5
-#define SPI1_MOSI_PIN_SOURCE    GPIO_PinSource5
-
-#define USABLE_TIMER_CHANNEL_COUNT 11
-
-#define EXTI_CALLBACK_HANDLER_COUNT 1 // MPU data ready
-
-#define GYRO
-#define USE_GYRO_MPU6500
-#define USE_GYRO_SPI_MPU6500
-#define GYRO_MPU6500_ALIGN CW270_DEG
-
-#define ACC
-#define USE_ACC_MPU6500
-#define USE_ACC_SPI_MPU6500
-#define ACC_MPU6500_ALIGN CW270_DEG
-
-#define BARO
-#define USE_BARO_MS5611
-
-#define MAG
-#define USE_MAG_HMC5883
-#define USE_MAG_AK8975
-
-#define BEEPER
-#define LED0
-#define LED1
-#define LED2
-
+/* Serial port defines */
 #define USE_VCP
 #define USE_USART1
 #define USE_USART2
@@ -106,6 +72,7 @@
 #define UART3_TX_PINSOURCE  GPIO_PinSource10
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
 
+/* I2C port defines */
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
 
@@ -120,6 +87,26 @@
 #define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
 #define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
 
+/* SPI port defines */
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+
+#define SPI1_GPIO               GPIOB
+#define SPI1_GPIO_PERIPHERAL    RCC_AHBPeriph_GPIOB
+#define SPI1_SCK_PIN            GPIO_Pin_3
+#define SPI1_SCK_PIN_SOURCE     GPIO_PinSource3
+#define SPI1_MISO_PIN           GPIO_Pin_4
+#define SPI1_MISO_PIN_SOURCE    GPIO_PinSource4
+#define SPI1_MOSI_PIN           GPIO_Pin_5
+#define SPI1_MOSI_PIN_SOURCE    GPIO_PinSource5
+
+#define MPU6500_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOA
+#define MPU6500_CS_GPIO                  GPIOA
+#define MPU6500_CS_PIN                   GPIO_Pin_4
+#define MPU6500_SPI_INSTANCE             SPI1
+
+
+/* ADC port defines */
 #define USE_ADC
 
 #define ADC_INSTANCE                ADC1
@@ -129,6 +116,7 @@
 #define VBAT_ADC_GPIO               GPIOC
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
 #define VBAT_ADC_CHANNEL            ADC_Channel_6
+//#define BOARD_HAS_VOLTAGE_DIVIDER
 
 #define CURRENT_METER_ADC_GPIO      GPIOC
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
@@ -142,11 +130,46 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_3
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_9
 
+/* Peripheral defines */
+#define GYRO
+#define USE_GYRO_MPU6500
+#define USE_GYRO_SPI_MPU6500
+#define GYRO_MPU6500_ALIGN CW270_DEG
+
+#define ACC
+#define USE_ACC_MPU6500
+#define USE_ACC_SPI_MPU6500
+#define ACC_MPU6500_ALIGN CW270_DEG
+
+#define BARO
+#define USE_BARO_MS5611
+
+#define MAG
+#define USE_MAG_HMC5883
+#define USE_MAG_AK8975
+
+#define EXTI_CALLBACK_HANDLER_COUNT 1 // MPU data ready
+//#define DEBUG_MPU_DATA_READY_INTERRUPT
+#define USE_MPU_DATA_READY_SIGNAL
+#define ENSURE_MPU_DATA_READY_IS_LOW
+
+/* Feature defines */
+//#define SONAR
 #define BLACKBOX
+//#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+//#define DISPLAY
 #define GPS
 #define GTUNE
-#define LED_STRIP
+#define SERIAL_RX
+#define TELEMETRY
+#define USE_SERVOS
+#define USE_CLI
+//#define BRUSHED_MOTORS
 
+/* Blheli Serial1Wire defines */
+
+/* LED Strip defines */
+#define LED_STRIP
 #define LED_STRIP_TIMER TIM16
 
 #define USE_LED_STRIP_ON_DMA1_CHANNEL3
@@ -160,12 +183,10 @@
 #define WS2811_DMA_CHANNEL              DMA1_Channel3
 #define WS2811_IRQ                      DMA1_Channel3_IRQn
 
-// MPU6500 interrupt
-//#define DEBUG_MPU_DATA_READY_INTERRUPT
-#define USE_MPU_DATA_READY_SIGNAL
-#define ENSURE_MPU_DATA_READY_IS_LOW
+/* Spektrum defines */
 
-#define TELEMETRY
-#define SERIAL_RX
-#define USE_SERVOS
-#define USE_CLI
+#define USABLE_TIMER_CHANNEL_COUNT 11
+
+
+
+

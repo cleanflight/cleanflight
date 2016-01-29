@@ -19,55 +19,29 @@
 
 #define TARGET_BOARD_IDENTIFIER "CHF3" // Chebuzz F3
 
+/* LED defines */
+#define LED0
 #define LED0_GPIO   GPIOE
 #define LED0_PIN    Pin_8|Pin_12 // Blue LEDs - PE8/PE12
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOE
 #define LED0_INVERTED
+
+#define LED1
 #define LED1_GPIO   GPIOE
 #define LED1_PIN    Pin_10|Pin_14  // Orange LEDs - PE10/PE14
 #define LED1_PERIPHERAL RCC_AHBPeriph_GPIOE
 #define LED1_INVERTED
 
+/* Buzzer defines */
+#define BEEPER
 #define BEEP_GPIO   GPIOE
 #define BEEP_PIN    Pin_9|Pin_13 // Red LEDs - PE9/PE13
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOE
 #define BEEPER_INVERTED
 
-#define USABLE_TIMER_CHANNEL_COUNT 18
+/* Hardware inverter defines */
 
-#define USE_SPI
-#define USE_SPI_DEVICE_1
-
-#define GYRO
-#define USE_GYRO_L3GD20
-#define USE_GYRO_MPU6050
-
-#define L3GD20_SPI                      SPI1
-#define L3GD20_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOE
-#define L3GD20_CS_GPIO                  GPIOE
-#define L3GD20_CS_PIN                   GPIO_Pin_3
-
-#define GYRO_L3GD20_ALIGN CW270_DEG
-#define GYRO_MPU6050_ALIGN CW0_DEG
-
-#define ACC
-#define USE_ACC_MPU6050
-#define USE_ACC_LSM303DLHC
-
-#define ACC_MPU6050_ALIGN CW0_DEG
-
-#define BARO
-#define USE_BARO_MS5611
-
-#define MAG
-#define USE_MAG_AK8975
-
-#define MAG_AK8975_ALIGN CW90_DEG_FLIP
-
-#define BEEPER
-#define LED0
-#define LED1
-
+/* Serial port defines */
 #define USE_VCP
 #define USE_USART1
 #define USE_USART2
@@ -87,9 +61,20 @@
 #define UART2_TX_PINSOURCE  GPIO_PinSource5
 #define UART2_RX_PINSOURCE  GPIO_PinSource6
 
+/* I2C port defines */
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1)
 
+/* SPI port defines */
+#define USE_SPI
+#define USE_SPI_DEVICE_1
+
+#define L3GD20_SPI                      SPI1
+#define L3GD20_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOE
+#define L3GD20_CS_GPIO                  GPIOE
+#define L3GD20_CS_PIN                   GPIO_Pin_3
+
+/* ADC port defines */
 #define USE_ADC
 
 #define ADC_INSTANCE                ADC1
@@ -99,6 +84,7 @@
 #define VBAT_ADC_GPIO               GPIOC
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
 #define VBAT_ADC_CHANNEL            ADC_Channel_6
+//#define BOARD_HAS_VOLTAGE_DIVIDER
 
 #define CURRENT_METER_ADC_GPIO      GPIOC
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
@@ -112,7 +98,43 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_3
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_9
 
+/* Peripheral defines */
+#define GYRO
+
+#define USE_GYRO_L3GD20
+#define GYRO_L3GD20_ALIGN CW270_DEG
+
+#define USE_GYRO_MPU6050
+#define GYRO_MPU6050_ALIGN CW0_DEG
+
+#define ACC
+#define USE_ACC_MPU6050
+#define ACC_MPU6050_ALIGN CW0_DEG
+
+#define USE_ACC_LSM303DLHC
+
+#define BARO
+#define USE_BARO_MS5611
+
+#define MAG
+#define USE_MAG_AK8975
+#define MAG_AK8975_ALIGN CW90_DEG_FLIP
+
+/* Feature defines */
+//#define SONAR
+#define BLACKBOX
+//#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+//#define DISPLAY
 #define GPS
+#define GTUNE
+#define SERIAL_RX
+#define TELEMETRY
+#define USE_SERVOS
+#define USE_CLI
+
+/* Blheli Serial1Wire defines */
+
+/* LED Strip defines */
 #define LED_STRIP
 #if 1
 #define LED_STRIP_TIMER TIM16
@@ -132,9 +154,7 @@
 #define WS2811_IRQ                      DMA1_Channel2_IRQn
 #endif
 
-#define BLACKBOX
-#define GTUNE
-#define TELEMETRY
-#define SERIAL_RX
-#define USE_SERVOS
-#define USE_CLI
+/* Spektrum defines */
+
+
+#define USABLE_TIMER_CHANNEL_COUNT 18

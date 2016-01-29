@@ -19,37 +19,22 @@
 
 #define TARGET_BOARD_IDENTIFIER "SPKY" // SParKY
 
+/* LED defines */
+#define LED0
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_4  // Blue (Rev 1 & 2) - PB4
 #define LED0_PERIPHERAL RCC_AHBPeriph_GPIOB
+
+#define LED1
 #define LED1_GPIO   GPIOB
 #define LED1_PIN    Pin_5  // Green (Rev 1) / Red (Rev 2) - PB5
 #define LED1_PERIPHERAL RCC_AHBPeriph_GPIOB
 
-#define USABLE_TIMER_CHANNEL_COUNT 11
+/* Buzzer defines */
 
-// MPU 9150 INT connected to PA15, pulled up to VCC by 10K Resistor, contains MPU6050 and AK8975 in single component.
-#define GYRO
-#define USE_GYRO_MPU6050
+/* Hardware inverter defines */
 
-#define GYRO_MPU6050_ALIGN CW270_DEG
-
-#define ACC
-#define USE_ACC_MPU6050
-
-#define ACC_MPU6050_ALIGN CW270_DEG
-
-#define BARO
-#define USE_BARO_MS5611
-
-#define MAG
-#define USE_MAG_AK8975
-
-#define MAG_AK8975_ALIGN CW180_DEG_FLIP
-
-#define LED0
-#define LED1
-
+/* Serial port defines */
 #define USE_VCP
 #define USE_USART1 // Conn 1 - TX (PB6) RX PB7 (AF7)
 #define USE_USART2 // Input - RX (PA3)
@@ -77,8 +62,7 @@
 #define UART3_TX_PINSOURCE  GPIO_PinSource10
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
 
-// Note: PA5 and PA0 are N/C on the sparky - potentially use for ADC or LED STRIP?
-
+/* I2C port defines */
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2) // SDA (PA10/AF4), SCL (PA9/AF4)
 
@@ -93,6 +77,9 @@
 #define I2C2_SDA_PIN_SOURCE  GPIO_PinSource10
 #define I2C2_SDA_CLK_SOURCE  RCC_AHBPeriph_GPIOA
 
+/* SPI port defines */
+
+/* ADC port defines */
 #define USE_ADC
 
 #define ADC_INSTANCE                ADC2
@@ -102,21 +89,51 @@
 #define VBAT_ADC_GPIO               GPIOA
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_4
 #define VBAT_ADC_CHANNEL            ADC_Channel_1
+//#define BOARD_HAS_VOLTAGE_DIVIDER
 
 #define CURRENT_METER_ADC_GPIO      GPIOA
 #define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_7
 #define CURRENT_METER_ADC_CHANNEL   ADC_Channel_4
 
+/* Peripheral defines */
+#define GYRO // MPU 9150 INT connected to PA15, pulled up to VCC by 10K Resistor, contains MPU6050 and AK8975 in single component.
+#define USE_GYRO_MPU6050
+#define GYRO_MPU6050_ALIGN CW270_DEG
+
+#define ACC
+#define USE_ACC_MPU6050
+#define ACC_MPU6050_ALIGN CW270_DEG
+
+#define BARO
+#define USE_BARO_MS5611
+
+#define MAG
+#define USE_MAG_AK8975
+
+#define MAG_AK8975_ALIGN CW180_DEG_FLIP
+
+/* Feature defines */
+#define SONAR
 #define BLACKBOX
+//#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+#define DISPLAY
 #define GPS
 #define GTUNE
-#define DISPLAY
 #define SERIAL_RX
 #define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
-#define SONAR
+//#define BRUSHED_MOTORS
 
+/* Blheli Serial1Wire defines */
+#define USE_SERIAL_1WIRE
+
+#define S1W_TX_GPIO         GPIOB
+#define S1W_TX_PIN          GPIO_Pin_6
+#define S1W_RX_GPIO         GPIOB
+#define S1W_RX_PIN          GPIO_Pin_7
+
+/* LED Strip defines */
 #define LED_STRIP
 #if 1
 // LED strip configuration using PWM motor output pin 5.
@@ -151,14 +168,9 @@
 #define WS2811_IRQ                      DMA1_Channel7_IRQn
 #endif
 
-#define USE_SERIAL_1WIRE
-
-#define S1W_TX_GPIO         GPIOB
-#define S1W_TX_PIN          GPIO_Pin_6
-#define S1W_RX_GPIO         GPIOB
-#define S1W_RX_PIN          GPIO_Pin_7
-
+/* Spektrum defines */
 #define SPEKTRUM_BIND
-// USART2, PA3
 #define BIND_PORT GPIOA
-#define BIND_PIN Pin_3
+#define BIND_PIN Pin_3 // USART2, PA3
+
+#define USABLE_TIMER_CHANNEL_COUNT 11
