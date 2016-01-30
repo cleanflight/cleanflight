@@ -184,6 +184,7 @@ These chips are also supported:
 * Micron/ST M25P16 - 16 Mbit / 2 MByte
 * Micron N25Q064 - 64 Mbit / 8 MByte
 * Winbond W25Q64 - 64 Mbit / 8 MByte
+* Macronix MX25L64 - 64 Mbit / 8 MByte
 * Micron N25Q0128 - 128 Mbit / 16 MByte
 * Winbond W25Q128 - 128 Mbit / 16 MByte
 
