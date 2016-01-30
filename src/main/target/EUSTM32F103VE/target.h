@@ -41,7 +41,7 @@
 #define MPU6500_SPI_INSTANCE  SPI2
 
 #define GYRO
-//#define USE_FAKE_GYRO
+#define USE_FAKE_GYRO
 //#define USE_GYRO_L3G4200D
 //#define USE_GYRO_L3GD20
 //#define USE_GYRO_MPU3050
@@ -52,7 +52,7 @@
 #define GYRO_MPU6050_ALIGN CW0_DEG
 
 #define ACC
-//#define USE_FAKE_ACC
+#define USE_FAKE_ACC
 //#define USE_ACC_ADXL345
 //#define USE_ACC_BMA280
 //#define USE_ACC_MMA8452
@@ -63,7 +63,7 @@
 #define ACC_MPU6050_ALIGN CW0_DEG
 
 #define BARO
-//#define USE_BARO_MS5611
+#define USE_BARO_MS5611
 #define USE_BARO_BMP085
 
 #define MAG
@@ -128,7 +128,7 @@
 #define USE_SERVOS
 #define USE_CLI
 
-#define SPEKTRUM_BIND
+//#define SPEKTRUM_BIND
 // USART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
