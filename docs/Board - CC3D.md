@@ -22,7 +22,7 @@ The 8 pin RC_Input connector has the following pinouts when used in RX_PPM/RX_SE
 | --- | --------- | -------------------------------- |
 | 1   | Ground    |                                  |
 | 2   | +5V       |                                  |
-| 3   | PPM Input | Enable `feature RX_PPM`          | 
+| 3   | PPM Input | Enable `feature RX_PPM`. PPM input must have a maximum of 12 channels, 22.5ms 300u frame.         | 
 | 4   | SoftSerial1 TX / Sonar trigger | |
 | 5   | SoftSerial1 RX / Sonar Echo    | |
 | 6   | Current   | Enable `feature CURRENT_METER`.  Connect to the output of a current sensor, 0v-3.3v input |
@@ -90,6 +90,8 @@ The main port is connected to an inverter which is automatically enabled as requ
 The flex port will be enabled in I2C mode unless USART3 is used.  You can connect external I2C sensors and displays to this port.
 
 You cannot use USART3 and I2C at the same time.
+
+For 1 wire protocol ESC flashing through Cleanflight using BLHeliSuite, this port must be used with a USB to UART adapter. Power to ESCs must be applied first, before powering the board and connecting in BLHeliSuite.
 
 ## Flex port pinout
 
