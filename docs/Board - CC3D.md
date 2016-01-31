@@ -22,7 +22,7 @@ The 8 pin RC_Input connector has the following pinouts when used in RX_PPM/RX_SE
 | --- | --------- | -------------------------------- |
 | 1   | Ground    |                                  |
 | 2   | +5V       |                                  |
-| 3   | PPM Input | Enable `feature RX_PPM`          | 
+| 3   | PPM Input | Enable `feature RX_PPM`. 12 channels maximum at 30.5ms 300u frame.       | 
 | 4   | SoftSerial1 TX / Sonar trigger | |
 | 5   | SoftSerial1 RX / Sonar Echo    | |
 | 6   | Current   | Enable `feature CURRENT_METER`.  Connect to the output of a current sensor, 0v-3.3v input |
@@ -77,6 +77,8 @@ The SoftSerial port is not available when RX_PARALLEL_PWM is used. The transmiss
 
 To connect the GUI to the flight controller you just need a USB cable to use the Virtual Com Port (VCP) or you can use UART1 (Main Port).
 
+Only 2 ports, excluding the SoftSerial port, can be enabled at any one time.
+
 CLI access is only available via the VCP by default.
 
 # Main Port
@@ -90,6 +92,8 @@ The main port is connected to an inverter which is automatically enabled as requ
 The flex port will be enabled in I2C mode unless USART3 is used.  You can connect external I2C sensors and displays to this port.
 
 You cannot use USART3 and I2C at the same time.
+
+The flex port is the only port usable with the Cleanflight 1-wire protocol passthrough for ESCs. On BLHeliSuite, you must apply power to the ESCs first, then with a USB to UART adapter connected to the flex port, apply power to the CC3D and connect to the correct COM port in BLHeliSuite with "Cleanflight" selected as programmer. Clicking "Check" should then scan for relevent ESCs where configuration may be edited.
 
 ## Flex port pinout
 
