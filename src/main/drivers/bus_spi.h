@@ -18,10 +18,12 @@
 #pragma once
 
 #if defined(STM32F40_41xxx)
+#define ULTRALOW_SPEED_SPI  256 // 0.328125 MHz
 #define LOW_SPEED_SPI       128 // 0.65625 MHz
 #define MEDIUM_SPEED_SPI    8   // 11.5 MHz
 #define HIGH_SPEED_SPI      4   // 21 MHz
 #else
+#define ULTRALOW_SPEED_SPI  256 // 0.28125 MHz
 #define LOW_SPEED_SPI       128 // 0.5625 MHz
 #define MEDIUM_SPEED_SPI    4   // 9 MHz
 #define HIGH_SPEED_SPI      2   // 18 MHz
@@ -30,8 +32,6 @@
 bool spiInit(SPI_TypeDef *instance);
 void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor);
 uint8_t spiTransferByte(SPI_TypeDef *instance, uint8_t in);
+bool spiIsBusBusy(SPI_TypeDef *instance);
 
-bool spiTransfer(SPI_TypeDef *instance, uint8_t *out, const uint8_t *in, int len);
-
-uint16_t spiGetErrorCounter(SPI_TypeDef *instance);
-void spiResetErrorCounter(SPI_TypeDef *instance);
+void spiTransfer(SPI_TypeDef *instance, uint8_t *out, const uint8_t *in, int len);

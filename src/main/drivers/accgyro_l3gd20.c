@@ -86,7 +86,7 @@ static void l3gd20SpiInit(SPI_TypeDef *SPIx)
     spiSetDivisor(L3GD20_SPI, MEDIUM_SPEED_SPI);
 }
 
-void l3gd20GyroInit(uint16_t lpf)
+void l3gd20GyroInit(uint8_t lpf)
 {
     UNUSED(lpf); // FIXME use it!
 

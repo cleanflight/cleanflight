@@ -220,14 +220,16 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     float vel_acc;
     int32_t vel_tmp;
     float accZ_tmp;
-    int32_t sonarAlt = SONAR_OUT_OF_RANGE;
     static float accZ_old = 0.0f;
     static float vel = 0.0f;
     static float accAlt = 0.0f;
     static int32_t lastBaroAlt;
 
+#ifdef SONAR
+    int32_t sonarAlt = SONAR_OUT_OF_RANGE;
     static int32_t baroAlt_offset = 0;
     float sonarTransition;
+#endif
 
     dTime = currentTime - previousTime;
     if (dTime < BARO_UPDATE_FREQUENCY_40HZ)
@@ -250,7 +252,6 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 #ifdef SONAR
     sonarAlt = sonarRead();
     sonarAlt = sonarCalculateAltitude(sonarAlt, getCosTiltAngle());
-#endif
 
     if (sonarAlt > 0 && sonarAlt < sonarCfAltCm) {
         // just use the SONAR
@@ -264,6 +265,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
             BaroAlt = sonarAlt * sonarTransition + BaroAlt * (1.0f - sonarTransition);
         }
     }
+#endif
 
     dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
 
@@ -294,12 +296,16 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     }
 #endif
 
+#ifdef SONAR
     if (sonarAlt > 0 && sonarAlt < sonarCfAltCm) {
         // the sonar has the best range
         EstAlt = BaroAlt;
     } else {
         EstAlt = accAlt;
     }
+#else
+    EstAlt = accAlt;
+#endif
 
     baroVel = (BaroAlt - lastBaroAlt) * 1000000.0f / dTime;
     lastBaroAlt = BaroAlt;
