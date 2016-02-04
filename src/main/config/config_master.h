@@ -26,8 +26,8 @@ typedef struct master_t {
     uint8_t mixerMode;
     uint32_t enabledFeatures;
     uint16_t looptime;                      // imu loop time in us
-    uint8_t emf_avoidance;                   // change pll settings to avoid noise in the uhf band
-    uint8_t i2c_overclock;                  // Overclock i2c Bus for faster IMU readings
+    uint8_t emf_avoidance;                  // change pll settings to avoid noise in the uhf band
+    uint8_t highSpeedI2c;                   // Overclock i2c Bus for faster IMU readings
     uint8_t gyroSync;                       // Enable interrupt based loop
     uint8_t gyroSyncDenominator;            // Gyro sync Denominator
 
