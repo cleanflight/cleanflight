@@ -482,7 +482,7 @@ static void resetConf(void)
 
     masterConfig.looptime = 3500;
     masterConfig.emf_avoidance = 0;
-    masterConfig.i2c_overclock = 0;
+    masterConfig.highSpeedI2c = 1;
     masterConfig.gyroSync = 0;
     masterConfig.gyroSyncDenominator = 1;
 
