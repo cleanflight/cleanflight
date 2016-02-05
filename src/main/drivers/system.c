@@ -30,6 +30,7 @@
 #include "nvic.h"
 
 #include "system.h"
+#include "system_interrupts.h"
 
 #ifndef EXTI_CALLBACK_HANDLER_COUNT
 #define EXTI_CALLBACK_HANDLER_COUNT 1

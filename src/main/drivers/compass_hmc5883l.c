@@ -28,6 +28,7 @@
 #include "common/maths.h"
 
 #include "system.h"
+#include "system_interrupts.h"
 #include "nvic.h"
 #include "gpio.h"
 #include "bus_i2c.h"
