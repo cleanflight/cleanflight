@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 extern "C" {
+    #include "platform.h"
     #include "scheduler.h"
 }
 
@@ -38,7 +39,8 @@ enum {
     calculateAltitudeTime = 154,
     updateDisplayTime = 10,
     telemetryTime = 10,
-    ledStripTime = 10
+    ledStripTime = 10,
+    transponderTime = 10
 };
 
 extern "C" {
@@ -47,6 +49,7 @@ extern "C" {
     uint8_t unittest_scheduler_selectedTaskDynPrio;
     uint16_t unittest_scheduler_waitingTasks;
     uint32_t unittest_scheduler_timeToNextRealtimeTask;
+    bool unittest_outsideRealtimeGuardInterval;
 
 // set up micros() to simulate time
     uint32_t simulatedTime = 0;
@@ -67,6 +70,7 @@ extern "C" {
     void taskUpdateDisplay(void) {simulatedTime+=updateDisplayTime;}
     void taskTelemetry(void) {simulatedTime+=telemetryTime;}
     void taskLedStrip(void) {simulatedTime+=ledStripTime;}
+    void taskTransponder(void) {simulatedTime+=transponderTime;}
 }
 
 TEST(SchedulerUnittest, TestSingleTask)
@@ -88,6 +92,57 @@ TEST(SchedulerUnittest, TestSingleTask)
     // task has run, so its dynamic priority should have been set to zero
     EXPECT_EQ(0, cfTasks[TASK_GYROPID].dynamicPriority);
 }
+
+TEST(SchedulerUnittest, TestRealTimeGuardInNoTaskRun)
+{
+    // disable all tasks except TASK_GYROPID and TASK_SYSTEM
+    for (int taskId=0; taskId < TASK_COUNT; ++taskId) {
+        setTaskEnabled(static_cast<cfTaskId_e>(taskId), false);
+    }
+    setTaskEnabled(TASK_GYROPID, true);
+    cfTasks[TASK_GYROPID].lastExecutedAt = 200000;
+    simulatedTime = 200700;
+
+    setTaskEnabled(TASK_SYSTEM, true);
+    cfTasks[TASK_SYSTEM].lastExecutedAt = 100000;
+
+    scheduler();
+
+    EXPECT_EQ(false, unittest_outsideRealtimeGuardInterval);
+    EXPECT_EQ(300, unittest_scheduler_timeToNextRealtimeTask);
+
+    // Nothing should be scheduled in guard period
+    EXPECT_EQ((uint8_t)TASK_NONE, unittest_scheduler_selectedTaskId);
+    EXPECT_EQ(100000, cfTasks[TASK_SYSTEM].lastExecutedAt);
+
+    EXPECT_EQ(200000, cfTasks[TASK_GYROPID].lastExecutedAt);
+}
+
+TEST(SchedulerUnittest, TestRealTimeGuardOutTaskRun)
+{
+    // disable all tasks except TASK_GYROPID and TASK_SYSTEM
+    for (int taskId=0; taskId < TASK_COUNT; ++taskId) {
+        setTaskEnabled(static_cast<cfTaskId_e>(taskId), false);
+    }
+    setTaskEnabled(TASK_GYROPID, true);
+    cfTasks[TASK_GYROPID].lastExecutedAt = 200000;
+    simulatedTime = 200699;
+
+    setTaskEnabled(TASK_SYSTEM, true);
+    cfTasks[TASK_SYSTEM].lastExecutedAt = 100000;
+
+    scheduler();
+
+    EXPECT_EQ(true, unittest_outsideRealtimeGuardInterval);
+    EXPECT_EQ(301, unittest_scheduler_timeToNextRealtimeTask);
+
+    // System should be scheduled as not in guard period
+    EXPECT_EQ((uint8_t)TASK_SYSTEM, unittest_scheduler_selectedTaskId);
+    EXPECT_EQ(200699, cfTasks[TASK_SYSTEM].lastExecutedAt);
+
+    EXPECT_EQ(200000, cfTasks[TASK_GYROPID].lastExecutedAt);
+}
+
 
 
 // STUBS
