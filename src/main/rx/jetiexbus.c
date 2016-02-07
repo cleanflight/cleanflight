@@ -30,7 +30,7 @@
  * Connect as follows:
  * Jeti EX Bus -> Serial RX (connect directly)
  * Serial TX -> Resistor(2k4) ->Serial RX
- * In jeti pdf it is different, but if the resistor breaks, the receiver continues to operate.
+ * In Jeti documentation pdf it is different, but if there is a problem with the resistor, the receiver continues to operate.
  *
  */
 
@@ -163,15 +163,13 @@ typedef struct exBusSensor_s{
 #define DECIMAL_MASK(decimals) (decimals << 5)
 
 // list of telemetry messages
-// after every 15 sensors a new header has to be inserted (e.g. "CF-Dev 1.12 S2")
+// after every 15 sensors a new header has to be inserted (e.g. "CF-Dev 1.12 D2")
 exBusSensor_t jetiExSensors[] = {
-    { "CF-Dev 1.12 S1", "",     0,      0,             0 },                     // device descripton
+    { "CF-Dev 1.12 D1", "",     0,      0,             0 },                     // device description
     { "Voltage",        "V",    0,      EX_TYPE_14b,   DECIMAL_MASK(1) },
     { "Current",        "A",    0,      EX_TYPE_14b,   DECIMAL_MASK(2) },
-    { "Altitude",       "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(1) },
-    { "Capacity",       "mAh",  0,      EX_TYPE_22b,   DECIMAL_MASK(0) },
-    { "frames lost",    " ",    0,      EX_TYPE_22b,   DECIMAL_MASK(0) },       // for debug only
-    { "time Diff",      "us",   0,      EX_TYPE_14b,   DECIMAL_MASK(0) }        // for debug only
+    { "Altitude",       "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(2) },
+    { "Capacity",       "mAh",  0,      EX_TYPE_22b,   DECIMAL_MASK(0) }
 };
 
 
@@ -180,9 +178,7 @@ enum exSensors_e {
     EX_VOLTAGE = 1,
     EX_CURRENT,
     EX_ALTITUDE,
-    EX_CAPACITY,
-    EX_FRAMES_LOST,                                                             // for debug only
-    EX_TIME_DIFF                                                                // for debug only
+    EX_CAPACITY
 };
 
 #define JETI_EX_SENSOR_COUNT (ARRAYLEN(jetiExSensors))
@@ -317,7 +313,7 @@ void jetiExBusFrameReset()
   other messages - not supported:
   0x3D 0x01 0x09 Packet_ID 0x3B 0x01 0xF0 CRC16              // Jetibox request (5th byte 0x3B)
   ...
-*/
+ */
 
 // Receive ISR callback
 static void jetiExBusDataReceive(uint16_t c)
@@ -426,7 +422,7 @@ static uint16_t jetiExBusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t c
   -----------------------------------------------
    Jeti Ex Bus Telemetry
   -----------------------------------------------
-*/
+ */
 
 void initJetiExBusTelemetry(telemetryConfig_t *initialTelemetryConfig)
 {
@@ -455,7 +451,7 @@ void createExTelemetrieTextMessage(uint8_t *exMessage, uint8_t messageID, const 
     uint8_t unitLength = strlen(sensor->unit);
 
     exMessage[EXTEL_HEADER_TYPE_LEN] = EXTEL_OVERHEAD + labelLength + unitLength;
-    exMessage[EXTEL_HEADER_LSN_LB] = messageID & 0xF0;                              // Device ID
+    exMessage[EXTEL_HEADER_LSN_LB] = (messageID & 0xF0) >> 4;                       // Device ID
     exMessage[EXTEL_HEADER_ID] = messageID & 0x0F;                                  // Sensor ID (%16)
     exMessage[EXTEL_HEADER_DATA] = (labelLength << 3) + unitLength;
 
@@ -479,7 +475,7 @@ uint8_t createExTelemetrieValueMessage(uint8_t *exMessage, uint8_t itemStart)
     if(item >= JETI_EX_SENSOR_COUNT)
         item = 1;
 
-    exMessage[EXTEL_HEADER_LSN_LB] = item & 0xF0;                                   // Device ID
+    exMessage[EXTEL_HEADER_LSN_LB] = (item & 0xF0) >> 4;                            // Device ID
     uint8_t *p = &exMessage[EXTEL_HEADER_ID];
 
     while(item <= (itemStart | 0x0F)) {
@@ -551,8 +547,6 @@ void handleJetiExBusTelemetry(void)
             jetiExSensors[EX_CURRENT].value = amperage;
             jetiExSensors[EX_ALTITUDE].value = BaroAlt;
             jetiExSensors[EX_CAPACITY].value = mAhDrawn;
-            jetiExSensors[EX_FRAMES_LOST].value = framesLost;
-            jetiExSensors[EX_TIME_DIFF].value = timeDiff;
 
             // switch to TX mode
             if (uartTotalRxBytesWaiting(jetiExBusPort) == 0) {
@@ -585,7 +579,7 @@ void sendJetiExBusTelemetry(uint8_t packetID)
     static uint8_t requestLoop = 0;
     uint8_t *jetiExTelemetryFrame = &jetiExBusTelemetryFrame[EXBUS_HEADER_DATA];
 
-    if (requestLoop == 100){              //every nth request send the name of a value
+    if (requestLoop == 100){              //every nth request send the name of a sensor
         if (sensorDescriptionCounter == JETI_EX_SENSOR_COUNT )
             sensorDescriptionCounter = 0;
 
