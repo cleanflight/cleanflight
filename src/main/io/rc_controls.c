@@ -67,8 +67,7 @@ static bool isUsingSticksToArm = true;
 
 int16_t rcCommand[4];           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 
-uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
-
+STATIC_UNIT_TESTED uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
 
 void blackboxLogInflightAdjustmentEvent(adjustmentFunction_e adjustmentFunction, int32_t newValue) {
 #ifndef BLACKBOX
@@ -147,7 +146,7 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     // perform actions
     if (!isUsingSticksToArm) {
 
-        if (IS_RC_MODE_ACTIVE(BOXARM)) {
+        if (rcModeIsActive(BOXARM)) {
             // Arming via ARM BOX
             if (throttleStatus == THROTTLE_LOW) {
                 if (ARMING_FLAG(OK_TO_ARM)) {
@@ -306,18 +305,17 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
 
 }
 
-bool isModeActivationConditionPresent(modeActivationCondition_t *modeActivationConditions, boxId_e modeId)
+bool rcModeIsActivationConditionPresent(modeActivationCondition_t *modeActivationConditions, boxId_e modeId)
 {
     uint8_t index;
 
     for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
         modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
-        
+
         if (modeActivationCondition->modeId == modeId && IS_RANGE_USABLE(&modeActivationCondition->range)) {
             return true;
         }
     }
-    
     return false;
 }
 
@@ -331,19 +329,23 @@ bool isRangeActive(uint8_t auxChannelIndex, channelRange_t *range) {
             && channelValue < MODE_STEP_TO_CHANNEL_VALUE(range->endStep));
 }
 
-void updateActivatedModes(modeActivationCondition_t *modeActivationConditions)
+bool rcModeIsActive(boxId_e modeId)
 {
-    rcModeActivationMask = 0;
+    return rcModeActivationMask & (1 << modeId);
+}
 
-    uint8_t index;
+void rcModeUpdateActivated(modeActivationCondition_t *modeActivationConditions)
+{
+    uint32_t newRcModeMask = 0;
 
-    for (index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
+    for (int index = 0; index < MAX_MODE_ACTIVATION_CONDITION_COUNT; index++) {
         modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[index];
 
         if (isRangeActive(modeActivationCondition->auxChannelIndex, &modeActivationCondition->range)) {
-            ACTIVATE_RC_MODE(modeActivationCondition->modeId);
+            newRcModeMask |= 1 << modeActivationCondition->modeId;
         }
     }
+    rcModeActivationMask = newRcModeMask;
 }
 
 uint8_t adjustmentStateMask = 0;
@@ -628,7 +630,7 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
     escAndServoConfig = escAndServoConfigToUse;
     pidProfile = pidProfileToUse;
 
-    isUsingSticksToArm = !isModeActivationConditionPresent(modeActivationConditions, BOXARM);
+    isUsingSticksToArm = !rcModeIsActivationConditionPresent(modeActivationConditions, BOXARM);
 }
 
 void resetAdjustmentStates(void)

@@ -903,7 +903,7 @@ void updateLedStrip(void)
         return;
     }
 
-    if (IS_RC_MODE_ACTIVE(BOXLEDLOW)) {
+    if (rcModeIsActive(BOXLEDLOW)) {
         if (ledStripEnabled) {
             ledStripDisable();
             ledStripEnabled = false;
