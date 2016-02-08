@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "io/rc_controls.h"
+
 #define VBAT_SCALE_DEFAULT 110
 #define VBAT_RESDIVVAL_DEFAULT 10
 #define VBAT_RESDIVMULTIPLIER_DEFAULT 1
