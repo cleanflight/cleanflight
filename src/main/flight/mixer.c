@@ -44,6 +44,7 @@
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
+#include "sensors/battery.h"
 
 #include "flight/mixer.h"
 #include "flight/failsafe.h"
@@ -755,6 +756,9 @@ void mixTable(void)
     uint32_t i;
 
     bool isFailsafeActive = failsafeIsActive();
+    float vbatCompensationFactor;
+
+    if (batteryConfig->vbatPidCompensation) vbatCompensationFactor = calculateVbatPidCompensation(); // Calculate voltage compensation
 
     if (motorCount >= 4 && mixerConfig->yaw_jump_prevention_limit < YAW_JUMP_PREVENTION_LIMIT_HIGH) {
         // prevent "yaw jump" during yaw correction
@@ -773,6 +777,8 @@ void mixTable(void)
                 axisPID[PITCH] * currentMixer[i].pitch +
                 axisPID[ROLL] * currentMixer[i].roll +
                 -mixerConfig->yaw_motor_direction * axisPID[YAW] * currentMixer[i].yaw;
+
+            if (batteryConfig->vbatPidCompensation) motor[i] *= vbatCompensationFactor;  // Add voltage compensation
 
             if (rollPitchYawMix[i] > rollPitchYawMixMax) rollPitchYawMixMax = rollPitchYawMix[i];
             if (rollPitchYawMix[i] < rollPitchYawMixMin) rollPitchYawMixMin = rollPitchYawMix[i];
@@ -850,6 +856,8 @@ void mixTable(void)
                 axisPID[PITCH] * currentMixer[i].pitch +
                 axisPID[ROLL] * currentMixer[i].roll +
                 -mixerConfig->yaw_motor_direction * axisPID[YAW] * currentMixer[i].yaw;
+
+            if (batteryConfig->vbatPidCompensation) motor[i] *= vbatCompensationFactor;  // Add voltage compensation
         }
 
         // Find the maximum motor output.
@@ -998,4 +1006,3 @@ void filterServos(void)
 
 #endif
 }
-

@@ -32,8 +32,11 @@ extern "C" {
     #include "drivers/accgyro.h"
     #include "drivers/pwm_mapping.h"
 
+    #include "io/rc_controls.h"
+
     #include "sensors/sensors.h"
     #include "sensors/acceleration.h"
+    #include "sensors/battery.h"
 
     #include "rx/rx.h"
     #include "flight/pid.h"
@@ -43,7 +46,6 @@ extern "C" {
 
     #include "io/escservo.h"
     #include "io/gimbal.h"
-    #include "io/rc_controls.h"
 
     extern uint8_t servoCount;
     void forwardAuxChannelsToServos(uint8_t firstServoIndex);
@@ -401,6 +403,8 @@ int16_t debug[DEBUG16_VALUE_COUNT];
 uint8_t stateFlags;
 uint16_t flightModeFlags;
 uint8_t armingFlags;
+
+float calculateVbatPidCompensation() {return 1.0f;}
 
 void delay(uint32_t) {}
 

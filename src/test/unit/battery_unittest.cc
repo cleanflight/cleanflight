@@ -49,6 +49,7 @@ TEST(BatteryTest, BatteryADCToVoltage)
         .vbatmaxcellvoltage = 43,
         .vbatmincellvoltage = 33,
         .vbatwarningcellvoltage = 35,
+        .vbatPidCompensation = 0,
         .currentMeterScale = 400,
         .currentMeterOffset = 0,
         .currentMeterType = CURRENT_SENSOR_NONE,
@@ -109,6 +110,7 @@ TEST(BatteryTest, BatteryState)
         .vbatmaxcellvoltage = 43,
         .vbatmincellvoltage = 33,
         .vbatwarningcellvoltage = 35,
+        .vbatPidCompensation = 0,
         .currentMeterScale = 400,
         .currentMeterOffset = 0,
         .currentMeterType = CURRENT_SENSOR_NONE,
@@ -168,6 +170,7 @@ TEST(BatteryTest, CellCount)
         .vbatmaxcellvoltage = 43,
         .vbatmincellvoltage = 33,
         .vbatwarningcellvoltage = 35,
+        .vbatPidCompensation = 0,
         .currentMeterScale = 400,
         .currentMeterOffset = 0,
         .currentMeterType = CURRENT_SENSOR_NONE,
@@ -273,7 +276,6 @@ extern "C" {
 
 uint8_t armingFlags = 0;
 int16_t rcCommand[4] = {0,0,0,0};
-
 
 bool feature(uint32_t mask)
 {

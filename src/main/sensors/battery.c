@@ -50,8 +50,6 @@ uint16_t amperageLatestADC = 0;     // most recent raw reading from current ADC
 int32_t amperage = 0;               // amperage read by current sensor in centiampere (1/100th A)
 int32_t mAhDrawn = 0;               // milliampere hours drawn from the battery since start
 
-batteryConfig_t *batteryConfig;
-
 static batteryState_e batteryState;
 static lowpass_t lowpassFilter;
 
@@ -203,6 +201,16 @@ void updateCurrentMeter(int32_t lastUpdateAt, throttleStatus_e throttleStatus)
 
     mAhdrawnRaw += (MAX(0, amperage) * lastUpdateAt) / 1000;
     mAhDrawn = mAhdrawnRaw / (3600 * 100);
+}
+
+float calculateVbatPidCompensation(void) {
+	float batteryScaler =  1.0f;
+    if (batteryConfig->vbatPidCompensation && feature(FEATURE_VBAT) && batteryCellCount > 1) {
+        // Up to 25% PID gain. Should be fine for 4,2to 3,3 difference
+        batteryScaler =  constrainf(( ((float)batteryConfig->vbatmaxcellvoltage * batteryCellCount) / vbat ), 1.0f, 1.25f);
+    }
+
+    return batteryScaler;
 }
 
 uint8_t calculateBatteryPercentage(void)
