@@ -45,22 +45,20 @@
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
 #include "io/serial.h"
+#include "rx/rx.h"
 #include "rx/jetiexbus.h"
 
 
 #ifdef TELEMETRY
 
 #include <string.h>
+#include "io/rc_controls.h"
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
 #include "sensors/barometer.h"
 #include "telemetry/telemetry.h"
 
 #endif //TELEMETRY
-
-
-#include "debug.h"
-#include "rx/rx.h"
 
 //
 // Serial driver for Jeti EX Bus receiver
