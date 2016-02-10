@@ -147,6 +147,8 @@
 
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
 #define BLACKBOX
 #define GPS
@@ -157,7 +159,6 @@
 #define USE_CLI
 
 #define USE_SERIAL_1WIRE
-#define USE_SERIAL_1WIRE_CLI
 
 #define S1W_TX_GPIO         GPIOA
 #define S1W_TX_PIN          GPIO_Pin_9

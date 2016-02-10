@@ -145,7 +145,6 @@
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM1
 
-#define USE_LED_STRIP_ON_DMA1_CHANNEL2
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
 #define WS2811_GPIO_AF                  GPIO_AF_6
@@ -155,6 +154,9 @@
 #define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM1
 #define WS2811_DMA_CHANNEL              DMA1_Channel2
 #define WS2811_IRQ                      DMA1_Channel2_IRQn
+#define WS2811_DMA_TC_FLAG              DMA1_FLAG_TC2
+#define WS2811_DMA_HANDLER_IDENTIFER    DMA1_CH2_HANDLER
+
 
 #define BLACKBOX
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
@@ -173,7 +175,6 @@
 #define BIND_PIN   Pin_11
 
 #define USE_SERIAL_1WIRE
-#define USE_SERIAL_1WIRE_CLI
 
 #define S1W_TX_GPIO         GPIOA
 #define S1W_TX_PIN          GPIO_Pin_9

@@ -169,11 +169,14 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
-#define GPS
 
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
+#define GPS
+#define GTUNE
 #define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
@@ -186,7 +189,6 @@
 #define BIND_PIN   Pin_3
 
 #define USE_SERIAL_1WIRE
-#define USE_SERIAL_1WIRE_CLI
 
 // STM32F103CBT6-LQFP48 Pin30 (PA9) TX - PC3 connects to onboard CP2102 RX
 #define S1W_TX_GPIO         GPIOA
