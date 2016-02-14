@@ -666,14 +666,14 @@ static int16_t decidegreeToServoPulse(uint8_t servo_index, int16_t angle_deci_de
     // normalize angle to range -180 to 180 (degree)
     while (angle_deci_degree > 1800)
         angle_deci_degree -= 3600;
-    while (angle_deci_degree < -1800)
+    while (angle_deci_degree < -1799) //prevent an angle to be -1800, it will be 1800
         angle_deci_degree += 3600;
 
     //remap input value (RX limit) to output value (Servo limit), also take into account eventual non-linearity of the two half range
     if (angle_deci_degree > 0) {
-        angle_deci_degree = scaleRange(angle_deci_degree, 0, servoConf[servo_index].angleAtMax * 10, 0, servoConf[servo_index].max);
+        angle_deci_degree = scaleRange(angle_deci_degree, 0, servoConf[servo_index].angleAtMax * 10, servoConf[servo_index].middle, servoConf[servo_index].max);
     } else {
-        angle_deci_degree = scaleRange(angle_deci_degree, 0, servoConf[servo_index].angleAtMin * 10, 0, servoConf[servo_index].min);
+        angle_deci_degree = scaleRange(angle_deci_degree, 0, -servoConf[servo_index].angleAtMin * 10, servoConf[servo_index].middle, servoConf[servo_index].min);
     }
 
     return angle_deci_degree;
@@ -687,7 +687,7 @@ int16_t getMix(uint8_t rule_index)
     uint8_t servo_index = currentServoMixer[rule_index].targetChannel;
 
     // consider rule only if no box assigned or box is active
-    if (!currentServoMixer[rule_index].box == 0 && !IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[rule_index].box - 1)) {
+    if (currentServoMixer[rule_index].box != 0 && !IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[rule_index].box - 1)) {
         currentOutput[servo_index] = 0;
         return rxConfig->midrc;
     }
