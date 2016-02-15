@@ -87,7 +87,7 @@ void I2C2_EV_IRQHandler(void)
     i2c_ev_handler();
 }
 
-#define I2C_DEFAULT_TIMEOUT 30000
+#define I2C_VERY_LONG_TIMEOUT 30000
 static volatile uint16_t i2cErrorCount = 0;
 
 static volatile bool error = false;
@@ -111,7 +111,7 @@ static bool i2cHandleHardwareFailure(void)
 
 bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
 {
-    uint32_t timeout = I2C_DEFAULT_TIMEOUT;
+    uint32_t timeout = I2C_VERY_LONG_TIMEOUT;
 
     addr = addr_ << 1;
     reg = reg_;
@@ -137,7 +137,7 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data)
         I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, ENABLE);            // allow the interrupts to fire off again
     }
 
-    timeout = I2C_DEFAULT_TIMEOUT;
+    timeout = I2C_VERY_LONG_TIMEOUT;
     while (busy && --timeout > 0) { ; }
     if (timeout == 0) {
         return i2cHandleHardwareFailure();
@@ -153,7 +153,7 @@ bool i2cWrite(uint8_t addr_, uint8_t reg_, uint8_t data)
 
 bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
 {
-    uint32_t timeout = I2C_DEFAULT_TIMEOUT;
+    uint32_t timeout = I2C_VERY_LONG_TIMEOUT;
 
     addr = addr_ << 1;
     reg = reg_;
@@ -178,7 +178,7 @@ bool i2cRead(uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
         I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, ENABLE);            // allow the interrupts to fire off again
     }
 
-    timeout = I2C_DEFAULT_TIMEOUT;
+    timeout = I2C_VERY_LONG_TIMEOUT;
     while (busy && --timeout > 0) { ; }
     if (timeout == 0)
         return i2cHandleHardwareFailure();
