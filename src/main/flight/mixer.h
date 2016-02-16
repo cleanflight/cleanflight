@@ -17,8 +17,13 @@
 
 #pragma once
 
+#ifdef USE_QUAD_MIXER_ONLY
+#define MAX_SUPPORTED_MOTORS 4
+#define MAX_SUPPORTED_SERVOS 1
+#else
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
+#endif
 #define YAW_JUMP_PREVENTION_LIMIT_LOW 80
 #define YAW_JUMP_PREVENTION_LIMIT_HIGH 500
 
@@ -70,6 +75,7 @@ typedef struct mixer_s {
 
 typedef struct mixerConfig_s {
     uint8_t pid_at_min_throttle;            // when enabled pids are used at minimum throttle
+    uint8_t airmode_saturation_limit;       // Use max possible correction when within the limit
     int8_t yaw_motor_direction;
     uint16_t yaw_jump_prevention_limit;      // make limit configurable (original fixed value was 100)
 #ifdef USE_SERVOS
@@ -193,6 +199,8 @@ void filterServos(void);
 
 extern int16_t motor[MAX_SUPPORTED_MOTORS];
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
+
+extern bool motorLimitReached;
 
 struct escAndServoConfig_s;
 struct rxConfig_s;

@@ -20,7 +20,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "version.h"
 
 #include "build_config.h"
@@ -39,16 +39,15 @@
 
 #ifdef DISPLAY
 
-#include "io/dataEdition.h"
+#include "io/config_menus.h"
+#include "io/rc_controls.h"
+
 #include "sensors/battery.h"
 #include "sensors/sensors.h"
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 
-#include "rx/rx.h"
-
-#include "io/rc_controls.h"
 
 #include "flight/pid.h"
 #include "flight/imu.h"
@@ -57,6 +56,10 @@
 #ifdef GPS
 #include "io/gps.h"
 #include "flight/navigation.h"
+#endif
+
+#ifdef SONAR
+#include "sensors/sonar.h"
 #endif
 
 #include "config/runtime_config.h"
@@ -569,32 +572,15 @@ void showSensorsPage(void)
     i2c_OLED_set_line(rowIndex++);
     i2c_OLED_send_string(lineBuffer);
 
-    /*
-    uint8_t length;
-
-    ftoa(EstG.A[X], lineBuffer);
-    length = strlen(lineBuffer);
-    while (length < HALF_SCREEN_CHARACTER_COLUMN_COUNT) {
-        lineBuffer[length++] = ' ';
-        lineBuffer[length+1] = 0;
+#ifdef SONAR
+    if (sensors(SENSOR_SONAR)) {
+        static const char *sonarFormat = "%s             %5d";
+        tfp_sprintf(lineBuffer, sonarFormat, "SNR", sonarGetLatestAltitude());
+        padLineBuffer();
+        i2c_OLED_set_line(rowIndex++);
+        i2c_OLED_send_string(lineBuffer);
     }
-    ftoa(EstG.A[Y], lineBuffer + length);
-    padLineBuffer();
-    i2c_OLED_set_line(rowIndex++);
-    i2c_OLED_send_string(lineBuffer);
-
-    ftoa(EstG.A[Z], lineBuffer);
-    length = strlen(lineBuffer);
-    while (length < HALF_SCREEN_CHARACTER_COLUMN_COUNT) {
-        lineBuffer[length++] = ' ';
-        lineBuffer[length+1] = 0;
-    }
-    ftoa(smallAngle, lineBuffer + length);
-    padLineBuffer();
-    i2c_OLED_set_line(rowIndex++);
-    i2c_OLED_send_string(lineBuffer);
-    */
-
+#endif
 }
 
 #ifdef ENABLE_DEBUG_OLED_PAGE
@@ -624,8 +610,8 @@ void updateDisplay(void)
 
     nextDisplayUpdateAt = now + DISPLAY_UPDATE_FREQUENCY;
 
-	if(onGoingDataEditionWithSticks){
-		processDataEdition(commandFromSticksForDataEdition);
+	if(onGoingDataEditingWithSticks){
+		processDataEditing(commandFromSticksForDataEdition);
 		sendContentOfPageToDisplay();
 		return;
 	}

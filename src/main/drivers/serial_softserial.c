@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 
@@ -485,6 +485,7 @@ const struct serialPortVTable softSerialVTable[] = {
         softSerialSetBaudRate,
         isSoftSerialTransmitBufferEmpty,
         softSerialSetMode,
+        .writeBuf = NULL,
     }
 };
 

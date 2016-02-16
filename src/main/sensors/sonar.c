@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 
 #include "common/maths.h"
@@ -29,6 +29,8 @@
 #include "drivers/gpio.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
+
+#include "io/rc_controls.h"
 
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
@@ -69,8 +71,10 @@ const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryCon
         .exti_pin_source = GPIO_PinSource1,
         .exti_irqn = EXTI1_IRQn
     };
-    // If we are using parallel PWM for our receiver or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
-    if (feature(FEATURE_RX_PARALLEL_PWM ) || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC) ) {
+    // If we are using softserial, parallel PWM or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use rc pins 7 and 8
+    if (feature(FEATURE_SOFTSERIAL)
+            || feature(FEATURE_RX_PARALLEL_PWM )
+            || (feature(FEATURE_CURRENT_METER) && batteryConfig->currentMeterType == CURRENT_SENSOR_ADC)) {
         return &sonarPWM56;
     } else {
         return &sonarRC78;
@@ -99,7 +103,7 @@ const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryCon
         .exti_irqn = EXTI0_IRQn
     };
     return &sonarHardware;
-#elif defined(SPRACINGF3)
+#elif defined(SPRACINGF3) || defined(SPRACINGF3MINI)
     UNUSED(batteryConfig);
     static const sonarHardware_t const sonarHardware = {
         .trigger_pin = Pin_0,   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
@@ -145,6 +149,32 @@ void sonarInit(const sonarHardware_t *sonarHardware)
     calculatedAltitude = SONAR_OUT_OF_RANGE;
 }
 
+#define DISTANCE_SAMPLES_MEDIAN 5
+
+static int32_t applySonarMedianFilter(int32_t newSonarReading)
+{
+    static int32_t sonarFilterSamples[DISTANCE_SAMPLES_MEDIAN];
+    static int currentFilterSampleIndex = 0;
+    static bool medianFilterReady = false;
+    int nextSampleIndex;
+
+    if (newSonarReading > SONAR_OUT_OF_RANGE) // only accept samples that are in range
+    {
+        nextSampleIndex = (currentFilterSampleIndex + 1);
+        if (nextSampleIndex == DISTANCE_SAMPLES_MEDIAN) {
+            nextSampleIndex = 0;
+            medianFilterReady = true;
+        }
+
+        sonarFilterSamples[currentFilterSampleIndex] = newSonarReading;
+        currentFilterSampleIndex = nextSampleIndex;
+    }
+    if (medianFilterReady)
+        return quickMedianFilter5(sonarFilterSamples);
+    else
+        return newSonarReading;
+}
+
 void sonarUpdate(void)
 {
     hcsr04_start_reading();
@@ -158,7 +188,8 @@ int32_t sonarRead(void)
     int32_t distance = hcsr04_get_distance();
     if (distance > HCSR04_MAX_RANGE_CM)
         distance = SONAR_OUT_OF_RANGE;
-    return distance;
+
+    return applySonarMedianFilter(distance);
 }
 
 /**

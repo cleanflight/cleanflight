@@ -24,7 +24,7 @@
 #include "common/maths.h"
 
 #include "build_config.h"
-#include "platform.h"
+#include <platform.h>
 #include "debug.h"
 
 #include "common/axis.h"
@@ -68,6 +68,7 @@ float fc_acc;
 float smallAngleCosZ = 0;
 
 float magneticDeclination = 0.0f;       // calculated at startup from config
+static bool isAccelUpdatedAtLeastOnce = false;
 
 static imuRuntimeConfig_t *imuRuntimeConfig;
 static pidProfile_t *pidProfile;
@@ -369,10 +370,12 @@ static bool imuIsAccelerometerHealthy(void)
     return (81 < accMagnitude) && (accMagnitude < 121);
 }
 
+#ifdef MAG
 static bool isMagnetometerHealthy(void)
 {
     return (magADC[X] != 0) && (magADC[Y] != 0) && (magADC[Z] != 0);
 }
+#endif
 
 static void imuCalculateEstimatedAttitude(void)
 {
@@ -401,9 +404,11 @@ static void imuCalculateEstimatedAttitude(void)
         useAcc = true;
     }
 
+#ifdef MAG
     if (sensors(SENSOR_MAG) && isMagnetometerHealthy()) {
         useMag = true;
     }
+#endif
 #if defined(GPS)
     else if (STATE(FIXED_WING) && sensors(SENSOR_GPS) && STATE(GPS_FIX) && GPS_numSat >= 5 && GPS_speed >= 300) {
         // In case of a fixed-wing aircraft we can use GPS course over ground to correct heading
@@ -423,12 +428,19 @@ static void imuCalculateEstimatedAttitude(void)
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
 }
 
-void imuUpdate(rollAndPitchTrims_t *accelerometerTrims)
+void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
+{
+    if (sensors(SENSOR_ACC)) {
+        updateAccelerationReadings(accelerometerTrims);
+        isAccelUpdatedAtLeastOnce = true;
+    }
+}
+
+void imuUpdateGyroAndAttitude(void)
 {
     gyroUpdate();
 
-    if (sensors(SENSOR_ACC)) {
-        updateAccelerationReadings(accelerometerTrims);
+    if (sensors(SENSOR_ACC) && isAccelUpdatedAtLeastOnce) {
         imuCalculateEstimatedAttitude();
     } else {
         accADC[X] = 0;
