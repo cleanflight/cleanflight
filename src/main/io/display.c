@@ -611,7 +611,7 @@ void updateDisplay(void)
     nextDisplayUpdateAt = now + DISPLAY_UPDATE_FREQUENCY;
 
 	if(onGoingDataEditingWithSticks){
-		processDataEditing(commandFromSticksForDataEdition);
+		processDataEditing(commandFromSticksForDataEditing);
 		sendContentOfPageToDisplay();
 		return;
 	}

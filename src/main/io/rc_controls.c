@@ -48,7 +48,7 @@
 #include "io/escservo.h"
 #include "io/rc_curves.h"
 
-#include "io/dataEdition.h"
+#include "io/config_menus.h"
 #include "io/display.h"
 
 #include "flight/pid.h"
@@ -132,39 +132,39 @@ rollPitchStatus_e calculateRollPitchCenterStatus(rxConfig_t *rxConfig)
     return NOT_CENTERED;
 }
 
-void checkCommandForDataEditionWithSticks(uint8_t rcSticks)
+void checkCommandForDataEditingWithSticks(uint8_t rcSticks)
 {
-	commandFromSticksForDataEdition = NO_COMMAND;
+	commandFromSticksForDataEditing = NO_COMMAND;
 
 	switch (rcSticks){
 		case THR_LO + YAW_CE + PIT_LO + ROL_LO : { // deactivation
-			onGoingDataEditionWithSticks = false;
-			commandFromSticksForDataEdition = EXIT_EDITION_MODE;
+			onGoingDataEditingWithSticks = false;
+			commandFromSticksForDataEditing = EXIT_EDITING_MODE;
 			return;
 		}
 		case THR_LO + YAW_CE + PIT_LO + ROL_HI : { // activation
-			onGoingDataEditionWithSticks = true;
-			commandFromSticksForDataEdition = ENTER_EDITION_MODE;
+			onGoingDataEditingWithSticks = true;
+			commandFromSticksForDataEditing = ENTER_EDITING_MODE;
 			return;
 		}
 		case THR_LO + YAW_CE + PIT_HI + ROL_CE : {
-			commandFromSticksForDataEdition= INC_COMMAND;
+			commandFromSticksForDataEditing = INC_COMMAND;
 			break;
 		}
 		case THR_LO + YAW_CE + PIT_LO + ROL_CE : {
-			commandFromSticksForDataEdition= DEC_COMMAND;
+			commandFromSticksForDataEditing = DEC_COMMAND;
 			break;
 		}
 		case THR_LO + YAW_CE + PIT_CE + ROL_HI : {
-			commandFromSticksForDataEdition= NEXT_COMMAND;
+			commandFromSticksForDataEditing = NEXT_COMMAND;
 			break;
 		}
 		case THR_LO + YAW_CE + PIT_CE + ROL_LO : {
-			commandFromSticksForDataEdition= PREV_COMMAND;
+			commandFromSticksForDataEditing = PREV_COMMAND;
 			break;
 		}
 		case THR_LO + YAW_HI + PIT_HI + ROL_CE : {// Selection  or  Exit
-			commandFromSticksForDataEdition= SET_COMMAND;
+			commandFromSticksForDataEditing = SET_COMMAND;
 			break;
 		}
 	}
@@ -195,8 +195,8 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
 
     // perform actions
     if (!ARMING_FLAG(ARMED)){
-    	checkCommandForDataEditionWithSticks(rcSticks);
-    	if (onGoingDataEditionWithSticks)
+    	checkCommandForDataEditingWithSticks(rcSticks);
+    	if (onGoingDataEditingWithSticks)
     		return;
     }
 

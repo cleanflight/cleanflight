@@ -111,6 +111,10 @@ static const char * const lookupTableGyroLpf[] = {
     "10HZ"
 };
 
+static const char * const lookupDeltaMethod[] = {
+    "ERROR", "MEASUREMENT"
+};
+
 
 typedef struct lookupTableEntry_s {
     const char * const *values;
@@ -134,6 +138,7 @@ typedef enum {
     TABLE_SERIAL_RX,
     TABLE_GYRO_FILTER,
     TABLE_GYRO_LPF,
+    TABLE_DELTA_METHOD,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {

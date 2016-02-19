@@ -32,7 +32,7 @@ typedef enum {
 #endif
 } pageId_e;
 
-uint8_t commandFromSticksForDataEdition;
+uint8_t commandFromSticksForDataEditing;
 
 void updateDisplay(void);
 
