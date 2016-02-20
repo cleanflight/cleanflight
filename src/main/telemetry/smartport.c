@@ -146,6 +146,7 @@ static bool smartPortTelemetryEnabled =  false;
 static portSharing_e smartPortPortSharing;
 
 extern void serialInit(serialConfig_t *); // from main.c // FIXME remove this dependency
+extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 char smartPortState = SPSTATE_UNINITIALIZED;
 static uint8_t smartPortHasRequest = 0;
@@ -415,9 +416,7 @@ void handleSmartPortTelemetry(void)
                     tmpi += 10;
                 if (FLIGHT_MODE(HORIZON_MODE))
                     tmpi += 20;
-                if (FLIGHT_MODE(UNUSED_MODE))
-                    tmpi += 40;
-                if (FLIGHT_MODE(PASSTHRU_MODE))
+                if (IS_RC_MODE_ACTIVE(BOXAIRMODE))
                     tmpi += 40;
 
                 if (FLIGHT_MODE(MAG_MODE))
@@ -449,6 +448,15 @@ void handleSmartPortTelemetry(void)
                     smartPortSendPackage(id, 0);
                     smartPortHasRequest = 0;
                 }
+		else {
+		    // if no GPS send real temp
+#ifdef BARO
+		    smartPortSendPackage(id, (baroTemperature + 50)/ 100);
+#else
+		    smartPortSendPackage(id, telemTemperature1 / 10);
+#endif
+                    smartPortHasRequest = 0;
+		}
                 break;
 #ifdef GPS
             case FSSP_DATAID_GPS_ALT    :

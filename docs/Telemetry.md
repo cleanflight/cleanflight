@@ -160,10 +160,10 @@ Tmp1 : actual flight mode, sent as 4 digits. Number is sent as (1)1234. Please i
 
 1. 1 is GPS Hold, 2 is GPS Home, 4 is Headfree
 2. 1 is mag enabled, 2 is baro enabled, 4 is sonar enabled
-3. 1 is angle, 2 is horizon, 4 is passthrough
+3. 1 is angle, 2 is horizon, 4 is airmode
 4. 1 is ok to arm, 2 is arming is prevented,  4 is armed
 
-Tmp2 : GPS lock status, Number is sent as 1234, the numbers are aditives :
+Tmp2 : if no GPS is present, barometer temp is sent, else it is GPS lock status, Number is sent as 1234, the numbers are aditives :
 
 1. 1 is GPS Fix, 2 is GPS Home fix
 2. not used
