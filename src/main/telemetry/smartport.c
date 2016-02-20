@@ -146,6 +146,7 @@ static bool smartPortTelemetryEnabled =  false;
 static portSharing_e smartPortPortSharing;
 
 extern void serialInit(serialConfig_t *); // from main.c // FIXME remove this dependency
+extern int16_t telemTemperature1; // FIXME dependency on mw.c
 
 char smartPortState = SPSTATE_UNINITIALIZED;
 static uint8_t smartPortHasRequest = 0;
@@ -449,6 +450,11 @@ void handleSmartPortTelemetry(void)
                 }
 		else {
 		    // if no GPS send real temp
+#ifdef BARO
+		    smartPortSendPackage(id, (baroTemperature + 50)/ 100);
+#else
+		    smartPortSendPackage(id, telemTemperature1 / 10);
+#endif
 		    smartPortSendPackage(id, (baroTemperature + 50)/ 100);
                     smartPortHasRequest = 0;
 		}
