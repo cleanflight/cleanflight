@@ -211,19 +211,19 @@ static float invSqrt(float x)
 
 static uint32_t imuGainResetTime = 0;
 
-void imuResetGainTime(uint32_t millis)
+void imuResetGainTime(uint32_t micros)
 {
-    imuGainResetTime = millis;
+    imuGainResetTime = micros;
 }
 
 static bool imuUseFastGains(void)
 {
-    uint32_t now = millis();
+    uint32_t now = micros();
 
     int32_t millisSinceGainReset = now - imuGainResetTime;
 
     // not armed and within 20 sec from powerup OR within 2 seconds of the gain reset time
-    return (!ARMING_FLAG(ARMED) && now < 20000) || (millisSinceGainReset < 2000L);
+    return (!ARMING_FLAG(ARMED) && now < 20000) || (millisSinceGainReset < (20L * 1000 * 1000));
 }
 
 static float imuGetPGainScaleFactor(void)
