@@ -104,6 +104,7 @@ typedef enum {
 	SELECTION_PAGE = 0,
 	ALL_DATA_PAGE
 } indexOfPages_e;
+
 static const char * const pageNames[] = {
 	"All CleanF data"
 };
@@ -140,6 +141,7 @@ typedef enum {
     MOTORS_PAGE,
     SERVOS_PAGE
 } indexOfPages_e;
+
 static const char * const pageNames[] = {
 	"Firmware",
     "All CleanF data",
