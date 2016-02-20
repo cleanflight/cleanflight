@@ -455,7 +455,6 @@ void handleSmartPortTelemetry(void)
 #else
 		    smartPortSendPackage(id, telemTemperature1 / 10);
 #endif
-		    smartPortSendPackage(id, (baroTemperature + 50)/ 100);
                     smartPortHasRequest = 0;
 		}
                 break;
