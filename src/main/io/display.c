@@ -68,7 +68,7 @@
 
 #include "display.h"
 
-#if (DATA_EDITION_FULL_VERSION)
+#if (DATA_SETTING_FULL_VERSION)
 static const uint8_t const logoCleanflight[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x7C,
 	0xFE, 0xFE, 0xFF, 0x7F, 0x3E, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0xC0, 0xC0,
@@ -335,7 +335,7 @@ void showRxPage(void)
 }
 
 
-#if (DATA_EDITION_FULL_VERSION)
+#if (DATA_SETTING_FULL_VERSION)
 void drawLogo(void)
 {
 	i2c_OLED_send_cmd(0xb2);    // set page address to 2
@@ -350,7 +350,7 @@ void drawLogo(void)
 
 void showWelcomePage(void)
 {
-#if (DATA_EDITION_FULL_VERSION)
+#if (DATA_SETTING_FULL_VERSION)
 	drawLogo();
 #else
     uint8_t rowIndex = PAGE_TITLE_LINE_COUNT;

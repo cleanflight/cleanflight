@@ -94,9 +94,9 @@ typedef enum {
 } pixelColor_e;
 
 #if defined(FLASH_SIZE) && (FLASH_SIZE > 128)
-# define DATA_SETTING_FULL_VERSION 1
+# define DATA_SETTING_FULL_VERSION     1
 # else
-# define DATA_SETTING_FULL_VERSION 0
+# define DATA_SETTING_FULL_VERSION     0
 #endif
 
 #if (!DATA_SETTING_FULL_VERSION)
