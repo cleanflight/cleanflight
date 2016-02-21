@@ -55,6 +55,7 @@
 
 #define BEEPER
 #define LED0
+
 #define SONAR
 #define SONAR_TRIGGER_PIN           Pin_0   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_TRIGGER_GPIO          GPIOB
