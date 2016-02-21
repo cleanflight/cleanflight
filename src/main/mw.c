@@ -505,6 +505,7 @@ void processRx(void)
 
         if (!FLIGHT_MODE(ANGLE_MODE)) {
             pidResetErrorAngle();
+            imuResetGainTime(currentTime);
             ENABLE_FLIGHT_MODE(ANGLE_MODE);
         }
     } else {
@@ -517,6 +518,7 @@ void processRx(void)
 
         if (!FLIGHT_MODE(HORIZON_MODE)) {
             pidResetErrorAngle();
+            imuResetGainTime(currentTime);
             ENABLE_FLIGHT_MODE(HORIZON_MODE);
         }
     } else {
@@ -621,6 +623,19 @@ void filterRc(void){
 static bool haveProcessedAnnexCodeOnce = false;
 #endif
 
+static bool isAccelUpdatedAtLeastOnce = false;
+
+bool shouldCalculateAttitude(void)
+{
+    bool calculateAttitude = sensors(SENSOR_ACC);
+    if (calculateAttitude) {
+
+        calculateAttitude = masterConfig.mixerMode == MIXER_GIMBAL || (!isAccelerationCalibrationComplete()) || FLIGHT_MODE(HORIZON_MODE | ANGLE_MODE);
+    }
+
+    return calculateAttitude;
+}
+
 void taskMainPidLoop(void)
 {
     cycleTime = getTaskDeltaTime(TASK_SELF);
@@ -632,7 +647,14 @@ void taskMainPidLoop(void)
     debug[0] = cycleTime;
     debug[1] = cycleTime - filteredCycleTime;
 
-    imuUpdateGyroAndAttitude();
+    gyroUpdate();
+
+    if (isAccelUpdatedAtLeastOnce && shouldCalculateAttitude()) {
+        imuCalculateEstimatedAttitude();
+    } else {
+        resetAttitude();
+    }
+
 
     annexCode();
 
@@ -736,7 +758,13 @@ void taskMainPidLoopChecker(void) {
 
 void taskUpdateAccelerometer(void)
 {
-    imuUpdateAccelerometer(&currentProfile->accelerometerTrims);
+    if (!shouldCalculateAttitude()) {
+        return;
+    }
+
+    if (imuUpdateAccelerometer(&currentProfile->accelerometerTrims)) {
+        isAccelUpdatedAtLeastOnce = true;
+    }
 }
 
 void taskHandleSerial(void)

@@ -68,7 +68,6 @@ float fc_acc;
 float smallAngleCosZ = 0;
 
 float magneticDeclination = 0.0f;       // calculated at startup from config
-static bool isAccelUpdatedAtLeastOnce = false;
 
 static imuRuntimeConfig_t *imuRuntimeConfig;
 static pidProfile_t *pidProfile;
@@ -210,9 +209,21 @@ static float invSqrt(float x)
     return 1.0f / sqrtf(x);
 }
 
+static uint32_t imuGainResetTime = 0;
+
+void imuResetGainTime(uint32_t micros)
+{
+    imuGainResetTime = micros;
+}
+
 static bool imuUseFastGains(void)
 {
-    return !ARMING_FLAG(ARMED) && millis() < 20000;
+    uint32_t now = micros();
+
+    int32_t millisSinceGainReset = now - imuGainResetTime;
+
+    // not armed and within 20 sec from powerup OR within 2 seconds of the gain reset time
+    return (!ARMING_FLAG(ARMED) && now < 20000) || (millisSinceGainReset < (20L * 1000 * 1000));
 }
 
 static float imuGetPGainScaleFactor(void)
@@ -305,7 +316,7 @@ static void imuMahonyAHRSupdate(float dt, float gx, float gy, float gz,
         integralFBz = 0.0f;
     }
 
-    // Calculate kP gain. If we are acquiring initial attitude (not armed and within 20 sec from powerup) scale the kP to converge faster
+    // Calculate kP gain. If we are acquiring initial attitude scale the kP to converge faster
     float dcmKpGain = imuRuntimeConfig->dcm_kp * imuGetPGainScaleFactor();
 
     // Apply proportional and integral feedback
@@ -377,10 +388,11 @@ static bool isMagnetometerHealthy(void)
 }
 #endif
 
-static void imuCalculateEstimatedAttitude(void)
+static uint32_t previousIMUUpdateTime;
+
+void imuCalculateEstimatedAttitude(void)
 {
     static filterStatePt1_t accLPFState[3];
-    static uint32_t previousIMUUpdateTime;
     float rawYawError = 0;
     int32_t axis;
     bool useAcc = false;
@@ -428,25 +440,27 @@ static void imuCalculateEstimatedAttitude(void)
     imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
 }
 
-void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
+bool imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
 {
     if (sensors(SENSOR_ACC)) {
         updateAccelerationReadings(accelerometerTrims);
-        isAccelUpdatedAtLeastOnce = true;
+        return true;
     }
+
+    return false;
 }
 
-void imuUpdateGyroAndAttitude(void)
+void resetAttitude(void)
 {
-    gyroUpdate();
+    accADC[X] = 0;
+    accADC[Y] = 0;
+    accADC[Z] = 0;
 
-    if (sensors(SENSOR_ACC) && isAccelUpdatedAtLeastOnce) {
-        imuCalculateEstimatedAttitude();
-    } else {
-        accADC[X] = 0;
-        accADC[Y] = 0;
-        accADC[Z] = 0;
-    }
+    accSmooth[X] = 0;
+    accSmooth[Y] = 0;
+    accSmooth[Z] = 0;
+
+    previousIMUUpdateTime = micros();
 }
 
 float getCosTiltAngle(void)

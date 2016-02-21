@@ -69,6 +69,17 @@ static const extiConfig_t *mpuIntExtiConfig = NULL;
 
 #define MPU_INQUIRY_MASK   0x7E
 
+// NOTE - This ignores mpuConfiguration.gyroReadXRegister
+#define MPU_BUFFER_GYRO_OFFSET (MPU_RA_GYRO_XOUT_H - MPU_RA_ACCEL_XOUT_H)
+#define MPU_ACC_TEMPERATURE_GYRO_BUFFER_SIZE ((MPU_RA_GYRO_ZOUT_L - MPU_RA_ACCEL_XOUT_H) + 1) // inclusive
+
+#if (MPU_ACC_TEMPERATURE_GYRO_BUFFER_SIZE != 14)
+#error Unexpected acc/gyro/temperate buffer size
+#endif
+
+static uint8_t mpuAccGyroTemperatureBuffer[MPU_ACC_TEMPERATURE_GYRO_BUFFER_SIZE];
+static bool mpuDataReadOk = false;
+
 mpuDetectionResult_t *detectMpu(const extiConfig_t *configToUse)
 {
     memset(&mpuDetectionResult, 0, sizeof(mpuDetectionResult));
@@ -187,6 +198,17 @@ static void mpu6050FindRevision(void)
     }
 }
 
+bool mpuUpdateAccGyroTemperatureBuffer(void)
+{
+
+    bool ack = mpuConfiguration.read(MPU_RA_ACCEL_XOUT_H, MPU_ACC_TEMPERATURE_GYRO_BUFFER_SIZE, mpuAccGyroTemperatureBuffer);
+    if (!ack) {
+        return false;
+    }
+
+    return true;
+}
+
 void MPU_DATA_READY_EXTI_Handler(void)
 {
     if (EXTI_GetITStatus(mpuIntExtiConfig->exti_line) == RESET) {
@@ -196,6 +218,10 @@ void MPU_DATA_READY_EXTI_Handler(void)
     EXTI_ClearITPendingBit(mpuIntExtiConfig->exti_line);
 
     mpuDataReady = true;
+
+    if (mpuDetectionResult.sensor != MPU_3050) {
+        mpuDataReadOk = mpuUpdateAccGyroTemperatureBuffer();
+    }
 
 #ifdef DEBUG_MPU_DATA_READY_INTERRUPT
     // Measure the delta in micro seconds between calls to the interrupt handler
@@ -305,34 +331,54 @@ static bool mpuWriteRegisterI2C(uint8_t reg, uint8_t data)
     return ack;
 }
 
+static void convertAccBufferToAccData(int16_t *accData, uint8_t *buffer)
+{
+    accData[0] = (int16_t)((buffer[0] << 8) | buffer[1]);
+    accData[1] = (int16_t)((buffer[2] << 8) | buffer[3]);
+    accData[2] = (int16_t)((buffer[4] << 8) | buffer[5]);
+}
+
 bool mpuAccRead(int16_t *accData)
 {
     uint8_t data[6];
+
+    if (mpuDataReady && mpuDataReadOk) {
+        convertAccBufferToAccData(accData, &mpuAccGyroTemperatureBuffer[0]);
+        return true;
+    }
 
     bool ack = mpuConfiguration.read(MPU_RA_ACCEL_XOUT_H, 6, data);
     if (!ack) {
         return false;
     }
 
-    accData[0] = (int16_t)((data[0] << 8) | data[1]);
-    accData[1] = (int16_t)((data[2] << 8) | data[3]);
-    accData[2] = (int16_t)((data[4] << 8) | data[5]);
+    convertAccBufferToAccData(accData, &data[0]);
 
     return true;
+}
+
+static void convertGyroBufferToGyroData(int16_t *gyroADC, uint8_t *buffer)
+{
+    gyroADC[0] = (int16_t)((buffer[0] << 8) | buffer[1]);
+    gyroADC[1] = (int16_t)((buffer[2] << 8) | buffer[3]);
+    gyroADC[2] = (int16_t)((buffer[4] << 8) | buffer[5]);
 }
 
 bool mpuGyroRead(int16_t *gyroADC)
 {
     uint8_t data[6];
 
+    if (mpuDataReady && mpuDataReadOk) {
+        convertGyroBufferToGyroData(gyroADC, &mpuAccGyroTemperatureBuffer[MPU_BUFFER_GYRO_OFFSET]);
+        return true;
+    }
+
     bool ack = mpuConfiguration.read(mpuConfiguration.gyroReadXRegister, 6, data);
     if (!ack) {
         return false;
     }
 
-    gyroADC[0] = (int16_t)((data[0] << 8) | data[1]);
-    gyroADC[1] = (int16_t)((data[2] << 8) | data[3]);
-    gyroADC[2] = (int16_t)((data[4] << 8) | data[5]);
+    convertGyroBufferToGyroData(gyroADC, &data[0]);
 
     return true;
 }
