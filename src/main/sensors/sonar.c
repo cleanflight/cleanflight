@@ -52,6 +52,7 @@ static int32_t calculatedAltitude;
 
 const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig)
 {
+#if !defined(UNIT_TEST)
     static const sonarHardware_t sonarRC = {
         .trigger_pin = SONAR_TRIGGER_PIN,
         .trigger_gpio = SONAR_TRIGGER_GPIO,
@@ -61,6 +62,7 @@ const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryCon
         .exti_pin_source = SONAR_EXTI_PIN_SOURCE,
         .exti_irqn = SONAR_EXTI_IRQN
     };
+#endif
 #if defined(SONAR_PWM_TRIGGER_PIN)
     static const sonarHardware_t const sonarPWM = {
         .trigger_pin = SONAR_PWM_TRIGGER_PIN,
