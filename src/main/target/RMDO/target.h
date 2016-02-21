@@ -53,9 +53,9 @@
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
 
-#define SONAR
 #define BEEPER
 #define LED0
+//#define SONAR
 
 #define USE_UART1
 #define USE_UART2
