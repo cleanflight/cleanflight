@@ -72,8 +72,6 @@ static portSharing_e frskyPortSharing;
 
 extern batteryConfig_t *batteryConfig;
 
-extern int16_t telemTemperature1; // FIXME dependency on mw.c
-
 #define CYCLETIME             125
 
 #define PROTOCOL_HEADER       0x5E
@@ -178,14 +176,12 @@ static void sendBaro(void)
 
 #ifdef GPS
 static void sendGpsAltitude(void)
-{
-    uint16_t altitude = GPS_altitude;
-    //Send real GPS altitude only if it's reliable (there's a GPS fix)
+{  
     if (!STATE(GPS_FIX)) {
-        altitude = 0;
+        return;
     }
     sendDataHead(ID_GPS_ALTIDUTE_BP);
-    serialize16(altitude);
+    serialize16((uint16_t)GPS_altitude);
     sendDataHead(ID_GPS_ALTIDUTE_AP);
     serialize16(0);
 }
@@ -300,45 +296,13 @@ static void sendLatLong(int32_t coord[2])
     serialize16(coord[LON] < 0 ? 'W' : 'E');
 }
 
-#ifdef GPS
-static void sendFakeLatLong(void)
-{
-    // Heading is only displayed on OpenTX if non-zero lat/long is also sent
-    int32_t coord[2] = {0,0};
 
-    coord[LAT] = (telemetryConfig->gpsNoFixLatitude * GPS_DEGREES_DIVIDER);
-    coord[LON] = (telemetryConfig->gpsNoFixLongitude * GPS_DEGREES_DIVIDER);
-
-    sendLatLong(coord);
-}
-#endif
-
-static void sendFakeLatLongThatAllowsHeadingDisplay(void)
-{
-    // Heading is only displayed on OpenTX if non-zero lat/long is also sent
-    int32_t coord[2] = {
-        1 * GPS_DEGREES_DIVIDER,
-        1 * GPS_DEGREES_DIVIDER
-    };
-
-    sendLatLong(coord);
-}
-
-#ifdef GPS
 static void sendGPSLatLong(void)
 {
-    static uint8_t gpsFixOccured = 0;
-
-    if (STATE(GPS_FIX) || gpsFixOccured == 1) {
-        // If we have ever had a fix, send the last known lat/long
-        gpsFixOccured = 1;
+    if (STATE(GPS_FIX)){
         sendLatLong(GPS_coord);
-    } else {
-        // otherwise send fake lat/long in order to display compass value
-        sendFakeLatLong();
-    }
+    } 
 }
-#endif
 
 /*
  * Send vertical speed for opentx. ID_VERT_SPEED
@@ -348,47 +312,6 @@ static void sendVario(void)
 {
     sendDataHead(ID_VERT_SPEED);
     serialize16(vario);
-}
-
-/*
- * Send voltage via ID_VOLT
- *
- * NOTE: This sends voltage divided by batteryCellCount. To get the real
- * battery voltage, you need to multiply the value by batteryCellCount.
- */
-static void sendVoltage(void)
-{
-    static uint16_t currentCell = 0;
-    uint32_t cellVoltage;
-    uint16_t payload;
-
-    /*
-     * Format for Voltage Data for single cells is like this:
-     *
-     *  llll llll cccc hhhh
-     *  l: Low voltage bits
-     *  h: High voltage bits
-     *  c: Cell number (starting at 0)
-     *
-     * The actual value sent for cell voltage has resolution of 0.002 volts
-     * Since vbat has resolution of 0.1 volts it has to be multiplied by 50
-     */
-    cellVoltage = ((uint32_t)vbat * 100 + batteryCellCount) / (batteryCellCount * 2);
-
-    // Cell number is at bit 9-12
-    payload = (currentCell << 4);
-
-    // Lower voltage bits are at bit 0-8
-    payload |= ((cellVoltage & 0x0ff) << 8);
-
-    // Higher voltage bits are at bits 13-15
-    payload |= ((cellVoltage & 0xf00) >> 8);
-
-    sendDataHead(ID_VOLT);
-    serialize16(payload);
-
-    currentCell++;
-    currentCell %= batteryCellCount;
 }
 
 /*
@@ -502,14 +425,18 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
 
     // Sent every 125ms
     sendAccel();
-    sendVario();
+    if (sensors(SENSOR_MAG)) {
+	sendVario();
+     }
     sendTelemetryTail();
 
-    if ((cycleNum % 4) == 0) {      // Sent every 500ms
+    if ((cycleNum % 4) == 0 && sensors(SENSOR_BARO)) {      // Sent every 500ms
         if (lastCycleTime > DELAY_FOR_BARO_INITIALISATION) { //Allow 5s to boot correctly
             sendBaro();
         }
-        sendHeading();
+        if (sensors(SENSOR_MAG)) {
+		sendHeading();
+	}
         sendTelemetryTail();
     }
 
@@ -518,8 +445,9 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
         sendThrottleOrBatterySizeAsRpm(rxConfig, deadband3d_throttle);
 
         if (feature(FEATURE_VBAT)) {
-            sendVoltage();
             sendVoltageAmp();
+	}
+	if (feature(FEATURE_CURRENT_METER)) {
             sendAmperage();
             sendFuelLevel();
         }
@@ -531,11 +459,6 @@ void handleFrSkyTelemetry(rxConfig_t *rxConfig, uint16_t deadband3d_throttle)
             sendSatalliteSignalQualityAsTemperature2();
             sendGPSLatLong();
         }
-        else {
-            sendFakeLatLongThatAllowsHeadingDisplay();
-        }
-#else
-        sendFakeLatLongThatAllowsHeadingDisplay();
 #endif
 
         sendTelemetryTail();
