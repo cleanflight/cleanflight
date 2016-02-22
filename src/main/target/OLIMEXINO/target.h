@@ -32,7 +32,7 @@
 #ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
 // "LED2" is using one of the PWM pins (CH2/PWM2), so we must not use PWM2 unless the jumper is cut.  @See pwmInit()
 #define LED1_GPIO   GPIOA
-#define LED1_PIN    Pin_1 // D3, PA1/USART2_RTS/ADC1/TIM2_CH3 - "LED2" on silkscreen, Yellow
+#define LED1_PIN    Pin_1 // D3, PA1/UART2_RTS/ADC1/TIM2_CH3 - "LED2" on silkscreen, Yellow
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOA
 #define LED1
 #endif
@@ -65,8 +65,8 @@
 
 #define SONAR
 
-#define USE_USART1
-#define USE_USART2
+#define USE_UART1
+#define USE_UART2
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
 #define SERIAL_PORT_COUNT 4
@@ -104,8 +104,11 @@
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
 #define GPS
+
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
 #define TELEMETRY
 #define SERIAL_RX

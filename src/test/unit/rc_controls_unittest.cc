@@ -21,7 +21,7 @@
 //#define DEBUG_RC_CONTROLS
 
 extern "C" {
-    #include "platform.h"
+    #include <platform.h>
 
     #include "common/maths.h"
     #include "common/axis.h"
@@ -64,7 +64,6 @@ TEST_F(RcControlsModesTest, updateActivatedModesWithAllInputsAtMidde)
 
     // and
     memset(&rxRuntimeConfig, 0, sizeof(rxRuntimeConfig_t));
-    rxRuntimeConfig.auxChannelCount = MAX_SUPPORTED_RC_CHANNEL_COUNT - NON_AUX_CHANNEL_COUNT;
 
     // and
     uint8_t index;
@@ -136,7 +135,6 @@ TEST_F(RcControlsModesTest, updateActivatedModesUsingValidAuxConfigurationAndRXV
 
     // and
     memset(&rxRuntimeConfig, 0, sizeof(rxRuntimeConfig_t));
-    rxRuntimeConfig.auxChannelCount = MAX_SUPPORTED_RC_CHANNEL_COUNT - NON_AUX_CHANNEL_COUNT;
 
     // and
     uint8_t index;

@@ -79,10 +79,12 @@
 #define LED1
 #define LED2
 
+#define USB_IO
+
 #define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define SERIAL_PORT_COUNT 4
 
 #define UART1_TX_PIN        GPIO_Pin_4
@@ -149,7 +151,6 @@
 
 #define LED_STRIP_TIMER TIM16
 
-#define USE_LED_STRIP_ON_DMA1_CHANNEL3
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
 #define WS2811_GPIO_AF                  GPIO_AF_1
@@ -159,6 +160,9 @@
 #define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM16
 #define WS2811_DMA_CHANNEL              DMA1_Channel3
 #define WS2811_IRQ                      DMA1_Channel3_IRQn
+#define WS2811_DMA_TC_FLAG              DMA1_FLAG_TC3
+#define WS2811_DMA_HANDLER_IDENTIFER    DMA1_CH3_HANDLER
+
 
 // MPU6500 interrupt
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
@@ -169,3 +173,9 @@
 #define SERIAL_RX
 #define USE_SERVOS
 #define USE_CLI
+
+#define USE_SERIAL_1WIRE
+#define S1W_TX_GPIO         GPIOB
+#define S1W_TX_PIN          GPIO_Pin_10
+#define S1W_RX_GPIO         GPIOB
+#define S1W_RX_PIN          GPIO_Pin_11

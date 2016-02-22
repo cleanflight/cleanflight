@@ -34,8 +34,8 @@
 #define DEFAULT_SERVO_MIN 1000
 #define DEFAULT_SERVO_MIDDLE 1500
 #define DEFAULT_SERVO_MAX 2000
-#define DEFAULT_SERVO_MIN_ANGLE 90
-#define DEFAULT_SERVO_MAX_ANGLE 90
+#define DEFAULT_SERVO_MIN_ANGLE 45
+#define DEFAULT_SERVO_MAX_ANGLE 45
 
 typedef enum {
     SERIAL_RX_FRAME_PENDING = 0,
@@ -111,6 +111,7 @@ typedef struct rxChannelRangeConfiguration_s {
 typedef struct rxConfig_s {
     uint8_t rcmap[MAX_MAPPABLE_RX_INPUTS];  // mapping of radio channels to internal RPYTA+ order
     uint8_t serialrx_provider;              // type of UART-based receiver (0 = spek 10, 1 = spek 11, 2 = sbus). Must be enabled by FEATURE_RX_SERIAL first.
+    uint8_t sbus_inversion;                 // default sbus (Futaba, FrSKY) is inverted. Support for uninverted OpenLRS (and modified FrSKY) receivers.
     uint8_t spektrum_sat_bind;              // number of bind pulses for Spektrum satellite receivers
     uint8_t rssi_channel;
     uint8_t rssi_scale;
@@ -131,7 +132,6 @@ typedef struct rxConfig_s {
 
 typedef struct rxRuntimeConfig_s {
     uint8_t channelCount;                  // number of rc channels as reported by current input driver
-    uint8_t auxChannelCount;
 } rxRuntimeConfig_t;
 
 extern rxRuntimeConfig_t rxRuntimeConfig;

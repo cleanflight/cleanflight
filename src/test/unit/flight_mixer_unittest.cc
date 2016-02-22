@@ -23,14 +23,16 @@
 extern "C" {
     #include "debug.h"
 
-    #include "platform.h"
+    #include <platform.h>
 
     #include "common/axis.h"
     #include "common/maths.h"
+    #include "common/filter.h"
 
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
     #include "drivers/pwm_mapping.h"
+    #include "drivers/gyro_sync.h"
 
     #include "sensors/sensors.h"
     #include "sensors/acceleration.h"
@@ -39,7 +41,6 @@ extern "C" {
     #include "flight/pid.h"
     #include "flight/imu.h"
     #include "flight/mixer.h"
-    #include "flight/lowpass.h"
 
     #include "io/escservo.h"
     #include "io/gimbal.h"
@@ -49,7 +50,7 @@ extern "C" {
     void forwardAuxChannelsToServos(uint8_t firstServoIndex);
 
     void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers, servoMixer_t *initialCustomServoMixers);
-    void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
+    void mixerUsePWMIOConfiguration(pwmIOConfiguration_t *pwmIOConfiguration);
 }
 
 #include "unittest_macros.h"
@@ -222,12 +223,16 @@ TEST_F(BasicMixerIntegrationTest, TestTricopterServo)
     mixerInit(MIXER_TRI, customMotorMixer, customServoMixer);
 
     // and
-    pwmOutputConfiguration_t pwmOutputConfiguration = {
+    pwmIOConfiguration_t pwmIOConfiguration = {
             .servoCount = 1,
-            .motorCount = 3
+            .motorCount = 3,
+            .ioCount = 4,
+            .pwmInputCount = 0,
+            .ppmInputCount = 0,
+            .ioConfigurations = {}
     };
 
-    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+    mixerUsePWMIOConfiguration(&pwmIOConfiguration);
 
     // and
     axisPID[YAW] = 0;
@@ -251,12 +256,16 @@ TEST_F(BasicMixerIntegrationTest, TestQuadMotors)
     mixerInit(MIXER_QUADX, customMotorMixer, customServoMixer);
 
     // and
-    pwmOutputConfiguration_t pwmOutputConfiguration = {
+    pwmIOConfiguration_t pwmIOConfiguration = {
             .servoCount = 0,
-            .motorCount = 4
+            .motorCount = 4,
+            .ioCount = 4,
+            .pwmInputCount = 0,
+            .ppmInputCount = 0,
+            .ioConfigurations = {}
     };
 
-    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+    mixerUsePWMIOConfiguration(&pwmIOConfiguration);
 
     // and
     memset(rcCommand, 0, sizeof(rcCommand));
@@ -333,12 +342,16 @@ TEST_F(CustomMixerIntegrationTest, TestCustomMixer)
 
     mixerInit(MIXER_CUSTOM_AIRPLANE, customMotorMixer, customServoMixer);
 
-    pwmOutputConfiguration_t pwmOutputConfiguration = {
+    pwmIOConfiguration_t pwmIOConfiguration = {
             .servoCount = 6,
-            .motorCount = 2
+            .motorCount = 2,
+            .ioCount = 8,
+            .pwmInputCount = 0,
+            .ppmInputCount = 0,
+            .ioConfigurations = {}
     };
 
-    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+    mixerUsePWMIOConfiguration(&pwmIOConfiguration);
 
     // and
     rcCommand[THROTTLE] = 1000;
@@ -390,14 +403,16 @@ uint8_t stateFlags;
 uint16_t flightModeFlags;
 uint8_t armingFlags;
 
+uint32_t targetLooptime;
+
 void delay(uint32_t) {}
+
+float applyBiQuadFilter(float sample, biquad_t *state) {UNUSED(state);return sample;}
+void BiQuadNewLpf(float filterCutFreq, biquad_t *newState, uint32_t refreshRate) {UNUSED(filterCutFreq);UNUSED(newState);UNUSED(refreshRate);}
+
 
 bool feature(uint32_t mask) {
     return (mask & testFeatureMask);
-}
-
-int32_t lowpassFixed(lowpass_t *, int32_t, int16_t) {
-    return 0;
 }
 
 void pwmWriteMotor(uint8_t index, uint16_t value) {

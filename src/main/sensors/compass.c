@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/axis.h"
 
@@ -43,7 +43,8 @@ mag_t mag;                   // mag access functions
 
 extern uint32_t currentTime; // FIXME dependency on global variable, pass it in instead.
 
-int16_t magADC[XYZ_AXIS_COUNT];
+int16_t magADCRaw[XYZ_AXIS_COUNT];
+int32_t magADC[XYZ_AXIS_COUNT];
 sensor_align_e magAlign = 0;
 #ifdef MAG
 static uint8_t magInit = 0;
@@ -57,25 +58,19 @@ void compassInit(void)
     magInit = 1;
 }
 
-#define COMPASS_UPDATE_FREQUENCY_10HZ (1000 * 100)
-
 void updateCompass(flightDynamicsTrims_t *magZero)
 {
-    static uint32_t nextUpdateAt, tCal = 0;
+    static uint32_t tCal = 0;
     static flightDynamicsTrims_t magZeroTempMin;
     static flightDynamicsTrims_t magZeroTempMax;
     uint32_t axis;
 
-    if ((int32_t)(currentTime - nextUpdateAt) < 0)
-        return;
-
-    nextUpdateAt = currentTime + COMPASS_UPDATE_FREQUENCY_10HZ;
-
-    mag.read(magADC);
+    mag.read(magADCRaw);
+    for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) magADC[axis] = magADCRaw[axis];  // int32_t copy to work with
     alignSensors(magADC, magADC, magAlign);
 
     if (STATE(CALIBRATE_MAG)) {
-        tCal = nextUpdateAt;
+        tCal = currentTime;
         for (axis = 0; axis < 3; axis++) {
             magZero->raw[axis] = 0;
             magZeroTempMin.raw[axis] = magADC[axis];
@@ -91,7 +86,7 @@ void updateCompass(flightDynamicsTrims_t *magZero)
     }
 
     if (tCal != 0) {
-        if ((nextUpdateAt - tCal) < 30000000) {    // 30s: you have 30s to turn the multi in all directions
+        if ((currentTime - tCal) < 30000000) {    // 30s: you have 30s to turn the multi in all directions
             LED0_TOGGLE;
             for (axis = 0; axis < 3; axis++) {
                 if (magADC[axis] < magZeroTempMin.raw[axis])

@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/axis.h"
 #include "common/maths.h"
@@ -133,7 +133,7 @@ bool mpu6500SpiGyroDetect(gyro_t *gyro)
 
     gyro->init = mpu6500GyroInit;
     gyro->read = mpuGyroRead;
-    gyro->intStatus = checkMPUDataReady;
+    gyro->isDataReady = mpuIsDataReady;
 
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;

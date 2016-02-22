@@ -62,9 +62,9 @@
 #define BEEPER
 #define LED0
 
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
 #define SERIAL_PORT_COUNT 5
@@ -145,7 +145,6 @@
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM1
 
-#define USE_LED_STRIP_ON_DMA1_CHANNEL2
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
 #define WS2811_GPIO_AF                  GPIO_AF_6
@@ -155,6 +154,9 @@
 #define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM1
 #define WS2811_DMA_CHANNEL              DMA1_Channel2
 #define WS2811_IRQ                      DMA1_Channel2_IRQn
+#define WS2811_DMA_TC_FLAG              DMA1_FLAG_TC2
+#define WS2811_DMA_HANDLER_IDENTIFER    DMA1_CH2_HANDLER
+
 
 #define BLACKBOX
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
@@ -168,7 +170,7 @@
 #define USE_CLI
 
 #define SPEKTRUM_BIND
-// USART3,
+// UART3,
 #define BIND_PORT  GPIOB
 #define BIND_PIN   Pin_11
 

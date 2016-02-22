@@ -79,11 +79,14 @@
 #define DISPLAY
 #define INVERTER
 
-#define USE_USART1
-#define USE_USART2
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
+#define USE_UART4
+#define USE_UART5
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
-#define SERIAL_PORT_COUNT 4
+#define SERIAL_PORT_COUNT 7
 
 #define SOFTSERIAL_1_TIMER TIM3
 #define SOFTSERIAL_1_TIMER_RX_HARDWARE 4 // PWM 5
@@ -117,11 +120,14 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
-#define GPS
+
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
 #define BLACKBOX
+#define GPS
 #define GTUNE
 #define TELEMETRY
 #define SERIAL_RX
@@ -129,6 +135,6 @@
 #define USE_CLI
 
 #define SPEKTRUM_BIND
-// USART2, PA3
+// UART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
