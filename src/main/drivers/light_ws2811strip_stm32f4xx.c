@@ -18,13 +18,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/color.h"
 #include "drivers/light_ws2811strip.h"
 #include "nvic.h"
 
-#if defined(ANYFC) || defined(REVO)
 void ws2811LedStripHardwareInit(void)
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
@@ -34,24 +33,22 @@ void ws2811LedStripHardwareInit(void)
 
     uint16_t prescalerValue;
 
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM5, ENABLE);
+    RCC_AHB1PeriphClockCmd(WS2811_GPIO_AHB1_PERIPHERAL, ENABLE);
+    RCC_APB1PeriphClockCmd(WS2811_TIMER_APB1_PERIPHERAL, ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
 
-
-    /* GPIOA Configuration: TIM5 Channel 1 as alternate function push-pull */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStructure.GPIO_Pin = WS2811_PIN;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0,  GPIO_AF_TIM5);
+    GPIO_PinAFConfig(WS2811_GPIO, WS2811_PIN_SOURCE,  WS2811_GPIO_AF);
 
 
     // Stop timer
-    TIM_Cmd(TIM5, DISABLE);
+    TIM_Cmd(WS2811_TIMER, DISABLE);
 
     /* Compute the prescaler value */
     prescalerValue = (uint16_t) (SystemCoreClock / 2 / 84000000) - 1;
@@ -67,19 +64,24 @@ void ws2811LedStripHardwareInit(void)
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
     TIM_OCInitStructure.TIM_Pulse = 0;
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-    TIM_OC1Init(TIM5, &TIM_OCInitStructure);
-    TIM_OC1PreloadConfig(TIM5, TIM_OCPreload_Enable);
 
-    TIM_Cmd(TIM5, ENABLE);
+#ifdef COLIBRI
+    TIM_OC2Init(WS2811_TIMER, &TIM_OCInitStructure);
+    TIM_OC2PreloadConfig(WS2811_TIMER, TIM_OCPreload_Enable);
+#else
+    TIM_OC1Init(WS2811_TIMER, &TIM_OCInitStructure);
+    TIM_OC1PreloadConfig(WS2811_TIMER, TIM_OCPreload_Enable);
+#endif
+    TIM_Cmd(WS2811_TIMER, ENABLE);
 
 
     /* configure DMA */
     /* DMA1 Channel Config */
-    DMA_Cmd(DMA1_Stream2, DISABLE);            // disable DMA channel 6
-    DMA_DeInit(DMA1_Stream2);
+    DMA_Cmd(WS2811_DMA_STREAM, DISABLE);            // disable DMA channel 6
+    DMA_DeInit(WS2811_DMA_STREAM);
     DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_Channel = DMA_Channel_6;
-    DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&(TIM5->CCR1);
+    DMA_InitStructure.DMA_Channel = WS2811_DMA_CHANNEL;
+    DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&(WS2811_TIMER->CCR1);
     DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)ledStripDMABuffer;
     DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
     DMA_InitStructure.DMA_BufferSize = WS2811_DMA_BUFFER_SIZE;
@@ -93,14 +95,15 @@ void ws2811LedStripHardwareInit(void)
     DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
     DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single;
     DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-    DMA_Init(DMA1_Stream2, &DMA_InitStructure);
+    DMA_Init(WS2811_DMA_STREAM, &DMA_InitStructure);
 
-    DMA_ITConfig(DMA1_Stream2, DMA_IT_TC, ENABLE);
-    DMA_ClearITPendingBit(DMA1_Stream2, DMA_IT_TCIF2);               // clear DMA1 Channel 6 transfer complete flag
+    DMA_ITConfig(WS2811_DMA_STREAM, DMA_IT_TC, ENABLE);
+    DMA_ClearFlag(WS2811_DMA_STREAM, WS2811_DMA_TC_FLAG);
+    //DMA_ClearITPendingBit(WS2811_DMA_STREAM, DMA_IT_TCIF2);               // clear DMA1 Channel 6 transfer complete flag
 
     NVIC_InitTypeDef NVIC_InitStructure;
 
-    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream2_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannel = WS2811_IRQ;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_WS2811_DMA);
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_WS2811_DMA);
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -110,6 +113,7 @@ void ws2811LedStripHardwareInit(void)
     ws2811UpdateStrip();
 }
 
+/*
 void DMA1_Stream2_IRQHandler(void)
 {
     if (DMA_GetFlagStatus(DMA1_Stream2, DMA_FLAG_TCIF2)) {
@@ -119,120 +123,14 @@ void DMA1_Stream2_IRQHandler(void)
         DMA_ClearITPendingBit(DMA1_Stream2, DMA_IT_TCIF2);
     }
 }
+*/
 
 void ws2811LedStripDMAEnable(void)
 {
-    DMA_SetCurrDataCounter(DMA1_Stream2, WS2811_DMA_BUFFER_SIZE);  // load number of bytes to be transferred
-    TIM_SetCounter(TIM5, 0);
-    DMA_Cmd(DMA1_Stream2, ENABLE);
-    TIM_DMACmd(TIM5, TIM_DMA_CC1, ENABLE);
-}
-#endif
-
-#ifdef COLIBRI
-
-void ws2811LedStripHardwareInit(void)
-{
-    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-    TIM_OCInitTypeDef  TIM_OCInitStructure;
-    GPIO_InitTypeDef GPIO_InitStructure;
-    DMA_InitTypeDef DMA_InitStructure;
-
-    uint16_t prescalerValue;
-
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
-
-
-    /* GPIOB Configuration: TIM4 Channel 2 as alternate function push-pull */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource7,  GPIO_AF_TIM4);
-
-
-    // Stop timer
-    TIM_Cmd(TIM4, DISABLE);
-
-    /* Compute the prescaler value */
-    prescalerValue = (uint16_t) (SystemCoreClock / 2 / 84000000) - 1;
-    /* Time base configuration */
-    TIM_TimeBaseStructure.TIM_Period = 104; // 800kHz
-    TIM_TimeBaseStructure.TIM_Prescaler = prescalerValue;
-    TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure);
-
-    /* PWM1 Mode configuration: Channel1 */
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_Pulse = 0;
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
-    TIM_OC2Init(TIM4, &TIM_OCInitStructure);
-    TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);
-
-    TIM_Cmd(TIM4, ENABLE);
-
-
-    /* configure DMA */
-    /* DMA1 Channel Config */
-    DMA_Cmd(DMA1_Stream3, DISABLE);            // disable DMA channel 2
-    DMA_DeInit(DMA1_Stream3);
-    DMA_StructInit(&DMA_InitStructure);
-    DMA_InitStructure.DMA_Channel = DMA_Channel_2;
-    DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&(TIM4->CCR2);
-    DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)ledStripDMABuffer;
-    DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-    DMA_InitStructure.DMA_BufferSize = WS2811_DMA_BUFFER_SIZE;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-    DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
-    DMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Enable;
-    DMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
-    DMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-    DMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-    DMA_Init(DMA1_Stream3, &DMA_InitStructure);
-
-    DMA_ITConfig(DMA1_Stream3, DMA_IT_TC, ENABLE);
-    DMA_ClearITPendingBit(DMA1_Stream3, DMA_IT_TCIF3);               // clear DMA1 Channel 2 transfer complete flag
-
-    NVIC_InitTypeDef NVIC_InitStructure;
-
-    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Stream3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = NVIC_PRIORITY_BASE(NVIC_PRIO_WS2811_DMA);
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = NVIC_PRIORITY_SUB(NVIC_PRIO_WS2811_DMA);
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-
-    setStripColor(&hsv_white);
-    ws2811UpdateStrip();
+    DMA_SetCurrDataCounter(WS2811_DMA_STREAM, WS2811_DMA_BUFFER_SIZE);  // load number of bytes to be transferred
+    TIM_SetCounter(WS2811_TIMER, 0);
+    DMA_Cmd(WS2811_DMA_STREAM, ENABLE);
+    TIM_DMACmd(WS2811_TIMER, WS2811_TIMER_DMA, ENABLE);
 }
 
 
-void DMA1_Stream3_IRQHandler(void)
-{
-    if (DMA_GetFlagStatus(DMA1_Stream3, DMA_FLAG_TCIF3)) {
-        ws2811LedDataTransferInProgress = 0;
-        DMA_Cmd(DMA1_Stream3, DISABLE);
-        TIM_DMACmd(TIM4, TIM_DMA_CC2, DISABLE);
-        DMA_ClearITPendingBit(DMA1_Stream3, DMA_IT_TCIF3);
-    }
-}
-
-void ws2811LedStripDMAEnable(void)
-{
-    DMA_SetCurrDataCounter(DMA1_Stream3, WS2811_DMA_BUFFER_SIZE);  // load number of bytes to be transferred
-    TIM_SetCounter(TIM4, 0);
-    DMA_Cmd(DMA1_Stream3, ENABLE);
-    TIM_DMACmd(TIM4, TIM_DMA_CC2, ENABLE);
-}
-
-#endif

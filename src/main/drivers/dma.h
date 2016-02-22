@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(STM32F303xC) || defined(STM32F10X)
 
 typedef void (*dmaCallbackHandlerFuncPtr)(DMA_Channel_TypeDef *channel);
 
@@ -33,3 +34,25 @@ typedef struct dmaHandlers_s {
 
 void dmaInit(void);
 void dmaSetHandler(dmaHandlerIdentifier_e identifier, dmaCallbackHandlerFuncPtr callback);
+#elif defined(STM32F40_41xxx)
+
+typedef void (*dmaCallbackHandlerFuncPtr)(DMA_Stream_TypeDef *channel);
+
+typedef enum {
+    DMA1_CH2_HANDLER = 0,
+    DMA1_CH3_HANDLER,
+    DMA1_CH6_HANDLER,
+    DMA1_CH7_HANDLER,
+} dmaHandlerIdentifier_e;
+
+typedef struct dmaHandlers_s {
+    dmaCallbackHandlerFuncPtr dma1Stream2IRQHandler;
+    dmaCallbackHandlerFuncPtr dma1Stream3IRQHandler;
+    dmaCallbackHandlerFuncPtr dma1Stream6IRQHandler;
+    dmaCallbackHandlerFuncPtr dma1Stream7IRQHandler;
+} dmaHandlers_t;
+
+void dmaInit(void);
+void dmaSetHandler(dmaHandlerIdentifier_e identifier, dmaCallbackHandlerFuncPtr callback);
+
+#endif

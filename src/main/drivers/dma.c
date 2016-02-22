@@ -24,6 +24,7 @@
 #include "build_config.h"
 
 #include "drivers/dma.h"
+#if defined(STM32F303xC) || defined(STM32F10X)
 
 /*
  * DMA handlers for DMA resources that are shared between different features depending on run-time configuration.
@@ -81,3 +82,47 @@ void dmaSetHandler(dmaHandlerIdentifier_e identifier, dmaCallbackHandlerFuncPtr 
             break;
     }
 }
+#elif defined(STM32F40_41xxx)
+
+/*
+ * DMA handlers for DMA resources that are shared between different features depending on run-time configuration.
+ */
+static dmaHandlers_t dmaHandlers;
+
+void dmaNoOpHandler(DMA_Stream_TypeDef *channel)
+{
+    UNUSED(channel);
+}
+
+void DMA1_Stream2_IRQHandler(void)
+{
+    dmaHandlers.dma1Stream2IRQHandler(DMA1_Stream2);
+}
+
+#if defined(COLIBRI)
+void DMA1_Stream3_IRQHandler(void)
+{
+    dmaHandlers.dma1Stream3IRQHandler(DMA1_Stream3);
+}
+#endif
+
+void dmaInit(void)
+{
+    memset(&dmaHandlers, 0, sizeof(dmaHandlers));
+    dmaHandlers.dma1Stream2IRQHandler = dmaNoOpHandler;
+    dmaHandlers.dma1Stream3IRQHandler = dmaNoOpHandler;
+}
+
+void dmaSetHandler(dmaHandlerIdentifier_e identifier, dmaCallbackHandlerFuncPtr callback)
+{
+    switch (identifier) {
+        case DMA1_CH2_HANDLER:
+            dmaHandlers.dma1Stream2IRQHandler = callback;
+            break;
+        case DMA1_CH3_HANDLER:
+            dmaHandlers.dma1Stream3IRQHandler = callback;
+            break;
+    }
+}
+
+#endif

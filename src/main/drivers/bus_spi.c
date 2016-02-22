@@ -535,6 +535,9 @@ bool spiIsBusBusy(SPI_TypeDef *instance)
 #ifdef STM32F10X
     return SPI_I2S_GetFlagStatus(instance, SPI_I2S_FLAG_TXE) == RESET || SPI_I2S_GetFlagStatus(instance, SPI_I2S_FLAG_BSY) == SET;
 #endif
+#ifdef STM32F40_41xxx
+    return SPI_I2S_GetFlagStatus(instance, SPI_I2S_FLAG_TXE) == RESET || SPI_I2S_GetFlagStatus(instance, SPI_I2S_FLAG_BSY) == SET;
+#endif
 
 }
 

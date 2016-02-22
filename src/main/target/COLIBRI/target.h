@@ -167,6 +167,21 @@
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM4
 
+#define WS2811_GPIO                     GPIOB
+#define WS2811_GPIO_AHB1_PERIPHERAL     RCC_AHB1Periph_GPIOB
+#define WS2811_GPIO_AF                  GPIO_AF_TIM4
+#define WS2811_PIN                      GPIO_Pin_7 // TIM4_CH2
+#define WS2811_PIN_SOURCE               GPIO_PinSource7
+#define WS2811_TIMER                    TIM4
+#define WS2811_TIMER_DMA                TIM_DMA_CC2
+#define WS2811_TIMER_APB1_PERIPHERAL    RCC_APB1Periph_TIM4
+#define WS2811_DMA_STREAM				DMA1_Stream3
+#define WS2811_DMA_CHANNEL              DMA_Channel_2
+#define WS2811_IRQ                      DMA1_Stream3_IRQn
+#define WS2811_DMA_TC_FLAG              DMA_FLAG_TCIF3
+#define WS2811_DMA_HANDLER_IDENTIFER    DMA1_CH3_HANDLER
+
+
 #define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
