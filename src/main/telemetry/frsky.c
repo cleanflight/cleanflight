@@ -207,8 +207,6 @@ static void sendTemperature1(void)
     sendDataHead(ID_TEMPRATURE1);
 #ifdef BARO
     serialize16((baroTemperature + 50)/ 100); //Airmamaf
-#else
-    serialize16(telemTemperature1 / 10);
 #endif
 }
 
@@ -296,13 +294,14 @@ static void sendLatLong(int32_t coord[2])
     serialize16(coord[LON] < 0 ? 'W' : 'E');
 }
 
-
+#ifdef GPS
 static void sendGPSLatLong(void)
 {
     if (STATE(GPS_FIX)){
         sendLatLong(GPS_coord);
     } 
 }
+#endif
 
 /*
  * Send vertical speed for opentx. ID_VERT_SPEED
