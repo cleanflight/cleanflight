@@ -82,31 +82,46 @@
 
 
 extern unsigned char oledCharFormat;
+extern uint16_t rssi;
+extern uint8_t motorCount;
+extern uint8_t servoCount;
+
 extern void cliSetVar(const clivalue_t *var, const int_float_value_t value);
 extern const clivalue_t valueTable[];
 extern uint8_t numberOfRecordsInCLITable ;
 
+extern const lookupTableEntry_t lookupTables[];
+//extern const char * const lookupTableOffOn[];
+//extern const char * const lookupTableUnit[];
+//extern const char * const lookupTableAlignment[];
+extern const char * const lookupTableGPSProvider[];
+extern const char * const lookupTableGPSSBASMode[];
+extern const char * const lookupTableCurrentSensor[];
+//extern const char * const lookupTableGimbalMode[];
+extern const char * const lookupTablePidController[];
+//extern const char * const lookupTableBlackboxDevice[];
+//extern const char * const lookupTableSerialRX[];
+//extern const char * const lookupTableGyroFilter[];
+//extern const char * const lookupTableGyroLpf[];
+//extern const char * const lookupDeltaMethod[];
 
-typedef enum {
-    PIXEL_NORMAL = 0,
-    PIXEL_INVERTED = (1 << 0),
-    PIXEL_MIXED = (1 << 1)
-} pixelColor_e;
+extern const char * const mixerNames[];
+extern const char * const featureNames[];
+
 
 #if defined(FLASH_SIZE) && (FLASH_SIZE > 128)
-# define DATA_SETTING_FULL_VERSION     1
-# else
-# define DATA_SETTING_FULL_VERSION     0
+#define DATA_SETTING_FULL_VERSION
 #endif
 
-#if (!DATA_SETTING_FULL_VERSION)
+#ifndef DATA_SETTING_FULL_VERSION
 typedef enum {
 	SELECTION_PAGE = 0,
 	ALL_DATA_PAGE
 } indexOfPages_e;
 
 static const char * const pageNames[] = {
-	"All CleanF data"
+	"All CleanF data",
+	NULL
 };
 // pageNames[] and indexOfPages must be kept synchronized
 
@@ -155,7 +170,8 @@ static const char * const pageNames[] = {
     "GPS",
     "Receiver",
     "Motors",
-    "Servos"
+    "Servos",
+    NULL
 };
 // pageNames[] and indexOfPages must be kept synchronized
 
@@ -258,10 +274,25 @@ static const char * const servosPage[] = {
     " channel         %3s",
     "      no servos"
 };
-static const char * const servoForwardChannel[] = {"CH1", "CH2", "CH3", "CH4", "A1",
-    "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", " no"};
 
+static const char * const servoForwardChannel[] = {"CH1", "CH2", "CH3", "CH4", "A1",
+    "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", " no", NULL};
+
+static bool isAlarmSoundOn = true;
+#define SCALE_P_MW     10
+#define SCALE_I_MW     1000
+#define SCALE_D_MW     1
+#define SCALE_P_LUX    10
+#define SCALE_I_LUX    100
+#define SCALE_D_LUX    1000
 #endif
+
+typedef enum {
+    PIXEL_NORMAL = 0,
+    PIXEL_INVERTED = (1 << 0),
+    PIXEL_MIXED = (1 << 1)
+} pixelColor_e;
+
 
 #define DISPLAY_LINES			8
 #define CHARS_PER_LINE			21
@@ -298,36 +329,21 @@ typedef struct PAGE_MESSAGE_s {
 static page_message_t contentOfPage;
 static page_display_t structureOfPage;
 
-
 static uint8_t 	bottomLineOnDisplay;
-static uint8_t  positionInLineOfInvertedChar = 0;
-static uint8_t 	whichOfPages 	= 0;
+static uint8_t  positionInLineOfInvertedChar;
+static uint8_t 	whichOfPages;
 static uint8_t	selectedPage	= SELECTION_PAGE;
 static uint8_t	selectedLine	= 1;
 static int8_t	editionLine		= -1;
 static int8_t	selectedItem 	= -1;
-static uint8_t  numberOfElementsInList;
-static uint8_t 	numberOfSecondaryPagesForThatPage = 0;
+static uint8_t 	numberOfSecondaryPagesForThisPage;
 
 static bool shouldInitialiseThePage 	= true;
 static bool onGoingEditingProcess 		= false;
 
 static char tempString[10];
-static float valueFloat = 0;
-static int32_t valueInteger = 0;
-
-#if (DATA_SETTING_FULL_VERSION)
-extern uint16_t rssi;
-static bool isAlarmSoundOn = true;
-extern uint8_t motorCount;
-extern uint8_t servoCount;
-#define SCALE_P_MW     10
-#define SCALE_I_MW     1000
-#define SCALE_D_MW     1
-#define SCALE_P_LUX    10
-#define SCALE_I_LUX    100
-#define SCALE_D_LUX    1000
-#endif
+static float valueFloat;
+static int32_t valueInteger;
 
 
 //======================================  Utilities  =======================================
@@ -360,7 +376,7 @@ static void initialiseEditingModeSpace(void)
     selectedItem = -1;
     shouldInitialiseThePage = false;
 	onGoingEditingProcess = false;
-	numberOfSecondaryPagesForThatPage = 0;
+	numberOfSecondaryPagesForThisPage = 0;
 }
 
 static uint8_t firstItemOnLine(uint8_t line)
@@ -394,7 +410,15 @@ static void completeStringWithSpaces(uint8_t lineIndex)
     	contentOfPage.lineOfText[lineIndex][length++] = ' ';
 }
 
-#if (DATA_SETTING_FULL_VERSION)
+uint8_t numberOfElementsInTable(const char * const table[])
+{
+    for (int i = 0; ; i++) {
+        if (table[i] == NULL)
+            return i;
+    }
+}
+
+#ifdef DATA_SETTING_FULL_VERSION
 static bool isBatteryLevelOK(void)
 {
 	if ((featureConfigured(FEATURE_VBAT)) && (getBatteryState() != BATTERY_OK))
@@ -461,18 +485,18 @@ static void defineOnOffItem(uint8_t item, uint8_t leftPosition, uint8_t rightPos
     defineActiveItem (item, leftPosition, rightPosition, 0, 1);
 }
 
-static void initialiseItemsForThisPage(uint8_t numberOfDisplayLines)
+static void initialiseItemsForThisPage(uint8_t numberOfElementsInList, uint8_t numberOfDisplayLines)
 {
-	numberOfSecondaryPagesForThatPage = ((numberOfElementsInList + (numberOfDisplayLines - 1)) / numberOfDisplayLines) - 1;
+	numberOfSecondaryPagesForThisPage = ((numberOfElementsInList + (numberOfDisplayLines - 1)) / numberOfDisplayLines) - 1;
 
 	if ((whichOfPages == 0) && (numberOfElementsInList <= numberOfDisplayLines)){
 		bottomLineOnDisplay = numberOfElementsInList;
 	}
 	else {
-		if (whichOfPages != numberOfSecondaryPagesForThatPage)
+		if (whichOfPages != numberOfSecondaryPagesForThisPage)
 			bottomLineOnDisplay = numberOfDisplayLines;
 		else
-			bottomLineOnDisplay = (numberOfElementsInList - (numberOfDisplayLines * numberOfSecondaryPagesForThatPage));
+			bottomLineOnDisplay = (numberOfElementsInList - (numberOfDisplayLines * numberOfSecondaryPagesForThisPage));
     }
 	for (int i = 0; i < bottomLineOnDisplay; i++)
 		defineOnOffItem(firstItemOnLine(i+1), 19, 19);
@@ -484,8 +508,7 @@ static void initialiseItemsOfTheSelectedPage(void)
 
 	switch (selectedPage){
 		case SELECTION_PAGE : {
-			numberOfElementsInList = ARRAYLEN(pageNames);
-			initialiseItemsForThisPage(DISPLAY_LINES-1);
+			initialiseItemsForThisPage(numberOfElementsInTable(pageNames), (DISPLAY_LINES-1));
 			for (int i = 0; i < MAX_OF_EDITABLE_ITEMS; i++)
 				structureOfPage.editField[i].alive = false;
 		break;
@@ -497,10 +520,9 @@ static void initialiseItemsOfTheSelectedPage(void)
 			defineActiveItem (9, 9, 19, 0, 1);
         break;
 		}
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 		case FEATURES_PAGE : {
-			numberOfElementsInList = ARRAYLEN(featureNames) - 1;
-			initialiseItemsForThisPage(DISPLAY_LINES-2);
+			initialiseItemsForThisPage(numberOfElementsInTable(featureNames), (DISPLAY_LINES-2));
 	    break;
 		}
         case MEASURES_PAGE : {
@@ -524,7 +546,7 @@ static void initialiseItemsOfTheSelectedPage(void)
 			structureOfPage.displayLine[2].itemsOnLine = 2;
 			defineActiveItem (9, 16, 19, 0, 3300);
 			defineOnOffItem(12, 19, 19);
-			defineActiveItem (15, 13, 19, 0, ARRAYLEN(lookupTableCurrentSensor) - 1);
+			defineActiveItem (15, 13, 19, 0, numberOfElementsInTable(lookupTableCurrentSensor) - 1);
 		break;
 		}
 		case ESCMOTORS_PAGE : {
@@ -559,9 +581,9 @@ static void initialiseItemsOfTheSelectedPage(void)
 		case GPS_PAGE : {
 #ifdef GPS
 			defineOnOffItem(3, 19, 19);
-			defineActiveItem (6, 15, 19, 0, ARRAYLEN(lookupTableGPSProvider) - 1);
+			defineActiveItem (6, 15, 19, 0, numberOfElementsInTable(lookupTableGPSProvider) - 1);
 			defineActiveItem (9, 14, 19, 0, baudRateCount() - 1);
-			defineActiveItem (12, 15, 19, 0, ARRAYLEN(lookupTableGPSSBASMode) - 1);
+			defineActiveItem (12, 15, 19, 0, numberOfElementsInTable(lookupTableGPSSBASMode) - 1);
 			defineOnOffItem(15, 12, 12);
 			defineActiveItem (16, 13, 15, 0, 180);
 			defineActiveItem (17, 17, 18, 0, 59);
@@ -648,7 +670,7 @@ static void updateDataValue(void)
 	}
 }
 
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 static void updatePIDProfileValues(void)
 {
 	structureOfPage.editField[6].data = masterConfig.profile[structureOfPage.editField[3].data].pidProfile.pidController;
@@ -691,7 +713,7 @@ static void updateValuesForTheSelectedServo(void)
     structureOfPage.editField[15].data = currentProfile->servoConf[structureOfPage.editField[3].data].angleAtMax;
 
     if (currentProfile->servoConf[structureOfPage.editField[3].data].forwardFromChannel == (int8_t)CHANNEL_FORWARDING_DISABLED)
-        structureOfPage.editField[18].data = ARRAYLEN(servoForwardChannel) - 1;
+        structureOfPage.editField[18].data = numberOfElementsInTable(servoForwardChannel) - 1;
 }
 #endif
 
@@ -702,7 +724,7 @@ static void updateValuesForThisPage(void)
 			updateDataValue();
 		break;
 		}
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 		case FEATURES_PAGE : {
 			for (int i = 0; i < bottomLineOnDisplay; i++){
 				int index = (whichOfPages * (DISPLAY_LINES-2)) + i;
@@ -817,7 +839,7 @@ static void applyNewValuesOnCleanflightDataPage(int8_t delta)
 	}
 }
 
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 static void updateFeatureSelection(bool on, uint32_t feature)
 {
 	on ? featureSet(feature) : featureClear(feature);
@@ -977,7 +999,7 @@ static void applyNewValuesOnTheCurrentPage(void)
 				currentProfile->servoConf[index].rate = (structureOfPage.editField[10].data ? 1 : -1) * structureOfPage.editField[11].data;
 				currentProfile->servoConf[index].angleAtMin = structureOfPage.editField[12].data;
 				currentProfile->servoConf[index].angleAtMax = structureOfPage.editField[15].data;
-				if (structureOfPage.editField[18].data == ARRAYLEN(servoForwardChannel) - 1)
+				if (structureOfPage.editField[18].data == numberOfElementsInTable(servoForwardChannel) - 1)
 					currentProfile->servoConf[index].forwardFromChannel = (int8_t)CHANNEL_FORWARDING_DISABLED;
 				else
 					currentProfile->servoConf[index].forwardFromChannel = structureOfPage.editField[18].data;
@@ -1000,7 +1022,7 @@ static void includeTitleLine(void)
 	completeStringWithSpaces(0);
 
 	contentOfPage.lineOfText[0][CHARS_PER_LINE - 2] = '<';
-	if (whichOfPages < numberOfSecondaryPagesForThatPage)
+	if (whichOfPages < numberOfSecondaryPagesForThisPage)
 		contentOfPage.lineOfText[0][CHARS_PER_LINE - 1] = '>';
 }
 
@@ -1021,7 +1043,7 @@ static void prepareMessageForThisList(char *listOfItems[], uint8_t numberOfLines
 		includeEmptyLine(i+1);
 }
 
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 static char charForSelectionBox(uint8_t value)
 {
 	return (value ? 'X' : '-');
@@ -1118,7 +1140,7 @@ static void prepareLinesOfTextForTheSelectedPage(void)
 			includeEmptyLine(6);
 		break;
 		}
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
         case FIRMWARE_PAGE : {
 			snprintf(contentOfPage.lineOfText[1],CHARS_PER_LINE, firmwarePage[0], targetName);
 			snprintf(contentOfPage.lineOfText[2],CHARS_PER_LINE, firmwarePage[1], FC_VERSION_STRING);
@@ -1281,7 +1303,7 @@ static int32_t newValueAfterEvent(int8_t whichWay, int32_t whichValue, int32_t m
 
 static void processIncDecEvent(int8_t whichWay)
 {
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 	if ((selectedItem == 21) && (selectedPage != MOTORS_PAGE)){
 		structureOfPage.editField[selectedItem].color = PIXEL_NORMAL;
 		exitEditingProcess();
@@ -1301,7 +1323,7 @@ static void processIncDecEvent(int8_t whichWay)
 
         if (selectedPage == ALL_DATA_PAGE)
             applyNewValuesOnCleanflightDataPage(whichWay);
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
         else
         	applyNewValuesOnTheCurrentPage();
 #endif
@@ -1317,7 +1339,7 @@ static void processIncDecEvent(int8_t whichWay)
 
 static void processNextPrevEvent(int8_t whichWay)
 {
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
     if ((selectedPage == RECEIVER_PAGE) && (selectedItem == 18)) {
     	structureOfPage.editField[19].data = newValueAfterEvent(whichWay, structureOfPage.editField[19].data, 0, (MAX_MAPPABLE_RX_INPUTS - 1));
 		structureOfPage.editField[selectedItem].data = getChannelIndex();
@@ -1374,7 +1396,7 @@ static void processInterfaceOfThePage(uint8_t commandID)
 				selectedItem = firstItemOnLine(editionLine);
 				structureOfPage.editField[selectedItem].color = PIXEL_INVERTED;
 				onGoingEditingProcess = true;
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 				if ((selectedPage == RECEIVER_PAGE) && (selectedItem == 18)) {
 	        		structureOfPage.editField[19].data = 0;
 	        		getReceiverMapping();
@@ -1407,7 +1429,7 @@ static void processInterfaceOfThePage(uint8_t commandID)
 		break;
 		}
 		case SET_COMMAND : {
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 			if ((selectedItem == 21) && (selectedPage != MOTORS_PAGE)){
 			    saveConfigAndNotify();
 			    structureOfPage.editField[selectedItem].color = PIXEL_NORMAL;
@@ -1469,7 +1491,7 @@ static void processSelectedPage(uint8_t commandID)
 
  	prepareLinesOfTextForTheSelectedPage();
 
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
     if (selectedPage != FIRMWARE_PAGE)
     	highlightSelectedLine();
 #else
@@ -1500,7 +1522,7 @@ void sendContentOfPageToDisplay(void)
 void processDataEditing(uint8_t commandID)
 {
 	if (commandID == NO_COMMAND){
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 		if(selectedPage == MEASURES_PAGE){
 			updateDataValue();
 			highlightItemOnOledDisplay(3);
@@ -1513,7 +1535,7 @@ void processDataEditing(uint8_t commandID)
 	if (!onGoingEditingProcess) {
 		switch(commandID) {
 			case NEXT_COMMAND : {
-				if (whichOfPages < numberOfSecondaryPagesForThatPage) {
+				if (whichOfPages < numberOfSecondaryPagesForThisPage) {
 					whichOfPages++;
 					shouldInitialiseThePage = true;
 				}
@@ -1528,7 +1550,7 @@ void processDataEditing(uint8_t commandID)
 						return;
 					}
 					else {
-#if (DATA_SETTING_FULL_VERSION)
+#ifdef DATA_SETTING_FULL_VERSION
 						if (selectedPage == MOTORS_PAGE)
 						    stopMotors();
 						if (selectedPage == SERVOS_PAGE)

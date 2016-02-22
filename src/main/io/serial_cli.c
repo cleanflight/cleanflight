@@ -76,8 +76,6 @@
 #include "flight/navigation.h"
 #include "flight/failsafe.h"
 
-#include "io/config_menus.h"
-
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
 
@@ -166,6 +164,27 @@ static void cliSdInfo(char *cmdline);
 // buffer
 static char cliBuffer[48];
 static uint32_t bufferIndex = 0;
+
+#ifndef USE_QUAD_MIXER_ONLY
+//  this with mixerMode_e
+const char * const mixerNames[] = {
+    "TRI", "QUADP", "QUADX", "BI",
+    "GIMBAL", "Y6", "HEX6",
+    "FLYING_WING", "Y4", "HEX6X", "OCTOX8", "OCTOFLATP", "OCTOFLATX",
+    "AIRPLANE", "HELI_120_CCPM", "HELI_90_DEG", "VTAIL4",
+    "HEX6H", "PPM_TO_SERVO", "DUALCOPTER", "SINGLECOPTER",
+    "ATAIL4", "CUSTOM", "CUSTOMAIRPLANE", "CUSTOMTRI", NULL
+};
+#endif
+
+// sync this with features_e
+const char * const featureNames[] = {
+    "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
+    "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
+    "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
+    "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
+    "BLACKBOX", "CHANNEL_FORWARDING", NULL
+};
 
 // sync this with rxFailsafeChannelMode_e
 static const char rxFailsafeModeCharacters[] = "ahs";
@@ -289,6 +308,105 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("version", "show version", NULL, cliVersion),
 };
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
+
+static const char * const lookupTableOffOn[] = {
+    "OFF", "ON", NULL
+};
+
+const char * const lookupTableUnit[] = {
+    "IMPERIAL", "METRIC", NULL
+};
+
+const char * const lookupTableAlignment[] = {
+    "DEFAULT",
+    "CW0",
+    "CW90",
+    "CW180",
+    "CW270",
+    "CW0FLIP",
+    "CW90FLIP",
+    "CW180FLIP",
+    "CW270FLIP",
+    NULL
+};
+
+#ifdef GPS
+const char * const lookupTableGPSProvider[] = {
+    "NMEA", "UBLOX", NULL
+};
+
+const char * const lookupTableGPSSBASMode[] = {
+    "AUTO", "EGNOS", "WAAS", "MSAS", "GAGAN", NULL
+};
+#endif
+
+const char * const lookupTableCurrentSensor[] = {
+    "NONE", "ADC", "VIRTUAL", NULL
+};
+
+const char * const lookupTableGimbalMode[] = {
+    "NORMAL", "MIXTILT", NULL
+};
+
+const char * const lookupTablePidController[] = {
+    "MW23", "MWREWRITE", "LUX", NULL
+};
+
+const char * const lookupTableBlackboxDevice[] = {
+    "SERIAL", "SPIFLASH", "SDCARD", NULL
+};
+
+const char * const lookupTableSerialRX[] = {
+    "SPEK1024",
+    "SPEK2048",
+    "SBUS",
+    "SUMD",
+    "SUMH",
+    "XB-B",
+    "XB-B-RJ01",
+    "IBUS",
+    NULL
+};
+
+const char * const lookupTableGyroFilter[] = {
+    "OFF", "LOW", "MEDIUM", "HIGH", NULL
+};
+
+const char * const lookupTableGyroLpf[] = {
+    "OFF",
+    "188HZ",
+    "98HZ",
+    "42HZ",
+    "20HZ",
+    "10HZ",
+    NULL
+};
+
+const char * const lookupDeltaMethod[] = {
+    "ERROR", "MEASUREMENT", NULL
+};
+
+
+/*static const*/ lookupTableEntry_t lookupTables[] = {
+    { lookupTableOffOn, ((sizeof(lookupTableOffOn) / sizeof(char *))-1) },
+    { lookupTableUnit, ((sizeof(lookupTableUnit) / sizeof(char *))- 1)  },
+    { lookupTableAlignment, ((sizeof(lookupTableAlignment) / sizeof(char *)) - 1) },
+#ifdef GPS
+    { lookupTableGPSProvider, ((sizeof(lookupTableGPSProvider) / sizeof(char *)) - 1) },
+    { lookupTableGPSSBASMode, ((sizeof(lookupTableGPSSBASMode) / sizeof(char *)) - 1) },
+#endif
+#ifdef BLACKBOX
+    { lookupTableBlackboxDevice, ((sizeof(lookupTableBlackboxDevice) / sizeof(char *)) - 1) },
+#endif
+    { lookupTableCurrentSensor, ((sizeof(lookupTableCurrentSensor) / sizeof(char *)) - 1) },
+    { lookupTableGimbalMode, ((sizeof(lookupTableGimbalMode) / sizeof(char *)) - 1) },
+    { lookupTablePidController, ((sizeof(lookupTablePidController) / sizeof(char *)) - 1) },
+    { lookupTableSerialRX, ((sizeof(lookupTableSerialRX) / sizeof(char *)) - 1) },
+    { lookupTableGyroFilter, ((sizeof(lookupTableGyroFilter) / sizeof(char *)) - 1) },
+    { lookupTableGyroLpf, ((sizeof(lookupTableGyroLpf) / sizeof(char *)) - 1) },
+    { lookupDeltaMethod, ((sizeof(lookupDeltaMethod) / sizeof(char *)) - 1) }
+};
+
 
 const clivalue_t valueTable[] = {
     { "looptime",                   VAR_UINT16 | MASTER_VALUE,  &masterConfig.looptime, .config.minmax = {0, 9000} },
