@@ -415,9 +415,7 @@ void handleSmartPortTelemetry(void)
                     tmpi += 10;
                 if (FLIGHT_MODE(HORIZON_MODE))
                     tmpi += 20;
-                if (FLIGHT_MODE(UNUSED_MODE))
-                    tmpi += 40;
-                if (FLIGHT_MODE(PASSTHRU_MODE))
+                if (IS_RC_MODE_ACTIVE(BOXAIRMODE))
                     tmpi += 40;
 
                 if (FLIGHT_MODE(MAG_MODE))
