@@ -328,14 +328,12 @@ void init(void)
 
 #ifdef SONAR
     const sonarHardware_t *sonarHardware = NULL;
-
+    sonarGPIOConfig_t sonarGPIOConfig;
     if (feature(FEATURE_SONAR)) {
         sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
-        sonarGPIOConfig_t sonarGPIOConfig = {
-            .gpio = SONAR_GPIO,
-            .triggerPin = sonarHardware->echo_pin,
-            .echoPin = sonarHardware->trigger_pin,
-        };
+        sonarGPIOConfig.gpio = SONAR_GPIO;
+        sonarGPIOConfig.triggerPin = sonarHardware->echo_pin;
+        sonarGPIOConfig.echoPin = sonarHardware->trigger_pin;
         pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
     }
 #endif
