@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
 
@@ -67,7 +67,7 @@ static uint16_t sbusStateFlags = 0;
 #define SBUS_FRAME_BEGIN_BYTE 0x0F
 
 #define SBUS_BAUDRATE 100000
-#define SBUS_PORT_OPTIONS (SERIAL_STOPBITS_2 | SERIAL_PARITY_EVEN | SERIAL_INVERTED)
+#define SBUS_PORT_OPTIONS (SERIAL_STOPBITS_2 | SERIAL_PARITY_EVEN)
 
 #define SBUS_DIGITAL_CHANNEL_MIN 173
 #define SBUS_DIGITAL_CHANNEL_MAX 1812
@@ -82,7 +82,7 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
 {
     int b;
     for (b = 0; b < SBUS_MAX_CHANNEL; b++)
-        sbusChannelData[b] = (1.6f * rxConfig->midrc) - 1408;
+        sbusChannelData[b] = (16 * rxConfig->midrc) / 10 - 1408;
     if (callback)
         *callback = sbusReadRawRC;
     rxRuntimeConfig->channelCount = SBUS_MAX_CHANNEL;
@@ -91,8 +91,8 @@ bool sbusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
     if (!portConfig) {
         return false;
     }
-
-    serialPort_t *sBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sbusDataReceive, SBUS_BAUDRATE, MODE_RX, SBUS_PORT_OPTIONS);
+    portOptions_t options = (rxConfig->sbus_inversion) ? (SBUS_PORT_OPTIONS | SERIAL_INVERTED) : SBUS_PORT_OPTIONS;
+    serialPort_t *sBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sbusDataReceive, SBUS_BAUDRATE, MODE_RX, options);
 
     return sBusPort != NULL;
 }
@@ -152,8 +152,6 @@ static void sbusDataReceive(uint16_t c)
         sbusFramePosition = 0;
     }
 
-    sbusFrame.bytes[sbusFramePosition] = (uint8_t)c;
-
     if (sbusFramePosition == 0) {
         if (c != SBUS_FRAME_BEGIN_BYTE) {
             return;
@@ -161,16 +159,17 @@ static void sbusDataReceive(uint16_t c)
         sbusFrameStartAt = now;
     }
 
-    sbusFramePosition++;
-
-    if (sbusFramePosition == SBUS_FRAME_SIZE) {
-        // endByte currently ignored
-        sbusFrameDone = true;
+    if (sbusFramePosition < SBUS_FRAME_SIZE) {
+        sbusFrame.bytes[sbusFramePosition++] = (uint8_t)c;
+        if (sbusFramePosition == SBUS_FRAME_SIZE) {
+            // endByte currently ignored
+            sbusFrameDone = true;
 #ifdef DEBUG_SBUS_PACKETS
-        debug[2] = sbusFrameTime;
+            debug[2] = sbusFrameTime;
 #endif
-    } else {
-        sbusFrameDone = false;
+        } else {
+            sbusFrameDone = false;
+        }
     }
 }
 

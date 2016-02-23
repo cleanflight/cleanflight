@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
 
@@ -49,9 +49,5 @@ void detectHardwareRevision(void)
 }
 
 void updateHardwareRevision(void)
-{
-}
-
-void spiBusInit(void)
 {
 }

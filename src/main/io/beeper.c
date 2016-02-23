@@ -15,63 +15,32 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
-#include "platform.h"
+#include "stdbool.h"
+#include "stdint.h"
+#include "stdlib.h"
 
-#include "common/maths.h"
-#include "common/axis.h"
-#include "common/color.h"
-#include "common/utils.h"
+#include <platform.h>
+#include "build_config.h"
+
+#include "io/rc_controls.h"
 
 #include "drivers/gpio.h"
-#include "drivers/sensor.h"
-#include "drivers/system.h"
-#include "drivers/serial.h"
-#include "drivers/compass.h"
-#include "drivers/timer.h"
-#include "drivers/pwm_rx.h"
-#include "drivers/accgyro.h"
-#include "drivers/light_led.h"
 #include "drivers/sound_beeper.h"
-
-#include "sensors/sensors.h"
-#include "sensors/boardalignment.h"
-#include "sensors/sonar.h"
-#include "sensors/compass.h"
-#include "sensors/acceleration.h"
-#include "sensors/barometer.h"
-#include "sensors/gyro.h"
+#include "drivers/system.h"
 #include "sensors/battery.h"
+#include "sensors/sensors.h"
 
-#include "io/display.h"
-#include "io/escservo.h"
-#include "io/rc_controls.h"
-#include "io/gimbal.h"
-#include "io/gps.h"
-#include "io/ledstrip.h"
-#include "io/serial.h"
-#include "io/serial_cli.h"
-#include "io/serial_msp.h"
 #include "io/statusindicator.h"
 
-#include "rx/rx.h"
-#include "rx/msp.h"
-
-#include "telemetry/telemetry.h"
-
-#include "flight/mixer.h"
-#include "flight/altitudehold.h"
-#include "flight/failsafe.h"
-#include "flight/imu.h"
-#include "flight/navigation.h"
-
-#include "io/beeper.h"
+#ifdef GPS
+#include "io/gps.h"
+#endif
 
 #include "config/runtime_config.h"
 #include "config/config.h"
-#include "config/config_profile.h"
-#include "config/config_master.h"
 
+
+#include "io/beeper.h"
 
 #if FLASH_SIZE > 64
 #define BEEPER_NAMES
@@ -82,6 +51,7 @@
 #define BEEPER_COMMAND_REPEAT 0xFE
 #define BEEPER_COMMAND_STOP   0xFF
 
+#ifdef BEEPER
 /* Beeper Sound Sequences: (Square wave generation)
  * Sequence must end with 0xFF or 0xFE. 0xFE repeats the sequence from
  * start when 0xFF stops the sound when it's completed.
@@ -411,3 +381,17 @@ int beeperTableEntryCount(void)
 {
     return (int)BEEPER_TABLE_ENTRY_COUNT;
 }
+
+#else
+
+// Stub out beeper functions if #BEEPER not defined
+void beeper(beeperMode_e mode) {UNUSED(mode);}
+void beeperSilence(void) {}
+void beeperConfirmationBeeps(uint8_t beepCount) {UNUSED(beepCount);}
+void beeperUpdate(void) {}
+uint32_t getArmingBeepTimeMicros(void) {return 0;}
+beeperMode_e beeperModeForTableIndex(int idx) {UNUSED(idx); return BEEPER_SILENCE;}
+const char *beeperNameForTableIndex(int idx) {UNUSED(idx); return NULL;}
+int beeperTableEntryCount(void) {return 0;}
+
+#endif

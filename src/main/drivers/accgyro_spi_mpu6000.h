@@ -12,9 +12,10 @@
 
 #define MPU6000_WHO_AM_I_CONST              (0x68)
 
+bool mpu6000SpiDetect(void);
 
 bool mpu6000SpiAccDetect(acc_t *acc);
-bool mpu6000SpiGyroDetect(gyro_t *gyro, uint16_t lpf);
+bool mpu6000SpiGyroDetect(gyro_t *gyro);
 
-bool mpu6000SpiGyroRead(int16_t *gyroADC);
-bool mpu6000SpiAccRead(int16_t *gyroADC);
+bool mpu6000WriteRegister(uint8_t reg, uint8_t data);
+bool mpu6000ReadRegister(uint8_t reg, uint8_t length, uint8_t *data);

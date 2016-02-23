@@ -5,7 +5,8 @@
 ## Introduction
 
 This feature transmits your flight data information on every control loop iteration over a serial port to an external
-logging device to be recorded, or to a dataflash chip which is present on some flight controllers.
+logging device like an OpenLog to be recorded, to an onboard dataflash chip which is present on some flight controllers,
+or to an onboard SD card socket.
 
 After your flight, you can view the resulting logs using the interactive log viewer:
 
@@ -92,15 +93,18 @@ the best chance of writing at high speed. You must format it with either FAT, or
 
 ### Choosing a serial port for the OpenLog
 First, tell the Blackbox to log using a serial port (rather than to an onboard dataflash chip). Go to the
-Configurator's CLI tab, enter `set blackbox_device=0` to switch logging to serial (this is the default setting), and
+Configurator's CLI tab, enter `set blackbox_device=SERIAL` to switch logging to serial, and
 save.
 
 You need to let Cleanflight know which of [your serial ports][] you connect your OpenLog to (i.e. the Blackbox port),
 which you can do on the Configurator's Ports tab.
 
-A hardware serial port is required (such as UART1 on the Naze32, the two-pin Tx/Rx header in the center of the board).
-SoftSerial ports cannot be used as they are too slow. Blackbox needs to be set to at least 115200 baud on this port.
-When using fast looptimes (<2500), a baud rate of 250000 should be used instead in order to reduce dropped frames.
+You should use a hardware serial port (such as UART1 on the Naze32, the two-pin Tx/Rx header in the center of the
+board). SoftSerial ports can be used for the Blackbox. However, because they are limited to 19200 baud, your logging 
+rate will need to be severely reduced to compensate. Therefore the use of SoftSerial is not recommended.
+
+When using a hardware serial port, Blackbox should be set to at least 115200 baud on that port. When using fast
+looptimes (<2500), a baud rate of 250000 should be used instead in order to reduce dropped frames.
 
 The serial port used for Blackbox cannot be shared with any other function (e.g. GPS, telemetry) except the MSP
 protocol. If MSP is used on the same port as Blackbox, then MSP will be active when the board is disarmed, and Blackbox
@@ -121,9 +125,7 @@ telemetry pins.
 
 Pin RC3 on the side of the board is UART2's Tx pin. If Blackbox is configured on UART2, MSP can still be used on UART1
 when the board is armed, which means that the Configurator will continue to work simultaneously with Blackbox logging.
-However, the RC3 pin is only available for use by UART2 if the receiver mode is _not_ `PARALLEL_PWM`. In other words, a
-PPM or Serial receiver must be used. If a PWM receiver is used, the RC3 and RC4 pins are used for channel input from the
-receiver. Sharing UART1 between Blackbox and MSP is the only way to use Blackbox on a Naze32 with a PWM receiver.
+Note that in `PARALLEL_PWM` mode this leaves the board with 6 input channels as RC3 and RC4 pins are used by UART2 as Tx and Rx. Cleanflight automatically shifts logical channel mapping for you when UART2 is enabled in `Ports` tab so you'll have to shift receiver pins that are connected to Naze32 pins 3 to 6 by two.
 
 The OpenLog tolerates a power supply of between 3.3V and 12V. If you are powering your Naze32 with a standard 5V BEC,
 then you can use a spare motor header's +5V and GND pins to power the OpenLog with.
@@ -132,7 +134,7 @@ then you can use a spare motor header's +5V and GND pins to power the OpenLog wi
 Boards other than the Naze32 may have more accessible hardware serial devices, in which case refer to their
 documentation to decide how to wire up the logger. The key criteria are:
 
-* Must be a hardware serial port. Not SoftSerial.
+* Should be a hardware serial port rather than SoftSerial.
 * Cannot be shared with any other function (GPS, telemetry) except MSP.
 * If MSP is used on the same UART, MSP will stop working when the board is armed.
 
@@ -187,11 +189,36 @@ These chips are also supported:
 * Winbond W25Q128 - 128 Mbit / 16 MByte
 
 #### Enable recording to dataflash
-On the Configurator's CLI tab, you must enter `set blackbox_device=1` to switch to logging to an onboard dataflash chip,
+On the Configurator's CLI tab, you must enter `set blackbox_device=SPIFLASH` to switch to logging to an onboard dataflash chip,
 then save.
 
 [your serial ports]: https://github.com/cleanflight/cleanflight/blob/master/docs/Serial.md
 [Cleanflight Configurator]: https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb?hl=en
+
+### Onboard SD card socket
+Some flight controllers have an SD or Micro SD card socket on their circuit boards. This allows for very high speed
+logging (1KHz or faster, which is a looptime of 1000 or lower) on suitable cards.
+
+The card can be either Standard (SDSC) or High capacity (SDHC), and must be formatted with the FAT16 or FAT32
+filesystems. This covers a range of card capacities from 1 to 32GB. Extended capacity cards (SDXC) are not supported.
+
+The first time you power up Cleanflight with a new card inserted, the flight controller will spend a few seconds
+scanning the disk for free space and collecting this space together into a file called "FREESPAC.E". During flight,
+Cleanflight will carve chunks from this file to create new log files. You must not edit this file on your computer (i.e.
+open it in a program and save changes) because this may cause it to become fragmented. Don't run any defragmentation
+tools on the card either.
+
+You can delete the FREESPAC.E file if you want to free up space on the card to fit non-Blackbox files (Cleanflight will 
+recreate the FREESPAC.E file next time it starts, using whatever free space was left over).
+
+The maximum size of the FREESPAC.E file is currently 4GB. Once 4GB worth of logs have been recorded, the FREESPAC.E
+file will be nearly empty and no more logs will be able to be recorded. At this point you should either delete the 
+FREESPAC.E file (and any logs left on the card to free up space), or just reformat the card. A new FREESPAC.E file 
+will be created by Cleanflight on its next boot.
+
+#### Enable recording to SD card
+On the Configurator's CLI tab, you must enter `set blackbox_device=SDCARD` to switch to logging to an onboard SD card,
+then save.
 
 ## Configuring the Blackbox
 
@@ -213,6 +240,9 @@ set blackbox_rate_denom = 2
 
 The data rate for my quadcopter using a looptime of 2400 and a rate of 1/1 is about 10.25kB/s. This allows about 18
 days of flight logs to fit on my OpenLog's 16GB MicroSD card, which ought to be enough for anybody :).
+
+If you are logging using SoftSerial, you will almost certainly need to reduce your logging rate to 1/32. Even at that
+logging rate, looptimes faster than about 1000 cannot be successfully logged.
 
 If you're logging to an onboard dataflash chip instead of an OpenLog, be aware that the 2MB of storage space it offers
 is pretty small. At the default 1/1 logging rate, and a 2400 looptime, this is only enough for about 3 minutes of
@@ -252,6 +282,17 @@ After downloading the log, be sure to erase the chip to make it ready for reuse 
 
 If you try to start recording a new flight when the dataflash is already full, Blackbox logging will be disabled and
 nothing will be recorded.
+
+### Usage - Onboard SD card socket
+You must insert your SD card before powering on your flight controller. You can remove the SD card while the board is
+powered up, but you must wait 5 seconds after disarming before you do so in order to give Cleanflight a chance to finish
+saving your log (otherwise the filesystem may become corrupted).
+
+Cleanflight will create a new log file in the "LOG" directory each time the craft is armed. If you are using a Blackbox
+logging switch and you keep it paused for the entire flight, the resulting empty log file will be deleted after disarming.
+
+To read your logs, you must remove the SD card and insert it into a card reader on your computer (Cleanflight doesn't
+support reading these logs directly through the Configurator).
 
 ### Usage - Logging switch
 If you're recording to an onboard flash chip, you probably want to disable Blackbox recording when not required in order

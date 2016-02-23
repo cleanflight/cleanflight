@@ -73,7 +73,7 @@
 
 #define USE_FLASH_M25P16
 
-#define EXTI15_10_CALLBACK_HANDLER_COUNT 3 // MPU data ready, MAG data ready, BMP085 EOC
+#define EXTI_CALLBACK_HANDLER_COUNT 3 // MPU data ready, MAG data ready, BMP085 EOC
 
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
@@ -84,29 +84,32 @@
 #define GYRO
 #define USE_GYRO_MPU3050
 #define USE_GYRO_MPU6050
+#define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
 
 
 #define GYRO_MPU3050_ALIGN CW0_DEG
 #define GYRO_MPU6050_ALIGN CW0_DEG
-#define GYRO_SPI_MPU6500_ALIGN CW0_DEG
+#define GYRO_MPU6500_ALIGN CW0_DEG
 
 #define ACC
 #define USE_ACC_ADXL345
 #define USE_ACC_BMA280
 #define USE_ACC_MMA8452
 #define USE_ACC_MPU6050
+#define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
 
 #define ACC_ADXL345_ALIGN CW270_DEG
 #define ACC_MPU6050_ALIGN CW0_DEG
 #define ACC_MMA8452_ALIGN CW90_DEG
 #define ACC_BMA280_ALIGN CW0_DEG
-#define ACC_SPI_MPU6500_ALIGN CW0_DEG
+#define ACC_MPU6500_ALIGN CW0_DEG
 
 #define BARO
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085
+#define USE_BARO_BMP280
 
 #define MAG
 #define USE_MAG_HMC5883
@@ -120,9 +123,9 @@
 #define INVERTER
 #define DISPLAY
 
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
 #define SERIAL_PORT_COUNT 5
@@ -134,12 +137,12 @@
 #define SOFTSERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
 #define SOFTSERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
 
-// USART3 only on NAZE32_SP - Flex Port
-#define USART3_RX_PIN Pin_11
-#define USART3_TX_PIN Pin_10
-#define USART3_GPIO GPIOB
-#define USART3_APB1_PERIPHERALS RCC_APB1Periph_USART3
-#define USART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
+// UART3 only on NAZE32_SP - Flex Port
+#define UART3_RX_PIN Pin_11
+#define UART3_TX_PIN Pin_10
+#define UART3_GPIO GPIOB
+#define UART3_APB1_PERIPHERALS RCC_APB1Periph_USART3
+#define UART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
@@ -166,22 +169,33 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
-#define GPS
 
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
+#define GPS
+#define GTUNE
 #define BLACKBOX
 #define TELEMETRY
 #define SERIAL_RX
-#define AUTOTUNE
 #define USE_SERVOS
 #define USE_CLI
 
 #define SPEKTRUM_BIND
-// USART2, PA3
+// UART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
+
+#define USE_SERIAL_1WIRE
+
+// STM32F103CBT6-LQFP48 Pin30 (PA9) TX - PC3 connects to onboard CP2102 RX
+#define S1W_TX_GPIO         GPIOA
+#define S1W_TX_PIN          GPIO_Pin_9
+// STM32F103CBT6-LQFP48 Pin31 (PA10) RX - PC1 to onboard CP2102 TX
+#define S1W_RX_GPIO         GPIOA
+#define S1W_RX_PIN          GPIO_Pin_10
 
 // alternative defaults for AlienWii32 F1 target
 #ifdef ALIENWII32

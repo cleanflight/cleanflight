@@ -26,8 +26,8 @@ typedef enum {
     ACC_MMA8452 = 4,
     ACC_BMA280 = 5,
     ACC_LSM303DLHC = 6,
-    ACC_SPI_MPU6000 = 7,
-    ACC_SPI_MPU6500 = 8,
+    ACC_MPU6000 = 7,
+    ACC_MPU6500 = 8,
     ACC_FAKE = 9,
 } accelerationSensor_e;
 
@@ -37,7 +37,7 @@ extern sensor_align_e accAlign;
 extern acc_t acc;
 extern uint16_t acc_1G;
 
-extern int16_t accADC[XYZ_AXIS_COUNT];
+extern int32_t accADC[XYZ_AXIS_COUNT];
 
 typedef struct rollAndPitchTrims_s {
     int16_t roll;

@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
 
@@ -35,6 +35,65 @@
 #include "serial.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
+#ifdef STM32F10X
+#include "serial_uart_stm32f10x.h"
+#endif
+#ifdef STM32F303xC
+#include "serial_uart_stm32f30x.h"
+#endif
+
+void usartInitAllIOSignals(void)
+{
+#ifdef STM32F10X
+    // Set UART1 TX to output and high state to prevent a rs232 break condition on reset.
+    // See issue https://github.com/cleanflight/cleanflight/issues/1433
+    gpio_config_t gpio;
+
+    gpio.mode = Mode_Out_PP;
+    gpio.speed = Speed_2MHz;
+    gpio.pin = UART1_TX_PIN;
+    digitalHi(UART1_GPIO, gpio.pin);
+    gpioInit(UART1_GPIO, &gpio);
+
+    // Set TX of UART2 and UART3 to input with pull-up to prevent floating TX outputs.
+    gpio.mode = Mode_IPU;
+
+#ifdef USE_UART2
+    gpio.pin = UART2_TX_PIN;
+    gpioInit(UART2_GPIO, &gpio);
+#endif
+
+#ifdef USE_UART3
+    gpio.pin = UART3_TX_PIN;
+    gpioInit(UART3_GPIO, &gpio);
+#endif
+
+#endif
+
+#ifdef STM32F303
+    // Set TX for UART1, UART2 and UART3 to input with pull-up to prevent floating TX outputs.
+    gpio_config_t gpio;
+
+    gpio.mode = Mode_IPU;
+    gpio.speed = Speed_2MHz;
+
+#ifdef USE_UART1
+    gpio.pin = UART1_TX_PIN;
+    gpioInit(UART1_GPIO, &gpio);
+#endif
+
+//#ifdef USE_UART2
+//    gpio.pin = UART2_TX_PIN;
+//    gpioInit(UART2_GPIO, &gpio);
+//#endif
+
+#ifdef USE_UART3
+    gpio.pin = UART3_TX_PIN;
+    gpioInit(UART3_GPIO, &gpio);
+#endif
+
+#endif
+}
 
 static void usartConfigurePinInversion(uartPort_t *uartPort) {
 #if !defined(INVERTER) && !defined(STM32F303xC)
@@ -99,14 +158,22 @@ serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback,
     uartPort_t *s = NULL;
 
     if (USARTx == USART1) {
-        s = serialUSART1(baudRate, mode, options);
-#ifdef USE_USART2
+        s = serialUART1(baudRate, mode, options);
+#ifdef USE_UART2
     } else if (USARTx == USART2) {
-        s = serialUSART2(baudRate, mode, options);
+        s = serialUART2(baudRate, mode, options);
 #endif
-#ifdef USE_USART3
+#ifdef USE_UART3
     } else if (USARTx == USART3) {
-        s = serialUSART3(baudRate, mode, options);
+        s = serialUART3(baudRate, mode, options);
+#endif
+#ifdef USE_UART4
+    } else if (USARTx == UART4) {
+        s = serialUART4(baudRate, mode, options);
+#endif
+#ifdef USE_UART5
+    } else if (USARTx == UART5) {
+        s = serialUART5(baudRate, mode, options);
 #endif
     } else {
         return (serialPort_t *)s;
@@ -211,7 +278,7 @@ void uartStartTxDMA(uartPort_t *s)
     DMA_Cmd(s->txDMAChannel, ENABLE);
 }
 
-uint8_t uartTotalBytesWaiting(serialPort_t *instance)
+uint8_t uartTotalRxBytesWaiting(serialPort_t *instance)
 {
     uartPort_t *s = (uartPort_t*)instance;
     if (s->rxDMAChannel) {
@@ -228,6 +295,41 @@ uint8_t uartTotalBytesWaiting(serialPort_t *instance)
     } else {
         return s->port.rxBufferSize + s->port.rxBufferHead - s->port.rxBufferTail;
     }
+}
+
+uint8_t uartTotalTxBytesFree(serialPort_t *instance)
+{
+    uartPort_t *s = (uartPort_t*)instance;
+
+    uint32_t bytesUsed;
+
+    if (s->port.txBufferHead >= s->port.txBufferTail) {
+        bytesUsed = s->port.txBufferHead - s->port.txBufferTail;
+    } else {
+        bytesUsed = s->port.txBufferSize + s->port.txBufferHead - s->port.txBufferTail;
+    }
+
+    if (s->txDMAChannel) {
+        /*
+         * When we queue up a DMA request, we advance the Tx buffer tail before the transfer finishes, so we must add
+         * the remaining size of that in-progress transfer here instead:
+         */
+        bytesUsed += s->txDMAChannel->CNDTR;
+
+        /*
+         * If the Tx buffer is being written to very quickly, we might have advanced the head into the buffer
+         * space occupied by the current DMA transfer. In that case the "bytesUsed" total will actually end up larger
+         * than the total Tx buffer size, because we'll end up transmitting the same buffer region twice. (So we'll be
+         * transmitting a garbage mixture of old and new bytes).
+         *
+         * Be kind to callers and pretend like our buffer can only ever be 100% full.
+         */
+        if (bytesUsed >= s->port.txBufferSize - 1) {
+            return 0;
+        }
+    }
+
+    return (s->port.txBufferSize - 1) - bytesUsed;
 }
 
 bool isUartTransmitBufferEmpty(serialPort_t *instance)
@@ -281,10 +383,14 @@ void uartWrite(serialPort_t *instance, uint8_t ch)
 const struct serialPortVTable uartVTable[] = {
     {
         uartWrite,
-        uartTotalBytesWaiting,
+        uartTotalRxBytesWaiting,
+        uartTotalTxBytesFree,
         uartRead,
         uartSetBaudRate,
         isUartTransmitBufferEmpty,
         uartSetMode,
+        .writeBuf = NULL,
+        .beginWrite = NULL,
+        .endWrite = NULL,
     }
 };

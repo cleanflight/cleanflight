@@ -56,7 +56,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 #include "debug.h"
 
@@ -68,6 +68,7 @@
 
 #include "drivers/serial.h"
 #include "io/serial.h"
+#include "io/rc_controls.h"
 
 #include "config/runtime_config.h"
 
@@ -193,15 +194,15 @@ void hottPrepareGPSResponse(HOTT_GPS_MSG_t *hottGPSMessage)
 
     addGPSCoordinates(hottGPSMessage, GPS_coord[LAT], GPS_coord[LON]);
 
-    // GPS Speed in km/h
-    uint16_t speed = (GPS_speed * 36) / 100; // 0->1m/s * 0->36 = km/h
+    // GPS Speed is returned in cm/s (from io/gps.c) and must be sent in km/h (Hott requirement)
+    uint16_t speed = (GPS_speed * 36) / 1000;
     hottGPSMessage->gps_speed_L = speed & 0x00FF;
     hottGPSMessage->gps_speed_H = speed >> 8;
 
     hottGPSMessage->home_distance_L = GPS_distanceToHome & 0x00FF;
     hottGPSMessage->home_distance_H = GPS_distanceToHome >> 8;
 
-    uint16_t hottGpsAltitude = (GPS_altitude / 10) + HOTT_GPS_ALTITUDE_OFFSET; // 1 / 0.1f == 10, GPS_altitude of 1 == 0.1m
+    uint16_t hottGpsAltitude = GPS_altitude + HOTT_GPS_ALTITUDE_OFFSET;   // GPS_altitude in m ; offset = 500 -> O m
 
     hottGPSMessage->altitude_L = hottGpsAltitude & 0x00FF;
     hottGPSMessage->altitude_H = hottGpsAltitude >> 8;
@@ -374,7 +375,7 @@ static void processBinaryModeRequest(uint8_t address) {
 
 static void flushHottRxBuffer(void)
 {
-    while (serialTotalBytesWaiting(hottPort) > 0) {
+    while (serialRxBytesWaiting(hottPort) > 0) {
         serialRead(hottPort);
     }
 }
@@ -383,7 +384,7 @@ static void hottCheckSerialData(uint32_t currentMicros)
 {
     static bool lookingForRequest = true;
 
-    uint8_t bytesWaiting = serialTotalBytesWaiting(hottPort);
+    uint8_t bytesWaiting = serialRxBytesWaiting(hottPort);
 
     if (bytesWaiting <= 1) {
         return;
@@ -423,13 +424,19 @@ static void hottCheckSerialData(uint32_t currentMicros)
     }
 }
 
+static void workAroundForHottTelemetryOnUsart(serialPort_t *instance, portMode_t mode) {
+	closeSerialPort(hottPort);
+	hottPort = openSerialPort(instance->identifier, FUNCTION_TELEMETRY_HOTT, NULL, HOTT_BAUDRATE, mode, SERIAL_NOT_INVERTED);
+}
+
 static void hottSendTelemetryData(void) {
     if (!hottIsSending) {
         hottIsSending = true;
         // FIXME temorary workaround for HoTT not working on Hardware serial ports due to hardware/softserial serial port initialisation differences
-        //serialSetMode(hottPort, MODE_TX);
-        closeSerialPort(hottPort);
-        hottPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_HOTT, NULL, HOTT_BAUDRATE, MODE_TX, SERIAL_NOT_INVERTED);
+        if ((portConfig->identifier == SERIAL_PORT_UART1) || (portConfig->identifier == SERIAL_PORT_UART2) || (portConfig->identifier == SERIAL_PORT_UART3))
+        	workAroundForHottTelemetryOnUsart(hottPort, MODE_TX);
+        else
+        	serialSetMode(hottPort, MODE_TX);
         hottMsgCrc = 0;
         return;
     }
@@ -437,11 +444,11 @@ static void hottSendTelemetryData(void) {
     if (hottMsgRemainingBytesToSendCount == 0) {
         hottMsg = NULL;
         hottIsSending = false;
-
         // FIXME temorary workaround for HoTT not working on Hardware serial ports due to hardware/softserial serial port initialisation differences
-        //serialSetMode(hottPort, MODE_RX);
-        closeSerialPort(hottPort);
-        hottPort = openSerialPort(portConfig->identifier, FUNCTION_TELEMETRY_HOTT, NULL, HOTT_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+        if ((portConfig->identifier == SERIAL_PORT_UART1) || (portConfig->identifier == SERIAL_PORT_UART2) || (portConfig->identifier == SERIAL_PORT_UART3))
+        	workAroundForHottTelemetryOnUsart(hottPort, MODE_RX);
+        else
+        	serialSetMode(hottPort, MODE_RX);
         flushHottRxBuffer();
         return;
     }

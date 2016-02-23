@@ -17,8 +17,13 @@
 
 #pragma once
 
+#ifdef USE_QUAD_MIXER_ONLY
+#define MAX_SUPPORTED_MOTORS 4
+#define MAX_SUPPORTED_SERVOS 1
+#else
 #define MAX_SUPPORTED_MOTORS 12
 #define MAX_SUPPORTED_SERVOS 8
+#endif
 #define YAW_JUMP_PREVENTION_LIMIT_LOW 80
 #define YAW_JUMP_PREVENTION_LIMIT_HIGH 500
 
@@ -54,7 +59,7 @@ typedef enum mixerMode
 } mixerMode_e;
 
 // Custom mixer data per motor
-typedef struct motorMixer_t {
+typedef struct motorMixer_s {
     float throttle;
     float roll;
     float pitch;
@@ -62,7 +67,7 @@ typedef struct motorMixer_t {
 } motorMixer_t;
 
 // Custom mixer configuration
-typedef struct mixer_t {
+typedef struct mixer_s {
     uint8_t motorCount;
     uint8_t useServo;
     const motorMixer_t *motor;
@@ -70,11 +75,12 @@ typedef struct mixer_t {
 
 typedef struct mixerConfig_s {
     uint8_t pid_at_min_throttle;            // when enabled pids are used at minimum throttle
+    uint8_t airmode_saturation_limit;       // Use max possible correction when within the limit
     int8_t yaw_motor_direction;
     uint16_t yaw_jump_prevention_limit;      // make limit configurable (original fixed value was 100)
 #ifdef USE_SERVOS
     uint8_t tri_unarmed_servo;              // send tail servo correction pulses even when unarmed
-    int16_t servo_lowpass_freq;             // lowpass servo filter frequency selection; 1/1000ths of loop freq
+    float servo_lowpass_freq;             // lowpass servo filter frequency selection; 1/1000ths of loop freq
     int8_t servo_lowpass_enable;            // enable/disable lowpass filter
 #endif
 } mixerConfig_t;
@@ -86,7 +92,7 @@ typedef struct flight3DConfig_s {
     uint16_t deadband3d_throttle;           // default throttle deadband from MIDRC
 } flight3DConfig_t;
 
-typedef struct airplaneConfig_t {
+typedef struct airplaneConfig_s {
     int8_t fixedwing_althold_dir;           // +1 or -1 for pitch/althold gain. later check if need more than just sign
 } airplaneConfig_t;
 
@@ -118,12 +124,12 @@ enum {
 typedef enum {
     SERVO_GIMBAL_PITCH = 0,
     SERVO_GIMBAL_ROLL = 1,
-    SERVO_FLAPS = 2,
+    SERVO_ELEVATOR = 2,
     SERVO_FLAPPERON_1 = 3,
     SERVO_FLAPPERON_2 = 4,
     SERVO_RUDDER = 5,
-    SERVO_ELEVATOR = 6,
-    SERVO_THROTTLE = 7, // for internal combustion (IC) planes
+    SERVO_THROTTLE = 6, // for internal combustion (IC) planes
+    SERVO_FLAPS = 7,
 
     SERVO_BICOPTER_LEFT = 4,
     SERVO_BICOPTER_RIGHT = 5,
@@ -138,8 +144,8 @@ typedef enum {
 
 } servoIndex_e; // FIXME rename to servoChannel_e
 
-#define SERVO_PLANE_INDEX_MIN SERVO_FLAPS
-#define SERVO_PLANE_INDEX_MAX SERVO_THROTTLE
+#define SERVO_PLANE_INDEX_MIN SERVO_ELEVATOR
+#define SERVO_PLANE_INDEX_MAX SERVO_FLAPS
 
 #define SERVO_DUALCOPTER_INDEX_MIN SERVO_DUALCOPTER_LEFT
 #define SERVO_DUALCOPTER_INDEX_MAX SERVO_DUALCOPTER_RIGHT
@@ -150,7 +156,7 @@ typedef enum {
 #define SERVO_FLAPPERONS_MIN SERVO_FLAPPERON_1
 #define SERVO_FLAPPERONS_MAX SERVO_FLAPPERON_2
 
-typedef struct servoMixer_t {
+typedef struct servoMixer_s {
     uint8_t targetChannel;                  // servo that receives the output of the rule
     uint8_t inputSource;                    // input channel for this rule
     int8_t rate;                            // range [-125;+125] ; can be used to adjust a rate 0-125% and a direction
@@ -165,12 +171,12 @@ typedef struct servoMixer_t {
 #define MAX_SERVO_BOXES 3
 
 // Custom mixer configuration
-typedef struct mixerRules_t {
+typedef struct mixerRules_s {
     uint8_t servoRuleCount;
     const servoMixer_t *rule;
 } mixerRules_t;
 
-typedef struct servoParam_t {
+typedef struct servoParam_s {
     int16_t min;                            // servo min
     int16_t max;                            // servo max
     int16_t middle;                         // servo middle
@@ -194,16 +200,21 @@ void filterServos(void);
 extern int16_t motor[MAX_SUPPORTED_MOTORS];
 extern int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];
 
+extern bool motorLimitReached;
+
+struct escAndServoConfig_s;
+struct rxConfig_s;
+
 void mixerUseConfigs(
 #ifdef USE_SERVOS
         servoParam_t *servoConfToUse,
         struct gimbalConfig_s *gimbalConfigToUse,
 #endif
         flight3DConfig_t *flight3DConfigToUse,
-		struct escAndServoConfig_s *escAndServoConfigToUse,
+        struct escAndServoConfig_s *escAndServoConfigToUse,
         mixerConfig_t *mixerConfigToUse,
         airplaneConfig_t *airplaneConfigToUse,
-		struct rxConfig_s *rxConfigToUse);
+        struct rxConfig_s *rxConfigToUse);
 
 void writeAllMotors(int16_t mc);
 void mixerLoadMix(int index, motorMixer_t *customMixers);
@@ -217,3 +228,4 @@ void mixTable(void);
 void writeMotors(void);
 void stopMotors(void);
 void StopPwmAllMotors(void);
+void mixerInitialiseServoFiltering(uint32_t targetLooptime);

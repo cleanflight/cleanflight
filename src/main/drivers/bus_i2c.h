@@ -17,6 +17,10 @@
 
 #pragma once
 
+#define I2C_SHORT_TIMEOUT            ((uint32_t)0x1000)
+#define I2C_LONG_TIMEOUT             ((uint32_t)(10 * I2C_SHORT_TIMEOUT))
+#define I2C_DEFAULT_TIMEOUT          I2C_SHORT_TIMEOUT
+
 typedef enum I2CDevice {
     I2CDEV_1,
     I2CDEV_2,
@@ -28,3 +32,4 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg_, uint8_t len_, uint8_t *data);
 bool i2cWrite(uint8_t addr_, uint8_t reg, uint8_t data);
 bool i2cRead(uint8_t addr_, uint8_t reg, uint8_t len, uint8_t* buf);
 uint16_t i2cGetErrorCounter(void);
+void i2cSetOverclock(uint8_t OverClock);

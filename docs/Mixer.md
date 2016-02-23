@@ -105,12 +105,12 @@ Custom servo mixing rules can be applied to each servo.  Rules are applied in th
 |----|--------------|
 | 0  | GIMBAL PITCH |
 | 1  | GIMBAL ROLL |
-| 2  | FLAPS |
+| 2  | ELEVATOR / SINGLECOPTER_4 | 
 | 3  | FLAPPERON 1 (LEFT) / SINGLECOPTER_1 |
 | 4  | FLAPPERON 2 (RIGHT) / BICOPTER_LEFT / DUALCOPTER_LEFT / SINGLECOPTER_2 |
 | 5  | RUDDER / BICOPTER_RIGHT / DUALCOPTER_RIGHT / SINGLECOPTER_3 |
-| 6  | ELEVATOR / SINGLECOPTER_4 | 
-| 7  | THROTTLE (Based ONLY on the first motor output) | 
+| 6  | THROTTLE (Based ONLY on the first motor output) | 
+| 7  | FLAPS |
 
 
 | id | Input sources |
@@ -120,7 +120,7 @@ Custom servo mixing rules can be applied to each servo.  Rules are applied in th
 | 2  | Stabilised YAW |
 | 3  | Stabilised THROTTLE |
 | 4  | RC ROLL |
-| 5  | RC ITCH |
+| 5  | RC PITCH |
 | 6  | RC YAW |
 | 7  | RC THROTTLE |
 | 8  | RC AUX 1 |
@@ -203,5 +203,37 @@ profile 1
 smix reverse 5 2 r
 profile 2
 smix reverse 5 2 r
+
+```
+
+### Example 4: Custom Airplane with Differential Thrust
+Here is an example of a custom twin engine plane with [Differential Thrust](http://rcvehicles.about.com/od/rcairplanes/ss/RCAirplaneBasic.htm#step8)
+Motors take the first 2 pins, the servos take pins as indicated in the [Servo slot] chart above.
+Settings bellow have motor yaw influence at "0.3", you can change this nuber to have more or less differential thrust over the two motors.
+Note: You can look at the Motors tab in [Cleanflight Cofigurator](https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb?hl=en) to see motor and servo outputs.
+
+| Pins | Outputs          |
+|------|------------------|
+| 1    | Left Engine      |
+| 2    | Right Engine     |
+| 3    | [EMPTY]          |
+| 4    | Roll / Aileron   |
+| 5    | Roll / Aileron   |
+| 6    | Yaw / Rudder     |
+| 7    | Pitch / Elevator |
+| 8    | [EMPTY]          |
+
+```
+mixer CUSTOMAIRPLANE
+mmix reset
+mmix 0 1.0 0.0 0.0 0.3  # Left Engine
+mmix 1 1.0 0.0 0.0 -0.3  # Right Engine
+
+smix reset
+# Rule	Servo	Source	Rate	Speed	Min	Max	Box
+smix 0 3 0 100 0 0 100 0  # Roll / Aileron
+smix 1 4 0 100 0 0 100 0  # Roll / Aileron
+smix 3 5 2 100 0 0 100 0  # Yaw / Rudder
+smix 2 2 1 100 0 0 100 0  # Pitch / Elevator
 
 ```

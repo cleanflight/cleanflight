@@ -18,23 +18,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/axis.h"
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 
+#include "io/rc_controls.h"
+#include "io/beeper.h"
+
 #include "sensors/battery.h"
 #include "sensors/sensors.h"
-#include "io/beeper.h"
 #include "sensors/boardalignment.h"
+
 #include "config/runtime_config.h"
 #include "config/config.h"
 
 #include "sensors/acceleration.h"
 
-int16_t accADC[XYZ_AXIS_COUNT];
+int32_t accADC[XYZ_AXIS_COUNT];
 
 acc_t acc;                       // acc access functions
 sensor_align_e accAlign = 0;
@@ -169,11 +172,25 @@ void applyAccelerationTrims(flightDynamicsTrims_t *accelerationTrims)
     accADC[Z] -= accelerationTrims->raw[Z];
 }
 
+static void convertRawACCADCReadingsToInternalType(int16_t *accADCRaw)
+{
+    int axis;
+
+    for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        accADC[axis] = accADCRaw[axis];
+    }
+}
+
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
-    if (!acc.read(accADC)) {
+    int16_t accADCRaw[XYZ_AXIS_COUNT];
+
+    if (!acc.read(accADCRaw)) {
         return;
     }
+
+    convertRawACCADCReadingsToInternalType(accADCRaw);
+
     alignSensors(accADC, accADC, accAlign);
 
     if (!isAccelerationCalibrationComplete()) {

@@ -15,14 +15,18 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+typedef struct filterStatePt1_s {
+	float state;
+	float RC;
+	float constdT;
+} filterStatePt1_t;
 
-void autotuneReset();
-void autotuneBeginNextPhase(pidProfile_t *pidProfileToTune);
-float autotune(angle_index_t angleIndex, const rollAndPitchInclination_t *inclination, float errorAngle);
-void autotuneEndPhase();
+/* this holds the data required to update samples thru a filter */
+typedef struct biquad_s {
+    float b0, b1, b2, a1, a2;
+    float x1, x2, y1, y2;
+} biquad_t;
 
-bool isAutotuneIdle(void);
-bool hasAutotunePhaseCompleted(void);
-bool havePidsBeenUpdatedByAutotune(void);
-
+float filterApplyPt1(float input, filterStatePt1_t *filter, uint8_t f_cut, float dt);
+float applyBiQuadFilter(float sample, biquad_t *state);
+void BiQuadNewLpf(float filterCutFreq, biquad_t *newState, uint32_t refreshRate);

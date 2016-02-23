@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #ifdef TELEMETRY
 
@@ -161,7 +161,7 @@ static void smartPortDataReceive(uint16_t c)
     static uint8_t lastChar;
     if (lastChar == FSSP_START_STOP) {
         smartPortState = SPSTATE_WORKING;
-        if (c == FSSP_SENSOR_ID1 && (serialTotalBytesWaiting(smartPortSerialPort) == 0)) {
+        if (c == FSSP_SENSOR_ID1 && (serialRxBytesWaiting(smartPortSerialPort) == 0)) {
             smartPortLastRequestTime = now;
             smartPortHasRequest = 1;
             // we only responde to these IDs
@@ -283,7 +283,7 @@ void handleSmartPortTelemetry(void)
         return;
     }
 
-    while (serialTotalBytesWaiting(smartPortSerialPort) > 0) {
+    while (serialRxBytesWaiting(smartPortSerialPort) > 0) {
         uint8_t c = serialRead(smartPortSerialPort);
         smartPortDataReceive(c);
     }
@@ -312,7 +312,6 @@ void handleSmartPortTelemetry(void)
         smartPortIdCnt++;
 
         int32_t tmpi;
-        static uint8_t t1Cnt = 0;
 
         switch(id) {
 #ifdef GPS
@@ -332,7 +331,7 @@ void handleSmartPortTelemetry(void)
                 break;
             case FSSP_DATAID_CURRENT    :
                 if (feature(FEATURE_CURRENT_METER)) {
-                    smartPortSendPackage(id, amperage); // given in 10mA steps, unknown requested unit
+                    smartPortSendPackage(id, amperage / 10); // given in 10mA steps, unknown requested unit
                     smartPortHasRequest = 0;
                 }
                 break;
@@ -381,7 +380,7 @@ void handleSmartPortTelemetry(void)
                 }
                 break;
             case FSSP_DATAID_HEADING    :
-                smartPortSendPackage(id, heading * 100); // given in deg, requested in 10000 = 100 deg
+                smartPortSendPackage(id, attitude.values.yaw * 10); // given in 10*deg, requested in 10000 = 100 deg
                 smartPortHasRequest = 0;
                 break;
             case FSSP_DATAID_ACCX       :
@@ -402,12 +401,7 @@ void handleSmartPortTelemetry(void)
             case FSSP_DATAID_T1         :
                 // we send all the flags as decimal digits for easy reading
 
-                // the t1Cnt simply allows the telemetry view to show at least some changes
-                t1Cnt++;
-                if (t1Cnt >= 4) {
-                    t1Cnt = 1;
-                }
-                tmpi = t1Cnt * 10000; // start off with at least one digit so the most significant 0 won't be cut off
+                tmpi =  10000; // start off with at least one digit so the most significant 0 won't be cut off
                 // the Taranis seems to be able to fit 5 digits on the screen
                 // the Taranis seems to consider this number a signed 16 bit integer
 
@@ -422,7 +416,7 @@ void handleSmartPortTelemetry(void)
                     tmpi += 10;
                 if (FLIGHT_MODE(HORIZON_MODE))
                     tmpi += 20;
-                if (FLIGHT_MODE(AUTOTUNE_MODE))
+                if (FLIGHT_MODE(UNUSED_MODE))
                     tmpi += 40;
                 if (FLIGHT_MODE(PASSTHRU_MODE))
                     tmpi += 40;

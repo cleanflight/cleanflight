@@ -17,14 +17,17 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/axis.h"
 #include "common/maths.h"
+#include "common/filter.h"
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
+#include "drivers/gyro_sync.h"
 #include "sensors/sensors.h"
 #include "io/beeper.h"
 #include "io/statusindicator.h"
@@ -33,17 +36,34 @@
 #include "sensors/gyro.h"
 
 uint16_t calibratingG = 0;
-int16_t gyroADC[XYZ_AXIS_COUNT];
-int16_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
+int16_t gyroADCRaw[XYZ_AXIS_COUNT];
+int32_t gyroADC[XYZ_AXIS_COUNT];
+int32_t gyroZero[FLIGHT_DYNAMICS_INDEX_COUNT] = { 0, 0, 0 };
 
 static gyroConfig_t *gyroConfig;
+static biquad_t gyroFilterState[3];
+static bool gyroFilterStateIsSet;
+static float gyroLpfCutFreq;
+int axis;
 
 gyro_t gyro;                      // gyro access functions
 sensor_align_e gyroAlign = 0;
 
-void useGyroConfig(gyroConfig_t *gyroConfigToUse)
+void useGyroConfig(gyroConfig_t *gyroConfigToUse, float gyro_lpf_hz)
 {
     gyroConfig = gyroConfigToUse;
+    gyroLpfCutFreq = gyro_lpf_hz;
+}
+
+void initGyroFilterCoefficients(void) {
+    if (gyroLpfCutFreq) {
+        // Initialisation needs to happen once sampling rate is known
+        for (axis = 0; axis < 3; axis++) {
+            BiQuadNewLpf(gyroLpfCutFreq, &gyroFilterState[axis], targetLooptime);
+        }
+
+        gyroFilterStateIsSet = true;
+    }
 }
 
 void gyroSetCalibrationCycles(uint16_t calibrationCyclesRequired)
@@ -117,10 +137,28 @@ static void applyGyroZero(void)
 void gyroUpdate(void)
 {
     // range: +/- 8192; +/- 2000 deg/sec
-    if (!gyro.read(gyroADC)) {
+    if (!gyro.read(gyroADCRaw)) {
         return;
     }
+
+    // Prepare a copy of int32_t gyroADC for mangling to prevent overflow
+    for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        gyroADC[axis] = gyroADCRaw[axis];
+    }
+
     alignSensors(gyroADC, gyroADC, gyroAlign);
+
+    if (gyroLpfCutFreq) {
+        if (!gyroFilterStateIsSet) {
+            initGyroFilterCoefficients();
+        }
+
+        if (gyroFilterStateIsSet) {
+            for (axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                gyroADC[axis] = lrintf(applyBiQuadFilter((float) gyroADC[axis], &gyroFilterState[axis]));
+            }
+        }
+    }
 
     if (!isGyroCalibrationComplete()) {
         performAcclerationCalibration(gyroConfig->gyroMovementCalibrationThreshold);

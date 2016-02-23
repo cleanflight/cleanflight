@@ -15,21 +15,33 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * telemetry_MSP.h
- *
- *  Created on: 22 Apr 2014
- *      Author: trey marc
- */
+#include <stdint.h>
 
-#ifndef TELEMETRY_MSP_H_
-#define TELEMETRY_MSP_H_
+#include "buf_writer.h"
 
-void initMSPTelemetry(telemetryConfig_t *initialTelemetryConfig);
-void handleMSPTelemetry(void);
-void checkMSPTelemetryState(void);
+bufWriter_t *bufWriterInit(uint8_t *b, int total_size, bufWrite_t writer, void *arg)
+{
+    bufWriter_t *buf = (bufWriter_t *)b;
+    buf->writer = writer;
+    buf->arg = arg;
+    buf->at = 0;
+    buf->capacity = total_size - sizeof(*buf);
 
-void freeMSPTelemetryPort(void);
-void configureMSPTelemetryPort(void);
+    return buf;
+}
 
-#endif /* TELEMETRY_MSP_H_ */
+void bufWriterAppend(bufWriter_t *b, uint8_t ch)
+{
+    b->data[b->at++] = ch;
+    if (b->at >= b->capacity) {
+        bufWriterFlush(b);
+    }
+}
+
+void bufWriterFlush(bufWriter_t *b)
+{
+    if (b->at != 0) {
+        b->writer(b->arg, b->data, b->at);
+        b->at = 0;
+    }
+}

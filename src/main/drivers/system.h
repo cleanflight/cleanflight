@@ -36,10 +36,10 @@ void enableGPIOPowerUsageAndNoiseReductions(void);
 // current crystal frequency - 8 or 12MHz
 extern uint32_t hse_value;
 
-typedef void extiCallbackHandler(void);
+typedef void extiCallbackHandlerFunc(void);
 
-void registerExti15_10_CallbackHandler(extiCallbackHandler *fn);
-void unregisterExti15_10_CallbackHandler(extiCallbackHandler *fn);
+void registerExtiCallbackHandler(IRQn_Type irqn, extiCallbackHandlerFunc *fn);
+void unregisterExtiCallbackHandler(IRQn_Type irqn, extiCallbackHandlerFunc *fn);
 
 extern uint32_t cachedRccCsrValue;
 
@@ -49,7 +49,7 @@ typedef enum {
     FAILURE_ACC_INIT,
     FAILURE_ACC_INCOMPATIBLE,
     FAILURE_INVALID_EEPROM_CONTENTS,
-    FAILURE_FLASH_WRITE_FAILED
+    FAILURE_FLASH_WRITE_FAILED,
+    FAILURE_GYRO_INIT_FAILED
 } failureMode_e;
 
-#define FAILURE_MODE_COUNT 4

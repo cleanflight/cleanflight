@@ -21,7 +21,7 @@
 
 #include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "debug.h"
 
 #include "common/axis.h"
@@ -176,7 +176,7 @@ static void hmc5883lConfigureDataReadyInterruptHandling(void)
     }
 #endif
 
-    registerExti15_10_CallbackHandler(MAG_DATA_READY_EXTI_Handler);
+    registerExtiCallbackHandler(hmc5883Config->exti_irqn, MAG_DATA_READY_EXTI_Handler);
 
     EXTI_ClearITPendingBit(hmc5883Config->exti_line);
 
@@ -310,7 +310,7 @@ bool hmc5883lRead(int16_t *magData)
     uint8_t buf[6];
 
     bool ack = i2cRead(MAG_ADDRESS, MAG_DATA_REGISTER, 6, buf);
-    if (ack) {
+    if (!ack) {
         return false;
     }
     // During calibration, magGain is 1.0, so the read returns normal non-calibrated values.

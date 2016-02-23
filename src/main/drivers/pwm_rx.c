@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 
 #include "common/utils.h"
@@ -83,7 +83,7 @@ static uint8_t ppmFrameCount = 0;
 static uint8_t lastPPMFrameCount = 0;
 static uint8_t ppmCountShift = 0;
 
-typedef struct ppmDevice {
+typedef struct ppmDevice_s {
     uint8_t  pulseIndex;
     uint32_t previousTime;
     uint32_t currentTime;

@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 #include "debug.h"
 
@@ -48,20 +48,11 @@
 #include "rx/sumh.h"
 #include "rx/msp.h"
 #include "rx/xbus.h"
+#include "rx/ibus.h"
 
 #include "rx/rx.h"
 
-
 //#define DEBUG_RX_SIGNAL_LOSS
-
-void rxPwmInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-
-bool sbusInit(rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool spektrumInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool sumdInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-
-void rxMspInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
 const char rcChannelLetters[] = "AERT12345678abcdefgh";
 
@@ -69,7 +60,10 @@ uint16_t rssi = 0;                  // range: [0;1023]
 
 static bool rxDataReceived = false;
 static bool rxSignalReceived = false;
+static bool rxSignalReceivedNotDataDriven = false;
 static bool rxFlightChannelsValid = false;
+static bool rxIsInFailsafeMode = true;
+static bool rxIsInFailsafeModeNotDataDriven = true;
 
 static uint32_t rxUpdateAt = 0;
 static uint32_t needRxSignalBefore = 0;
@@ -78,16 +72,20 @@ static uint8_t  skipRxSamples = 0;
 
 int16_t rcRaw[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
+uint32_t rcInvalidPulsPeriod[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
-#define PPM_AND_PWM_SAMPLE_COUNT 4
+#define MAX_INVALID_PULS_TIME    300
+#define PPM_AND_PWM_SAMPLE_COUNT 3
 
 #define DELAY_50_HZ (1000000 / 50)
 #define DELAY_10_HZ (1000000 / 10)
+#define DELAY_5_HZ (1000000 / 5)
 #define SKIP_RC_ON_SUSPEND_PERIOD 1500000           // 1.5 second period in usec (call frequency independent)
 #define SKIP_RC_SAMPLES_ON_RESUME  2                // flush 2 samples to drop wrong measurements (timing independent)
 
 rxRuntimeConfig_t rxRuntimeConfig;
 static rxConfig_t *rxConfig;
+static uint8_t rcSampleIndex = 0;
 
 static uint16_t nullReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t channel) {
     UNUSED(rxRuntimeConfig);
@@ -97,6 +95,7 @@ static uint16_t nullReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t channe
 }
 
 static rcReadRawDataPtr rcReadRawFunc = nullReadRawRC;
+static uint16_t rxRefreshRate;
 
 void serialRxInit(rxConfig_t *rxConfig);
 
@@ -142,18 +141,34 @@ void resetAllRxChannelRangeConfigurations(rxChannelRangeConfiguration_t *rxChann
     }
 }
 
-void rxInit(rxConfig_t *rxConfig)
+void rxInit(rxConfig_t *rxConfig, modeActivationCondition_t *modeActivationConditions)
 {
     uint8_t i;
+    uint16_t value;
 
     useRxConfig(rxConfig);
+    rcSampleIndex = 0;
 
     for (i = 0; i < MAX_SUPPORTED_RC_CHANNEL_COUNT; i++) {
         rcData[i] = rxConfig->midrc;
+        rcInvalidPulsPeriod[i] = millis() + MAX_INVALID_PULS_TIME;
     }
 
-    if (!feature(FEATURE_3D)) {
-        rcData[0] = rxConfig->rx_min_usec;
+    rcData[THROTTLE] = (feature(FEATURE_3D)) ? rxConfig->midrc : rxConfig->rx_min_usec;
+
+    // Initialize ARM switch to OFF position when arming via switch is defined
+    for (i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
+        modeActivationCondition_t *modeActivationCondition = &modeActivationConditions[i];
+        if (modeActivationCondition->modeId == BOXARM && IS_RANGE_USABLE(&modeActivationCondition->range)) {
+            // ARM switch is defined, determine an OFF value
+            if (modeActivationCondition->range.startStep > 0) {
+                value = MODE_STEP_TO_CHANNEL_VALUE((modeActivationCondition->range.startStep - 1));
+            } else {
+                value = MODE_STEP_TO_CHANNEL_VALUE((modeActivationCondition->range.endStep + 1));
+            }
+            // Initialize ARM AUX channel to OFF value
+            rcData[modeActivationCondition->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = value;
+        }
     }
 
 #ifdef SERIAL_RX
@@ -167,10 +182,9 @@ void rxInit(rxConfig_t *rxConfig)
     }
 
     if (feature(FEATURE_RX_PPM) || feature(FEATURE_RX_PARALLEL_PWM)) {
+        rxRefreshRate = 20000;
         rxPwmInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
-
-    rxRuntimeConfig.auxChannelCount = rxRuntimeConfig.channelCount - STICK_CHANNEL_COUNT;
 }
 
 #ifdef SERIAL_RX
@@ -179,21 +193,32 @@ void serialRxInit(rxConfig_t *rxConfig)
     bool enabled = false;
     switch (rxConfig->serialrx_provider) {
         case SERIALRX_SPEKTRUM1024:
+            rxRefreshRate = 22000;
+            enabled = spektrumInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
+            break;
         case SERIALRX_SPEKTRUM2048:
+            rxRefreshRate = 11000;
             enabled = spektrumInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_SBUS:
+            rxRefreshRate = 11000;
             enabled = sbusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_SUMD:
+            rxRefreshRate = 11000;
             enabled = sumdInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_SUMH:
+            rxRefreshRate = 11000;
             enabled = sumhInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_XBUS_MODE_B:
         case SERIALRX_XBUS_MODE_B_RJ01:
+            rxRefreshRate = 11000;
             enabled = xBusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
+            break;
+        case SERIALRX_IBUS:
+            enabled = ibusInit(rxConfig, &rxRuntimeConfig, &rcReadRawFunc);
             break;
     }
 
@@ -227,6 +252,8 @@ uint8_t serialRxFrameStatus(rxConfig_t *rxConfig)
         case SERIALRX_XBUS_MODE_B:
         case SERIALRX_XBUS_MODE_B_RJ01:
             return xBusFrameStatus();
+        case SERIALRX_IBUS:
+            return ibusFrameStatus();
     }
     return SERIAL_RX_FRAME_PENDING;
 }
@@ -261,9 +288,7 @@ static void resetRxSignalReceivedFlagIfNeeded(uint32_t currentTime)
 
     if (((int32_t)(currentTime - needRxSignalBefore) >= 0)) {
         rxSignalReceived = false;
-#ifdef DEBUG_RX_SIGNAL_LOSS
-        debug[0]++;
-#endif
+        rxSignalReceivedNotDataDriven = false;
     }
 }
 
@@ -296,22 +321,27 @@ void updateRx(uint32_t currentTime)
 
         if (frameStatus & SERIAL_RX_FRAME_COMPLETE) {
             rxDataReceived = true;
-            rxSignalReceived = (frameStatus & SERIAL_RX_FRAME_FAILSAFE) == 0;
+            rxIsInFailsafeMode = (frameStatus & SERIAL_RX_FRAME_FAILSAFE) != 0;
+            rxSignalReceived = !rxIsInFailsafeMode;
+            needRxSignalBefore = currentTime + DELAY_10_HZ;
         }
     }
 #endif
 
     if (feature(FEATURE_RX_MSP)) {
         rxDataReceived = rxMspFrameComplete();
-    }
 
-    if (feature(FEATURE_RX_SERIAL | FEATURE_RX_MSP) && rxDataReceived) {
-        needRxSignalBefore = currentTime + DELAY_10_HZ;
+        if (rxDataReceived) {
+            rxSignalReceived = true;
+            rxIsInFailsafeMode = false;
+            needRxSignalBefore = currentTime + DELAY_5_HZ;
+        }
     }
 
     if (feature(FEATURE_RX_PPM)) {
         if (isPPMDataBeingReceived()) {
-            rxSignalReceived = true;
+            rxSignalReceivedNotDataDriven = true;
+            rxIsInFailsafeModeNotDataDriven = false;
             needRxSignalBefore = currentTime + DELAY_10_HZ;
             resetPPMDataReceivedState();
         }
@@ -319,7 +349,8 @@ void updateRx(uint32_t currentTime)
 
     if (feature(FEATURE_RX_PARALLEL_PWM)) {
         if (isPWMDataBeingReceived()) {
-            rxSignalReceived = true;
+            rxSignalReceivedNotDataDriven = true;
+            rxIsInFailsafeModeNotDataDriven = false;
             needRxSignalBefore = currentTime + DELAY_10_HZ;
         }
     }
@@ -331,12 +362,9 @@ bool shouldProcessRx(uint32_t currentTime)
     return rxDataReceived || ((int32_t)(currentTime - rxUpdateAt) >= 0); // data driven or 50Hz
 }
 
-static uint8_t rcSampleIndex = 0;
-
 static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
 {
-    static int16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
-    static int16_t rcDataMean[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT];
+    static uint16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
     static bool rxSamplesCollected = false;
 
     uint8_t currentSampleIndex = rcSampleIndex % PPM_AND_PWM_SAMPLE_COUNT;
@@ -352,20 +380,25 @@ static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
         rxSamplesCollected = true;
     }
 
-    rcDataMean[chan] = 0;
-
+    uint16_t rcDataMean = 0;
     uint8_t sampleIndex;
     for (sampleIndex = 0; sampleIndex < PPM_AND_PWM_SAMPLE_COUNT; sampleIndex++)
-        rcDataMean[chan] += rcSamples[chan][sampleIndex];
+        rcDataMean += rcSamples[chan][sampleIndex];
 
-    return rcDataMean[chan] / PPM_AND_PWM_SAMPLE_COUNT;
+    return rcDataMean / PPM_AND_PWM_SAMPLE_COUNT;
 }
 
 static uint16_t getRxfailValue(uint8_t channel)
 {
     rxFailsafeChannelConfiguration_t *channelFailsafeConfiguration = &rxConfig->failsafe_channel_configurations[channel];
+    uint8_t mode = channelFailsafeConfiguration->mode;
 
-    switch(channelFailsafeConfiguration->mode) {
+    // force auto mode to prevent fly away when failsafe stage 2 is disabled
+    if ( channel < NON_AUX_CHANNEL_COUNT && (!feature(FEATURE_FAILSAFE)) ) {
+        mode = RX_FAILSAFE_MODE_AUTO;
+    }
+
+    switch(mode) {
         case RX_FAILSAFE_MODE_AUTO:
             switch (channel) {
                 case ROLL:
@@ -424,37 +457,49 @@ static void readRxChannelsApplyRanges(void)
     }
 }
 
-static void processNonDataDrivenRx(void)
-{
-    rcSampleIndex++;
-}
-
 static void detectAndApplySignalLossBehaviour(void)
 {
     int channel;
+    uint16_t sample;
+    bool useValueFromRx = true;
+    bool rxIsDataDriven = isRxDataDriven();
+    uint32_t currentMilliTime = millis();
+
+    if (!rxIsDataDriven) {
+        rxSignalReceived = rxSignalReceivedNotDataDriven;
+        rxIsInFailsafeMode = rxIsInFailsafeModeNotDataDriven;
+    }
+
+    if (!rxSignalReceived || rxIsInFailsafeMode) {
+        useValueFromRx = false;
+    }
+
+#ifdef DEBUG_RX_SIGNAL_LOSS
+    debug[0] = rxSignalReceived;
+    debug[1] = rxIsInFailsafeMode;
+    debug[2] = rcReadRawFunc(&rxRuntimeConfig, 0);
+#endif
 
     rxResetFlightChannelStatus();
 
     for (channel = 0; channel < rxRuntimeConfig.channelCount; channel++) {
-        uint16_t sample = rcRaw[channel];
 
-        if (!rxSignalReceived) {
-            if (isRxDataDriven() && rxDataReceived) {
-                // use the values from the RX
-            } else {
-                sample = PPM_RCVR_TIMEOUT;
-            }
-        }
+        sample = (useValueFromRx) ? rcRaw[channel] : PPM_RCVR_TIMEOUT;
 
         bool validPulse = isPulseValid(sample);
 
         if (!validPulse) {
-            sample = getRxfailValue(channel);
+            if (currentMilliTime < rcInvalidPulsPeriod[channel]) {
+                sample = rcData[channel];           // hold channel for MAX_INVALID_PULS_TIME
+            } else {
+                sample = getRxfailValue(channel);   // after that apply rxfail value
+                rxUpdateFlightChannelStatus(channel, validPulse);
+            }
+        } else {
+            rcInvalidPulsPeriod[channel] = currentMilliTime + MAX_INVALID_PULS_TIME;
         }
 
-        rxUpdateFlightChannelStatus(channel, validPulse);
-
-        if (isRxDataDriven()) {
+        if (rxIsDataDriven) {
             rcData[channel] = sample;
         } else {
             rcData[channel] = calculateNonDataDrivenChannel(channel, sample);
@@ -463,10 +508,10 @@ static void detectAndApplySignalLossBehaviour(void)
 
     rxFlightChannelsValid = rxHaveValidFlightChannels();
 
-    if ((rxFlightChannelsValid) && !IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+    if ((rxFlightChannelsValid) && !(IS_RC_MODE_ACTIVE(BOXFAILSAFE) && feature(FEATURE_FAILSAFE))) {
         failsafeOnValidDataReceived();
     } else {
-        rxSignalReceived = false;
+        rxIsInFailsafeMode = rxIsInFailsafeModeNotDataDriven = true;
         failsafeOnValidDataFailed();
 
         for (channel = 0; channel < rxRuntimeConfig.channelCount; channel++) {
@@ -474,19 +519,14 @@ static void detectAndApplySignalLossBehaviour(void)
         }
     }
 
+#ifdef DEBUG_RX_SIGNAL_LOSS
+    debug[3] = rcData[THROTTLE];
+#endif
 }
 
 void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
 {
     rxUpdateAt = currentTime + DELAY_50_HZ;
-
-    if (!feature(FEATURE_RX_MSP)) {
-        // rcData will have already been updated by MSP_SET_RAW_RC
-
-        if (!isRxDataDriven()) {
-            processNonDataDrivenRx();
-        }
-    }
 
     // only proceed when no more samples to skip and suspend period is over
     if (skipRxSamples) {
@@ -498,6 +538,8 @@ void calculateRxChannelsAndUpdateFailsafe(uint32_t currentTime)
 
     readRxChannelsApplyRanges();
     detectAndApplySignalLossBehaviour();
+
+    rcSampleIndex++;
 }
 
 void parseRcChannels(const char *input, rxConfig_t *rxConfig)
@@ -573,4 +615,7 @@ void updateRSSI(uint32_t currentTime)
     }
 }
 
+void initRxRefreshRate(uint16_t *rxRefreshRatePtr) {
+    *rxRefreshRatePtr = rxRefreshRate;
+}
 

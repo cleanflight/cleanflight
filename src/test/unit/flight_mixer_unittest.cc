@@ -23,14 +23,16 @@
 extern "C" {
     #include "debug.h"
 
-    #include "platform.h"
+    #include <platform.h>
 
     #include "common/axis.h"
     #include "common/maths.h"
+    #include "common/filter.h"
 
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
     #include "drivers/pwm_mapping.h"
+    #include "drivers/gyro_sync.h"
 
     #include "sensors/sensors.h"
     #include "sensors/acceleration.h"
@@ -39,7 +41,6 @@ extern "C" {
     #include "flight/pid.h"
     #include "flight/imu.h"
     #include "flight/mixer.h"
-    #include "flight/lowpass.h"
 
     #include "io/escservo.h"
     #include "io/gimbal.h"
@@ -49,7 +50,7 @@ extern "C" {
     void forwardAuxChannelsToServos(uint8_t firstServoIndex);
 
     void mixerInit(mixerMode_e mixerMode, motorMixer_t *initialCustomMixers, servoMixer_t *initialCustomServoMixers);
-    void mixerUsePWMOutputConfiguration(pwmOutputConfiguration_t *pwmOutputConfiguration);
+    void mixerUsePWMIOConfiguration(pwmIOConfiguration_t *pwmIOConfiguration);
 }
 
 #include "unittest_macros.h"
@@ -222,12 +223,16 @@ TEST_F(BasicMixerIntegrationTest, TestTricopterServo)
     mixerInit(MIXER_TRI, customMotorMixer, customServoMixer);
 
     // and
-    pwmOutputConfiguration_t pwmOutputConfiguration = {
+    pwmIOConfiguration_t pwmIOConfiguration = {
             .servoCount = 1,
-            .motorCount = 3
+            .motorCount = 3,
+            .ioCount = 4,
+            .pwmInputCount = 0,
+            .ppmInputCount = 0,
+            .ioConfigurations = {}
     };
 
-    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+    mixerUsePWMIOConfiguration(&pwmIOConfiguration);
 
     // and
     axisPID[YAW] = 0;
@@ -251,12 +256,16 @@ TEST_F(BasicMixerIntegrationTest, TestQuadMotors)
     mixerInit(MIXER_QUADX, customMotorMixer, customServoMixer);
 
     // and
-    pwmOutputConfiguration_t pwmOutputConfiguration = {
+    pwmIOConfiguration_t pwmIOConfiguration = {
             .servoCount = 0,
-            .motorCount = 4
+            .motorCount = 4,
+            .ioCount = 4,
+            .pwmInputCount = 0,
+            .ppmInputCount = 0,
+            .ioConfigurations = {}
     };
 
-    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+    mixerUsePWMIOConfiguration(&pwmIOConfiguration);
 
     // and
     memset(rcCommand, 0, sizeof(rcCommand));
@@ -316,12 +325,12 @@ TEST_F(CustomMixerIntegrationTest, TestCustomMixer)
     };
 
     servoMixer_t testServoMixer[EXPECTED_SERVOS_TO_MIX_COUNT] = {
-        { SERVO_FLAPS, INPUT_RC_AUX1,  100, 0, 0, 100, 0 },
+        { SERVO_ELEVATOR, INPUT_STABILIZED_PITCH, 100, 0, 0, 100, 0 },
         { SERVO_FLAPPERON_1, INPUT_STABILIZED_ROLL,  100, 0, 0, 100, 0 },
         { SERVO_FLAPPERON_2, INPUT_STABILIZED_ROLL,  100, 0, 0, 100, 0 },
         { SERVO_RUDDER, INPUT_STABILIZED_YAW,   100, 0, 0, 100, 0 },
-        { SERVO_ELEVATOR, INPUT_STABILIZED_PITCH, 100, 0, 0, 100, 0 },
         { SERVO_THROTTLE, INPUT_STABILIZED_THROTTLE, 100, 0, 0, 100, 0 },
+        { SERVO_FLAPS, INPUT_RC_AUX1,  100, 0, 0, 100, 0 },
     };
     memcpy(customServoMixer, testServoMixer, sizeof(testServoMixer));
 
@@ -333,12 +342,16 @@ TEST_F(CustomMixerIntegrationTest, TestCustomMixer)
 
     mixerInit(MIXER_CUSTOM_AIRPLANE, customMotorMixer, customServoMixer);
 
-    pwmOutputConfiguration_t pwmOutputConfiguration = {
+    pwmIOConfiguration_t pwmIOConfiguration = {
             .servoCount = 6,
-            .motorCount = 2
+            .motorCount = 2,
+            .ioCount = 8,
+            .pwmInputCount = 0,
+            .ppmInputCount = 0,
+            .ioConfigurations = {}
     };
 
-    mixerUsePWMOutputConfiguration(&pwmOutputConfiguration);
+    mixerUsePWMIOConfiguration(&pwmIOConfiguration);
 
     // and
     rcCommand[THROTTLE] = 1000;
@@ -364,19 +377,19 @@ TEST_F(CustomMixerIntegrationTest, TestCustomMixer)
 
     EXPECT_EQ(EXPECTED_SERVOS_TO_MIX_COUNT, updatedServoCount);
 
-    EXPECT_EQ(2000, servos[0].value); // Flaps
+    EXPECT_EQ(TEST_SERVO_MID, servos[0].value);
     EXPECT_EQ(TEST_SERVO_MID, servos[1].value);
     EXPECT_EQ(TEST_SERVO_MID, servos[2].value);
     EXPECT_EQ(TEST_SERVO_MID, servos[3].value);
-    EXPECT_EQ(TEST_SERVO_MID, servos[4].value);
-    EXPECT_EQ(1000, servos[5].value); // Throttle
+    EXPECT_EQ(1000, servos[4].value); // Throttle
+    EXPECT_EQ(2000, servos[5].value); // Flaps
 
 }
 
 // STUBS
 
 extern "C" {
-rollAndPitchInclination_t inclination;
+attitudeEulerAngles_t attitude;
 rxRuntimeConfig_t rxRuntimeConfig;
 
 int16_t axisPID[XYZ_AXIS_COUNT];
@@ -390,14 +403,16 @@ uint8_t stateFlags;
 uint16_t flightModeFlags;
 uint8_t armingFlags;
 
+uint32_t targetLooptime;
+
 void delay(uint32_t) {}
+
+float applyBiQuadFilter(float sample, biquad_t *state) {UNUSED(state);return sample;}
+void BiQuadNewLpf(float filterCutFreq, biquad_t *newState, uint32_t refreshRate) {UNUSED(filterCutFreq);UNUSED(newState);UNUSED(refreshRate);}
+
 
 bool feature(uint32_t mask) {
     return (mask & testFeatureMask);
-}
-
-int32_t lowpassFixed(lowpass_t *, int32_t, int16_t) {
-    return 0;
 }
 
 void pwmWriteMotor(uint8_t index, uint16_t value) {

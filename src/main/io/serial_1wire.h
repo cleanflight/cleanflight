@@ -13,29 +13,24 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Ported from https://github.com/4712/BLHeliSuite/blob/master/Interfaces/Arduino1Wire/Source/Arduino1Wire_C/Arduino1Wire.c
+ *  by Nathan Tsoi <nathan@vertile.com>
  */
 
 #pragma once
 
+#ifdef USE_SERIAL_1WIRE
 
-#define LOWPASS_NUM_COEF 3
-#define LPF_ROUND(x) (x < 0 ? (x - 0.5f) : (x + 0.5f))
+extern uint8_t escCount;
 
-typedef struct lowpass_t {
-    bool init;
-    int16_t freq;                           // Normalized freq in 1/1000ths
-    float bf[LOWPASS_NUM_COEF];
-    float af[LOWPASS_NUM_COEF];
-    int64_t b[LOWPASS_NUM_COEF];
-    int64_t a[LOWPASS_NUM_COEF];
-    int16_t coeff_shift;
-    int16_t input_shift;
-    int32_t input_bias;
-    float xf[LOWPASS_NUM_COEF];
-    float yf[LOWPASS_NUM_COEF];
-    int32_t x[LOWPASS_NUM_COEF];
-    int32_t y[LOWPASS_NUM_COEF];
-} lowpass_t;
+typedef struct {
+    GPIO_TypeDef* gpio;
+    uint16_t pinpos;
+    uint16_t pin;
+} escHardware_t;
 
-void generateLowpassCoeffs2(int16_t freq, lowpass_t *filter);
-int32_t lowpassFixed(lowpass_t *filter, int32_t in, int16_t freq);
+
+void usb1WireInitialize();
+void usb1WirePassthrough(uint8_t escIndex);
+#endif

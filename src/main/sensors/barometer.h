@@ -21,11 +21,12 @@ typedef enum {
     BARO_DEFAULT = 0,
     BARO_NONE = 1,
     BARO_BMP085 = 2,
-    BARO_MS5611 = 3
+    BARO_MS5611 = 3,
+    BARO_BMP280 = 4
 } baroSensor_e;
 
 #define BARO_SAMPLE_COUNT_MAX   48
-#define BARO_MAX BARO_MS5611
+#define BARO_MAX BARO_BMP280
 
 typedef struct barometerConfig_s {
     uint8_t baro_sample_count;              // size of baro filter array
@@ -41,7 +42,7 @@ extern int32_t baroTemperature;             // Use temperature for telemetry
 void useBarometerConfig(barometerConfig_t *barometerConfigToUse);
 bool isBaroCalibrationComplete(void);
 void baroSetCalibrationCycles(uint16_t calibrationCyclesRequired);
-void baroUpdate(uint32_t currentTime);
+uint32_t baroUpdate(void);
 bool isBaroReady(void);
 int32_t baroCalculateAltitude(void);
 void performBaroCalibrationCycle(void);
