@@ -423,6 +423,8 @@ __ALIGN_BEGIN uint8_t usbd_cdc_OtherCfgDesc[USB_CDC_CONFIG_DESC_SIZ]  __ALIGN_EN
 static uint8_t  usbd_cdc_Init (void  *pdev, 
                                uint8_t cfgidx)
 {
+  (void)pdev;
+  (void)cfgidx;
   uint8_t *pbuf;
 
   /* Open EP IN */
@@ -469,6 +471,8 @@ static uint8_t  usbd_cdc_Init (void  *pdev,
 static uint8_t  usbd_cdc_DeInit (void  *pdev, 
                                  uint8_t cfgidx)
 {
+  (void)pdev;
+  (void)cfgidx;
   /* Open EP IN */
   DCD_EP_Close(pdev,
               CDC_IN_EP);
@@ -596,6 +600,7 @@ static uint8_t  usbd_cdc_Setup (void  *pdev,
   */
 static uint8_t  usbd_cdc_EP0_RxReady (void  *pdev)
 { 
+  (void)pdev;
   if (cdcCmd != NO_CMD)
   {
     /* Process the data */
@@ -617,6 +622,8 @@ static uint8_t  usbd_cdc_EP0_RxReady (void  *pdev)
   */
 static uint8_t  usbd_cdc_DataIn (void *pdev, uint8_t epnum)
 {
+  (void)pdev;
+  (void)epnum;
   uint16_t USB_Tx_ptr;
   uint16_t USB_Tx_length;
 
@@ -776,6 +783,7 @@ static void Handle_USBAsynchXfer (void *pdev)
   */
 static uint8_t  *USBD_cdc_GetCfgDesc (uint8_t speed, uint16_t *length)
 {
+  (void)speed;
   *length = sizeof (usbd_cdc_CfgDesc);
   return usbd_cdc_CfgDesc;
 }

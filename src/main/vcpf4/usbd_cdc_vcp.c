@@ -99,6 +99,7 @@ void ust_cpy(LINE_CODING* plc2, const LINE_CODING* plc1)
  */
 static uint16_t VCP_Ctrl(uint32_t Cmd, uint8_t* Buf, uint32_t Len)
 {
+    (void)Len;
    LINE_CODING* plc = (LINE_CODING*)Buf;
 
    assert_param(Len>=sizeof(LINE_CODING));
@@ -152,13 +153,12 @@ static uint16_t VCP_Ctrl(uint32_t Cmd, uint8_t* Buf, uint32_t Len)
  *******************************************************************************/
 uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
 {
-	if(USB_Tx_State!=1)
-	{
-		VCP_DataTx(ptrBuffer,sendLength);
-		delayMicroseconds(20);
-		return sendLength;
-	}
-	return 0;
+    uint32_t i = 0;
+    if(USB_Tx_State!=1)
+    {
+        i = VCP_DataTx(ptrBuffer,sendLength);
+    }
+    return i;
 }
 
 /**
@@ -171,16 +171,26 @@ uint32_t CDC_Send_DATA(uint8_t *ptrBuffer, uint8_t sendLength)
  */
 static uint16_t VCP_DataTx(uint8_t* Buf, uint32_t Len)
 {
-
-    uint16_t ptr = APP_Rx_ptr_in;
-    uint32_t i;
+    uint16_t ptr_head = APP_Rx_ptr_in;
+    uint16_t ptr_tail = APP_Rx_ptr_out;
+    uint16_t i = 0;
 
     for (i = 0; i < Len; i++)
-    	APP_Rx_Buffer[ptr++ & (APP_RX_DATA_SIZE-1)] = Buf[i];
+    {
+        // head reached tail
+        if(ptr_head == (ptr_tail-1))
+        {
+            break;
+        }
 
-    APP_Rx_ptr_in = ptr % APP_RX_DATA_SIZE;
-
-    return USBD_OK;
+        APP_Rx_Buffer[ptr_head++] = Buf[i];
+        if(ptr_head == (APP_RX_DATA_SIZE))
+        {
+            ptr_head = 0;
+        }
+    }
+    APP_Rx_ptr_in = ptr_head;
+    return i;
 }
 
 
@@ -197,12 +207,13 @@ uint8_t usbAvailable(void) {
  *******************************************************************************/
 uint32_t CDC_Receive_DATA(uint8_t* recvBuf, uint32_t len)
 {
+    (void)len;
     uint8_t ch = 0;
 
     if (usbAvailable()) {
-    	recvBuf[0] = usbData.rxBuf[usbData.rxBufTail];
-    	usbData.rxBufTail = (usbData.rxBufTail + 1) % USB_RX_BUFSIZE;
-    	ch=1;
+        recvBuf[0] = usbData.rxBuf[usbData.rxBufTail];
+        usbData.rxBufTail = (usbData.rxBufTail + 1) % USB_RX_BUFSIZE;
+        ch=1;
         receiveLength--;
     }
     return ch;

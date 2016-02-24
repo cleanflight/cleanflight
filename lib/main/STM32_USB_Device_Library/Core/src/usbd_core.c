@@ -159,6 +159,7 @@ void USBD_Init(USB_OTG_CORE_HANDLE *pdev,
 USBD_Status USBD_DeInit(USB_OTG_CORE_HANDLE *pdev)
 {
   /* Software Init */
+  (void)pdev;
   
   return USBD_OK;
 }

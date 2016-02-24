@@ -28,10 +28,13 @@
 
 
 void USB_OTG_BSP_ConfigVBUS(USB_OTG_CORE_HANDLE *pdev) {
+	(void)pdev;
 
 }
 
 void USB_OTG_BSP_DriveVBUS(USB_OTG_CORE_HANDLE *pdev,uint8_t state) {
+	(void)pdev;
+	(void)state;
 
 }
 
@@ -45,6 +48,7 @@ void USB_OTG_BSP_DriveVBUS(USB_OTG_CORE_HANDLE *pdev,uint8_t state) {
 
 void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
 {
+  (void)pdev;
   GPIO_InitTypeDef GPIO_InitStructure;
 
 #ifndef USE_ULPI_PHY
@@ -290,6 +294,7 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
 */
 void USB_OTG_BSP_EnableInterrupt(USB_OTG_CORE_HANDLE *pdev)
 {
+  (void)pdev;
   NVIC_InitTypeDef NVIC_InitStructure;
 
   NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);
