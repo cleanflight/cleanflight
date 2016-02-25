@@ -126,7 +126,7 @@ void imuInit(void);
 void displayInit(rxConfig_t *intialRxConfig);
 void ledStripInit(ledConfig_t *ledConfigsToUse, hsvColor_t *colorsToUse);
 void spektrumBind(rxConfig_t *rxConfig);
-const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig);
+const sonarHardware_t *sonarGetHardwareConfiguration(currentSensor_e  currentMeterType);
 void sonarInit(const sonarHardware_t *sonarHardware);
 void transponderInit(uint8_t* transponderCode);
 
@@ -328,14 +328,12 @@ void init(void)
 
 #ifdef SONAR
     const sonarHardware_t *sonarHardware = NULL;
-
+    sonarGPIOConfig_t sonarGPIOConfig;
     if (feature(FEATURE_SONAR)) {
-        sonarHardware = sonarGetHardwareConfiguration(&masterConfig.batteryConfig);
-        sonarGPIOConfig_t sonarGPIOConfig = {
-            .gpio = SONAR_GPIO,
-            .triggerPin = sonarHardware->echo_pin,
-            .echoPin = sonarHardware->trigger_pin,
-        };
+        sonarHardware = sonarGetHardwareConfiguration(masterConfig.batteryConfig.currentMeterType);
+        sonarGPIOConfig.gpio = SONAR_GPIO;
+        sonarGPIOConfig.triggerPin = sonarHardware->echo_pin;
+        sonarGPIOConfig.echoPin = sonarHardware->trigger_pin;
         pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
     }
 #endif
