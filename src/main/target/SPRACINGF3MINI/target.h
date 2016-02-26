@@ -31,7 +31,7 @@
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOC
 #define BEEPER_INVERTED
 
-#define USABLE_TIMER_CHANNEL_COUNT 14 // 8 Outputs; PPM; LED Strip; SonarPads; 2 additional PWM pins also on UART3 RX/TX pins.
+#define USABLE_TIMER_CHANNEL_COUNT 12 // 8 Outputs; PPM; LED Strip; 2 additional PWM pins also on UART3 RX/TX pins.
 
 #define EXTI15_10_CALLBACK_HANDLER_COUNT 2 // MPU_INT, SDCardDetect
 
@@ -61,7 +61,7 @@
 #define USE_MAG_AK8975
 #define USE_MAG_HMC5883 // External
 
-#define MAG_AK8975_ALIGN CW270_DEG_FLIP
+#define MAG_AK8975_ALIGN CW90_DEG_FLIP
 
 #define SONAR
 #define BEEPER
@@ -75,9 +75,9 @@
 #define USB_DETECT_GPIO_CLK              RCC_AHBPeriph_GPIOC
 
 #define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define USE_SOFTSERIAL1
 #define SERIAL_PORT_COUNT 5
 
@@ -205,6 +205,8 @@
 #define TRANSPONDER_DMA_HANDLER_IDENTIFER    DMA1_CH2_HANDLER
 
 #define REDUCE_TRANSPONDER_CURRENT_DRAW_WHEN_USB_CABLE_PRESENT
+
+#define DEFAULT_RX_FEATURE FEATURE_RX_PPM
 
 #define GPS
 #define BLACKBOX

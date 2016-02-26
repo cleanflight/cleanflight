@@ -17,25 +17,17 @@
 
 #pragma once
 
+#define MAG
+#define BARO
+#define GPS
+#define DISPLAY
+#define TELEMETRY
+#define LED_STRIP
+#define USE_SERVOS
+#define TRANSPONDER
 
-#define LOWPASS_NUM_COEF 3
-#define LPF_ROUND(x) (x < 0 ? (x - 0.5f) : (x + 0.5f))
+#define SERIAL_PORT_COUNT 4
 
-typedef struct lowpass_s {
-    bool init;
-    int16_t freq;                           // Normalized freq in 1/1000ths
-    float bf[LOWPASS_NUM_COEF];
-    float af[LOWPASS_NUM_COEF];
-    int64_t b[LOWPASS_NUM_COEF];
-    int64_t a[LOWPASS_NUM_COEF];
-    int16_t coeff_shift;
-    int16_t input_shift;
-    int32_t input_bias;
-    float xf[LOWPASS_NUM_COEF];
-    float yf[LOWPASS_NUM_COEF];
-    int32_t x[LOWPASS_NUM_COEF];
-    int32_t y[LOWPASS_NUM_COEF];
-} lowpass_t;
+#define MAX_SIMULTANEOUS_ADJUSTMENT_COUNT 6
 
-void generateLowpassCoeffs2(int16_t freq, lowpass_t *filter);
-int32_t lowpassFixed(lowpass_t *filter, int32_t in, int16_t freq);
+#define TARGET_BOARD_IDENTIFIER "TEST"

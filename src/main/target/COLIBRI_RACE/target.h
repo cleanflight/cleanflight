@@ -85,9 +85,9 @@
 #define USB_IO
 
 #define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define SERIAL_PORT_COUNT 4
 
 #define UART1_TX_PIN        GPIO_Pin_4
@@ -180,3 +180,9 @@
 #define USE_SERVOS
 #define USE_CLI
 #define UG2864_BUS I2C_DEVICE_INT
+
+#define USE_SERIAL_1WIRE
+#define S1W_TX_GPIO         GPIOB
+#define S1W_TX_PIN          GPIO_Pin_10
+#define S1W_RX_GPIO         GPIOB
+#define S1W_RX_PIN          GPIO_Pin_11

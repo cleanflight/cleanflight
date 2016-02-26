@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 
 #include "common/maths.h"
@@ -29,6 +29,8 @@
 #include "drivers/gpio.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
+
+#include "io/rc_controls.h"
 
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
@@ -50,7 +52,7 @@ static int32_t calculatedAltitude;
 
 const sonarHardware_t *sonarGetHardwareConfiguration(batteryConfig_t *batteryConfig)
 {
-#if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R)
+#if defined(NAZE) || defined(EUSTM32F103RC) || defined(PORT103R) || defined(PORT103V)
     static const sonarHardware_t const sonarPWM56 = {
         .trigger_pin = Pin_8,   // PWM5 (PB8) - 5v tolerant
         .trigger_gpio = GPIOB,

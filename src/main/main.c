@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "scheduler.h"
 
 #include "common/axis.h"
@@ -258,8 +258,7 @@ void init(void)
 #ifdef STM32F40_41xxx
     SetSysClock();
 #endif
-    i2cSetOverclock(masterConfig.i2c_overclock);
-
+    i2cSetOverclock(masterConfig.i2c_highspeed);
 #ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();
 #endif
@@ -353,17 +352,20 @@ void init(void)
         pwm_params.airplane = true;
     else
         pwm_params.airplane = false;
-#if defined(USE_USART2) && defined(STM32F10X)
-    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#if defined(USE_UART2) && defined(STM32F10X)
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_UART2);
 #endif
-#ifdef STM32F303xC
-    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_USART3);
+#if defined(USE_UART3)
+    pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_UART3);
 #endif
-#if defined(USE_USART2) && defined(STM32F40_41xxx)
-    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_USART2);
+#if defined(USE_UART4)
+    pwm_params.useUART4 = doesConfigurationUsePort(SERIAL_PORT_UART4);
 #endif
-#if defined(USE_USART6) && defined(STM32F40_41xxx)
-    pwm_params.useUART6 = doesConfigurationUsePort(SERIAL_PORT_USART6);
+#if defined(USE_UART5)
+    pwm_params.useUART5 = doesConfigurationUsePort(SERIAL_PORT_UART5);
+#endif
+#if defined(USE_UART6)
+    pwm_params.useUART6 = doesConfigurationUsePort(SERIAL_PORT_UART6);
 #endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
@@ -427,7 +429,7 @@ void init(void)
     if (hardwareRevision == NAZE32_SP) {
         serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
     } else  {
-        serialRemovePort(SERIAL_PORT_USART3);
+        serialRemovePort(SERIAL_PORT_UART3);
     }
 #endif
 
@@ -449,18 +451,18 @@ void init(void)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);
     } else {
-        if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+        if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
             i2cInit(I2C_DEVICE);
         }
     }
 #elif defined(CC3D)
-    if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+    if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
         i2cInit(I2C_DEVICE);
     }
 #else
     i2cInit(I2C_DEVICE_INT);
 #if defined(ANYFC) || defined(COLIBRI) || defined(REVO)
-    if (!doesConfigurationUsePort(SERIAL_PORT_USART3)) {
+    if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
 #ifdef I2C_DEVICE_EXT
         i2cInit(I2C_DEVICE_EXT);
 #endif
@@ -508,6 +510,10 @@ void init(void)
 
     flashLedsAndBeep();
 
+#ifdef USE_SERVOS
+    mixerInitialiseServoFiltering(targetLooptime);
+#endif
+
 #ifdef MAG
     if (sensors(SENSOR_MAG))
         compassInit();
@@ -549,7 +555,7 @@ void init(void)
 
     if (feature(FEATURE_LED_STRIP)) {
 #ifdef COLIBRI
-        if (!doesConfigurationUsePort(SERIAL_PORT_USART1)) {
+        if (!doesConfigurationUsePort(SERIAL_PORT_UART1)) {
             ledStripEnable();
         }
 #else
@@ -693,7 +699,9 @@ int main(void) {
     setTaskEnabled(TASK_GYROPID, true);
     setTaskEnabled(TASK_ACCEL, sensors(SENSOR_ACC));
     setTaskEnabled(TASK_SERIAL, true);
+#ifdef BEEPER
     setTaskEnabled(TASK_BEEPER, true);
+#endif
     setTaskEnabled(TASK_BATTERY, feature(FEATURE_VBAT) || feature(FEATURE_CURRENT_METER));
     setTaskEnabled(TASK_RX, true);
 #ifdef GPS

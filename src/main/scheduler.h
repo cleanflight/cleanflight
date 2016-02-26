@@ -44,7 +44,9 @@ typedef enum {
     TASK_GYROPID,
     TASK_ACCEL,
     TASK_SERIAL,
+#ifdef BEEPER
     TASK_BEEPER,
+#endif
     TASK_BATTERY,
     TASK_RX,
 #ifdef GPS
@@ -118,4 +120,6 @@ uint32_t getTaskDeltaTime(cfTaskId_e taskId);
 
 void scheduler(void);
 
-#define isSystemOverloaded() (averageSystemLoadPercent >= 100)
+#define LOAD_PERCENTAGE_ONE 100
+
+#define isSystemOverloaded() (averageSystemLoadPercent >= LOAD_PERCENTAGE_ONE)

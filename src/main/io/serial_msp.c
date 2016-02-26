@@ -23,7 +23,7 @@
 
 #include "build_config.h"
 #include "debug.h"
-#include "platform.h"
+#include <platform.h>
 #include "scheduler.h"
 
 #include "common/axis.h"
@@ -143,6 +143,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXSERVO3, "SERVO3;", 25 },
     { BOXBLACKBOX, "BLACKBOX;", 26 },
     { BOXFAILSAFE, "FAILSAFE;", 27 },
+    { BOXAIRMODE, "AIR MODE;", 28 },
     { CHECKBOX_ITEM_COUNT, NULL, 0xFF }
 };
 
@@ -247,12 +248,14 @@ static void tailSerialReply(void)
     serialEndWrite(mspSerialPort);
 }
 
+#ifdef USE_SERVOS
 static void s_struct(uint8_t *cb, uint8_t siz)
 {
     headSerialReply(siz);
     while (siz--)
         serialize8(*cb++);
 }
+#endif
 
 static void serializeNames(const char *s)
 {
@@ -468,9 +471,13 @@ void mspInit(serialConfig_t *serialConfig)
         activeBoxIds[activeBoxIdCount++] = BOXHORIZON;
     }
 
+#ifdef BARO
     if (sensors(SENSOR_BARO)) {
         activeBoxIds[activeBoxIdCount++] = BOXBARO;
     }
+#endif
+
+    activeBoxIds[activeBoxIdCount++] = BOXAIRMODE;
 
     if (sensors(SENSOR_ACC) || sensors(SENSOR_MAG)) {
         activeBoxIds[activeBoxIdCount++] = BOXMAG;
@@ -488,7 +495,7 @@ void mspInit(serialConfig_t *serialConfig)
     }
 #endif
 
-    if (masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_AIRPLANE)
+    if (masterConfig.mixerMode == MIXER_FLYING_WING || masterConfig.mixerMode == MIXER_AIRPLANE || masterConfig.mixerMode == MIXER_CUSTOM_AIRPLANE)
         activeBoxIds[activeBoxIdCount++] = BOXPASSTHRU;
 
     activeBoxIds[activeBoxIdCount++] = BOXBEEPERON;
@@ -504,8 +511,10 @@ void mspInit(serialConfig_t *serialConfig)
 
     activeBoxIds[activeBoxIdCount++] = BOXOSD;
 
+#ifdef TELEMETRY
     if (feature(FEATURE_TELEMETRY) && masterConfig.telemetryConfig.telemetry_switch)
         activeBoxIds[activeBoxIdCount++] = BOXTELEMETRY;
+#endif
 
     if (feature(FEATURE_SONAR)){
         activeBoxIds[activeBoxIdCount++] = BOXSONAR;
@@ -570,7 +579,8 @@ static uint32_t packFlightModeFlags(void)
         IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
         IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM |
         IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBLACKBOX)) << BOXBLACKBOX |
-        IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << BOXFAILSAFE;
+        IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << BOXFAILSAFE |
+        IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAIRMODE)) << BOXAIRMODE;
 
     for (i = 0; i < activeBoxIdCount; i++) {
         int flag = (tmp & (1 << activeBoxIds[i]));
@@ -731,7 +741,10 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 #endif
     case MSP_MOTOR:
-        s_struct((uint8_t *)motor, 16);
+        headSerialReply(16);
+        for (i = 0; i < 8; i++) {
+            serialize16(i < MAX_SUPPORTED_MOTORS ? motor[i] : 0);
+        }
         break;
     case MSP_RC:
         headSerialReply(2 * rxRuntimeConfig.channelCount);
@@ -1365,8 +1378,12 @@ static bool processInCommand(void)
         masterConfig.batteryConfig.vbatwarningcellvoltage = read8();  // vbatlevel when buzzer starts to alert
         break;
     case MSP_SET_MOTOR:
-        for (i = 0; i < 8; i++) // FIXME should this use MAX_MOTORS or MAX_SUPPORTED_MOTORS instead of 8
-            motor_disarmed[i] = read16();
+        for (i = 0; i < 8; i++) {
+            const int16_t disarmed = read16();
+            if (i < MAX_SUPPORTED_MOTORS) {
+                motor_disarmed[i] = disarmed;
+            }
+        }
         break;
     case MSP_SET_SERVO_CONFIGURATION:
 #ifdef USE_SERVOS
@@ -1717,6 +1734,8 @@ static bool processInCommand(void)
                 // proceed with a success reply first
                 headSerialReply(0);
                 tailSerialReply();
+                // flush the transmit buffer
+                bufWriterFlush(writer);
                 // wait for all data to send
                 waitForSerialPortToFinishTransmitting(currentPort->port);
                 // Start to activate here

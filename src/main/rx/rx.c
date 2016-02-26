@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
 #include "debug.h"
 
@@ -52,18 +52,7 @@
 
 #include "rx/rx.h"
 
-
 //#define DEBUG_RX_SIGNAL_LOSS
-
-void rxPwmInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-
-bool sbusInit(rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool spektrumInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool sumdInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool sumhInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-bool ibusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
-
-void rxMspInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 
 const char rcChannelLetters[] = "AERT12345678abcdefgh";
 
@@ -196,8 +185,6 @@ void rxInit(rxConfig_t *rxConfig, modeActivationCondition_t *modeActivationCondi
         rxRefreshRate = 20000;
         rxPwmInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
-
-    rxRuntimeConfig.auxChannelCount = rxRuntimeConfig.channelCount - STICK_CHANNEL_COUNT;
 }
 
 #ifdef SERIAL_RX
@@ -377,8 +364,7 @@ bool shouldProcessRx(uint32_t currentTime)
 
 static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
 {
-    static int16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
-    static int16_t rcDataMean[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT];
+    static uint16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
     static bool rxSamplesCollected = false;
 
     uint8_t currentSampleIndex = rcSampleIndex % PPM_AND_PWM_SAMPLE_COUNT;
@@ -394,13 +380,12 @@ static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
         rxSamplesCollected = true;
     }
 
-    rcDataMean[chan] = 0;
-
+    uint16_t rcDataMean = 0;
     uint8_t sampleIndex;
     for (sampleIndex = 0; sampleIndex < PPM_AND_PWM_SAMPLE_COUNT; sampleIndex++)
-        rcDataMean[chan] += rcSamples[chan][sampleIndex];
+        rcDataMean += rcSamples[chan][sampleIndex];
 
-    return rcDataMean[chan] / PPM_AND_PWM_SAMPLE_COUNT;
+    return rcDataMean / PPM_AND_PWM_SAMPLE_COUNT;
 }
 
 static uint16_t getRxfailValue(uint8_t channel)

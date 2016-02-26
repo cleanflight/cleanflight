@@ -49,15 +49,17 @@ extern "C" {
             uint16_t max_angle_inclination, rollAndPitchTrims_t *angleTrim, rxConfig_t *rxConfig);            // pid controller function prototype
     extern pidControllerFuncPtr pid_controller;
     extern uint8_t PIDweight[3];
+    extern bool motorLimitReached;
+    extern uint32_t rcModeActivationMask;
     float dT; // dT for pidLuxFloat
-    float unittest_pidLuxFloat_lastError[3];
+    float unittest_pidLuxFloat_lastErrorForDelta[3];
     float unittest_pidLuxFloat_delta1[3];
     float unittest_pidLuxFloat_delta2[3];
     float unittest_pidLuxFloat_PTerm[3];
     float unittest_pidLuxFloat_ITerm[3];
     float unittest_pidLuxFloat_DTerm[3];
-    int32_t cycleTime; // cycleTime for pidMultiWiiRewrite
-    int32_t unittest_pidMultiWiiRewrite_lastError[3];
+    int32_t unittest_pidMultiWiiRewrite_lastErrorForDelta[3];
+    int32_t targetLooptime; // targetLooptime for pidMultiWiiRewrite
     int32_t unittest_pidMultiWiiRewrite_PTerm[3];
     int32_t unittest_pidMultiWiiRewrite_ITerm[3];
     int32_t unittest_pidMultiWiiRewrite_DTerm[3];
@@ -99,9 +101,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->D8[PIDVEL] = 1;
 
     pidProfile->yaw_p_limit = YAW_P_LIMIT_MAX;
-    pidProfile->gyro_soft_lpf = 0;   // no filtering by default
-    pidProfile->yaw_pterm_cut_hz = 0;
     pidProfile->dterm_cut_hz = 0;
+    pidProfile->deltaMethod = DELTA_FROM_ERROR;
 
     pidProfile->P_f[FD_ROLL] = 1.4f;     // new PID with preliminary defaults test carefully
     pidProfile->I_f[FD_ROLL] = 0.4f;
@@ -151,7 +152,7 @@ void pidControllerInitLuxFloat(pidProfile_t *pidProfile, controlRateConfig_t *co
     controlRate->rates[YAW] = 90;
     // reset the pidLuxFloat static values
     for (int ii = FD_ROLL; ii <= FD_YAW; ++ii) {
-        unittest_pidLuxFloat_lastError[ii] = 0.0f;
+        unittest_pidLuxFloat_lastErrorForDelta[ii] = 0.0f;
         unittest_pidLuxFloat_delta1[ii] = 0.0f;
         unittest_pidLuxFloat_delta2[ii] = 0.0f;
     }
@@ -511,7 +512,7 @@ void pidControllerInitMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfi
     pidSetController(PID_CONTROLLER_MWREWRITE);
     deltaTotalSamples = 1;
     resetPidProfile(pidProfile);
-    cycleTime = 2048; // normalised cycleTime for pidMultiWiiRewrite
+    targetLooptime = 2048; // normalised targetLooptime for pidMultiWiiRewrite
     resetRollAndPitchTrims(rollAndPitchTrims);
     pidResetErrorAngle();
     pidResetErrorGyro();
@@ -525,7 +526,7 @@ void pidControllerInitMultiWiiRewrite(pidProfile_t *pidProfile, controlRateConfi
     controlRate->rates[YAW] = 73;
     // reset the pidMultiWiiRewrite static values
     for (int ii = FD_ROLL; ii <= FD_YAW; ++ii) {
-        unittest_pidMultiWiiRewrite_lastError[ii] = 0;
+        unittest_pidMultiWiiRewrite_lastErrorForDelta[ii] = 0;
     }
 }
 
@@ -576,11 +577,11 @@ int32_t calcMwrPTerm(pidProfile_t *pidProfile, pidIndex_e axis, int rateError) {
 }
 
 int32_t calcMwrITermDelta(pidProfile_t *pidProfile, pidIndex_e axis, int rateError) {
-    return pidProfile->I8[axis] * (rateError * cycleTime >> 11) >> 13;
+    return pidProfile->I8[axis] * (rateError * targetLooptime >> 11) >> 13;
 }
 
 int32_t calcMwrDTerm(pidProfile_t *pidProfile, pidIndex_e axis, int rateError) {
-    return (pidProfile->D8[axis] * (rateError * ((uint16_t) 0xFFFF / (cycleTime >> 4))) >> 6) >> 8;
+    return (pidProfile->D8[axis] * (rateError * ((uint16_t) 0xFFFF / (targetLooptime >> 4))) >> 6) >> 8;
 }
 
 TEST(PIDUnittest, TestPidMultiWiiRewrite)
@@ -661,9 +662,9 @@ TEST(PIDUnittest, TestPidMultiWiiRewriteITermConstrain)
     pid_controller(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
     EXPECT_EQ(calcMwrITermDelta(&pidProfile, PIDROLL, rateErrorRoll), unittest_pidMultiWiiRewrite_ITerm[FD_ROLL]);
 
-    // set up a very large rateError and a large cycleTime to force ITerm to be constrained
+    // set up a very large rateError and a large targetLooptime to force ITerm to be constrained
     pidControllerInitMultiWiiRewrite(&pidProfile, &controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
-    cycleTime = 8192;
+    targetLooptime = 8192;
     rcCommand[ROLL] = calcMwrRcCommandRoll(32750, &controlRate); // can't use INT16_MAX, since get rounding error
     rateErrorRoll = calcMwrAngleRateRoll(&controlRate);
     EXPECT_EQ(32750, rateErrorRoll);// cross check
@@ -679,9 +680,12 @@ int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {return MIN(ABS(rcDat
 attitudeEulerAngles_t attitude = { { 0, 0, 0 } };
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims) {rollAndPitchTrims->values.roll = 0;rollAndPitchTrims->values.pitch = 0;};
 uint16_t flightModeFlags = 0; // acro mode
+uint8_t stateFlags = 0;
 uint8_t motorCount = 4;
 gyro_t gyro;
 int16_t gyroADC[XYZ_AXIS_COUNT];
 int16_t rcCommand[4] = {1500,0,0,0};           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
+bool motorLimitReached;
+uint32_t rcModeActivationMask;
 }

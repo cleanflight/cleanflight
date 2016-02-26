@@ -46,6 +46,11 @@ typedef enum {
     PID_COUNT
 } pidControllerType_e;
 
+typedef enum {
+	DELTA_FROM_ERROR = 0,
+	DELTA_FROM_MEASUREMENT
+} pidDeltaType_e;
+
 #define IS_PID_CONTROLLER_FP_BASED(pidController) (pidController == PID_CONTROLLER_LUX_FLOAT)
 
 typedef struct pidProfile_s {
@@ -63,9 +68,8 @@ typedef struct pidProfile_s {
     uint8_t H_sensitivity;
 
     uint16_t yaw_p_limit;                   // set P term limit (fixed value was 300)
-    uint8_t dterm_cut_hz;                   // (default 17Hz, Range 1-50Hz) Used for PT1 element in PID1, PID2 and PID5
-    uint8_t yaw_pterm_cut_hz;               // Used for filering Pterm noise on noisy frames
-    uint8_t gyro_soft_lpf;
+    float dterm_cut_hz;                     // dterm filtering
+    uint8_t deltaMethod;                    // Alternative delta calculation. Delta from gyro might give smoother results
 
 #ifdef GTUNE
     uint8_t  gtune_lolimP[3];               // [0..200] Lower limit of P during G tune
