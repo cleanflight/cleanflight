@@ -2006,7 +2006,7 @@ static void cliBeeper(char *cmdline)
             if (strncasecmp(cmdline, beeperNameForTableIndex(i), len) == 0) {
                 if (remove) { // beeper off
                     if (i == BEEPER_ALL-1)
-                        beeperOffSetAll();
+                        beeperOffSetAll(beeperCount-2);
                     else
                     	if (i == BEEPER_PREFERENCE-1)
                             setBeeperOffMask(getPreferedBeeperOffMask());
