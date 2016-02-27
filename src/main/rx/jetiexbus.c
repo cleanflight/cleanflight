@@ -163,7 +163,7 @@ typedef struct exBusSensor_s{
 // list of telemetry messages
 // after every 15 sensors a new header has to be inserted (e.g. "CF-Dev 1.12 D2")
 exBusSensor_t jetiExSensors[] = {
-    { "Cleanflight D1", "",     0,      0,             0 },                     // device description
+    { "CF-Dev 1.12 D1", "",     0,      0,             0 },                     // device description
     { "Voltage",        "V",    0,      EX_TYPE_14b,   DECIMAL_MASK(1) },
     { "Current",        "A",    0,      EX_TYPE_14b,   DECIMAL_MASK(2) },
     { "Altitude",       "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(2) },
