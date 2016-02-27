@@ -35,7 +35,7 @@ FLASH_SIZE ?=
 
 FORKNAME			 = cleanflight
 
-VALID_TARGETS	 = ALIENWIIF1 ALIENWIIF3 CC3D CHEBUZZF3 CJMCU COLIBRI_RACE LUX_RACE EUSTM32F103RC MOTOLAB NAZE NAZE32PRO OLIMEXINO PORT103R RMDO SPARKY SPRACINGF3 SPRACINGF3MINI STM32F3DISCOVERY 
+VALID_TARGETS	 = ALIENWIIF1 ALIENWIIF3 CC3D CHEBUZZF3 CJMCU COLIBRI_RACE EUSTM32F103RC LUX_RACE MOTOLAB NAZE NAZE32PRO OLIMEXINO PORT103R RMDO SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY 
 
 # Configure default flash sizes for the targets
 ifeq ($(FLASH_SIZE),)
@@ -43,7 +43,7 @@ ifeq ($(TARGET),$(filter $(TARGET),CJMCU))
 FLASH_SIZE = 64
 else ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF1 CC3D NAZE OLIMEXINO RMDO))
 FLASH_SIZE = 128
-else ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE LUX_RACE EUSTM32F103RC MOTOLAB NAZE32PRO PORT103R SPARKY SPRACINGF3 SPRACINGF3MINI STM32F3DISCOVERY))
+else ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC LUX_RACE MOTOLAB NAZE32PRO PORT103R SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY))
 FLASH_SIZE = 256
 else
 $(error FLASH_SIZE not configured for target)
@@ -70,7 +70,7 @@ FATFS_SRC = $(notdir $(wildcard $(FATFS_DIR)/*.c))
 
 CSOURCES        := $(shell find $(SRC_DIR) -name '*.c')
 
-ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE LUX_RACE MOTOLAB NAZE32PRO RMDO SPARKY SPRACINGF3 SPRACINGF3MINI STM32F3DISCOVERY))
+ifeq ($(TARGET),$(filter $(TARGET),ALIENWIIF3 CHEBUZZF3 COLIBRI_RACE LUX_RACE MOTOLAB NAZE32PRO RMDO SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY))
 
 STDPERIPH_DIR	= $(ROOT)/lib/main/STM32F30x_StdPeriph_Driver
 
@@ -354,6 +354,7 @@ EUSTM32F103RC_SRC = startup_stm32f10x_hd_gcc.S \
 		   drivers/accgyro_mpu.c \
 		   drivers/accgyro_mpu3050.c \
 		   drivers/accgyro_mpu6050.c \
+		   drivers/accgyro_mpu6500.c \
 		   drivers/accgyro_spi_mpu6000.c \
 		   drivers/accgyro_spi_mpu6500.c \
 		   drivers/adc.c \
@@ -622,6 +623,28 @@ SPRACINGF3_SRC = \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC)
 
+SPRACINGF3EVO_SRC	 = \
+		   $(STM32F30x_COMMON_SRC) \
+		   drivers/accgyro_mpu.c \
+		   drivers/accgyro_mpu6500.c \
+		   drivers/accgyro_spi_mpu6500.c \
+		   drivers/barometer_bmp280.c \
+		   drivers/compass_ak8975.c \
+		   drivers/display_ug2864hsweg01.h \
+		   drivers/light_ws2811strip.c \
+		   drivers/light_ws2811strip_stm32f30x.c \
+		   drivers/serial_usb_vcp.c \
+		   drivers/sdcard.c \
+		   drivers/sdcard_standard.c \
+		   drivers/transponder_ir.c \
+		   drivers/transponder_ir_stm32f30x.c \
+		   io/asyncfatfs/asyncfatfs.c \
+		   io/asyncfatfs/fat_standard.c \
+		   io/transponder_ir.c \
+		   $(HIGHEND_SRC) \
+		   $(COMMON_SRC) \
+		   $(VCP_SRC)
+
 MOTOLAB_SRC = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/accgyro_mpu.c \
@@ -662,7 +685,6 @@ SPRACINGF3MINI_SRC	 = \
 		   $(HIGHEND_SRC) \
 		   $(COMMON_SRC) \
 		   $(VCP_SRC)
-#		   $(FATFS_SRC)
 
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
@@ -759,14 +781,14 @@ TARGET_MAP	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 ## all         : Make all filetypes, binary and hex
 all: hex bin
 
-## bin         : Make binary filetype
-## binary      : Make binary filtype
+## binary      : Make binary filetype
+## bin         : Alias of 'binary'
 ## hex         : Make hex filetype
 bin:    $(TARGET_BIN)
 binary: $(TARGET_BIN)
 hex:    $(TARGET_HEX)
 
-## rule to reinvoke make with TARGET= parameter
+# rule to reinvoke make with TARGET= parameter
 # rules that should be handled in toplevel Makefile, not dependent on TARGET
 GLOBAL_GOALS	= all_targets cppcheck test
 
@@ -774,7 +796,7 @@ GLOBAL_GOALS	= all_targets cppcheck test
 $(VALID_TARGETS):
 	$(MAKE) TARGET=$@ $(filter-out $(VALID_TARGETS) $(GLOBAL_GOALS), $(MAKECMDGOALS))
 
-## rule to build all targets
+## all_targets : Make all TARGETs
 .PHONY: all_targets
 all_targets : $(VALID_TARGETS)
 
