@@ -36,6 +36,7 @@
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/sonar.h"
 
 #include "rx/rx.h"
@@ -329,6 +330,29 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 int32_t altitudeHoldGetEstimatedAltitude(void)
 {
     return EstAlt;
+}
+
+
+
+void calculateAirspeed(uint32_t currentTime)
+{
+    static uint32_t previousTime;
+    uint32_t dTime;
+    dTime = currentTime - previousTime;
+    if (dTime < BARO_UPDATE_FREQUENCY_40HZ)
+        return;
+
+    previousTime = currentTime;
+
+#ifdef PITOT
+    /*if (!isBaroCalibrationComplete()) {
+        performBaroCalibrationCycle();
+        vel = 0;
+        accAlt = 0;
+    }*/
+
+    pitotCalculateAirSpeed();
+#endif
 }
 
 #endif

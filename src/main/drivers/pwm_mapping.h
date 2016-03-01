@@ -70,6 +70,9 @@ typedef struct drv_pwm_config_s {
 #if defined(USE_UART5)
     bool useUART5;
 #endif
+#if defined(USE_UART6)
+    bool useUART6;
+#endif
     bool useVbat;
     bool useOneshot;
     bool useSoftSerial;

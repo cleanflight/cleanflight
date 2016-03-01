@@ -44,6 +44,7 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/boardalignment.h"
 #include "sensors/battery.h"
 
@@ -100,6 +101,10 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
     #ifdef STM32F10X_HD
         #define FLASH_PAGE_SIZE                 ((uint16_t)0x800)
     #endif
+
+    #ifdef STM32F40_41xxx
+        #define FLASH_PAGE_SIZE                 ((uint32_t)0x20000)
+    #endif
 #endif
 
 #if !defined(FLASH_SIZE) && !defined(FLASH_PAGE_COUNT)
@@ -113,7 +118,11 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, es
 #endif
 
 #if defined(FLASH_SIZE)
-#define FLASH_PAGE_COUNT ((FLASH_SIZE * 0x400) / FLASH_PAGE_SIZE)
+#ifdef STM32F40_41xxx
+    #define FLASH_PAGE_COUNT 8 // just to make calculations work
+#else
+	#define FLASH_PAGE_COUNT ((FLASH_SIZE * 0x400) / FLASH_PAGE_SIZE)
+#endif
 #endif
 
 #if !defined(FLASH_PAGE_SIZE)
@@ -227,6 +236,13 @@ void resetBarometerConfig(barometerConfig_t *barometerConfig)
     barometerConfig->baro_cf_alt = 0.965f;
 }
 #endif
+
+void resetPitotmeterConfig(pitotmeterConfig_t *pitotmeterConfig)
+{
+	pitotmeterConfig->pitot_sample_count = 21;
+	pitotmeterConfig->pitot_noise_lpf = 0.6f;
+	pitotmeterConfig->pitot_scale = 1.00f;
+}
 
 void resetEscAndServoConfig(escAndServoConfig_t *escAndServoConfig)
 {
@@ -453,6 +469,7 @@ STATIC_UNIT_TESTED void resetConf(void)
 #ifdef BARO
     resetBarometerConfig(&currentProfile->barometerConfig);
 #endif
+    resetPitotmeterConfig(&currentProfile->pitotmeterConfig);
 
     // Radio
     parseRcChannels("AETR1234", &masterConfig.rxConfig);
@@ -734,6 +751,9 @@ void activateConfig(void)
 #ifdef BARO
     useBarometerConfig(&currentProfile->barometerConfig);
 #endif
+#ifdef PITOT
+    usePitotmeterConfig(&currentProfile->pitotmeterConfig);
+#endif
 }
 
 void validateAndFixConfig(void)
@@ -894,7 +914,11 @@ void writeEEPROM(void)
 #endif
         for (wordOffset = 0; wordOffset < sizeof(master_t); wordOffset += 4) {
             if (wordOffset % FLASH_PAGE_SIZE == 0) {
+#ifdef STM32F40_41xxx
+            	status = FLASH_EraseSector(FLASH_Sector_11, VoltageRange_3);
+#else
                 status = FLASH_ErasePage(CONFIG_START_FLASH_ADDRESS + wordOffset);
+#endif
                 if (status != FLASH_COMPLETE) {
                     break;
                 }

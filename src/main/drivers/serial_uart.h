@@ -33,12 +33,21 @@
 #define UART4_TX_BUFFER_SIZE    256
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
+#define UART6_RX_BUFFER_SIZE    256
+#define UART6_TX_BUFFER_SIZE    256
 
 typedef struct {
     serialPort_t port;
 
+#ifdef STM32F40_41xxx
+    DMA_Stream_TypeDef *rxDMAStream;
+    DMA_Stream_TypeDef *txDMAStream;
+    uint32_t rxDMAChannel;
+    uint32_t txDMAChannel;
+#else
     DMA_Channel_TypeDef *rxDMAChannel;
     DMA_Channel_TypeDef *txDMAChannel;
+#endif
 
     uint32_t rxDMAIrq;
     uint32_t txDMAIrq;

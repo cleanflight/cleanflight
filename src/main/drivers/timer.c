@@ -225,6 +225,34 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
 #endif
 
+#if defined(ANYFC)
+const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    { TIM12, GPIOB, Pin_14, TIM_Channel_1, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource14, GPIO_AF_TIM12}, // S1_IN
+    { TIM12, GPIOB, Pin_15, TIM_Channel_2, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource15, GPIO_AF_TIM12}, // S2_IN
+    { TIM8, GPIOC, Pin_6, TIM_Channel_1, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource6, GPIO_AF_TIM8}, // S3_IN
+    { TIM8, GPIOC, Pin_7, TIM_Channel_2, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource7, GPIO_AF_TIM8}, // S4_IN
+    { TIM8, GPIOC, Pin_9, TIM_Channel_4, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource9, GPIO_AF_TIM8}, // S5_IN
+    { TIM8, GPIOC, Pin_8, TIM_Channel_3, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource8, GPIO_AF_TIM8}, // S6_IN
+
+    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource1, GPIO_AF_TIM3},    // S1_OUT
+    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource0, GPIO_AF_TIM3},    // S2_OUT
+    { TIM2, GPIOA, Pin_3, TIM_Channel_4, TIM2_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource3, GPIO_AF_TIM2},    // S3_OUT
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource2, GPIO_AF_TIM2},    // S4_OUT
+    { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource1, GPIO_AF_TIM5},    // S5_OUT
+    { TIM5, GPIOA, Pin_0, TIM_Channel_1, TIM5_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource0, GPIO_AF_TIM5},    // S6_OUT
+    { TIM2, GPIOA, Pin_15, TIM_Channel_1, TIM2_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource15, GPIO_AF_TIM2},   // S7_OUT
+    { TIM3, GPIOB, Pin_5, TIM_Channel_2, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource5, GPIO_AF_TIM3},    // S8_OUT
+    { TIM3, GPIOB, Pin_4, TIM_Channel_1, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource4, GPIO_AF_TIM3},    // S9_OUT
+    { TIM2, GPIOB, Pin_3, TIM_Channel_2, TIM2_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource3, GPIO_AF_TIM2},    // S10_OUT
+};
+
+#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(12) | TIM_N(8) | TIM_N(9))
+
+#define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM5 | RCC_APB1Periph_TIM12 | RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC)
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM8 | RCC_APB2Periph_TIM9)
+
+#endif
+
 #if defined(SPARKY) || defined(ALIENWIIF3)
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     //
@@ -269,6 +297,60 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #define TIMER_AHB_PERIPHERALS (RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB)
 
 #endif
+
+#if defined(REVO)
+const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    { TIM12, GPIOB, Pin_14, TIM_Channel_1, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource14, GPIO_AF_TIM12}, // S1_IN
+    { TIM12, GPIOB, Pin_15, TIM_Channel_2, TIM8_BRK_TIM12_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource15, GPIO_AF_TIM12}, // S2_IN - GPIO_PartialRemap_TIM3
+    { TIM8, GPIOC, Pin_6, TIM_Channel_1, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource6, GPIO_AF_TIM8}, // S3_IN
+    { TIM8, GPIOC, Pin_7, TIM_Channel_2, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource7, GPIO_AF_TIM8}, // S4_IN
+    { TIM8, GPIOC, Pin_8, TIM_Channel_3, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource8, GPIO_AF_TIM8}, // S5_IN
+    { TIM8, GPIOC, Pin_9, TIM_Channel_4, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource9, GPIO_AF_TIM8}, // S6_IN
+
+    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource0, GPIO_AF_TIM3},    // S1_OUT
+    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource1, GPIO_AF_TIM3},    // S2_OUT
+    { TIM9, GPIOA, Pin_3, TIM_Channel_2, TIM1_BRK_TIM9_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource3, GPIO_AF_TIM9},    // S3_OUT
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource2, GPIO_AF_TIM2}, // S4_OUT
+    { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource1, GPIO_AF_TIM5},    // S5_OUT - GPIO_PartialRemap_TIM3
+    { TIM5, GPIOA, Pin_0, TIM_Channel_1, TIM5_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource0, GPIO_AF_TIM5},    // S6_OUT
+};
+
+#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(12) | TIM_N(8) | TIM_N(9))
+
+#define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM5 | RCC_APB1Periph_TIM12 | RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC)
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM8 | RCC_APB2Periph_TIM9)
+
+#endif
+
+#if defined(COLIBRI)
+const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    { TIM1, GPIOA, Pin_10, TIM_Channel_3, TIM1_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource10, GPIO_AF_TIM1},    // S1_IN
+    { TIM8, GPIOC, Pin_6, TIM_Channel_1, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource6, GPIO_AF_TIM8}, // S2_IN
+    { TIM8, GPIOC, Pin_7, TIM_Channel_2, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource7, GPIO_AF_TIM8}, // S3_IN
+    { TIM8, GPIOC, Pin_8, TIM_Channel_3, TIM8_CC_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource8, GPIO_AF_TIM8}, // S4_IN
+    { TIM2, GPIOA, Pin_15, TIM_Channel_1, TIM2_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource15, GPIO_AF_TIM2},   // S5_IN
+    { TIM2, GPIOB, Pin_3, TIM_Channel_2, TIM2_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource3, GPIO_AF_TIM2},   // S6_IN
+    { TIM5, GPIOA, Pin_0, TIM_Channel_1, TIM5_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource0, GPIO_AF_TIM5},   // S7_IN
+    { TIM5, GPIOA, Pin_1, TIM_Channel_2, TIM5_IRQn, 0, GPIO_Mode_AF, GPIO_PinSource1, GPIO_AF_TIM5},   // S8_IN
+
+
+    { TIM3, GPIOB, Pin_0, TIM_Channel_3, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource0, GPIO_AF_TIM3},    // S1_OUT
+    { TIM3, GPIOB, Pin_4, TIM_Channel_1, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource4, GPIO_AF_TIM3},    // S2_OUT
+    { TIM3, GPIOB, Pin_1, TIM_Channel_4, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource1, GPIO_AF_TIM3},    // S3_OUT
+    { TIM12, GPIOB, Pin_15, TIM_Channel_2, TIM8_BRK_TIM12_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource15, GPIO_AF_TIM12}, // S4_OUT
+    { TIM3, GPIOB, Pin_5, TIM_Channel_2, TIM3_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource5, GPIO_AF_TIM3},    // S5_OUT
+    { TIM12, GPIOB, Pin_14, TIM_Channel_1, TIM8_BRK_TIM12_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource14, GPIO_AF_TIM12}, // S6_OUT
+    { TIM10, GPIOB, Pin_8, TIM_Channel_1, TIM1_UP_TIM10_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource8, GPIO_AF_TIM10},    // S7_OUT
+    { TIM11, GPIOB, Pin_9, TIM_Channel_1, TIM1_TRG_COM_TIM11_IRQn, 1, GPIO_Mode_AF, GPIO_PinSource9, GPIO_AF_TIM11},    // S8_OUT
+};
+
+#define USED_TIMERS  ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(12) | TIM_N(8) | TIM_N(10) | TIM_N(11))
+
+#define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM5 | RCC_APB1Periph_TIM12 | RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC)
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_TIM8 | RCC_APB2Periph_TIM10 | RCC_APB2Periph_TIM11 )
+
+#endif
+
 
 #if defined(SPRACINGF3)
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
@@ -362,7 +444,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #endif
 
 #define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
-#define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4
+#define CC_CHANNELS_PER_TIMER 4 // TIM_Channel_1..4
 
 #define TIM_IT_CCx(ch) (TIM_IT_CC1 << ((ch) / 4))
 
@@ -407,8 +489,35 @@ static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
 #if USED_TIMERS & TIM_N(4)
         _CASE(4);
 #endif
+#if USED_TIMERS & TIM_N(5)
+        _CASE(5);
+#endif
+#if USED_TIMERS & TIM_N(6)
+        _CASE(6);
+#endif
+#if USED_TIMERS & TIM_N(7)
+        _CASE(7);
+#endif
 #if USED_TIMERS & TIM_N(8)
         _CASE(8);
+#endif
+#if USED_TIMERS & TIM_N(9)
+        _CASE(9);
+#endif
+#if USED_TIMERS & TIM_N(10)
+        _CASE(10);
+#endif
+#if USED_TIMERS & TIM_N(11)
+        _CASE(11);
+#endif
+#if USED_TIMERS & TIM_N(12)
+        _CASE(12);
+#endif
+#if USED_TIMERS & TIM_N(13)
+        _CASE(13);
+#endif
+#if USED_TIMERS & TIM_N(14)
+        _CASE(14);
 #endif
 #if USED_TIMERS & TIM_N(15)
         _CASE(15);
@@ -440,8 +549,35 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #if USED_TIMERS & TIM_N(4)
     _DEF(4),
 #endif
+#if USED_TIMERS & TIM_N(5)
+    _DEF(5),
+#endif
+#if USED_TIMERS & TIM_N(6)
+    _DEF(6),
+#endif
+#if USED_TIMERS & TIM_N(7)
+    _DEF(7),
+#endif
 #if USED_TIMERS & TIM_N(8)
     _DEF(8),
+#endif
+#if USED_TIMERS & TIM_N(9)
+    _DEF(9),
+#endif
+#if USED_TIMERS & TIM_N(10)
+    _DEF(10),
+#endif
+#if USED_TIMERS & TIM_N(11)
+    _DEF(11),
+#endif
+#if USED_TIMERS & TIM_N(12)
+    _DEF(12),
+#endif
+#if USED_TIMERS & TIM_N(13)
+    _DEF(13),
+#endif
+#if USED_TIMERS & TIM_N(14)
+    _DEF(14),
 #endif
 #if USED_TIMERS & TIM_N(15)
     _DEF(15),
@@ -480,7 +616,14 @@ void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz)
 
     // "The counter clock frequency (CK_CNT) is equal to f CK_PSC / (PSC[15:0] + 1)." - STM32F10x Reference Manual 14.4.11
     // Thus for 1Mhz: 72000000 / 1000000 = 72, 72 - 1 = 71 = TIM_Prescaler
+#if defined (STM32F40_41xxx)
+    if(tim == TIM1 || tim == TIM8 || tim == TIM9|| tim == TIM10|| tim == TIM11)
+		TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / ((uint32_t)mhz * 1000000)) - 1;
+    else
+    	TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / 2 / ((uint32_t)mhz * 1000000)) - 1;
+#else
     TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / ((uint32_t)mhz * 1000000)) - 1;
+#endif
 
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -498,6 +641,14 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
 #if defined(STM32F10X)
     case TIM1_CC_IRQn:
         timerNVICConfigure(TIM1_UP_IRQn);
+        break;
+#endif
+#if defined(STM32F40_41xxx)
+    case TIM1_CC_IRQn:
+        timerNVICConfigure(TIM1_UP_TIM10_IRQn);
+        break;
+    case TIM8_CC_IRQn:
+        timerNVICConfigure(TIM8_UP_TIM13_IRQn);
         break;
 #endif
 #ifdef STM32F303xC
@@ -862,6 +1013,13 @@ _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
 # if defined(STM32F10X)
 _TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);       // timer can't be shared
 # endif
+# if defined(STM32F40_41xxx)
+#  if USED_TIMERS & TIM_N(10)
+_TIM_IRQ_HANDLER2(TIM1_UP_TIM10_IRQHandler, 1,10);  // both timers are in use
+#  else
+_TIM_IRQ_HANDLER(TIM1_UP_TIM10_IRQHandler, 1);     // timer10 is not used
+#  endif
+# endif
 # ifdef STM32F303xC
 #  if USED_TIMERS & TIM_N(16)
 _TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
@@ -879,13 +1037,34 @@ _TIM_IRQ_HANDLER(TIM3_IRQHandler, 3);
 #if USED_TIMERS & TIM_N(4)
 _TIM_IRQ_HANDLER(TIM4_IRQHandler, 4);
 #endif
+#if USED_TIMERS & TIM_N(5)
+_TIM_IRQ_HANDLER(TIM5_IRQHandler, 5);
+#endif
 #if USED_TIMERS & TIM_N(8)
 _TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
-# if defined(STM32F10X_XL)
+# if defined(STM32F10X) || defined(STM32F303xC)
+#  if defined(STM32F10X_XL)
 _TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);
-# else  // f10x_hd, f30x
+#  else  // f10x_hd, f30x
 _TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, 8);
+#  endif
 # endif
+# if defined(STM32F40_41xxx)
+#  if USED_TIMERS & TIM_N(13)
+_TIM_IRQ_HANDLER2(TIM8_UP_TIM13_IRQHandler, 8,13);  // both timers are in use
+#  else
+_TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);     // timer13 is not used
+#  endif
+# endif
+#endif
+#if USED_TIMERS & TIM_N(9)
+_TIM_IRQ_HANDLER(TIM1_BRK_TIM9_IRQHandler, 9);
+#endif
+#  if USED_TIMERS & TIM_N(11)
+_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM11_IRQHandler, 11);
+#  endif
+#if USED_TIMERS & TIM_N(12)
+_TIM_IRQ_HANDLER(TIM8_BRK_TIM12_IRQHandler, 12);
 #endif
 #if USED_TIMERS & TIM_N(15)
 _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
@@ -918,6 +1097,13 @@ void timerInit(void)
 #endif
 
 #ifdef STM32F303xC
+    for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
+        const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
+        GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);
+    }
+#endif
+
+#ifdef STM32F40_41xxx
     for (uint8_t timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
         const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
         GPIO_PinAFConfig(timerHardwarePtr->gpio, (uint16_t)timerHardwarePtr->gpioPinSource, timerHardwarePtr->alternateFunction);

@@ -83,6 +83,7 @@
 
 #define GYRO
 #define USE_GYRO_MPU3050
+#define MPU3050_BUS I2C_DEVICE_INT
 #define USE_GYRO_MPU6050
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
@@ -94,11 +95,16 @@
 
 #define ACC
 #define USE_ACC_ADXL345
+#define ADXL345_BUS I2C_DEVICE_INT
 #define USE_ACC_BMA280
+#define BMA280_BUS I2C_DEVICE_INT
 #define USE_ACC_MMA8452
+#define MMA8452_BUS I2C_DEVICE_INT
 #define USE_ACC_MPU6050
 #define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
+#define MPU6050_BUS I2C_DEVICE_INT
+#define L3G4200D_BUS I2C_DEVICE_INT
 
 #define ACC_ADXL345_ALIGN CW270_DEG
 #define ACC_MPU6050_ALIGN CW0_DEG
@@ -108,11 +114,15 @@
 
 #define BARO
 #define USE_BARO_MS5611
+#define MS5611_BUS I2C_DEVICE_INT
 #define USE_BARO_BMP085
+#define BMP085_BUS I2C_DEVICE_INT
 #define USE_BARO_BMP280
+#define BMP280_BUS I2C_DEVICE_INT
 
 #define MAG
 #define USE_MAG_HMC5883
+#define HMC5883_BUS I2C_DEVICE_INT
 
 #define MAG_HMC5883_ALIGN CW180_DEG
 
@@ -122,6 +132,7 @@
 #define LED1
 #define INVERTER
 #define DISPLAY
+#define UG2864_BUS I2C_DEVICE_INT
 
 #define USE_UART1
 #define USE_UART2
@@ -146,6 +157,7 @@
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
+#define I2C_DEVICE_INT (I2CDEV_2)
 
 // #define SOFT_I2C // enable to test software i2c
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)

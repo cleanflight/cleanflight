@@ -55,7 +55,7 @@ VIRTUAL_COM_PORT_SIZ_CONFIG_DESC, /* wTotalLength:no of returned bytes */
 0x01, /* bConfigurationValue: Configuration value */
 0x00, /* iConfiguration: Index of string descriptor describing the configuration */
 0xC0, /* bmAttributes: self powered */
-0x32, /* MaxPower 0 mA */
+0xFA, /* MaxPower 500 mA */
 /*Interface Descriptor*/
 0x09, /* bLength: Interface Descriptor size */
 USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */

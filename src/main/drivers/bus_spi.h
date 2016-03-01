@@ -17,10 +17,17 @@
 
 #pragma once
 
-#define SPI_0_28125MHZ_CLOCK_DIVIDER  256
-#define SPI_0_5625MHZ_CLOCK_DIVIDER 128
-#define SPI_18MHZ_CLOCK_DIVIDER     2
-#define SPI_9MHZ_CLOCK_DIVIDER      4
+#if defined(STM32F40_41xxx)
+#define ULTRALOW_SPEED_SPI  256 // 0.328125 MHz
+#define LOW_SPEED_SPI       128 // 0.65625 MHz
+#define MEDIUM_SPEED_SPI    8   // 11.5 MHz
+#define HIGH_SPEED_SPI      4   // 21 MHz
+#else
+#define ULTRALOW_SPEED_SPI  256 // 0.28125 MHz
+#define LOW_SPEED_SPI       128 // 0.5625 MHz
+#define MEDIUM_SPEED_SPI    4   // 9 MHz
+#define HIGH_SPEED_SPI      2   // 18 MHz
+#endif
 
 bool spiInit(SPI_TypeDef *instance);
 void spiSetDivisor(SPI_TypeDef *instance, uint16_t divisor);

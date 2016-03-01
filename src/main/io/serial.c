@@ -72,6 +72,9 @@ const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT] = {
 #ifdef USE_UART5
     SERIAL_PORT_UART5,
 #endif
+#ifdef USE_UART6
+    SERIAL_PORT_UART6,
+#endif
 #ifdef USE_SOFTSERIAL1
     SERIAL_PORT_SOFTSERIAL1,
 #endif
@@ -304,6 +307,11 @@ serialPort_t *openSerialPort(
 #ifdef USE_UART5
         case SERIAL_PORT_UART5:
             serialPort = uartOpen(UART5, callback, baudRate, mode, options);
+            break;
+#endif
+#ifdef USE_UART6
+        case SERIAL_PORT_UART6:
+            serialPort = uartOpen(USART6, callback, baudRate, mode, options);
             break;
 #endif
 #ifdef USE_SOFTSERIAL1

@@ -35,6 +35,7 @@ typedef struct profile_s {
 #ifdef BARO
     barometerConfig_t barometerConfig;
 #endif
+    pitotmeterConfig_t pitotmeterConfig;
 
     uint8_t acc_unarmedcal;                 // turn automatic acc compensation on/off
 

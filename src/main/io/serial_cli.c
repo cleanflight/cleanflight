@@ -69,6 +69,7 @@
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 
 #include "flight/pid.h"
 #include "flight/imu.h"
@@ -83,6 +84,8 @@
 #include "config/config.h"
 #include "config/config_profile.h"
 #include "config/config_master.h"
+
+#include "drivers/serial_escserial.h"
 
 #include "common/printf.h"
 
@@ -134,6 +137,9 @@ static void cliRxRange(char *cmdline);
 
 #ifdef GPS
 static void cliGpsPassthrough(char *cmdline);
+#endif
+#ifdef USE_ESCSERIAL
+static void cliEscPassthrough(char *cmdline);
 #endif
 
 static void cliHelp(char *cmdline);
@@ -261,6 +267,9 @@ const clicmd_t cmdTable[] = {
             "[name]", cliGet),
 #ifdef GPS
     CLI_COMMAND_DEF("gpspassthrough", "passthrough gps to serial", NULL, cliGpsPassthrough),
+#endif
+#ifdef USE_ESCSERIAL
+    CLI_COMMAND_DEF("escprog", "passthrough esc to serial", "<mode [sk/bl]> <index>", cliEscPassthrough),
 #endif
     CLI_COMMAND_DEF("help", NULL, NULL, cliHelp),
 #ifdef LED_STRIP
@@ -646,6 +655,9 @@ const clivalue_t valueTable[] = {
     { "mag_hardware",               VAR_UINT8  | MASTER_VALUE,  &masterConfig.mag_hardware, .config.minmax = { 0,  MAG_MAX } },
     { "mag_declination",            VAR_INT16  | PROFILE_VALUE, &masterConfig.profile[0].mag_declination, .config.minmax = { -18000,  18000 } },
 #endif
+    { "pitot_tab_size",             VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_sample_count, .config.minmax = { 0, PITOT_SAMPLE_COUNT_MAX } },
+    { "pitot_noise_lpf",            VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_noise_lpf, .config.minmax = { 0, 1 } },
+    { "pitot_scale",                VAR_FLOAT  | PROFILE_VALUE, &masterConfig.profile[0].pitotmeterConfig.pitot_scale, .config.minmax = { 0, 100 } },
 
     { "pid_delta_method",           VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].pidProfile.deltaMethod, .config.lookup = { TABLE_DELTA_METHOD } },
 
@@ -1949,6 +1961,57 @@ static void cliGpsPassthrough(char *cmdline)
     gpsEnablePassthrough(cliPort);
 }
 #endif
+
+#ifdef USE_ESCSERIAL
+static void cliEscPassthrough(char *cmdline)
+{
+    uint8_t mode = 0;
+    int index = 0;
+    int i = 0;
+    char *pch = NULL;
+    char *saveptr;
+
+    if (isEmpty(cmdline)) {
+        cliShowParseError();
+        return;
+    }
+
+    pch = strtok_r(cmdline, " ", &saveptr);
+    while (pch != NULL) {
+        switch (i) {
+            case 0:
+            	if(strncasecmp(pch, "sk", strlen(pch)) == 0)
+            	{
+            		mode = 0;
+            	}
+            	else if(strncasecmp(pch, "bl", strlen(pch)) == 0)
+            	{
+            		mode = 1;
+            	}
+            	else
+            	{
+                    cliShowParseError();
+                    return;
+            	}
+                break;
+            case 1:
+            	index = atoi(pch);
+                if ((index >= 0) && (index < USABLE_TIMER_CHANNEL_COUNT)) {
+                    printf("passthru at pwm output %d enabled\r\n", index);
+                }
+                else {
+                    printf("invalid pwm output, valid range: 0 to %d\r\n", USABLE_TIMER_CHANNEL_COUNT);
+                    return;
+                }
+                break;
+        }
+        i++;
+        pch = strtok_r(NULL, " ", &saveptr);
+    }
+    escEnablePassthrough(cliPort,index,mode);
+}
+#endif
+
 
 static void cliHelp(char *cmdline)
 {

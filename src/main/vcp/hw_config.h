@@ -64,5 +64,29 @@ uint8_t usbIsConnected(void);   // HJI
 extern __IO uint32_t receiveLength;  // HJI
 extern __IO uint32_t packetSent;     // HJI
 
+#define  BPUTSIZE      5      // number of buffers in ring
+#define  PACKETSIZE   64      // packet size to buffer (max. 64)
+#define  BGETSIZE 256           // (one remains unused)
+typedef struct {
+  uint32_t count;                 // bytes pending (already filled)
+  uint8_t data[PACKETSIZE];      // holds bytes
+} packet;
+
+// state
+extern uint8_t started;        // 1 if active
+extern uint8_t transmitting;   // 1 if wait for byte to be sent
+extern uint8_t bputbusy;       // 1 while vcomPutc fiddles
+extern uint8_t terminal;       // 1 if host terminal is active
+
+extern packet bput[BPUTSIZE]; // ring of buffers
+extern packet *bputread;      // next packet to send
+extern packet *bputwrite;     // packet being filled
+
+// vcomGetC circular buffer
+extern uint8_t bget[BGETSIZE];   // input buffer
+extern uint8_t *bgetread;        // next-to-read pointer
+extern uint8_t *bgetwrite;       // next-to-write pointer
+
+
 #endif  /*__HW_CONFIG_H*/
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

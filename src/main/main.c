@@ -71,6 +71,7 @@
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
@@ -137,6 +138,10 @@ void SetSysClock(void);
 #ifdef STM32F10X
 // from system_stm32f10x.c
 void SetSysClock(bool overclock);
+#endif
+#ifdef STM32F40_41xxx
+// from system_stm32f4xx.c
+void SetSysClock(void);
 #endif
 
 typedef enum {
@@ -250,8 +255,10 @@ void init(void)
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(masterConfig.emf_avoidance);
 #endif
+#ifdef STM32F40_41xxx
+    SetSysClock();
+#endif
     i2cSetOverclock(masterConfig.i2c_highspeed);
-
 #ifdef USE_HARDWARE_REVISION_DETECTION
     detectHardwareRevision();
 #endif
@@ -357,6 +364,9 @@ void init(void)
 #if defined(USE_UART5)
     pwm_params.useUART5 = doesConfigurationUsePort(SERIAL_PORT_UART5);
 #endif
+#if defined(USE_UART6)
+    pwm_params.useUART6 = doesConfigurationUsePort(SERIAL_PORT_UART6);
+#endif
     pwm_params.useVbat = feature(FEATURE_VBAT);
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
@@ -408,6 +418,7 @@ void init(void)
 #ifdef USE_SPI
     spiInit(SPI1);
     spiInit(SPI2);
+    spiInit(SPI3);
 #endif
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
@@ -449,7 +460,14 @@ void init(void)
         i2cInit(I2C_DEVICE);
     }
 #else
-    i2cInit(I2C_DEVICE);
+    i2cInit(I2C_DEVICE_INT);
+#if defined(ANYFC) || defined(COLIBRI) || defined(REVO)
+    if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
+#ifdef I2C_DEVICE_EXT
+        i2cInit(I2C_DEVICE_EXT);
+#endif
+    }
+#endif
 #endif
 #endif
 
@@ -536,7 +554,13 @@ void init(void)
     ledStripInit(masterConfig.ledConfigs, masterConfig.colors);
 
     if (feature(FEATURE_LED_STRIP)) {
+#ifdef COLIBRI
+        if (!doesConfigurationUsePort(SERIAL_PORT_UART1)) {
+            ledStripEnable();
+        }
+#else
         ledStripEnable();
+#endif
     }
 #endif
 

@@ -36,14 +36,17 @@
 
 #define ACC
 #define USE_ACC_MPU6050
+#define MPU6050_BUS I2C_DEVICE_INT
 
 #define ACC_MPU6050_ALIGN CW270_DEG
 
 #define BARO
 #define USE_BARO_MS5611
+#define MS5611_BUS I2C_DEVICE_INT
 
 #define MAG
 #define USE_MAG_AK8975
+#define AK8975_BUS I2C_DEVICE_INT
 
 #define MAG_AK8975_ALIGN CW180_DEG_FLIP
 
@@ -82,7 +85,7 @@
 // Note: PA5 and PA0 are N/C on the sparky - potentially use for ADC or LED STRIP?
 
 #define USE_I2C
-#define I2C_DEVICE (I2CDEV_2) // SDA (PA10/AF4), SCL (PA9/AF4)
+#define I2C_DEVICE_INT (I2CDEV_2) // SDA (PA10/AF4), SCL (PA9/AF4)
 
 #define I2C2_SCL_GPIO        GPIOA
 #define I2C2_SCL_GPIO_AF     GPIO_AF_4
@@ -113,6 +116,8 @@
 #define GPS
 #define GTUNE
 #define DISPLAY
+#define UG2864_BUS I2C_DEVICE_INT
+
 #define SERIAL_RX
 #define TELEMETRY
 #define USE_SERVOS

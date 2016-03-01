@@ -50,6 +50,7 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
+#include "sensors/pitotmeter.h"
 #include "sensors/gyro.h"
 #include "sensors/battery.h"
 
@@ -682,6 +683,7 @@ void taskMainPidLoop(void)
     if (sensors(SENSOR_GPS)) {
         if ((FLIGHT_MODE(GPS_HOME_MODE) || FLIGHT_MODE(GPS_HOLD_MODE)) && STATE(GPS_FIX_HOME)) {
             updateGpsStateForHomeAndHoldMode();
+        	//debug[2]=(STATE(GPS_FIX)?10:0)+(STATE(GPS_FIX_HOME)?1:0);
         }
     }
 #endif

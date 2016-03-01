@@ -36,7 +36,7 @@
 #include "drivers/dma.h"
 #include "drivers/light_ws2811strip.h"
 
-uint8_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
+uint32_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
 volatile uint8_t ws2811LedDataTransferInProgress = 0;
 
 static hsvColor_t ledColorBuffer[WS2811_LED_STRIP_LENGTH];
@@ -77,6 +77,16 @@ void setStripColors(const hsvColor_t *colors)
     }
 }
 
+#if defined(STM32F40_41xxx)
+void ws2811DMAHandler(DMA_Stream_TypeDef *channel) {
+    if (DMA_GetFlagStatus(channel, WS2811_DMA_TC_FLAG)) {
+        ws2811LedDataTransferInProgress = 0;
+        DMA_Cmd(channel, DISABLE);
+        TIM_DMACmd(WS2811_TIMER, WS2811_TIMER_DMA, DISABLE);
+        DMA_ClearFlag(channel, WS2811_DMA_TC_FLAG);
+     }
+}
+#else
 void ws2811DMAHandler(DMA_Channel_TypeDef *channel) {
     if (DMA_GetFlagStatus(WS2811_DMA_TC_FLAG)) {
         ws2811LedDataTransferInProgress = 0;
@@ -84,6 +94,7 @@ void ws2811DMAHandler(DMA_Channel_TypeDef *channel) {
         DMA_ClearFlag(WS2811_DMA_TC_FLAG);
     }
 }
+#endif
 
 void ws2811LedStripInit(void)
 {

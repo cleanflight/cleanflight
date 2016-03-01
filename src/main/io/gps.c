@@ -21,6 +21,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <platform.h>
 #include "build_config.h"
@@ -35,8 +38,11 @@
 #include "drivers/serial_uart.h"
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
+#include "drivers/sensor.h"
+#include "drivers/compass.h"
 
 #include "sensors/sensors.h"
+#include "sensors/compass.h"
 
 #include "io/serial.h"
 #include "io/display.h"
@@ -62,6 +68,7 @@
 #define LOG_UBLOX_SVINFO 'I'
 #define LOG_UBLOX_POSLLH 'P'
 #define LOG_UBLOX_VELNED 'V'
+#define LOG_UBLOX_PVT    'X'
 
 #define GPS_SV_MAXSATS   16
 
@@ -79,6 +86,7 @@ uint32_t GPS_svInfoReceivedCount = 0; // SV = Space Vehicle, counter increments 
 uint8_t GPS_update = 0;             // it's a binary toggle to distinct a GPS position update
 
 uint16_t GPS_altitude;              // altitude in 0.1m
+int32_t GPS_VELNED[3];              // cm/s
 uint16_t GPS_speed;                 // speed in 0.1m/s
 uint16_t GPS_ground_course = 0;     // degrees * 10
 
@@ -88,7 +96,10 @@ uint8_t GPS_svinfo_svid[GPS_SV_MAXSATS];    // Satellite ID
 uint8_t GPS_svinfo_quality[GPS_SV_MAXSATS]; // Bitfield Qualtity
 uint8_t GPS_svinfo_cno[GPS_SV_MAXSATS];     // Carrier to Noise Ratio (Signal Strength)
 
+int16_t GPS_MAG[3]; // NAZA GPS mag data XYZ
+
 static gpsConfig_t *gpsConfig;
+uint32_t hwVersion = 0;
 
 uint32_t GPS_garbageByteCount = 0;
 
@@ -122,12 +133,16 @@ static const gpsInitData_t gpsInitData[] = {
 
 #define DEFAULT_BAUD_RATE_INDEX 0
 
-static const uint8_t ubloxInit[] = {
+static const uint8_t ubloxInit6[] = {
 
-    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x03, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
-    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Pedistrian and
-    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,           // capturing the data from the U-Center binary console.
-    0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0xC2,
+    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x06, 0x02, 0x00,           // CFG-NAV5 - Set engine settings
+    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Airborne <1G 3D fix only
+    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x51, 0xC7,
+
+    0xB5, 0x62, 0x06, 0x23, 0x28, 0x00, 0x00, 0x00, 0x4C, 0x66, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // CFG-NAVX5 min 5 SV
+    0x05, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7C, 0xCD,
 
     // DISABLE NMEA messages
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x05, 0x00, 0xFF, 0x19,           // VGS: Course over ground and Ground speed
@@ -146,6 +161,35 @@ static const uint8_t ubloxInit[] = {
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x12, 0x01, 0x1E, 0x67,           // set VELNED MSG rate
 
     0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A,             // set rate to 5Hz (measurement period: 200ms, navigation rate: 1 cycle)
+};
+
+static const uint8_t ubloxInit[] = {
+    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x06, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
+    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Airborne <1G
+    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0xE8,
+
+    // DISABLE NMEA messages
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x00, 0x00, 0xFA, 0x0F,           // GGA: Global positioning system fix data
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x01, 0x00, 0xFB, 0x11,           // GLL: Latitude and longitude, with time of position fix and status
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x02, 0x00, 0xFC, 0x13,           // GSA: GNSS DOP and Active Satellites
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x03, 0x00, 0xFD, 0x15,           // GSV: GNSS Satellites in View
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x04, 0x00, 0xFE, 0x17,           // RMC: Recommended Minimum data
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x05, 0x00, 0xFF, 0x19,           // VGS: Course over ground and Ground speed
+
+    // Enable UBLOX messages
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0xB9, // disable POSLLH
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13, 0xC0, // disable STATUS
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0xD5, // disable SOL
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x30, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x4A, 0x2D, // enable SVINFO 10 cycle
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22, 0x29, // disable VELNED
+    0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x18, 0xE1, // enable PVT 1 cycle
+
+    0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12,	// set rate to 10Hz (measurement period: 100ms, navigation rate: 1 cycle)
+};
+
+static const uint8_t ubloxVerPoll[] = {
+    0xB5, 0x62, 0x0A, 0x04, 0x00, 0x00, 0x0E, 0x34,          // MON-VER - Poll version info
 };
 
 // UBlox 6 Protocol documentation - GPS.G6-SW-10018-F
@@ -176,6 +220,7 @@ typedef enum {
     GPS_UNKNOWN,
     GPS_INITIALIZING,
     GPS_CHANGE_BAUD,
+    GPS_CHECK_VERSION,
     GPS_CONFIGURE,
     GPS_RECEIVING_DATA,
     GPS_LOST_COMMUNICATION,
@@ -196,6 +241,7 @@ static void shiftPacketLog(void)
 static void gpsNewData(uint16_t c);
 static bool gpsNewFrameNMEA(char c);
 static bool gpsNewFrameUBLOX(uint8_t data);
+static bool gpsNewFrameNAZA(uint8_t data);
 
 static void gpsSetState(gpsState_e state)
 {
@@ -241,6 +287,8 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
     // only RX is needed for NMEA-style GPS
     if (gpsConfig->provider == GPS_NMEA)
 	    mode &= ~MODE_TX;
+    if (gpsConfig->provider == GPS_NAZA)
+        mode &= ~MODE_TX;
 
     // no callback - buffer will be consumed in gpsThread()
     gpsPort = openSerialPort(gpsPortConfig->identifier, FUNCTION_GPS, NULL, gpsInitData[gpsData.baudrateIndex].baudrateIndex, mode, SERIAL_NOT_INVERTED);
@@ -254,6 +302,17 @@ void gpsInit(serialConfig_t *initialSerialConfig, gpsConfig_t *initialGpsConfig)
 }
 
 void gpsInitNmea(void)
+{
+    switch(gpsData.state) {
+        case GPS_INITIALIZING:
+        case GPS_CHANGE_BAUD:
+            serialSetBaudRate(gpsPort, baudRates[gpsInitData[gpsData.baudrateIndex].baudrateIndex]);
+            gpsSetState(GPS_RECEIVING_DATA);
+            break;
+    }
+}
+
+void gpsInitNaza(void)
 {
     switch(gpsData.state) {
         case GPS_INITIALIZING:
@@ -303,7 +362,31 @@ void gpsInitUblox(void)
             break;
         case GPS_CHANGE_BAUD:
             serialSetBaudRate(gpsPort, baudRates[gpsInitData[gpsData.baudrateIndex].baudrateIndex]);
-            gpsSetState(GPS_CONFIGURE);
+            gpsSetState(GPS_CHECK_VERSION);
+            break;
+        case GPS_CHECK_VERSION:
+            if (gpsData.messageState == GPS_MESSAGE_STATE_IDLE) {
+                gpsData.messageState++;
+            }
+            if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
+
+                if (gpsData.state_position < sizeof(ubloxVerPoll)) {
+                    serialWrite(gpsPort, ubloxVerPoll[gpsData.state_position]);
+                    gpsData.state_position++;
+                } else {
+                    gpsData.state_position = 0;
+                    gpsData.messageState = GPS_MESSAGE_STATE_ENTRY_COUNT;
+                }
+            }
+            if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
+                // Wait until version found
+                if(hwVersion != 0)
+                {
+                    //proceed
+                    gpsData.messageState = GPS_MESSAGE_STATE_IDLE;
+                    gpsSetState(GPS_CONFIGURE);
+                }
+            }
             break;
         case GPS_CONFIGURE:
 
@@ -319,12 +402,22 @@ void gpsInitUblox(void)
 
             if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
 
-                if (gpsData.state_position < sizeof(ubloxInit)) {
-                    serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
-                    gpsData.state_position++;
+                if(hwVersion<70000) {
+                    if (gpsData.state_position < sizeof(ubloxInit6)) {
+                        serialWrite(gpsPort, ubloxInit6[gpsData.state_position]);
+                        gpsData.state_position++;
+                    } else {
+                        gpsData.state_position = 0;
+                        gpsData.messageState++;
+                    }
                 } else {
-                    gpsData.state_position = 0;
-                    gpsData.messageState++;
+                    if (gpsData.state_position < sizeof(ubloxInit)) {
+                        serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
+                        gpsData.state_position++;
+                    } else {
+                        gpsData.state_position = 0;
+                        gpsData.messageState++;
+                    }
                 }
             }
 
@@ -355,6 +448,10 @@ void gpsInitHardware(void)
         case GPS_UBLOX:
             gpsInitUblox();
             break;
+
+        case GPS_NAZA:
+            gpsInitNaza();
+            break;
     }
 }
 
@@ -372,6 +469,7 @@ void gpsThread(void)
 
         case GPS_INITIALIZING:
         case GPS_CHANGE_BAUD:
+        case GPS_CHECK_VERSION:
         case GPS_CONFIGURE:
             gpsInitHardware();
             break;
@@ -431,6 +529,8 @@ bool gpsNewFrame(uint8_t c)
             return gpsNewFrameNMEA(c);
         case GPS_UBLOX:         // UBX binary
             return gpsNewFrameUBLOX(c);
+        case GPS_NAZA:         // NAZA binary
+            return gpsNewFrameNAZA(c);
     }
 
     return false;
@@ -708,6 +808,11 @@ typedef struct {
 } ubx_header;
 
 typedef struct {
+    char swVersion[30];      // Zero-terminated Software Version String
+    char hwVersion[10];      // Zero-terminated Hardware Version String
+} ubx_mon_ver;
+
+typedef struct {
     uint32_t time;              // GPS msToW
     int32_t longitude;
     int32_t latitude;
@@ -778,17 +883,53 @@ typedef struct {
     ubx_nav_svinfo_channel channel[16];         // 16 satellites * 12 byte
 } ubx_nav_svinfo;
 
+typedef struct {
+    uint32_t time; // GPS msToW
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t min;
+    uint8_t sec;
+    uint8_t valid;
+    uint32_t tAcc;
+    int32_t nano;
+    uint8_t fix_type;
+    uint8_t fix_status;
+    uint8_t reserved1;
+    uint8_t satellites;
+    int32_t longitude;
+    int32_t latitude;
+    int32_t altitude_ellipsoid;
+    int32_t altitude_msl;
+    uint32_t horizontal_accuracy;
+    uint32_t vertical_accuracy;
+    int32_t ned_north;
+    int32_t ned_east;
+    int32_t ned_down;
+    int32_t speed_2d;
+    int32_t heading_2d;
+    uint32_t speed_accuracy;
+    uint32_t heading_accuracy;
+    uint16_t position_DOP;
+    uint16_t reserved2;
+    uint16_t reserved3;
+} ubx_nav_pvt;
+
 enum {
     PREAMBLE1 = 0xb5,
     PREAMBLE2 = 0x62,
     CLASS_NAV = 0x01,
     CLASS_ACK = 0x05,
     CLASS_CFG = 0x06,
+    CLASS_MON = 0x0A,
+    MSG_VER = 0x04,
     MSG_ACK_NACK = 0x00,
     MSG_ACK_ACK = 0x01,
     MSG_POSLLH = 0x2,
     MSG_STATUS = 0x3,
     MSG_SOL = 0x6,
+    MSG_PVT = 0x7,
     MSG_VELNED = 0x12,
     MSG_SVINFO = 0x30,
     MSG_CFG_PRT = 0x00,
@@ -796,6 +937,55 @@ enum {
     MSG_CFG_SET_RATE = 0x01,
     MSG_CFG_NAV_SETTINGS = 0x24
 } ubx_protocol_bytes;
+
+
+typedef struct {
+	uint8_t res[4]; // 0
+	uint8_t fw[4]; // 4
+	uint8_t hw[4]; // 8
+} naza_ver;
+
+typedef struct {
+	uint16_t x; // 0
+	uint16_t y; // 2
+	uint16_t z; // 4
+} naza_mag;
+
+typedef struct {
+    uint32_t time; // GPS msToW 0
+    int32_t longitude; // 4
+    int32_t latitude; // 8
+    int32_t altitude_msl; // 12
+    int32_t h_acc; // 16
+    int32_t v_acc; // 20
+    int32_t reserved;
+    int32_t ned_north; // 28
+    int32_t ned_east; // 32
+    int32_t ned_down;  // 36
+    uint16_t pdop;  // 40
+    uint16_t vdop;  // 42
+    uint16_t ndop; // 44
+    uint16_t edop;	// 46
+    uint8_t satellites; // 48
+    uint8_t reserved3; //
+    uint8_t fix_type; // 50
+    uint8_t reserved4; //
+    uint8_t fix_status; // 52
+    uint8_t reserved5;
+    uint8_t reserved6;
+    uint8_t mask;	// 55
+} naza_nav;
+
+enum {
+    HEADER1 = 0x55,
+    HEADER2 = 0xAA,
+    ID_NAV = 0x10,
+    ID_MAG = 0x20,
+    ID_VER = 0x30,
+    LEN_NAV = 0x3A,
+    LEN_MAG = 0x06,
+} naza_protocol_bytes;
+
 
 enum {
     FIX_NONE = 0,
@@ -850,11 +1040,22 @@ static bool _new_speed;
 
 // Receive buffer
 static union {
+    naza_mag mag;
+    naza_nav nav;
+    naza_ver ver;
+    uint8_t bytes[UBLOX_BUFFER_SIZE];
+} _buffernaza;
+
+
+// Receive buffer
+static union {
     ubx_nav_posllh posllh;
     ubx_nav_status status;
     ubx_nav_solution solution;
     ubx_nav_velned velned;
+    ubx_nav_pvt pvt;
     ubx_nav_svinfo svinfo;
+    ubx_mon_ver ver;
     uint8_t bytes[UBLOX_BUFFER_SIZE];
 } _buffer;
 
@@ -905,9 +1106,40 @@ static bool UBLOX_parse_gps(void)
     case MSG_VELNED:
         *gpsPacketLogChar = LOG_UBLOX_VELNED;
         // speed_3d                        = _buffer.velned.speed_3d;  // cm/s
+        GPS_VELNED[0]=_buffer.velned.ned_north;  // cm/s
+        GPS_VELNED[1]=_buffer.velned.ned_east;   // cm/s
+        GPS_VELNED[2]=_buffer.velned.ned_down;   // cm/s
         GPS_speed = _buffer.velned.speed_2d;    // cm/s
         GPS_ground_course = (uint16_t) (_buffer.velned.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
         _new_speed = true;
+        break;
+    case MSG_PVT:
+        *gpsPacketLogChar = LOG_UBLOX_PVT;
+        GPS_coord[LON] = _buffer.pvt.longitude;
+        GPS_coord[LAT] = _buffer.pvt.latitude;
+        GPS_altitude = _buffer.pvt.altitude_msl / 10 / 100;  //alt in m
+        next_fix = (_buffer.pvt.fix_status & NAV_STATUS_FIX_VALID) && (_buffer.pvt.fix_type == FIX_3D);
+        if (next_fix) {
+            ENABLE_STATE(GPS_FIX);
+        } else {
+            DISABLE_STATE(GPS_FIX);
+        }
+        GPS_VELNED[0]=_buffer.pvt.ned_north/10;  // to cm/s
+        GPS_VELNED[1]=_buffer.pvt.ned_east/10;   // to cm/s
+        GPS_VELNED[2]=_buffer.pvt.ned_down/10;   // to cm/s
+        GPS_speed = _buffer.pvt.speed_2d/10;    // to cm/s
+        GPS_ground_course = (uint16_t) (_buffer.pvt.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
+        GPS_numSat = _buffer.pvt.satellites;
+        GPS_hdop = _buffer.pvt.position_DOP;
+        _new_position = true;
+        _new_speed = true;
+        break;
+    case MSG_VER:
+        if(_class == CLASS_MON)
+        {
+            //uint32_t swver = _buffer.ver.swVersion;
+            hwVersion = atoi(_buffer.ver.hwVersion);
+        }
         break;
     case MSG_SVINFO:
         *gpsPacketLogChar = LOG_UBLOX_SVINFO;
@@ -1037,6 +1269,224 @@ static bool gpsNewFrameUBLOX(uint8_t data)
     }
     return parsed;
 }
+
+int32_t decodeLong(uint32_t idx, uint8_t mask)
+{
+  union { uint32_t l; uint8_t b[4]; } val;
+  val.l=idx;
+  for(int i = 0; i < 4; i++) val.b[i] ^= mask;
+  return val.l;
+}
+
+int16_t decodeShort(uint16_t idx, uint8_t mask)
+{
+  union { uint16_t s; uint8_t b[2]; } val;
+  val.s=idx;
+  for(int i = 0; i < 2; i++) val.b[i] ^= mask;
+  return val.s;
+}
+
+
+static bool NAZA_parse_gps(void)
+{
+    uint32_t i;
+
+    *gpsPacketLogChar = LOG_IGNORED;
+
+    switch (_msg_id) {
+    case ID_NAV:
+        *gpsPacketLogChar = LOG_UBLOX_POSLLH;
+        uint8_t mask = _buffernaza.nav.mask;
+
+        //uint32_t time = decodeLong(_buffernaza.nav.time, mask);
+        //uint32_t second = time & 0b00111111; time >>= 6;
+        //uint32_t minute = time & 0b00111111; time >>= 6;
+        //uint32_t hour = time & 0b00001111; time >>= 4;
+        //uint32_t day = time & 0b00011111; time >>= 5;
+        //uint32_t month = time & 0b00001111; time >>= 4;
+        //uint32_t year = time & 0b01111111;
+
+        GPS_coord[LON] = decodeLong(_buffernaza.nav.longitude, mask);
+        GPS_coord[LAT] = decodeLong(_buffernaza.nav.latitude, mask);
+        GPS_altitude = decodeLong(_buffernaza.nav.altitude_msl, mask) / 1000.0f;  //alt in m
+
+        uint8_t fixType = _buffernaza.nav.fix_type ^ mask;
+        //uint8_t fixFlags = _buffernaza.nav.fix_status ^ mask;
+
+        //uint8_t r3 = _buffernaza.nav.reserved3 ^ mask;
+        //uint8_t r4 = _buffernaza.nav.reserved4 ^ mask;
+        //uint8_t r5 = _buffernaza.nav.reserved5 ^ mask;
+        //uint8_t r6 = _buffernaza.nav.reserved6 ^ mask;
+
+        next_fix = (fixType == FIX_3D);
+        if (next_fix) {
+            ENABLE_STATE(GPS_FIX);
+        } else {
+            DISABLE_STATE(GPS_FIX);
+        }
+        //uint32_t h_acc = decodeLong(_buffernaza.nav.h_acc, mask); // mm
+        //uint32_t v_acc = decodeLong(_buffernaza.nav.v_acc, mask); // mm
+        //uint32_t test = decodeLong(_buffernaza.nav.reserved, mask);
+
+        GPS_VELNED[X]=decodeLong(_buffernaza.nav.ned_north, mask);  // cm/s
+        GPS_VELNED[Y]=decodeLong(_buffernaza.nav.ned_east, mask);   // cm/s
+        GPS_VELNED[Z]=decodeLong(_buffernaza.nav.ned_down, mask);   // cm/s
+
+
+        //uint16_t pdop = decodeShort(_buffernaza.nav.pdop, mask); // pdop
+        //uint16_t vdop = decodeShort(_buffernaza.nav.vdop, mask); // vdop
+        uint16_t ndop = decodeShort(_buffernaza.nav.ndop, mask);
+        uint16_t edop = decodeShort(_buffernaza.nav.edop, mask);
+
+        GPS_numSat = _buffernaza.nav.satellites;
+        GPS_hdop = sqrtf(powf(ndop,2)+powf(edop,2));
+        GPS_speed = sqrtf(powf(GPS_VELNED[X],2)+powf(GPS_VELNED[Y],2)); //cm/s
+
+        // calculate gps heading from VELNE
+        //GPS_ground_course = (uint16_t) (fmod(RADIANS_TO_DECIDEGREES(atan2_approx(GPS_VELNED[Y], GPS_VELNED[X]))*10.0f+3600.0f,3600.0f));
+
+        _new_position = true;
+        _new_speed = true;
+        break;
+    case ID_MAG:
+        *gpsPacketLogChar = LOG_UBLOX_STATUS;
+        uint8_t mask_mag = (_buffernaza.mag.z)&0xFF;
+        mask_mag = (((mask_mag ^ (mask_mag >> 4)) & 0x0F) | ((mask_mag << 3) & 0xF0)) ^ (((mask_mag & 0x01) << 3) | ((mask_mag & 0x01) << 7));
+        int16_t x = decodeShort(_buffernaza.mag.x, mask_mag);
+        int16_t y = decodeShort(_buffernaza.mag.y, mask_mag);
+        int16_t z = (_buffernaza.mag.z ^ (mask_mag<<8));
+
+        GPS_MAG[0] = x;
+        GPS_MAG[1] = y;
+        GPS_MAG[2] = z;
+
+        debug[0]=x;
+        debug[1]=y;
+        debug[2]=z;
+        debug[3]=mask_mag;
+        break;
+    case ID_VER:
+        *gpsPacketLogChar = LOG_UBLOX_STATUS;
+        break;
+    default:
+        return false;
+    }
+
+    // we only return true when we get new position and speed data
+    // this ensures we don't use stale data
+    if (_new_position && _new_speed) {
+        _new_speed = _new_position = false;
+        return true;
+    }
+    return false;
+}
+
+void nazaGPSInit()
+{
+    bool ack;
+    UNUSED(ack);
+}
+
+bool nazaGPSRead(int16_t *magData)
+{
+    magData[X] = GPS_MAG[0];
+    magData[Y] = GPS_MAG[1];
+    magData[Z] = GPS_MAG[2];
+    return true;
+}
+
+bool nazaGPSdetect(mag_t *mag)
+{
+	// we dont know provider here yet
+	//if(gpsConfig->provider != GPS_NAZA)
+	//	return false;
+
+    mag->init = nazaGPSInit;
+    mag->read = nazaGPSRead;
+    return true;
+}
+
+static bool gpsNewFrameNAZA(uint8_t data)
+{
+    bool parsed = false;
+
+    switch (_step) {
+        case 0: // Sync char 1 (0x55)
+            if (HEADER1 == data) {
+                _skip_packet = false;
+                _step++;
+             } else {
+                GPS_garbageByteCount++;
+             }
+            break;
+        case 1: // Sync char 2 (0xAA)
+            if (HEADER2 != data) {
+                _step = 0;
+                break;
+            }
+            _step++;
+            break;
+        case 2: // Id
+            _step++;
+            _ck_b = _ck_a = data;   // reset the checksum accumulators
+            _msg_id = data;
+            break;
+        case 3: // Payload length
+            _step++;
+            _ck_b += (_ck_a += data);       // checksum byte
+            _payload_length = data; // payload length low byte
+            if (_payload_length > UBLOX_BUFFER_SIZE) {
+                _skip_packet = true;
+            }
+            _payload_counter = 0;   // prepare to receive payload
+            if (_payload_length == 0) {
+                _step = 6;
+            }
+            break;
+        case 4:
+            _ck_b += (_ck_a += data);       // checksum byte
+            if (_payload_counter < UBLOX_BUFFER_SIZE) {
+                _buffernaza.bytes[_payload_counter] = data;
+            }
+            // NOTE: check counter BEFORE increasing so that a payload_size of 65535 is correctly handled.  This can happen if garbage data is received.
+            if (_payload_counter ==  _payload_length - 1) {
+                _step++;
+            }
+            _payload_counter++;
+            break;
+        case 5:
+            _step++;
+            if (_ck_a != data) {
+                _skip_packet = true;          // bad checksum
+                gpsData.errors++;
+            }
+            break;
+        case 6:
+            _step = 0;
+
+            shiftPacketLog();
+
+            if (_ck_b != data) {
+                *gpsPacketLogChar = LOG_ERROR;
+                gpsData.errors++;
+                break;              // bad checksum
+            }
+
+            GPS_packetCount++;
+
+            if (_skip_packet) {
+                *gpsPacketLogChar = LOG_SKIPPED;
+                break;
+            }
+
+            if (NAZA_parse_gps()) {
+                parsed = true;
+            }
+            break;
+    }
+    return parsed;
+}
+
 
 void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort)
 {
