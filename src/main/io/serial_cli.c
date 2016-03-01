@@ -1007,21 +1007,27 @@ static void cliSerial(char *cmdline)
 static void cliAdjustmentRange(char *cmdline)
 {
     int i, val = 0;
+    float valf = 0.0f;
     char *ptr;
+    char buf[8];
 
     if (isEmpty(cmdline)) {
         // print out adjustment ranges channel settings
         for (i = 0; i < MAX_ADJUSTMENT_RANGE_COUNT; i++) {
             adjustmentRange_t *ar = &currentProfile->adjustmentRanges[i];
-            cliPrintf("adjrange %u %u %u %u %u %u %u\r\n",
+            cliPrintf("adjrange %u %u %u %u %u %u %u %u",
                 i,
                 ar->adjustmentIndex,
                 ar->auxChannelIndex,
                 MODE_STEP_TO_CHANNEL_VALUE(ar->range.startStep),
                 MODE_STEP_TO_CHANNEL_VALUE(ar->range.endStep),
                 ar->adjustmentFunction,
-                ar->auxSwitchChannelIndex
+                ar->auxSwitchChannelIndex,
+                ar->enableDirectMode
             );
+            cliPrintf("%s", ftoa(ar->valueRange.min, buf));
+            cliPrintf("%s\r\n", ftoa(ar->valueRange.max, buf));
+
         }
     } else {
         ptr = cmdline;
@@ -1066,7 +1072,36 @@ static void cliAdjustmentRange(char *cmdline)
                 }
             }
 
-            if (validArgumentCount != 6) {
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                val = atoi(++ptr);
+                if (val >= 0) {
+                    ar->enableDirectMode = val > 0 ? 1 : 0;
+                    validArgumentCount++;
+                }
+            }
+
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                valf = fastA2F(++ptr);
+                // NaN test
+                if (valf == valf) {
+                    ar->valueRange.min = valf;
+                    validArgumentCount++;
+                }
+            }
+
+            ptr = strchr(ptr, ' ');
+            if (ptr) {
+                valf = fastA2F(++ptr);
+                // NaN test
+                if (valf == valf) {
+                    ar->valueRange.max = valf;
+                    validArgumentCount++;
+                }
+            }
+
+            if (validArgumentCount != 6 && validArgumentCount != 9) {
                 memset(ar, 0, sizeof(adjustmentRange_t));
                 cliShowParseError();
             }

@@ -382,6 +382,8 @@ void configureAdjustmentState(adjustmentRange_t *adjustmentRange) {
     if (adjustmentRange->adjustmentFunction == ADJUSTMENT_RATE_PROFILE) {
         adjustmentState->config.mode = ADJUSTMENT_MODE_SELECT;
         adjustmentState->config.data.selectConfig.switchPositions = 3;
+    } else if (adjustmentRange->enableDirectMode > 0) {
+        adjustmentState->config.mode = ADJUSTMENT_MODE_DIRECT;
     } else {
         adjustmentState->config.mode = ADJUSTMENT_MODE_STEP;
         adjustmentState->config.data.stepConfig.step = 1;
@@ -390,145 +392,156 @@ void configureAdjustmentState(adjustmentRange_t *adjustmentRange) {
     MARK_ADJUSTMENT_FUNCTION_AS_READY(index);
 }
   
-static void setAdjustment(uint8_t* ptr, float* ptrFP, uint8_t adjustment, int delta, float factor, uint8_t min, uint8_t max) {
+static void setAdjustment(uint8_t* ptr, float* ptrFP, uint8_t adjustment, int delta, float factor, uint8_t min, uint8_t max, uint8_t isDirect, float value) {
+  float newValF;
+  int newVal;
   if(ptrFP != 0 && IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
-    *ptrFP = constrainf((*ptrFP) + (delta / factor), PID_F_MIN, PID_F_MAX);
+    newValF = isDirect ? value : (*ptrFP) + (delta / factor);
+    *ptrFP = constrainf(newValF, PID_F_MIN, PID_F_MAX);
     blackboxLogInflightAdjustmentEventFloat(adjustment, *ptrFP);
   } else {
-    *ptr = constrain((int)(*ptr)+delta, min ,max);
+    newVal = (int) isDirect ? lrintf(value) : (int)(*ptr)+delta;
+    *ptr = constrain(newVal, min, max);
     blackboxLogInflightAdjustmentEvent(adjustment, *ptr);
   }
 }
 
-void applyStepAdjustment(controlRateConfig_t *controlRateConfig, uint8_t adjustmentFunction, int delta) {
-
-    if (delta > 0) {
-        beeperConfirmationBeeps(2);
-    } else {
-        beeperConfirmationBeeps(1);
+void applyAdjustment(controlRateConfig_t *controlRateConfig, uint8_t adjustmentFunction, int delta, uint8_t isDirect, float value) {
+    if (!isDirect) {
+        if (delta > 0) {
+            beeperConfirmationBeeps(2);
+        } else {
+            beeperConfirmationBeeps(1);
+        }
     }
     switch(adjustmentFunction) {
         case ADJUSTMENT_RC_RATE:
-            setAdjustment(&controlRateConfig->rcRate8,0,ADJUSTMENT_RC_RATE,delta,0,RC_RATE_MIN,RC_RATE_MAX);
-            generatePitchRollCurve(controlRateConfig);
+            if (!isDirect || (uint8_t)value != controlRateConfig->rcRate8) {
+                setAdjustment(&controlRateConfig->rcRate8,0,ADJUSTMENT_RC_RATE,delta,0,RC_RATE_MIN,RC_RATE_MAX,isDirect,value);
+                generatePitchRollCurve(controlRateConfig);
+            }
         break;
         case ADJUSTMENT_RC_EXPO:
-            setAdjustment(&controlRateConfig->rcExpo8,0,ADJUSTMENT_RC_EXPO,delta,0,EXPO_MIN,EXPO_MAX);
-            generatePitchRollCurve(controlRateConfig);
+            if (!isDirect || (uint8_t)value != controlRateConfig->rcExpo8) {
+                setAdjustment(&controlRateConfig->rcExpo8,0,ADJUSTMENT_RC_EXPO,delta,0,EXPO_MIN,EXPO_MAX,isDirect,value);
+                generatePitchRollCurve(controlRateConfig);
+            }
         break;
         case ADJUSTMENT_THROTTLE_EXPO:
-            setAdjustment(&controlRateConfig->thrExpo8,0,ADJUSTMENT_THROTTLE_EXPO,delta,0,EXPO_MIN,EXPO_MAX);
-            generateThrottleCurve(controlRateConfig, escAndServoConfig);
+            if (!isDirect || (uint8_t)value != controlRateConfig->thrExpo8) {
+                setAdjustment(&controlRateConfig->thrExpo8,0,ADJUSTMENT_THROTTLE_EXPO,delta,0,EXPO_MIN,EXPO_MAX,isDirect,value);
+                generateThrottleCurve(controlRateConfig, escAndServoConfig);
+            }
         break;
         case ADJUSTMENT_PITCH_ROLL_RATE:
         case ADJUSTMENT_PITCH_RATE:
-            setAdjustment(&controlRateConfig->rates[FD_PITCH],0,ADJUSTMENT_PITCH_RATE,delta,0,0,CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX);
+            setAdjustment(&controlRateConfig->rates[FD_PITCH],0,ADJUSTMENT_PITCH_RATE,delta,0,0,CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX,isDirect,value);
             if (adjustmentFunction == ADJUSTMENT_PITCH_RATE) {
                 break;
             }
             // follow though for combined ADJUSTMENT_PITCH_ROLL_RATE
         case ADJUSTMENT_ROLL_RATE:
-            setAdjustment(&controlRateConfig->rates[FD_ROLL],0,ADJUSTMENT_ROLL_RATE,delta,0,0,CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX);
+            setAdjustment(&controlRateConfig->rates[FD_ROLL],0,ADJUSTMENT_ROLL_RATE,delta,0,0,CONTROL_RATE_CONFIG_ROLL_PITCH_RATE_MAX,isDirect,value);
             break;
         case ADJUSTMENT_YAW_RATE:
-            setAdjustment(&controlRateConfig->rates[FD_YAW],0,ADJUSTMENT_YAW_RATE,delta,0,0,CONTROL_RATE_CONFIG_YAW_RATE_MAX);
+            setAdjustment(&controlRateConfig->rates[FD_YAW],0,ADJUSTMENT_YAW_RATE,delta,0,0,CONTROL_RATE_CONFIG_YAW_RATE_MAX,isDirect,value);
             break;
         case ADJUSTMENT_PITCH_ROLL_P:
         case ADJUSTMENT_PITCH_P:
-            setAdjustment(&pidProfile->P8[PIDPITCH],&pidProfile->P_f[PIDPITCH],ADJUSTMENT_PITCH_P,delta,10.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDPITCH],&pidProfile->P_f[PIDPITCH],ADJUSTMENT_PITCH_P,delta,10.0f,PID_MIN,PID_MAX,isDirect,value);
             if (adjustmentFunction == ADJUSTMENT_PITCH_P) {
                 break;
             }
             // follow though for combined ADJUSTMENT_PITCH_ROLL_P
         case ADJUSTMENT_ROLL_P:
-            setAdjustment(&pidProfile->P8[PIDROLL],&pidProfile->P_f[PIDROLL],ADJUSTMENT_ROLL_P,delta,10.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDROLL],&pidProfile->P_f[PIDROLL],ADJUSTMENT_ROLL_P,delta,10.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_PITCH_ROLL_I:
         case ADJUSTMENT_PITCH_I:
-            setAdjustment(&pidProfile->I8[PIDPITCH],&pidProfile->I_f[PIDPITCH],ADJUSTMENT_PITCH_I,delta,100.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDPITCH],&pidProfile->I_f[PIDPITCH],ADJUSTMENT_PITCH_I,delta,100.0f,PID_MIN,PID_MAX,isDirect,value);
             if (adjustmentFunction == ADJUSTMENT_PITCH_I) {
                 break;
             }
             // follow though for combined ADJUSTMENT_PITCH_ROLL_I
         case ADJUSTMENT_ROLL_I:
-           setAdjustment(&pidProfile->I8[PIDROLL],&pidProfile->I_f[PIDROLL],ADJUSTMENT_ROLL_I,delta,100.0f,PID_MIN,PID_MAX);
+           setAdjustment(&pidProfile->I8[PIDROLL],&pidProfile->I_f[PIDROLL],ADJUSTMENT_ROLL_I,delta,100.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_PITCH_ROLL_D:
         case ADJUSTMENT_PITCH_D:
-            setAdjustment(&pidProfile->D8[PIDPITCH],&pidProfile->D_f[PIDPITCH],ADJUSTMENT_PITCH_D,delta,1000.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->D8[PIDPITCH],&pidProfile->D_f[PIDPITCH],ADJUSTMENT_PITCH_D,delta,1000.0f,PID_MIN,PID_MAX,isDirect,value);
             if (adjustmentFunction == ADJUSTMENT_PITCH_D) {
                 break;
             }
             // follow though for combined ADJUSTMENT_PITCH_ROLL_D
         case ADJUSTMENT_ROLL_D:
-            setAdjustment(&pidProfile->D8[PIDROLL],&pidProfile->D_f[PIDROLL],ADJUSTMENT_ROLL_D,delta,1000.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->D8[PIDROLL],&pidProfile->D_f[PIDROLL],ADJUSTMENT_ROLL_D,delta,1000.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_YAW_P:
-                setAdjustment(&pidProfile->P8[PIDYAW],&pidProfile->P_f[PIDYAW],ADJUSTMENT_YAW_P,delta,10.0f,PID_MIN,PID_MAX);
+                setAdjustment(&pidProfile->P8[PIDYAW],&pidProfile->P_f[PIDYAW],ADJUSTMENT_YAW_P,delta,10.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_YAW_I:
-            setAdjustment(&pidProfile->I8[PIDYAW],&pidProfile->I_f[PIDYAW],ADJUSTMENT_YAW_I,delta,100.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDYAW],&pidProfile->I_f[PIDYAW],ADJUSTMENT_YAW_I,delta,100.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_YAW_D:
-                setAdjustment(&pidProfile->D8[PIDYAW],&pidProfile->D_f[PIDYAW],ADJUSTMENT_YAW_D,delta,1000.0f,PID_MIN,PID_MAX);
+                setAdjustment(&pidProfile->D8[PIDYAW],&pidProfile->D_f[PIDYAW],ADJUSTMENT_YAW_D,delta,1000.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_LEVEL_P:
-            setAdjustment(&pidProfile->P8[PIDLEVEL],&pidProfile->A_level,ADJUSTMENT_LEVEL_P,delta,10.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDLEVEL],&pidProfile->A_level,ADJUSTMENT_LEVEL_P,delta,10.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_LEVEL_I:
-            setAdjustment(&pidProfile->I8[PIDLEVEL],&pidProfile->H_level,ADJUSTMENT_LEVEL_I,delta,10.0f,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDLEVEL],&pidProfile->H_level,ADJUSTMENT_LEVEL_I,delta,10.0f,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_LEVEL_D:
             if (IS_PID_CONTROLLER_FP_BASED(pidProfile->pidController)) {
-              setAdjustment(&pidProfile->H_sensitivity,0,ADJUSTMENT_LEVEL_D,delta,0,PID_MIN,PID_MAX);
+              setAdjustment(&pidProfile->H_sensitivity,0,ADJUSTMENT_LEVEL_D,delta,0,PID_MIN,PID_MAX,isDirect,value);
             } else {
-              setAdjustment(&pidProfile->D8[PIDLEVEL],0,ADJUSTMENT_LEVEL_D,delta,0,PID_MIN,PID_MAX);
+              setAdjustment(&pidProfile->D8[PIDLEVEL],0,ADJUSTMENT_LEVEL_D,delta,0,PID_MIN,PID_MAX,isDirect,value);
             }
             break;
         case ADJUSTMENT_ALT_P:
-            setAdjustment(&pidProfile->P8[PIDALT],0,ADJUSTMENT_ALT_P,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDALT],0,ADJUSTMENT_ALT_P,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_ALT_I:
-            setAdjustment(&pidProfile->I8[PIDALT],0,ADJUSTMENT_ALT_I,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDALT],0,ADJUSTMENT_ALT_I,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_ALT_D:
-            setAdjustment(&pidProfile->D8[PIDALT],0,ADJUSTMENT_ALT_D,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->D8[PIDALT],0,ADJUSTMENT_ALT_D,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_POS_P:
-            setAdjustment(&pidProfile->P8[PIDPOS],0,ADJUSTMENT_POS_P,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDPOS],0,ADJUSTMENT_POS_P,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_POS_I:
-            setAdjustment(&pidProfile->I8[PIDPOS],0,ADJUSTMENT_POS_I,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDPOS],0,ADJUSTMENT_POS_I,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_POSR_P:
-            setAdjustment(&pidProfile->P8[PIDPOSR],0,ADJUSTMENT_POSR_P,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDPOSR],0,ADJUSTMENT_POSR_P,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_POSR_I:
-            setAdjustment(&pidProfile->I8[PIDPOSR],0,ADJUSTMENT_POSR_I,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDPOSR],0,ADJUSTMENT_POSR_I,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_POSR_D:
-            setAdjustment(&pidProfile->D8[PIDPOSR],0,ADJUSTMENT_POSR_D,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->D8[PIDPOSR],0,ADJUSTMENT_POSR_D,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
        case ADJUSTMENT_NAVR_P:
-            setAdjustment(&pidProfile->P8[PIDNAVR],0,ADJUSTMENT_NAVR_P,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDNAVR],0,ADJUSTMENT_NAVR_P,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_NAVR_I:
-            setAdjustment(&pidProfile->I8[PIDNAVR],0,ADJUSTMENT_NAVR_I,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDNAVR],0,ADJUSTMENT_NAVR_I,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_NAVR_D:
-            setAdjustment(&pidProfile->D8[PIDNAVR],0,ADJUSTMENT_NAVR_D,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->D8[PIDNAVR],0,ADJUSTMENT_NAVR_D,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_MAG_P:
-            setAdjustment(&pidProfile->P8[PIDMAG],0,ADJUSTMENT_MAG_P,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDMAG],0,ADJUSTMENT_MAG_P,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_VEL_P:
-            setAdjustment(&pidProfile->P8[PIDVEL],0,ADJUSTMENT_VEL_P,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->P8[PIDVEL],0,ADJUSTMENT_VEL_P,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_VEL_I:
-            setAdjustment(&pidProfile->I8[PIDVEL],0,ADJUSTMENT_VEL_I,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->I8[PIDVEL],0,ADJUSTMENT_VEL_I,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         case ADJUSTMENT_VEL_D:
-            setAdjustment(&pidProfile->D8[PIDVEL],0,ADJUSTMENT_VEL_D,delta,0,PID_MIN,PID_MAX);
+            setAdjustment(&pidProfile->D8[PIDVEL],0,ADJUSTMENT_VEL_D,delta,0,PID_MIN,PID_MAX,isDirect,value);
             break;
         default:
             break;
@@ -604,12 +617,18 @@ void processRcAdjustments(controlRateConfig_t *controlRateConfig, rxConfig_t *rx
                 continue;
             }
 
-            applyStepAdjustment(controlRateConfig, adjustmentFunction, delta);
+            applyAdjustment(controlRateConfig, adjustmentFunction, delta, 0, 0.0f);
         } else if (adjustmentState->config.mode == ADJUSTMENT_MODE_SELECT) {
-            uint16_t rangeWidth = ((2100 - 900) / adjustmentState->config.data.selectConfig.switchPositions);
-            uint8_t position = (constrain(rcData[channelIndex], 900, 2100 - 1) - 900) / rangeWidth;
+            uint16_t rangeWidth = ((CHANNEL_RANGE_WIDTH) / adjustmentState->config.data.selectConfig.switchPositions);
+            uint8_t position = (constrain(rcData[channelIndex], CHANNEL_RANGE_MIN, CHANNEL_RANGE_MAX - 1) - CHANNEL_RANGE_MIN) / rangeWidth;
 
             applySelectAdjustment(adjustmentFunction, position);
+        } else if (adjustmentState->config.mode == ADJUSTMENT_MODE_DIRECT) {
+            float valueMin = adjustmentState->range->valueRange.min;
+            float valueMax = adjustmentState->range->valueRange.max;
+            float rangeWidth = valueMax - valueMin;
+            float value = (constrain(rcData[channelIndex], CHANNEL_RANGE_MIN, CHANNEL_RANGE_MAX - 1) - CHANNEL_RANGE_MIN) * rangeWidth / CHANNEL_RANGE_WIDTH + valueMin;
+            applyAdjustment(controlRateConfig, adjustmentFunction, 0, 1, value);
         }
         MARK_ADJUSTMENT_FUNCTION_AS_BUSY(adjustmentIndex);
     }

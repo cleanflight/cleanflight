@@ -100,6 +100,8 @@ typedef enum {
 #define CHANNEL_RANGE_MIN 900
 #define CHANNEL_RANGE_MAX 2100
 
+#define CHANNEL_RANGE_WIDTH (CHANNEL_RANGE_MAX - CHANNEL_RANGE_MIN)
+
 #define MODE_STEP_TO_CHANNEL_VALUE(step) (CHANNEL_RANGE_MIN + 25 * (step))
 #define CHANNEL_VALUE_TO_STEP(channelValue) ((constrain((channelValue), CHANNEL_RANGE_MIN, CHANNEL_RANGE_MAX) - CHANNEL_RANGE_MIN) / 25)
 
@@ -122,6 +124,11 @@ typedef struct channelRange_s {
     uint8_t startStep;
     uint8_t endStep;
 } channelRange_t;
+
+typedef struct valueRange_s {
+    float min;
+    float max;
+} valueRange_t;
 
 typedef struct modeActivationCondition_s {
     boxId_e modeId;
@@ -216,7 +223,8 @@ typedef enum {
 
 typedef enum {
     ADJUSTMENT_MODE_STEP,
-    ADJUSTMENT_MODE_SELECT
+    ADJUSTMENT_MODE_SELECT,
+    ADJUSTMENT_MODE_DIRECT
 } adjustmentMode_e;
 
 typedef struct adjustmentStepConfig_s {
@@ -249,6 +257,8 @@ typedef struct adjustmentRange_s {
 
     // ... via slot
     uint8_t adjustmentIndex;
+    uint8_t enableDirectMode;
+    valueRange_t valueRange;
 } adjustmentRange_t;
 
 #define ADJUSTMENT_INDEX_OFFSET 1
