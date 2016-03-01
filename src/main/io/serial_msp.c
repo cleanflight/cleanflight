@@ -855,7 +855,10 @@ static bool processOutCommand(uint8_t cmdMSP)
                 1 + // start step
                 1 + // end step
                 1 + // adjustment function
-                1   // aux switch channel index
+                1 + // aux switch channel index
+                1 + // direct mode flag
+                4 + // value range minimum
+                4   // value range maximum
         ));
         for (i = 0; i < MAX_ADJUSTMENT_RANGE_COUNT; i++) {
             adjustmentRange_t *adjRange = &currentProfile->adjustmentRanges[i];
@@ -865,6 +868,9 @@ static bool processOutCommand(uint8_t cmdMSP)
             serialize8(adjRange->range.endStep);
             serialize8(adjRange->adjustmentFunction);
             serialize8(adjRange->auxSwitchChannelIndex);
+            serialize8(adjRange->enableDirectMode);
+            serialize32(adjRange->valueRange.min);
+            serialize32(adjRange->valueRange.max);
         }
         break;
     case MSP_BOXNAMES:
@@ -1314,6 +1320,9 @@ static bool processInCommand(void)
                 adjRange->range.endStep = read8();
                 adjRange->adjustmentFunction = read8();
                 adjRange->auxSwitchChannelIndex = read8();
+                adjRange->enableDirectMode = read8();
+                adjRange->valueRange.min = read32();
+                adjRange->valueRange.max = read32();
             } else {
                 headSerialError(0);
             }
