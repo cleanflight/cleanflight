@@ -168,6 +168,8 @@
 #define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
+#define VTX
+#define VTXBB
 
 #define SPEKTRUM_BIND
 // UART3,

@@ -122,6 +122,8 @@
 #define LED1
 #define INVERTER
 #define DISPLAY
+#define VTX
+#define VTXBB
 
 #define USE_UART1
 #define USE_UART2

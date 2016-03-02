@@ -290,7 +290,9 @@ HIGHEND_SRC = \
 		   sensors/sonar.c \
 		   sensors/barometer.c \
 		   blackbox/blackbox.c \
-		   blackbox/blackbox_io.c
+		   blackbox/blackbox_io.c \
+		   io/vtxrc.c \
+		   drivers/vtx_rtc6705bb.c
 
 VCP_SRC = \
 		   vcp/hw_config.c \

@@ -515,6 +515,19 @@ STATIC_UNIT_TESTED void resetConf(void)
     masterConfig.blackbox_rate_denom = 1;
 #endif
 
+#ifdef VTXBB
+    masterConfig.vtxbb_ss_pcode = 0;
+    masterConfig.vtxbb_sck_pcode = 0;
+    masterConfig.vtxbb_mosi_pcode = 0;
+#endif
+
+#ifdef VTX
+    masterConfig.vtx_mode = 0;
+    masterConfig.vtx_mhz = 5740;
+    masterConfig.vtx_band = 4;
+    masterConfig.vtx_channel = 1;
+#endif
+
     // alternative defaults settings for COLIBRI RACE targets
 #if defined(COLIBRI_RACE)
     masterConfig.looptime = 1000;
