@@ -19,8 +19,8 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
     apt-get remove -y binutils-arm-none-eabi gcc-arm-none-eabi
-    add-apt-repository ppa:terry.guo/gcc-arm-embedded
+    add-apt-repository ppa:team-gcc-arm-embedded/ppa
     apt-get update
-    apt-get install -y git gcc-arm-none-eabi=4.9.3.2015q3-1trusty1
+    apt-get install -y git gcc-arm-embedded=5-2015q4-1~trusty1
   SHELL
 end

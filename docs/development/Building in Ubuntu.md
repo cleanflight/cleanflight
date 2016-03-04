@@ -2,8 +2,8 @@
 
 Building for Ubuntu platform is remarkably easy. The only trick to understand is that the Ubuntu toolchain,
 which they are downstreaming from Debian, is not compatible with Cleanflight. We suggest that you take an
-alternative PPA from Terry Guo, found here:
-https://launchpad.net/~terry.guo/+archive/ubuntu/gcc-arm-embedded
+alternative PPA from the GCC ARM Embedded team, found here:
+https://launchpad.net/~team-gcc-arm-embedded/+archive/ubuntu/ppa
 
 This PPA has several compiler versions and platforms available. For many hardware platforms (notably Naze)
 the 4.9.3 compiler will work fine. For some, older compiler 4.8 (notably Sparky) is more appropriate. We
@@ -12,34 +12,34 @@ If you cannot, please see the section below for further hints on what you might 
 
 ## Setup GNU ARM Toolchain
 
-Note specifically the last paragraph of Terry's PPA documentation -- Ubuntu carries its own package for
-`gcc-arm-none-eabi`, so you'll have to remove it, and then pin the one from the PPA.
+Note specifically the last paragraph of GCC ARM Embedded PPA documentation -- Ubuntu carries its own package for
+`gcc-arm-embedded`, so you'll have to remove it, and then pin the one from the PPA.
 For your release, you should first remove any older pacakges (from Debian or Ubuntu directly), introduce
-Terry's PPA, and update:
+GCC ARM Embedded PPA, and update:
 ```
 sudo apt-get remove binutils-arm-none-eabi gcc-arm-none-eabi
-sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded
+sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa
 sudo apt-get update
 ```
 
-For Ubuntu 14.10 (current release, called Utopic Unicorn), you should pin:
+For Ubuntu 15.10 (current release, called Wily Werewolf), you should pin:
 ```
-sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0utopic12
+sudo apt-get install gcc-arm-embedded=5-2015q4-1~wily1
 ```
 
 For Ubuntu 14.04 (an LTS as of Q1'2015, called Trusty Tahr), you should pin:
 ```
-sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0trusty12
+sudo apt-get install gcc-arm-embedded=5-2015q4-1~trusty1
 ```
 
 For Ubuntu 12.04 (previous LTS, called Precise Penguin), you should pin:
 ```
-sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0precise12
+sudo apt-get install gcc-arm-embedded=5-2015q4-1~precise1
 ```
 
 ## Building on Ubuntu
 
-After the ARM toolchain from Terry is installed, you should be able to build from source.
+After the ARM toolchain from GCC ARM Embedded team is installed, you should be able to build from source.
 ```
 cd src
 git clone git@github.com:cleanflight/cleanflight.git
