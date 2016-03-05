@@ -37,6 +37,42 @@ For Ubuntu 12.04 (previous LTS, called Precise Penguin), you should pin:
 sudo apt-get install gcc-arm-embedded=5-2015q4-1~precise1
 ```
 
+## One-time: Long-term developers
+
+The ARM toolchain was provided by an alternative repository prior to 2015 Q4 [1].
+
+For the 2015Q4 GCC 5 release the GCC ARM Embedded team decided to move
+from the old PPA maintained by Terry Guo [1] to a team maintained one [2].
+They also took advantage of that move to rename the package from
+gcc-arm-none-eabi to gcc-arm-embedded.
+
+[1] https://launchpad.net/~terry.guo/+archive/gcc-arm-embedded
+[2] https://launchpad.net/~team-gcc-arm-embedded/+archive/ubuntu/ppa
+
+A consequence of that move is that existing users of the old PPA are not
+automatically upgraded to the 2015Q4 GCC 5 release and need special action
+to do so:
+
+Step 1: Inside Ubuntu, open a terminal and input
+        "sudo add-apt-repository ppa:team-gcc-arm-embedded/ppa"
+        to add the new PPA
+
+Step 2: Input "sudo add-apt-repository -r ppa:terry.guo/gcc-arm-embedded"
+        to remove the old PPA
+
+Step 3: Input "sudo apt-get update" to update apt's database
+
+Step 4: Input "sudo apt-get remove gcc-arm-none-eabi"
+        to remove the 2015Q3 GCC 4.9 package
+
+Step 5: Input "sudo apt-get install gcc-arm-embedded"
+        to install the 2015Q4 GCC 5 release
+
+These steps only need to be performed once: upgrade to future release will
+be done automatically after that.
+
+Refer: https://launchpad.net/gcc-arm-embedded/+announcement/13824
+
 ## Building on Ubuntu
 
 After the ARM toolchain from GCC ARM Embedded team is installed, you should be able to build from source.
