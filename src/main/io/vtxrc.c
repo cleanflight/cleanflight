@@ -91,6 +91,7 @@
 
 #include "version.h"
 
+#ifdef VTX
 void vtxRcInit()
 {
     vtxInit();
@@ -106,3 +107,4 @@ void vtxRcInit()
         vtxSetFreq(masterConfig.vtx_mhz);
     }
 }
+#endif
