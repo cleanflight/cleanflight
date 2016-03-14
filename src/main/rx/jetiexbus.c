@@ -57,6 +57,8 @@
 #include "sensors/battery.h"
 #include "sensors/barometer.h"
 #include "telemetry/telemetry.h"
+#include "config/runtime_config.h"
+#include "config/config.h"
 
 #endif //TELEMETRY
 
@@ -156,6 +158,7 @@ typedef struct exBusSensor_s{
     int32_t value;
     const uint8_t exDataType;
     const uint8_t decimals;
+    bool active;
 } exBusSensor_t;
 
 #define DECIMAL_MASK(decimals) (decimals << 5)
@@ -163,11 +166,11 @@ typedef struct exBusSensor_s{
 // list of telemetry messages
 // after every 15 sensors a new header has to be inserted (e.g. "CF-Dev 1.12 D2")
 exBusSensor_t jetiExSensors[] = {
-    { "Cleanflight D1", "",     0,      0,             0 },                     // device description
-    { "Voltage",        "V",    0,      EX_TYPE_14b,   DECIMAL_MASK(1) },
-    { "Current",        "A",    0,      EX_TYPE_14b,   DECIMAL_MASK(2) },
-    { "Altitude",       "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(2) },
-    { "Capacity",       "mAh",  0,      EX_TYPE_22b,   DECIMAL_MASK(0) }
+    { "Cleanflight D1", "",     0,      0,             0 , false},                     // device description
+    { "Voltage",        "V",    0,      EX_TYPE_14b,   DECIMAL_MASK(1), false},
+    { "Current",        "A",    0,      EX_TYPE_14b,   DECIMAL_MASK(2), false},
+    { "Altitude",       "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(2), false},
+    { "Capacity",       "mAh",  0,      EX_TYPE_22b,   DECIMAL_MASK(0), false}
 };
 
 
@@ -440,6 +443,19 @@ void initJetiExBusTelemetry(telemetryConfig_t *initialTelemetryConfig)
     jetiExTelemetryFrame[EXTEL_HEADER_LSN_LB] = 0x00;            // increment by telemetry count (%16) > only 15 values per device possible
     jetiExTelemetryFrame[EXTEL_HEADER_LSN_HB] = 0x00;
     jetiExTelemetryFrame[EXTEL_HEADER_RES] = 0x00;               // reserved, by default 0x00
+
+    if (feature(FEATURE_VBAT)) {
+        jetiExSensors[EX_VOLTAGE].active = true;
+    }
+
+    if (feature(FEATURE_CURRENT_METER)){
+        jetiExSensors[EX_CURRENT].active = true;
+        jetiExSensors[EX_CAPACITY].active = true;
+    }
+
+    if (sensors(SENSOR_BARO)) {
+        jetiExSensors[EX_ALTITUDE].active = true;
+    }
 }
 
 
@@ -477,22 +493,26 @@ uint8_t createExTelemetrieValueMessage(uint8_t *exMessage, uint8_t itemStart)
     uint8_t *p = &exMessage[EXTEL_HEADER_ID];
 
     while(item <= (itemStart | 0x0F)) {
-        *p++ = ((item & 0x0F) << 4) | jetiExSensors[item].exDataType;               // Sensor ID (%16) | EX Data Type
+        if(jetiExSensors[item].active){
+            *p++ = ((item & 0x0F) << 4) | jetiExSensors[item].exDataType;           // Sensor ID (%16) | EX Data Type
 
-        sensorValue = jetiExSensors[item].value;
-        iCount = exDataTypeLen[jetiExSensors[item].exDataType];
-        while(iCount > 1) {
-            *p++ = sensorValue;
-            sensorValue = sensorValue >> 8;
-            iCount--;
+            sensorValue = jetiExSensors[item].value;
+            iCount = exDataTypeLen[jetiExSensors[item].exDataType];
+            while(iCount > 1) {
+                *p++ = sensorValue;
+                sensorValue = sensorValue >> 8;
+                iCount--;
+            }
+            *p++ = (sensorValue & 0x9F) | jetiExSensors[item].decimals;
+
+            item++;
+            if(item > JETI_EX_SENSOR_COUNT)
+                break;
+            if(EXTEL_MAX_PAYLOAD <= ((p-&exMessage[EXTEL_HEADER_ID]) + exDataTypeLen[jetiExSensors[item].exDataType]) + 1)
+                break;
+        } else {
+            item++;
         }
-        *p++ = (sensorValue & 0x9F) | jetiExSensors[item].decimals;
-
-        item++;
-        if(item > JETI_EX_SENSOR_COUNT)
-            break;
-        if(EXTEL_MAX_PAYLOAD <= ((p-&exMessage[EXTEL_HEADER_ID]) + exDataTypeLen[jetiExSensors[item].exDataType]) + 1)
-            break;
     }
 
     messageSize = (EXTEL_HEADER_LEN + (p-&exMessage[EXTEL_HEADER_ID]));
