@@ -108,6 +108,8 @@ There are two primary ways to get Cleanflight onto a CC3D board.
 * Single binary image mode - best mode if you don't want to use OpenPilot.
 * OpenPilot Bootloader compatible image mode - best mode if you want to switch between OpenPilot and Cleanflight.
 
+This short video shows how to flash step by step: https://youtu.be/eClp-YBeSms
+
 ## Single binary image mode.
 
 The entire flash ram on the target processor is flashed with a single image.
