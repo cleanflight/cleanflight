@@ -160,7 +160,13 @@ See Sparky schematic for CONN2 pinouts.
 
 ## TauLabs bootloader
 
-Flashing cleanflight will erase the TauLabs bootloader, this is not a problem and can easily be restored using the st flashloader tool.
+Flashing cleanflight will erase the TauLabs bootloader, this is not a problem and can easily be restored using the st flashloader tool or Cleanflight Configurator as detailed below.
+
+### Restoring dRonin/Tau Labs Bootloader
+To restore the dRonin bootloader (currently Tau Labs compatible):
+* Download a [dRonin release package](https://github.com/d-ronin/dRonin/releases), inside there will be a file called `ef_sparky.hex`. This image includes both the bootloader and the firmware.
+* Flash the `ef_sparky.hex` image using the Cleanflight Configurator app firmware flasher, choosing to load a local firmware (or by another method of your choice should you so desire). 
+* You should now be able to connect to the dRonin GCS.
 
 # Serial Ports
 
