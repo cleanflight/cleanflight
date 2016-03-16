@@ -181,3 +181,4 @@ An ALT - P of 8 will target a speed of 62 cm/secs at 1 meter of target, and 3m /
 Once the target velocity has been set, a regular PID will try to achieve it, but the following elements should also be taken into consideration :
 - Alt-Hold does NOT work during inverted flight, and automaticaly disables itself at 80° angle
 - When trying to determine it's current vertical speed, Cleanflight is not only using baro/sonar, but also acceleration sensors. If your motor/props are badly unbalanced, this could seriously affect acceleration reading and therefore Alt-Hold itself
+- Your choice of PID controller (MW23, MWREWRITE or LUXFLOAT) has no effect on the VEL-PID or ALT-P
