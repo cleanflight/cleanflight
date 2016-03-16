@@ -2007,25 +2007,19 @@ static void cliBeeper(char *cmdline)
                 if (remove) { // beeper off
                     if (i == BEEPER_ALL-1)
                         beeperOffSetAll(beeperCount-2);
-                    else
-                    	if (i == BEEPER_PREFERENCE-1)
-                            setBeeperOffMask(getPreferedBeeperOffMask());
-                        else {
-                            mask = 1 << i;
-                            beeperOffSet(mask);
-                        }
+                    else {
+						mask = 1 << i;
+						beeperOffSet(mask);
+					}
                     cliPrint("Disabled");
                 }
                 else { // beeper on
                     if (i == BEEPER_ALL-1)
                         beeperOffClearAll();
-                    else
-                    	if (i == BEEPER_PREFERENCE-1)
-                            setPreferedBeeperOffMask(getBeeperOffMask());
-                        else {
-                            mask = 1 << i;
-                            beeperOffClear(mask);
-                        }
+                    else{
+						mask = 1 << i;
+						beeperOffClear(mask);
+					}
                     cliPrint("Enabled");
                 }
             cliPrintf(" %s\r\n", beeperNameForTableIndex(i));

@@ -171,7 +171,6 @@ typedef struct beeperTableEntry_s {
     { BEEPER_ENTRY(BEEPER_SYSTEM_INIT,           16, NULL,                 "SYSTEM_INIT") },
 
     { BEEPER_ENTRY(BEEPER_ALL,                   17, NULL,      		   "ALL") },
-    { BEEPER_ENTRY(BEEPER_PREFERENCE,            18, NULL,                 "PREFERED") },
 };
 
 static const beeperTableEntry_t *currentBeeperEntry = NULL;

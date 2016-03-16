@@ -1029,13 +1029,3 @@ void setBeeperOffMask(uint32_t mask)
 {
     masterConfig.beeper_off_flags = mask;
 }
-
-uint32_t getPreferedBeeperOffMask(void)
-{
-    return masterConfig.prefered_beeper_off_flags;
-}
-
-void setPreferedBeeperOffMask(uint32_t mask)
-{
-    masterConfig.prefered_beeper_off_flags = mask;
-}

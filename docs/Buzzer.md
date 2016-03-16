@@ -52,7 +52,6 @@ Under CLI, all beeping conditions are listed either with *dump* or *beeper list*
 
 - *beeper XX* and *beeper -XX* respectively enable / disable the XX beeping condition.
 - *beeper ALL* and *beeper -ALL* respectively enable / disable all beeping conditions.
-- *beeper PREFERED* saves the current configuration and *beeper -PREFERED* recalls this configuration to be applied at any time.
 - *beeper* lists all disabled conditions.
 
 The XX conditions are listed below :
@@ -76,7 +75,6 @@ The XX conditions are listed below :
     SYSTEM_INIT            // Initialisation beeps when board is powered on
 
     ALL                    // Turn ON or OFF all conditions
-    PREFERED               // Save current configuration as preference
     
 ## Types of buzzer supported
 
