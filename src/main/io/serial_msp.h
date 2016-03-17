@@ -59,7 +59,7 @@
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   16 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   17 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -166,6 +166,9 @@ static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 
 #define MSP_TRANSPONDER_CONFIG          82 //in message          Get transponder settings
 #define MSP_SET_TRANSPONDER_CONFIG      83 //out message         Set transponder settings
+
+#define MSP_BEEPER                      84 //in message          Get beeper disabled settings
+#define MSP_SET_BEEPER                  85 //out message         Set beeper disabled settings
 
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)

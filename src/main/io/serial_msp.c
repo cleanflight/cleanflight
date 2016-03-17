@@ -993,6 +993,11 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize32(featureMask());
         break;
 
+    case MSP_BEEPER:
+        headSerialReply(4);
+        serialize32(getBeeperOffMask());
+        break;
+
     case MSP_BOARD_ALIGNMENT:
         headSerialReply(6);
         serialize16(masterConfig.boardAlignment.rollDegrees);
@@ -1542,6 +1547,11 @@ static bool processInCommand(void)
     case MSP_SET_FEATURE:
         featureClearAll();
         featureSet(read32()); // features bitmap
+        break;
+
+    case MSP_SET_BEEPER:
+    	beeperOffClearAll();
+    	beeperOffSet(read32()); // beeper conditions bitmap
         break;
 
     case MSP_SET_BOARD_ALIGNMENT:
