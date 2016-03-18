@@ -1984,7 +1984,13 @@ static void cliBeeper(char *cmdline)
                 cliPrintf("  %s", beeperNameForTableIndex(i));
         }
         cliPrint("\r\n");
-    } else if (strncasecmp(cmdline, "list", len) == 0) {
+        return;
+    }
+   while (cmdline[0] == ' ') {
+    	cmdline++;
+    	len--;
+    }
+    if (strncasecmp(cmdline, "list", len) == 0) {
         cliPrint("Available:");
         for (i = 0; i < beeperCount; i++)
             cliPrintf("  %s", beeperNameForTableIndex(i));
@@ -1996,6 +2002,10 @@ static void cliBeeper(char *cmdline)
             remove = true;     // this is for beeper OFF condition
             cmdline++;
             len--;
+        }
+        while (cmdline[0] == ' ') {
+        	cmdline++;
+        	len--;
         }
 
         for (i = 0; ; i++) {
