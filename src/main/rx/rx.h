@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+
 
 #define STICK_CHANNEL_COUNT 4
 

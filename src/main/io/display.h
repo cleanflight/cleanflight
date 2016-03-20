@@ -17,6 +17,9 @@
 
 //#define ENABLE_DEBUG_OLED_PAGE
 
+#pragma once
+#include <stdint.h>
+
 typedef enum {
     PAGE_WELCOME,
     PAGE_ARMED,

@@ -26,6 +26,9 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
+#pragma once
+#include <stdint.h>
+
 #ifndef __usb_prop_H
 #define __usb_prop_H
 

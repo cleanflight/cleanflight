@@ -16,6 +16,10 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "drivers/serial_uart.h"
+#include "drivers/serial.h"
+
 
 // device specific uart implementation is defined here
 

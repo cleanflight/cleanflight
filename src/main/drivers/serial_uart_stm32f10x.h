@@ -18,6 +18,7 @@
 #pragma once
 
 
+
 #ifndef UART1_GPIO
 #define UART1_TX_PIN                Pin_9  // PA9
 #define UART1_RX_PIN                Pin_10 // PA10

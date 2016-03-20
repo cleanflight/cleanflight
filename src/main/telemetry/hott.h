@@ -23,6 +23,10 @@
  * Texmode add-on by Michi (mamaretti32@gmail.com)
  */
 
+#pragma once
+#include <stdint.h>
+#include "telemetry/telemetry.h"
+
 #ifndef HOTT_TELEMETRY_H_
 #define HOTT_TELEMETRY_H_
 

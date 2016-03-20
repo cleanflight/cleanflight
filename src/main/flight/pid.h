@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "common/axis.h"
+
 
 #define PID_LUX_FLOAT_MAX_I 250.0f
 #define PID_LUX_FLOAT_MAX_D 300.0f

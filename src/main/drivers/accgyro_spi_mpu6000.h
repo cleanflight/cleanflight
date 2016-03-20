@@ -1,5 +1,9 @@
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/accgyro.h"
+
 
 #define MPU6000_CONFIG		    	0x1A
 

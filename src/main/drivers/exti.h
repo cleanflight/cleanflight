@@ -17,6 +17,8 @@
 
 
 #pragma once
+#include <stdint.h>
+
 
 typedef struct extiConfig_s {
 #ifdef STM32F303

@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+
 
 typedef enum portMode_t {
     MODE_RX = 1 << 0,

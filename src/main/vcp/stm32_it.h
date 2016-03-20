@@ -26,6 +26,8 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
+#pragma once
+
 #ifndef __STM32_IT_H
 #define __STM32_IT_H
 

@@ -15,5 +15,7 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "common/color.h"
+
 
 rgbColor24bpp_t* hsvToRgb24(const hsvColor_t *c);

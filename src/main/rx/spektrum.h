@@ -16,6 +16,10 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "rx/rx.h"
+
 
 #define SPEKTRUM_SAT_BIND_DISABLED 0
 #define SPEKTRUM_SAT_BIND_MAX 10

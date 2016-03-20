@@ -16,6 +16,10 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/accgyro.h"
+
 
 typedef struct drv_adxl345_config_s {
     bool useFifo;

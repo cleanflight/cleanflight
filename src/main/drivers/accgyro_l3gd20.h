@@ -16,5 +16,8 @@
  */
 
 #pragma once
+#include <stdbool.h>
+#include "drivers/accgyro.h"
+
 
 bool l3gd20Detect(gyro_t *gyro);

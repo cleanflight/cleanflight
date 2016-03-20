@@ -16,6 +16,10 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/gpio.h"
+
 
 #ifdef BEEPER
 #define BEEP_TOGGLE              digitalToggle(BEEP_GPIO, BEEP_PIN)

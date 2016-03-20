@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "sensors/acceleration.h"
+
 
 extern int16_t magHold;
 

@@ -1,5 +1,7 @@
 
 #pragma once
+#include <stdint.h>
+
 
 #include "stm32f30x.h"
 

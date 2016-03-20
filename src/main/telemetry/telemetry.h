@@ -21,6 +21,11 @@
  *  Created on: 6 Apr 2014
  *      Author: Hydra
  */
+#pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "io/serial.h"
+
 #include "rx/rx.h"
 
 #ifndef TELEMETRY_COMMON_H_

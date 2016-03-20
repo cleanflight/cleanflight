@@ -16,6 +16,11 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "sensors/sensors.h"
+#include "common/axis.h"
+#include "drivers/compass.h"
+
 
 // Type of magnetometer used/detected
 typedef enum {

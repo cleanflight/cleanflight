@@ -26,6 +26,9 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
+#pragma once
+#include <stdint.h>
+
 #ifndef __HW_CONFIG_H
 #define __HW_CONFIG_H
 

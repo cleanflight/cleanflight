@@ -102,6 +102,8 @@ For further details see source code.
 regs Kusti, 23.10.2004
 */
 
+#pragma once
+
 #ifndef __TFP_PRINTF__
 #define __TFP_PRINTF__
 

@@ -19,6 +19,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+
 
 #ifdef USE_SERIAL_1WIRE
 

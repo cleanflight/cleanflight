@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+
 
 typedef enum {
     BARO_DEFAULT = 0,

@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+
 
 // FIXME some of these are flight modes, some of these are general status indicators
 typedef enum {

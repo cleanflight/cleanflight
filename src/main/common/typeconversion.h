@@ -16,6 +16,7 @@
  */
 #pragma once
 
+
 void uli2a(unsigned long int num, unsigned int base, int uc, char *bf);
 void li2a(long num, char *bf);
 void ui2a(unsigned int num, unsigned int base, int uc, char *bf);

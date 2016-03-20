@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdbool.h>
+
 
 #include "blackbox/blackbox_fielddefs.h"
 

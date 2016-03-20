@@ -16,6 +16,11 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "platform.h"
+#include "drivers/serial.h"
+
 
 typedef enum {
     PORTSHARING_UNUSED = 0,

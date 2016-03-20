@@ -17,6 +17,7 @@
 
 #pragma once
 
+
 #ifdef INVERTER
 #define INVERTER_OFF digitalLo(INVERTER_GPIO, INVERTER_PIN)
 #define INVERTER_ON digitalHi(INVERTER_GPIO, INVERTER_PIN)
