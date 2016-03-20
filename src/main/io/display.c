@@ -105,8 +105,6 @@ static const char* const pageTitles[] = {
 #endif
 };
 
-#define PAGE_COUNT (PAGE_RX + 1)
-
 const pageId_e cyclePageIds[] = {
     PAGE_PROFILE,
 #ifdef GPS
@@ -573,6 +571,11 @@ void updateDisplay(void)
                 (((int32_t)(now - pageState.nextPageAt) >= 0L && (pageState.pageFlags & PAGE_STATE_FLAG_CYCLE_ENABLED)));
         if (pageState.pageChanging && (pageState.pageFlags & PAGE_STATE_FLAG_CYCLE_ENABLED)) {
             pageState.cycleIndex++;
+            
+            if (cyclePageIds[pageState.cycleIndex] == PAGE_BATTERY && !feature(FEATURE_VBAT) && !feature(FEATURE_CURRENT_METER)) {
+                pageState.cycleIndex++;
+            }
+            
             pageState.cycleIndex = pageState.cycleIndex % CYCLE_PAGE_ID_COUNT;
             pageState.pageId = cyclePageIds[pageState.cycleIndex];
         }
