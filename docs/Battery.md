@@ -87,11 +87,11 @@ feature CURRENT_METER
 
 Configure the current meter type using the `current_meter_type` settings here:
 
-| Value | Sensor Type            |
-| ----- | ---------------------- | 
-| 0     | None                   |
-| 1     | ADC/hardware sensor    |
-| 2     | Virtual sensor         |
+| Value   | Sensor Type            |
+| ------- | ---------------------- | 
+| NONE    | None                   |
+| ADC     | ADC/hardware sensor    |
+| VIRTUAL | Virtual sensor         |
 
 Configure capacity using the `battery_capacity` setting, in mAh units.
 
