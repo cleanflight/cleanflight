@@ -15,12 +15,12 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef CLI_H_
+#define CLI_H_
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "drivers/serial.h"
-#ifndef CLI_H_
-#define CLI_H_
 
 extern uint8_t cliMode;
 

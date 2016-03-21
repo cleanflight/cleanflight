@@ -26,13 +26,13 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#pragma once
-#include <stdint.h>
-#include <stdbool.h>
 #ifndef __USB_PWR_H
 #define __USB_PWR_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
+#include <stdbool.h>
+
 /* Exported types ------------------------------------------------------------*/
 typedef enum _RESUME_STATE {
     RESUME_EXTERNAL,

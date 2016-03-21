@@ -15,13 +15,12 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#ifndef TELEMETRY_FRSKY_H_
+#define TELEMETRY_FRSKY_H_
+
 #include <stdint.h>
 #include "telemetry/telemetry.h"
 #include "rx/rx.h"
-
-#ifndef TELEMETRY_FRSKY_H_
-#define TELEMETRY_FRSKY_H_
 
 typedef enum {
     FRSKY_VFAS_PRECISION_LOW = 0,

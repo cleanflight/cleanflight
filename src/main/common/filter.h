@@ -17,6 +17,7 @@
 
 #pragma once
 #include <stdint.h>
+
 typedef struct filterStatePt1_s {
 	float state;
 	float RC;

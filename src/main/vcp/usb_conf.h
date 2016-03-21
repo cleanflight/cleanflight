@@ -26,7 +26,6 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#pragma once
 #ifndef __USB_CONF_H
 #define __USB_CONF_H
 

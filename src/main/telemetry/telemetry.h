@@ -21,14 +21,13 @@
  *  Created on: 6 Apr 2014
  *      Author: Hydra
  */
-#pragma once
+#ifndef TELEMETRY_COMMON_H_
+#define TELEMETRY_COMMON_H_
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "io/serial.h"
 #include "rx/rx.h"
-
-#ifndef TELEMETRY_COMMON_H_
-#define TELEMETRY_COMMON_H_
 
 typedef enum {
     FRSKY_FORMAT_DMS = 0,

@@ -26,12 +26,12 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#pragma once
-#include <stdint.h>
 #ifndef __USB_DESC_H
 #define __USB_DESC_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/

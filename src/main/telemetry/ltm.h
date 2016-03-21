@@ -17,10 +17,10 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-#include "telemetry/telemetry.h"
 #ifndef TELEMETRY_LTM_H_
 #define TELEMETRY_LTM_H_
+
+#include "telemetry/telemetry.h"
 
 void initLtmTelemetry(telemetryConfig_t *initialTelemetryConfig);
 void handleLtmTelemetry(void);

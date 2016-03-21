@@ -5,11 +5,11 @@
  *      Author: Frank26080115
  */
 
-#pragma once
-#include <stdbool.h>
-#include "telemetry/telemetry.h"
 #ifndef TELEMETRY_SMARTPORT_H_
 #define TELEMETRY_SMARTPORT_H_
+
+#include <stdbool.h>
+#include "telemetry/telemetry.h"
 
 void initSmartPortTelemetry(telemetryConfig_t *);
 

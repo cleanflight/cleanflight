@@ -16,6 +16,7 @@
  */
 
 #pragma once
+
 typedef void (*dmaCallbackHandlerFuncPtr)(DMA_Channel_TypeDef *channel);
 
 typedef enum {
