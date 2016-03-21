@@ -479,8 +479,8 @@ static void readRxChannelsApplyRanges(void)
 {
     uint8_t channel;
 
-    uint16_t MSP_channels[8];
-    uint16_t RC_channels[8];
+    int16_t MSP_channels[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+    int16_t RC_channels[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
     for (channel = 0; channel < rxRuntimeConfig.channelCount; channel++) {
 
@@ -496,19 +496,22 @@ static void readRxChannelsApplyRanges(void)
             msp_sample = applyRxChannelRangeConfiguraton(msp_sample, rxConfig->channelRanges[channel]);
             rc_sample = applyRxChannelRangeConfiguraton(rc_sample, rxConfig->channelRanges[channel]);
         }
-        
+
+        bool validPulse = isPulseValid(msp_sample);
+        if(!validPulse)
+            msp_sample = (channel == THROTTLE ? 1000 : 1500);
         MSP_channels[channel] = msp_sample;
-        RC_channels[rawChannel] = rc_sample;
+        RC_channels[channel] = rc_sample;
     }
     // filter through buddy-box
     for(channel = 0; channel < rxRuntimeConfig.channelCount; channel++){
         if((channel == ROLL || channel == PITCH || channel == YAW) && RC_channels[AUX1] > 1500){ // allow MSP to take control if AUX1 is high
-            rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 100) ? MSP_channels[channel] : RC_channels[channel]; // allow RC override if sticks are moved
+            rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 50) ? MSP_channels[channel] : RC_channels[channel]; // allow RC override if sticks are moved
         } else if(channel == THROTTLE && RC_channels[AUX1] > 1500 ){ // saturate thrust at RC value if on buddybox
-                rcRaw[channel] = (RC_channels[channel] < MSP_channels[channel]) ? RC_channels[channel] : MSP_channels[channel];
-        }else if(channel == AUX3 || channel == AUX4){ // aux3 and aux4 belong to MSP
-            rcRaw[channel]  = MSP_channels[channel];     
-        }else{
+            rcRaw[channel] = (RC_channels[channel] < MSP_channels[channel]) ? RC_channels[channel] : MSP_channels[channel];
+        } else if(channel == AUX3 || channel == AUX4){ // aux3 and aux4 belong to MSP
+            rcRaw[channel]  = MSP_channels[channel];
+        } else{
             rcRaw[channel]  = RC_channels[channel];     
         }
     }
