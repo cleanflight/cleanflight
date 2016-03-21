@@ -19,6 +19,5 @@
 #include <stdbool.h>
 #include "drivers/barometer.h"
 
-
 bool bmp280Detect(baro_t *baro);
 

@@ -19,6 +19,5 @@
 #include <stdint.h>
 #include "flight/pid.h"
 
-
 void init_Gtune(pidProfile_t *pidProfileToTune);
 void calculate_Gtune(uint8_t axis);

@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 // FIXME some of these are flight modes, some of these are general status indicators
 typedef enum {
     OK_TO_ARM       = (1 << 0),

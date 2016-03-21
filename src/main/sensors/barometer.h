@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 typedef enum {
     BARO_DEFAULT = 0,
     BARO_NONE = 1,

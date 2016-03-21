@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #include "rx/rx.h"
 
 bool xBusInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);

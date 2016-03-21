@@ -27,7 +27,6 @@
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 #pragma once
-
 #ifndef __PLATFORM_CONFIG_H
 #define __PLATFORM_CONFIG_H
 

@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include "drivers/accgyro.h"
 
-
 typedef struct drv_adxl345_config_s {
     bool useFifo;
     uint16_t dataRate;

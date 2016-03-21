@@ -20,7 +20,6 @@
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 
-
 #define PITCH_LOOKUP_LENGTH 7
 #define YAW_LOOKUP_LENGTH 7
 #define THROTTLE_LOOKUP_LENGTH 12

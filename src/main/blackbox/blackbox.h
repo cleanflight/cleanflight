@@ -18,7 +18,6 @@
 #pragma once
 #include <stdbool.h>
 
-
 #include "blackbox/blackbox_fielddefs.h"
 
 void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data);

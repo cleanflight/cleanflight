@@ -17,5 +17,4 @@
 #pragma once
 #include "common/color.h"
 
-
 rgbColor24bpp_t* hsvToRgb24(const hsvColor_t *c);

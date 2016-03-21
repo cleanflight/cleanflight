@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include "sensors/acceleration.h"
 
-
 extern int16_t magHold;
 
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta);

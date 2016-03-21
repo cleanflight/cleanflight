@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include "drivers/gpio.h"
 
-
 #if !defined(USABLE_TIMER_CHANNEL_COUNT)
 #define USABLE_TIMER_CHANNEL_COUNT 14
 #endif

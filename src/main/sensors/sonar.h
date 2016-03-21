@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 #define SONAR_OUT_OF_RANGE (-1)
 
 extern int16_t sonarMaxRangeCm;

@@ -29,7 +29,6 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
-
 #ifndef __USB_PWR_H
 #define __USB_PWR_H
 

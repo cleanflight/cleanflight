@@ -25,7 +25,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "io/serial.h"
-
 #include "rx/rx.h"
 
 #ifndef TELEMETRY_COMMON_H_

@@ -20,7 +20,6 @@
 #include <stdbool.h>
 
 
-
 #define TRANSPONDER_BITS_PER_BYTE 10 // start + 8 data + stop
 #define TRANSPONDER_DATA_LENGTH 6
 #define TRANSPONDER_TOGGLES_PER_BIT 11

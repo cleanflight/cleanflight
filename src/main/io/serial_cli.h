@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "drivers/serial.h"
-
 #ifndef CLI_H_
 #define CLI_H_
 

@@ -19,7 +19,6 @@
 
 #pragma once
 #include <stdint.h>
-
 typedef enum {
     PAGE_WELCOME,
     PAGE_ARMED,

@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "drivers/accgyro.h"
-
 #define MPU6500_WHO_AM_I_CONST              (0x70)
 
 #define MPU6500_BIT_RESET                   (0x80)

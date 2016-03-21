@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 typedef struct boardAlignment_s {
     int16_t rollDegrees;
     int16_t pitchDegrees;

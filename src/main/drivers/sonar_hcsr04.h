@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 #include <platform.h>
 
 typedef struct sonarHardware_s {

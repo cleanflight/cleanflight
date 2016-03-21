@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #include "serial.h"
 
 typedef struct {

@@ -19,7 +19,6 @@
 #include <stdint.h>
 
 
-
 void transponderEnable(void);
 void transponderDisable(void);
 void updateTransponder(void);

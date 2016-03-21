@@ -35,7 +35,6 @@
 #include "io/ledstrip.h"
 #include "telemetry/telemetry.h"
 
-
 // System-wide
 typedef struct master_t {
     uint8_t version;

@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include "drivers/accgyro.h"
 
-
 bool mpu6500SpiDetect(void);
 
 bool mpu6500SpiAccDetect(acc_t *acc);

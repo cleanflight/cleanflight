@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include "common/color.h"
 
-
 #define MAX_LED_STRIP_LENGTH 32
 #define CONFIGURABLE_COLOR_COUNT 16
 

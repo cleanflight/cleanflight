@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include "drivers/barometer.h"
 
-
 typedef struct bmp085Config_s {
     uint32_t gpioAPB2Peripherals;
     uint16_t xclrGpioPin;

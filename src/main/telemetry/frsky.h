@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 #include "telemetry/telemetry.h"
-
 #include "rx/rx.h"
 
 #ifndef TELEMETRY_FRSKY_H_

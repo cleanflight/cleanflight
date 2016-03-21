@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 

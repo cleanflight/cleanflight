@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #include "rx/rx.h"
 
 typedef enum {

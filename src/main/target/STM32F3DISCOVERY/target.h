@@ -17,7 +17,6 @@
 
 #pragma once
 
-
 #define TARGET_BOARD_IDENTIFIER "SDF3" // STM Discovery F3
 
 #define LED0_GPIO   GPIOE

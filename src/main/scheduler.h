@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 //#define SCHEDULER_DEBUG
 
 typedef enum {

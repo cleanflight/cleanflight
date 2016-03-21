@@ -20,7 +20,6 @@
 #include <stdbool.h>
 #include "drivers/gpio.h"
 
-
 #ifdef BEEPER
 #define BEEP_TOGGLE              digitalToggle(BEEP_GPIO, BEEP_PIN)
 #define BEEP_OFF                 systemBeep(false)

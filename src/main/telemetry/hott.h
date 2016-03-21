@@ -26,7 +26,6 @@
 #pragma once
 #include <stdint.h>
 #include "telemetry/telemetry.h"
-
 #ifndef HOTT_TELEMETRY_H_
 #define HOTT_TELEMETRY_H_
 

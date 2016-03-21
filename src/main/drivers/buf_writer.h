@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 // Called to flush the buffer.
 typedef void (*bufWrite_t)(void *arg, void *data, int count);
 

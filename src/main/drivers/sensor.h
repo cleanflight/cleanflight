@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 typedef void (*sensorInitFuncPtr)(void);                    // sensor init prototype
 typedef bool (*sensorReadFuncPtr)(int16_t *data);           // sensor read prototype
 typedef void (*sensorGyroInitFuncPtr)(uint8_t lpf);         // gyro sensor init prototype

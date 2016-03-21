@@ -22,7 +22,6 @@
 #include "flight/pid.h"
 #include "io/rc_controls.h"
 
-
 typedef struct profile_s {
     pidProfile_t pidProfile;
 

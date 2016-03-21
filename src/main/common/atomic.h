@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 // only set_BASEPRI is implemented in device library. It does always create memory barrier
 // missing versions are implemented here
 

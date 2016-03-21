@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 void pwmWriteMotor(uint8_t index, uint16_t value);
 void pwmShutdownPulsesForAllMotors(uint8_t motorCount);
 void pwmCompleteOneshotMotorUpdate(uint8_t motorCount);

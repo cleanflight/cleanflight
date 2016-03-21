@@ -20,6 +20,5 @@
 #include <stdbool.h>
 #include "rx/rx.h"
 
-
 uint8_t sbusFrameStatus(void);
 bool sbusInit(rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);

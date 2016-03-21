@@ -22,7 +22,6 @@
 #include "common/axis.h"
 #include "drivers/accgyro.h"
 
-
 typedef enum {
     GYRO_NONE = 0,
     GYRO_DEFAULT,

@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 #ifdef STM32F303xC
 #include "stm32f30x_conf.h"
 #include "stm32f30x_rcc.h"

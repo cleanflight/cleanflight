@@ -19,7 +19,6 @@
 #include <stdbool.h>
 #include "drivers/accgyro.h"
 
-
 // Registers
 #define MPU3050_SMPLRT_DIV      0x15
 #define MPU3050_DLPF_FS_SYNC    0x16

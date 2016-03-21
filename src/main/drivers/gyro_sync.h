@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
-
 #define INTERRUPT_WAIT_TIME 10
 
 extern uint32_t targetLooptime;

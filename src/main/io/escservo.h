@@ -18,7 +18,6 @@
 #pragma once
 #include <stdint.h>
 
-
 typedef struct escAndServoConfig_s {
 
     // PWM values, in milliseconds, common range is 1000-2000 (1 to 2ms)
