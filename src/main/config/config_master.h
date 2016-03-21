@@ -30,12 +30,10 @@
 #include "config/config.h"
 #include "config/config_profile.h"
 #include "rx/rx.h"
-#include "flight/mixer.h"
 #include "common/color.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
 #include "telemetry/telemetry.h"
-#include "flight/mixer.h"
 
 
 // System-wide
