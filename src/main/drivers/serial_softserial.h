@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/serial.h"
 
 #define SOFTSERIAL_BUFFER_SIZE 256
 

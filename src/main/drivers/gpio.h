@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #if defined(STM32F10X)
 typedef enum

@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "io/escservo.h"
+#include "io/rc_controls.h"
 
 #define PITCH_LOOKUP_LENGTH 7
 #define YAW_LOOKUP_LENGTH 7

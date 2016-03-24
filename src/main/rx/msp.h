@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "rx/rx.h"
 
 bool rxMspFrameComplete(void);
 void rxMspFrameReceive(uint16_t *frame, int channelCount);

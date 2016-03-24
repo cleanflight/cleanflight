@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 typedef struct escAndServoConfig_s {
 

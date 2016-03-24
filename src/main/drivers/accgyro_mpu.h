@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/exti.h"
 
 // MPU6050
 #define MPU_RA_WHO_AM_I         0x75

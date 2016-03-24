@@ -30,6 +30,7 @@
 #define __HW_CONFIG_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
 //#include "platform_config.h"
 #include "usb_type.h"
 #ifdef STM32F303

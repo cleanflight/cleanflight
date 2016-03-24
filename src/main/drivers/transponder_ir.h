@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 
 #define TRANSPONDER_BITS_PER_BYTE 10 // start + 8 data + stop

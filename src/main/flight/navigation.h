@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "flight/pid.h"
+#include "common/axis.h"
 
 // navigation mode
 typedef enum {

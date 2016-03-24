@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "drivers/sensor.h"
 
 extern uint16_t acc_1G; // FIXME move into acc_t
 

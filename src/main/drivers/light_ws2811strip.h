@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "common/color.h"
 
 #define WS2811_LED_STRIP_LENGTH 32
 #define WS2811_BITS_PER_LED 24

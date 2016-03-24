@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "drivers/accgyro.h"
 
 /**
   * @brief  LSM303DLHC Status

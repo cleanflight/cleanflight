@@ -20,6 +20,8 @@
 #ifndef TELEMETRY_LTM_H_
 #define TELEMETRY_LTM_H_
 
+#include "telemetry/telemetry.h"
+
 void initLtmTelemetry(telemetryConfig_t *initialTelemetryConfig);
 void handleLtmTelemetry(void);
 void checkLtmTelemetryState(void);

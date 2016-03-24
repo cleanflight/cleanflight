@@ -15,6 +15,9 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+#include <stdint.h>
+#include "flight/mixer.h"
 #include "io/escservo.h"
 #include "io/rc_controls.h"
 #include "flight/pid.h"

@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #define I2C_SHORT_TIMEOUT            ((uint32_t)0x1000)
 #define I2C_LONG_TIMEOUT             ((uint32_t)(10 * I2C_SHORT_TIMEOUT))

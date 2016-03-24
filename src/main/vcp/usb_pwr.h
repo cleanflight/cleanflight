@@ -30,6 +30,9 @@
 #define __USB_PWR_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
+#include <stdbool.h>
+
 /* Exported types ------------------------------------------------------------*/
 typedef enum _RESUME_STATE {
     RESUME_EXTERNAL,

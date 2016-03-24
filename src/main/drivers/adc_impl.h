@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include "drivers/adc.h"
 
 extern adc_config_t adcConfig[ADC_CHANNEL_COUNT];
 extern volatile uint16_t adcValues[ADC_CHANNEL_COUNT];

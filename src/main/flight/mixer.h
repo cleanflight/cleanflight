@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #ifdef USE_QUAD_MIXER_ONLY
 #define MAX_SUPPORTED_MOTORS 4

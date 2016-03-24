@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 typedef enum {
     GIMBAL_MODE_NORMAL = 0,

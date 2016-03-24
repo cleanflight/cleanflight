@@ -16,5 +16,7 @@
  */
 
 #pragma once
+#include <stdbool.h>
+#include "drivers/barometer.h"
 
 bool ms5611Detect(baro_t *baro);

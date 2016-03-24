@@ -26,6 +26,8 @@
 #ifndef HOTT_TELEMETRY_H_
 #define HOTT_TELEMETRY_H_
 
+#include <stdint.h>
+#include "telemetry/telemetry.h"
 
 #define HOTTV4_RXTX 4
 

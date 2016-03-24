@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #define FAILSAFE_POWER_ON_DELAY_US (1000 * 1000 * 5)
 #define MILLIS_PER_TENTH_SECOND      100

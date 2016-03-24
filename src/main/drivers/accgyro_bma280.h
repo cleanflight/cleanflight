@@ -16,5 +16,7 @@
  */
 
 #pragma once
+#include <stdbool.h>
+#include "drivers/accgyro.h"
 
 bool bma280Detect(acc_t *acc);

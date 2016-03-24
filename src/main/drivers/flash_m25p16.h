@@ -18,6 +18,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "flash.h"
 
 #define M25P16_PAGESIZE 256

@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 typedef void (*dmaCallbackHandlerFuncPtr)(DMA_Channel_TypeDef *channel);
 
 typedef enum {

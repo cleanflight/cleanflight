@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/compass.h"
 
 typedef struct hmc5883Config_s {
 #ifdef STM32F303

@@ -18,6 +18,10 @@
 #ifndef CLI_H_
 #define CLI_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/serial.h"
+
 extern uint8_t cliMode;
 
 void cliProcess(void);

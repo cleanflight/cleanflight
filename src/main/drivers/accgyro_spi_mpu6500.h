@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/accgyro.h"
 
 bool mpu6500SpiDetect(void);
 

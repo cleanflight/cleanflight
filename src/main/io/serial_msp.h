@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 #include "io/serial.h"
 #include "drivers/serial.h"

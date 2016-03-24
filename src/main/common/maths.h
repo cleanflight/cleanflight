@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 #ifndef sq
 #define sq(x) ((x)*(x))

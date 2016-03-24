@@ -16,5 +16,7 @@
  */
 
 #pragma once
+#include <stdbool.h>
+#include "drivers/accgyro.h"
 
 bool mma8452Detect(acc_t *acc);

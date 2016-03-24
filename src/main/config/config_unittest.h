@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
 
 #ifdef SRC_MAIN_SCHEDULER_C_
 #ifdef UNIT_TEST

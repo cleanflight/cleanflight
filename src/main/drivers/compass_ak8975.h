@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <stdbool.h>
+#include "drivers/compass.h"
 
 bool ak8975detect(mag_t *mag);
 void ak8975Init(void);

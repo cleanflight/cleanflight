@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 typedef enum {
     // IMPORTANT: these are in priority order, 0 = Highest

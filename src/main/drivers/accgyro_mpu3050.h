@@ -16,6 +16,8 @@
  */
 
 #pragma once
+#include <stdbool.h>
+#include "drivers/accgyro.h"
 
 // Registers
 #define MPU3050_SMPLRT_DIV      0x15

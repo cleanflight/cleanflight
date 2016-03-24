@@ -30,6 +30,8 @@
 #define __usb_prop_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <stdint.h>
+
 /* Exported types ------------------------------------------------------------*/
 typedef struct {
     uint32_t bitrate;
