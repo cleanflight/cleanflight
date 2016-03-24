@@ -572,7 +572,7 @@ void updateDisplay(void)
         if (pageState.pageChanging && (pageState.pageFlags & PAGE_STATE_FLAG_CYCLE_ENABLED)) {
             pageState.cycleIndex++;
             
-            if (cyclePageIds[pageState.cycleIndex] == PAGE_BATTERY && !feature(FEATURE_VBAT) && !feature(FEATURE_CURRENT_METER)) {
+            if (cyclePageIds[pageState.cycleIndex] == PAGE_BATTERY && !(feature(FEATURE_VBAT) || feature(FEATURE_CURRENT_METER))) {
                 pageState.cycleIndex++;
             }
             
