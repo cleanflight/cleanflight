@@ -68,12 +68,10 @@
 #define BASEFLIGHT_IDENTIFIER "BAFL";
 
 #define FLIGHT_CONTROLLER_IDENTIFIER_LENGTH 4
-extern const char * const flightControllerIdentifier;
 
 #define FLIGHT_CONTROLLER_VERSION_LENGTH    3
 #define FLIGHT_CONTROLLER_VERSION_MASK      0xFFF
 
-static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
 #define BOARD_IDENTIFIER_LENGTH             4 // 4 UPPER CASE alpha numeric characters that identify the board being used.
 #define BOARD_HARDWARE_REVISION_LENGTH      2
 
