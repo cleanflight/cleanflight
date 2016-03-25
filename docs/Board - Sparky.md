@@ -20,7 +20,7 @@ Tested with revision 1 & 2 boards.
 
 # Voltage and current monitoring (ADC support)
 
-Voltage monitoring is possible when enabled via PWM9 pin and current can be monitored via PWM8 pin. The voltage divider and current sensor need to be connected externally. The vbatscale cli parameter need to be adjusted to fit the sensor specification. For more details regarding the sensor hardware you can check here: https://github.com/TauLabs/TauLabs/wiki/User-Guide:-Battery-Configuration
+Voltage monitoring is possible when enabled via PWM9 pin and current can be monitored via PWM8 pin. Be aware that enabling led-strip will reuse PWM8 as the LED output pin. The voltage divider and current sensor need to be connected externally. The vbatscale cli parameter need to be adjusted to fit the sensor specification. For more details regarding the sensor hardware you can check here: https://github.com/TauLabs/TauLabs/wiki/User-Guide:-Battery-Configuration
 
 # Flashing
 
