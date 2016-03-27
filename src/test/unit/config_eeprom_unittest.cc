@@ -24,6 +24,7 @@ extern "C" {
     #include "common/axis.h"
     #include "common/maths.h"
     #include "common/color.h"
+    #include "common/utils.h"
 
     #include "config/parameter_group.h"
 
@@ -99,16 +100,16 @@ const pgRegistry_t __pg_registry[] =
         .pgn = 1,
         .format = 0,
         .flags = PGC_PROFILE
-    },
-    {
-        .base = nullptr,
-        .ptr = 0,
-        .size = 0,
-        .pgn = 0,
-        .format = 0,
-        .flags = 0
-    },
+    }
 };
+
+const pgRegistry_t __pg_registry_end[] = {}; // FIXME enforce the location of this somehow.
+
+TEST(configTest, pgRegistryEndMarkerValid)
+{
+    // if this fails then __pg_registry_end does not follow __pg_registry in the resulting binary.
+    EXPECT_EQ(__pg_registry + ARRAYLEN(__pg_registry), __pg_registry_end);
+}
 
 TEST(configTest, resetEEPROM)
 {

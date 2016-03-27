@@ -68,6 +68,7 @@ SECTIONS
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
   } >FLASH
+  
   .init_array :
   {
     PROVIDE_HIDDEN (__init_array_start = .);
@@ -75,6 +76,7 @@ SECTIONS
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
   } >FLASH
+  
   .fini_array :
   {
     PROVIDE_HIDDEN (__fini_array_start = .);
@@ -82,12 +84,13 @@ SECTIONS
     KEEP (*(SORT(.fini_array.*)))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
+  
   .pg_registry :
   {
     PROVIDE_HIDDEN (__pg_registry = .);
     KEEP (*(.pg_registry))
     KEEP (*(SORT(.pg_registry.*)))
-    KEEP (*(.pg_registry_tail))
+    PROVIDE_HIDDEN (__pg_registry_end = .);
   } >FLASH
 
   /* used by the startup to initialize data */

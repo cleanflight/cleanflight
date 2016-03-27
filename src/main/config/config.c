@@ -96,8 +96,6 @@ static uint32_t activeFeaturesLatch = 0;
 static uint8_t currentControlRateProfileIndex = 0;
 controlRateConfig_t *currentControlRateProfile;
 
-static const void *pg_registry_tail PG_REGISTRY_TAIL_SECTION;
-
 static const pgRegistry_t masterRegistry PG_REGISTRY_SECTION = {
     .base = (uint8_t *)&masterConfig,
     .size = sizeof(masterConfig),
