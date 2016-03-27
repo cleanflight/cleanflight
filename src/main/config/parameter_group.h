@@ -48,15 +48,15 @@ typedef struct pgRegistry_s {
 } pgRegistry_t;
 
 #define PG_REGISTRY_SECTION __attribute__((section(".pg_registry"), used))
-#define PG_REGISTRY_TAIL_SECTION __attribute__((section(".pg_registry_tail"), used))
 
 #define PG_PACKED __attribute__((packed))
 
 extern const pgRegistry_t __pg_registry[];
+extern const pgRegistry_t __pg_registry_end[];
 
 // Helper to iterate over the PG register.  Cheaper than a visitor style callback.
 #define PG_FOREACH(_name) \
-    for (const pgRegistry_t *(_name) = __pg_registry; (_name)->base != NULL; (_name)++)
+        for (const pgRegistry_t *(_name) = __pg_registry; (_name) < __pg_registry_end; (_name)++)
 
 typedef uint8_t (*pgMatcherFuncPtr)(const pgRegistry_t *candidate, const void *criteria);
 
