@@ -484,6 +484,44 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesFloat)
     EXPECT_EQ(H_sensitivity, currentProfile->pidProfile.H_sensitivity);
 }
 
+TEST_F(SerialMspUnitTest, Test_BoardAlignment)
+{
+    const boardAlignment_t testBoardAlignment = {295, 147, -202};
+
+    boardAlignment_t *pBoardAlignment = &masterConfig.boardAlignment; // !! Just change this value to test pgGroup
+    memcpy(pBoardAlignment, &testBoardAlignment, sizeof(boardAlignment_t));
+    // use the MSP to write out the test values
+    serialWritePos = 0;
+    serialReadPos = 0;
+    currentPort->cmdMSP = MSP_BOARD_ALIGNMENT;
+    mspProcessReceivedCommand();
+    EXPECT_EQ(sizeof(boardAlignment_t), serialBuffer.mspResponse.header.size);
+
+    // reset test values to zero, so we can check if they get read properly
+    memset(pBoardAlignment, 0, sizeof(boardAlignment_t));
+
+    // now use the MSP to read back the values and check they are the same
+    // spoof a change from the written MSP_BOARD_ALIGNMENT to the readable MSP_SET_BOARD_ALIGNMENT
+    currentPort->cmdMSP = MSP_SET_BOARD_ALIGNMENT;
+    serialBuffer.mspResponse.header.direction = '<';
+    serialBuffer.mspResponse.header.type = currentPort->cmdMSP;
+    // force the checksum
+    serialBuffer.mspResponse.payload[serialBuffer.mspResponse.header.size] ^= MSP_BOARD_ALIGNMENT;
+    serialBuffer.mspResponse.payload[serialBuffer.mspResponse.header.size] ^= MSP_SET_BOARD_ALIGNMENT;
+    // copy the command data into the current port inBuf so it can be processed
+    memcpy(currentPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
+
+
+    // set the offset into the payload
+    currentPort->indRX = offsetof(struct mspResonse_s, payload);
+    mspProcessReceivedCommand();
+
+    // check the values are as expected
+    EXPECT_FLOAT_EQ(testBoardAlignment.rollDegrees, pBoardAlignment->rollDegrees);
+    EXPECT_FLOAT_EQ(testBoardAlignment.pitchDegrees, pBoardAlignment->pitchDegrees);
+    EXPECT_FLOAT_EQ(testBoardAlignment.yawDegrees, pBoardAlignment->yawDegrees);
+}
+
 TEST_F(SerialMspUnitTest, TestMspOutMessageLengthsCommand)
 {
     static const uint8_t outMessages[] = {
