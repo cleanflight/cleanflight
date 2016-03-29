@@ -57,6 +57,7 @@
 
 #include "rx/rx.h"
 
+#include "io/beeper.h"
 #include "io/serial.h"
 #include "io/flashfs.h"
 #include "io/gps.h"
@@ -158,7 +159,8 @@ void flashLedsAndBeep(void)
         LED1_TOGGLE;
         LED0_TOGGLE;
         delay(25);
-        BEEP_ON;
+    	if (!(getBeeperOffMask() & (1 << (BEEPER_SYSTEM_INIT - 1))))
+        	BEEP_ON;
         delay(25);
         BEEP_OFF;
     }

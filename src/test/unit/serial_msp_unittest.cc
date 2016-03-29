@@ -602,6 +602,11 @@ bool feature(uint32_t mask) {UNUSED(mask);return false;}
 void featureSet(uint32_t mask) {UNUSED(mask);}
 void featureClearAll() {}
 uint32_t featureMask(void) {return 0;}
+
+void beeperOffSet(uint32_t mask) {UNUSED(mask);}
+void beeperOffClearAll(void){}
+uint32_t getBeeperOffMask(void) {return 0;}
+
 // from debug.c
 int16_t debug[DEBUG16_VALUE_COUNT];
 // from gps.c

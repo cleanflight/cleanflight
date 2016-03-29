@@ -76,6 +76,7 @@ Re-apply any new defaults as desired.
 | `1wire <esc>`    | passthrough 1wire to the specified esc         |
 | `adjrange`       | show/set adjustment ranges settings            |
 | `aux`            | show/set aux settings                          |
+| `beeper`         | enable/disable beeper for a given condition    |
 | `mmix`           | design custom motor mixer                      |
 | `smix`           | design custom servo mixer                      |
 | `color`          | configure colors                               |

@@ -55,6 +55,12 @@ void featureSet(uint32_t mask);
 void featureClear(uint32_t mask);
 void featureClearAll(void);
 uint32_t featureMask(void);
+void beeperOffSet(uint32_t mask);
+void beeperOffSetAll(uint8_t beeperCount);
+void beeperOffClear(uint32_t mask);
+void beeperOffClearAll(void);
+uint32_t getBeeperOffMask(void);
+void setBeeperOffMask(uint32_t mask);
 
 void copyCurrentProfileToProfileSlot(uint8_t profileSlotIndex);
 

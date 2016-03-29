@@ -1011,3 +1011,33 @@ uint32_t featureMask(void)
 {
     return masterConfig.enabledFeatures;
 }
+
+void beeperOffSet(uint32_t mask)
+{
+    masterConfig.beeper_off_flags |= mask;
+}
+
+void beeperOffSetAll(uint8_t beeperCount)
+{
+    masterConfig.beeper_off_flags = (1 << beeperCount) -1;
+}
+
+void beeperOffClear(uint32_t mask)
+{
+    masterConfig.beeper_off_flags &= ~(mask);
+}
+
+void beeperOffClearAll(void)
+{
+    masterConfig.beeper_off_flags = 0;
+}
+
+uint32_t getBeeperOffMask(void)
+{
+    return masterConfig.beeper_off_flags;
+}
+
+void setBeeperOffMask(uint32_t mask)
+{
+    masterConfig.beeper_off_flags = mask;
+}
