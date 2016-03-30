@@ -64,7 +64,10 @@ static uint32_t nextAnimationUpdateAt = 0;
 static uint32_t nextIndicatorFlashAt = 0;
 static uint32_t nextWarningFlashAt = 0;
 static uint32_t nextRotationUpdateAt = 0;
+static uint32_t nextLarsonScannerUpdateAt = 0;
 
+#define LED_STRIP_50HZ ((1000 * 1000) / 50)
+#define LED_STRIP_25HZ ((1000 * 1000) / 25)
 #define LED_STRIP_20HZ ((1000 * 1000) / 20)
 #define LED_STRIP_10HZ ((1000 * 1000) / 10)
 #define LED_STRIP_5HZ ((1000 * 1000) / 5)
@@ -225,10 +228,31 @@ uint8_t ledGridWidth;
 uint8_t ledGridHeight;
 uint8_t ledCount;
 uint8_t ledsInRingCount;
+uint8_t ledsInLarsonScannerCount;
 
 ledConfig_t *ledConfigs;
 hsvColor_t *colors;
 
+#ifdef USE_LED_LARSON_SCANNER_DEFAULT_CONFIG
+const ledConfig_t defaultLedStripConfig[] = {
+    { CALCULATE_LED_XY( 0,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 1,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 2,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 3,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 4,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 5,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 6,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 7,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 8,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 9,  0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 10, 0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 11, 0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 12, 0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 13, 0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 14, 0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+    { CALCULATE_LED_XY( 15, 0), COLOR_RED, LED_FUNCTION_COLOR | LED_FUNCTION_LARSON_SCANNER},
+};
+#else
 
 #ifdef USE_LED_RING_DEFAULT_CONFIG
 const ledConfig_t defaultLedStripConfig[] = {
@@ -246,6 +270,7 @@ const ledConfig_t defaultLedStripConfig[] = {
     { CALCULATE_LED_XY( 1,  1), 3, LED_FUNCTION_THRUST_RING},
 };
 #else
+
 const ledConfig_t defaultLedStripConfig[] = {
     { CALCULATE_LED_XY(15, 15), 0, LED_DIRECTION_SOUTH | LED_DIRECTION_EAST | LED_FUNCTION_INDICATOR | LED_FUNCTION_ARM_STATE },
 
@@ -288,6 +313,8 @@ const ledConfig_t defaultLedStripConfig[] = {
 };
 #endif
 
+#endif
+
 
 
 /*
@@ -323,7 +350,7 @@ static const uint8_t directionMappings[DIRECTION_COUNT] = {
     LED_DIRECTION_DOWN
 };
 
-static const char functionCodes[] = { 'I', 'W', 'F', 'A', 'T', 'R', 'C' };
+static const char functionCodes[] = { 'I', 'W', 'F', 'A', 'T', 'R', 'C', 'L' };
 #define FUNCTION_COUNT (sizeof(functionCodes) / sizeof(functionCodes[0]))
 static const uint16_t functionMappings[FUNCTION_COUNT] = {
     LED_FUNCTION_INDICATOR,
@@ -332,7 +359,8 @@ static const uint16_t functionMappings[FUNCTION_COUNT] = {
     LED_FUNCTION_ARM_STATE,
     LED_FUNCTION_THROTTLE,
 	LED_FUNCTION_THRUST_RING,
-	LED_FUNCTION_COLOR
+	LED_FUNCTION_COLOR,
+    LED_FUNCTION_LARSON_SCANNER
 };
 
 // grid offsets
@@ -380,6 +408,7 @@ void updateLedCount(void)
     uint8_t ledIndex;
     ledCount = 0;
     ledsInRingCount = 0;
+    ledsInLarsonScannerCount = 0;
 
     if( ledConfigs == 0 ){
         return;
@@ -397,6 +426,10 @@ void updateLedCount(void)
 
         if ((ledConfig->flags & LED_FUNCTION_THRUST_RING)) {
             ledsInRingCount++;
+        }
+
+        if ((ledConfig->flags & LED_FUNCTION_LARSON_SCANNER)) {
+            ledsInLarsonScannerCount++;
         }
     }
 }
@@ -852,6 +885,79 @@ void applyLedThrustRingLayer(void)
     }
 }
 
+uint8_t larsonScannerBrightnessValues[3];
+int8_t larsonScannerCurrentIndex = 0;
+bool larsonScannerDirection = 1;
+
+uint8_t brightnessForLarsonIndex(uint8_t larsonIndex)
+{
+    int8_t offset = larsonIndex - larsonScannerCurrentIndex;
+
+    if (offset < -1 || offset > 1) {
+        return 0;
+    }
+
+    if (larsonScannerDirection) {
+        return larsonScannerBrightnessValues[offset + 1];
+    } else {
+        return larsonScannerBrightnessValues[2 - (offset + 1)];
+    }
+}
+
+void larsonScannerNextStep(uint8_t delta)
+{
+    uint16_t currentBrightness = larsonScannerBrightnessValues[1];
+
+    currentBrightness += delta;
+
+    if (currentBrightness > 255) {
+        currentBrightness = 127;
+
+        if (larsonScannerDirection) {
+            larsonScannerCurrentIndex++;
+            if (larsonScannerCurrentIndex >= ledsInLarsonScannerCount) {
+                larsonScannerCurrentIndex = ledsInLarsonScannerCount - 1;
+                larsonScannerDirection = 0;
+            }
+        } else {
+            larsonScannerCurrentIndex--;
+            if (larsonScannerCurrentIndex < 0) {
+                larsonScannerCurrentIndex = 0;
+                larsonScannerDirection = 1;
+            }
+        }
+    }
+
+    larsonScannerBrightnessValues[0] = 255 - currentBrightness;
+    larsonScannerBrightnessValues[1] = currentBrightness;
+    larsonScannerBrightnessValues[2] = currentBrightness - 127;
+}
+
+void applyLedLarsonScannerLayer(void)
+{
+    uint8_t ledIndex;
+    uint8_t scannerLedIndex;
+    const ledConfig_t *ledConfig;
+    hsvColor_t ledColor;
+
+    scannerLedIndex = 0;
+
+    for (ledIndex = 0; ledIndex < ledCount; ledIndex++) {
+
+        ledConfig = &ledConfigs[ledIndex];
+
+        if ((ledConfig->flags & LED_FUNCTION_LARSON_SCANNER) == 0) {
+            continue;
+        }
+
+        getLedHsv(ledIndex, &ledColor);
+        ledColor.v = brightnessForLarsonIndex(scannerLedIndex);
+        setLedHsv(ledIndex, &ledColor);
+
+        scannerLedIndex++;
+    }
+}
+
 #ifdef USE_LED_ANIMATION
 static uint8_t previousRow;
 static uint8_t currentRow;
@@ -922,13 +1028,15 @@ void updateLedStrip(void)
     bool indicatorFlashNow = (int32_t)(now - nextIndicatorFlashAt) >= 0L;
     bool warningFlashNow = (int32_t)(now - nextWarningFlashAt) >= 0L;
     bool rotationUpdateNow = (int32_t)(now - nextRotationUpdateAt) >= 0L;
+    bool larsonScannerUpdateNow = (int32_t)(now - nextLarsonScannerUpdateAt) >= 0L;
 #ifdef USE_LED_ANIMATION
     bool animationUpdateNow = (int32_t)(now - nextAnimationUpdateAt) >= 0L;
 #endif
     if (!(
             indicatorFlashNow ||
             rotationUpdateNow ||
-            warningFlashNow
+            warningFlashNow   ||
+            larsonScannerUpdateNow
 #ifdef USE_LED_ANIMATION
             || animationUpdateNow
 #endif
@@ -966,6 +1074,14 @@ void updateLedStrip(void)
     }
 
     applyLedIndicatorLayer(indicatorFlashState);
+
+    if (ledsInLarsonScannerCount > 0) {
+        applyLedLarsonScannerLayer();
+        if (larsonScannerUpdateNow) {
+            larsonScannerNextStep(12);
+            nextLarsonScannerUpdateAt = now + LED_STRIP_50HZ;
+        }
+    }
 
 #ifdef USE_LED_ANIMATION
     if (animationUpdateNow) {
