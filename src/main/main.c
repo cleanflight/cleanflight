@@ -54,6 +54,8 @@
 #include "drivers/usb_io.h"
 #include "drivers/transponder_ir.h"
 #include "drivers/gyro_sync.h"
+#include "drivers/vtx.h"
+#include "drivers/vtxbb.h"
 
 #include "rx/rx.h"
 
@@ -67,6 +69,7 @@
 #include "io/display.h"
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/transponder_ir.h"
+#include "io/vtxrc.h"
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
@@ -337,6 +340,25 @@ void init(void)
             .echoPin = sonarHardware->trigger_pin,
         };
         pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
+    }
+#endif
+
+#ifdef VTXBB
+    const vtxbbHardware_t *vtxbbHardware;
+    vtxbbGPIOConfig_t vtxbbGPIOConfig;
+    if (feature(FEATURE_VTXBB) &&
+            (vtxbbHardware = vtxbbGetHardwareConfig())) {
+        vtxbbGPIOConfig.ssGPIO = vtxbbHardware->ss_gpio;
+        vtxbbGPIOConfig.ssPin = vtxbbHardware->ss_pin;
+        vtxbbGPIOConfig.sckGPIO = vtxbbHardware->sck_gpio;
+        vtxbbGPIOConfig.sckPin = vtxbbHardware->sck_pin;
+        vtxbbGPIOConfig.mosiGPIO = vtxbbHardware->mosi_gpio;
+        vtxbbGPIOConfig.mosiPin = vtxbbHardware->mosi_pin;
+        pwm_params.vtxbbGPIOConfig = &vtxbbGPIOConfig;
+        pwm_params.useVTXBB = true;	// Never used ...
+    } else {
+        pwm_params.vtxbbGPIOConfig = NULL;
+        pwm_params.useVTXBB = false;	// Never used ...
     }
 #endif
 
@@ -638,6 +660,10 @@ void init(void)
 
 #ifdef CJMCU
     LED2_ON;
+#endif
+
+#ifdef VTX
+    (void)vtxRcInit();
 #endif
 
     // Latch active features AGAIN since some may be modified by init().
