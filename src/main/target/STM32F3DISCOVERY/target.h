@@ -31,7 +31,7 @@
 #define BEEP_GPIO   GPIOE
 #define BEEP_PIN    Pin_9|Pin_13 // Red LEDs - PE9/PE13
 #define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOE
-#define BEEPER_INVERTED
+#define BEEPER_OUTPUT_NPN
 
 
 #define BEEPER_INVERTED

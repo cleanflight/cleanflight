@@ -18,7 +18,16 @@ There is a special arming tone used if a GPS fix has been attained, and there's 
 
 The CLI command `play_sound` is useful for demonstrating the buzzer tones. Repeatedly entering the command will play the various tones in turn. Entering the command with a numeric-index parameter (see below) will play the associated tone.
 
+## Buzzer port
+
 Buzzer is enabled by default on platforms that have buzzer connections.
+Depending on platforms, the buzzer is driven by either a NPN or PNP transistor located on- or off-board.
+The output mode of the buzzer port can be configured as appropriate by setting the  `beeper_output_mode` parameter in CLI to one of those four values : 
+N-PP
+I-PP
+N-OD
+I-OD 
+where PP/OD stands for (push-pull)NPN/PNP(opendrain) transistor and N/I for Normal/Inverted functionning.
 
 ## Tone sequences
 
