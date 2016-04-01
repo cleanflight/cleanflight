@@ -109,6 +109,9 @@ typedef struct box_e {
     const uint8_t permanentId;      //
 } box_t;
 
+// scale factor for serialising PID values
+const int pidFloatScale = 100;
+
 // FIXME remove ;'s
 static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXARM, "ARM;", 0 },
@@ -829,6 +832,25 @@ static bool processOutCommand(uint8_t cmdMSP)
             }
         }
         break;
+     case MSP_PID_FLOAT:
+        headSerialReply(3 * sizeof(uint16_t) * PID_ITEM_COUNT);
+        for (i = 0; i < 3; i++) {
+            serialize16(constrain(lrintf(currentProfile->pidProfile.P_f[i] * pidFloatScale), 0, UINT16_MAX));
+            serialize16(constrain(lrintf(currentProfile->pidProfile.I_f[i] * pidFloatScale), 0, UINT16_MAX));
+            serialize16(constrain(lrintf(currentProfile->pidProfile.D_f[i] * pidFloatScale), 0, UINT16_MAX));
+        }
+        for (i = 3; i < PID_ITEM_COUNT; i++) {
+            if (i == PIDLEVEL) {
+                serialize16(constrain(lrintf(currentProfile->pidProfile.A_level * pidFloatScale), 0, UINT16_MAX));
+                serialize16(constrain(lrintf(currentProfile->pidProfile.H_level * pidFloatScale), 0, UINT16_MAX));
+                serialize16(constrain(lrintf(currentProfile->pidProfile.H_sensitivity * pidFloatScale), 0, UINT16_MAX));
+            } else {
+                serialize16(currentProfile->pidProfile.P8[i] * pidFloatScale);
+                serialize16(currentProfile->pidProfile.I8[i] * pidFloatScale);
+                serialize16(currentProfile->pidProfile.D8[i] * pidFloatScale);
+            }
+        }
+        break;
     case MSP_PIDNAMES:
         headSerialReply(sizeof(pidnames) - 1);
         serializeNames(pidnames);
@@ -1279,6 +1301,24 @@ static bool processInCommand(void)
                 currentProfile->pidProfile.P8[i] = read8();
                 currentProfile->pidProfile.I8[i] = read8();
                 currentProfile->pidProfile.D8[i] = read8();
+            }
+        }
+        break;
+    case MSP_SET_PID_FLOAT:
+        for (i = 0; i < 3; i++) {
+            currentProfile->pidProfile.P_f[i] = (float)read16() / pidFloatScale;
+            currentProfile->pidProfile.I_f[i] = (float)read16() / pidFloatScale;
+            currentProfile->pidProfile.D_f[i] = (float)read16() / pidFloatScale;
+        }
+        for (i = 3; i < PID_ITEM_COUNT; i++) {
+            if (i == PIDLEVEL) {
+                currentProfile->pidProfile.A_level = (float)read16() / pidFloatScale;
+                currentProfile->pidProfile.H_level = (float)read16() / pidFloatScale;
+                currentProfile->pidProfile.H_sensitivity = (float)read16() / pidFloatScale;
+            } else {
+                currentProfile->pidProfile.P8[i] = (float)read16() / pidFloatScale;
+                currentProfile->pidProfile.I8[i] = (float)read16() / pidFloatScale;
+                currentProfile->pidProfile.D8[i] = (float)read16() / pidFloatScale;
             }
         }
         break;
