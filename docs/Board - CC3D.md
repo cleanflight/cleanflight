@@ -18,6 +18,8 @@ Tricopter & Airplane support is untested, please report success or failure if yo
 
 The 8 pin RC_Input connector has the following pinouts when used in RX_PPM/RX_SERIAL mode
 
+This was not true for me! Actually PPM Input was on channel 8 not 3! Nut sure if this only applies to me or everyone...
+
 | Pin | Function  | Notes                            |
 | --- | --------- | -------------------------------- |
 | 1   | Ground    |                                  |
