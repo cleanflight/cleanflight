@@ -735,7 +735,11 @@ static void updateValuesForThisPage(void)
         case MEASURES_PAGE : {
         	structureOfPage.editField[3].color = isBatteryLevelOK() ? PIXEL_NORMAL : PIXEL_INVERTED;
         	structureOfPage.editField[15].data = isAlarmSoundOn;
+#ifdef TELEMETRY
         	structureOfPage.editField[18].data = masterConfig.telemetryConfig.hottAlarmSoundInterval;
+#else
+        	structureOfPage.editField[18].data = 5; //default value
+#endif
 		break;
 		}
 		case BATTERY_PAGE : {
@@ -879,7 +883,9 @@ static void applyNewValuesOnTheCurrentPage(void)
 	    }
         case MEASURES_PAGE : {
         	isAlarmSoundOn = structureOfPage.editField[15].data;
+#ifdef TELEMETRY
         	masterConfig.telemetryConfig.hottAlarmSoundInterval = structureOfPage.editField[18].data;
+#endif
 		break;
 		}
         case BATTERY_PAGE : {
