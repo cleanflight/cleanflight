@@ -552,7 +552,7 @@ static void initialiseItemsOfTheSelectedPage(void)
 		case ESCMOTORS_PAGE : {
 			for (int i = 0; i < 2; i++)
 				defineOnOffItem(firstItemOnLine(i+1), 19, 19);
-			for (int i = 0; i < 5; i++)
+			for (int i = 0; i < 4; i++)
 				defineActiveItem (firstItemOnLine(i+3), 16, 19, PWM_RANGE_ZERO, PWM_RANGE_MAX);
 		break;
 		}
