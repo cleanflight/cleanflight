@@ -281,6 +281,7 @@ HIGHEND_SRC = \
 		   common/colorconversion.c \
 		   io/gps.c \
 		   io/ledstrip.c \
+		   io/config_menus.c \
 		   io/display.c \
 		   telemetry/telemetry.c \
 		   telemetry/frsky.c \

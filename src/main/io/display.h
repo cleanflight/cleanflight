@@ -32,6 +32,8 @@ typedef enum {
 #endif
 } pageId_e;
 
+uint8_t commandFromSticksForDataEditing;
+
 void updateDisplay(void);
 
 void displayShowFixedPage(pageId_e pageId);

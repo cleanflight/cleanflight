@@ -127,7 +127,7 @@ void closeSerialPort(serialPort_t *serialPort);
 void waitForSerialPortToFinishTransmitting(serialPort_t *serialPort);
 
 baudRate_e lookupBaudRateIndex(uint32_t baudRate);
-
+uint8_t baudRateCount(void);
 
 //
 // msp/cli/bootloader

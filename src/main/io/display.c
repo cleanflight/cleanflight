@@ -39,6 +39,7 @@
 
 #ifdef DISPLAY
 
+#include "io/config_menus.h"
 #include "io/rc_controls.h"
 
 #include "sensors/battery.h"
@@ -46,7 +47,6 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
-
 
 #include "flight/pid.h"
 #include "flight/imu.h"
@@ -67,6 +67,7 @@
 
 #include "display.h"
 
+extern void sendContentOfPageToDisplay(void);
 controlRateConfig_t *getControlRateConfig(uint8_t profileIndex);
 
 #define MICROSECONDS_IN_A_SECOND (1000 * 1000)
@@ -551,6 +552,12 @@ void updateDisplay(void)
     }
 
     nextDisplayUpdateAt = now + DISPLAY_UPDATE_FREQUENCY;
+
+	if(onGoingDataEditingWithSticks){
+		processDataEditing(commandFromSticksForDataEditing);
+		sendContentOfPageToDisplay();
+		return;
+	}
 
     bool armedState = ARMING_FLAG(ARMED) ? true : false;
     bool armedStateChanged = armedState != previousArmedState;

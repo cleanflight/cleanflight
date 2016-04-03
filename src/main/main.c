@@ -65,6 +65,8 @@
 #include "io/gimbal.h"
 #include "io/ledstrip.h"
 #include "io/display.h"
+
+#include "io/config_menus.h"
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/transponder_ir.h"
 
@@ -478,6 +480,7 @@ void init(void)
     if (feature(FEATURE_DISPLAY)) {
         displayInit(&masterConfig.rxConfig);
     }
+    initDataEditingStructures();
 #endif
 
     if (!sensorsAutodetect(&masterConfig.sensorAlignmentConfig, masterConfig.gyro_lpf,
