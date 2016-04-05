@@ -59,6 +59,7 @@
 #include "drivers/sonar_hcsr04.h"
 
 #include "config/runtime_config.h"
+#include "config/parameter_group.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -71,8 +72,6 @@
 #ifdef NAZE
 #include "hardware_revision.h"
 #endif
-
-extern float magneticDeclination;
 
 extern gyro_t gyro;
 extern baro_t baro;
@@ -212,9 +211,6 @@ bool fakeAccDetect(acc_t *acc)
 
 bool detectGyro(void)
 {
-    bool sensorDetected;
-    UNUSED(sensorDetected); // avoid unused-variable warning on some targets.
-
     gyroSensor_e gyroHardware = GYRO_DEFAULT;
     gyroAlign = ALIGN_DEFAULT;
 
@@ -283,17 +279,22 @@ bool detectGyro(void)
 
         case GYRO_MPU6500:
 #ifdef USE_GYRO_MPU6500
-#ifdef USE_GYRO_SPI_MPU6500
-            sensorDetected = mpu6500GyroDetect(&gyro) || mpu6500SpiGyroDetect(&gyro);
-#else
-            sensorDetected = mpu6500GyroDetect(&gyro);
-#endif
-            if (sensorDetected) {
+            if (mpu6500GyroDetect(&gyro)) {
                 gyroHardware = GYRO_MPU6500;
 #ifdef GYRO_MPU6500_ALIGN
                 gyroAlign = GYRO_MPU6500_ALIGN;
 #endif
 
+                break;
+            }
+#endif
+
+#ifdef USE_GYRO_SPI_MPU6500
+            if (mpu6500SpiGyroDetect(&gyro)) {
+                gyroHardware = GYRO_MPU6500;
+#ifdef GYRO_MPU6500_ALIGN
+                gyroAlign = GYRO_MPU6500_ALIGN;
+#endif
                 break;
             }
 #endif
@@ -418,12 +419,17 @@ retry:
             ; // fallthrough
         case ACC_MPU6500:
 #ifdef USE_ACC_MPU6500
-#ifdef USE_ACC_SPI_MPU6500
-            sensorDetected = mpu6500AccDetect(&acc) || mpu6500SpiAccDetect(&acc);
-#else
-            sensorDetected = mpu6500AccDetect(&acc);
+            if (mpu6500AccDetect(&acc)) {
+#ifdef ACC_MPU6500_ALIGN
+                accAlign = ACC_MPU6500_ALIGN;
 #endif
-            if (sensorDetected) {
+                accHardware = ACC_MPU6500;
+                break;
+            }
+#endif
+
+#ifdef USE_ACC_SPI_MPU6500
+            if (mpu6500SpiAccDetect(&acc)) {
 #ifdef ACC_MPU6500_ALIGN
                 accAlign = ACC_MPU6500_ALIGN;
 #endif
@@ -655,15 +661,8 @@ void reconfigureAlignment(sensorAlignmentConfig_t *sensorAlignmentConfig)
 #endif
 }
 
-bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint8_t gyroLpf, uint8_t accHardwareToUse, uint8_t magHardwareToUse, uint8_t baroHardwareToUse,
-        int16_t magDeclinationFromConfig,
-        uint32_t looptime, uint8_t gyroSync, uint8_t gyroSyncDenominator) {
-
-    int16_t deg, min;
-
-#ifndef MAG
-    UNUSED(magHardwareToUse);
-#endif
+bool sensorsAutodetect(void)
+{
     memset(&acc, 0, sizeof(acc));
     memset(&gyro, 0, sizeof(gyro));
 
@@ -678,33 +677,21 @@ bool sensorsAutodetect(sensorAlignmentConfig_t *sensorAlignmentConfig, uint8_t g
     if (!detectGyro()) {
         return false;
     }
-    detectAcc(accHardwareToUse);
-    detectBaro(baroHardwareToUse);
+    detectAcc(sensorSelectionConfig()->acc_hardware);
+    detectBaro(sensorSelectionConfig()->baro_hardware);
 
 
     // Now time to init things, acc first
     if (sensors(SENSOR_ACC))
         acc.init();
     // this is safe because either mpu6050 or mpu3050 or lg3d20 sets it, and in case of fail, we never get here.
-    gyroUpdateSampleRate(looptime, gyroLpf, gyroSync, gyroSyncDenominator);   // Set gyro sampling rate divider before initialization
-    gyro.init(gyroLpf);
+    gyro.init(gyroConfig()->gyro_lpf);
 
 #ifdef MAG
-    detectMag(magHardwareToUse);
+    detectMag(sensorSelectionConfig()->mag_hardware);
 #endif
 
-    reconfigureAlignment(sensorAlignmentConfig);
-
-    // FIXME extract to a method to reduce dependencies, maybe move to sensors_compass.c
-    if (sensors(SENSOR_MAG)) {
-        // calculate magnetic declination
-        deg = magDeclinationFromConfig / 100;
-        min = magDeclinationFromConfig % 100;
-
-        magneticDeclination = (deg + ((float)min * (1.0f / 60.0f))) * 10; // heading is in 0.1deg units
-    } else {
-        magneticDeclination = 0.0f; // TODO investigate if this is actually needed if there is no mag sensor or if the value stored in the config should be used.
-    }
+    reconfigureAlignment(sensorAlignmentConfig());
 
     return true;
 }
