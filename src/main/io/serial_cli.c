@@ -178,7 +178,7 @@ static uint32_t bufferIndex = 0;
 
 #ifndef USE_QUAD_MIXER_ONLY
 //  this with mixerMode_e
-static const char * const mixerNames[] = {
+const char * const mixerNames[] = {
     "TRI", "QUADP", "QUADX", "BI",
     "GIMBAL", "Y6", "HEX6",
     "FLYING_WING", "Y4", "HEX6X", "OCTOX8", "OCTOFLATP", "OCTOFLATX",
@@ -189,12 +189,12 @@ static const char * const mixerNames[] = {
 #endif
 
 // sync this with features_e
-static const char * const featureNames[] = {
+const char * const featureNames[] = {
     "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
     "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
-    "BLACKBOX", "CHANNEL_FORWARDING", "TRANSPONDER", NULL
+    "BLACKBOX", "CHANNEL_FORWARDING", NULL
 };
 
 // sync this with rxFailsafeChannelMode_e
@@ -321,14 +321,14 @@ const clicmd_t cmdTable[] = {
 #define CMD_COUNT (sizeof(cmdTable) / sizeof(clicmd_t))
 
 static const char * const lookupTableOffOn[] = {
-    "OFF", "ON"
+    "OFF", "ON", NULL
 };
 
-static const char * const lookupTableUnit[] = {
-    "IMPERIAL", "METRIC"
+const char * const lookupTableUnit[] = {
+    "IMPERIAL", "METRIC", NULL
 };
 
-static const char * const lookupTableAlignment[] = {
+const char * const lookupTableAlignment[] = {
     "DEFAULT",
     "CW0",
     "CW90",
@@ -337,36 +337,37 @@ static const char * const lookupTableAlignment[] = {
     "CW0FLIP",
     "CW90FLIP",
     "CW180FLIP",
-    "CW270FLIP"
+    "CW270FLIP",
+    NULL
 };
 
 #ifdef GPS
-static const char * const lookupTableGPSProvider[] = {
-    "NMEA", "UBLOX"
+const char * const lookupTableGPSProvider[] = {
+    "NMEA", "UBLOX", NULL
 };
 
-static const char * const lookupTableGPSSBASMode[] = {
-    "AUTO", "EGNOS", "WAAS", "MSAS", "GAGAN"
+const char * const lookupTableGPSSBASMode[] = {
+    "AUTO", "EGNOS", "WAAS", "MSAS", "GAGAN", NULL
 };
 #endif
 
-static const char * const lookupTableCurrentSensor[] = {
-    "NONE", "ADC", "VIRTUAL"
+const char * const lookupTableCurrentSensor[] = {
+    "NONE", "ADC", "VIRTUAL", NULL
 };
 
-static const char * const lookupTableGimbalMode[] = {
-    "NORMAL", "MIXTILT"
+const char * const lookupTableGimbalMode[] = {
+    "NORMAL", "MIXTILT", NULL
 };
 
-static const char * const lookupTablePidController[] = {
-    "MW23", "MWREWRITE", "LUX"
+const char * const lookupTablePidController[] = {
+    "MW23", "MWREWRITE", "LUX", NULL
 };
 
-static const char * const lookupTableBlackboxDevice[] = {
-    "SERIAL", "SPIFLASH", "SDCARD"
+const char * const lookupTableBlackboxDevice[] = {
+    "SERIAL", "SPIFLASH", "SDCARD", NULL
 };
 
-static const char * const lookupTableSerialRX[] = {
+const char * const lookupTableSerialRX[] = {
     "SPEK1024",
     "SPEK2048",
     "SBUS",
@@ -374,121 +375,48 @@ static const char * const lookupTableSerialRX[] = {
     "SUMH",
     "XB-B",
     "XB-B-RJ01",
-    "IBUS"
+    "IBUS",
+    NULL
 };
 
-static const char * const lookupTableGyroFilter[] = {
-    "OFF", "LOW", "MEDIUM", "HIGH"
+const char * const lookupTableGyroFilter[] = {
+    "OFF", "LOW", "MEDIUM", "HIGH", NULL
 };
 
-static const char * const lookupTableGyroLpf[] = {
+const char * const lookupTableGyroLpf[] = {
     "OFF",
     "188HZ",
     "98HZ",
     "42HZ",
     "20HZ",
-    "10HZ"
+    "10HZ",
+    NULL
 };
 
-static const char * const lookupDeltaMethod[] = {
-    "ERROR", "MEASUREMENT"
+const char * const lookupDeltaMethod[] = {
+    "ERROR", "MEASUREMENT", NULL
 };
 
-typedef struct lookupTableEntry_s {
-    const char * const *values;
-    const uint8_t valueCount;
-} lookupTableEntry_t;
 
-typedef enum {
-    TABLE_OFF_ON = 0,
-    TABLE_UNIT,
-    TABLE_ALIGNMENT,
+/*static const*/ lookupTableEntry_t lookupTables[] = {
+    { lookupTableOffOn, ((sizeof(lookupTableOffOn) / sizeof(char *))-1) },
+    { lookupTableUnit, ((sizeof(lookupTableUnit) / sizeof(char *))- 1)  },
+    { lookupTableAlignment, ((sizeof(lookupTableAlignment) / sizeof(char *)) - 1) },
 #ifdef GPS
-    TABLE_GPS_PROVIDER,
-    TABLE_GPS_SBAS_MODE,
+    { lookupTableGPSProvider, ((sizeof(lookupTableGPSProvider) / sizeof(char *)) - 1) },
+    { lookupTableGPSSBASMode, ((sizeof(lookupTableGPSSBASMode) / sizeof(char *)) - 1) },
 #endif
 #ifdef BLACKBOX
-    TABLE_BLACKBOX_DEVICE,
+    { lookupTableBlackboxDevice, ((sizeof(lookupTableBlackboxDevice) / sizeof(char *)) - 1) },
 #endif
-    TABLE_CURRENT_SENSOR,
-    TABLE_GIMBAL_MODE,
-    TABLE_PID_CONTROLLER,
-    TABLE_SERIAL_RX,
-    TABLE_GYRO_FILTER,
-    TABLE_GYRO_LPF,
-    TABLE_DELTA_METHOD,
-} lookupTableIndex_e;
-
-static const lookupTableEntry_t lookupTables[] = {
-    { lookupTableOffOn, sizeof(lookupTableOffOn) / sizeof(char *) },
-    { lookupTableUnit, sizeof(lookupTableUnit) / sizeof(char *) },
-    { lookupTableAlignment, sizeof(lookupTableAlignment) / sizeof(char *) },
-#ifdef GPS
-    { lookupTableGPSProvider, sizeof(lookupTableGPSProvider) / sizeof(char *) },
-    { lookupTableGPSSBASMode, sizeof(lookupTableGPSSBASMode) / sizeof(char *) },
-#endif
-#ifdef BLACKBOX
-    { lookupTableBlackboxDevice, sizeof(lookupTableBlackboxDevice) / sizeof(char *) },
-#endif
-    { lookupTableCurrentSensor, sizeof(lookupTableCurrentSensor) / sizeof(char *) },
-    { lookupTableGimbalMode, sizeof(lookupTableGimbalMode) / sizeof(char *) },
-    { lookupTablePidController, sizeof(lookupTablePidController) / sizeof(char *) },
-    { lookupTableSerialRX, sizeof(lookupTableSerialRX) / sizeof(char *) },
-    { lookupTableGyroFilter, sizeof(lookupTableGyroFilter) / sizeof(char *) },
-    { lookupTableGyroLpf, sizeof(lookupTableGyroLpf) / sizeof(char *) },
-    { lookupDeltaMethod, sizeof(lookupDeltaMethod) / sizeof(char *) }
+    { lookupTableCurrentSensor, ((sizeof(lookupTableCurrentSensor) / sizeof(char *)) - 1) },
+    { lookupTableGimbalMode, ((sizeof(lookupTableGimbalMode) / sizeof(char *)) - 1) },
+    { lookupTablePidController, ((sizeof(lookupTablePidController) / sizeof(char *)) - 1) },
+    { lookupTableSerialRX, ((sizeof(lookupTableSerialRX) / sizeof(char *)) - 1) },
+    { lookupTableGyroFilter, ((sizeof(lookupTableGyroFilter) / sizeof(char *)) - 1) },
+    { lookupTableGyroLpf, ((sizeof(lookupTableGyroLpf) / sizeof(char *)) - 1) },
+    { lookupDeltaMethod, ((sizeof(lookupDeltaMethod) / sizeof(char *)) - 1) }
 };
-
-#define VALUE_TYPE_OFFSET 0
-#define VALUE_SECTION_OFFSET 4
-#define VALUE_MODE_OFFSET 6
-
-typedef enum {
-    // value type
-    VAR_UINT8 = (0 << VALUE_TYPE_OFFSET),
-    VAR_INT8 = (1 << VALUE_TYPE_OFFSET),
-    VAR_UINT16 = (2 << VALUE_TYPE_OFFSET),
-    VAR_INT16 = (3 << VALUE_TYPE_OFFSET),
-    VAR_UINT32 = (4 << VALUE_TYPE_OFFSET),
-    VAR_FLOAT = (5 << VALUE_TYPE_OFFSET),
-
-    // value section
-    MASTER_VALUE = (0 << VALUE_SECTION_OFFSET),
-    PROFILE_VALUE = (1 << VALUE_SECTION_OFFSET),
-    CONTROL_RATE_VALUE = (2 << VALUE_SECTION_OFFSET),
-
-    // value mode
-    MODE_DIRECT = (0 << VALUE_MODE_OFFSET),
-    MODE_LOOKUP = (1 << VALUE_MODE_OFFSET)
-} cliValueFlag_e;
-
-#define VALUE_TYPE_MASK (0x0F)
-#define VALUE_SECTION_MASK (0x30)
-#define VALUE_MODE_MASK (0xC0)
-
-typedef struct cliMinMaxConfig_s {
-    const int32_t min;
-    const int32_t max;
-} cliMinMaxConfig_t;
-
-typedef struct cliLookupTableConfig_s {
-    const lookupTableIndex_e tableIndex;
-} cliLookupTableConfig_t;
-
-typedef union {
-    cliLookupTableConfig_t lookup;
-    cliMinMaxConfig_t minmax;
-
-} cliValueConfig_t;
-
-typedef struct {
-    const char *name;
-    const uint8_t type; // see cliValueFlag_e
-    const cliValueConfig_t config;
-
-    pgn_t pgn;
-    uint16_t offset;
-} __attribute__((packed)) clivalue_t;
 
 const clivalue_t valueTable[] = {
     { "looptime",                   VAR_UINT16 | MASTER_VALUE, .config.minmax = {0, 9000} , PG_IMU_CONFIG, offsetof(imuConfig_t, looptime)},
@@ -737,12 +665,9 @@ const clivalue_t valueTable[] = {
     { "magzero_z",                  VAR_INT16  | MASTER_VALUE, .config.minmax = { -32768,  32767 } , PG_SENSOR_TRIMS, offsetof(sensorTrims_t, magZero.raw[Z])},
 };
 
-typedef union {
-    int32_t int_value;
-    float float_value;
-} int_float_value_t;
+uint8_t numberOfRecordsInCLITable = ARRAYLEN(valueTable);
 
-static void cliSetVar(const clivalue_t *var, const int_float_value_t value);
+void cliSetVar(const clivalue_t *var, const int_float_value_t value);
 static void cliPrintVar(const clivalue_t *var, uint32_t full);
 static void cliPrint(const char *str);
 static void cliPrintf(const char *fmt, ...);
@@ -2219,7 +2144,7 @@ static void cliWrite(uint8_t ch)
     bufWriterAppend(cliWriter, ch);
 }
 
-static void* cliVarPtr(const clivalue_t *var)
+void* cliVarPtr(const clivalue_t *var)
 {
     const pgRegistry_t* rec = pgFind(var->pgn);
 
@@ -2288,7 +2213,7 @@ static void cliPrintVar(const clivalue_t *var, uint32_t full)
     }
 }
 
-static void cliSetVar(const clivalue_t *var, const int_float_value_t value)
+void cliSetVar(const clivalue_t *var, const int_float_value_t value)
 {
     void *ptr = cliVarPtr(var);
 

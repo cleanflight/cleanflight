@@ -33,6 +33,7 @@ typedef enum {
 } pageId_e;
 
 void displayInit(void);
+extern uint8_t commandFromSticksForDataEditing;
 
 void updateDisplay(void);
 

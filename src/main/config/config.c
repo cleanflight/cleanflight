@@ -84,11 +84,6 @@
 #define SECOND_PORT_INDEX 1
 #endif
 
-uint16_t getCurrentMinthrottle(void)
-{
-    return motorAndServoConfig()->minthrottle;
-}
-
 // Default settings
 STATIC_UNIT_TESTED void resetConf(void)
 {

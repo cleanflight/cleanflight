@@ -72,6 +72,8 @@
 #include "io/gimbal.h"
 #include "io/ledstrip.h"
 #include "io/display.h"
+
+#include "io/config_menus.h"
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/transponder_ir.h"
 #include "io/serial_msp.h"
@@ -477,6 +479,7 @@ void init(void)
     if (feature(FEATURE_DISPLAY)) {
         displayInit();
     }
+    initDataEditingStructures();
 #endif
 
     gyroUpdateSampleRate(imuConfig()->looptime, gyroConfig()->gyro_lpf, imuConfig()->gyroSync, imuConfig()->gyroSyncDenominator);   // Set gyro sampling rate divider before initialization

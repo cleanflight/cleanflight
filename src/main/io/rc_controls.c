@@ -53,6 +53,7 @@
 #include "io/motor_and_servo.h"
 #include "io/rc_curves.h"
 
+#include "io/config_menus.h"
 #include "io/display.h"
 
 #include "flight/pid.h"
@@ -72,7 +73,7 @@ PG_REGISTER_PROFILE(modeActivationProfile_t, modeActivationProfile, PG_MODE_ACTI
 static bool isUsingSticksToArm = true;
 
 int16_t rcCommand[4];           // interval [1000;2000] for THROTTLE and [-500;+500] for ROLL/PITCH/YAW
-
+uint8_t commandFromSticksForDataEditing;
 uint32_t rcModeActivationMask; // one bit per mode defined in boxId_e
 
 void pgReset_rcControlsConfig(rcControlsConfig_t *rcControlsConfig)
@@ -126,6 +127,44 @@ rollPitchStatus_e calculateRollPitchCenterStatus(rxConfig_t *rxConfig)
     return NOT_CENTERED;
 }
 
+void checkCommandForDataEditingWithSticks(uint8_t rcSticks)
+{
+	commandFromSticksForDataEditing = NO_COMMAND;
+
+	switch (rcSticks){
+		case THR_LO + YAW_CE + PIT_LO + ROL_LO : { // deactivation
+			onGoingDataEditingWithSticks = false;
+			commandFromSticksForDataEditing = EXIT_EDITING_MODE;
+			return;
+		}
+		case THR_LO + YAW_CE + PIT_LO + ROL_HI : { // activation
+			onGoingDataEditingWithSticks = true;
+			commandFromSticksForDataEditing = ENTER_EDITING_MODE;
+			return;
+		}
+		case THR_LO + YAW_CE + PIT_HI + ROL_CE : {
+			commandFromSticksForDataEditing = INC_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_LO + ROL_CE : {
+			commandFromSticksForDataEditing = DEC_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_CE + ROL_HI : {
+			commandFromSticksForDataEditing = NEXT_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_CE + PIT_CE + ROL_LO : {
+			commandFromSticksForDataEditing = PREV_COMMAND;
+			break;
+		}
+		case THR_LO + YAW_HI + PIT_HI + ROL_CE : {// Selection  or  Exit
+			commandFromSticksForDataEditing = SET_COMMAND;
+			break;
+		}
+	}
+}
+
 void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStatus, bool retarded_arm, bool disarm_kill_switch)
 {
     static uint8_t rcDelayCommand;      // this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
@@ -150,6 +189,12 @@ void processRcStickPositions(rxConfig_t *rxConfig, throttleStatus_e throttleStat
     rcSticks = stTmp;
 
     // perform actions
+    if (!ARMING_FLAG(ARMED)){
+    	checkCommandForDataEditingWithSticks(rcSticks);
+    	if (onGoingDataEditingWithSticks)
+    		return;
+    }
+
     if (!isUsingSticksToArm) {
 
         if (IS_RC_MODE_ACTIVE(BOXARM)) {
