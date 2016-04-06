@@ -57,6 +57,8 @@ typedef enum mixerMode
     MIXER_CUSTOM_TRI = 25
 } mixerMode_e;
 
+#define DEFAULT_MIXER MIXER_QUADX
+
 // Custom mixer data per motor
 typedef struct motorMixer_s {
     float throttle;
@@ -72,6 +74,7 @@ typedef struct mixer_s {
     uint8_t motorCount;
     uint8_t useServo;
     const motorMixer_t *motor;
+    bool enabled;
 } mixer_t;
 
 typedef struct mixerConfig_s {
@@ -239,3 +242,4 @@ void writeMotors(void);
 void stopMotors(void);
 void StopPwmAllMotors(void);
 void mixerInitialiseServoFiltering(uint32_t targetLooptime);
+bool isMixerEnabled(mixerMode_e mixerMode);

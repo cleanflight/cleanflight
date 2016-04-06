@@ -208,3 +208,5 @@
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5
 #endif
+
+#define DISABLE_UNCOMMON_MIXERS

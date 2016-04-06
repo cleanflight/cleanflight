@@ -115,3 +115,5 @@
 #define BLACKBOX
 #define USE_SERVOS
 #define USE_CLI
+
+#define DISABLE_UNCOMMON_MIXERS
