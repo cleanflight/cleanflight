@@ -241,8 +241,14 @@
 
 #define MSP_EEPROM_WRITE         250    //in message          no param
 
+// Command reserved for future expansion
+#define MSP_EXTENSION_TWO_BYTES  252    // reserved for extension to allow two byte commands
+
 #define MSP_DEBUGMSG             253    //out message         debug string buffer
 #define MSP_DEBUG                254    //out message         debug1,debug2,debug3,debug4
+
+// Command reserved for future expansion
+#define MSP_EXTENSION_ONE_BYTE   255    // reserved for extension to allow extra byte for command
 
 // Additional commands that are not compatible with MultiWii
 #define MSP_STATUS_EX            150    //out message         cycletime, errors_count, CPU load, sensor present etc
