@@ -136,24 +136,29 @@ uint8_t spektrumFrameStatus(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeCo
     //This packet wont contain any data if the remote was bound using a separate receiver (bound as external remote)
     if(!initialPacket){
 
+        //save current resolution to variable in case remote rx is bound as external.
+        //This will prevent the if statement (after the switch case) from setting the resolution to an incorrect value if no resolution data is received.
+        uint8_t spmResolution = rxConfig->serialrx_provider;
+
         switch (spekFrame[1]){
             case 0xb2:       //11MS 2048 DSMX
-                rxConfig->serialrx_provider = SERIALRX_SPEKTRUM2048;
-                saveConfigAndNotify();
+                spmResolution = SERIALRX_SPEKTRUM2048;
                 break;
             case 0xa2:  //22MS 2048 DSMX
-                rxConfig->serialrx_provider = SERIALRX_SPEKTRUM2048;
-                saveConfigAndNotify();
+                spmResolution = SERIALRX_SPEKTRUM2048;
                 break;
             case 0x12:  //11MS 2048 DSM2
-                rxConfig->serialrx_provider = SERIALRX_SPEKTRUM2048;
-                saveConfigAndNotify();
+                spmResolution = SERIALRX_SPEKTRUM2048;
                 break;
             case 0x01:  //22MS 1024 DSM2
-                rxConfig->serialrx_provider = SERIALRX_SPEKTRUM1024;
-                saveConfigAndNotify();
+                spmResolution = SERIALRX_SPEKTRUM1024;
                 break;
         }
+
+    if(rxConfig->serialrx_provider != spmResolution){
+        rxConfig->serialrx_provider = spmResolution;
+        saveConfigAndNotify();
+    }
         //Immediately set the resolution settings so that a reboot isn't required after binding.
         switch (rxConfig->serialrx_provider) {
             case SERIALRX_SPEKTRUM2048:
@@ -196,9 +201,11 @@ static uint16_t spektrumReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t ch
     }
 
     if (spekHiRes)
-        data = 903 + (spekChannelData[chan]*.583);      // 2048 mode
+        data = 988 + (spekChannelData[chan] >> 1);      // 2048 mode
+        //data = 903 + (spekChannelData[chan]*.583);    // 2048 mode
     else
-        data = 903 + (spekChannelData[chan]*1.166);     // 1024 mode
+        data = 988 + spekChannelData[chan];             // 1024 mode
+        //data = 903 + (spekChannelData[chan]*1.166);   // 1024 mode
 
     return data;
 }
