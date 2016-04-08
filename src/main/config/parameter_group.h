@@ -90,8 +90,10 @@ extern const pgRegistry_t __pg_registry_end[];
 
 #define PG_DECLARE_PROFILE(_type, _name)                                \
     extern _type *_name ## _ProfileCurrent;                             \
+    extern _type _name ## _Storage[];                  \
     void pgReset_##_name(_type *);                                      \
     static inline _type* _name(void) { return _name ## _ProfileCurrent; } \
+    static inline _type* _name ## _profile(int _index) { return &_name ## _Storage[_index]; } \
     struct _dummy                                                       \
     /**/
 
@@ -154,7 +156,7 @@ extern const pgRegistry_t __pg_registry_end[];
 #endif
 
 #define PG_REGISTER_PROFILE(_type, _name, _pgn, _version)               \
-    STATIC_UNIT_TESTED _type _name ## _Storage[MAX_PROFILE_COUNT];      \
+    _type _name ## _Storage[MAX_PROFILE_COUNT];      \
     PG_ASSIGN(_type, _name)                                             \
     static const pgRegistry_t _name ## _Registry PG_REGISTER_ATTRIBUTES = { \
         .pgn = _pgn | (_version << 12),                                 \
@@ -166,7 +168,7 @@ extern const pgRegistry_t __pg_registry_end[];
     /**/
 
 #define PG_REGISTER_PROFILE_WITH_RESET(_type, _name, _pgn, _version)    \
-    STATIC_UNIT_TESTED _type _name ## _Storage[MAX_PROFILE_COUNT];      \
+    _type _name ## _Storage[MAX_PROFILE_COUNT];      \
     PG_ASSIGN(_type, _name)                                             \
     static const pgRegistry_t _name ## _Registry PG_REGISTER_ATTRIBUTES = { \
         .pgn = _pgn | (_version << 12),                                 \

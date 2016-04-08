@@ -50,5 +50,11 @@ void pgReset_motorAndServoConfig(motorAndServoConfig_t *motorAndServoConfig)
         .motor_pwm_rate = DEFAULT_PWM_RATE,
         .servo_pwm_rate = 50,
     );
-
 }
+
+// FIXME probably not needed
+uint16_t getCurrentMinthrottle(void)
+{
+    return motorAndServoConfig()->minthrottle;
+}
+

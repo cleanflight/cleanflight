@@ -30,3 +30,6 @@ typedef struct motorAndServoConfig_s {
 } motorAndServoConfig_t;
 
 PG_DECLARE(motorAndServoConfig_t, motorAndServoConfig);
+
+// FIXME probably not needed
+uint16_t getCurrentMinthrottle(void);

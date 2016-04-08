@@ -43,9 +43,8 @@
 #include "telemetry/smartport.h"
 
 #include "config/runtime_config.h"
-#include "config/config.h"
-
 #include "config/feature.h"
+#include "config/config.h"
 
 enum
 {

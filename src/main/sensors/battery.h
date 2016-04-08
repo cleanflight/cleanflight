@@ -61,6 +61,7 @@ extern uint16_t vbatRaw;
 extern uint16_t vbatLatestADC;
 extern uint8_t batteryCellCount;
 extern uint16_t batteryWarningVoltage;
+extern uint16_t batteryCriticalVoltage;
 extern uint16_t amperageLatestADC;
 extern int32_t amperage;
 extern int32_t mAhDrawn;
