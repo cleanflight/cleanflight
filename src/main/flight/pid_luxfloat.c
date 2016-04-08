@@ -144,7 +144,6 @@ void pidLuxFloat(const pidProfile_t *pidProfile, const controlRateConfig_t *cont
 
         // Anti windup protection
         if (IS_RC_MODE_ACTIVE(BOXAIRMODE)) {
-            errorGyroIf[axis] = errorGyroIf[axis] * pidScaleItermToRcInput(axis);
             if (STATE(ANTI_WINDUP) || motorLimitReached) {
                 errorGyroIf[axis] = constrainf(errorGyroIf[axis], -errorGyroIfLimit[axis], errorGyroIfLimit[axis]);
             } else {

@@ -146,7 +146,6 @@ void pidMultiWiiRewrite(const pidProfile_t *pidProfile, const controlRateConfig_
 
         // Anti windup protection
         if (IS_RC_MODE_ACTIVE(BOXAIRMODE)) {
-            errorGyroI[axis] = (int32_t) (errorGyroI[axis] * pidScaleItermToRcInput(axis));
             if (STATE(ANTI_WINDUP) || motorLimitReached) {
                 errorGyroI[axis] = constrain(errorGyroI[axis], -errorGyroILimit[axis], errorGyroILimit[axis]);
             } else {
