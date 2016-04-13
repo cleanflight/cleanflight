@@ -298,11 +298,7 @@ void mavlinkSendPosition(void)
         // lon Longitude in 1E7 degrees
         GPS_coord[LON],
         // alt Altitude in 1E3 meters (millimeters) above MSL
-#if defined(BARO) || defined(SONAR)
-        (sensors(SENSOR_SONAR) || sensors(SENSOR_BARO)) ? altitudeHoldGetEstimatedAltitude() * 10 : GPS_altitude * 1000,
-#else
         GPS_altitude * 1000,
-#endif
         // eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
         65535,
         // epv GPS VDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
@@ -313,6 +309,34 @@ void mavlinkSendPosition(void)
         GPS_ground_course * 10,
         // satellites_visible Number of satellites visible. If unknown, set to 255
         GPS_numSat);
+    msgLength = mavlink_msg_to_send_buffer(mavBuffer, &mavMsg);
+    mavlinkSerialWrite(mavBuffer, msgLength);
+
+    // Global position
+    mavlink_msg_global_position_int_pack(0, 200, &mavMsg,
+        // time_usec Timestamp (microseconds since UNIX epoch or microseconds since system boot)
+        micros(),
+        // lat Latitude in 1E7 degrees
+        GPS_coord[LAT],
+        // lon Longitude in 1E7 degrees
+        GPS_coord[LON],
+        // alt Altitude in 1E3 meters (millimeters) above MSL
+        GPS_altitude * 1000,
+        // relative_alt Altitude above ground in meters, expressed as * 1000 (millimeters)
+#if defined(BARO) || defined(SONAR)
+        (sensors(SENSOR_SONAR) || sensors(SENSOR_BARO)) ? altitudeHoldGetEstimatedAltitude() * 10 : GPS_altitude * 1000,
+#else
+        GPS_altitude * 1000,
+#endif
+        // Ground X Speed (Latitude), expressed as m/s * 100
+        0,
+        // Ground Y Speed (Longitude), expressed as m/s * 100
+        0,
+        // Ground Z Speed (Altitude), expressed as m/s * 100
+        0,
+        // heading Current heading in degrees, in compass units (0..360, 0=north)
+        DECIDEGREES_TO_DEGREES(attitude.values.yaw)
+    );
     msgLength = mavlink_msg_to_send_buffer(mavBuffer, &mavMsg);
     mavlinkSerialWrite(mavBuffer, msgLength);
 
