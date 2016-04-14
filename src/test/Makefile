@@ -733,21 +733,21 @@ $(OBJECT_DIR)/io/msp_protocol.o : \
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/msp_protocol.c -o $@
 
-$(OBJECT_DIR)/serial_msp_unittest.o : \
-	$(TEST_DIR)/serial_msp_unittest.cc \
+$(OBJECT_DIR)/io_msp_unittest.o : \
+	$(TEST_DIR)/io_msp_unittest.cc \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/serial_msp_unittest.cc -o $@
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/io_msp_unittest.cc -o $@
 
-$(OBJECT_DIR)/serial_msp_unittest : \
+$(OBJECT_DIR)/io_msp_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/version.o \
 	$(OBJECT_DIR)/io/serial.o \
 	$(OBJECT_DIR)/io/msp_protocol.o \
 	$(OBJECT_DIR)/drivers/buf_writer.o \
 	$(OBJECT_DIR)/config/parameter_group.o \
-	$(OBJECT_DIR)/serial_msp_unittest.o \
+	$(OBJECT_DIR)/io_msp_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $(PG_FLAGS) $^ -o $(OBJECT_DIR)/$@
