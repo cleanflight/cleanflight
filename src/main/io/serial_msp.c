@@ -129,7 +129,7 @@ void mspReleaseSerialPortIfAllocated(serialPort_t *serialPort)
     }
 }
 
-STATIC_UNIT_TESTED void setCurrentPort(mspSerialPort_t *port)
+static void setCurrentPort(mspSerialPort_t *port)
 {
     currentPort = port;
     currentMspPort = &port->mspPort;

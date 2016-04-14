@@ -79,14 +79,7 @@ extern "C" {
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
-typedef struct mspSerialPort_s {
-    serialPort_t *serialPort; // null when port unused.
-    mspPort_t mspPort;
-} mspSerialPort_t;
-
-
 extern "C" {
-    void setCurrentPort(mspSerialPort_t *port);
     uint8_t pgMatcherForMSPSet(const pgRegistry_t *candidate, const void *criteria);
     uint8_t pgMatcherForMSP(const pgRegistry_t *candidate, const void *criteria);
     void mspProcessReceivedCommand();
@@ -94,7 +87,6 @@ extern "C" {
     bool processInCommand(uint8_t cmdMSP);
     extern bufWriter_t *mspWriter;
     extern mspPort_t *currentMspPort;
-    extern mspSerialPort_t mspPorts[];
 
     PG_REGISTER(motorAndServoConfig_t, motorAndServoConfig, PG_MOTOR_AND_SERVO_CONFIG, 0);
     PG_REGISTER(sensorAlignmentConfig_t, sensorAlignmentConfig, PG_SENSOR_ALIGNMENT_CONFIG, 0);
@@ -151,6 +143,9 @@ static mspBuffer_t serialBuffer;
 static int serialWritePos = 0;
 static int serialReadPos = 0;
 
+static mspPort_t mspPort;
+
+
 uint8_t buf[sizeof(bufWriter_t) + SERIAL_BUFFER_SIZE];
 
 void serialWrite(serialPort_t *instance, uint8_t ch)
@@ -167,39 +162,6 @@ void serialWriteBufShim(void *instance, uint8_t *data, int count)
     }
 }
 
-void serialBeginWrite(serialPort_t *instance)
-{
-    UNUSED(instance);
-}
-
-void serialEndWrite(serialPort_t *instance)
-{
-    UNUSED(instance);
-}
-
-uint8_t serialRxBytesWaiting(serialPort_t *instance)
-{
-    UNUSED(instance);
-    if (serialWritePos > serialReadPos) {
-        return serialWritePos - serialReadPos;
-    } else {
-        return 0;
-    }
-}
-
-uint8_t serialRead(serialPort_t *instance)
-{
-    UNUSED(instance);
-    const uint8_t ch = serialBuffer.buf[serialReadPos];
-    ++serialReadPos;
-    if (currentMspPort->indRX == MSP_PORT_INBUF_SIZE) {
-        currentMspPort->indRX = 0;
-    }
-    currentMspPort->inBuf[currentMspPort->indRX] = ch;
-    ++currentMspPort->indRX;
-    return ch;
-}
-
 bool isSerialTransmitBufferEmpty(serialPort_t *instance)
 {
     UNUSED(instance);
@@ -210,8 +172,8 @@ class SerialMspUnitTest : public ::testing::Test {
 protected:
     virtual void SetUp() {
         memset(serialBuffer.buf, 0, sizeof(serialBuffer));
-        setCurrentPort(&mspPorts[0]);
-        mspWriter = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, &mspPorts[0]);
+        currentMspPort = &mspPort;
+        mspWriter = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, 0);
     }
 };
 
@@ -696,6 +658,8 @@ serialPort_t *usbVcpOpen(void) { return NULL; }
 serialPort_t *uartOpen(USART_TypeDef *, serialReceiveCallbackPtr, uint32_t, portMode_t, portOptions_t) { return NULL; }
 serialPort_t *openSoftSerial(softSerialPortIndex_e, serialReceiveCallbackPtr, uint32_t, portOptions_t) { return NULL; }
 void serialSetMode(serialPort_t *, portMode_t) {}
-
+void mspSerialProcess(void) {}
+void mspBeginWrite(void) {}
+void mspEndWrite(void) {}
 }
 
