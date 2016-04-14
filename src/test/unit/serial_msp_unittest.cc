@@ -79,15 +79,22 @@ extern "C" {
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
+typedef struct mspSerialPort_s {
+    serialPort_t *serialPort; // null when port unused.
+    mspPort_t mspPort;
+} mspSerialPort_t;
+
 
 extern "C" {
-    void setCurrentPort(mspPort_t *port);
+    void setCurrentPort(mspSerialPort_t *port);
     uint8_t pgMatcherForMSPSet(const pgRegistry_t *candidate, const void *criteria);
     uint8_t pgMatcherForMSP(const pgRegistry_t *candidate, const void *criteria);
     void mspProcessReceivedCommand();
-    extern mspPort_t *currentPort;
-    extern bufWriter_t *writer;
-    extern mspPort_t mspPorts[];
+    bool processOutCommand(uint8_t cmdMSP);
+    bool processInCommand(uint8_t cmdMSP);
+    extern bufWriter_t *mspWriter;
+    extern mspPort_t *currentMspPort;
+    extern mspSerialPort_t mspPorts[];
 
     PG_REGISTER(motorAndServoConfig_t, motorAndServoConfig, PG_MOTOR_AND_SERVO_CONFIG, 0);
     PG_REGISTER(sensorAlignmentConfig_t, sensorAlignmentConfig, PG_SENSOR_ALIGNMENT_CONFIG, 0);
@@ -185,11 +192,11 @@ uint8_t serialRead(serialPort_t *instance)
     UNUSED(instance);
     const uint8_t ch = serialBuffer.buf[serialReadPos];
     ++serialReadPos;
-    if (currentPort->indRX == MSP_PORT_INBUF_SIZE) {
-        currentPort->indRX = 0;
+    if (currentMspPort->indRX == MSP_PORT_INBUF_SIZE) {
+        currentMspPort->indRX = 0;
     }
-    currentPort->inBuf[currentPort->indRX] = ch;
-    ++currentPort->indRX;
+    currentMspPort->inBuf[currentMspPort->indRX] = ch;
+    ++currentMspPort->indRX;
     return ch;
 }
 
@@ -204,7 +211,7 @@ protected:
     virtual void SetUp() {
         memset(serialBuffer.buf, 0, sizeof(serialBuffer));
         setCurrentPort(&mspPorts[0]);
-        writer = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, &mspPorts[0]);
+        mspWriter = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, &mspPorts[0]);
     }
 };
 
@@ -214,7 +221,7 @@ TEST_F(SerialMspUnitTest, TestMspProcessReceivedCommand)
     // check the MSP_API_VERSION is written out correctly
     serialWritePos = 0;
     serialReadPos = 0;
-    currentPort->cmdMSP = MSP_API_VERSION;
+    currentMspPort->cmdMSP = MSP_API_VERSION;
     mspProcessReceivedCommand();
 
     EXPECT_EQ('$', serialBuffer.mspResponse.header.dollar);
@@ -232,9 +239,8 @@ TEST_F(SerialMspUnitTest, TestMspProcessReceivedCommand)
     // check the MSP_FC_VARIANT is written out correctly
     serialWritePos = 0;
     serialReadPos = 0;
-    currentPort->cmdMSP = MSP_FC_VARIANT;
+    currentMspPort->cmdMSP = MSP_FC_VARIANT;
     mspProcessReceivedCommand();
-
     EXPECT_EQ('$', serialBuffer.mspResponse.header.dollar);
     EXPECT_EQ('M', serialBuffer.mspResponse.header.m);
     EXPECT_EQ('>', serialBuffer.mspResponse.header.direction);
@@ -251,7 +257,7 @@ TEST_F(SerialMspUnitTest, TestMspProcessReceivedCommand)
     // check the MSP_FC_VERSION is written out correctly
     serialWritePos = 0;
     serialReadPos = 0;
-    currentPort->cmdMSP = MSP_FC_VERSION;
+    currentMspPort->cmdMSP = MSP_FC_VERSION;
     mspProcessReceivedCommand();
     EXPECT_EQ('$', serialBuffer.mspResponse.header.dollar);
     EXPECT_EQ('M', serialBuffer.mspResponse.header.m);
@@ -271,7 +277,7 @@ TEST_F(SerialMspUnitTest, TestMspProcessReceivedCommand)
     pgActivateProfile(0);
 
     pidProfile()->pidController = PID_CONTROLLER_MWREWRITE;
-    currentPort->cmdMSP = MSP_PID_CONTROLLER;
+    currentMspPort->cmdMSP = MSP_PID_CONTROLLER;
     mspProcessReceivedCommand();
     EXPECT_EQ('$', serialBuffer.mspResponse.header.dollar);
     EXPECT_EQ('M', serialBuffer.mspResponse.header.m);
@@ -291,7 +297,7 @@ TEST_F(SerialMspUnitTest, Test_PID_CONTROLLER)
     pidProfile()->pidController = PID_CONTROLLER_MWREWRITE;
     serialWritePos = 0;
     serialReadPos = 0;
-    currentPort->cmdMSP = MSP_PID_CONTROLLER;
+    currentMspPort->cmdMSP = MSP_PID_CONTROLLER;
     mspProcessReceivedCommand();
     EXPECT_EQ(PID_CONTROLLER_MWREWRITE, serialBuffer.mspResponse.payload[0]);
 
@@ -300,17 +306,17 @@ TEST_F(SerialMspUnitTest, Test_PID_CONTROLLER)
 
     // Now use the MSP to read back the picController and check if it is the same
     // spoof a change from the written MSP_PID_CONTROLLER to the readable MSP_SET_PID_CONTROLLER
-    currentPort->cmdMSP = MSP_SET_PID_CONTROLLER;
+    currentMspPort->cmdMSP = MSP_SET_PID_CONTROLLER;
     serialBuffer.mspResponse.header.direction = '<';
-    serialBuffer.mspResponse.header.type = currentPort->cmdMSP;
+    serialBuffer.mspResponse.header.type = currentMspPort->cmdMSP;
     // force the checksum
     serialBuffer.mspResponse.payload[1] ^= MSP_PID_CONTROLLER;
     serialBuffer.mspResponse.payload[1] ^= MSP_SET_PID_CONTROLLER;
     // copy the command data into the current port inBuf so it can be processed
-    memcpy(currentPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
+    memcpy(currentMspPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
 
     // set the offset into the payload
-    currentPort->indRX = offsetof(struct mspResonse_s, payload);
+    currentMspPort->indRX = offsetof(struct mspResonse_s, payload);
     mspProcessReceivedCommand();
 
     // check the pidController value has been read correctly
@@ -386,7 +392,7 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesInt)
     // use the MSP to write out the PID values
     serialWritePos = 0;
     serialReadPos = 0;
-    currentPort->cmdMSP = MSP_PID;
+    currentMspPort->cmdMSP = MSP_PID;
     mspProcessReceivedCommand();
     EXPECT_EQ(3 * PID_ITEM_COUNT, serialBuffer.mspResponse.header.size);
     // check few values, just to make sure they have been written correctly
@@ -399,17 +405,17 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesInt)
 
     // now use the MSP to read back the PID values and check they are the same as written
     // spoof a change from the written MSP_PID to the readable MSP_SET_PID
-    currentPort->cmdMSP = MSP_SET_PID;
+    currentMspPort->cmdMSP = MSP_SET_PID;
     serialBuffer.mspResponse.header.direction = '<';
-    serialBuffer.mspResponse.header.type = currentPort->cmdMSP;
+    serialBuffer.mspResponse.header.type = currentMspPort->cmdMSP;
     // force the checksum
     serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_PID;
     serialBuffer.mspResponse.payload[3 * PID_ITEM_COUNT] ^= MSP_SET_PID;
     // copy the command data into the current port inBuf so it can be processed
-    memcpy(currentPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
+    memcpy(currentMspPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
 
     // set the offset into the payload
-    currentPort->indRX = offsetof(struct mspResonse_s, payload);
+    currentMspPort->indRX = offsetof(struct mspResonse_s, payload);
     mspProcessReceivedCommand();
 
     // check the values are as expected
@@ -457,7 +463,7 @@ TEST_F(SerialMspUnitTest, Test_BoardAlignment)
     // use the MSP to write out the test values
     serialWritePos = 0;
     serialReadPos = 0;
-    currentPort->cmdMSP = MSP_BOARD_ALIGNMENT;
+    currentMspPort->cmdMSP = MSP_BOARD_ALIGNMENT;
     mspProcessReceivedCommand();
     EXPECT_EQ('$', serialBuffer.mspResponse.header.dollar);
     EXPECT_EQ('M', serialBuffer.mspResponse.header.m);
@@ -473,20 +479,20 @@ TEST_F(SerialMspUnitTest, Test_BoardAlignment)
 
     // now use the MSP to read back the values and check they are the same
     // spoof a change from the written MSP_BOARD_ALIGNMENT to the readable MSP_SET_BOARD_ALIGNMENT
-    currentPort->cmdMSP = MSP_SET_BOARD_ALIGNMENT;
+    currentMspPort->cmdMSP = MSP_SET_BOARD_ALIGNMENT;
     serialBuffer.mspResponse.header.direction = '<';
-    serialBuffer.mspResponse.header.type = currentPort->cmdMSP;
+    serialBuffer.mspResponse.header.type = currentMspPort->cmdMSP;
     // force the checksum
     serialBuffer.mspResponse.payload[serialBuffer.mspResponse.header.size] ^= MSP_BOARD_ALIGNMENT;
     serialBuffer.mspResponse.payload[serialBuffer.mspResponse.header.size] ^= MSP_SET_BOARD_ALIGNMENT;
     // copy the command data into the current port inBuf so it can be processed
-    memcpy(currentPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
+    memcpy(currentMspPort->inBuf, serialBuffer.buf, MSP_PORT_INBUF_SIZE);
 
 
     // set the offset into the payload
-    currentPort->indRX = offsetof(struct mspResonse_s, payload);
-    currentPort->dataSize = serialBuffer.mspResponse.header.size;
-    const pgRegistry_t *regSet = pgMatcher(pgMatcherForMSPSet, (void*)&currentPort->cmdMSP);
+    currentMspPort->indRX = offsetof(struct mspResonse_s, payload);
+    currentMspPort->dataSize = serialBuffer.mspResponse.header.size;
+    const pgRegistry_t *regSet = pgMatcher(pgMatcherForMSPSet, (void*)&currentMspPort->cmdMSP);
     EXPECT_NE(static_cast<const pgRegistry_t*>(0), regSet);
     EXPECT_EQ(reg->address, regSet->address);
 
@@ -578,12 +584,10 @@ TEST_F(SerialMspUnitTest, TestMspOutMessageLengthsCommand)
 
         serialWritePos = 0;
         serialReadPos = 0;
-        currentPort->cmdMSP = outMessages[ii];
-
+        currentMspPort->cmdMSP = outMessages[ii];
 #ifdef DEBUG_MSP
-        printf("parse iteration: %d, MSP message id: %d\n", ii, currentPort->cmdMSP);
+        printf("parse iteration: %d, MSP message id: %d\n", ii, currentMspPort->cmdMSP);
 #endif
-
         mspProcessReceivedCommand();
         EXPECT_EQ('$', serialBuffer.mspResponse.header.dollar);
         EXPECT_EQ('M', serialBuffer.mspResponse.header.m);
@@ -593,7 +597,6 @@ TEST_F(SerialMspUnitTest, TestMspOutMessageLengthsCommand)
         EXPECT_EQ(serialWritePos - sizeof(mspHeader_t) - 1, serialBuffer.mspResponse.header.size);
     }
 }
-
 // STUBS
 extern "C" {
 // from acceleration.c

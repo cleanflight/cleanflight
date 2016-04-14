@@ -43,12 +43,13 @@
 
 
 void mspInit(void);
-void mspProcessReceivedCommand(void);
+void mspProcessReceivedCommand();
 bool mspProcessReceivedData(uint8_t c);
 
 extern bool isRebootScheduled;
 
 extern mspPort_t *currentMspPort;
+extern bufWriter_t *mspWriter;
 
 static serialPort_t *mspSerialPort;
 
@@ -61,15 +62,28 @@ STATIC_UNIT_TESTED mspSerialPort_t mspPorts[MAX_MSP_PORT_COUNT];
 STATIC_UNIT_TESTED mspSerialPort_t *currentPort;
 STATIC_UNIT_TESTED bufWriter_t *writer;
 
-void mspWrite8(uint8_t a)
+void mspBeginWrite(void)
 {
-    bufWriterAppend(writer, a);
+    serialBeginWrite(mspSerialPort);
 }
 
 void mspEndWrite(void)
 {
     serialEndWrite(mspSerialPort);
 }
+
+void mspReleaseFor1Wire(void)
+{
+    // wait for all data to send
+    waitForSerialPortToFinishTransmitting(currentPort->serialPort);
+    mspReleaseSerialPortIfAllocated(mspSerialPort); // CloseSerialPort also marks currentPort as UNUSED_PORT
+}
+
+void mspReAllocateAfter1Wire(void)
+{
+    mspAllocateSerialPorts();
+}
+
 
 static void resetMspPort(mspSerialPort_t *mspPortToReset, serialPort_t *serialPort)
 {
@@ -115,32 +129,6 @@ void mspReleaseSerialPortIfAllocated(serialPort_t *serialPort)
     }
 }
 
-void mspReleaseFor1Wire(void)
-{
-    // flush the transmit buffer
-    bufWriterFlush(writer);
-    // wait for all data to send
-    waitForSerialPortToFinishTransmitting(currentPort->serialPort);
-    // Start to activate here
-    // motor 1 => index 0
-
-    // search currentPort portIndex
-    /* next lines seems to be unnecessary, because the currentPort always point to the same mspPorts[portIndex]
-    uint8_t portIndex;
-    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
-        if (currentPort == &mspPorts[portIndex]) {
-            break;
-        }
-    }
-    */
-    mspReleaseSerialPortIfAllocated(mspSerialPort); // CloseSerialPort also marks currentPort as UNUSED_PORT
-}
-
-void mspReAllocateAfter1Wire(void)
-{
-    mspAllocateSerialPorts();
-}
-
 STATIC_UNIT_TESTED void setCurrentPort(mspSerialPort_t *port)
 {
     currentPort = port;
@@ -150,11 +138,8 @@ STATIC_UNIT_TESTED void setCurrentPort(mspSerialPort_t *port)
 
 void mspSerialProcess(void)
 {
-    uint8_t portIndex;
-    mspSerialPort_t *candidatePort;
-
-    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
-        candidatePort = &mspPorts[portIndex];
+    for (uint8_t portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
+        mspSerialPort_t *candidatePort = &mspPorts[portIndex];
         if (!candidatePort->serialPort) {
             continue;
         }
@@ -166,7 +151,7 @@ void mspSerialProcess(void)
 
         while (serialRxBytesWaiting(mspSerialPort)) {
 
-            uint8_t c = serialRead(mspSerialPort);
+            const uint8_t c = serialRead(mspSerialPort);
             bool consumed = mspProcessReceivedData(c);
 
             if (!consumed && !ARMING_FLAG(ARMED)) {

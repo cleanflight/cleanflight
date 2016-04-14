@@ -34,16 +34,20 @@
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
+#include "config/runtime_config.h"
+#include "config/config.h"
+#include "config/feature.h"
+#include "config/profile.h"
 
 #include "drivers/system.h"
-
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
-
 #include "drivers/serial.h"
 #include "drivers/bus_i2c.h"
 #include "drivers/sdcard.h"
+#include "drivers/buf_writer.h"
+
 #include "rx/rx.h"
 #include "rx/msp.h"
 
@@ -83,11 +87,6 @@
 
 #include "mw.h"
 
-#include "config/runtime_config.h"
-#include "config/config.h"
-#include "config/feature.h"
-#include "config/profile.h"
-
 #include "version.h"
 #ifdef NAZE
 #include "hardware_revision.h"
@@ -97,6 +96,7 @@
 #endif
 
 
+bufWriter_t *mspWriter;
 mspPort_t *currentMspPort;
 // cause reboot after MSP processing complete
 bool isRebootScheduled = false;
@@ -178,7 +178,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
 
 void serialize8(uint8_t a)
 {
-    mspWrite8(a);
+    bufWriterAppend(mspWriter, a);
     currentMspPort->checksum ^= a;
 }
 
@@ -215,8 +215,7 @@ static uint32_t read32(void)
 
 static void headSerialResponse(uint8_t err, uint8_t responseBodySize)
 {
-    //!!serialBeginWrite(mspSerialPort);
-
+    mspBeginWrite();
     serialize8('$');
     serialize8('M');
     serialize8(err ? '!' : '>');
@@ -577,7 +576,7 @@ uint8_t pgMatcherForMSP(const pgRegistry_t *candidate, const void *criteria)
     return false;
 }
 
-static bool processOutCommand(uint8_t cmdMSP)
+STATIC_UNIT_TESTED bool processOutCommand(void)
 {
     uint32_t i;
 
@@ -585,14 +584,14 @@ static bool processOutCommand(uint8_t cmdMSP)
     uint8_t wp_no;
     int32_t lat = 0, lon = 0;
 #endif
-    const pgRegistry_t *reg = pgMatcher(pgMatcherForMSP, (void*)&cmdMSP);
+    const pgRegistry_t *reg = pgMatcher(pgMatcherForMSP, (void*)&currentMspPort->cmdMSP);
 
     if (reg != NULL) {
         s_struct(reg->address, pgSize(reg));
         return true;
     }
 
-    switch (cmdMSP) {
+    switch (currentMspPort->cmdMSP) {
     case MSP_API_VERSION:
         headSerialReply(
             1 + // protocol version length
@@ -1179,7 +1178,7 @@ static bool processOutCommand(uint8_t cmdMSP)
     return true;
 }
 
-static bool processInCommand(uint8_t cmdMSP)
+STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 {
     uint32_t i;
     uint16_t tmp;
@@ -1697,6 +1696,8 @@ static bool processInCommand(uint8_t cmdMSP)
                 // proceed with a success reply first
                 headSerialReply(0);
                 tailSerialReply();
+                // flush the transmit buffer
+                bufWriterFlush(mspWriter);
                 mspReleaseFor1Wire();
                 usb1WirePassthrough(i);
                 // Wait a bit more to let App read the 0 byte and switch baudrate
@@ -1729,9 +1730,9 @@ static bool processInCommand(uint8_t cmdMSP)
     return true;
 }
 
-void mspProcessReceivedCommand()
+void mspProcessReceivedCommand(void)
 {
-    if (!(processOutCommand(currentMspPort->cmdMSP) || processInCommand(currentMspPort->cmdMSP))) {
+    if (!(processOutCommand() || processInCommand(currentMspPort->cmdMSP))) {
         headSerialError(0);
     }
     tailSerialReply();
