@@ -717,6 +717,14 @@ $(OBJECT_DIR)/drivers/buf_writer.o : \
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -D'__TARGET__="TEST"' -D'__REVISION__="revision"' -c $(USER_DIR)/drivers/buf_writer.c -o $@
 
+$(OBJECT_DIR)/io/msp_protocol.o : \
+	$(USER_DIR)/io/msp_protocol.c \
+	$(USER_DIR)/io/msp_protocol.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/msp_protocol.c -o $@
+
 $(OBJECT_DIR)/io/serial_msp.o : \
 	$(USER_DIR)/io/serial_msp.c \
 	$(USER_DIR)/io/serial_msp.h \
@@ -737,6 +745,7 @@ $(OBJECT_DIR)/serial_msp_unittest : \
 	$(OBJECT_DIR)/version.o \
 	$(OBJECT_DIR)/io/serial.o \
 	$(OBJECT_DIR)/io/serial_msp.o \
+	$(OBJECT_DIR)/io/msp_protocol.o \
 	$(OBJECT_DIR)/drivers/buf_writer.o \
 	$(OBJECT_DIR)/config/parameter_group.o \
 	$(OBJECT_DIR)/serial_msp_unittest.o \
