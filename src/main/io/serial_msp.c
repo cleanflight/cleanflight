@@ -58,9 +58,8 @@ typedef struct mspSerialPort_s {
     mspPort_t mspPort;
 } mspSerialPort_t;
 
-STATIC_UNIT_TESTED mspSerialPort_t mspPorts[MAX_MSP_PORT_COUNT];
-STATIC_UNIT_TESTED mspSerialPort_t *currentPort;
-STATIC_UNIT_TESTED bufWriter_t *writer;
+static mspSerialPort_t mspPorts[MAX_MSP_PORT_COUNT];
+static mspSerialPort_t *currentPort;
 
 void mspBeginWrite(void)
 {
@@ -147,7 +146,7 @@ void mspSerialProcess(void)
         setCurrentPort(candidatePort);
         // Big enough to fit a MSP_STATUS in one write.
         uint8_t buf[sizeof(bufWriter_t) + 20];
-        writer = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, currentPort->serialPort);
+        mspWriter = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, currentPort->serialPort);
 
         while (serialRxBytesWaiting(mspSerialPort)) {
 
@@ -164,7 +163,7 @@ void mspSerialProcess(void)
             }
         }
 
-        bufWriterFlush(writer);
+        bufWriterFlush(mspWriter);
 
         if (isRebootScheduled) {
             waitForSerialPortToFinishTransmitting(candidatePort->serialPort);
