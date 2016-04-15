@@ -233,9 +233,9 @@ static void headSerialReply(uint8_t responseBodySize)
     headSerialResponse(0, responseBodySize);
 }
 
-static void headSerialError(uint8_t responseBodySize)
+static void headSerialError(void)
 {
-    headSerialResponse(1, responseBodySize);
+    headSerialResponse(1, 0);
 }
 
 static void tailSerialReply(void)
@@ -1217,7 +1217,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
         {
             uint8_t channelCount = currentMspPort->dataSize / sizeof(uint16_t);
             if (channelCount > MAX_SUPPORTED_RC_CHANNEL_COUNT) {
-                headSerialError(0);
+                headSerialError();
             } else {
                 uint16_t frame[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
@@ -1284,10 +1284,10 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 
                 useRcControlsConfig(modeActivationProfile()->modeActivationConditions);
             } else {
-                headSerialError(0);
+                headSerialError();
             }
         } else {
-            headSerialError(0);
+            headSerialError();
         }
         break;
     case MSP_SET_ADJUSTMENT_RANGE:
@@ -1303,10 +1303,10 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
                 adjRange->adjustmentFunction = read8();
                 adjRange->auxSwitchChannelIndex = read8();
             } else {
-                headSerialError(0);
+                headSerialError();
             }
         } else {
-            headSerialError(0);
+            headSerialError();
         }
         break;
 
@@ -1327,7 +1327,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
                 currentControlRateProfile->rcYawExpo8 = read8();
             }
         } else {
-            headSerialError(0);
+            headSerialError();
         }
         break;
     case MSP_SET_MISC:
@@ -1372,12 +1372,12 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
     case MSP_SET_SERVO_CONFIGURATION:
 #ifdef USE_SERVOS
         if (currentMspPort->dataSize != 1 + sizeof(servoParam_t)) {
-            headSerialError(0);
+            headSerialError();
             break;
         }
         i = read8();
         if (i >= MAX_SUPPORTED_SERVOS) {
-            headSerialError(0);
+            headSerialError();
         } else {
             servoProfile()->servoConf[i].min = read16();
             servoProfile()->servoConf[i].max = read16();
@@ -1395,7 +1395,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 #ifdef USE_SERVOS
         i = read8();
         if (i >= MAX_SERVO_RULES) {
-            headSerialError(0);
+            headSerialError();
         } else {
             customServoMixer(i)->targetChannel = read8();
             customServoMixer(i)->inputSource = read8();
@@ -1448,7 +1448,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
         break;
     case MSP_EEPROM_WRITE:
         if (ARMING_FLAG(ARMED)) {
-            headSerialError(0);
+            headSerialError();
             return true;
         }
         writeEEPROM();
@@ -1469,7 +1469,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 #ifdef TRANSPONDER
     case MSP_SET_TRANSPONDER_CONFIG:
         if (currentMspPort->dataSize != sizeof(transponderConfig()->data)) {
-            headSerialError(0);
+            headSerialError();
             break;
         }
 
@@ -1569,7 +1569,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
             failsafeChannelConfigs(i)->mode = read8();
             failsafeChannelConfigs(i)->step = CHANNEL_VALUE_TO_RXFAIL_STEP(read16());
         } else {
-            headSerialError(0);
+            headSerialError();
         }
         break;
 
@@ -1609,7 +1609,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
             uint8_t portConfigSize = sizeof(uint8_t) + sizeof(uint16_t) + (sizeof(uint8_t) * 4);
 
             if (currentMspPort->dataSize % portConfigSize != 0) {
-                headSerialError(0);
+                headSerialError();
                 break;
             }
 
@@ -1620,7 +1620,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 
                 serialPortConfig_t *portConfig = serialFindPortConfiguration(identifier);
                 if (!portConfig) {
-                    headSerialError(0);
+                    headSerialError();
                     break;
                 }
 
@@ -1648,7 +1648,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
         {
             i = read8();
             if (i >= MAX_LED_STRIP_LENGTH || currentMspPort->dataSize != (1 + 7)) {
-                headSerialError(0);
+                headSerialError();
                 break;
             }
             ledConfig_t *ledConfig = ledConfigs(i);
@@ -1724,7 +1724,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
             } else {
                 // ESC channel higher than max. allowed
                 // rem: BLHeliSuite will not support more than 8
-                headSerialError(0);
+                headSerialError();
             }
             // proceed as usual with MSP commands
             // and wait to switch to next channel
@@ -1743,7 +1743,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 void mspProcessReceivedCommand(void)
 {
     if (!(processOutCommand() || processInCommand(currentMspPort->cmdMSP))) {
-        headSerialError(0);
+        headSerialError();
     }
     tailSerialReply();
     currentMspPort->c_state = IDLE;
