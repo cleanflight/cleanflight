@@ -659,7 +659,5 @@ serialPort_t *uartOpen(USART_TypeDef *, serialReceiveCallbackPtr, uint32_t, port
 serialPort_t *openSoftSerial(softSerialPortIndex_e, serialReceiveCallbackPtr, uint32_t, portOptions_t) { return NULL; }
 void serialSetMode(serialPort_t *, portMode_t) {}
 void mspSerialProcess(void) {}
-void mspBeginWrite(void) {}
-void mspEndWrite(void) {}
 }
 

@@ -48,6 +48,7 @@ bool mspProcessReceivedData(uint8_t c);
 
 extern bool isRebootScheduled;
 
+extern mspFunctionPointers_t mspFunctionPointers;
 extern mspPort_t *currentMspPort;
 extern bufWriter_t *mspWriter;
 
@@ -61,24 +62,24 @@ typedef struct mspSerialPort_s {
 static mspSerialPort_t mspPorts[MAX_MSP_PORT_COUNT];
 static mspSerialPort_t *currentPort;
 
-void mspBeginWrite(void)
+void mspSerialBeginWrite(void)
 {
     serialBeginWrite(mspSerialPort);
 }
 
-void mspEndWrite(void)
+void mspSerialEndWrite(void)
 {
     serialEndWrite(mspSerialPort);
 }
 
-void mspReleaseFor1Wire(void)
+void mspSerialReleaseFor1Wire(void)
 {
     // wait for all data to send
     waitForSerialPortToFinishTransmitting(currentPort->serialPort);
     mspReleaseSerialPortIfAllocated(mspSerialPort); // CloseSerialPort also marks currentPort as UNUSED_PORT
 }
 
-void mspReAllocateAfter1Wire(void)
+void mspSerialReallocateAfter1Wire(void)
 {
     mspAllocateSerialPorts();
 }
@@ -147,6 +148,10 @@ void mspSerialProcess(void)
         // Big enough to fit a MSP_STATUS in one write.
         uint8_t buf[sizeof(bufWriter_t) + 20];
         mspWriter = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, currentPort->serialPort);
+        mspFunctionPointers.beginWrite = mspSerialBeginWrite;
+        mspFunctionPointers.endWrite = mspSerialEndWrite;
+        mspFunctionPointers.releaseFor1Wire = mspSerialReleaseFor1Wire;
+        mspFunctionPointers.reallocateAfter1Wire = mspSerialReallocateAfter1Wire;
 
         while (serialRxBytesWaiting(mspSerialPort)) {
 

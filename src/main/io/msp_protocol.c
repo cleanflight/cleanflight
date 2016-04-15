@@ -98,6 +98,8 @@
 
 bufWriter_t *mspWriter;
 mspPort_t *currentMspPort;
+mspFunctionPointers_t mspFunctionPointers;
+
 // cause reboot after MSP processing complete
 bool isRebootScheduled = false;
 
@@ -215,7 +217,9 @@ static uint32_t read32(void)
 
 static void headSerialResponse(uint8_t err, uint8_t responseBodySize)
 {
-    mspBeginWrite();
+    if (mspFunctionPointers.beginWrite) {
+        mspFunctionPointers.beginWrite();
+    }
     serialize8('$');
     serialize8('M');
     serialize8(err ? '!' : '>');
@@ -237,7 +241,9 @@ static void headSerialError(uint8_t responseBodySize)
 static void tailSerialReply(void)
 {
     serialize8(currentMspPort->checksum);
-    mspEndWrite();
+    if (mspFunctionPointers.endWrite) {
+        mspFunctionPointers.endWrite();
+    }
 }
 
 
@@ -1698,13 +1704,17 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
                 tailSerialReply();
                 // flush the transmit buffer
                 bufWriterFlush(mspWriter);
-                mspReleaseFor1Wire();
+                if (mspFunctionPointers.releaseFor1Wire) {
+                    mspFunctionPointers.releaseFor1Wire();
+                }
                 usb1WirePassthrough(i);
                 // Wait a bit more to let App read the 0 byte and switch baudrate
                 // 2ms will most likely do the job, but give some grace time
                 delay(10);
                 // rebuild/refill currentMspPort structure, does openSerialPort if marked UNUSED_PORT - used ports are skiped
-                mspReAllocateAfter1Wire();
+                if (mspFunctionPointers.reallocateAfter1Wire) {
+                    mspFunctionPointers.reallocateAfter1Wire();
+                }
                 /* restore currentMspPort and mspSerialPort
                 setcurrentMspPort(&mspPorts[portIndex]); // not needed same index will be restored
                 */

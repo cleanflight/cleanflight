@@ -41,9 +41,12 @@ typedef struct mspPort_s {
     uint8_t cmdMSP;
 } mspPort_t;
 
-// These 4 functions need to be virtualized to allow MSP to be implemented over a new carrier.
-extern void mspBeginWrite(void);
-extern void mspEndWrite(void);
-extern void mspReleaseFor1Wire(void);
-extern void mspReAllocateAfter1Wire(void);
+typedef void (*mspFunctionPtr)(void);
+
+typedef struct mspFunctionPointers_s {
+    mspFunctionPtr beginWrite;
+    mspFunctionPtr endWrite;
+    mspFunctionPtr releaseFor1Wire;
+    mspFunctionPtr reallocateAfter1Wire;
+} mspFunctionPointers_t;
 
