@@ -105,7 +105,6 @@ bool isRebootScheduled = false;
 
 extern uint16_t cycleTime; // FIXME dependency on mw.c
 extern uint16_t rssi; // FIXME dependency on mw.c
-extern void resetPidProfile(pidProfile_t *pidProfile);
 
 static const char * const flightControllerIdentifier = CLEANFLIGHT_IDENTIFIER; // 4 UPPER CASE alpha numeric characters that identify the flight controller.
 static const char * const boardIdentifier = TARGET_BOARD_IDENTIFIER;
@@ -806,29 +805,10 @@ STATIC_UNIT_TESTED bool processOutCommand(void)
         break;
     case MSP_PID:
         headSerialReply(3 * PID_ITEM_COUNT);
-        if (IS_PID_CONTROLLER_FP_BASED(pidProfile()->pidController)) { // convert float stuff into uint8_t to keep backwards compatability with all 8-bit shit with new pid
-            for (i = 0; i < 3; i++) {
-                serialize8(constrain(lrintf(pidProfile()->P_f[i] * 10.0f), 0, 255));
-                serialize8(constrain(lrintf(pidProfile()->I_f[i] * 100.0f), 0, 255));
-                serialize8(constrain(lrintf(pidProfile()->D_f[i] * 1000.0f), 0, 255));
-            }
-            for (i = 3; i < PID_ITEM_COUNT; i++) {
-                if (i == PIDLEVEL) {
-                    serialize8(constrain(lrintf(pidProfile()->A_level * 10.0f), 0, 255));
-                    serialize8(constrain(lrintf(pidProfile()->H_level * 10.0f), 0, 255));
-                    serialize8(constrain(lrintf(pidProfile()->H_sensitivity), 0, 255));
-                } else {
-                    serialize8(pidProfile()->P8[i]);
-                    serialize8(pidProfile()->I8[i]);
-                    serialize8(pidProfile()->D8[i]);
-                }
-            }
-        } else {
-            for (i = 0; i < PID_ITEM_COUNT; i++) {
-                serialize8(pidProfile()->P8[i]);
-                serialize8(pidProfile()->I8[i]);
-                serialize8(pidProfile()->D8[i]);
-            }
+        for (i = 0; i < PID_ITEM_COUNT; i++) {
+            serialize8(pidProfile()->P8[i]);
+            serialize8(pidProfile()->I8[i]);
+            serialize8(pidProfile()->D8[i]);
         }
         break;
     case MSP_PIDNAMES:
@@ -1246,29 +1226,10 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
         pidSetController(pidProfile()->pidController);
         break;
     case MSP_SET_PID:
-        if (IS_PID_CONTROLLER_FP_BASED(pidProfile()->pidController)) {
-            for (i = 0; i < 3; i++) {
-                pidProfile()->P_f[i] = (float)read8() / 10.0f;
-                pidProfile()->I_f[i] = (float)read8() / 100.0f;
-                pidProfile()->D_f[i] = (float)read8() / 1000.0f;
-            }
-            for (i = 3; i < PID_ITEM_COUNT; i++) {
-                if (i == PIDLEVEL) {
-                    pidProfile()->A_level = (float)read8() / 10.0f;
-                    pidProfile()->H_level = (float)read8() / 10.0f;
-                    pidProfile()->H_sensitivity = read8();
-                } else {
-                    pidProfile()->P8[i] = read8();
-                    pidProfile()->I8[i] = read8();
-                    pidProfile()->D8[i] = read8();
-                }
-            }
-        } else {
-            for (i = 0; i < PID_ITEM_COUNT; i++) {
-                pidProfile()->P8[i] = read8();
-                pidProfile()->I8[i] = read8();
-                pidProfile()->D8[i] = read8();
-            }
+        for (i = 0; i < PID_ITEM_COUNT; i++) {
+            pidProfile()->P8[i] = read8();
+            pidProfile()->I8[i] = read8();
+            pidProfile()->D8[i] = read8();
         }
         break;
     case MSP_SET_MODE_RANGE:
@@ -1424,7 +1385,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
         break;
 
     case MSP_SET_RESET_CURR_PID:
-        pgReset_pidProfile(pidProfile());
+        PG_RESET_CURRENT(pidProfile);
         break;
 
     case MSP_SET_SENSOR_ALIGNMENT:
