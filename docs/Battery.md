@@ -130,8 +130,8 @@ Note: Tmax is maximum throttle offset (i.e. for `max_throttle` = 1850, Tmax = 18
 For example, assuming a maximum current of 34.2A, a minimum current of 2.8A, and a Tmax `max_throttle` = 1850:
 ```
 current_meter_scale = (Imax - Imin) * 100000 / (Tmax + (Tmax * Tmax / 50))
-                    = (34.2 - 2.8) * 100000 / (850 + (850 * 850 / 50))
-                    = 205
+                    = (34.2 - 2.8) * 100000 / (1850 + (1850 * 1850 / 50))
+                    = 45
 current_meter_offset = Imin * 100 = 280
 ```
 #### Tuning Using Battery Charger Measurement
