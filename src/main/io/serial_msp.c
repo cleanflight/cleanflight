@@ -950,7 +950,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize8(rxConfig()->rssi_channel);
         serialize8(0);
 
-        serialize16(compassConfig()->mag_declination / 10);
+        serialize16(compassConfig()->mag_declination);
 
         serialize8(batteryConfig()->vbatscale);
         serialize8(batteryConfig()->vbatmincellvoltage);
@@ -966,7 +966,8 @@ static bool processOutCommand(uint8_t cmdMSP)
         break;
 #ifdef GPS
     case MSP_RAW_GPS:
-        headSerialReply(16);
+        headSerialReply(18);
+
         serialize8(STATE(GPS_FIX));
         serialize8(GPS_numSat);
         serialize32(GPS_coord[LAT]);
@@ -974,6 +975,7 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize16(GPS_altitude);
         serialize16(GPS_speed);
         serialize16(GPS_ground_course);
+        serialize16(GPS_hdop);
         break;
     case MSP_COMP_GPS:
         headSerialReply(5);
@@ -1400,7 +1402,7 @@ static bool processInCommand(void)
         rxConfig()->rssi_channel = read8();
         read8();
 
-        compassConfig()->mag_declination = read16() * 10;
+        compassConfig()->mag_declination = read16();
 
         batteryConfig()->vbatscale = read8();           // actual vbatscale as intended
         batteryConfig()->vbatmincellvoltage = read8();  // vbatlevel_warn1 in MWC2.3 GUI
