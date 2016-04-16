@@ -758,10 +758,11 @@ STATIC_UNIT_TESTED bool processOutCommand(void)
         headSerialReply(6);
 #if defined(BARO) || defined(SONAR)
         serialize32(altitudeHoldGetEstimatedAltitude());
+        serialize16(vario);
 #else
         serialize32(0);
+        serialize16(0);
 #endif
-        serialize16(vario);
         break;
     case MSP_SONAR_ALTITUDE:
         headSerialReply(4);
