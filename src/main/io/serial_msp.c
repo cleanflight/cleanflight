@@ -17,9 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "build_config.h"
 #include "debug.h"
