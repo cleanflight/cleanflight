@@ -581,7 +581,7 @@ uint8_t pgMatcherForMSP(const pgRegistry_t *candidate, const void *criteria)
     return false;
 }
 
-STATIC_UNIT_TESTED bool processOutCommand(void)
+bool mspProcessOutCommand(void)
 {
     uint32_t i;
 
@@ -1165,7 +1165,7 @@ STATIC_UNIT_TESTED bool processOutCommand(void)
     return true;
 }
 
-STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
+bool mspProcessInCommand(uint8_t cmdMSP)
 {
     uint32_t i;
     uint16_t tmp;
@@ -1704,7 +1704,7 @@ STATIC_UNIT_TESTED bool processInCommand(uint8_t cmdMSP)
 
 void mspProcessReceivedCommand(void)
 {
-    if (!(processOutCommand() || processInCommand(currentMspPort->cmdMSP))) {
+    if (!(mspProcessOutCommand() || mspProcessInCommand(currentMspPort->cmdMSP))) {
         headSerialError();
     }
     tailSerialReply();

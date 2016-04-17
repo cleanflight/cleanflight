@@ -41,11 +41,6 @@
 
 #include "io/serial_msp.h"
 
-
-void mspInit(void);
-void mspProcessReceivedCommand();
-bool mspProcessReceivedData(uint8_t c);
-
 extern bool isRebootScheduled;
 
 extern mspFunctionPointers_t mspFunctionPointers;

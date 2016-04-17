@@ -411,7 +411,6 @@ TEST_F(SerialMspUnitTest, Test_PIDValuesInt)
     EXPECT_EQ(D8_PIDVEL, pidProfile()->D8[PIDVEL]);
 }
 
-
 TEST_F(SerialMspUnitTest, Test_BoardAlignment)
 {
     const uint8_t cmdMSP = MSP_BOARD_ALIGNMENT;

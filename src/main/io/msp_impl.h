@@ -50,3 +50,9 @@ typedef struct mspFunctionPointers_s {
     mspFunctionPtr reallocateAfter1Wire;
 } mspFunctionPointers_t;
 
+void mspInit(void);
+bool mspProcessOutCommand(void);
+bool mspProcessInCommand(uint8_t cmdMSP);
+void mspProcessReceivedCommand();
+bool mspProcessReceivedData(uint8_t c);
+
