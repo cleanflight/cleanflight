@@ -45,7 +45,7 @@ int32_t BaroAlt = 0;
 
 #ifdef BARO
 
-PG_REGISTER_PROFILE_WITH_RESET_TEMPLATE(barometerConfig_t, barometerConfig, PG_BAROMETER_CONFIG, 0);
+PG_REGISTER_WITH_RESET_TEMPLATE(barometerConfig_t, barometerConfig, PG_BAROMETER_CONFIG, 0);
 
 static int32_t baroGroundAltitude = 0;
 static int32_t baroGroundPressure = 0;
