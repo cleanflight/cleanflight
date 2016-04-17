@@ -57,65 +57,56 @@ typedef struct mspSerialPort_s {
 static mspSerialPort_t mspPorts[MAX_MSP_PORT_COUNT];
 static mspSerialPort_t *currentPort;
 
-void mspSerialBeginWrite(void)
+static void mspSerialBeginWrite(void)
 {
     serialBeginWrite(mspSerialPort);
 }
 
-void mspSerialEndWrite(void)
+static void mspSerialEndWrite(void)
 {
     serialEndWrite(mspSerialPort);
 }
 
-void mspSerialReleaseFor1Wire(void)
+static void mspSerialReleaseFor1Wire(void)
 {
     // wait for all data to send
     waitForSerialPortToFinishTransmitting(currentPort->serialPort);
     mspReleaseSerialPortIfAllocated(mspSerialPort); // CloseSerialPort also marks currentPort as UNUSED_PORT
 }
 
-void mspSerialReallocateAfter1Wire(void)
+static void mspSerialReallocateAfter1Wire(void)
 {
     mspAllocateSerialPorts();
 }
 
-
 static void resetMspPort(mspSerialPort_t *mspPortToReset, serialPort_t *serialPort)
 {
     memset(mspPortToReset, 0, sizeof(mspSerialPort_t));
-
     mspPortToReset->serialPort = serialPort;
 }
 
 void mspAllocateSerialPorts(void)
 {
-    serialPort_t *serialPort;
-
     uint8_t portIndex = 0;
-
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP);
-
     while (portConfig && portIndex < MAX_MSP_PORT_COUNT) {
         mspSerialPort_t *mspPort = &mspPorts[portIndex];
         if (mspPort->serialPort) {
             portIndex++;
             continue;
         }
-
-        serialPort = openSerialPort(portConfig->identifier, FUNCTION_MSP, NULL, baudRates[portConfig->msp_baudrateIndex], MODE_RXTX, SERIAL_NOT_INVERTED);
+        serialPort_t *serialPort = openSerialPort(portConfig->identifier, FUNCTION_MSP, NULL, baudRates[portConfig->msp_baudrateIndex], MODE_RXTX, SERIAL_NOT_INVERTED);
         if (serialPort) {
             resetMspPort(mspPort, serialPort);
             portIndex++;
         }
-
         portConfig = findNextSerialPortConfig(FUNCTION_MSP);
     }
 }
 
 void mspReleaseSerialPortIfAllocated(serialPort_t *serialPort)
 {
-    uint8_t portIndex;
-    for (portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
+    for (uint8_t portIndex = 0; portIndex < MAX_MSP_PORT_COUNT; portIndex++) {
         mspSerialPort_t *candidateMspPort = &mspPorts[portIndex];
         if (candidateMspPort->serialPort == serialPort) {
             closeSerialPort(serialPort);
@@ -138,25 +129,23 @@ void mspSerialProcess(void)
         if (!candidatePort->serialPort) {
             continue;
         }
-
         setCurrentPort(candidatePort);
+
         // Big enough to fit a MSP_STATUS in one write.
         uint8_t buf[sizeof(bufWriter_t) + 20];
         mspWriter = bufWriterInit(buf, sizeof(buf), (bufWrite_t)serialWriteBufShim, currentPort->serialPort);
+
         mspFunctionPointers.beginWrite = mspSerialBeginWrite;
         mspFunctionPointers.endWrite = mspSerialEndWrite;
         mspFunctionPointers.releaseFor1Wire = mspSerialReleaseFor1Wire;
         mspFunctionPointers.reallocateAfter1Wire = mspSerialReallocateAfter1Wire;
 
         while (serialRxBytesWaiting(mspSerialPort)) {
-
             const uint8_t c = serialRead(mspSerialPort);
             bool consumed = mspProcessReceivedData(c);
-
             if (!consumed && !ARMING_FLAG(ARMED)) {
                 evaluateOtherData(mspSerialPort, c);
             }
-
             if (currentPort->mspPort.c_state == COMMAND_RECEIVED) {
                 mspProcessReceivedCommand();
                 break; // process one command at a time so as not to block.
@@ -177,7 +166,7 @@ void mspSerialProcess(void)
 void mspSerialInit(void)
 {
     mspInit();
-    memset(mspPorts, 0x00, sizeof(mspPorts));
+    memset(mspPorts, 0, sizeof(mspPorts));
     mspAllocateSerialPorts();
 }
 
