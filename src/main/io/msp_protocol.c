@@ -1726,19 +1726,17 @@ bool mspProcessReceivedData(uint8_t c)
     } else if (currentMspPort->c_state == HEADER_ARROW) {
         if (c > MSP_PORT_INBUF_SIZE) {
             currentMspPort->c_state = IDLE;
-
         } else {
-            currentMspPort->dataSize = c;
-            currentMspPort->offset = 0;
-            currentMspPort->checksum = 0;
-            currentMspPort->indRX = 0;
-            currentMspPort->checksum ^= c;
             currentMspPort->c_state = HEADER_SIZE;
+            currentMspPort->dataSize = c;
+            currentMspPort->checksum = c;
+            currentMspPort->offset = 0;
+            currentMspPort->indRX = 0;
         }
     } else if (currentMspPort->c_state == HEADER_SIZE) {
+        currentMspPort->c_state = HEADER_CMD;
         currentMspPort->cmdMSP = c;
         currentMspPort->checksum ^= c;
-        currentMspPort->c_state = HEADER_CMD;
     } else if (currentMspPort->c_state == HEADER_CMD && currentMspPort->offset < currentMspPort->dataSize) {
         currentMspPort->checksum ^= c;
         currentMspPort->inBuf[currentMspPort->offset++] = c;
@@ -1751,4 +1749,3 @@ bool mspProcessReceivedData(uint8_t c)
     }
     return true;
 }
-
