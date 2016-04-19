@@ -141,3 +141,6 @@
 // UART3, PB11 (Flexport)
 #define BIND_PORT  GPIOB
 #define BIND_PIN   Pin_11
+
+//Disables uncommon predefined mixer settings like BiCopter, H6 and similar exotics
+#define DISABLE_UNCOMMON_MIXERS

@@ -312,6 +312,13 @@ void validateAndFixConfig(void)
         PG_RESET_CURRENT(serialConfig);
     }
 
+    /*
+     * If provided predefined mixer setup is disabled, fallback to default one
+     */
+     if (!isMixerEnabled(mixerConfig()->mixerMode)) {
+         mixerConfig()->mixerMode = DEFAULT_MIXER;
+     }
+
 #if defined(USE_VCP)
     serialConfig()->portConfigs[0].functionMask = FUNCTION_MSP;
 #endif

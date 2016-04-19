@@ -153,3 +153,5 @@
 // UART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3
+
+#define DISABLE_UNCOMMON_MIXERS
