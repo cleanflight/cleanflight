@@ -503,7 +503,7 @@ void init(void)
 
     imuInit();
 
-    mspInit();
+    mspSerialInit();
 
 #ifdef USE_CLI
     cliInit();
