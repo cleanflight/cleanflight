@@ -94,6 +94,10 @@ void ws2811LedStripHardwareInit(void)
 
     /* DMA1 Channel Config */
     DMA_DeInit(WS2811_DMA_CHANNEL);
+    
+    #ifdef REMAP_TIM17_DMA
+    SYSCFG_DMAChannelRemapConfig(SYSCFG_DMARemap_TIM17, ENABLE);
+    #endif
 
     DMA_StructInit(&DMA_InitStructure);
     DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&WS2811_TIMER->CCR1;

@@ -128,28 +128,10 @@
 #define SONAR_EXTI_IRQN             EXTI1_IRQn
 
 #define LED_STRIP
-#if 1
-// LED strip configuration using PWM motor output pin 5.
-#define LED_STRIP_TIMER TIM16
 
-#define WS2811_GPIO                     GPIOA
-#define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
-#define WS2811_GPIO_AF                  GPIO_AF_1
-#define WS2811_PIN                      GPIO_Pin_6 // TIM16_CH1
-#define WS2811_PIN_SOURCE               GPIO_PinSource6
-#define WS2811_TIMER                    TIM16
-#define WS2811_TIMER_APB2_PERIPHERAL    RCC_APB2Periph_TIM16
-#define WS2811_DMA_CHANNEL              DMA1_Channel3
-#define WS2811_IRQ                      DMA1_Channel3_IRQn
-#define WS2811_DMA_TC_FLAG              DMA1_FLAG_TC3
-#define WS2811_DMA_HANDLER_IDENTIFER    DMA1_CH3_HANDLER
-
-#endif
-
-#if 0
-// Alternate LED strip pin
-// FIXME DMA IRQ Transfer Complete is never called because the  TIM17_DMA_RMP needs to be set in SYSCFG_CFGR1
+// LED strip configuration using PWM motor output pin 8.
 #define LED_STRIP_TIMER TIM17
+#define REMAP_TIM17_DMA
 
 #define WS2811_GPIO                     GPIOA
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOA
@@ -163,8 +145,6 @@
 #define WS2811_DMA_TC_FLAG              DMA1_FLAG_TC7
 #define WS2811_DMA_HANDLER_IDENTIFER    DMA1_CH7_HANDLER
 
-
-#endif
 
 #define USE_SERIAL_1WIRE
 
