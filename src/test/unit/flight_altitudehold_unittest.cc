@@ -153,53 +153,30 @@ bool rcModeIsActive(boxId_e modeId) { return rcModeActivationMask & (1 << modeId
 int16_t rcCommand[4];
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
-uint32_t accTimeSum ;        // keep track for integration of acc
-int accSumCount;
-float accVelScale;
+int32_t BaroAlt=0;
+uint32_t accTimeSum=0;        // keep track for integration of acc
+int accSumCount=0;
+float accVelScale=0;
 
 attitudeEulerAngles_t attitude;
 
-//uint16_t acc_1G;
-//int16_t heading;
-//gyro_t gyro;
 int32_t accSum[XYZ_AXIS_COUNT];
-//int16_t magADC[XYZ_AXIS_COUNT];
-int32_t BaroAlt;
 int16_t debug[DEBUG16_VALUE_COUNT];
 
 uint8_t stateFlags;
 uint16_t flightModeFlags;
-uint8_t armingFlags;
 
-int32_t sonarAlt;
-int16_t sonarCfAltCm;
-int16_t sonarMaxAltWithTiltCm;
-
-uint16_t enableFlightMode(flightModeFlags_e mask)
-{
-    return flightModeFlags |= (mask);
-}
-
-uint16_t disableFlightMode(flightModeFlags_e mask)
-{
-    return flightModeFlags &= ~(mask);
-}
-
-void gyroUpdate(void) {};
-bool sensors(uint32_t mask)
-{
-    UNUSED(mask);
-    return false;
-};
-void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
-{
-    UNUSED(rollAndPitchTrims);
-}
-
+void sensorsSet(uint32_t mask) {UNUSED(mask);}
+uint16_t enableFlightMode(flightModeFlags_e mask) {return flightModeFlags |= (mask);}
+uint16_t disableFlightMode(flightModeFlags_e mask) {return flightModeFlags &= ~(mask);}
 void imuResetAccelerationSum(void) {};
-
-uint32_t micros(void) { return 0; }
-bool isBaroCalibrationComplete(void) { return true; }
+bool isBaroCalibrationComplete(void) {return true;}
 void performBaroCalibrationCycle(void) {}
-int32_t baroCalculateAltitude(void) { return 0; }
+int32_t baroCalculateAltitude(void) {return 0;}
+uint32_t millis(void) {return 0;}
+void delayMicroseconds(uint32_t us) {UNUSED(us);};
+bool feature(uint32_t mask) {UNUSED(mask); return true;};
+float getCosTiltAngle(void) {return 1.0f;};
+bool i2cWrite(uint8_t, uint8_t, uint8_t) {return false;}
+bool i2cRead(uint8_t, uint8_t, uint8_t, uint8_t*) {return false;}
 }

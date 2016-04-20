@@ -205,4 +205,9 @@ uint32_t millis(void) { return 0; }
 bool isBaroCalibrationComplete(void) { return true; }
 void performBaroCalibrationCycle(void) {}
 int32_t baroCalculateAltitude(void) { return 0; }
+void sensorsSet(uint32_t mask) {UNUSED(mask);}
+void delayMicroseconds(uint32_t us) {UNUSED(us);};
+bool feature(uint32_t mask) {UNUSED(mask); return true;};
+bool i2cWrite(uint8_t, uint8_t, uint8_t) {return false;}
+bool i2cRead(uint8_t, uint8_t, uint8_t, uint8_t*) {return false;}
 }

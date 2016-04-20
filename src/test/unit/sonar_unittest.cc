@@ -20,11 +20,16 @@
 
 extern "C" {
     #include "build_config.h"
+    #include "config/parameter_group_ids.h"
+    #include "config/parameter_group.h"
     #include "drivers/sonar_hcsr04.h"
+    #include "drivers/sonar_srf10.h"
+    #include "io/rc_controls.h"
     #include "sensors/sonar.h"
-    extern int32_t measurement;
+    extern int32_t hcsr04SonarPulseTravelTime;
+    extern int32_t srf10measurementCm;
     extern int16_t sonarMaxTiltDeciDegrees;
-    void sonarInit(const sonarHardware_t *sonarHardware);
+    void sonarSetFunctionPointers(sonarHardwareType_e sonarHardwareType);
 }
 
 #include "unittest_macros.h"
@@ -34,17 +39,37 @@ extern "C" {
 
 TEST(SonarUnittest, TestConstants)
 {
-    sonarInit(0);
     // SONAR_OUT_OF_RANGE must be negative
     EXPECT_LE(SONAR_OUT_OF_RANGE, 0);
-    // Check against gross errors in max range constants
-    EXPECT_GT(HCSR04_MAX_RANGE_CM, 100);
 }
 
-TEST(SonarUnittest, TestSonarInit)
+TEST(SonarUnittest, TestConstantsSRF10)
 {
-    sonarInit(0);
-    EXPECT_EQ(sonarMaxRangeCm, HCSR04_MAX_RANGE_CM);
+    // SONAR_OUT_OF_RANGE must be negative
+    EXPECT_LE(SONAR_OUT_OF_RANGE, 0);
+}
+
+TEST(SonarUnittest, TestSonarInitHCSR04)
+{
+    sonarSetFunctionPointers(SONAR_HCSR04);
+    sonarInit(NULL);
+    EXPECT_GE(sonarMaxRangeCm, 100);
+    // Check against gross errors in max range values
+    EXPECT_GE(sonarMaxAltWithTiltCm, 100);
+    EXPECT_LE(sonarMaxAltWithTiltCm, sonarMaxRangeCm);
+    EXPECT_GE(sonarCfAltCm, 100);
+    EXPECT_LE(sonarCfAltCm, sonarMaxRangeCm);
+    EXPECT_LE(sonarCfAltCm, sonarMaxAltWithTiltCm);
+    // Check reasonable values for maximum tilt
+    EXPECT_GE(sonarMaxTiltDeciDegrees, 0);
+    EXPECT_LE(sonarMaxTiltDeciDegrees, 450);
+}
+
+TEST(SonarUnittest, TestSonarInitSRF10)
+{
+    sonarSetFunctionPointers(SONAR_SRF10);
+    sonarInit(NULL);
+    EXPECT_GE(sonarMaxRangeCm, 100);
     // Check against gross errors in max range values
     EXPECT_GE(sonarMaxAltWithTiltCm, 100);
     EXPECT_LE(sonarMaxAltWithTiltCm, sonarMaxRangeCm);
@@ -60,22 +85,23 @@ TEST(SonarUnittest, TestDistance)
 {
     // Check sonar pulse time converted correctly to cm
     const int echoMicroSecondsPerCm = 59;
-    measurement =  0;
+    hcsr04SonarPulseTravelTime =  0;
     EXPECT_EQ(hcsr04_get_distance(), 0);
 
-    measurement =  echoMicroSecondsPerCm;
+    hcsr04SonarPulseTravelTime =  echoMicroSecondsPerCm;
     EXPECT_EQ(hcsr04_get_distance(), 1);
 
-    measurement =  10 * echoMicroSecondsPerCm;
+    hcsr04SonarPulseTravelTime =  10 * echoMicroSecondsPerCm;
     EXPECT_EQ(hcsr04_get_distance(), 10);
 
-    measurement =  HCSR04_MAX_RANGE_CM * echoMicroSecondsPerCm;
-    EXPECT_EQ(hcsr04_get_distance(), HCSR04_MAX_RANGE_CM);
+    hcsr04SonarPulseTravelTime =  350 * echoMicroSecondsPerCm;
+    EXPECT_EQ(hcsr04_get_distance(), 350);
 }
 
-TEST(SonarUnittest, TestAltitude)
+TEST(SonarUnittest, TestAltitudeHCSR04)
 {
-    sonarInit(0);
+    sonarSetFunctionPointers(SONAR_HCSR04);
+    sonarInit(NULL);
     // Check distance not modified if no tilt
     EXPECT_EQ(sonarCalculateAltitude(0, cosf(DECIDEGREES_TO_RADIANS(0))), 0);
     EXPECT_EQ(sonarGetLatestAltitude(), 0);
@@ -107,8 +133,48 @@ TEST(SonarUnittest, TestAltitude)
     EXPECT_NEAR(sonarGetLatestAltitude(), sonarMaxAltWithTiltCm, 1);
 }
 
+TEST(SonarUnittest, TestAltitudeSRF10)
+{
+    sonarSetFunctionPointers(SONAR_SRF10);
+    sonarInit(NULL);
+    // Check distance not modified if no tilt
+    EXPECT_EQ(sonarCalculateAltitude(0, cosf(DECIDEGREES_TO_RADIANS(0))), 0);
+    EXPECT_EQ(sonarGetLatestAltitude(), 0);
+    EXPECT_EQ(sonarCalculateAltitude(100, cosf(DECIDEGREES_TO_RADIANS(0))), 100);
+    EXPECT_EQ(sonarGetLatestAltitude(), 100);
+
+    // Check that out of range is returned if tilt is too large
+    EXPECT_EQ(sonarCalculateAltitude(0, cosf(DECIDEGREES_TO_RADIANS(sonarMaxTiltDeciDegrees+1))), SONAR_OUT_OF_RANGE);
+    EXPECT_EQ(sonarGetLatestAltitude(), SONAR_OUT_OF_RANGE);
+
+    // Check distance at various roll angles
+    // distance 400, 5 degrees of roll
+    EXPECT_EQ(sonarCalculateAltitude(400, cosf(DECIDEGREES_TO_RADIANS(50))), 398);
+    EXPECT_EQ(sonarGetLatestAltitude(), 398);
+    // distance 400, 10 degrees of roll
+    EXPECT_EQ(sonarCalculateAltitude(400, cosf(DECIDEGREES_TO_RADIANS(100))), 393);
+    EXPECT_EQ(sonarGetLatestAltitude(), 393);
+    // distance 400, 15 degrees of roll
+    EXPECT_EQ(sonarCalculateAltitude(400, cosf(DECIDEGREES_TO_RADIANS(150))), 386);
+    EXPECT_EQ(sonarGetLatestAltitude(), 386);
+    // distance 400, 20 degrees of roll
+    EXPECT_EQ(sonarCalculateAltitude(400, cosf(DECIDEGREES_TO_RADIANS(200))), 375);
+    EXPECT_EQ(sonarGetLatestAltitude(), 375);
+    // distance 400, 24.9 degrees of roll, this corresponds to SRF10 effective max detection angle
+    EXPECT_EQ(sonarCalculateAltitude(400, cosf(DECIDEGREES_TO_RADIANS(249))), 362);
+    EXPECT_EQ(sonarGetLatestAltitude(), 362);
+    // Check limits at max range max tilt, need to deal with rounding errors in cosf calculation
+    EXPECT_NEAR(sonarCalculateAltitude(sonarMaxRangeCm, cosf(DECIDEGREES_TO_RADIANS(sonarMaxTiltDeciDegrees - 1))), sonarMaxAltWithTiltCm, 1);
+    EXPECT_NEAR(sonarGetLatestAltitude(), sonarMaxAltWithTiltCm, 1);
+}
+
 // STUBS
 extern "C" {
 void sensorsSet(uint32_t mask) {UNUSED(mask);}
+uint32_t millis(void) {return 0;}
+void delayMicroseconds(uint32_t us) {UNUSED(us);};
+bool feature(uint32_t mask) {UNUSED(mask); return true;};
+bool i2cWrite(uint8_t, uint8_t, uint8_t) {return false;}
+bool i2cRead(uint8_t, uint8_t, uint8_t, uint8_t*) {return false;}
 }
 
