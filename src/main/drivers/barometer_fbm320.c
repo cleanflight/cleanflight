@@ -56,7 +56,6 @@ static bool fbm320InitDone = false;
 STATIC_UNIT_TESTED int32_t fbm320_up = 0;
 STATIC_UNIT_TESTED int32_t fbm320_ut = 0;
 
-static void fbm320_reset(void);
 static void fbm320_coefficient(void);
 static void fbm320_start_ut(void);
 static void fbm320_get_ut(void);
@@ -74,8 +73,6 @@ bool fbm320Detect(baro_t *baro)
     i2cRead(FBM320_I2C_ADDR, FBM320_CHIP_ID_REG, 1, &fbm320_chip_id);  /* read Chip Id */
     if (fbm320_chip_id != FBM320_DEFAULT_CHIP_ID)
         return false;
-
-    fbm320_reset();
 
     i2cRead(FBM320_I2C_ADDR, FBM320_CTRL_MEAS_REG, 1, &fbm32_formula_select_read);
     if (fbm32_formula_select_read & 0x40)
