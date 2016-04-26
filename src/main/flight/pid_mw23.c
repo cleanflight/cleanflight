@@ -60,11 +60,13 @@ uint8_t dynP8[3], dynI8[3], dynD8[3];
 extern uint8_t motorCount;
 
 #ifdef BLACKBOX
-extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
+extern int32_t axisPID_P[], axisPID_I[], axisPID_D[];
 #endif
-extern int32_t lastITerm[3], ITermLimit[3];
 
-extern biquad_t deltaFilterState[3];
+extern float dT;
+extern int32_t lastITerm[], ITermLimit[];
+
+extern biquad_t DTermFilter[];
 
 
 void pidResetITermAngle(void)
@@ -73,18 +75,23 @@ void pidResetITermAngle(void)
     ITermAngle[AI_PITCH] = 0;
 }
 
-void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig)
+void pidMultiWii23Init(const pidProfile_t *pidProfile)
 {
-    UNUSED(rxConfig);
+    for (int axis = 0; axis < 3; ++ axis) {
+        if (pidProfile->dterm_lpf_hz) {
+           pt1FilterInit((pt1Filter_t*)&DTermFilter[axis], pidProfile->dterm_lpf_hz);
+        }
+    }
+}
+
+void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig)
+{
 
     int axis, prop = 0;
     int32_t rc, error, errorAngle, delta, gyroError;
     int32_t PTerm, ITerm, PTermACC, ITermACC, DTerm;
     static int16_t lastErrorForDelta[2];
     static int32_t delta1[2], delta2[2];
-
-    pidFilterIsSetCheck(pidProfile);
 
     if (FLIGHT_MODE(HORIZON_MODE)) {
         prop = MIN(MAX(ABS(rcCommand[PITCH]), ABS(rcCommand[ROLL])), 512);
@@ -119,6 +126,8 @@ void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *co
 
         if (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE)) {   // axis relying on ACC
             // 50 degrees max inclination
+            const uint16_t max_angle_inclination = imuConfig()->max_angle_inclination;
+            const rollAndPitchTrims_t *angleTrim = &accelerometerConfig()->accelerometerTrims;
 #ifdef GPS
             errorAngle = constrain(2 * rcCommand[axis] + GPS_angle[axis], -((int) max_angle_inclination),
                 +max_angle_inclination) - attitude.raw[axis] + angleTrim->raw[axis];
@@ -146,10 +155,10 @@ void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *co
         // Delta from measurement
         delta = -(gyroError - lastErrorForDelta[axis]);
         lastErrorForDelta[axis] = gyroError;
-        if (pidProfile->dterm_cut_hz) {
-            // Dterm delta low pass
-            DTerm = delta;
-            DTerm = lrintf(applyBiQuadFilter((float) DTerm, &deltaFilterState[axis])) * 3;  // Keep same scaling as unfiltered DTerm
+        if (pidProfile->dterm_lpf_hz) {
+            // Dterm low pass filter
+            DTerm = delta * 3; // Keep same scaling as unfiltered DTerm
+            DTerm = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], (float)DTerm, pidProfile->dterm_lpf_hz, dT) ;
         } else {
             // When dterm filter disabled apply moving average to reduce noise
             DTerm  = delta1[axis] + delta2[axis] + delta;

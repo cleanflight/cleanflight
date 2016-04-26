@@ -116,11 +116,10 @@ extern uint8_t PIDweight[3];
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 
 static bool isRXDataNew;
-static filterStatePt1_t filteredCycleTimeState;
+static pt1Filter_t filteredCycleTimeState;
 uint16_t filteredCycleTime;
 
-typedef void (*pidControllerFuncPtr)(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig);            // pid controller function prototype
+typedef void (*pidControllerFuncPtr)(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);    // pid controller function prototype
 
 extern pidControllerFuncPtr pid_controller;
 
@@ -169,14 +168,18 @@ bool isCalibrating(void)
     return (!isAccelerationCalibrationComplete() && sensors(SENSOR_ACC)) || (!isGyroCalibrationComplete());
 }
 
-/*
-This function processes RX dependent coefficients when new RX commands are available
-Those are: TPA, throttle expo
-*/
-void processRxDependentCoefficients(void) {
+#if defined(BARO) || defined(SONAR)
+static bool haveProcessedAnnexCodeOnce = false;
+#endif
 
+void annexCode(void)
+{
     int32_t tmp, tmp2;
     int32_t axis, prop1 = 0, prop2;
+
+#if defined(BARO) || defined(SONAR)
+    haveProcessedAnnexCodeOnce = true;
+#endif
 
     // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
@@ -629,17 +632,13 @@ void filterRc(void){
     }
 }
 
-#if defined(BARO) || defined(SONAR)
-static bool haveProcessedAnnexCodeOnce = false;
-#endif
-
 void taskMainPidLoop(void)
 {
     cycleTime = getTaskDeltaTime(TASK_SELF);
     dT = (float)cycleTime * 0.000001f;
 
     // Calculate average cycle time and average jitter
-    filteredCycleTime = filterApplyPt1(cycleTime, &filteredCycleTimeState, 1, dT);
+    filteredCycleTime = pt1FilterApply(&filteredCycleTimeState, cycleTime, 1, dT);
 
     debug[0] = cycleTime;
     debug[1] = cycleTime - filteredCycleTime;
@@ -652,14 +651,10 @@ void taskMainPidLoop(void)
         filterRc();
     }
 
-#if defined(BARO) || defined(SONAR)
-    haveProcessedAnnexCodeOnce = true;
-#endif
-
 #ifdef MAG
-        if (sensors(SENSOR_MAG)) {
-            updateMagHold();
-        }
+    if (sensors(SENSOR_MAG)) {
+        updateMagHold();
+    }
 #endif
 
 #ifdef GTUNE
@@ -667,11 +662,11 @@ void taskMainPidLoop(void)
 #endif
 
 #if defined(BARO) || defined(SONAR)
-        if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
-            if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
-                applyAltHold();
-            }
+    if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
+        if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
+            applyAltHold();
         }
+    }
 #endif
 
     // If we're armed, at minimum throttle, and we do arming via the
@@ -703,13 +698,7 @@ void taskMainPidLoop(void)
 #endif
 
     // PID - note this is function pointer set by setPIDController()
-    pid_controller(
-        pidProfile(),
-        currentControlRateProfile,
-        imuConfig()->max_angle_inclination,
-        &accelerometerConfig()->accelerometerTrims,
-        rxConfig()
-    );
+    pid_controller(pidProfile(), currentControlRateProfile);
 
     mixTable();
 
