@@ -31,9 +31,9 @@
 
 #ifdef BARO
 
-// FBM320, address 0x6D
+// FBM320, default address 0x6D
 
-#define FBM320_I2C_ADDR                      (0x6C)
+#define FBM320_I2C_ADDR                      (0x6D)
 #define FBM320_DEFAULT_CHIP_ID               (0x42)
 
 #define FBM320_CHIP_ID_REG                   (0x6B)  /* Chip ID Register */
@@ -91,12 +91,6 @@ bool fbm320Detect(baro_t *baro)
     baro->calculate = fbm320_calculate;
 
     return true;
-}
-
-static void fbm320_reset(void)
-{
-    i2cWrite(FBM320_I2C_ADDR, FBM320_RST_REG, 0xB6);
-    delayMicroseconds(2800);
 }
 
 static void fbm320_start_ut(void)
