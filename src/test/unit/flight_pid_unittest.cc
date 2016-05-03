@@ -65,7 +65,6 @@ extern "C" {
     extern uint32_t rcModeActivationMask;
     float dT; // dT for pidLuxFloat
     int32_t targetLooptime; // targetLooptime for pidMultiWiiRewrite
-    float DTermFirFilterState[3][PID_DTERM_FIR_MAX_LENGTH];
     float unittest_pidLuxFloatCore_PTerm[3];
     float unittest_pidLuxFloatCore_ITerm[3];
     float unittest_pidLuxFloatCore_DTerm[3];
