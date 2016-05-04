@@ -48,7 +48,6 @@ void biQuadFilterInit(biquad_t *filter, float filterCutFreq, uint32_t refreshRat
 float biQuadFilterApply(biquad_t *filter, float input);
 
 
-void pt1FilterInit(pt1Filter_t *filter, uint8_t f_cut);
 float pt1FilterApply(pt1Filter_t *filter, float input, uint8_t f_cut, float dT);
 
 

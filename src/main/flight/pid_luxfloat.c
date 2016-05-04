@@ -115,7 +115,6 @@ void pidLuxFloatInit(const pidProfile_t *pidProfile)
     const float *coeffs = nrd[pidProfile->dterm_differentiator];
     for (int axis = 0; axis < 3; ++ axis) {
         firFilterInit(&gyroRateFilter[axis], (float*)gyroRateBuf[axis], pidProfile->dterm_differentiator + 2, coeffs);
-        pt1FilterInit((pt1Filter_t*)&DTermFilter[axis], pidProfile->dterm_lpf_hz);
     }
 }
 
@@ -138,12 +137,10 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
     // I coefficient (I8) moved before integration to make limiting independent from PID settings
     ITerm = constrainf(ITerm, -PID_MAX_I, PID_MAX_I);
     // Anti windup protection
-    if (rcModeIsActive(BOXAIRMODE)) {
-        if (STATE(ANTI_WINDUP) || motorLimitReached) {
-            ITerm = constrainf(ITerm, -ITermLimitf[axis], ITermLimitf[axis]);
-        } else {
-            ITermLimitf[axis] = ABS(ITerm);
-        }
+    if (STATE(ANTI_WINDUP) || motorLimitReached) {
+        ITerm = constrainf(ITerm, -ITermLimitf[axis], ITermLimitf[axis]);
+    } else {
+        ITermLimitf[axis] = ABS(ITerm);
     }
     lastITermf[axis] = ITerm;
 
@@ -158,7 +155,7 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
         DTerm = -firFilterApply(&gyroRateFilter[axis]) / dT;
         if (pidProfile->dterm_lpf_hz) {
             // DTerm delta low pass filter
-            DTerm = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], DTerm, pidProfile->dterm_lpf_hz, dT);
+            DTerm = pt1FilterApply(&DTermFilter[axis], DTerm, pidProfile->dterm_lpf_hz, dT);
         }
         DTerm = DTerm * luxDTermScale * pidProfile->D8[axis] * PIDweight[axis] / 100;
         DTerm = constrainf(DTerm, -PID_MAX_D, PID_MAX_D);

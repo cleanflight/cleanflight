@@ -108,7 +108,6 @@ void pidMultiWiiRewriteInit(const pidProfile_t *pidProfile)
     const int8_t *coeffs = nrd[pidProfile->dterm_differentiator];
     for (int axis = 0; axis < 3; ++ axis) {
         firFilterInt32Init(&gyroRateFilter[axis], gyroRateBuf[axis], pidProfile->dterm_differentiator + 2, coeffs);
-        pt1FilterInit(&DTermFilter[axis], pidProfile->dterm_lpf_hz);
     }
 }
 
@@ -135,12 +134,10 @@ STATIC_UNIT_TESTED int16_t pidMultiWiiRewriteCore(int axis, const pidProfile_t *
     // I coefficient (I8) moved before integration to make limiting independent from PID settings
     ITerm = constrain(ITerm, (int32_t)(-PID_MAX_I << 13), (int32_t)(PID_MAX_I << 13));
     // Anti windup protection
-    if (rcModeIsActive(BOXAIRMODE)) {
-        if (STATE(ANTI_WINDUP) || motorLimitReached) {
-            ITerm = constrain(ITerm, -ITermLimit[axis], ITermLimit[axis]);
-        } else {
-            ITermLimit[axis] = ABS(ITerm);
-        }
+    if (STATE(ANTI_WINDUP) || motorLimitReached) {
+        ITerm = constrain(ITerm, -ITermLimit[axis], ITermLimit[axis]);
+    } else {
+        ITermLimit[axis] = ABS(ITerm);
     }
     lastITerm[axis] = ITerm;
     ITerm = ITerm >> 13; // take integer part of Q19.13 value
@@ -160,7 +157,7 @@ STATIC_UNIT_TESTED int16_t pidMultiWiiRewriteCore(int axis, const pidProfile_t *
 
         if (pidProfile->dterm_lpf_hz) {
             // DTerm low pass filter
-            delta = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], (float)delta, pidProfile->dterm_lpf_hz, dT);
+            delta = pt1FilterApply(&DTermFilter[axis], (float)delta, pidProfile->dterm_lpf_hz, dT);
         }
         DTerm = (delta * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
         DTerm = constrain(DTerm, -PID_MAX_D, PID_MAX_D);

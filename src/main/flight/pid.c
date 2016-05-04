@@ -61,13 +61,11 @@ int32_t lastITerm[3], ITermLimit[3];
 float lastITermf[3], ITermLimitf[3];
 
 pt1Filter_t DTermFilter[3];
-// shared float/int buffers
-int32_t DTermAverageFilterBuf[3][PID_DTERM_AVERAGE_FILTER_MAX_LENGTH];
+// shared float/int buffer
 int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
 
 void pidLuxFloatInit(const pidProfile_t *pidProfile);
 void pidMultiWiiRewriteInit(const pidProfile_t *pidProfile);
-void pidMultiWii23Init(const pidProfile_t *pidProfile);
 
 void pidLuxFloat(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);
 void pidMultiWiiRewrite(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);
@@ -142,7 +140,6 @@ void pidSetController(pidControllerType_e type)
 #endif
 #ifndef SKIP_PID_MW23
     case PID_CONTROLLER_MW23:
-        pidMultiWii23Init(pidProfile());
         pid_controller = pidMultiWii23;
         break;
 #endif

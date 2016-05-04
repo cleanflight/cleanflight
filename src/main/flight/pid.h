@@ -28,7 +28,6 @@
 #define PID_GYRO_RATE_BUF_LENGTH 8
 #define PID_DTERM_FIR_MAX_LENGTH 8
 #define PID_MAX_DIFFERENTIATOR (PID_DTERM_FIR_MAX_LENGTH-2)
-#define PID_DTERM_AVERAGE_FILTER_MAX_LENGTH 8
 
 typedef enum {
     PIDROLL,
@@ -58,8 +57,6 @@ typedef struct pidProfile_s {
     uint8_t  pidController;
     uint8_t  dterm_differentiator;          // dterm noise-robust differentiator
     uint16_t dterm_lpf_hz;                  // dterm low pass filter frequency
-    uint8_t  dterm_lpf_biquad;              // dterm use biquad low pass filter
-    uint8_t  dterm_average_count;
     uint16_t yaw_p_limit;                   // yaw P term limit (fixed value was 300)
 } pidProfile_t;
 

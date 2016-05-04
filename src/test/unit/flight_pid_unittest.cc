@@ -124,7 +124,6 @@ void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->yaw_p_limit = YAW_P_LIMIT_MAX;
     pidProfile->dterm_differentiator = 0;
     pidProfile->dterm_lpf_hz = 0;
-    pidProfile->dterm_average_count = DTermAverageCount;
 }
 
 void resetRcCommands(void)
@@ -474,7 +473,6 @@ TEST(PIDUnittest, TestPidLuxFloatDTermRobust0)
     pidProfile_t *pidProfile = &testPidProfile;
 
     pidControllerInitLuxFloat(&controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
-    pidProfile->dterm_average_count = 0;
     pidLuxFloatInit(&testPidProfile);
 
     const float angleRate = 0;
@@ -508,7 +506,6 @@ TEST(PIDUnittest, TestPidLuxFloatDTermRobust3)
 
     pidControllerInitLuxFloat(&controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
     pidProfile->dterm_differentiator = 3;
-    pidProfile->dterm_average_count = 0;
     pidLuxFloatInit(pidProfile);
 
     const float angleRate = 0;
@@ -545,7 +542,6 @@ TEST(PIDUnittest, TestPidLuxFloatDifferentiationForQuadraticFunction)
         // get exact differential for quadratic function for differentiator >=3
         pidControllerInitLuxFloat(&controlRate, max_angle_inclination, &rollAndPitchTrims, &rxConfig);
         pidProfile->dterm_differentiator = differentiator;
-        pidProfile->dterm_average_count = 0;
         pidLuxFloatInit(pidProfile);
 
         // Test PID integration for a quadratic function:

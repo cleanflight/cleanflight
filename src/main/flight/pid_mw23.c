@@ -75,18 +75,8 @@ void pidResetITermAngle(void)
     ITermAngle[AI_PITCH] = 0;
 }
 
-void pidMultiWii23Init(const pidProfile_t *pidProfile)
-{
-    for (int axis = 0; axis < 3; ++ axis) {
-        if (pidProfile->dterm_lpf_hz) {
-           pt1FilterInit(&DTermFilter[axis], pidProfile->dterm_lpf_hz);
-        }
-    }
-}
-
 void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig)
 {
-
     int axis, prop = 0;
     int32_t rc, error, errorAngle, delta, gyroError;
     int32_t PTerm, ITerm, PTermACC, ITermACC, DTerm;
@@ -112,12 +102,10 @@ void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *co
         }
 
         // Anti windup protection
-        if (rcModeIsActive(BOXAIRMODE)) {
-            if (STATE(ANTI_WINDUP) || motorLimitReached) {
-                lastITerm[axis] = constrain(lastITerm[axis], -ITermLimit[axis], ITermLimit[axis]);
-            } else {
-                ITermLimit[axis] = ABS(lastITerm[axis]);
-            }
+        if (STATE(ANTI_WINDUP) || motorLimitReached) {
+            lastITerm[axis] = constrain(lastITerm[axis], -ITermLimit[axis], ITermLimit[axis]);
+        } else {
+            ITermLimit[axis] = ABS(lastITerm[axis]);
         }
 
         ITerm = (lastITerm[axis] >> 7) * pidProfile->I8[axis] >> 6;   // 16 bits is ok here 16000/125 = 128 ; 128*250 = 32000
