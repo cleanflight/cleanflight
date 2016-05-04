@@ -60,7 +60,7 @@ uint8_t PIDweight[3];
 int32_t lastITerm[3], ITermLimit[3];
 float lastITermf[3], ITermLimitf[3];
 
-biquad_t DTermFilter[3]; // shared buffer between biquad and pt1 filter
+pt1Filter_t DTermFilter[3];
 // shared float/int buffers
 int32_t DTermAverageFilterBuf[3][PID_DTERM_AVERAGE_FILTER_MAX_LENGTH];
 int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
@@ -111,9 +111,7 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
     .D8[PIDVEL] = 1,
 
     .dterm_differentiator = 3,
-    .dterm_lpf_hz = 0,
-    .dterm_lpf_biquad = 0,
-    .dterm_average_count = 0,
+    .dterm_lpf_hz = 110,
     .yaw_p_limit = YAW_P_LIMIT_MAX,
 );
 
@@ -127,7 +125,6 @@ void pidResetITerm(void)
 
 void pidSetController(pidControllerType_e type)
 {
-    BUILD_BUG_ON(sizeof(pt1Filter_t) > sizeof(biquad_t)); // PT1 and BiQuad filter share same memory
     BUILD_BUG_ON(sizeof(float) > sizeof(int32_t)); // int32_t and float gyroRateBuf share same memory
     BUILD_BUG_ON(PID_DTERM_FIR_MAX_LENGTH > PID_GYRO_RATE_BUF_LENGTH); // gyroRateBuf is used by FIR filter for differentiation
 

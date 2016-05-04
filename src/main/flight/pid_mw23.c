@@ -66,7 +66,7 @@ extern int32_t axisPID_P[], axisPID_I[], axisPID_D[];
 extern float dT;
 extern int32_t lastITerm[], ITermLimit[];
 
-extern biquad_t DTermFilter[];
+extern pt1Filter_t DTermFilter[];
 
 
 void pidResetITermAngle(void)
@@ -79,7 +79,7 @@ void pidMultiWii23Init(const pidProfile_t *pidProfile)
 {
     for (int axis = 0; axis < 3; ++ axis) {
         if (pidProfile->dterm_lpf_hz) {
-           pt1FilterInit((pt1Filter_t*)&DTermFilter[axis], pidProfile->dterm_lpf_hz);
+           pt1FilterInit(&DTermFilter[axis], pidProfile->dterm_lpf_hz);
         }
     }
 }
@@ -158,7 +158,7 @@ void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *co
         if (pidProfile->dterm_lpf_hz) {
             // Dterm low pass filter
             DTerm = delta * 3; // Keep same scaling as unfiltered DTerm
-            DTerm = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], (float)DTerm, pidProfile->dterm_lpf_hz, dT) ;
+            DTerm = pt1FilterApply(&DTermFilter[axis], (float)DTerm, pidProfile->dterm_lpf_hz, dT) ;
         } else {
             // When dterm filter disabled apply moving average to reduce noise
             DTerm  = delta1[axis] + delta2[axis] + delta;

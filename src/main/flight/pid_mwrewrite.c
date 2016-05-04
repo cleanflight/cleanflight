@@ -64,13 +64,10 @@ extern uint8_t motorCount;
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 #endif
 
-extern biquad_t DTermFilter[];
+extern pt1Filter_t DTermFilter[];
 
 static firFilterInt32_t gyroRateFilter[3];
 extern int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
-
-static firFilterInt32_t DTermAverageFilter[3];
-extern int32_t DTermAverageFilterBuf[3][PID_DTERM_AVERAGE_FILTER_MAX_LENGTH];
 
 /* Noise-robust differentiator filter coefficients by Pavel Holoborodko, see
 http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
@@ -111,12 +108,7 @@ void pidMultiWiiRewriteInit(const pidProfile_t *pidProfile)
     const int8_t *coeffs = nrd[pidProfile->dterm_differentiator];
     for (int axis = 0; axis < 3; ++ axis) {
         firFilterInt32Init(&gyroRateFilter[axis], gyroRateBuf[axis], pidProfile->dterm_differentiator + 2, coeffs);
-        firFilterInt32Init(&DTermAverageFilter[axis], DTermAverageFilterBuf[axis], pidProfile->dterm_average_count, NULL);
-        if (pidProfile->dterm_lpf_hz) {
-            biQuadFilterInit(&DTermFilter[axis], pidProfile->dterm_lpf_hz, targetLooptime);
-        } else {
-            pt1FilterInit((pt1Filter_t*)&DTermFilter[axis], pidProfile->dterm_lpf_hz);
-        }
+        pt1FilterInit(&DTermFilter[axis], pidProfile->dterm_lpf_hz);
     }
 }
 
@@ -168,16 +160,7 @@ STATIC_UNIT_TESTED int16_t pidMultiWiiRewriteCore(int axis, const pidProfile_t *
 
         if (pidProfile->dterm_lpf_hz) {
             // DTerm low pass filter
-            if (pidProfile->dterm_lpf_biquad) {
-                delta = lrintf(biQuadFilterApply(&DTermFilter[axis], (float)delta));
-            } else {
-                delta = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], (float)delta, pidProfile->dterm_lpf_hz, dT);
-            }
-        }
-        if (pidProfile->dterm_average_count) {
-            // Apply moving average
-            firFilterInt32Update(&DTermAverageFilter[axis], delta);
-            delta = firFilterInt32CalcAverage(&DTermAverageFilter[axis]);
+            delta = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], (float)delta, pidProfile->dterm_lpf_hz, dT);
         }
         DTerm = (delta * pidProfile->D8[axis] * PIDweight[axis] / 100) >> 8;
         DTerm = constrain(DTerm, -PID_MAX_D, PID_MAX_D);

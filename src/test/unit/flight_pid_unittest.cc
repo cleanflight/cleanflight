@@ -86,7 +86,7 @@ static const int mwrGyroScaleNum = 41;
 static const int mwrGyroScaleDenom = 10;
 #define TARGET_LOOPTIME 2048
 
-static const int DTermAverageCount = 4;
+static const int DTermAverageCount = 1;
 
 void resetPidProfile(pidProfile_t *pidProfile)
 {
@@ -833,7 +833,6 @@ TEST(PIDUnittest, TestPidMultiWiiRewritePidLuxFloatCoreEquivalence)
     pidControllerInitLuxFloatCore();
     EXPECT_EQ(TARGET_LOOPTIME, targetLooptime);
     EXPECT_FLOAT_EQ(TARGET_LOOPTIME * 0.000001f, dT);
-    EXPECT_EQ(4, DTermAverageCount);
 
     pidLuxFloatCore(FD_ROLL, pidProfile, -angleRate, 0);
     EXPECT_FLOAT_EQ(calcLuxPTerm(pidProfile, FD_ROLL, angleRate), unittest_pidLuxFloatCore_PTerm[FD_ROLL]);
@@ -843,7 +842,6 @@ TEST(PIDUnittest, TestPidMultiWiiRewritePidLuxFloatCoreEquivalence)
     pidControllerInitMultiWiiRewriteCore();
     EXPECT_EQ(TARGET_LOOPTIME, targetLooptime);
     EXPECT_FLOAT_EQ(TARGET_LOOPTIME * 0.000001f, dT);
-    EXPECT_EQ(4, DTermAverageCount);
 
     pidMultiWiiRewriteCore(FD_ROLL, pidProfile, -angleRate, 0);
     EXPECT_EQ(calcMwrPTerm(pidProfile, PIDROLL, angleRate), unittest_pidMultiWiiRewriteCore_PTerm[FD_ROLL]);

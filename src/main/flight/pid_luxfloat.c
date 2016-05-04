@@ -65,13 +65,10 @@ extern uint8_t motorCount;
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 #endif
 
-extern biquad_t DTermFilter[3];
+extern pt1Filter_t DTermFilter[3];
 
 static firFilter_t gyroRateFilter[3];
 extern int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
-
-static firFilter_t DTermAverageFilter[3];
-extern int32_t DTermAverageFilterBuf[3][PID_DTERM_AVERAGE_FILTER_MAX_LENGTH];
 
 // constants to scale pidLuxFloat so output is same as pidMultiWiiRewrite
 static const float luxPTermScale = 1.0f / 128;
@@ -118,12 +115,7 @@ void pidLuxFloatInit(const pidProfile_t *pidProfile)
     const float *coeffs = nrd[pidProfile->dterm_differentiator];
     for (int axis = 0; axis < 3; ++ axis) {
         firFilterInit(&gyroRateFilter[axis], (float*)gyroRateBuf[axis], pidProfile->dterm_differentiator + 2, coeffs);
-        firFilterInit(&DTermAverageFilter[axis], (float*)DTermAverageFilterBuf[axis], pidProfile->dterm_average_count, NULL);
-        if (pidProfile->dterm_lpf_hz) {
-            biQuadFilterInit(&DTermFilter[axis], pidProfile->dterm_lpf_hz, targetLooptime);
-        } else {
-            pt1FilterInit((pt1Filter_t*)&DTermFilter[axis], pidProfile->dterm_lpf_hz);
-        }
+        pt1FilterInit((pt1Filter_t*)&DTermFilter[axis], pidProfile->dterm_lpf_hz);
     }
 }
 
@@ -164,19 +156,9 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
         // Calculate derivative using FIR filter
         firFilterUpdate(&gyroRateFilter[axis], gyroRate);
         DTerm = -firFilterApply(&gyroRateFilter[axis]) / dT;
-
         if (pidProfile->dterm_lpf_hz) {
             // DTerm delta low pass filter
-            if (pidProfile->dterm_lpf_biquad) {
-                DTerm = biQuadFilterApply(&DTermFilter[axis], DTerm);
-            } else {
-                DTerm = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], DTerm, pidProfile->dterm_lpf_hz, dT);
-            }
-        }
-        if (pidProfile->dterm_average_count) {
-            // Apply moving average
-            firFilterUpdate(&DTermAverageFilter[axis], DTerm);
-            DTerm = firFilterCalcAverage(&DTermAverageFilter[axis]);
+            DTerm = pt1FilterApply((pt1Filter_t*)&DTermFilter[axis], DTerm, pidProfile->dterm_lpf_hz, dT);
         }
         DTerm = DTerm * luxDTermScale * pidProfile->D8[axis] * PIDweight[axis] / 100;
         DTerm = constrainf(DTerm, -PID_MAX_D, PID_MAX_D);

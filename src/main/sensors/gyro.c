@@ -60,7 +60,7 @@ PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
 PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .gyro_lpf = 1,                 // supported by all gyro drivers now. In case of ST gyro, will default to 32Hz instead
-    .soft_gyro_lpf_hz = 60,        // Software based lpf filter for gyro
+    .soft_gyro_lpf_hz = 80,        // Software based lpf filter for gyro
 
     .gyroMovementCalibrationThreshold = 32,
 );
