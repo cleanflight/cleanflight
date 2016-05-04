@@ -65,6 +65,7 @@ extern uint8_t motorCount;
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 #endif
 
+extern pt1Filter_t yawFilter;
 extern pt1Filter_t DTermFilter[3];
 
 static firFilter_t gyroRateFilter[3];
@@ -126,14 +127,19 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
 
     // -----calculate P component
     float PTerm = luxPTermScale * rateError * pidProfile->P8[axis] * PIDweight[axis] / 100;
-    // Constrain YAW by yaw_p_limit value if not servo driven, in that case servolimits apply
-    if (axis == YAW && pidProfile->yaw_p_limit && motorCount >= 4) {
-        PTerm = constrainf(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
+    if (axis == YAW) {
+        if (pidProfile->yaw_lpf_hz) {
+            PTerm = pt1FilterApply(&yawFilter, PTerm, pidProfile->yaw_lpf_hz, dT);
+        }
+        if (pidProfile->yaw_p_limit && motorCount >= 4) {
+            // Constrain YAW by yaw_p_limit value if not servo driven, in that case servolimits apply
+            PTerm = constrainf(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
+        }
     }
 
     // -----calculate I component
     float ITerm = lastITermf[axis] + luxITermScale * rateError * dT * pidProfile->I8[axis];
-    // limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
+    // Limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
     // I coefficient (I8) moved before integration to make limiting independent from PID settings
     ITerm = constrainf(ITerm, -PID_MAX_I, PID_MAX_I);
     // Anti windup protection

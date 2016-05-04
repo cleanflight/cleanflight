@@ -64,7 +64,8 @@ extern uint8_t motorCount;
 extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 #endif
 
-extern pt1Filter_t DTermFilter[];
+extern pt1Filter_t yawFilter;
+extern pt1Filter_t DTermFilter[3];
 
 static firFilterInt32_t gyroRateFilter[3];
 extern int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
@@ -119,9 +120,14 @@ STATIC_UNIT_TESTED int16_t pidMultiWiiRewriteCore(int axis, const pidProfile_t *
 
     // -----calculate P component
     int32_t PTerm = (rateError * pidProfile->P8[axis] * PIDweight[axis] / 100) >> 7;
-    // Constrain YAW by yaw_p_limit value if not servo driven, in that case servolimits apply
-    if (axis == YAW && pidProfile->yaw_p_limit && motorCount >= 4) {
-        PTerm = constrain(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
+    if (axis == YAW) {
+        if (pidProfile->yaw_lpf_hz) {
+            PTerm = pt1FilterApply(&yawFilter, PTerm, pidProfile->yaw_lpf_hz, dT);
+        }
+        if (pidProfile->yaw_p_limit && motorCount >= 4) {
+            // Constrain YAW by yaw_p_limit value if not servo driven, in that case servolimits apply
+            PTerm = constrain(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
+        }
     }
 
     // -----calculate I component
@@ -130,7 +136,7 @@ STATIC_UNIT_TESTED int16_t pidMultiWiiRewriteCore(int axis, const pidProfile_t *
     // Time correction (to avoid different I scaling for different builds based on average cycle time)
     // is normalized to cycle time = 2048 (2^11).
     int32_t ITerm = lastITerm[axis] + ((rateError * (uint16_t)targetLooptime) >> 11) * pidProfile->I8[axis];
-    // limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
+    // Limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
     // I coefficient (I8) moved before integration to make limiting independent from PID settings
     ITerm = constrain(ITerm, (int32_t)(-PID_MAX_I << 13), (int32_t)(PID_MAX_I << 13));
     // Anti windup protection

@@ -60,6 +60,7 @@ uint8_t PIDweight[3];
 int32_t lastITerm[3], ITermLimit[3];
 float lastITermf[3], ITermLimitf[3];
 
+pt1Filter_t yawFilter;
 pt1Filter_t DTermFilter[3];
 // shared float/int buffer
 int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
@@ -109,8 +110,9 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
     .D8[PIDVEL] = 1,
 
     .dterm_differentiator = 3,
-    .dterm_lpf_hz = 110,
+    .dterm_lpf_hz = 0,
     .yaw_p_limit = YAW_P_LIMIT_MAX,
+    .yaw_lpf_hz = 70,
 );
 
 void pidResetITerm(void)

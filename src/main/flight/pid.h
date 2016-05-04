@@ -56,7 +56,8 @@ typedef struct pidProfile_s {
     uint8_t  D8[PID_ITEM_COUNT];
     uint8_t  pidController;
     uint8_t  dterm_differentiator;          // dterm noise-robust differentiator
-    uint16_t dterm_lpf_hz;                  // dterm low pass filter frequency
+    uint8_t  dterm_lpf_hz;                  // dterm low pass filter frequency
+    uint8_t  yaw_lpf_hz;
     uint16_t yaw_p_limit;                   // yaw P term limit (fixed value was 300)
 } pidProfile_t;
 
