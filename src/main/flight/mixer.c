@@ -766,13 +766,21 @@ STATIC_UNIT_TESTED void servoMixer(void)
             int16_t min = currentServoMixer[i].min * servo_width / 100 - servo_width / 2;
             int16_t max = currentServoMixer[i].max * servo_width / 100 - servo_width / 2;
 
-            if (currentServoMixer[i].speed == 0)
-                currentOutput[i] = input[from];
-            else {
-                if (currentOutput[i] < input[from])
-                    currentOutput[i] = constrain(currentOutput[i] + currentServoMixer[i].speed, currentOutput[i], input[from]);
-                else if (currentOutput[i] > input[from])
-                    currentOutput[i] = constrain(currentOutput[i] - currentServoMixer[i].speed, input[from], currentOutput[i]);
+            // we want input to be scaled from -500 to 500, but now we want to have it scaled from min to max
+            int16_t scaledInput;
+            if (input[from] > 0) {
+                scaledInput = scaleRange(input[from], 0, 500, 0, max);
+            } else {
+                scaledInput = scaleRange(input[from], 0, -500, 0, min);
+            }
+
+            if (currentServoMixer[i].speed == 0) {
+                currentOutput[i] = scaledInput;
+            } else {
+                if (currentOutput[i] < scaledInput)
+                    currentOutput[i] = constrain(currentOutput[i] + currentServoMixer[i].speed, currentOutput[i], scaledInput);
+                else if (currentOutput[i] > scaledInput)
+                    currentOutput[i] = constrain(currentOutput[i] - currentServoMixer[i].speed, scaledInput, currentOutput[i]);
             }
 
             servo[target] += servoDirection(target, from) * constrain(((int32_t)currentOutput[i] * currentServoMixer[i].rate) / 100, min, max);
