@@ -98,12 +98,12 @@
 #define USE_NRF24_SOFTSPI
 
 // RC pinouts
-// RC3  PB6/TIM4    RX_PPM
+// RC3  PB6/TIM4    unused
 // RC4  PB5/TIM3    SCK / softserial1 TX / sonar trigger
-// RC5  PB0/TIM3    MISO /Softserial1 RX / sonar echo
+// RC5  PB0/TIM3    MISO /Softserial1 RX / sonar echo / RSSI ADC
 // RC6  PB1/TIM3    MOSI / current
 // RC7  PA0/TIM2    CSN / battery voltage
-// RC8  PA1/TIM2    CE / RSSI
+// RC8  PA1/TIM2    CE / RX_PPM
 
 // Nordic Semiconductor uses 'CSN', STM uses 'NSS'
 #define NRF24_CE_GPIO                   GPIOA
