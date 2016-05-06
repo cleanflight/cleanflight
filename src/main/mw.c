@@ -414,7 +414,7 @@ void processRx(void)
 {
     static bool armedBeeperOn = false;
 
-    calculateRxChannelsAndUpdateFailsafe(currentTime);
+    calculateRxChannelsAndUpdateFailsafe(currentTime); // this updates rcData[]
 
     // in 3D mode, we need to be able to disarm by switch at any time
     if (feature(FEATURE_3D)) {
@@ -433,8 +433,8 @@ void processRx(void)
         failsafeUpdateState();
     }
 
-    throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig(), rcControlsConfig()->deadband3d_throttle);
-    rollPitchStatus_e rollPitchStatus =  calculateRollPitchCenterStatus(rxConfig());
+    const throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig(), rcControlsConfig()->deadband3d_throttle);
+    const rollPitchStatus_e rollPitchStatus =  calculateRollPitchCenterStatus(rxConfig());
 
     /* In airmode Iterm should be prevented to grow when Low thottle and Roll + Pitch Centered.
      This is needed to prevent Iterm winding on the ground, but keep full stabilisation on 0 throttle while in air
