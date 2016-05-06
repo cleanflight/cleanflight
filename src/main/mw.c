@@ -172,7 +172,11 @@ bool isCalibrating(void)
 static bool haveProcessedAnnexCodeOnce = false;
 #endif
 
-void annexCode(void)
+/*
+This function processes RX dependent coefficients when new RX commands are available
+Those are: TPA, throttle expo
+*/
+void processRxDependentCoefficients(void)
 {
     int32_t tmp, tmp2;
     int32_t axis, prop1 = 0, prop2;
@@ -658,7 +662,7 @@ void taskMainPidLoop(void)
 #endif
 
 #ifdef GTUNE
-        updateGtuneState();
+    updateGtuneState();
 #endif
 
 #if defined(BARO) || defined(SONAR)
@@ -712,7 +716,7 @@ void taskMainPidLoop(void)
     }
 
 #ifdef USE_SDCARD
-        afatfs_poll();
+    afatfs_poll();
 #endif
 
 #ifdef BLACKBOX
@@ -726,10 +730,10 @@ void taskMainPidLoop(void)
 void taskMainPidLoopChecker(void) {
     // getTaskDeltaTime() returns delta time freezed at the moment of entering the scheduler. currentTime is freezed at the very same point.
     // To make busy-waiting timeout work we need to account for time spent within busy-waiting loop
-    uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
+    const uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
 
     if (imuConfig()->gyroSync) {
-        while (1) {
+        while (true) {
             if (gyroSyncCheckUpdate() || ((currentDeltaTime + (micros() - currentTime)) >= (targetLooptime + GYRO_WATCHDOG_DELAY))) {
                 break;
             }
