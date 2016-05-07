@@ -29,6 +29,7 @@
 #include "build_config.h"
 
 #ifdef TELEMETRY
+#ifndef SKIP_MAVLINK
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -551,4 +552,5 @@ void handleMAVLinkTelemetry(void)
     }
 }
 
+#endif
 #endif

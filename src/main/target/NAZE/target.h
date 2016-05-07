@@ -228,6 +228,7 @@
 #define GTUNE
 #define BLACKBOX
 #define TELEMETRY
+#define SKIP_MAVLINK
 #define SERIAL_RX
 #define USE_SERVOS
 #define USE_CLI

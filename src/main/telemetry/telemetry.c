@@ -64,7 +64,9 @@ void telemetryInit(void)
     initHoTTTelemetry();
     initSmartPortTelemetry();
     initLtmTelemetry();
+#ifndef SKIP_MAVLINK
     initMAVLinkTelemetry();
+#endif
     telemetryCheckState();
 }
 
@@ -88,7 +90,9 @@ void telemetryCheckState(void)
     checkHoTTTelemetryState();
     checkSmartPortTelemetryState();
     checkLtmTelemetryState();
+#ifndef SKIP_MAVLINK
     checkMAVLinkTelemetryState();
+#endif
 }
 
 void telemetryProcess(uint16_t deadband3d_throttle)
@@ -97,7 +101,9 @@ void telemetryProcess(uint16_t deadband3d_throttle)
     handleHoTTTelemetry();
     handleSmartPortTelemetry();
     handleLtmTelemetry();
+#ifndef SKIP_MAVLINK
     handleMAVLinkTelemetry();
+#endif
 }
 
 #endif
