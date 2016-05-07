@@ -157,10 +157,15 @@ void flashLedsAndBeep(void)
         LED1_TOGGLE;
         LED0_TOGGLE;
         delay(25);
-    	if (!(getBeeperOffMask() & (1 << (BEEPER_SYSTEM_INIT - 1))))
-        	BEEP_ON;
+
+#ifdef BEEPER
+        if (!(getBeeperOffMask() & (1 << (BEEPER_SYSTEM_INIT - 1)))) {
+            BEEP_ON;
+        }
         delay(25);
         BEEP_OFF;
+#endif
+
     }
     LED0_OFF;
     LED1_OFF;

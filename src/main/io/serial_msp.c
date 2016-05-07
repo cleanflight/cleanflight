@@ -1023,10 +1023,12 @@ static bool processOutCommand(uint8_t cmdMSP)
         serialize32(featureMask());
         break;
 
+#ifdef BEEPER
     case MSP_BEEPER:
         headSerialReply(4);
         serialize32(getBeeperOffMask());
         break;
+#endif
 
     case MSP_VOLTAGE_METER_CONFIG:
         headSerialReply(4);
@@ -1547,10 +1549,12 @@ static bool processInCommand(void)
         featureSet(read32()); // features bitmap
         break;
 
+#ifdef BEEPER
     case MSP_SET_BEEPER:
         beeperOffClearAll();
         beeperOffSet(read32()); // beeper conditions bitmap
         break;
+#endif
 
     case MSP_SET_VOLTAGE_METER_CONFIG:
         batteryConfig()->vbatscale = read8();           // actual vbatscale as intended
