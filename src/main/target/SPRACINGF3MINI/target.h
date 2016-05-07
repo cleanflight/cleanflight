@@ -58,14 +58,22 @@
 
 #define MAG
 #define USE_MPU9250_MAG // Enables bypass configuration
-#define USE_MAG_AK8975
+#define USE_MAG_AK8963
 #define USE_MAG_HMC5883 // External
 
-#define MAG_AK8975_ALIGN CW90_DEG_FLIP
+#define MAG_AK8963_ALIGN CW90_DEG_FLIP
 
-#define SONAR
 #define BEEPER
 #define LED0
+
+#define SONAR
+#define SONAR_TRIGGER_PIN           Pin_0   // RC_CH7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+#define SONAR_TRIGGER_GPIO          GPIOB
+#define SONAR_ECHO_PIN              Pin_1   // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+#define SONAR_ECHO_GPIO             GPIOB
+#define SONAR_EXTI_LINE             EXTI_Line1
+#define SONAR_EXTI_PIN_SOURCE       EXTI_PinSource1
+#define SONAR_EXTI_IRQN             EXTI1_IRQn
 
 #define USB_IO
 #define USB_CABLE_DETECTION
@@ -107,8 +115,8 @@
 #endif
 
 #define SOFTSERIAL_1_TIMER TIM2
-#define SOFTSERIAL_1_TIMER_RX_HARDWARE 9 // PA0 / PAD3
-#define SOFTSERIAL_1_TIMER_TX_HARDWARE 10 // PA1 / PAD4
+#define SOFTSERIAL_1_TIMER_RX_HARDWARE 9  // PA0
+#define SOFTSERIAL_1_TIMER_TX_HARDWARE 10 // PA1
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_1) // PB6/SCL, PB7/SDA
@@ -206,12 +214,14 @@
 
 #define REDUCE_TRANSPONDER_CURRENT_DRAW_WHEN_USB_CABLE_PRESENT
 
+#define DEFAULT_RX_FEATURE FEATURE_RX_PPM
+
 #define GPS
 #define BLACKBOX
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 #define TELEMETRY
 #define SERIAL_RX
-#define AUTOTUNE
+#define GTUNE
 #define DISPLAY
 #define USE_SERVOS
 #define USE_CLI
@@ -231,9 +241,4 @@
 #define BINDPLUG_PORT  BUTTON_B_PORT
 #define BINDPLUG_PIN   BUTTON_B_PIN
 
-#define USE_SERIAL_1WIRE
-
-#define S1W_TX_GPIO         UART1_GPIO
-#define S1W_TX_PIN          UART1_TX_PIN
-#define S1W_RX_GPIO         UART1_GPIO
-#define S1W_RX_PIN          UART1_RX_PIN
+#define USE_SERIAL_4WAY_BLHELI_INTERFACE

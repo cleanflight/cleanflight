@@ -15,8 +15,13 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// FIXME this file has started to resemble a garbage bin.  move everything out into appropriate locations.
+
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
 
 #include "config/runtime_config.h"
 #include "io/beeper.h"
