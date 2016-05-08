@@ -15,7 +15,7 @@
 #
 
 # The target to build, see VALID_TARGETS below
-TARGET		?= NAZE
+TARGET		?= EUSTM32F103VE
 
 # Compile-time options
 OPTIONS		?=
