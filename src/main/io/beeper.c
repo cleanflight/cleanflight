@@ -19,8 +19,15 @@
 #include "stdint.h"
 #include "stdlib.h"
 
-#include "platform.h"
+#include <platform.h>
 #include "build_config.h"
+
+#include "config/runtime_config.h"
+#include "config/config.h"
+#include "config/parameter_group.h"
+#include "config/feature.h"
+
+#include "io/rc_controls.h"
 
 #include "drivers/gpio.h"
 #include "drivers/sound_beeper.h"
@@ -28,17 +35,11 @@
 #include "sensors/battery.h"
 #include "sensors/sensors.h"
 
-#include "rx/rx.h"
-#include "io/rc_controls.h"
 #include "io/statusindicator.h"
 
 #ifdef GPS
 #include "io/gps.h"
 #endif
-
-#include "config/runtime_config.h"
-#include "config/config.h"
-
 
 #include "io/beeper.h"
 
@@ -278,7 +279,7 @@ void beeperGpsStatus(void)
 void beeperUpdate(void)
 {
     // If beeper option from AUX switch has been selected
-    if (IS_RC_MODE_ACTIVE(BOXBEEPERON)) {
+    if (rcModeIsActive(BOXBEEPERON)) {
 #ifdef GPS
         if (feature(FEATURE_GPS)) {
             beeperGpsStatus();

@@ -61,9 +61,9 @@
 #define USB_IO
 
 #define USE_VCP
-#define USE_USART1
-#define USE_USART2
-#define USE_USART3
+#define USE_UART1
+#define USE_UART2
+#define USE_UART3
 #define SERIAL_PORT_COUNT 4
 
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
@@ -110,6 +110,8 @@
 
 //#define SENSORS_SET (SENSOR_ACC | SENSOR_BARO | SENSOR_GPS | SENSOR_MAG)
 #define SENSORS_SET (SENSOR_ACC)
+
+#define DEFAULT_RX_FEATURE FEATURE_RX_PPM
 
 #define TELEMETRY
 #define BLACKBOX
@@ -179,13 +181,8 @@
 
 
 #define SPEKTRUM_BIND
-// USART2, PB4
+// UART2, PB4
 #define BIND_PORT GPIOB
 #define BIND_PIN Pin_4
 
-#define USE_SERIAL_1WIRE
-
-#define S1W_TX_GPIO         GPIOB
-#define S1W_TX_PIN          GPIO_Pin_6
-#define S1W_RX_GPIO         GPIOB
-#define S1W_RX_PIN          GPIO_Pin_7
+#define USE_SERIAL_4WAY_BLHELI_INTERFACE

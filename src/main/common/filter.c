@@ -24,8 +24,6 @@
 #include "common/filter.h"
 #include "common/maths.h"
 
-#include "drivers/gyro_sync.h"
-
 #define M_LN2_FLOAT	0.69314718055994530942f
 #define M_PI_FLOAT	3.14159265358979323846f
 
@@ -98,3 +96,28 @@ float applyBiQuadFilter(float sample, biquad_t *state)
 
     return result;
 }
+
+int32_t filterApplyAverage(int32_t input, uint8_t count, int32_t averageState[])
+{
+    int32_t sum = 0;
+    for (int ii = count - 1; ii > 0; --ii) {
+        averageState[ii] = averageState[ii-1];
+        sum += averageState[ii];
+    }
+    averageState[0] = input;
+    sum += input;
+    return sum / count;
+}
+
+float filterApplyAveragef(float input, uint8_t count, float averageState[])
+{
+    float sum = 0;
+    for (int ii = count - 1; ii > 0; --ii) {
+        averageState[ii] = averageState[ii-1];
+        sum += averageState[ii];
+    }
+    averageState[0] = input;
+    sum += input;
+    return sum / count;
+}
+

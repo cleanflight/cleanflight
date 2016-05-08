@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "build_config.h"
 #include "common/utils.h"
@@ -182,4 +182,10 @@ serialPort_t *usbVcpOpen(void)
     s->port.vTable = usbVTable;
 
     return (serialPort_t *)s;
+}
+uint32_t usbVcpGetBaudRate(serialPort_t *instance)
+{
+    UNUSED(instance);
+
+    return CDC_BaudRate();
 }
