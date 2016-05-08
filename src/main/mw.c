@@ -168,10 +168,6 @@ bool isCalibrating(void)
     return (!isAccelerationCalibrationComplete() && sensors(SENSOR_ACC)) || (!isGyroCalibrationComplete());
 }
 
-#if defined(BARO) || defined(SONAR)
-static bool haveProcessedAnnexCodeOnce = false;
-#endif
-
 /*
 This function processes RX dependent coefficients when new RX commands are available
 Those are: TPA, throttle expo
@@ -180,10 +176,6 @@ void processRxDependentCoefficients(void)
 {
     int32_t tmp, tmp2;
     int32_t axis, prop1 = 0, prop2;
-
-#if defined(BARO) || defined(SONAR)
-    haveProcessedAnnexCodeOnce = true;
-#endif
 
     // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
@@ -245,10 +237,7 @@ void processRxDependentCoefficients(void)
     tmp = (uint32_t)(tmp - rxConfig()->mincheck) * PWM_RANGE_MIN / (PWM_RANGE_MAX - rxConfig()->mincheck);       // [MINCHECK;2000] -> [0;1000]
     tmp2 = tmp / 100;
     rcCommand[THROTTLE] = lookupThrottleRC[tmp2] + (tmp - tmp2 * 100) * (lookupThrottleRC[tmp2 + 1] - lookupThrottleRC[tmp2]) / 100;    // [0;1000] -> expo -> [MINTHROTTLE;MAXTHROTTLE]
-}
 
-void annexCode(void)
-{
     if (FLIGHT_MODE(HEADFREE_MODE)) {
         float radDiff = degreesToRadians(DECIDEGREES_TO_DEGREES(attitude.values.yaw) - headFreeModeHold);
         float cosDiff = cos_approx(radDiff);
@@ -649,8 +638,6 @@ void taskMainPidLoop(void)
 
     imuUpdateGyroAndAttitude();
 
-    annexCode();
-
     if (rxConfig()->rcSmoothing) {
         filterRc();
     }
@@ -800,20 +787,14 @@ void taskUpdateRxMain(void)
     isRXDataNew = true;
 
 #ifdef BARO
-    // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
-    if (haveProcessedAnnexCodeOnce) {
-        if (sensors(SENSOR_BARO)) {
-            updateAltHoldState();
-        }
+    if (sensors(SENSOR_BARO)) {
+        updateAltHoldState();
     }
 #endif
 
 #ifdef SONAR
-    // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
-    if (haveProcessedAnnexCodeOnce) {
-        if (sensors(SENSOR_SONAR)) {
-            updateSonarAltHoldState();
-        }
+    if (sensors(SENSOR_SONAR)) {
+        updateSonarAltHoldState();
     }
 #endif
 }
