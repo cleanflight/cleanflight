@@ -201,13 +201,17 @@ static uint16_t spektrumReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t ch
         return 0;
     }
 
+#ifdef SPEKTRUM_PROPER_SCALING //To match intended spektrum pulse range. This will allow consistent travel between ppm and serial rx's
+    if (spekHiRes)
+        data = 903 + (spekChannelData[chan]*.583);    // 2048 mode
+    else
+        data = 903 + (spekChannelData[chan]*1.166);   // 1024 mode
+#else
     if (spekHiRes)
         data = 988 + (spekChannelData[chan] >> 1);      // 2048 mode
-        //data = 903 + (spekChannelData[chan]*.583);    // 2048 mode
     else
         data = 988 + spekChannelData[chan];             // 1024 mode
-        //data = 903 + (spekChannelData[chan]*1.166);   // 1024 mode
-
+#endif
     return data;
 }
 
