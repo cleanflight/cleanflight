@@ -344,6 +344,14 @@ $(OBJECT_DIR)/flight/mixer.o : \
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/flight/mixer.c -o $@
 
+$(OBJECT_DIR)/flight/servos.o : \
+	$(USER_DIR)/flight/servos.c \
+	$(USER_DIR)/flight/servos.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/flight/servos.c -o $@
+
 $(OBJECT_DIR)/flight_mixer_unittest.o : \
 	$(TEST_DIR)/flight_mixer_unittest.cc \
 	$(USER_DIR)/flight/mixer.h \
@@ -354,6 +362,7 @@ $(OBJECT_DIR)/flight_mixer_unittest.o : \
 
 $(OBJECT_DIR)/flight_mixer_unittest : \
 	$(OBJECT_DIR)/flight/mixer.o \
+	$(OBJECT_DIR)/flight/servos.o \
 	$(OBJECT_DIR)/flight_mixer_unittest.o \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/gtest_main.a
