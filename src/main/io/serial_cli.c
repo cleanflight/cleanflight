@@ -384,12 +384,18 @@ static const char * const lookupTableSerialRX[] = {
 
 #ifdef USE_RX_NRF24
 static const char * const lookupTableNRF24RX[] = {
+#ifdef USE_RX_V202
     "V202_250K",
     "V202_1M",
+#endif
+#ifdef USE_RX_SYMA
     "SYMA_X",
     "SYMA_X5C",
+#endif
+#ifdef USE_RX_CX10
     "CX10",
     "CX10A"
+#endif
 };
 #endif
 

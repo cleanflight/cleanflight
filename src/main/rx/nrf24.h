@@ -23,12 +23,18 @@
 #include "rx/rx.h"
 
 typedef enum {
+#ifdef USE_RX_V202
     NRF24RX_V202_250K = 0,
     NRF24RX_V202_1M,
+#endif
+#ifdef USE_RX_SYMA
     NRF24RX_SYMA_X,
     NRF24RX_SYMA_X5C,
+#endif
+#ifdef USE_RX_CX10
     NRF24RX_CX10,
     NRF24RX_CX10A,
+#endif
     NRF24RX_PROTOCOL_COUNT
 } nrf24_protocol_t;
 
