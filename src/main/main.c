@@ -30,6 +30,7 @@
 #include "common/atomic.h"
 #include "common/maths.h"
 #include "common/printf.h"
+#include "common/streambuf.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
@@ -75,6 +76,7 @@
 #include "io/display.h"
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/transponder_ir.h"
+#include "io/msp.h"
 #include "io/serial_msp.h"
 #include "io/serial_cli.h"
 
@@ -94,6 +96,7 @@
 #include "flight/pid.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
+#include "flight/servos.h"
 #include "flight/failsafe.h"
 #include "flight/navigation.h"
 
@@ -510,6 +513,7 @@ void init(void)
     imuInit();
 
     mspInit();
+    mspSerialInit();
 
 #ifdef USE_CLI
     cliInit();
