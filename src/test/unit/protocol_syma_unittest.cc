@@ -51,9 +51,9 @@ extern "C" {
     void rxNrf24SetProtocol(nrf24_protocol_t protocol);
     uint16_t rxNrf24ReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t channel);
     void symaNrf24Init(nrf24_protocol_t protocol);
-    bool checkBindPacket(const uint8_t *packet);
-    uint16_t convertToPwmUnsigned(uint8_t val);
-    uint16_t convertToPwmSigned(uint8_t val);
+    bool symaCheckBindPacket(const uint8_t *packet);
+    uint16_t symaConvertToPwmUnsigned(uint8_t val);
+    uint16_t symaConvertToPwmSigned(uint8_t val);
     //void setSymaXHoppingChannels(uint8_t rxTxAddress);
 
     extern uint8_t nrf24NewPacketAvailable;
@@ -63,10 +63,10 @@ extern "C" {
     extern const uint8_t rxTxAddrX5C[];
 
     // radio channels for frequency hopping
-    extern uint8_t rfChannelCount;
-    extern uint8_t rfChannelIndex;
-    extern uint8_t rfChannels[];
-    extern uint8_t rfChannelsX5C[];
+    extern uint8_t symaRfChannelCount;
+    extern uint8_t symaRfChannelIndex;
+    extern uint8_t symaRfChannels[];
+    extern uint8_t symaRfChannelsX5C[];
     //extern uint8_t rfBindChannels[];
     //extern uint8_t rfBindChannelsX5C[];
 }
@@ -313,7 +313,7 @@ TEST(SymaProtocolUnittest, TestNrf24Init)
 TEST(SymaProtocolUnittest, TestSymaInit_SYMA_X)
 {
     symaNrf24Init(NRF24RX_SYMA_X);
-    EXPECT_EQ(SYMA_X_RF_CHANNEL_COUNT, rfChannelCount);
+    EXPECT_EQ(SYMA_X_RF_CHANNEL_COUNT, symaRfChannelCount);
 
     EXPECT_NE(0, nrf24Registers[NRF24L01_00_CONFIG] & BV(NRF24L01_00_CONFIG_PWR_UP));
     EXPECT_NE(0, nrf24Registers[NRF24L01_00_CONFIG] & BV(NRF24L01_00_CONFIG_PRIM_RX));
@@ -335,7 +335,7 @@ TEST(SymaProtocolUnittest, TestSymaInit_SYMA_X)
 TEST(SymaProtocolUnittest, TestSymaInit_SYMA_X5C)
 {
     symaNrf24Init(NRF24RX_SYMA_X5C);
-    EXPECT_EQ(SYMA_X5C_RF_CHANNEL_COUNT, rfChannelCount);
+    EXPECT_EQ(SYMA_X5C_RF_CHANNEL_COUNT, symaRfChannelCount);
 
 //!!    EXPECT_EQ(SYMA_X_RF_BIND_CHANNEL, nrf24Registers[NRF24L01_05_RF_CH]);
     // 1Mbps
@@ -431,21 +431,21 @@ static void buildPacketSymaX(uint8_t bind, uint16_t roll, uint16_t pitch, uint16
 
 TEST(SymaProtocolUnittest, TestSymaConvertToPwmUnsigned)
 {
-    EXPECT_EQ(PWM_RANGE_MIN, convertToPwmUnsigned(0));
-    EXPECT_EQ(PWM_RANGE_MIN + 250 , convertToPwmUnsigned(64));
-    EXPECT_NEAR(PWM_RANGE_MIDDLE, convertToPwmUnsigned(128), 1);
-    EXPECT_NEAR(PWM_RANGE_MAX - 250 , convertToPwmUnsigned(192), 2);
-    EXPECT_EQ(PWM_RANGE_MAX, convertToPwmUnsigned(255));
+    EXPECT_EQ(PWM_RANGE_MIN, symaConvertToPwmUnsigned(0));
+    EXPECT_EQ(PWM_RANGE_MIN + 250 , symaConvertToPwmUnsigned(64));
+    EXPECT_NEAR(PWM_RANGE_MIDDLE, symaConvertToPwmUnsigned(128), 1);
+    EXPECT_NEAR(PWM_RANGE_MAX - 250 , symaConvertToPwmUnsigned(192), 2);
+    EXPECT_EQ(PWM_RANGE_MAX, symaConvertToPwmUnsigned(255));
 }
 
 TEST(SymaProtocolUnittest, TestSymaConvertToPwmSigned)
 {
-    EXPECT_EQ(PWM_RANGE_MIN, convertToPwmSigned(0xff));
-    EXPECT_NEAR(PWM_RANGE_MIN + 250, convertToPwmSigned(0xc0), 1);
-    EXPECT_EQ(PWM_RANGE_MIDDLE, convertToPwmSigned(0x80));
-    EXPECT_EQ(PWM_RANGE_MIDDLE, convertToPwmSigned(0));
-    EXPECT_NEAR(PWM_RANGE_MAX -  250, convertToPwmSigned(64), 1);
-    EXPECT_EQ(PWM_RANGE_MAX, convertToPwmSigned(0x7f));
+    EXPECT_EQ(PWM_RANGE_MIN, symaConvertToPwmSigned(0xff));
+    EXPECT_NEAR(PWM_RANGE_MIN + 250, symaConvertToPwmSigned(0xc0), 1);
+    EXPECT_EQ(PWM_RANGE_MIDDLE, symaConvertToPwmSigned(0x80));
+    EXPECT_EQ(PWM_RANGE_MIDDLE, symaConvertToPwmSigned(0));
+    EXPECT_NEAR(PWM_RANGE_MAX -  250, symaConvertToPwmSigned(64), 1);
+    EXPECT_EQ(PWM_RANGE_MAX, symaConvertToPwmSigned(0x7f));
 }
 
 TEST(SymaProtocolUnittest, TestSymaSetRcDataFromPayload_SYMA_X)
@@ -542,7 +542,7 @@ TEST(SymaProtocolUnittest, TestBindPackets_SYMA_X)
 {
     symaNrf24Init(NRF24RX_SYMA_X);
     static const uint8_t bindPacket[SYMA_X_PROTOCOL_PAYLOAD_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0x00, 0x00};
-    const bool bind = checkBindPacket(bindPacket);
+    const bool bind = symaCheckBindPacket(bindPacket);
     EXPECT_EQ(true, bind);
 }
 
@@ -550,7 +550,7 @@ TEST(SymaProtocolUnittest, TestBindPackets_SYMA_X5C)
 {
     symaNrf24Init(NRF24RX_SYMA_X5C);
     static uint8_t bindPacket[SYMA_X5C_PROTOCOL_PAYLOAD_SIZE] = {0x00, 0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0xae, 0xa9, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x17};
-    const bool bind = checkBindPacket(bindPacket);
+    const bool bind = symaCheckBindPacket(bindPacket);
     EXPECT_EQ(true, bind);
 }
 
@@ -571,17 +571,17 @@ TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X)
     nrf24_received_t dataReceived = symaDataReceived(nrf24Payload);
     //!!EXPECT_EQ(NRF24_RECEIVED_DATA, dataReceived);
     EXPECT_EQ(STATE_BIND, protocolState);
-    EXPECT_EQ(0, rfChannelIndex);
+    EXPECT_EQ(0, symaRfChannelIndex);
 
     // second packet, a bind packet
     static const uint8_t bindPacket[SYMA_X_PROTOCOL_PAYLOAD_SIZE] = {0x00, 0x01, 0x02, 0x03, 0x04, 0xaa, 0xaa, 0xaa, 0x00, 0x00};
-    //EXPECT_EQ(rfBindChannels[0], rfChannels[0]);
-    simulateTransmitPacket(rfChannels[0], rxTxAddr, bindPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
+    //EXPECT_EQ(rfBindChannels[0], symaRfChannels[0]);
+    simulateTransmitPacket(symaRfChannels[0], rxTxAddr, bindPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
     EXPECT_EQ(false, NRF24L01_IsRxFifoEmpty());
     dataReceived = symaDataReceived(nrf24Payload);
     EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    EXPECT_EQ(0, rfChannelIndex);
+    EXPECT_EQ(0, symaRfChannelIndex);
     // check the rxTxAddr has been set
     EXPECT_EQ(bindPacket[4], rxTxAddr[0]);
     EXPECT_EQ(bindPacket[3], rxTxAddr[1]);
@@ -590,18 +590,18 @@ TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X)
     EXPECT_EQ(bindPacket[0], rxTxAddr[4]);
 
     // second bind packet on same channel
-    simulateTransmitPacket(rfChannels[0], rxTxAddr, bindPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
+    simulateTransmitPacket(symaRfChannels[0], rxTxAddr, bindPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
     EXPECT_EQ(false, NRF24L01_IsRxFifoEmpty());
     dataReceived = symaDataReceived(nrf24Payload);
     //!!EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    //!!EXPECT_EQ(1, rfChannelIndex);
+    //!!EXPECT_EQ(1, symaRfChannelIndex);
 
     // send a bunch of bind packets, changing channel every second packet
     int channelIndex = 1;
     int count = 0;
     for (int ii = 0; ii < 20; ++ ii) {
-        simulateTransmitPacket(rfChannels[channelIndex], rxTxAddr, bindPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
+        simulateTransmitPacket(symaRfChannels[channelIndex], rxTxAddr, bindPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
         EXPECT_EQ(false, NRF24L01_IsRxFifoEmpty());
         dataReceived = symaDataReceived(nrf24Payload);
         //!!EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
@@ -609,7 +609,7 @@ TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X)
         ++count;
         if ((count & 0x01) == 0) {
             ++channelIndex;
-            if (channelIndex >= rfChannelCount) {
+            if (channelIndex >= symaRfChannelCount) {
                 channelIndex = 0;
             }
         }
@@ -617,18 +617,18 @@ TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X)
 
     // now send a data packet
     static const uint8_t dataPacket[SYMA_X_PROTOCOL_PAYLOAD_SIZE] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-    simulateTransmitPacket(rfChannels[channelIndex], rxTxAddr, dataPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
+    simulateTransmitPacket(symaRfChannels[channelIndex], rxTxAddr, dataPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
     dataReceived = symaDataReceived(nrf24Payload);
     EXPECT_EQ(NRF24_RECEIVED_DATA, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    //!!EXPECT_EQ(0, rfChannelIndex);
+    //!!EXPECT_EQ(0, symaRfChannelIndex);
 
     // now send a data packet on rxTxAddr
-    simulateTransmitPacket(rfChannels[0], rxTxAddr, dataPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
+    simulateTransmitPacket(symaRfChannels[0], rxTxAddr, dataPacket, SYMA_X_PROTOCOL_PAYLOAD_SIZE);
     dataReceived = symaDataReceived(nrf24Payload);
     EXPECT_EQ(NRF24_RECEIVED_DATA, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    //!!EXPECT_EQ(0, rfChannelIndex);
+    //!!EXPECT_EQ(0, symaRfChannelIndex);
 }
 
 TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X5C)
@@ -641,36 +641,36 @@ TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X5C)
     nrf24_received_t dataReceived = symaDataReceived(nrf24Payload);
     //!!EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
     EXPECT_EQ(STATE_BIND, protocolState);
-    //!!EXPECT_EQ(0, rfChannelIndex);
+    //!!EXPECT_EQ(0, symaRfChannelIndex);
 
     // second packet, a bind packet
     static uint8_t bindPacket[SYMA_X5C_PROTOCOL_PAYLOAD_SIZE] = {0x00, 0x00, 0x02, 0x03, 0x04, 0x05, 0x06, 0xae, 0xa9, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x17};
-//!!    EXPECT_EQ(rfBindChannelsX5C[0], rfChannels[0]);
-    simulateTransmitPacket(rfChannels[0], rxTxAddrX5C, bindPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
+//!!    EXPECT_EQ(rfBindChannelsX5C[0], symaRfChannels[0]);
+    simulateTransmitPacket(symaRfChannels[0], rxTxAddrX5C, bindPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
     dataReceived = symaDataReceived(nrf24Payload);
     EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-//!!    EXPECT_EQ(1, rfChannelIndex);
+//!!    EXPECT_EQ(1, symaRfChannelIndex);
 
     // second bind packet on same channel
-    simulateTransmitPacket(rfChannels[0], rxTxAddrX5C, bindPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
+    simulateTransmitPacket(symaRfChannels[0], rxTxAddrX5C, bindPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
     dataReceived = symaDataReceived(nrf24Payload);
     //!!EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    //!!EXPECT_EQ(1, rfChannelIndex);
+    //!!EXPECT_EQ(1, symaRfChannelIndex);
 
     // send a bunch of bind packets, changing channel every second packet
     int channelIndex = 1;
     int count = 0;
     for (int ii = 0; ii < 20; ++ ii) {
-        simulateTransmitPacket(rfChannels[channelIndex], rxTxAddrX5C, bindPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
+        simulateTransmitPacket(symaRfChannels[channelIndex], rxTxAddrX5C, bindPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
         dataReceived = symaDataReceived(nrf24Payload);
         //!!EXPECT_EQ(NRF24_RECEIVED_BIND, dataReceived);
         EXPECT_EQ(STATE_DATA, protocolState);
         ++count;
         if ((count & 0x01) == 0) {
             ++channelIndex;
-            if (channelIndex >= rfChannelCount) {
+            if (channelIndex >= symaRfChannelCount) {
                 channelIndex = 0;
             }
         }
@@ -678,18 +678,18 @@ TEST(SymaProtocolUnittest, TestStateMachine_SYMA_X5C)
 
     // now send a data packet
     static const uint8_t dataPacket[SYMA_X5C_PROTOCOL_PAYLOAD_SIZE] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0d, 0x0e};
-    simulateTransmitPacket(rfChannels[channelIndex], rxTxAddrX5C, dataPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
+    simulateTransmitPacket(symaRfChannels[channelIndex], rxTxAddrX5C, dataPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
     dataReceived = symaDataReceived(nrf24Payload);
     EXPECT_EQ(NRF24_RECEIVED_DATA, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    //!!EXPECT_EQ(0, rfChannelIndex);
+    //!!EXPECT_EQ(0, symaRfChannelIndex);
 
     // send a second data packet
-    simulateTransmitPacket(rfChannels[0], rxTxAddrX5C, dataPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
+    simulateTransmitPacket(symaRfChannels[0], rxTxAddrX5C, dataPacket, SYMA_X5C_PROTOCOL_PAYLOAD_SIZE);
     dataReceived = symaDataReceived(nrf24Payload);
     EXPECT_EQ(NRF24_RECEIVED_DATA, dataReceived);
     EXPECT_EQ(STATE_DATA, protocolState);
-    //!!EXPECT_EQ(0, rfChannelIndex);
+    //!!EXPECT_EQ(0, symaRfChannelIndex);
 }
 
 void setSymaXHoppingChannels(uint8_t addr)
@@ -699,7 +699,7 @@ void setSymaXHoppingChannels(uint8_t addr)
         addr = 0x07;
     }
     const uint32_t inc = (addr << 24) | (addr << 16) | (addr << 8) | addr;
-    uint32_t *prfChannels = (uint32_t *)rfChannels;
+    uint32_t *prfChannels = (uint32_t *)symaRfChannels;
     if (addr == 0x16) {
         *prfChannels = 0x28481131;
     } else if (addr == 0x1e) {
@@ -716,7 +716,7 @@ void setSymaXHoppingChannels(uint8_t addr)
 
 TEST(SymaProtocolUnittest, Test_SetSymaXHoppingChannels)
 {
-    uint32_t *prfChannels = (uint32_t *)rfChannels;
+    uint32_t *prfChannels = (uint32_t *)symaRfChannels;
     setSymaXHoppingChannels(0x00);
     EXPECT_EQ(0x3A2A1A0A, *prfChannels);
     setSymaXHoppingChannels(0x01);
@@ -787,16 +787,16 @@ TEST(SymaProtocolUnittest, Test_SetSymaXHoppingChannels)
     setSymaXHoppingChannels(0x1f);
     EXPECT_EQ(0x39194121, *prfChannels);
 
-    EXPECT_EQ(0x21, rfChannels[0]);
-    EXPECT_EQ(0x41, rfChannels[1]);
-    EXPECT_EQ(0x19, rfChannels[2]);
-    EXPECT_EQ(0x39, rfChannels[3]);
+    EXPECT_EQ(0x21, symaRfChannels[0]);
+    EXPECT_EQ(0x41, symaRfChannels[1]);
+    EXPECT_EQ(0x19, symaRfChannels[2]);
+    EXPECT_EQ(0x39, symaRfChannels[3]);
 
     setSymaXHoppingChannels(0xbc);
-    EXPECT_EQ(0x1e, rfChannels[0]);
-    EXPECT_EQ(0x3e, rfChannels[1]);
-    EXPECT_EQ(0x16, rfChannels[2]);
-    EXPECT_EQ(0x36, rfChannels[3]);
+    EXPECT_EQ(0x1e, symaRfChannels[0]);
+    EXPECT_EQ(0x3e, symaRfChannels[1]);
+    EXPECT_EQ(0x16, symaRfChannels[2]);
+    EXPECT_EQ(0x36, symaRfChannels[3]);
 }
 
 // STUBS

@@ -53,7 +53,7 @@ typedef enum {
 
 extern "C" {
     void cx10Nrf24Init(nrf24_protocol_t protocol);
-    bool checkBindPacket(const uint8_t *packet);
+    bool cx10CheckBindPacket(const uint8_t *packet);
     void setHoppingChannels(uint8_t* txId);
     // XN297 emulation layer
     uint8_t XN297_WritePayload(uint8_t* data, int len);
@@ -64,8 +64,8 @@ extern "C" {
     extern const uint8_t rxTxAddr[];
     extern uint8_t txId[4];
     // radio channels for frequency hopping
-    extern uint8_t rfChannelIndex;
-    extern uint8_t rfChannels[];
+    extern uint8_t cx10RfChannelIndex;
+    extern uint8_t cx10RfChannels[];
 }
 
 #define CX10_PROTOCOL_PAYLOAD_SIZE       15
@@ -232,7 +232,7 @@ TEST(ProtocolCX10Unittest, TestCX10SetRcDataFromPayload)
 TEST(ProtocolCX10Unittest, TestCX10SetHoppingChannels)
 {
     static const uint8_t bindPacket[] = {0xaa, 0xe5, 0x99, 0x56, 0x03};
-    bool bind = checkBindPacket(bindPacket);
+    bool bind = cx10CheckBindPacket(bindPacket);
     EXPECT_EQ(true, bind);
     // check the txId has been set
     EXPECT_EQ(bindPacket[1], txId[0]);
@@ -240,21 +240,21 @@ TEST(ProtocolCX10Unittest, TestCX10SetHoppingChannels)
     EXPECT_EQ(bindPacket[3], txId[2]);
     EXPECT_EQ(bindPacket[4], txId[3]);
     setHoppingChannels(txId);
-    EXPECT_EQ(0, rfChannelIndex);
-    EXPECT_EQ(0x08, rfChannels[0]);
-    EXPECT_EQ(0x24, rfChannels[1]);
-    EXPECT_EQ(0x36, rfChannels[2]);
-    EXPECT_EQ(0x49, rfChannels[3]);
+    EXPECT_EQ(0, cx10RfChannelIndex);
+    EXPECT_EQ(0x08, cx10RfChannels[0]);
+    EXPECT_EQ(0x24, cx10RfChannels[1]);
+    EXPECT_EQ(0x36, cx10RfChannels[2]);
+    EXPECT_EQ(0x49, cx10RfChannels[3]);
 
     static const uint8_t bindPacket2[] = {0xaa, 0x1c, 0x01, 0x62, 0xbc};
-    bind = checkBindPacket(bindPacket2);
+    bind = cx10CheckBindPacket(bindPacket2);
     EXPECT_EQ(true, bind);
     setHoppingChannels(txId);
-    EXPECT_EQ(0, rfChannelIndex);
-    EXPECT_EQ(0x0f, rfChannels[0]);
-    EXPECT_EQ(0x17, rfChannels[1]);
-    EXPECT_EQ(0x2e, rfChannels[2]);
-    EXPECT_EQ(0x40, rfChannels[3]);
+    EXPECT_EQ(0, cx10RfChannelIndex);
+    EXPECT_EQ(0x0f, cx10RfChannels[0]);
+    EXPECT_EQ(0x17, cx10RfChannels[1]);
+    EXPECT_EQ(0x2e, cx10RfChannels[2]);
+    EXPECT_EQ(0x40, cx10RfChannels[3]);
 }
 
 static uint8_t bitReverse(uint8_t bIn)

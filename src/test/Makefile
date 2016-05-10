@@ -961,7 +961,7 @@ $(OBJECT_DIR)/rx/nrf24.o : \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_NRF24 -DUSE_RX_SYMA -c $(USER_DIR)/rx/nrf24.c -o $@
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_NRF24 -DUSE_RX_SYMA -DUSE_RX_CX10 -c $(USER_DIR)/rx/nrf24.c -o $@
 
 $(OBJECT_DIR)/rx/nrf24_test.o : \
 	$(USER_DIR)/rx/nrf24_test.c \
@@ -969,7 +969,7 @@ $(OBJECT_DIR)/rx/nrf24_test.o : \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_TEST  -c $(USER_DIR)/rx/nrf24_test.c -o $@
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_TEST -c $(USER_DIR)/rx/nrf24_test.c -o $@
 
 $(OBJECT_DIR)/rx/nrf24_cx10.o : \
 	$(USER_DIR)/rx/nrf24_cx10.c \
@@ -977,14 +977,14 @@ $(OBJECT_DIR)/rx/nrf24_cx10.o : \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_CX10  -c $(USER_DIR)/rx/nrf24_cx10.c -o $@
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_CX10 -c $(USER_DIR)/rx/nrf24_cx10.c -o $@
 
 $(OBJECT_DIR)/protocol_cx10_unittest.o : \
 	$(TEST_DIR)/protocol_cx10_unittest.cc \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/protocol_cx10_unittest.cc -o $@
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -DUSE_RX_CX10 -c $(TEST_DIR)/protocol_cx10_unittest.cc -o $@
 
 $(OBJECT_DIR)/protocol_cx10_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
@@ -1001,20 +1001,21 @@ $(OBJECT_DIR)/rx/nrf24_syma.o : \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_SYMA  -c $(USER_DIR)/rx/nrf24_syma.c -o $@
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_SYMA -c $(USER_DIR)/rx/nrf24_syma.c -o $@
 
 $(OBJECT_DIR)/protocol_syma_unittest.o : \
 	$(TEST_DIR)/protocol_syma_unittest.cc \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/protocol_syma_unittest.cc -o $@
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -DUSE_RX_SYMA -c $(TEST_DIR)/protocol_syma_unittest.cc -o $@
 
 $(OBJECT_DIR)/protocol_syma_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/drivers/rx_nrf24l01.o \
 	$(OBJECT_DIR)/rx/nrf24.o \
 	$(OBJECT_DIR)/rx/nrf24_syma.o \
+	$(OBJECT_DIR)/rx/nrf24_cx10.o \
 	$(OBJECT_DIR)/protocol_syma_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
@@ -1026,14 +1027,14 @@ $(OBJECT_DIR)/rx/nrf24_v202.o : \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_V202  -c $(USER_DIR)/rx/nrf24_v202.c -o $@
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -DUSE_RX_V202 -c $(USER_DIR)/rx/nrf24_v202.c -o $@
 
 $(OBJECT_DIR)/protocol_v202_unittest.o : \
 	$(TEST_DIR)/protocol_v202_unittest.cc \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/protocol_v202_unittest.cc -o $@
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -DUSE_RX_V202 -c $(TEST_DIR)/protocol_v202_unittest.cc -o $@
 
 $(OBJECT_DIR)/protocol_v202_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
