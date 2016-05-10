@@ -206,10 +206,12 @@ void rxInit(modeActivationCondition_t *modeActivationConditions)
     }
 #endif
 
+#ifndef SKIP_RX_MSP
     if (feature(FEATURE_RX_MSP)) {
         rxRefreshRate = 20000;
         rxMspInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
+#endif
 
 #ifdef USE_RX_NRF24
     if (feature(FEATURE_RX_NRF24)) {
@@ -383,6 +385,7 @@ void updateRx(uint32_t currentTime)
     }
 #endif
 
+#ifndef SKIP_RX_MSP
     if (feature(FEATURE_RX_MSP)) {
         rxDataReceived = rxMspFrameComplete();
 
@@ -392,6 +395,7 @@ void updateRx(uint32_t currentTime)
             needRxSignalBefore = currentTime + DELAY_5_HZ;
         }
     }
+#endif
 
 #ifndef SKIP_RX_PWM
     if (feature(FEATURE_RX_PPM)) {

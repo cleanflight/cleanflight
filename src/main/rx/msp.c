@@ -19,8 +19,9 @@
 #include <stdint.h>
 
 #include <platform.h>
-
 #include "build_config.h"
+
+#ifndef SKIP_RX_MSP
 
 #include "config/parameter_group.h"
 
@@ -72,3 +73,4 @@ void rxMspInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
     if (callback)
         *callback = rxMspReadRawRC;
 }
+#endif

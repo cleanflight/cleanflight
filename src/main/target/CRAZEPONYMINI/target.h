@@ -63,6 +63,7 @@
 
 #define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
 #define USE_RX_NRF24
+#define USE_RX_SYMA
 #define USE_RX_V202
 #define NRF24_DEFAULT_PROTOCOL NRF24RX_V202_1M
 
@@ -86,7 +87,9 @@
 #define SKIP_RX_PWM
 #define SKIP_PID_LUXFLOAT
 #define SKIP_PID_MW23
+#define SKIP_RX_MSP
 #define USE_CLI
+#define SKIP_INFLIGHT_ADJUSTMENTS
 //#define GTUNE
 
 // Since the CrazePony MINI PCB has holes for 4 motors in each corner we can save same flash space by disabling support for other mixers.
@@ -95,7 +98,7 @@
 #if (FLASH_SIZE > 64)
 #define BLACKBOX
 #else
-//#define SKIP_TASK_STATISTICS
+#define SKIP_TASK_STATISTICS
 #define SKIP_CLI_COMMAND_HELP
 #endif
 
