@@ -69,7 +69,7 @@ static void initGyroFilterCoefficients(void)
 {
     if (gyroConfig()->soft_gyro_lpf_hz) {
         // Initialisation needs to happen once sampling rate is known
-        for (axis = 0; axis < 3; axis++) {
+        for (int axis = 0; axis < 3; axis++) {
             biQuadFilterInit(&gyroFilterState[axis], gyroConfig()->soft_gyro_lpf_hz, targetLooptime);
         }
         gyroFilterStateIsSet = true;
@@ -160,7 +160,7 @@ void gyroUpdate(void)
             initGyroFilterCoefficients();
         }
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            gyroADC[axis] = lrintf(applyBiQuadFilter((float)gyroADC[axis], &gyroFilterState[axis]));
+            gyroADC[axis] = lrintf(biQuadFilterApply(&gyroFilterState[axis], gyroADC[axis]));
         }
     }
 
