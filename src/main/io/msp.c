@@ -914,6 +914,7 @@ static int processOutCommand(mspPacket_t *cmd, mspPacket_t *reply)
 
             sbufWriteU16(dst, batteryConfig()->currentMeterScale);
             sbufWriteU16(dst, batteryConfig()->currentMeterOffset);
+            sbufWriteU8(dst, rxConfig()->nrf24rx_protocol);
             break;
 
         case MSP_CF_SERIAL_CONFIG:
@@ -1390,6 +1391,7 @@ static int processInCommand(mspPacket_t *cmd)
                 break;
             rxConfig()->rx_min_usec = sbufReadU16(src);
             rxConfig()->rx_max_usec = sbufReadU16(src);
+            rxConfig()->nrf24rx_protocol) = sbufReadU8(src);
             break;
 
         case MSP_SET_RXFAIL_CONFIG: {
