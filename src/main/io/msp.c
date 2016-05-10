@@ -1391,7 +1391,7 @@ static int processInCommand(mspPacket_t *cmd)
                 break;
             rxConfig()->rx_min_usec = sbufReadU16(src);
             rxConfig()->rx_max_usec = sbufReadU16(src);
-            rxConfig()->nrf24rx_protocol) = sbufReadU8(src);
+            rxConfig()->nrf24rx_protocol = sbufReadU8(src);
             break;
 
         case MSP_SET_RXFAIL_CONFIG: {
