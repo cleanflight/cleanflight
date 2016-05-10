@@ -336,6 +336,8 @@ $(OBJECT_DIR)/gps_conversion_unittest : \
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
+
+
 $(OBJECT_DIR)/flight/mixer.o : \
 	$(USER_DIR)/flight/mixer.c \
 	$(USER_DIR)/flight/mixer.h \
