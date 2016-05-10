@@ -204,6 +204,7 @@
 #define BIND_PIN   Pin_3
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
+#define TARGET_MOTOR_COUNT 8
 
 // alternative defaults for AlienFlight F1 target
 #ifdef ALIENFLIGHT
