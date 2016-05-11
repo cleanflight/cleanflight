@@ -53,6 +53,7 @@
 #include "rx/rx.h"
 #include "rx/msp.h"
 
+#include "io/beeper.h"
 #include "io/motor_and_servo.h"
 #include "io/rate_profile.h"
 #include "io/rc_controls.h"
@@ -859,8 +860,7 @@ static int processOutCommand(mspPacket_t *cmd, mspPacket_t *reply)
 
 #ifdef BEEPER
         case MSP_BEEPER:
-            headSerialReply(4);
-            sbugWriteU32(dst, getBeeperOffMask());
+            sbufWriteU32(dst, getBeeperOffMask());
             break;
 #endif
 
@@ -1355,7 +1355,7 @@ static int processInCommand(mspPacket_t *cmd)
 #ifdef BEEPER
         case MSP_SET_BEEPER:
             beeperOffClearAll();
-            beeperOffSet(sbufReadU32()); // beeper conditions bitmap
+            beeperOffSet(sbufReadU32(src)); // beeper conditions bitmap
             break;
 #endif
 
