@@ -216,8 +216,12 @@
 #define DEFAULT FEATURES FEATURE_MOTOR_STOP
 
 #define HARDWARE_BIND_PLUG
-
 // Hardware bind plug at PB5 (Pin 41)
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5
+
+#if (FLASH_SIZE <= 128)
+#define SKIP_CLI_COMMAND_HELP
 #endif
+#endif
+
