@@ -101,14 +101,14 @@ static const float nrdCoeffs4[] = { 1.0f/4,  1.0f/4, -1.0f/4, -1.0f/4 };
 static const float nrdCoeffs5[] = { 1.0f/8,  1.0f/4,  0.0f,   -1.0f/4,  1.0f/8 };
 static const float nrdCoeffs6[] = { 1.0f/16, 3.0f/16, 1.0f/8, -1.0f/8, -3.0f/16,-1.0f/16 };
 static const float nrdCoeffs7[] = { 1.0f/32, 1.0f/8,  5.0f/32, 0.0f,   -5.0f/32,-1.0f/8, -1.0f/32 };
-static const float nrdCoeffs8[] = { 1.0f/64, 5.0f/64, 9.0f/64, 5.0f/64,-5.0f/64,-9.0f/64,-5.0f/64,-1.0/64 };
+//static const float nrdCoeffs8[] = { 1.0f/64, 5.0f/64, 9.0f/64, 5.0f/64,-5.0f/64,-9.0f/64,-5.0f/64,-1.0/64 };
 #else
 static const float nrdCoeffs5[] = { 5.0f/8,  1.0f/4, -1.0f,   -1.0f/4,  3.0f/8 };
 static const float nrdCoeffs6[] = { 3.0f/8,  1.0f/2, -1.0f/2, -3.0f/4,  1.0f/8,  1.0f/4 };
 static const float nrdCoeffs7[] = { 7.0f/32, 1.0f/2, -1.0f/32,-3.0f/4,-11.0f/32, 1.0f/4,  5.0f/32 };
-static const float nrdCoeffs8[] = { 1.0f/8, 13.0f/32, 1.0f/4,-15.0f/32,-5.0f/8, -1.0f/32,  1.0f/4, 3.0/32 };
+//static const float nrdCoeffs8[] = { 1.0f/8, 13.0f/32, 1.0f/4,-15.0f/32,-5.0f/8, -1.0f/32,  1.0f/4, 3.0/32 };
 #endif
-static const float *nrd[] = {nrdCoeffs2, nrdCoeffs3, nrdCoeffs4, nrdCoeffs5, nrdCoeffs6, nrdCoeffs7, nrdCoeffs8};
+static const float *nrd[] = {nrdCoeffs2, nrdCoeffs3, nrdCoeffs4, nrdCoeffs5, nrdCoeffs6, nrdCoeffs7};
 
 
 void pidLuxFloatInit(const pidProfile_t *pidProfile)

@@ -94,14 +94,14 @@ static const int8_t nrdCoeffs4[] = { 16, 16,-16,-16 };
 static const int8_t nrdCoeffs5[] = {  8, 16,  0,-16, -8 };
 static const int8_t nrdCoeffs6[] = {  4, 12,  8, -8,-12, -4 };
 static const int8_t nrdCoeffs7[] = {  2,  8, 10,  0,-10, -8, -2 };
-static const int8_t nrdCoeffs8[] = {  1,  5,  9,  5, -5, -9, -5, -1 };
+//static const int8_t nrdCoeffs8[] = {  1,  5,  9,  5, -5, -9, -5, -1 };
 #else
 static const int8_t nrdCoeffs5[] = { 40,  8,-64,-16, 24 };
 static const int8_t nrdCoeffs6[] = { 24, 32,-32,-48,  8, 16 };
 static const int8_t nrdCoeffs7[] = { 14, 32, -2,-48,-22, 16, 10 };
-static const int8_t nrdCoeffs8[] = {  8, 26, 16,-30,-40, -2, 16,  6 };
+//static const int8_t nrdCoeffs8[] = {  8, 26, 16,-30,-40, -2, 16,  6 };
 #endif
-static const int8_t *nrd[] = {nrdCoeffs2, nrdCoeffs3, nrdCoeffs4, nrdCoeffs5, nrdCoeffs6, nrdCoeffs7, nrdCoeffs8};
+static const int8_t *nrd[] = {nrdCoeffs2, nrdCoeffs3, nrdCoeffs4, nrdCoeffs5, nrdCoeffs6, nrdCoeffs7};
 
 
 void pidMultiWiiRewriteInit(const pidProfile_t *pidProfile)
