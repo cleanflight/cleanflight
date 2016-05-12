@@ -25,20 +25,18 @@
 
 #include "common/maths.h"
 #include "common/axis.h"
-#include "common/color.h"
 #include "common/encoding.h"
 #include "common/utils.h"
 
-#include "drivers/gpio.h"
+#include "config/parameter_group_ids.h"
+#include "config/parameter_group.h"
+
 #include "drivers/sensor.h"
 #include "drivers/system.h"
-#include "drivers/serial.h"
 #include "drivers/compass.h"
-#include "drivers/timer.h"
-#include "drivers/pwm_rx.h"
 #include "drivers/accgyro.h"
-#include "drivers/light_led.h"
 
+#include "io/rate_profile.h"
 #include "io/rc_controls.h"
 
 #include "sensors/sensors.h"
@@ -51,22 +49,12 @@
 #include "sensors/battery.h"
 
 #include "io/beeper.h"
-#include "io/display.h"
-#include "io/escservo.h"
-#include "io/gimbal.h"
+
 #include "io/gps.h"
-#include "io/ledstrip.h"
-#include "io/serial.h"
-#include "io/serial_cli.h"
-#include "io/serial_msp.h"
-#include "io/statusindicator.h"
 
-#include "rx/rx.h"
-#include "rx/msp.h"
-
-#include "telemetry/telemetry.h"
 
 #include "flight/mixer.h"
+#include "flight/servos.h"
 #include "flight/altitudehold.h"
 #include "flight/failsafe.h"
 #include "flight/imu.h"
@@ -74,11 +62,28 @@
 
 #include "config/runtime_config.h"
 #include "config/config.h"
-#include "config/config_profile.h"
-#include "config/config_master.h"
+#include "config/feature.h"
+#include "config/profile.h"
+#include "config/config_reset.h"
 
 #include "blackbox.h"
 #include "blackbox_io.h"
+
+#ifdef ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+#define DEFAULT_BLACKBOX_DEVICE BLACKBOX_DEVICE_FLASH
+#elif defined(ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT)
+#define DEFAULT_BLACKBOX_DEVICE BLACKBOX_DEVICE_SDCARD
+#else
+#define DEFAULT_BLACKBOX_DEVICE BLACKBOX_DEVICE_SERIAL
+#endif
+
+PG_REGISTER_WITH_RESET_TEMPLATE(blackboxConfig_t, blackboxConfig, PG_BLACKBOX_CONFIG, 0);
+
+PG_RESET_TEMPLATE(blackboxConfig_t, blackboxConfig,
+        .device = DEFAULT_BLACKBOX_DEVICE,
+        .rate_num = 1,
+        .rate_denom = 1,
+);
 
 #define BLACKBOX_I_INTERVAL 32
 #define BLACKBOX_SHUTDOWN_TIMEOUT_MILLIS 200
@@ -363,7 +368,7 @@ static blackboxMainState_t* blackboxHistory[3];
 static bool blackboxModeActivationConditionPresent = false;
 
 /**
- * Return true if it is safe to edit the Blackbox configuration in the emasterConfig.
+ * Return true if it is safe to edit the Blackbox configuration.
  */
 bool blackboxMayEditConfig()
 {
@@ -371,7 +376,7 @@ bool blackboxMayEditConfig()
 }
 
 static bool blackboxIsOnlyLoggingIntraframes() {
-    return masterConfig.blackbox_rate_num == 1 && masterConfig.blackbox_rate_denom == 32;
+    return blackboxConfig()->rate_num == 1 && blackboxConfig()->rate_denom == 32;
 }
 
 static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
@@ -391,16 +396,12 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
             return motorCount >= condition - FLIGHT_LOG_FIELD_CONDITION_AT_LEAST_MOTORS_1 + 1;
         
         case FLIGHT_LOG_FIELD_CONDITION_TRICOPTER:
-            return masterConfig.mixerMode == MIXER_TRI || masterConfig.mixerMode == MIXER_CUSTOM_TRI;
+            return mixerConfig()->mixerMode == MIXER_TRI || mixerConfig()->mixerMode == MIXER_CUSTOM_TRI;
 
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0:
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_1:
         case FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_2:
-            if (IS_PID_CONTROLLER_FP_BASED(currentProfile->pidProfile.pidController)) {
-                return currentProfile->pidProfile.D_f[condition - FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0] != 0;
-            } else {
-                return currentProfile->pidProfile.D8[condition - FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0] != 0;
-            }
+            return pidProfile()->D8[condition - FLIGHT_LOG_FIELD_CONDITION_NONZERO_PID_D_0] != 0;
 
         case FLIGHT_LOG_FIELD_CONDITION_MAG:
 #ifdef MAG
@@ -420,7 +421,7 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
             return feature(FEATURE_VBAT);
 
         case FLIGHT_LOG_FIELD_CONDITION_AMPERAGE_ADC:
-            return feature(FEATURE_CURRENT_METER) && masterConfig.batteryConfig.currentMeterType == CURRENT_SENSOR_ADC;
+            return feature(FEATURE_CURRENT_METER) && batteryConfig()->currentMeterType == CURRENT_SENSOR_ADC;
 
         case FLIGHT_LOG_FIELD_CONDITION_SONAR:
 #ifdef SONAR
@@ -430,10 +431,10 @@ static bool testBlackboxConditionUncached(FlightLogFieldCondition condition)
 #endif
 
         case FLIGHT_LOG_FIELD_CONDITION_RSSI:
-            return masterConfig.rxConfig.rssi_channel > 0 || feature(FEATURE_RSSI_ADC);
+            return rxConfig()->rssi_channel > 0 || feature(FEATURE_RSSI_ADC);
 
         case FLIGHT_LOG_FIELD_CONDITION_NOT_LOGGING_EVERY_FRAME:
-            return masterConfig.blackbox_rate_num < masterConfig.blackbox_rate_denom;
+            return blackboxConfig()->rate_num < blackboxConfig()->rate_denom;
 
         case FLIGHT_LOG_FIELD_CONDITION_NEVER:
             return false;
@@ -521,7 +522,7 @@ static void writeIntraframe(void)
      * Write the throttle separately from the rest of the RC data so we can apply a predictor to it.
      * Throttle lies in range [minthrottle..maxthrottle]:
      */
-    blackboxWriteUnsignedVB(blackboxCurrent->rcCommand[THROTTLE] - masterConfig.escAndServoConfig.minthrottle);
+    blackboxWriteUnsignedVB(blackboxCurrent->rcCommand[THROTTLE] - motorAndServoConfig()->minthrottle);
 
     if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_VBAT)) {
         /*
@@ -564,7 +565,7 @@ static void writeIntraframe(void)
     blackboxWriteSigned16VBArray(blackboxCurrent->accSmooth, XYZ_AXIS_COUNT);
 
     //Motors can be below minthrottle when disarmed, but that doesn't happen much
-    blackboxWriteUnsignedVB(blackboxCurrent->motor[0] - masterConfig.escAndServoConfig.minthrottle);
+    blackboxWriteUnsignedVB(blackboxCurrent->motor[0] - motorAndServoConfig()->minthrottle);
 
     //Motors tend to be similar to each other so use the first motor's value as a predictor of the others
     for (x = 1; x < motorCount; x++) {
@@ -782,22 +783,22 @@ static void validateBlackboxConfig()
 {
     int div;
 
-    if (masterConfig.blackbox_rate_num == 0 || masterConfig.blackbox_rate_denom == 0
-            || masterConfig.blackbox_rate_num >= masterConfig.blackbox_rate_denom) {
-        masterConfig.blackbox_rate_num = 1;
-        masterConfig.blackbox_rate_denom = 1;
+    if (blackboxConfig()->rate_num == 0 || blackboxConfig()->rate_denom == 0
+            || blackboxConfig()->rate_num >= blackboxConfig()->rate_denom) {
+        blackboxConfig()->rate_num = 1;
+        blackboxConfig()->rate_denom = 1;
     } else {
         /* Reduce the fraction the user entered as much as possible (makes the recorded/skipped frame pattern repeat
          * itself more frequently)
          */
-        div = gcd(masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
+        div = gcd(blackboxConfig()->rate_num, blackboxConfig()->rate_denom);
 
-        masterConfig.blackbox_rate_num /= div;
-        masterConfig.blackbox_rate_denom /= div;
+        blackboxConfig()->rate_num /= div;
+        blackboxConfig()->rate_denom /= div;
     }
 
     // If we've chosen an unsupported device, change the device to serial
-    switch (masterConfig.blackbox_device) {
+    switch (blackboxConfig()->device) {
 #ifdef USE_FLASHFS
         case BLACKBOX_DEVICE_FLASH:
 #endif
@@ -809,7 +810,7 @@ static void validateBlackboxConfig()
         break;
 
         default:
-            masterConfig.blackbox_device = BLACKBOX_DEVICE_SERIAL;
+            blackboxConfig()->device = BLACKBOX_DEVICE_SERIAL;
     }
 }
 
@@ -843,7 +844,7 @@ void startBlackbox(void)
          */
         blackboxBuildConditionCache();
         
-        blackboxModeActivationConditionPresent = isModeActivationConditionPresent(currentProfile->modeActivationConditions, BOXBLACKBOX);
+        blackboxModeActivationConditionPresent = rcModeIsActivationConditionPresent(modeActivationProfile()->modeActivationConditions, BOXBLACKBOX);
 
         blackboxIteration = 0;
         blackboxPFrameIndex = 0;
@@ -1122,36 +1123,36 @@ static bool blackboxWriteSysinfo()
             blackboxPrintfHeaderLine("Firmware date:%s %s", buildDate, buildTime);
         break;
         case 3:
-            blackboxPrintfHeaderLine("P interval:%d/%d", masterConfig.blackbox_rate_num, masterConfig.blackbox_rate_denom);
+            blackboxPrintfHeaderLine("P interval:%d/%d", blackboxConfig()->rate_num, blackboxConfig()->rate_denom);
         break;
         case 4:
             blackboxPrintfHeaderLine("Device UID:0x%x%x%x", U_ID_0, U_ID_1, U_ID_2);
         break;
         case 5:
-            blackboxPrintfHeaderLine("rcRate:%d", masterConfig.controlRateProfiles[masterConfig.current_profile_index].rcRate8);
+            blackboxPrintfHeaderLine("rcRate:%d", controlRateProfiles(getCurrentProfile())->rcRate8);
         break;
         case 6:
-            blackboxPrintfHeaderLine("minthrottle:%d", masterConfig.escAndServoConfig.minthrottle);
+            blackboxPrintfHeaderLine("minthrottle:%d", motorAndServoConfig()->minthrottle);
         break;
         case 7:
-            blackboxPrintfHeaderLine("maxthrottle:%d", masterConfig.escAndServoConfig.maxthrottle);
+            blackboxPrintfHeaderLine("maxthrottle:%d", motorAndServoConfig()->maxthrottle);
         break;
         case 8:
             blackboxPrintfHeaderLine("gyro.scale:0x%x", castFloatBytesToInt(gyro.scale));
         break;
         case 9:
-            blackboxPrintfHeaderLine("acc_1G:%u", acc_1G);
+            blackboxPrintfHeaderLine("acc_1G:%u", acc.acc_1G);
         break;
         case 10:
             if (testBlackboxCondition(FLIGHT_LOG_FIELD_CONDITION_VBAT)) {
-                blackboxPrintfHeaderLine("vbatscale:%u", masterConfig.batteryConfig.vbatscale);
+                blackboxPrintfHeaderLine("vbatscale:%u", batteryConfig()->vbatscale);
             } else {
                 xmitState.headerIndex += 2; // Skip the next two vbat fields too
             }
         break;
         case 11:
-            blackboxPrintfHeaderLine("vbatcellvoltage:%u,%u,%u", masterConfig.batteryConfig.vbatmincellvoltage,
-                masterConfig.batteryConfig.vbatwarningcellvoltage, masterConfig.batteryConfig.vbatmaxcellvoltage);
+            blackboxPrintfHeaderLine("vbatcellvoltage:%u,%u,%u", batteryConfig()->vbatmincellvoltage,
+                batteryConfig()->vbatwarningcellvoltage, batteryConfig()->vbatmaxcellvoltage);
         break;
         case 12:
             blackboxPrintfHeaderLine("vbatref:%u", vbatReference);
@@ -1159,7 +1160,7 @@ static bool blackboxWriteSysinfo()
         case 13:
             //Note: Log even if this is a virtual current meter, since the virtual meter uses these parameters too:
             if (feature(FEATURE_CURRENT_METER)) {
-                blackboxPrintfHeaderLine("currentMeter:%d,%d", masterConfig.batteryConfig.currentMeterOffset, masterConfig.batteryConfig.currentMeterScale);
+                blackboxPrintfHeaderLine("currentMeter:%d,%d", batteryConfig()->currentMeterOffset, batteryConfig()->currentMeterScale);
             }
         break;
         default:
@@ -1234,10 +1235,10 @@ static void blackboxCheckAndLogArmingBeep()
  */
 static bool blackboxShouldLogPFrame(uint32_t pFrameIndex)
 {
-    /* Adding a magic shift of "masterConfig.blackbox_rate_num - 1" in here creates a better spread of
+    /* Adding a magic shift of "blackboxConfig()->rate_num - 1" in here creates a better spread of
      * recorded / skipped frames when the I frame's position is considered:
      */
-    return (pFrameIndex + masterConfig.blackbox_rate_num - 1) % masterConfig.blackbox_rate_denom < masterConfig.blackbox_rate_num;
+    return (pFrameIndex + blackboxConfig()->rate_num - 1) % blackboxConfig()->rate_denom < blackboxConfig()->rate_num;
 }
 
 static bool blackboxShouldLogIFrame() {
@@ -1400,7 +1401,7 @@ void handleBlackbox(void)
         break;
         case BLACKBOX_STATE_PAUSED:
             // Only allow resume to occur during an I-frame iteration, so that we have an "I" base to work from
-            if (IS_RC_MODE_ACTIVE(BOXBLACKBOX) && blackboxShouldLogIFrame()) {
+            if (rcModeIsActive(BOXBLACKBOX) && blackboxShouldLogIFrame()) {
                 // Write a log entry so the decoder is aware that our large time/iteration skip is intended
                 flightLogEvent_loggingResume_t resume;
 
@@ -1418,7 +1419,7 @@ void handleBlackbox(void)
         break;
         case BLACKBOX_STATE_RUNNING:
             // On entry to this state, blackboxIteration, blackboxPFrameIndex and blackboxIFrameIndex are reset to 0
-            if (blackboxModeActivationConditionPresent && !IS_RC_MODE_ACTIVE(BOXBLACKBOX)) {
+            if (blackboxModeActivationConditionPresent && !rcModeIsActive(BOXBLACKBOX)) {
                 blackboxSetState(BLACKBOX_STATE_PAUSED);
             } else {
                 blackboxLogIteration();

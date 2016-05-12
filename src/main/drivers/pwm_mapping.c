@@ -22,8 +22,11 @@
 
 #include <platform.h>
 
+#include "config/parameter_group.h"
+
 #include "gpio.h"
 #include "timer.h"
+#include "drivers/bus_i2c.h"
 
 #include "pwm_output.h"
 #include "pwm_rx.h"
@@ -152,18 +155,17 @@ static const uint16_t airPWM[] = {
 
 #ifdef CC3D
 static const uint16_t multiPPM[] = {
-    PWM1  | (MAP_TO_PPM_INPUT << 8),     // PPM input
-    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
-    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
-    PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),
-    PWM10 | (MAP_TO_MOTOR_OUTPUT << 8),
+    PWM6  | (MAP_TO_PPM_INPUT << 8),     // PPM input
+    PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),      // motor #1
+    PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),      // motor #2
+    PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),      // motor #3
+    PWM10 | (MAP_TO_MOTOR_OUTPUT << 8),      // motor #4
     PWM11 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM12 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM2  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
     PWM3  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
     PWM4  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
     PWM5  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
-    PWM6  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
     0xFFFF
 };
 static const uint16_t multiPWM[] = {
@@ -183,7 +185,7 @@ static const uint16_t multiPWM[] = {
 };
 
 static const uint16_t airPPM[] = {
-    PWM1  | (MAP_TO_PPM_INPUT << 8),     // PPM input
+    PWM6  | (MAP_TO_PPM_INPUT << 8),     // PPM input
     PWM7  | (MAP_TO_MOTOR_OUTPUT  << 8),
     PWM8  | (MAP_TO_MOTOR_OUTPUT  << 8),
     PWM9  | (MAP_TO_SERVO_OUTPUT  << 8),
@@ -194,7 +196,6 @@ static const uint16_t airPPM[] = {
     PWM3  | (MAP_TO_SERVO_OUTPUT  << 8),
     PWM4  | (MAP_TO_SERVO_OUTPUT  << 8),
     PWM5  | (MAP_TO_SERVO_OUTPUT  << 8),
-    PWM6  | (MAP_TO_SERVO_OUTPUT  << 8),
     0xFFFF
 };
 
@@ -316,7 +317,7 @@ static const uint16_t airPWM[] = {
 };
 #endif
 
-#if defined(SPARKY) || defined(ALIENWIIF3)
+#if defined(SPARKY) || defined(ALIENFLIGHTF3)
 static const uint16_t multiPPM[] = {
     PWM11 | (MAP_TO_PPM_INPUT << 8), // PPM input
 
@@ -592,6 +593,7 @@ static const uint16_t multiPWM[] = {
     PWM7  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM8  | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),
+    PWM1  | (MAP_TO_PWM_INPUT    << 8), // Use PWM input for AUX1, PWM6-9 get remapped by conditional code.
     PWM10 | (MAP_TO_MOTOR_OUTPUT << 8),
     PWM11 | (MAP_TO_MOTOR_OUTPUT << 8),
     0xFFFF
@@ -621,6 +623,7 @@ static const uint16_t airPWM[] = {
     PWM7  | (MAP_TO_SERVO_OUTPUT  << 8),
     PWM8  | (MAP_TO_SERVO_OUTPUT  << 8),
     PWM9  | (MAP_TO_SERVO_OUTPUT  << 8),
+    PWM1  | (MAP_TO_PWM_INPUT    << 8), // Use PWM input for AUX1, PWM6-9 get remapped by conditional code.
     PWM10 | (MAP_TO_SERVO_OUTPUT  << 8),
     PWM11 | (MAP_TO_SERVO_OUTPUT  << 8), // servo #8
     0xFFFF
@@ -696,9 +699,9 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
             continue;
 #endif
 
-#if defined(STM32F10X) && I2C_DEVICE == I2CDEV_1
+#ifdef STM32F10X
         // skip I2C ports if device 1 is selected
-        if (timerHardwarePtr->gpio == GPIOB && (timerHardwarePtr->pin == Pin_6 || timerHardwarePtr->pin == Pin_7))
+        if (I2C_DEVICE == I2CDEV_1 && timerHardwarePtr->gpio == GPIOB && (timerHardwarePtr->pin == Pin_6 || timerHardwarePtr->pin == Pin_7))
             continue;
 #endif
 
@@ -754,6 +757,14 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
 
         // hacks to allow current functionality
+
+#if defined(SPRACINGF3MINI)
+            // remap PWM1, 6-9 as PWM input when parallel PWM is used (for AUX1 and RC1-4, respectively)
+            if (init->useParallelPWM && (timerIndex == PWM6 || timerIndex == PWM7 || timerIndex == PWM8 || timerIndex == PWM9 || timerIndex == PWM1)) {
+                type = MAP_TO_PWM_INPUT;
+            }
+#endif
+
         if (type == MAP_TO_PWM_INPUT && !init->useParallelPWM)
             continue;
 
@@ -849,12 +860,7 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
 
         if (type == MAP_TO_PPM_INPUT) {
-#ifdef CC3D
-            if (init->useOneshot || isMotorBrushed(init->motorPwmRate)) {
-                ppmAvoidPWMTimerClash(timerHardwarePtr, TIM4);
-            }
-#endif
-#ifdef SPARKY
+#if defined(SPARKY) || defined(ALIENFLIGHTF3)
             if (init->useOneshot || isMotorBrushed(init->motorPwmRate)) {
                 ppmAvoidPWMTimerClash(timerHardwarePtr, TIM2);
             }
@@ -868,7 +874,13 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
             pwmIOConfiguration.pwmInputCount++;
             channelIndex++;
         } else if (type == MAP_TO_MOTOR_OUTPUT) {
-
+#ifdef CC3D
+            if (init->useOneshot || isMotorBrushed(init->motorPwmRate)){
+            	// Skip it if it would cause PPM capture timer to be reconfigured or manually overflowed
+            	if (timerHardwarePtr->tim == TIM2)
+            		continue;
+            }
+#endif
             if (init->useOneshot) {
 
                 pwmOneshotMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount);

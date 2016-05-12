@@ -9,11 +9,12 @@ auxillary receiver channels and other events such as failsafe detection.
 | 1       | 1      | ANGLE      | Legacy auto-level flight mode                                        |
 | 2       | 2      | HORIZON    | Auto-level flight mode                                               |
 | 3       | 3      | BARO       | Altitude hold mode (Requires barometer sensor)                       |
+| 4       | N/A    | VARIO      | Unused                                                               |
 | 5       | 4      | MAG        | Heading lock                                                         |
 | 6       | 5      | HEADFREE   | Head Free - When enabled yaw has no effect on pitch/roll inputs      |
 | 7       | 6      | HEADADJ    | Heading Adjust - Sets a new yaw origin for HEADFREE mode             |
 | 8       | 7      | CAMSTAB    | Camera Stabilisation                                                 |
-| 9       | 8      | CAMTRIG    |                                                                      |
+| 9       | 8      | CAMTRIG    | Unused                                                               |
 | 10      | 9      | GPSHOME    | Autonomous flight to HOME position                                   |
 | 11      | 10     | GPSHOLD    | Maintain the same longitude/lattitude                                |
 | 12      | 11     | PASSTHRU   | Pass roll, yaw, and pitch directly from rx to servos in airplane mix |
@@ -22,12 +23,16 @@ auxillary receiver channels and other events such as failsafe detection.
 | 15      | 14     | LEDLOW     |                                                                      |
 | 16      | 15     | LLIGHTS    |                                                                      |
 | 17      | 16     | CALIB      |                                                                      |
-| 18      | 17     | GOV        |                                                                      |
+| 18      | 17     | GOV        | Unused                                                               |
 | 19      | 18     | OSD        | Enable/Disable On-Screen-Display (OSD)                               |
 | 20      | 19     | TELEMETRY  | Enable telemetry via switch                                          |
+| 21      | 20     | GTUNE      | G-Tune - auto tuning of Pitch/Roll/Yaw P values                      |
 | 22      | 21     | SONAR      | Altitude hold mode (sonar sensor only)                               |
+| 23      | 22     | SERVO1     | Servo 1                                                              |
+| 24      | 23     | SERVO2     | Servo 2                                                              |
+| 25      | 24     | SERVO3     | Servo 3                                                              |
 | 26      | 25     | BLACKBOX   | Enable BlackBox logging                                              |
-| 27      | 26     | GTUNE      | G-Tune - auto tuning of Pitch/Roll/Yaw P values                      |
+| 27      | 26     | FAILSAFE   | Enter failsafe stage 2 manually                                      |
 | 28      | 27     | AIRMODE    | Alternative mixer and additional PID logic for more stable copter    |
 
 ## Mode details
@@ -78,13 +83,6 @@ motors spooling up on the ground. Also the Iterm will be reset above 70% of stic
 quick Iterm windups during finishes of rolls and flips, which will provide much cleaner and more natural stops
 of flips and rolls what again opens the ability to have higher I gains for some.
 Note that AIRMODE will also overrule motor stop function! It will basically also act as an idle up switch.
-Things to know about Airmode: There is an optional cli parameter "airmode_saturation_limit" what is a hard
-limit in percentage to where airmode will still try to provide the maximum possible correction. 0 means no limit,
-but that also means maximum possible motor correction during crashes and during equipment failure. In worse case
-that can cause effects like best called "tasmanian devil effect" or slight spazzing out. Default value of 50
-has a limit of 50% saturation. After that it will assume crash occured or equipment failed what will again remove
-airmode seeking for the best possible protection and act as a normal mode. It should be fine in most cases.
-
 
 
 ## Auxillary Configuration
