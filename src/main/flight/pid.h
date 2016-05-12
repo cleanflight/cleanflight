@@ -25,7 +25,9 @@
 #define YAW_P_LIMIT_MIN 100                 // Maximum value for yaw P limiter
 #define YAW_P_LIMIT_MAX 500                 // Maximum value for yaw P limiter
 
-#define DTERM_AVERAGE_COUNT 4
+#define PID_GYRO_RATE_BUF_LENGTH 8
+#define PID_DTERM_FIR_MAX_LENGTH 8
+#define PID_MAX_DIFFERENTIATOR 5
 
 typedef enum {
     PIDROLL,
@@ -48,15 +50,15 @@ typedef enum {
     PID_COUNT
 } pidControllerType_e;
 
-#define IS_PID_CONTROLLER_FP_BASED(pidController) (pidController == PID_CONTROLLER_LUX_FLOAT)
-
 typedef struct pidProfile_s {
-    uint8_t P8[PID_ITEM_COUNT];
-    uint8_t I8[PID_ITEM_COUNT];
-    uint8_t D8[PID_ITEM_COUNT];
-    uint8_t pidController;
-    uint16_t yaw_p_limit;                   // set P term limit (fixed value was 300)
-    uint16_t dterm_cut_hz;                  // dterm filtering
+    uint8_t  P8[PID_ITEM_COUNT];
+    uint8_t  I8[PID_ITEM_COUNT];
+    uint8_t  D8[PID_ITEM_COUNT];
+    uint8_t  pidController;
+    uint8_t  dterm_differentiator;          // dterm noise-robust differentiator
+    uint8_t  dterm_lpf_hz;                  // dterm low pass filter frequency
+    uint8_t  yaw_lpf_hz;
+    uint16_t yaw_p_limit;                   // yaw P term limit (fixed value was 300)
 } pidProfile_t;
 
 PG_DECLARE_PROFILE(pidProfile_t, pidProfile);
@@ -66,8 +68,6 @@ extern int16_t axisPID[FD_INDEX_COUNT];
 extern int32_t axisPID_P[FD_INDEX_COUNT], axisPID_I[FD_INDEX_COUNT], axisPID_D[FD_INDEX_COUNT];
 
 float pidScaleITermToRcInput(int axis);
-void pidFilterIsSetCheck(const pidProfile_t *pidProfile);
-
 void pidSetController(pidControllerType_e type);
 void pidResetITermAngle(void);
 void pidResetITerm(void);

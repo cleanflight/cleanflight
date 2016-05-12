@@ -29,45 +29,52 @@ extern "C" {
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
-TEST(FilterUnittest, TestFilterApplyAverage)
+TEST(FilterUnittest, TestFilterApplyAverageInt)
 {
 #define VALUE_COUNT 4
+    firFilterInt32_t filterState;
     int32_t valueState[VALUE_COUNT];
-    for (int ii = 0; ii < VALUE_COUNT; ++ii) {
-        valueState[ii] = 0;
-    }
-    int average = filterApplyAverage(8, VALUE_COUNT, valueState);
+
+    firFilterInt32Init(&filterState, valueState, VALUE_COUNT, NULL);
+
+    firFilterInt32Update(&filterState, 8);
+    int average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(2, average); // 8/4
     EXPECT_EQ(8, valueState[0]);
     EXPECT_EQ(0, valueState[1]);
 
-    average = filterApplyAverage(16, VALUE_COUNT, valueState);
+    firFilterInt32Update(&filterState, 16);
+    average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(6, average); // (8+16)/4
     EXPECT_EQ(16, valueState[0]);
     EXPECT_EQ(8, valueState[1]);
 
 
-    average = filterApplyAverage(4, VALUE_COUNT, valueState);
+    firFilterInt32Update(&filterState, 4);
+    average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(7, average); // (8+16+4)/4
     EXPECT_EQ(4, valueState[0]);
     EXPECT_EQ(16, valueState[1]);
     EXPECT_EQ(8, valueState[2]);
 
-    average = filterApplyAverage(-12, VALUE_COUNT, valueState);
+    firFilterInt32Update(&filterState, -12);
+    average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(4, average); // (8+16+4-12)/4
     EXPECT_EQ(-12, valueState[0]);
     EXPECT_EQ(4, valueState[1]);
     EXPECT_EQ(16, valueState[2]);
     EXPECT_EQ(8, valueState[3]);
 
-    average = filterApplyAverage(48, VALUE_COUNT, valueState);
+    firFilterInt32Update(&filterState, 48);
+    average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(14, average); // (16+4-12+48)/4
     EXPECT_EQ(48, valueState[0]);
     EXPECT_EQ(-12, valueState[1]);
     EXPECT_EQ(4, valueState[2]);
     EXPECT_EQ(16, valueState[3]);
 
-    average = filterApplyAverage(4, VALUE_COUNT, valueState);
+    firFilterInt32Update(&filterState, 4);
+    average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(11, average); // (4-12+48+4)/4
     EXPECT_EQ(4, valueState[0]);
     EXPECT_EQ(48, valueState[1]);
@@ -75,64 +82,74 @@ TEST(FilterUnittest, TestFilterApplyAverage)
     EXPECT_EQ(4, valueState[3]);
 }
 
-TEST(FilterUnittest, TestFilterApplyAverage2)
+TEST(FilterUnittest, TestFilterApplyAverageInt2)
 {
 #define VALUE_COUNT 4
+    firFilterInt32_t filterState;
     int32_t valueState[3][VALUE_COUNT];
-    for (int ii = 0; ii < VALUE_COUNT; ++ii) {
-        valueState[0][ii] = 0;
-    }
-    int average = filterApplyAverage(8, VALUE_COUNT, valueState[0]);
+
+    firFilterInt32Init(&filterState, valueState[0], VALUE_COUNT, NULL);
+
+    firFilterInt32Update(&filterState, 8);
+    int average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(2, average); // 8/4
     EXPECT_EQ(8, valueState[0][0]);
     EXPECT_EQ(0, valueState[0][1]);
 
-    average = filterApplyAverage(16, VALUE_COUNT, valueState[0]);
+    firFilterInt32Update(&filterState, 16);
+    average = firFilterInt32CalcAverage(&filterState);
     EXPECT_EQ(6, average); // (8+16)/4
     EXPECT_EQ(16, valueState[0][0]);
     EXPECT_EQ(8, valueState[0][1]);
 
 }
 
-TEST(FilterUnittest, TestFilterApplyAveragef)
+TEST(FilterUnittest, TestFilterApplyAverage)
 {
 #define VALUE_COUNT 4
+    firFilter_t filterState;
     float valueState[VALUE_COUNT];
-    for (int ii = 0; ii < VALUE_COUNT; ++ii) {
-        valueState[ii] = 0;
-    }
-    int average = filterApplyAveragef(8, VALUE_COUNT, valueState);
+
+    firFilterInit(&filterState, valueState, VALUE_COUNT, NULL);
+
+    firFilterUpdate(&filterState, 8);
+    float average = firFilterCalcAverage(&filterState);
     EXPECT_EQ(2, average); // 8/4
     EXPECT_EQ(8, valueState[0]);
     EXPECT_EQ(0, valueState[1]);
 
-    average = filterApplyAveragef(16, VALUE_COUNT, valueState);
+    firFilterUpdate(&filterState, 16);
+    average = firFilterCalcAverage(&filterState);
     EXPECT_EQ(6, average); // (8+16)/4
     EXPECT_EQ(16, valueState[0]);
     EXPECT_EQ(8, valueState[1]);
 
 
-    average = filterApplyAveragef(4, VALUE_COUNT, valueState);
+    firFilterUpdate(&filterState, 4);
+    average = firFilterCalcAverage(&filterState);
     EXPECT_EQ(7, average); // (8+16+4)/4
     EXPECT_EQ(4, valueState[0]);
     EXPECT_EQ(16, valueState[1]);
     EXPECT_EQ(8, valueState[2]);
 
-    average = filterApplyAveragef(-12, VALUE_COUNT, valueState);
+    firFilterUpdate(&filterState, -12);
+    average = firFilterCalcAverage(&filterState);
     EXPECT_EQ(4, average); // (8+16+4-12)/4
     EXPECT_EQ(-12, valueState[0]);
     EXPECT_EQ(4, valueState[1]);
     EXPECT_EQ(16, valueState[2]);
     EXPECT_EQ(8, valueState[3]);
 
-    average = filterApplyAveragef(48, VALUE_COUNT, valueState);
+    firFilterUpdate(&filterState, 48);
+    average = firFilterCalcAverage(&filterState);
     EXPECT_EQ(14, average); // (16+4-12+48)/4
     EXPECT_EQ(48, valueState[0]);
     EXPECT_EQ(-12, valueState[1]);
     EXPECT_EQ(4, valueState[2]);
     EXPECT_EQ(16, valueState[3]);
 
-    average = filterApplyAveragef(4, VALUE_COUNT, valueState);
+    firFilterUpdate(&filterState, 4);
+    average = firFilterCalcAverage(&filterState);
     EXPECT_EQ(11, average); // (4-12+48+4)/4
     EXPECT_EQ(4, valueState[0]);
     EXPECT_EQ(48, valueState[1]);

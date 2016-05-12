@@ -184,7 +184,7 @@ void mixerInitialiseServoFiltering(uint32_t targetLooptime)
 {
     if (mixerConfig()->servo_lowpass_enable) {
         for (int servoIdx = 0; servoIdx < MAX_SUPPORTED_SERVOS; servoIdx++) {
-            BiQuadNewLpf(mixerConfig()->servo_lowpass_freq, &servoFilterState[servoIdx], targetLooptime);
+            biQuadFilterInit(&servoFilterState[servoIdx], mixerConfig()->servo_lowpass_freq, targetLooptime);
         }
     }
 }
@@ -549,7 +549,7 @@ void filterServos(void)
 
     if (mixerConfig()->servo_lowpass_enable) {
         for (servoIdx = 0; servoIdx < MAX_SUPPORTED_SERVOS; servoIdx++) {
-            servo[servoIdx] = lrintf(applyBiQuadFilter((float) servo[servoIdx], &servoFilterState[servoIdx]));
+            servo[servoIdx] = lrintf(biQuadFilterApply(&servoFilterState[servoIdx], (float)servo[servoIdx]));
 
             // Sanity check
             servo[servoIdx] = constrain(servo[servoIdx], servoConf[servoIdx].min, servoConf[servoIdx].max);

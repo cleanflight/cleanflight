@@ -116,11 +116,10 @@ extern uint8_t PIDweight[3];
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 
 static bool isRXDataNew;
-static filterStatePt1_t filteredCycleTimeState;
+static pt1Filter_t filteredCycleTimeState;
 uint16_t filteredCycleTime;
 
-typedef void (*pidControllerFuncPtr)(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig);            // pid controller function prototype
+typedef void (*pidControllerFuncPtr)(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);    // pid controller function prototype
 
 extern pidControllerFuncPtr pid_controller;
 
@@ -173,8 +172,8 @@ bool isCalibrating(void)
 This function processes RX dependent coefficients when new RX commands are available
 Those are: TPA, throttle expo
 */
-void processRxDependentCoefficients(void) {
-
+void processRxDependentCoefficients(void)
+{
     int32_t tmp, tmp2;
     int32_t axis, prop1 = 0, prop2;
 
@@ -238,10 +237,7 @@ void processRxDependentCoefficients(void) {
     tmp = (uint32_t)(tmp - rxConfig()->mincheck) * PWM_RANGE_MIN / (PWM_RANGE_MAX - rxConfig()->mincheck);       // [MINCHECK;2000] -> [0;1000]
     tmp2 = tmp / 100;
     rcCommand[THROTTLE] = lookupThrottleRC[tmp2] + (tmp - tmp2 * 100) * (lookupThrottleRC[tmp2 + 1] - lookupThrottleRC[tmp2]) / 100;    // [0;1000] -> expo -> [MINTHROTTLE;MAXTHROTTLE]
-}
 
-void annexCode(void)
-{
     if (FLIGHT_MODE(HEADFREE_MODE)) {
         float radDiff = degreesToRadians(DECIDEGREES_TO_DEGREES(attitude.values.yaw) - headFreeModeHold);
         float cosDiff = cos_approx(radDiff);
@@ -407,7 +403,7 @@ void processRx(void)
 {
     static bool armedBeeperOn = false;
 
-    calculateRxChannelsAndUpdateFailsafe(currentTime);
+    calculateRxChannelsAndUpdateFailsafe(currentTime); // this updates rcData[]
 
     // in 3D mode, we need to be able to disarm by switch at any time
     if (feature(FEATURE_3D)) {
@@ -426,8 +422,8 @@ void processRx(void)
         failsafeUpdateState();
     }
 
-    throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig(), rcControlsConfig()->deadband3d_throttle);
-    rollPitchStatus_e rollPitchStatus =  calculateRollPitchCenterStatus(rxConfig());
+    const throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig(), rcControlsConfig()->deadband3d_throttle);
+    const rollPitchStatus_e rollPitchStatus =  calculateRollPitchCenterStatus(rxConfig());
 
     /* In airmode Iterm should be prevented to grow when Low thottle and Roll + Pitch Centered.
      This is needed to prevent Iterm winding on the ground, but keep full stabilisation on 0 throttle while in air
@@ -629,49 +625,39 @@ void filterRc(void){
     }
 }
 
-#if defined(BARO) || defined(SONAR)
-static bool haveProcessedAnnexCodeOnce = false;
-#endif
-
 void taskMainPidLoop(void)
 {
     cycleTime = getTaskDeltaTime(TASK_SELF);
     dT = (float)cycleTime * 0.000001f;
 
     // Calculate average cycle time and average jitter
-    filteredCycleTime = filterApplyPt1(cycleTime, &filteredCycleTimeState, 1, dT);
+    filteredCycleTime = pt1FilterApply(&filteredCycleTimeState, cycleTime, 1, dT);
 
     debug[0] = cycleTime;
     debug[1] = cycleTime - filteredCycleTime;
 
     imuUpdateGyroAndAttitude();
 
-    annexCode();
-
     if (rxConfig()->rcSmoothing) {
         filterRc();
     }
 
-#if defined(BARO) || defined(SONAR)
-    haveProcessedAnnexCodeOnce = true;
-#endif
-
 #ifdef MAG
-        if (sensors(SENSOR_MAG)) {
-            updateMagHold();
-        }
+    if (sensors(SENSOR_MAG)) {
+        updateMagHold();
+    }
 #endif
 
 #ifdef GTUNE
-        updateGtuneState();
+    updateGtuneState();
 #endif
 
 #if defined(BARO) || defined(SONAR)
-        if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
-            if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
-                applyAltHold();
-            }
+    if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
+        if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
+            applyAltHold();
         }
+    }
 #endif
 
     // If we're armed, at minimum throttle, and we do arming via the
@@ -703,13 +689,7 @@ void taskMainPidLoop(void)
 #endif
 
     // PID - note this is function pointer set by setPIDController()
-    pid_controller(
-        pidProfile(),
-        currentControlRateProfile,
-        imuConfig()->max_angle_inclination,
-        &accelerometerConfig()->accelerometerTrims,
-        rxConfig()
-    );
+    pid_controller(pidProfile(), currentControlRateProfile);
 
     mixTable();
 
@@ -723,7 +703,7 @@ void taskMainPidLoop(void)
     }
 
 #ifdef USE_SDCARD
-        afatfs_poll();
+    afatfs_poll();
 #endif
 
 #ifdef BLACKBOX
@@ -737,10 +717,10 @@ void taskMainPidLoop(void)
 void taskMainPidLoopChecker(void) {
     // getTaskDeltaTime() returns delta time freezed at the moment of entering the scheduler. currentTime is freezed at the very same point.
     // To make busy-waiting timeout work we need to account for time spent within busy-waiting loop
-    uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
+    const uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
 
     if (imuConfig()->gyroSync) {
-        while (1) {
+        while (true) {
             if (gyroSyncCheckUpdate() || ((currentDeltaTime + (micros() - currentTime)) >= (targetLooptime + GYRO_WATCHDOG_DELAY))) {
                 break;
             }
@@ -807,20 +787,14 @@ void taskUpdateRxMain(void)
     isRXDataNew = true;
 
 #ifdef BARO
-    // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
-    if (haveProcessedAnnexCodeOnce) {
-        if (sensors(SENSOR_BARO)) {
-            updateAltHoldState();
-        }
+    if (sensors(SENSOR_BARO)) {
+        updateAltHoldState();
     }
 #endif
 
 #ifdef SONAR
-    // the 'annexCode' initialses rcCommand, updateAltHoldState depends on valid rcCommand data.
-    if (haveProcessedAnnexCodeOnce) {
-        if (sensors(SENSOR_SONAR)) {
-            updateSonarAltHoldState();
-        }
+    if (sensors(SENSOR_SONAR)) {
+        updateSonarAltHoldState();
     }
 #endif
 }

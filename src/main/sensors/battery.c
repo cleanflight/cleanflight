@@ -84,7 +84,7 @@ static void updateBatteryVoltage(void)
     uint16_t vbatSample;
     // store the battery voltage with some other recent battery voltage readings
     vbatSample = vbatLatestADC = adcGetChannel(ADC_BATTERY);
-    vbatSample = applyBiQuadFilter(vbatSample, &vbatFilterState);
+    vbatSample = biQuadFilterApply(&vbatFilterState, vbatSample);
     vbat = batteryAdcToVoltage(vbatSample);
 }
 
@@ -176,7 +176,7 @@ void batteryInit(void)
     batteryWarningVoltage = 0;
     batteryCriticalVoltage = 0;
 
-    BiQuadNewLpf(VBATT_LPF_FREQ, &vbatFilterState, 50000);
+    biQuadFilterInit(&vbatFilterState, VBATT_LPF_FREQ, 50000);
 
 }
 

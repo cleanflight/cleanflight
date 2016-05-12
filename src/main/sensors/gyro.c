@@ -60,7 +60,7 @@ PG_REGISTER_WITH_RESET_TEMPLATE(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
 PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .gyro_lpf = 1,                 // supported by all gyro drivers now. In case of ST gyro, will default to 32Hz instead
-    .soft_gyro_lpf_hz = 60,        // Software based lpf filter for gyro
+    .soft_gyro_lpf_hz = 100,       // Software based lpf filter for gyro
 
     .gyroMovementCalibrationThreshold = 32,
 );
@@ -70,7 +70,7 @@ static void initGyroFilterCoefficients(void)
     if (gyroConfig()->soft_gyro_lpf_hz) {
         // Initialisation needs to happen once sampling rate is known
         for (int axis = 0; axis < 3; axis++) {
-            BiQuadNewLpf(gyroConfig()->soft_gyro_lpf_hz, &gyroFilterState[axis], targetLooptime);
+            biQuadFilterInit(&gyroFilterState[axis], gyroConfig()->soft_gyro_lpf_hz, targetLooptime);
         }
         gyroFilterStateIsSet = true;
     }
@@ -160,7 +160,7 @@ void gyroUpdate(void)
             initGyroFilterCoefficients();
         }
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            gyroADC[axis] = lrintf(applyBiQuadFilter((float)gyroADC[axis], &gyroFilterState[axis]));
+            gyroADC[axis] = lrintf(biQuadFilterApply(&gyroFilterState[axis], gyroADC[axis]));
         }
     }
 

@@ -60,15 +60,19 @@ uint8_t PIDweight[3];
 int32_t lastITerm[3], ITermLimit[3];
 float lastITermf[3], ITermLimitf[3];
 
-void pidLuxFloat(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig);
-void pidMultiWiiRewrite(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig);
-void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig);
+pt1Filter_t yawFilter;
+pt1Filter_t DTermFilter[3];
+// shared float/int buffer
+int32_t gyroRateBuf[3][PID_GYRO_RATE_BUF_LENGTH];
 
-typedef void (*pidControllerFuncPtr)(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
-        uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig);            // pid controller function prototype
+void pidLuxFloatInit(const pidProfile_t *pidProfile);
+void pidMultiWiiRewriteInit(const pidProfile_t *pidProfile);
+
+void pidLuxFloat(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);
+void pidMultiWiiRewrite(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);
+void pidMultiWii23(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);
+
+typedef void (*pidControllerFuncPtr)(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig);  // pid controller function prototype
 
 pidControllerFuncPtr pid_controller = pidMultiWiiRewrite;
 
@@ -105,8 +109,10 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
     .I8[PIDVEL] = 45,
     .D8[PIDVEL] = 1,
 
+    .dterm_differentiator = 3,
+    .dterm_lpf_hz = 0,
     .yaw_p_limit = YAW_P_LIMIT_MAX,
-    .dterm_cut_hz = 0,
+    .yaw_lpf_hz = 70,
 );
 
 void pidResetITerm(void)
@@ -117,35 +123,27 @@ void pidResetITerm(void)
     }
 }
 
-biquad_t deltaFilterState[3];
-
-void pidFilterIsSetCheck(const pidProfile_t *pidProfile)
-{
-    static bool deltaStateIsSet = false;
-    if (!deltaStateIsSet && pidProfile->dterm_cut_hz) {
-        for (int axis = 0; axis < 3; axis++) {
-            BiQuadNewLpf(pidProfile->dterm_cut_hz, &deltaFilterState[axis], targetLooptime);
-        }
-        deltaStateIsSet = true;
-    }
-}
-
 void pidSetController(pidControllerType_e type)
 {
+    BUILD_BUG_ON(sizeof(float) > sizeof(int32_t)); // int32_t and float gyroRateBuf share same memory
+    BUILD_BUG_ON(PID_DTERM_FIR_MAX_LENGTH > PID_GYRO_RATE_BUF_LENGTH); // gyroRateBuf is used by FIR filter for differentiation
+
     switch (type) {
-        default:
-        case PID_CONTROLLER_MWREWRITE:
-            pid_controller = pidMultiWiiRewrite;
-            break;
+    default:
+    case PID_CONTROLLER_MWREWRITE:
+        pidMultiWiiRewriteInit(pidProfile());
+        pid_controller = pidMultiWiiRewrite;
+        break;
 #ifndef SKIP_PID_LUXFLOAT
-        case PID_CONTROLLER_LUX_FLOAT:
-            pid_controller = pidLuxFloat;
-            break;
+    case PID_CONTROLLER_LUX_FLOAT:
+        pidLuxFloatInit(pidProfile());
+        pid_controller = pidLuxFloat;
+        break;
 #endif
 #ifndef SKIP_PID_MW23
-        case PID_CONTROLLER_MW23:
-            pid_controller = pidMultiWii23;
-            break;
+    case PID_CONTROLLER_MW23:
+        pid_controller = pidMultiWii23;
+        break;
 #endif
     }
 }
