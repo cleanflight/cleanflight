@@ -243,7 +243,7 @@ bool i2cWriteBuffer(uint8_t addr_, uint8_t reg, uint8_t len, uint8_t *data)
     }
 
     /* Configure slave address, nbytes, reload, end mode and start or stop generation */
-    I2C_TransferHandling(I2Cx, addr_, 1, I2C_AutoEnd_Mode, I2C_No_StartStop);
+    I2C_TransferHandling(I2Cx, addr_, len, I2C_AutoEnd_Mode, I2C_No_StartStop);
 
     while (len) {
         /* Wait until TXIS flag is set */
