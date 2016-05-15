@@ -107,9 +107,9 @@ Since 1.11.0 release there is only one way to get Cleanflight onto a CC3D board:
 * Windows only: (STM Flash Loader Demonstrator)[http://www.st.com/web/en/catalog/tools/PF257525]
 * Windows/Linux/OS X: (stm32flash utility)[http://sourceforge.net/projects/stm32flash/]. Here is a (manual online)[http://manpages.ubuntu.com/manpages/wily/man1/stm32flash.1.html]
 
-Please not that some user have issues with flashing CC3D via non-FTDI adapter. In that case "STM Flash Loader Demonstrator" just cannot connect to the target. Also, Arduino's embedded FTDIs may not work too.
+Please note that some user have issues with flashing CC3D via non-FTDI adapter. In that case "STM Flash Loader Demonstrator" just cannot connect to the target. Arduino's embedded FTDIs may also not work.
 
-The image can be flashed by an USB to UART adapter connected to the main port when the CC3D is put into the STM32 bootloader mode by powering on the CC3D with the SBL/3.3v pads bridged. You can than upgrade cleanflight with USB-Serial adapter via Cleanflight configurator without shorting boot pins.
+The image can be flashed by an USB to UART adapter connected to the main port when the CC3D is put into the STM32 bootloader mode by powering on the CC3D with the SBL/3.3v pads bridged. You can then upgrade cleanflight with USB-Serial adapter via Cleanflight configurator without shorting boot pins.
 
 ## Flashing process
 
