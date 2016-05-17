@@ -13,24 +13,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Ported from https://github.com/4712/BLHeliSuite/blob/master/Interfaces/Arduino1Wire/Source/Arduino1Wire_C/Arduino1Wire.c
- *  by Nathan Tsoi <nathan@vertile.com>
  */
 
 #pragma once
 
-#ifdef USE_SERIAL_1WIRE
+typedef struct featureConfig_s {
+    uint32_t enabledFeatures;
+} featureConfig_t;
 
-extern uint8_t escCount;
+PG_DECLARE(featureConfig_t, featureConfig);
 
-typedef struct {
-    GPIO_TypeDef* gpio;
-    uint16_t pinpos;
-    uint16_t pin;
-} escHardware_t;
-
-
-void usb1WireInitialize();
-void usb1WirePassthrough(uint8_t escIndex);
-#endif
+void latchActiveFeatures(void);
+bool featureConfigured(uint32_t mask);
+bool feature(uint32_t mask);
+void featureSet(uint32_t mask);
+void featureClear(uint32_t mask);
+void featureClearAll(void);
+uint32_t featureMask(void);
