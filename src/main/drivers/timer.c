@@ -403,7 +403,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
 #define TIMER_APB1_PERIPHERALS RCC_APB1Periph_TIM2
 #define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB)
-#endif
+#endif // CRAZEPONYMINI
 
 #define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
 #define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4
