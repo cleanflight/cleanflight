@@ -24,6 +24,8 @@
 
 #include "config/parameter_group.h"
 
+#include "common/utils.h"
+
 #include "gpio.h"
 #include "timer.h"
 #include "drivers/bus_i2c.h"
@@ -683,7 +685,120 @@ pwmIOConfiguration_t *pwmGetOutputConfiguration(void){
     return &pwmIOConfiguration;
 }
 
-pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
+bool pwmIsUsed(const drv_pwm_config_t *init, uint8_t type, const timerHardware_t *timerHardwarePtr, uint8_t timerIndex)
+{
+#ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
+    // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
+    if (timerIndex == PWM2)
+        return true;
+#endif
+
+    // skip UART ports
+#ifdef USE_UART2
+    if (init->useUART2 && timerHardwarePtr->gpio == UART2_GPIO && (timerHardwarePtr->pin == UART2_TX_PIN || timerHardwarePtr->pin == UART2_RX_PIN))
+        return true;
+#endif
+
+#ifdef USE_UART3
+    if (init->useUART3 && timerHardwarePtr->gpio == UART3_GPIO && (timerHardwarePtr->pin == UART3_TX_PIN || timerHardwarePtr->pin == UART3_RX_PIN))
+        return true;
+#endif
+
+#ifdef USE_UART4
+    if (init->useUART4 && timerHardwarePtr->gpio == UART4_GPIO && (timerHardwarePtr->pin == UART4_TX_PIN || timerHardwarePtr->pin == UART4_RX_PIN))
+        return true;
+#endif
+
+#ifdef USE_UART5
+    if (init->useUART5 &&
+        (
+            (timerHardwarePtr->gpio == UART5_GPIO_TX && timerHardwarePtr->pin == UART5_TX_PIN)
+            || (timerHardwarePtr->gpio == UART5_GPIO_RX && timerHardwarePtr->pin == UART5_RX_PIN)
+        )
+    )
+        return true;
+#endif
+
+#ifdef STM32F10X
+    // skip I2C ports if device 1 is selected
+    if (I2C_DEVICE == I2CDEV_1 && timerHardwarePtr->gpio == GPIOB && (timerHardwarePtr->pin == Pin_6 || timerHardwarePtr->pin == Pin_7))
+        return true;
+#endif
+
+#ifdef SOFTSERIAL_1_TIMER
+    if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_1_TIMER)
+        return true;
+#endif
+#ifdef SOFTSERIAL_2_TIMER
+    if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_2_TIMER)
+        return true;
+#endif
+
+#ifdef LED_STRIP_TIMER
+    // skip LED Strip output
+    if (init->useLEDStrip) {
+        if (timerHardwarePtr->tim == LED_STRIP_TIMER)
+            return true;
+#if defined(STM32F303xC) && defined(WS2811_GPIO) && defined(WS2811_PIN_SOURCE)
+        if (timerHardwarePtr->gpio == WS2811_GPIO && timerHardwarePtr->gpioPinSource == WS2811_PIN_SOURCE)
+            return true;
+#endif
+    }
+
+#endif
+
+#ifdef VBAT_ADC_GPIO
+    if (init->useVbat && timerHardwarePtr->gpio == VBAT_ADC_GPIO && timerHardwarePtr->pin == VBAT_ADC_GPIO_PIN) {
+        return true;
+    }
+#endif
+
+#ifdef RSSI_ADC_GPIO
+    if (init->useRSSIADC && timerHardwarePtr->gpio == RSSI_ADC_GPIO && timerHardwarePtr->pin == RSSI_ADC_GPIO_PIN) {
+        return true;
+    }
+#endif
+
+#ifdef CURRENT_METER_ADC_GPIO
+    if (init->useCurrentMeterADC && timerHardwarePtr->gpio == CURRENT_METER_ADC_GPIO && timerHardwarePtr->pin == CURRENT_METER_ADC_GPIO_PIN) {
+        return true;
+    }
+#endif
+
+#ifdef SONAR
+    if (init->sonarGPIOConfig && timerHardwarePtr->gpio == init->sonarGPIOConfig->gpio &&
+        (
+            timerHardwarePtr->pin == init->sonarGPIOConfig->triggerPin ||
+            timerHardwarePtr->pin == init->sonarGPIOConfig->echoPin
+        )
+    ) {
+        return true;
+    }
+#endif
+
+    // hacks to allow current functionality
+
+#if defined(SPRACINGF3MINI)
+    // remap PWM1, 6-9 as PWM input when parallel PWM is used (for AUX1 and RC1-4, respectively)
+    if (init->useParallelPWM && (timerIndex == PWM6 || timerIndex == PWM7 || timerIndex == PWM8 || timerIndex == PWM9 || timerIndex == PWM1)) {
+        type = MAP_TO_PWM_INPUT;
+    }
+#else
+    UNUSED(timerIndex);
+#endif
+
+    if (type == MAP_TO_PWM_INPUT && !init->useParallelPWM) {
+        return true;
+    }
+
+    if (type == MAP_TO_PPM_INPUT && !init->usePPM) {
+        return true;
+    }
+
+    return false;
+}
+
+pwmIOConfiguration_t *pwmInit(const drv_pwm_config_t *init)
 {
     int i = 0;
     const uint16_t *setup;
@@ -702,114 +817,13 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
     setup = hardwareMaps[i];
 
     for (i = 0; i < USABLE_TIMER_CHANNEL_COUNT && setup[i] != 0xFFFF; i++) {
-        uint8_t timerIndex = setup[i] & 0x00FF;
+        const uint8_t timerIndex = setup[i] & 0x00FF;
         uint8_t type = (setup[i] & 0xFF00) >> 8;
-
         const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
 
-#ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
-        // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
-        if (timerIndex == PWM2)
-            continue;
-#endif
-
-        // skip UART ports
-#ifdef USE_UART2
-        if (init->useUART2 && timerHardwarePtr->gpio == UART2_GPIO && (timerHardwarePtr->pin == UART2_TX_PIN || timerHardwarePtr->pin == UART2_RX_PIN))
-            continue;
-#endif
-
-#ifdef USE_UART3
-        if (init->useUART3 && timerHardwarePtr->gpio == UART3_GPIO && (timerHardwarePtr->pin == UART3_TX_PIN || timerHardwarePtr->pin == UART3_RX_PIN))
-            continue;
-#endif
-
-#ifdef USE_UART4
-        if (init->useUART4 && timerHardwarePtr->gpio == UART4_GPIO && (timerHardwarePtr->pin == UART4_TX_PIN || timerHardwarePtr->pin == UART4_RX_PIN))
-            continue;
-#endif
-
-#ifdef USE_UART5
-        if (init->useUART5 &&
-            (
-                (timerHardwarePtr->gpio == UART5_GPIO_TX && timerHardwarePtr->pin == UART5_TX_PIN)
-                || (timerHardwarePtr->gpio == UART5_GPIO_RX && timerHardwarePtr->pin == UART5_RX_PIN)
-            )
-        )
-            continue;
-#endif
-
-#ifdef STM32F10X
-        // skip I2C ports if device 1 is selected
-        if (I2C_DEVICE == I2CDEV_1 && timerHardwarePtr->gpio == GPIOB && (timerHardwarePtr->pin == Pin_6 || timerHardwarePtr->pin == Pin_7))
-            continue;
-#endif
-
-#ifdef SOFTSERIAL_1_TIMER
-        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_1_TIMER)
-            continue;
-#endif
-#ifdef SOFTSERIAL_2_TIMER
-        if (init->useSoftSerial && timerHardwarePtr->tim == SOFTSERIAL_2_TIMER)
-            continue;
-#endif
-
-#ifdef LED_STRIP_TIMER
-        // skip LED Strip output
-        if (init->useLEDStrip) {
-            if (timerHardwarePtr->tim == LED_STRIP_TIMER)
-                continue;
-#if defined(STM32F303xC) && defined(WS2811_GPIO) && defined(WS2811_PIN_SOURCE)
-            if (timerHardwarePtr->gpio == WS2811_GPIO && timerHardwarePtr->gpioPinSource == WS2811_PIN_SOURCE)
-                continue;
-#endif
-        }
-
-#endif
-
-#ifdef VBAT_ADC_GPIO
-        if (init->useVbat && timerHardwarePtr->gpio == VBAT_ADC_GPIO && timerHardwarePtr->pin == VBAT_ADC_GPIO_PIN) {
+        if (pwmIsUsed(init, type, timerHardwarePtr, timerIndex)) {
             continue;
         }
-#endif
-
-#ifdef RSSI_ADC_GPIO
-        if (init->useRSSIADC && timerHardwarePtr->gpio == RSSI_ADC_GPIO && timerHardwarePtr->pin == RSSI_ADC_GPIO_PIN) {
-            continue;
-        }
-#endif
-
-#ifdef CURRENT_METER_ADC_GPIO
-        if (init->useCurrentMeterADC && timerHardwarePtr->gpio == CURRENT_METER_ADC_GPIO && timerHardwarePtr->pin == CURRENT_METER_ADC_GPIO_PIN) {
-            continue;
-        }
-#endif
-
-#ifdef SONAR
-        if (init->sonarGPIOConfig && timerHardwarePtr->gpio == init->sonarGPIOConfig->gpio &&
-            (
-                timerHardwarePtr->pin == init->sonarGPIOConfig->triggerPin ||
-                timerHardwarePtr->pin == init->sonarGPIOConfig->echoPin
-            )
-        ) {
-            continue;
-        }
-#endif
-
-        // hacks to allow current functionality
-
-#if defined(SPRACINGF3MINI)
-            // remap PWM1, 6-9 as PWM input when parallel PWM is used (for AUX1 and RC1-4, respectively)
-            if (init->useParallelPWM && (timerIndex == PWM6 || timerIndex == PWM7 || timerIndex == PWM8 || timerIndex == PWM9 || timerIndex == PWM1)) {
-                type = MAP_TO_PWM_INPUT;
-            }
-#endif
-
-        if (type == MAP_TO_PWM_INPUT && !init->useParallelPWM)
-            continue;
-
-        if (type == MAP_TO_PPM_INPUT && !init->usePPM)
-            continue;
 
 #ifdef USE_SERVOS
         if (init->useServos && !init->airplane) {
@@ -912,7 +926,8 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
         }
 #endif
 
-        if (type == MAP_TO_PPM_INPUT) {
+        switch (type) {
+        case MAP_TO_PPM_INPUT:
 #if defined(SPARKY) || defined(ALIENFLIGHTF3)
             if (init->useOneshot || isMotorBrushed(init->motorPwmRate)) {
                 ppmAvoidPWMTimerClash(timerHardwarePtr, TIM2);
@@ -921,54 +936,47 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
             ppmInConfig(timerHardwarePtr);
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_PPM;
             pwmIOConfiguration.ppmInputCount++;
-        } else if (type == MAP_TO_PWM_INPUT) {
+            break;
+        case MAP_TO_PWM_INPUT:
             pwmInConfig(timerHardwarePtr, channelIndex);
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_PWM;
             pwmIOConfiguration.pwmInputCount++;
             channelIndex++;
-        } else if (type == MAP_TO_MOTOR_OUTPUT) {
+            break;
+        case MAP_TO_MOTOR_OUTPUT:
 #ifdef CC3D
             if (init->useOneshot || isMotorBrushed(init->motorPwmRate)){
-            	// Skip it if it would cause PPM capture timer to be reconfigured or manually overflowed
-            	if (timerHardwarePtr->tim == TIM2)
-            		continue;
+                // Skip it if it would cause PPM capture timer to be reconfigured or manually overflowed
+                if (timerHardwarePtr->tim == TIM2)
+                    continue;
             }
 #endif
             if (init->useOneshot) {
-
                 pwmOneshotMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_OUTPUT_PROTOCOL_ONESHOT|PWM_PF_OUTPUT_PROTOCOL_PWM;
-
             } else if (isMotorBrushed(init->motorPwmRate)) {
-
                 pwmBrushedMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_MOTOR_MODE_BRUSHED | PWM_PF_OUTPUT_PROTOCOL_PWM;
-
             } else {
-
                 pwmBrushlessMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_OUTPUT_PROTOCOL_PWM ;
             }
-
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].index = pwmIOConfiguration.motorCount;
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].timerHardware = timerHardwarePtr;
-
             pwmIOConfiguration.motorCount++;
-
-        } else if (type == MAP_TO_SERVO_OUTPUT) {
+            break;
+        case MAP_TO_SERVO_OUTPUT:
 #ifdef USE_SERVOS
             pwmServoConfig(timerHardwarePtr, pwmIOConfiguration.servoCount, init->servoPwmRate, init->servoCenterPulse);
-
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_SERVO | PWM_PF_OUTPUT_PROTOCOL_PWM;
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].index = pwmIOConfiguration.servoCount;
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].timerHardware = timerHardwarePtr;
-
             pwmIOConfiguration.servoCount++;
 #endif
-        } else {
+            break;
+        default:
             continue;
         }
-
         pwmIOConfiguration.ioCount++;
     }
 
