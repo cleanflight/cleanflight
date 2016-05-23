@@ -790,6 +790,28 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
         }
 #endif
 
+#ifdef USE_NRF24_SOFTSPI
+        if (type == MAP_TO_PWM_INPUT)
+            continue;
+        if (type == MAP_TO_PPM_INPUT)
+            continue;
+        if (timerHardwarePtr->gpio == NRF24_CE_GPIO && timerHardwarePtr->pin == NRF24_CE_PIN) {
+            continue;
+        }
+        if (timerHardwarePtr->gpio == NRF24_CSN_GPIO && timerHardwarePtr->pin == NRF24_CSN_PIN) {
+            continue;
+        }
+        if (timerHardwarePtr->gpio == NRF24_SCK_GPIO && timerHardwarePtr->pin == NRF24_SCK_PIN) {
+            continue;
+        }
+        if (timerHardwarePtr->gpio == NRF24_MOSI_GPIO && timerHardwarePtr->pin == NRF24_MOSI_PIN) {
+            continue;
+        }
+        if (timerHardwarePtr->gpio == NRF24_MISO_GPIO && timerHardwarePtr->pin == NRF24_MISO_PIN) {
+            continue;
+        }
+#endif
+
         // hacks to allow current functionality
 
 #if defined(SPRACINGF3MINI)
@@ -899,15 +921,11 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
                 ppmAvoidPWMTimerClash(timerHardwarePtr, TIM2);
             }
 #endif
-#ifndef SKIP_RX_PWM
             ppmInConfig(timerHardwarePtr);
-#endif
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_PPM;
             pwmIOConfiguration.ppmInputCount++;
         } else if (type == MAP_TO_PWM_INPUT) {
-#ifndef SKIP_RX_PWM
             pwmInConfig(timerHardwarePtr, channelIndex);
-#endif
             pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_PWM;
             pwmIOConfiguration.pwmInputCount++;
             channelIndex++;

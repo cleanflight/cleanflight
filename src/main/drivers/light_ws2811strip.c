@@ -31,6 +31,8 @@
 
 #include "build_config.h"
 
+#ifdef LED_STRIP
+
 #include "common/color.h"
 #include "common/colorconversion.h"
 #include "drivers/dma.h"
@@ -129,4 +131,5 @@ void ws2811UpdateStrip(void)
     ws2811LedDataTransferInProgress = 1;
     ws2811LedStripDMAEnable();
 }
+#endif
 

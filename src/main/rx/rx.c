@@ -100,6 +100,9 @@ PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 0);
 PG_REGISTER_ARR_WITH_RESET_FN(rxFailsafeChannelConfig_t, MAX_SUPPORTED_RC_CHANNEL_COUNT, failsafeChannelConfigs, PG_FAILSAFE_CHANNEL_CONFIG, 0);
 PG_REGISTER_ARR_WITH_RESET_FN(rxChannelRangeConfiguration_t, NON_AUX_CHANNEL_COUNT, channelRanges, PG_CHANNEL_RANGE_CONFIG, 0);
 
+#ifndef NRF24_DEFAULT_PROTOCOL
+#define NRF24_DEFAULT_PROTOCOL 0
+#endif
 PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .sbus_inversion = 1,
     .midrc = 1500,
@@ -108,6 +111,7 @@ PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .rx_min_usec = 885,          // any of first 4 channels below this value will trigger rx loss detection
     .rx_max_usec = 2115,         // any of first 4 channels above this value will trigger rx loss detection
     .rssi_scale = RSSI_SCALE_DEFAULT,
+    .nrf24rx_protocol = NRF24_DEFAULT_PROTOCOL,
 );
 
 void pgResetFn_channelRanges(rxChannelRangeConfiguration_t *instance)

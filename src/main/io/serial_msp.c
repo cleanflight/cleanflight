@@ -20,9 +20,10 @@
 #include <string.h>
 
 #include "build_config.h"
+
 #include <platform.h>
+
 #include "config/runtime_config.h"
-#include "target.h"
 
 #include "common/streambuf.h"
 #include "common/utils.h"
