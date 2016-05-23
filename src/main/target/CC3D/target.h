@@ -89,8 +89,7 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
 
-#define USE_RX_NRF24
-
+//#define USE_RX_NRF24
 #ifdef USE_RX_NRF24
 #define SKIP_RX_MSP
 #define SKIP_RX_PWM
@@ -119,6 +118,7 @@
 #undef USE_SOFTSERIAL1
 #undef SERIAL_PORT_COUNT
 #define SERIAL_PORT_COUNT 3
+
 // RC pinouts
 // RC3  PB6/TIM4    unused
 // RC4  PB5/TIM3    SCK / softserial1 TX / sonar trigger
