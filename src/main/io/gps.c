@@ -240,9 +240,6 @@ void gpsInit(void)
     }
 
     portMode_t mode = MODE_RXTX;
-    // only RX is needed for NMEA-style GPS
-    if (gpsConfig()->provider == GPS_NMEA)
-	    mode &= ~MODE_TX;
 
     // no callback - buffer will be consumed in gpsThread()
     gpsPort = openSerialPort(gpsPortConfig->identifier, FUNCTION_GPS, NULL, gpsInitData[gpsData.baudrateIndex].baudrateIndex, mode, SERIAL_NOT_INVERTED);
@@ -380,6 +377,11 @@ void gpsThread(void)
 
         case GPS_LOST_COMMUNICATION:
             gpsData.timeouts++;
+
+            serialSetBaudRate(gpsPort, baudRates[BAUD_38400]);
+            serialPrint(gpsPort, "$PNMRX100,0,57600,0*xx\r\n");
+            serialSetBaudRate(gpsPort, baudRates[BAUD_57600]);
+
             if (gpsConfig()->autoBaud) {
                 // try another rate
                 gpsData.baudrateIndex++;
