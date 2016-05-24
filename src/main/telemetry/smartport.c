@@ -301,7 +301,7 @@ void handleSmartPortTelemetry(void)
                 if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
                     //convert to knots: 1cm/s = 0.0194384449 knots
                     //Speed should be sent in knots/1000 (GPS speed is in cm/s)
-                    uint32_t tmpui = gpsSol.groundSpeed * 1944 / 100; 
+                    uint32_t tmpui = GPS_speed * 1944 / 100; 
                     smartPortSendPackage(id, tmpui);
                     smartPortHasRequest = 0;
                 }
