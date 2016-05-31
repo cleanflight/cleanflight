@@ -530,7 +530,7 @@ int32_t gyroADC[XYZ_AXIS_COUNT];
 attitudeEulerAngles_t attitude = { { 0, 0, 0 } };     // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
 int16_t accSmooth[XYZ_AXIS_COUNT];
 // from ledstrip.c
-void reevalulateLedConfig(void) {}
+void reevaluateLedConfig(void) {}
 // from mixer.c
 int16_t motor[MAX_SUPPORTED_MOTORS];
 int16_t motor_disarmed[MAX_SUPPORTED_MOTORS];

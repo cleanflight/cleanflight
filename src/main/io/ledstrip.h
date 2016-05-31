@@ -125,7 +125,7 @@ void applyDefaultColors(void);
 
 void ledStripInit(void);
 void ledStripEnable(void);
-void reevalulateLedConfig(void);
+void reevaluateLedConfig(void);
 
 bool setModeColor(ledModeIndex_e modeIndex, int modeColorIndex, int colorIndex);
 

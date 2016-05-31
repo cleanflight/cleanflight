@@ -1471,7 +1471,7 @@ static int processInCommand(mspPacket_t *cmd)
 
             ledConfig->color = sbufReadU8(src);
 
-            reevalulateLedConfig();
+            reevaluateLedConfig();
         }
         break;
 #endif

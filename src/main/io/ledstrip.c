@@ -271,7 +271,7 @@ static void updateLedCount(void)
     ledRingCount = countRing;
 }
 
-void reevalulateLedConfig(void)
+void reevaluateLedConfig(void)
 {
     updateLedCount();
     determineLedStripDimensions();
@@ -363,7 +363,7 @@ bool parseLedStripConfig(int ledIndex, const char *config)
     ledConfig->color = color;
     ledConfig->flags = flags;
 
-    reevalulateLedConfig();
+    reevaluateLedConfig();
     return true;
 }
 
@@ -987,7 +987,7 @@ void ledStripInit(void)
 
 void ledStripEnable(void)
 {
-    reevalulateLedConfig();
+    reevaluateLedConfig();
     ledStripInitialised = true;
 
     ws2811LedStripInit();
