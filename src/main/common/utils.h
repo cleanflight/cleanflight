@@ -52,6 +52,10 @@ static inline int32_t cmp32(uint32_t a, uint32_t b) { return a-b; }
 
 // using memcpy_fn will force memcpy function call, instead of inlining it. In most cases function call takes fewer instructions
 //  than inlined version (inlining is cheaper for very small moves < 8 bytes / 2 store instructions)
+#ifdef UNIT_TEST
+#define memcpy_fn memcpy
+#else
 void * memcpy_fn ( void * destination, const void * source, size_t num ) asm("memcpy");
+#endif
 
 #endif
