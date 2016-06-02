@@ -51,8 +51,8 @@ CXX_FLAGS = $(COMMON_FLAGS) \
 GCOV_CC_FLAGS := -fprofile-arcs -ftest-coverage
 GCOV_L_FLAGS  := -lgcov
 
-C_FLAGS   += $(GCOV_CC_FLAGS) $(GCOV_L_FLAGS)
-CXX_FLAGS += $(GCOV_CC_FLAGS) $(GCOV_L_FLAGS) 
+C_FLAGS   += $(GCOV_CC_FLAGS)
+CXX_FLAGS += $(GCOV_CC_FLAGS) 
 
 #enable fast Maths tests
 C_FLAGS   += -DFAST_MATH
