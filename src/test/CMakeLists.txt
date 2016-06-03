@@ -21,7 +21,7 @@ get_filename_component(USER_DIR     "${PROJECT_SOURCE_DIR}/../main" ABSOLUTE)
 enable_testing()
 get_filename_component(GTEST_DIR    "${PROJECT_SOURCE_DIR}/../../lib/test/gtest" ABSOLUTE)
 add_subdirectory(${GTEST_DIR} gtest)
-include_directories(${gtest_SOURCE_DIR}/inc)
+include_directories(SYSTEM ${gtest_SOURCE_DIR}/inc)
 
 # Includes in the test dir which should override the user dir
 include_directories(${CMAKE_CURRENT_LIST_DIR}/unit)
