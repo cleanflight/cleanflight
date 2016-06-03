@@ -22,12 +22,12 @@
 #include <platform.h>
 #include "build_config.h"
 
-#include "config/runtime_config.h"
-#include "config/config.h"
 #include "config/parameter_group.h"
 #include "config/feature.h"
 
-#include "io/rc_controls.h"
+#include "fc/runtime_config.h"
+#include "fc/config.h"
+#include "fc/rc_controls.h"
 
 #include "drivers/gpio.h"
 #include "drivers/sound_beeper.h"

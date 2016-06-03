@@ -32,7 +32,8 @@ static uint32_t warningLedTimer = 0;
 typedef enum {
     WARNING_LED_OFF = 0,
     WARNING_LED_ON,
-    WARNING_LED_FLASH
+    WARNING_LED_FLASH,
+    WARNING_LED_PULSE
 } warningLedState_e;
 
 static warningLedState_e warningLedState = WARNING_LED_OFF;
@@ -58,22 +59,47 @@ void warningLedFlash(void)
     warningLedState = WARNING_LED_FLASH;
 }
 
+void warningLedPulse(void)
+{
+    warningLedState = WARNING_LED_PULSE;
+}
+
+
 void warningLedRefresh(void)
 {
+    uint32_t delay = 500000;
+    static bool ledEnabled = false;
+
     switch (warningLedState) {
         case WARNING_LED_OFF:
-            LED0_OFF;
+            ledEnabled = false;
             break;
         case WARNING_LED_ON:
-            LED0_ON;
+            ledEnabled = true;
             break;
         case WARNING_LED_FLASH:
+            ledEnabled = !ledEnabled;
             LED0_TOGGLE;
+            break;
+        case WARNING_LED_PULSE:
+            ledEnabled = !ledEnabled;
+
+            if (ledEnabled) {
+                delay = 100000; // short on
+            } else {
+                delay = 900000; // long off
+            }
             break;
     }
 
+    if (ledEnabled) {
+        LED0_ON;
+    } else {
+        LED0_OFF;
+    }
+
     uint32_t now = micros();
-    warningLedTimer = now + 500000;
+    warningLedTimer = now + delay;
 }
 
 void warningLedUpdate(void)
@@ -86,5 +112,4 @@ void warningLedUpdate(void)
 
     warningLedRefresh();
 }
-
 
