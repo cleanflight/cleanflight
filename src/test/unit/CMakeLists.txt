@@ -127,11 +127,8 @@ endif()
 # /io/
 ###################
 
-#TODO: Fix memcpy lib
-if(NOT CYGWIN)
-    cleanflight_add_gtest(ledstrip_unittest
-        "io-ledstrip;")
-endif()
+cleanflight_add_gtest(ledstrip_unittest
+    "io-ledstrip;")
 
 cleanflight_add_gtest(msp_unittest
     "common-maths;common-streambuf;io-serial;io-msp;io-serial_msp;version;drivers-buf_writer;config-parameter_group;")
