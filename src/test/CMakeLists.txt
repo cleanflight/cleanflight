@@ -1,5 +1,6 @@
 # A CMake file for building tests
 cmake_minimum_required (VERSION 2.8.3)
+set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
