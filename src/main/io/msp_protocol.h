@@ -164,8 +164,8 @@
 
 #define MSP_TRANSPONDER_CONFIG          82 //out message         Get transponder settings
 #define MSP_SET_TRANSPONDER_CONFIG      83 //in  message         Set transponder settings
-#define MSP_FLASHCHIP_CONFIG            84 //out  message        Get flash chip settings
-#define MSP_SET_FLASHCHIP_CONFIG        85 //in  message         Set flash chip settings
+#define MSP_FLASHCHIP_CONFIG            88 //out  message        Get flash chip settings
+#define MSP_SET_FLASHCHIP_CONFIG        89 //in  message         Set flash chip settings
 
 //
 // Baseflight MSP commands (if enabled they exist in Cleanflight)
