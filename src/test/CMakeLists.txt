@@ -30,8 +30,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/unit)
 include_directories(${USER_DIR})
 
 # Compiler flags for coverage instrumentation
-set(GCOV_CC_FLAGS   "-fprofile-arcs -ftest-coverage")
-set(GCOV_L_FLAGS    "-lgcov")
+set(COVERAGE_FLAGS  "--coverage")
 
 # COMMON_FLAGS
 set(COMMON_FLAGS "${COMMON_FLAGS} -g")
@@ -45,12 +44,12 @@ set(COMMON_FLAGS "${COMMON_FLAGS} -MMD -MP")
 # C_FLAGS
 set(CMAKE_C_FLAGS   "${COMMON_FLAGS}")
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=gnu99")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${GCOV_CC_FLAGS} ${GCOV_L_FLAGS}")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${COVERAGE_FLAGS}")
 
 # CXX_FLAGS
 set(CMAKE_CXX_FLAGS "${COMMON_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCOV_CC_FLAGS} ${GCOV_L_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS}")
 
 # build for unit tests
 add_definitions(-DUNIT_TEST)
