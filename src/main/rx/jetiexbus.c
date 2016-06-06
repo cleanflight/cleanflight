@@ -41,6 +41,8 @@
 #include "common/utils.h"
 #include "platform.h"
 #include "build_config.h"
+#include "config/parameter_group.h"
+
 #include "drivers/system.h"
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
@@ -58,6 +60,7 @@
 #include "telemetry/telemetry.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
+#include "config/feature.h"
 
 #ifdef GPS
 #include "io/gps.h"
@@ -440,10 +443,8 @@ static uint16_t jetiExBusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t c
   -----------------------------------------------
  */
 
-void initJetiExBusTelemetry(telemetryConfig_t *initialTelemetryConfig)
+void initJetiExBusTelemetry()
 {
-    UNUSED(initialTelemetryConfig);
-
     // Init Ex Bus Frame header
     jetiExBusTelemetryFrame[EXBUS_HEADER_SYNC] = 0x3B;       // Startbytes
     jetiExBusTelemetryFrame[EXBUS_HEADER_REQ] = 0x01;

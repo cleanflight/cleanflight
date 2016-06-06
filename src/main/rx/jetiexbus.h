@@ -28,7 +28,7 @@ uint8_t jetiExBusFrameStatus(void);
 
 #include "telemetry/telemetry.h"
 
-void initJetiExBusTelemetry(telemetryConfig_t *initialTelemetryConfig);
+void initJetiExBusTelemetry();
 void checkJetiExBusTelemetryState(void);
 void handleJetiExBusTelemetry(void);
 

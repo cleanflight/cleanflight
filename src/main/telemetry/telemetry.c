@@ -67,7 +67,7 @@ void telemetryInit(void)
     initSmartPortTelemetry();
     initLtmTelemetry();
     initMAVLinkTelemetry();
-    initJetiExBusTelemetry(telemetryConfig);
+    initJetiExBusTelemetry();
     telemetryCheckState();
 }
 
