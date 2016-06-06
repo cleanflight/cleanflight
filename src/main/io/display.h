@@ -24,6 +24,9 @@ typedef enum {
     PAGE_SENSORS,
     PAGE_RX,
     PAGE_PROFILE,
+#ifndef SKIP_TASK_STATISTICS
+    PAGE_TASKS,
+#endif
 #ifdef GPS
     PAGE_GPS,
 #endif
@@ -31,6 +34,8 @@ typedef enum {
     PAGE_DEBUG,
 #endif
 } pageId_e;
+
+void displayInit(void);
 
 void updateDisplay(void);
 
