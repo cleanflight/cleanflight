@@ -42,6 +42,17 @@ C_FLAGS = $(COMMON_FLAGS) \
 CXX_FLAGS = $(COMMON_FLAGS) \
 	-std=gnu++11
 
+# Compiler flags for coverage instrumentation
+GCOV_CC_FLAGS := -fprofile-arcs -ftest-coverage
+GCOV_L_FLAGS  := -lgcov
+
+C_FLAGS   += $(GCOV_CC_FLAGS) $(GCOV_L_FLAGS)
+CXX_FLAGS += $(GCOV_CC_FLAGS) $(GCOV_L_FLAGS) 
+
+#enable fast Maths tests
+C_FLAGS   += -DFAST_MATH
+CXX_FLAGS += -DFAST_MATH
+
 # Determine the OS and set up the parameter group linker flags accordingly
 UNAME := $(shell uname -s)
 ifeq ($(UNAME), Darwin)
@@ -50,7 +61,6 @@ else
 PG_FLAGS = -Wl,-T,$(TEST_DIR)/parameter_group.ld -Wl,-Map,$(OBJECT_DIR)/$@.map
 endif
 
-#
 # Gather up all of the tests.
 TEST_SRC = $(sort $(wildcard $(TEST_DIR)/*.cc))
 TESTS = $(TEST_SRC:$(TEST_DIR)/%.cc=%)
@@ -62,10 +72,13 @@ GTEST_HEADERS = $(GTEST_DIR)/inc/gtest/*.h
 
 # House-keeping build targets.
 
+## all         : Build all Unit Tests (Default goal)
 all : $(TEST_BINARIES)
 
+## clean       : Cleanup the UnitTest binaries.
 clean :
 	rm -rf $(OBJECT_DIR)
+
 
 # Builds gtest.a and gtest_main.a.
 
@@ -323,6 +336,8 @@ $(OBJECT_DIR)/gps_conversion_unittest : \
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
+
+
 $(OBJECT_DIR)/flight/mixer.o : \
 	$(USER_DIR)/flight/mixer.c \
 	$(USER_DIR)/flight/mixer.h \
@@ -330,6 +345,14 @@ $(OBJECT_DIR)/flight/mixer.o : \
 
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/flight/mixer.c -o $@
+
+$(OBJECT_DIR)/flight/servos.o : \
+	$(USER_DIR)/flight/servos.c \
+	$(USER_DIR)/flight/servos.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/flight/servos.c -o $@
 
 $(OBJECT_DIR)/flight_mixer_unittest.o : \
 	$(TEST_DIR)/flight_mixer_unittest.cc \
@@ -341,6 +364,7 @@ $(OBJECT_DIR)/flight_mixer_unittest.o : \
 
 $(OBJECT_DIR)/flight_mixer_unittest : \
 	$(OBJECT_DIR)/flight/mixer.o \
+	$(OBJECT_DIR)/flight/servos.o \
 	$(OBJECT_DIR)/flight_mixer_unittest.o \
 	$(OBJECT_DIR)/common/maths.o \
 	$(OBJECT_DIR)/gtest_main.a
@@ -717,6 +741,14 @@ $(OBJECT_DIR)/drivers/buf_writer.o : \
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -D'__TARGET__="TEST"' -D'__REVISION__="revision"' -c $(USER_DIR)/drivers/buf_writer.c -o $@
 
+$(OBJECT_DIR)/common/streambuf.o : \
+	$(USER_DIR)/common/streambuf.c \
+	$(USER_DIR)/common/streambuf.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -D'__TARGET__="TEST"' -D'__REVISION__="revision"' -c $(USER_DIR)/common/streambuf.c -o $@
+
 $(OBJECT_DIR)/io/serial_msp.o : \
 	$(USER_DIR)/io/serial_msp.c \
 	$(USER_DIR)/io/serial_msp.h \
@@ -724,6 +756,14 @@ $(OBJECT_DIR)/io/serial_msp.o : \
 
 	@mkdir -p $(dir $@)
 	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/serial_msp.c -o $@
+
+$(OBJECT_DIR)/io/msp.o : \
+	$(USER_DIR)/io/msp.c \
+	$(USER_DIR)/io/msp.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/io/msp.c -o $@
 
 $(OBJECT_DIR)/serial_msp_unittest.o : \
 	$(TEST_DIR)/serial_msp_unittest.cc \
@@ -734,12 +774,32 @@ $(OBJECT_DIR)/serial_msp_unittest.o : \
 
 $(OBJECT_DIR)/serial_msp_unittest : \
 	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/common/streambuf.o \
 	$(OBJECT_DIR)/version.o \
 	$(OBJECT_DIR)/io/serial.o \
 	$(OBJECT_DIR)/io/serial_msp.o \
 	$(OBJECT_DIR)/drivers/buf_writer.o \
 	$(OBJECT_DIR)/config/parameter_group.o \
 	$(OBJECT_DIR)/serial_msp_unittest.o \
+	$(OBJECT_DIR)/gtest_main.a
+
+	$(CXX) $(CXX_FLAGS) $(PG_FLAGS) $^ -o $(OBJECT_DIR)/$@
+
+$(OBJECT_DIR)/msp_unittest.o : \
+	$(TEST_DIR)/msp_unittest.cc \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXX_FLAGS) $(TEST_CFLAGS) -c $(TEST_DIR)/msp_unittest.cc -o $@
+
+$(OBJECT_DIR)/msp_unittest : \
+	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/common/streambuf.o \
+	$(OBJECT_DIR)/version.o \
+	$(OBJECT_DIR)/io/serial.o \
+	$(OBJECT_DIR)/io/msp.o \
+	$(OBJECT_DIR)/config/parameter_group.o \
+	$(OBJECT_DIR)/msp_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $(PG_FLAGS) $^ -o $(OBJECT_DIR)/$@
@@ -881,9 +941,33 @@ $(OBJECT_DIR)/config_streamer_unittest : \
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
+## test        : Build and run the Unit Tests
 test: $(TESTS:%=test-%)
 
+## junittest   : Build and run the Unit Tests, producing Junit XML result files."
+junittest: EXEC_OPTS = "--gtest_output=xml:$<_results.xml" 
+junittest: $(TESTS:%=test-%)
+
 test-%: $(OBJECT_DIR)/%
-	$<
+	$< $(EXEC_OPTS)
+
+## help        : print this help message and exit
+## what        : print this help message and exit
+## usage       : print this help message and exit
+help what usage: Makefile
+	@echo ""
+	@echo "Makefile for Unit Tests"
+	@echo ""
+	@echo "Usage:"
+	@echo "        make [goal] "
+	@echo ""
+	@echo "Valid goals are:"
+	@echo ""
+	@sed -n 's/^## //p' $<
+	@echo ""
+	@echo "Any of the Unit Test programs can be used as goals:"
+	@$(foreach prg, $(TEST_BINARIES), echo "    $(prg)";)
+
+
 
 -include $(DEPS)
