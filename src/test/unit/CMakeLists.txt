@@ -117,11 +117,8 @@ cleanflight_add_gtest(flight_mixer_unittest
 cleanflight_add_gtest(flight_imu_unittest
     "flight-imu;flight-altitudehold;")
 
-#TODO: Fix broken tests
-if(NOT CYGWIN)
-    cleanflight_add_gtest(flight_pid_unittest
-        "common-maths;flight-pid;flight-pid_luxfloat;flight-pid_mwrewrite;flight-pid_mw23;")
-endif()
+cleanflight_add_gtest(flight_pid_unittest
+    "common-maths;flight-pid;flight-pid_luxfloat;flight-pid_mwrewrite;flight-pid_mw23;")
 
 ###################
 # /io/
