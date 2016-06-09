@@ -338,7 +338,7 @@ void init(void)
     memset(&pwm_params, 0, sizeof(pwm_params));
 
 #ifdef SONAR
-    const sonarHardware_t *sonarHardware;
+    const sonarHardware_t *sonarHardware = NULL;
     if (feature(FEATURE_SONAR)) {
         sonarHardware = sonarGetHardwareConfiguration(batteryConfig()->currentMeterType);
         sonarGPIOConfig_t sonarGPIOConfig = {
