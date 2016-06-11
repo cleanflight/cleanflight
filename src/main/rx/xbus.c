@@ -202,7 +202,6 @@ static void xBusUnpackModeBFrame(uint8_t offsetBytes)
             xBusChannelData[i] = XBUS_CONVERT_TO_USEC(value);
         }
 
-        xBusFrameReceived = true;
     }
 
 }
@@ -291,16 +290,7 @@ static void xBusDataReceive(uint16_t c)
 
     // Done?
     if (xBusFramePosition == xBusFrameLength) {
-        switch (xBusProvider) {
-            case SERIALRX_XBUS_MODE_B:
-                xBusUnpackModeBFrame(0);
-                break;
-            case SERIALRX_XBUS_MODE_B_RJ01:
-                xBusUnpackRJ01Frame();
-                break;
-        }
-        xBusDataIncoming = false;
-        xBusFramePosition = 0;
+        xBusFrameReceived = true;
     }
 }
 
@@ -310,6 +300,17 @@ uint8_t xBusFrameStatus(void)
     if (!xBusFrameReceived) {
         return SERIAL_RX_FRAME_PENDING;
     }
+
+    switch (xBusProvider) {
+        case SERIALRX_XBUS_MODE_B:
+            xBusUnpackModeBFrame(0);
+            break;
+        case SERIALRX_XBUS_MODE_B_RJ01:
+            xBusUnpackRJ01Frame();
+            break;
+    }
+    xBusDataIncoming = false;
+    xBusFramePosition = 0;
 
     xBusFrameReceived = false;
 
