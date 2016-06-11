@@ -41,18 +41,9 @@
 
 // Frame is: ID(1 byte) + 12*channel(2 bytes) + CRC(2 bytes) = 27
 #define XBUS_FRAME_SIZE 27
+#define XBUS_MAX_FRAME_SIZE 33
 
-#define XBUS_RJ01_FRAME_SIZE 33
-#define XBUS_RJ01_MESSAGE_LENGTH 30
 #define XBUS_RJ01_OFFSET_BYTES 3
-
-#define XBUS_RA01_FRAME_SIZE 31
-#define XBUS_RA01_MESSAGE_LENGTH 28
-#define XBUS_RA01_OFFSET_BYTES 3
-
-#define XBUS_RA01TL_FRAME_SIZE 32
-#define XBUS_RA01TL_MESSAGE_LENGTH 29
-#define XBUS_RA01TL_OFFSET_BYTES 3
 
 #define XBUS_MESSAGE_LENGTH_POSITION 1
 
@@ -90,7 +81,7 @@ static uint8_t xBusProvider;
 
 
 // Use max values for ram areas
-static volatile uint8_t xBusFrame[XBUS_RJ01_FRAME_SIZE];
+static volatile uint8_t xBusFrame[XBUS_MAX_FRAME_SIZE];
 static uint16_t xBusChannelData[XBUS_RJ01_CHANNEL_COUNT];
 
 static void xBusDataReceive(uint16_t c);
@@ -118,7 +109,6 @@ bool xBusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
             xBusDataIncoming = false;
             xBusFramePosition = 0;
             baudRate = XBUS_RJ01_BAUDRATE;
-            xBusFrameLength = XBUS_RJ01_FRAME_SIZE;
             xBusChannelCount = XBUS_RJ01_CHANNEL_COUNT;
             xBusProvider = SERIALRX_XBUS_MODE_B_RJ01;
             break;
@@ -158,7 +148,7 @@ static uint16_t xBusCRC16(uint16_t crc, uint8_t value)
     return crc;
 }
 
-// Full RJ01/RA01 message CRC8 calculations
+// Full Xbus message CRC8 calculations
 uint8_t xBusCRC8(uint8_t inData, uint8_t seed)
 {
     uint8_t bitsLeft;
@@ -228,6 +218,9 @@ static void xBusUnpackRJ01Frame(void)
     // the MODE_B -frame is packed within some
     // at the moment unknown bytes before and after:
     // 0xA1 LEN __ 0xA1 12*(High + Low) CRC1 CRC2 + __ __ CRC_OUTER
+    // Note that the unknown number of bytes differ between receivers,
+    // but the "CRC_OUTER" is always the last byte, and the MODE B frame
+    // always starts 3 bytes into the frame
     // Compared to a standard MODE B frame that only
     // contains the "middle" package.
     // Hence, at the moment, the unknown header and footer
@@ -235,20 +228,8 @@ static void xBusUnpackRJ01Frame(void)
     // However, the LAST byte (CRC_OUTER) is infact an 8-bit
     // CRC for the whole package, using the Dallas-One-Wire CRC
     // method.
-    // So, we check both these values as well as the provided length
-    // of the outer/full message (LEN)
 
-    //
-    // Check we have correct length of message
-    //
-    if (xBusFrame[1] != XBUS_RJ01_MESSAGE_LENGTH)
-    {
-        // Unknown package as length is not ok
-        return;
-    }
-    //
-
-    // CRC calculation & check for full message
+    // CRC calculation & check for full message (CRC_OUTER)
     //
     for (i = 0; i < xBusFrameLength - 1; i++) {
         outerCrc = xBusCRC8(outerCrc, xBusFrame[i]);
@@ -262,98 +243,6 @@ static void xBusUnpackRJ01Frame(void)
 
     // Now unpack the "embedded MODE B frame"
     xBusUnpackModeBFrame(XBUS_RJ01_OFFSET_BYTES);
-}
-
-static void xBusUnpackRA01Frame(void)
-{
-    // Calculate the CRC of the incoming frame
-    uint8_t outerCrc = 0;
-    uint8_t i = 0;
-
-    // When using the RA01 receiver with
-    // a MODE B setting in the radio (XG14 tested)
-    // the MODE_B -frame looks like this:
-    // 0xA1 LEN __ 0xA1 12*(High + Low) CRC1 CRC2 + CRC_OUTER
-    // Compared to a standard MODE B frame that only
-    // contains the "middle" package.
-    // Hence, at the moment, the unknown header
-    // of the RA01 MODEB packages are discarded.
-    // However, the LAST byte (CRC_OUTER) is infact an 8-bit
-    // CRC for the whole package, using the Dallas-One-Wire CRC
-    // method.
-    // So, we check both these values as well as the provided length
-    // of the outer/full message (LEN)
-
-    //
-    // Check we have correct length of message
-    //
-    if (xBusFrame[1] != XBUS_RA01_MESSAGE_LENGTH)
-    {
-        // Unknown package as length is not ok
-        return;
-    }
-    //
-
-    // CRC calculation & check for full message
-    //
-    for (i = 0; i < xBusFrameLength - 1; i++) {
-        outerCrc = xBusCRC8(outerCrc, xBusFrame[i]);
-    }
-
-    if (outerCrc != xBusFrame[xBusFrameLength - 1])
-    {
-        // CRC does not match, skip this frame
-        return;
-    }
-
-    // Now unpack the "embedded MODE B frame"
-    xBusUnpackModeBFrame(XBUS_RA01_OFFSET_BYTES);
-}
-
-static void xBusUnpackRA01TLFrame(void)
-{
-    // Calculate the CRC of the incoming frame
-    uint8_t outerCrc = 0;
-    uint8_t i = 0;
-
-    // When using the RA01TL receiver with
-    // a MODE B setting in the radio (XG14 tested)
-    // the MODE_B -frame looks like this:
-    // 0xA1 LEN __ 0xA1 12*(High + Low) CRC1 CRC2 + __ + CRC_OUTER
-    // Compared to a standard MODE B frame that only
-    // contains the "middle" package.
-    // Hence, at the moment, the unknown header
-    // of the RA01 MODEB packages are discarded.
-    // However, the LAST byte (CRC_OUTER) is infact an 8-bit
-    // CRC for the whole package, using the Dallas-One-Wire CRC
-    // method.
-    // So, we check both these values as well as the provided length
-    // of the outer/full message (LEN)
-
-    //
-    // Check we have correct length of message
-    //
-    if (xBusFrame[1] != XBUS_RA01TL_MESSAGE_LENGTH)
-    {
-        // Unknown package as length is not ok
-        return;
-    }
-    //
-
-    // CRC calculation & check for full message
-    //
-    for (i = 0; i < xBusFrameLength - 1; i++) {
-        outerCrc = xBusCRC8(outerCrc, xBusFrame[i]);
-    }
-
-    if (outerCrc != xBusFrame[xBusFrameLength - 1])
-    {
-        // CRC does not match, skip this frame
-        return;
-    }
-
-    // Now unpack the "embedded MODE B frame"
-    xBusUnpackModeBFrame(XBUS_RA01TL_OFFSET_BYTES);
 }
 
 // Receive ISR callback
@@ -371,6 +260,14 @@ static void xBusDataReceive(uint16_t c)
         xBusDataIncoming = false;
     }
 
+    // Too long message?
+    if (xBusFramePosition >= XBUS_MAX_FRAME_SIZE) {
+        // Something wrong...stop in order to avoid
+        // overwriting the buffer
+        xBusFramePosition = 0;
+        xBusDataIncoming = false;
+    }
+
     // Check if we shall start a frame?
     if ((xBusFramePosition == 0) && (c == XBUS_START_OF_FRAME_BYTE)) {
         xBusDataIncoming = true;
@@ -378,28 +275,18 @@ static void xBusDataReceive(uint16_t c)
 
     // Only do this if we are receiving to a frame
     if (xBusDataIncoming == true) {
-        // Store in frame copy
+        // Store in frame buffer
         xBusFrame[xBusFramePosition] = (uint8_t)c;
 
-        // Figure out if this is RA01 or RJ01 receiver?
+        // Figure out the FRAME LENGTH (it might vary depending on receiver)
+        // Note: This is only in XBUS_RJ01 mode.
         if ((xBusProvider == SERIALRX_XBUS_MODE_B_RJ01) &&
             (xBusFramePosition == XBUS_MESSAGE_LENGTH_POSITION)) {
-            // Check this by looking at length of message
-            if (c == XBUS_RJ01_MESSAGE_LENGTH) {
-                xBusFrameLength = XBUS_RJ01_FRAME_SIZE;
-            } else if (c == XBUS_RA01_MESSAGE_LENGTH) {
-                xBusFrameLength = XBUS_RA01_FRAME_SIZE;
-            } else if (c == XBUS_RA01TL_MESSAGE_LENGTH) {
-                xBusFrameLength = XBUS_RA01TL_FRAME_SIZE;
-            } else {
-                // This is an unknown message, abort it
-                xBusDataIncoming = false;
-                xBusFramePosition = 0;
-            }
+            xBusFrameLength = xBusFrame[xBusFramePosition]
+                              + XBUS_RJ01_OFFSET_BYTES;
         }
 
         xBusFramePosition++;
-
     }
 
     // Done?
@@ -407,14 +294,10 @@ static void xBusDataReceive(uint16_t c)
         switch (xBusProvider) {
             case SERIALRX_XBUS_MODE_B:
                 xBusUnpackModeBFrame(0);
+                break;
             case SERIALRX_XBUS_MODE_B_RJ01:
-                if (xBusFrameLength == XBUS_RJ01_FRAME_SIZE) {
-                    xBusUnpackRJ01Frame();
-                } else if (xBusFrameLength == XBUS_RA01_FRAME_SIZE) {
-                    xBusUnpackRA01Frame();
-                } else {
-                    xBusUnpackRA01TLFrame();
-                }
+                xBusUnpackRJ01Frame();
+                break;
         }
         xBusDataIncoming = false;
         xBusFramePosition = 0;
