@@ -33,7 +33,8 @@ typedef enum {
     WARNING_LED_OFF = 0,
     WARNING_LED_ON,
     WARNING_LED_FLASH,
-    WARNING_LED_PULSE
+    WARNING_LED_PULSE,
+    WARNING_LED_CODE,
 } warningLedState_e;
 
 static warningLedState_e warningLedState = WARNING_LED_OFF;
@@ -64,31 +65,81 @@ void warningLedPulse(void)
     warningLedState = WARNING_LED_PULSE;
 }
 
+static uint8_t ledCode = 0;
+
+void warningLedCode(uint8_t code)
+{
+    warningLedState = WARNING_LED_CODE;
+    ledCode = code;
+}
+
 
 void warningLedRefresh(void)
 {
     uint32_t delay = 500000;
     static bool ledEnabled = false;
+    static int codeCounter = 0;
 
-    switch (warningLedState) {
+    static warningLedState_e ledState = WARNING_LED_OFF;
+
+    static bool finished = true;
+
+    if (ledState != warningLedState && finished) {
+        // new state ready to apply
+        ledEnabled = false;
+        ledState = warningLedState;
+        finished = false;
+    }
+
+
+    switch (ledState) {
         case WARNING_LED_OFF:
             ledEnabled = false;
+            finished = true;
             break;
         case WARNING_LED_ON:
             ledEnabled = true;
+            finished = true;
             break;
         case WARNING_LED_FLASH:
             ledEnabled = !ledEnabled;
-            LED0_TOGGLE;
+
+            if (!ledEnabled) {
+                finished = true;
+            }
             break;
         case WARNING_LED_PULSE:
             ledEnabled = !ledEnabled;
 
             if (ledEnabled) {
-                delay = 100000; // short on
+                delay = 200000; // short on
+                finished = false;
             } else {
                 delay = 900000; // long off
+                finished = true;
             }
+
+            break;
+        case WARNING_LED_CODE:
+            ledEnabled = !ledEnabled;
+            finished = false;
+
+            if (!ledEnabled) {
+                if (codeCounter) {
+                    codeCounter--;
+                }
+                if (codeCounter == 0) {
+                    finished = true;
+                    codeCounter = ledCode;
+                }
+            }
+
+            if (!finished) {
+                delay = 100000; // short on or off when counting down
+            } else {
+                delay = 900000; // long off after counter.
+            }
+
             break;
     }
 
