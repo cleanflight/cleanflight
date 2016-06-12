@@ -97,7 +97,7 @@
 #include "fc/cleanflight_fc.h"
 
 #include "version.h"
-#ifdef NAZE
+#ifdef USE_HARDWARE_REVISION_DETECTION
 #include "hardware_revision.h"
 #endif
 
@@ -514,10 +514,10 @@ int mspServerProcessOutCommand(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_BOARD_INFO:
             sbufWriteData(dst, boardIdentifier, BOARD_IDENTIFIER_LENGTH);
-#ifdef NAZE
+#ifdef USE_HARDWARE_REVISION_DETECTION
             sbufWriteU16(dst, hardwareRevision);
 #else
-            sbufWriteU16(dst, 0); // No other build targets currently have hardware revision detection.
+            sbufWriteU16(dst, 0); // No hardware revision available.
 #endif
             break;
 
