@@ -62,9 +62,7 @@ enum
 
     // ID of sensor. Must be something that is polled by FrSky RX
     FSSP_SENSOR_ID1 = 0x1B,
-    FSSP_SENSOR_ID2 = 0x0D,
-    FSSP_SENSOR_ID3 = 0x34,
-    FSSP_SENSOR_ID4 = 0x67,
+
     // there are 32 ID's polled by smartport master
     // remaining 3 bits are crc (according to comments in openTx code)
 };
@@ -398,9 +396,7 @@ void handleSmartPortTelemetry(void)
                     tmpi += 10;
                 if (FLIGHT_MODE(HORIZON_MODE))
                     tmpi += 20;
-                if (FLIGHT_MODE(UNUSED_MODE))
-                    tmpi += 40;
-                if (FLIGHT_MODE(PASSTHRU_MODE))
+                if (IS_RC_MODE_ACTIVE(BOXAIRMODE))
                     tmpi += 40;
 
                 if (FLIGHT_MODE(MAG_MODE))
@@ -420,20 +416,19 @@ void handleSmartPortTelemetry(void)
                 smartPortSendPackage(id, (uint32_t)tmpi);
                 smartPortHasRequest = 0;
                 break;
+#ifdef GPS
             case FSSP_DATAID_T2         :
                 if (sensors(SENSOR_GPS)) {
-#ifdef GPS
                     // provide GPS lock status
                     smartPortSendPackage(id, (STATE(GPS_FIX) ? 1000 : 0) + (STATE(GPS_FIX_HOME) ? 2000 : 0) + GPS_numSat);
                     smartPortHasRequest = 0;
-#endif
                 }
                 else if (feature(FEATURE_GPS)) {
                     smartPortSendPackage(id, 0);
                     smartPortHasRequest = 0;
                 }
                 break;
-#ifdef GPS
+
             case FSSP_DATAID_GPS_ALT    :
                 if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
                     smartPortSendPackage(id, GPS_altitude * 100); // given in 0.1m , requested in 10 = 1m (should be in mm, probably a bug in opentx, tested on 2.0.1.7)
