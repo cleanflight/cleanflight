@@ -28,18 +28,19 @@ doc_files=(
 	'Blackbox.md'
 	'Migrating from baseflight.md'
 	'Boards.md'
-	'Board - AlienWii32.md'
-	'Board - CC3D.md'
-    'Board - ChebuzzF3.md'
-	'Board - CJMCU.md'
+    'Board - SPRacingF3Mini.md'
+    'Board - SPRacingF3.md'
     'Board - ColibriRace.md'
-	'Board - Motolab.md'
-	'Board - Naze32.md'
-    'Board - Olimexino.md'
+    'Board - Sparky.md'
+    'Board - Motolab.md'
+    'Board - RMDO.md'
+    'Board - Naze32.md'
     'Board - Paris Air Hero 32.md'
-	'Board - Sparky.md'
-	'Board - RMDO.md'
-	'Board - SPRacingF3.md'
+    'Board - AlienFlight.md'
+    'Board - CC3D.md'
+    'Board - CJMCU.md'
+    'Board - Olimexino.md'
+    'Board - ChebuzzF3.md'
 )
 
 if which gimli >/dev/null; then
@@ -51,6 +52,7 @@ if which gimli >/dev/null; then
 	for i in "${doc_files[@]}"
 	do
 		cat "$i" >> ${filename}.md
+		echo >> ${filename}.md
 	done
 	rm -f ${filename}.pdf
 	gimli -f ${filename}.md -stylesheet override.css \

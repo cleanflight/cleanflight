@@ -71,4 +71,18 @@ typedef struct sensorAlignmentConfig_s {
     sensor_align_e mag_align;               // mag alignment
 } sensorAlignmentConfig_t;
 
-extern int16_t heading;
+typedef struct sensorSelectionConfig_s {
+    uint8_t acc_hardware;                   // Which acc hardware to use on boards with more than one device
+    uint8_t mag_hardware;                   // Which mag hardware to use on boards with more than one device
+    uint8_t baro_hardware;                  // Barometer hardware to use
+} sensorSelectionConfig_t;
+
+typedef struct sensorTrims_s {
+    flightDynamicsTrims_t accZero;
+    flightDynamicsTrims_t magZero;
+} sensorTrims_t;
+
+PG_DECLARE(sensorSelectionConfig_t, sensorSelectionConfig);
+PG_DECLARE(sensorAlignmentConfig_t, sensorAlignmentConfig);
+PG_DECLARE(sensorTrims_t, sensorTrims);
+

@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "drivers/system.h"
 #include "drivers/gpio.h"
@@ -37,7 +37,8 @@ typedef enum {
 
 static warningLedState_e warningLedState = WARNING_LED_OFF;
 
-void warningLedResetTimer(void) {
+void warningLedResetTimer(void)
+{
     uint32_t now = millis();
     warningLedTimer = now + 500000;
 }

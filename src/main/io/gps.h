@@ -66,6 +66,8 @@ typedef struct gpsConfig_s {
     gpsAutoBaud_e autoBaud;
 } gpsConfig_t;
 
+PG_DECLARE(gpsConfig_t, gpsConfig);
+
 typedef struct gpsCoordinateDDDMMmmmm_s {
     int16_t dddmm;
     int16_t mmmm;
@@ -114,9 +116,12 @@ extern uint8_t GPS_svinfo_svid[16];        // Satellite ID
 extern uint8_t GPS_svinfo_quality[16];     // Bitfield Qualtity
 extern uint8_t GPS_svinfo_cno[16];         // Carrier to Noise Ratio (Signal Strength)
 
+extern uint32_t GPS_garbageByteCount;
+
 #define GPS_DBHZ_MIN 0
 #define GPS_DBHZ_MAX 55
 
+void gpsInit(void);
 
 void gpsThread(void);
 bool gpsNewFrame(uint8_t c);

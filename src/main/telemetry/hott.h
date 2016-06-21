@@ -70,7 +70,6 @@ typedef enum {
     HOTT_EAM_ALARM2_FLAG_ON_SIGN_OR_TEXT_ACTIVE = (1 << 7),
 } hottEamAlarm2Flag_e;
 
-
 //
 // Messages
 //
@@ -202,7 +201,7 @@ typedef struct HOTT_GAM_MSG_s {
     uint8_t pressure;            //#42 Pressure up to 16bar. 0,1bar scale. 20 = 2bar
     uint8_t version;             //#43 version number TODO: more info?
     uint8_t stop_byte;           //#44 stop uint8_t
-} OTT_GAM_MSG_t;
+} HOTT_GAM_MSG_t;
 
 #define HOTT_VARIO_MSG_TEXT_LEN 21
 typedef struct HOTT_VARIO_MSG_s {
@@ -431,7 +430,7 @@ typedef struct HOTT_GPS_MSG_s {
 
 typedef struct HOTT_AIRESC_MSG_s {
     uint8_t start_byte;      //#01 constant value 0x7c
-    uint8_t gps_sensor_id;   //#02 constant value 0x8c
+    uint8_t airesc_sensor_id;   //#02 constant value 0x8c
     uint8_t warning_beeps;   //#03 1=A 2=B ...
                             // A
                             // L
@@ -487,10 +486,16 @@ typedef struct HOTT_AIRESC_MSG_s {
     uint8_t stop_byte;      //#44 constant value 0x7d
 } HOTT_AIRESC_MSG_t;
 
+typedef struct hottTelemetryConfig_s {
+    uint8_t hottAlarmSoundInterval;
+} hottTelemetryConfig_t;
+
+PG_DECLARE(hottTelemetryConfig_t, hottTelemetryConfig);
+
 void handleHoTTTelemetry(void);
 void checkHoTTTelemetryState(void);
 
-void initHoTTTelemetry(telemetryConfig_t *telemetryConfig);
+void initHoTTTelemetry(void);
 void configureHoTTTelemetryPort(void);
 void freeHoTTTelemetryPort(void);
 

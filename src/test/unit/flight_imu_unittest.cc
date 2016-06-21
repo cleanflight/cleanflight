@@ -17,59 +17,134 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <limits.h>
 
 #define BARO
 
 extern "C" {
+    #include <platform.h>
+    #include "build_config.h"
     #include "debug.h"
 
     #include "common/axis.h"
     #include "common/maths.h"
 
+    #include "config/parameter_group.h"
+    #include "config/parameter_group_ids.h"
+
     #include "sensors/sensors.h"
+
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
     #include "drivers/compass.h"
+
     #include "sensors/gyro.h"
     #include "sensors/compass.h"
     #include "sensors/acceleration.h"
     #include "sensors/barometer.h"
 
     #include "config/runtime_config.h"
+    #include "config/config.h"
+
+    #include "io/motor_and_servo.h"
+    #include "io/rc_controls.h"
 
     #include "rx/rx.h"
+
+    #include "io/rc_controls.h"
 
     #include "flight/mixer.h"
     #include "flight/pid.h"
     #include "flight/imu.h"
+
+    PG_REGISTER_PROFILE(pidProfile_t, pidProfile, PG_PID_PROFILE, 0);
+    PG_REGISTER_PROFILE(rcControlsConfig_t, rcControlsConfig, PG_RC_CONTROLS_CONFIG, 0);
+    PG_REGISTER_PROFILE(barometerConfig_t, barometerConfig, PG_BAROMETER_CONFIG, 0);
+    PG_REGISTER_PROFILE(compassConfig_t, compassConfig, PG_COMPASS_CONFIGURATION, 0);
+    PG_REGISTER(motorAndServoConfig_t, motorAndServoConfig, PG_MOTOR_AND_SERVO_CONFIG, 0);
+
 }
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
 
-#define DOWNWARDS_THRUST true
-#define UPWARDS_THRUST false
+extern float q0, q1, q2, q3;
+extern "C" {
+void imuComputeRotationMatrix(void);
+void imuUpdateEulerAngles(void);
 
+int16_t cycleTime = 2000;
 
-TEST(FlightImuTest, TestCalculateHeading)
+}
+
+void imuComputeQuaternionFromRPY(int16_t initialRoll, int16_t initialPitch, int16_t initialYaw)
 {
-    //TODO: Add test cases using the Z dimension.
-    t_fp_vector north = {.A={1.0f, 0.0f, 0.0f}};
-    EXPECT_EQ(imuCalculateHeading(&north), 0);
+    if (initialRoll > 1800) initialRoll -= 3600;
+    if (initialPitch > 1800) initialPitch -= 3600;
+    if (initialYaw > 1800) initialYaw -= 3600;
 
-    t_fp_vector east = {.A={0.0f, 1.0f, 0.0f}};
-    EXPECT_EQ(imuCalculateHeading(&east), 90);
+    float cosRoll = cosf(DECIDEGREES_TO_RADIANS(initialRoll) * 0.5f);
+    float sinRoll = sinf(DECIDEGREES_TO_RADIANS(initialRoll) * 0.5f);
 
-    t_fp_vector south = {.A={-1.0f, 0.0f, 0.0f}};
-    EXPECT_EQ(imuCalculateHeading(&south), 180);
+    float cosPitch = cosf(DECIDEGREES_TO_RADIANS(initialPitch) * 0.5f);
+    float sinPitch = sinf(DECIDEGREES_TO_RADIANS(initialPitch) * 0.5f);
 
-    t_fp_vector west = {.A={0.0f, -1.0f, 0.0f}};
-    EXPECT_EQ(imuCalculateHeading(&west), 270);
+    float cosYaw = cosf(DECIDEGREES_TO_RADIANS(-initialYaw) * 0.5f);
+    float sinYaw = sinf(DECIDEGREES_TO_RADIANS(-initialYaw) * 0.5f);
 
-    t_fp_vector north_east = {.A={1.0f, 1.0f, 0.0f}};
-    EXPECT_EQ(imuCalculateHeading(&north_east), 45);
+    q0 = cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw;
+    q1 = sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw;
+    q2 = cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw;
+    q3 = cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw;
+
+    imuComputeRotationMatrix();
+}
+
+TEST(FlightImuTest, TestEulerAngleCalculation)
+{
+    imuComputeQuaternionFromRPY(0, 0, 0);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, 0);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, 0);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 0);
+
+    imuComputeQuaternionFromRPY(450, 450, 0);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, 450);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, 450);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 0);
+
+    imuComputeQuaternionFromRPY(-450, -450, 0);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, -450);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, -450);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 0);
+
+    imuComputeQuaternionFromRPY(1790, 0, 0);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, 1790);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, 0);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 0);
+
+    imuComputeQuaternionFromRPY(-1790, 0, 0);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, -1790);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, 0);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 0);
+
+    imuComputeQuaternionFromRPY(0, 0, 900);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, 0);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, 0);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 900);
+
+    imuComputeQuaternionFromRPY(0, 0, 2700);
+    imuUpdateEulerAngles();
+    EXPECT_FLOAT_EQ(attitude.values.roll, 0);
+    EXPECT_FLOAT_EQ(attitude.values.pitch, 0);
+    EXPECT_FLOAT_EQ(attitude.values.yaw, 2700);
 }
 
 // STUBS
@@ -79,10 +154,10 @@ uint32_t rcModeActivationMask;
 int16_t rcCommand[4];
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
-uint16_t acc_1G;
+acc_t acc;
 int16_t heading;
 gyro_t gyro;
-int16_t magADC[XYZ_AXIS_COUNT];
+int32_t magADC[XYZ_AXIS_COUNT];
 int32_t BaroAlt;
 int16_t debug[DEBUG16_VALUE_COUNT];
 
@@ -93,9 +168,16 @@ uint8_t armingFlags;
 int32_t sonarAlt;
 int16_t sonarCfAltCm;
 int16_t sonarMaxAltWithTiltCm;
-int16_t accADC[XYZ_AXIS_COUNT];
-int16_t gyroADC[XYZ_AXIS_COUNT];
+int32_t accADC[XYZ_AXIS_COUNT];
+int32_t gyroADC[XYZ_AXIS_COUNT];
 
+int16_t GPS_speed;
+int16_t GPS_ground_course;
+int16_t GPS_numSat;
+
+float magneticDeclination = 0.0f;
+
+bool rcModeIsActive(boxId_e modeId) { return rcModeActivationMask & (1 << modeId); }
 
 uint16_t enableFlightMode(flightModeFlags_e mask)
 {
@@ -119,6 +201,7 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 }
 
 uint32_t micros(void) { return 0; }
+uint32_t millis(void) { return 0; }
 bool isBaroCalibrationComplete(void) { return true; }
 void performBaroCalibrationCycle(void) {}
 int32_t baroCalculateAltitude(void) { return 0; }

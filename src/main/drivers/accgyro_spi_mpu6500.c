@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
 
 #include "common/axis.h"
 #include "common/maths.h"
@@ -37,8 +37,6 @@
 
 #define DISABLE_MPU6500       GPIO_SetBits(MPU6500_CS_GPIO,   MPU6500_CS_PIN)
 #define ENABLE_MPU6500        GPIO_ResetBits(MPU6500_CS_GPIO, MPU6500_CS_PIN)
-
-extern uint16_t acc_1G;
 
 bool mpu6500WriteRegister(uint8_t reg, uint8_t data)
 {
@@ -101,16 +99,17 @@ static void mpu6500SpiInit(void)
 
 bool mpu6500SpiDetect(void)
 {
-    uint8_t tmp;
+    uint8_t sig;
 
     mpu6500SpiInit();
 
-    mpu6500ReadRegister(MPU_RA_WHO_AM_I, 1, &tmp);
+    mpu6500ReadRegister(MPU_RA_WHO_AM_I, 1, &sig);
 
-    if (tmp != MPU6500_WHO_AM_I_CONST)
-        return false;
+    if (sig == MPU6500_WHO_AM_I_CONST || sig == MPU9250_WHO_AM_I_CONST) {
+        return true;
+    }
 
-    return true;
+    return false;
 }
 
 bool mpu6500SpiAccDetect(acc_t *acc)
@@ -133,10 +132,10 @@ bool mpu6500SpiGyroDetect(gyro_t *gyro)
 
     gyro->init = mpu6500GyroInit;
     gyro->read = mpuGyroRead;
+    gyro->isDataReady = mpuIsDataReady;
 
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;
 
     return true;
 }
-

@@ -19,15 +19,23 @@
 #include "gpio.h"
 #include "timer.h"
 
+#if defined(USE_QUAD_MIXER_ONLY)
+#define MAX_PWM_MOTORS  4
+#define MAX_PWM_SERVOS  1
+#define MAX_MOTORS  4
+#define MAX_SERVOS  1
+
+#elif defined(TARGET_MOTOR_COUNT)
+#define MAX_PWM_MOTORS TARGET_MOTOR_COUNT
+#define MAX_PWM_SERVOS 8
+#define MAX_MOTORS  TARGET_MOTOR_COUNT
+#define MAX_SERVOS  8
+
+#else
 #define MAX_PWM_MOTORS  12
 #define MAX_PWM_SERVOS  8
-
 #define MAX_MOTORS  12
 #define MAX_SERVOS  8
-#define MAX_PWM_OUTPUT_PORTS MAX_PWM_MOTORS // must be set to the largest of either MAX_MOTORS or MAX_SERVOS
-
-#if MAX_PWM_OUTPUT_PORTS < MAX_MOTORS || MAX_PWM_OUTPUT_PORTS < MAX_SERVOS
-#error Invalid motor/servo/port configuration
 #endif
 
 
@@ -52,11 +60,17 @@ typedef struct drv_pwm_config_s {
     bool useSerialRx;
     bool useRSSIADC;
     bool useCurrentMeterADC;
-#ifdef STM32F10X
+#if defined(USE_UART2)
     bool useUART2;
 #endif
-#ifdef STM32F303xC
+#if defined(USE_UART3)
     bool useUART3;
+#endif
+#if defined(USE_UART4)
+    bool useUART4;
+#endif
+#if defined(USE_UART5)
+    bool useUART5;
 #endif
     bool useVbat;
     bool useOneshot;
@@ -85,7 +99,9 @@ typedef enum {
     PWM_PF_SERVO = (1 << 1),
     PWM_PF_MOTOR_MODE_BRUSHED = (1 << 2),
     PWM_PF_OUTPUT_PROTOCOL_PWM = (1 << 3),
-    PWM_PF_OUTPUT_PROTOCOL_ONESHOT = (1 << 4)
+    PWM_PF_OUTPUT_PROTOCOL_ONESHOT = (1 << 4),
+    PWM_PF_PPM = (1 << 5),
+    PWM_PF_PWM = (1 << 6)
 } pwmPortFlags_e;
 
 
@@ -95,12 +111,14 @@ typedef struct pwmPortConfiguration_s {
     const timerHardware_t *timerHardware;
 } pwmPortConfiguration_t;
 
-typedef struct pwmOutputConfiguration_s {
+typedef struct pwmIOConfiguration_s {
     uint8_t servoCount;
     uint8_t motorCount;
-    uint8_t outputCount;
-    pwmPortConfiguration_t portConfigurations[MAX_PWM_OUTPUT_PORTS];
-} pwmOutputConfiguration_t;
+    uint8_t ioCount;
+    uint8_t pwmInputCount;
+    uint8_t ppmInputCount;
+    pwmPortConfiguration_t ioConfigurations[USABLE_TIMER_CHANNEL_COUNT];
+} pwmIOConfiguration_t;
 
 // This indexes into the read-only hardware definition structure, timerHardware_t
 enum {
@@ -122,4 +140,6 @@ enum {
     PWM16
 };
 
-pwmOutputConfiguration_t *pwmGetOutputConfiguration(void);
+pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init);
+pwmIOConfiguration_t *pwmGetOutputConfiguration(void);
+

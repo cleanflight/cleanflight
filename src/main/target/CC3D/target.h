@@ -44,7 +44,7 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 12
 
-#define DEBUG_MPU_DATA_READY_INTERRUPT
+//#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
 
 #define GYRO
@@ -70,21 +70,17 @@
 #define BEEPER
 #define DISPLAY
 
+#define USB_IO
+
 #define USE_VCP
-#define USE_USART1
-#define USE_USART3
+#define USE_UART1
+#define USE_UART3
 #define USE_SOFTSERIAL1
 #define SERIAL_PORT_COUNT 4
 
 #define SOFTSERIAL_1_TIMER TIM3
 #define SOFTSERIAL_1_TIMER_TX_HARDWARE 1 // PWM 2
 #define SOFTSERIAL_1_TIMER_RX_HARDWARE 2 // PWM 3
-
-#define USART3_RX_PIN Pin_11
-#define USART3_TX_PIN Pin_10
-#define USART3_GPIO GPIOB
-#define USART3_APB1_PERIPHERALS RCC_APB1Periph_USART3
-#define USART3_APB2_PERIPHERALS RCC_APB2Periph_GPIOB
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1
@@ -103,36 +99,40 @@
 #define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
 #define VBAT_ADC_CHANNEL            ADC_Channel_0
 
-#define RSSI_ADC_GPIO               GPIOA
-#define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
-#define RSSI_ADC_CHANNEL            ADC_Channel_1
+#define RSSI_ADC_GPIO               GPIOB
+#define RSSI_ADC_GPIO_PIN           GPIO_Pin_0
+#define RSSI_ADC_CHANNEL            ADC_Channel_8
 
-#define GPS
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
+#define SPEKTRUM_BIND
+// UART3, PB11 (Flexport)
+#define BIND_PORT  GPIOB
+#define BIND_PIN   Pin_11
+
+#define USE_SERIAL_4WAY_BLHELI_INTERFACE
+
+#define SONAR
+#define SONAR_TRIGGER_PIN           Pin_5   // (PB5)
+#define SONAR_TRIGGER_GPIO          GPIOB
+#define SONAR_ECHO_PIN              Pin_0   // (PB0) - only 3.3v ( add a 1K Ohms resistor )
+#define SONAR_ECHO_GPIO             GPIOB
+#define SONAR_EXTI_LINE             EXTI_Line0
+#define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource0
+#define SONAR_EXTI_IRQN             EXTI0_IRQn
+
+#define GPS
 #define BLACKBOX
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
 
 #define TELEMETRY
 #define SERIAL_RX
-#define SONAR
 #define USE_SERVOS
 #define USE_CLI
+#define TARGET_MOTOR_COUNT 6
 
-#define USE_SERIAL_1WIRE
-#define USE_SERIAL_1WIRE_CLI
 
-// FlexPort (pin 21/22, TX/RX respectively):
-// Note, FlexPort has 10k pullups on both TX and RX
-// JST Pin3 TX - connect to external UART/USB RX
-#define S1W_TX_GPIO         GPIOB
-#define S1W_TX_PIN          GPIO_Pin_10
-// JST Pin4 RX - connect to external UART/USB TX
-#define S1W_RX_GPIO         GPIOB
-#define S1W_RX_PIN          GPIO_Pin_11
 
-#define SPEKTRUM_BIND
-// USART3, PB11 (Flexport)
-#define BIND_PORT  GPIOB
-#define BIND_PIN   Pin_11

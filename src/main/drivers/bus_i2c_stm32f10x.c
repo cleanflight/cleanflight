@@ -63,7 +63,8 @@ static I2C_TypeDef *I2Cx = NULL;
 static I2CDevice I2Cx_index;
 static bool i2cOverClock;
 
-void i2cSetOverclock(uint8_t OverClock) {
+void i2cSetOverclock(uint8_t OverClock)
+{
     i2cOverClock = (OverClock) ? true : false;
 }
 
@@ -87,7 +88,6 @@ void I2C2_EV_IRQHandler(void)
     i2c_ev_handler();
 }
 
-#define I2C_DEFAULT_TIMEOUT 30000
 static volatile uint16_t i2cErrorCount = 0;
 
 static volatile bool error = false;

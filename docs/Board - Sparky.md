@@ -14,7 +14,6 @@ Tested with revision 1 & 2 boards.
 
 ## TODO
 
-* Sonar
 * Display (via Flex port)
 * SoftSerial - though having 3 hardware serial ports makes it a little redundant.
 * Airplane PWM mappings.
@@ -170,12 +169,20 @@ Flashing cleanflight will erase the TauLabs bootloader, this is not a problem an
 | 1     | USB VCP      | RX (USB)  | TX (USB)   |                                                                |
 | 2     | USART1       | RX / PB7  | TX / PB6   | Conn1 / Flexi Port.                                            |
 | 3     | USART2       | RX / PA3  | PWM6 / PA2 | On RX is on INPUT header.  Best port for Serial RX input       |
-| 4     | USART3       | RX / PB11 | TX / PB10  | RX/TX is on one end of the 6-pin header about the PWM outputs. |
+| 4     | USART3       | RX / PB11 | TX / PB10  | RX/TX is on one end of the 6-pin header above the PWM outputs. |
 
 USB VCP *can* be used at the same time as other serial ports (unlike Naze32).
 
 All USART ports all support automatic hardware inversion which allows direct connection of serial rx receivers like the FrSky X4RSB - no external inverter needed.
 
+# Sonar Connections
+
+| Pin  | Signal | Function        | Resistor    |
+| ---- | ------ | --------------- | ----------- |
+| PWM6 | PA2    | Trigger pin     | 1K Ohm      |
+| PWM7 | PB1    | Echo pin        | 1K Ohm      |
+
+WARNING: Both PWM6 and PWM7 pins are NOT 5 volt tolerant, so a 1K Ohm resistor is required between the sensor and the FC pins.
 
 # Battery Monitoring Connections
 
@@ -204,4 +211,4 @@ This gives a 2.2k for an 11.2v battery.  The `vbat_scale` for this divider shoul
 
 ## Current Monitoring
 
-Connect a current sensor to PWM8/PA7 that gives a range between 0v and 3.3v out (MAX). 
+Connect a current sensor to PWM8/PA7 that gives a range between 0v and 3.3v out (MAX).
