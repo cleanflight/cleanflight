@@ -17,15 +17,12 @@
 
 #pragma once
 
-typedef struct mspPacket_s {
-    sbuf_t buf;
-    int16_t cmd;
-    int16_t result;
-} mspPacket_t;
-
-extern bool isRebootScheduled;
-extern bool mspEnterEsc4way;
-
-void mspInit(void);
-
-int mspProcess(mspPacket_t *command, mspPacket_t *reply);
+void taskUpdateCycleTime(void);
+void taskMSP(void);
+void taskUpdateBattery(void);
+void taskStatusLed(void);
+void taskHardwareWatchdog(void);
+void taskSystem(void);
+void taskDrawScreen(void);
+void taskUpdateFCState(void);
+void taskTest(void);
