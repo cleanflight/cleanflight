@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include <platform.h>
+#include "build_config.h"
 
 #include "config/parameter_group.h"
 
@@ -84,7 +85,7 @@ static uint16_t srxlChannelData[SRXL_CHANNEL_COUNT_MAX];
 
 static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
-bool xBusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
+bool srxlInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     uint32_t baudRate;
 
@@ -223,6 +224,6 @@ uint8_t srxlFrameStatus(void)
 
 static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
 {
-    UNUSED(rxRuntimeConfig);
+	UNUSED(rxRuntimeConfig);
     return srxlChannelData[chan];
 }
