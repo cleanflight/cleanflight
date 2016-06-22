@@ -300,6 +300,7 @@ FC_COMMON_SRC = \
 		   rx/sumh.c \
 		   rx/spektrum.c \
 		   rx/xbus.c \
+			 rx/srxl.c \
 		   rx/ibus.c \
 		   sensors/sensors.c \
 		   sensors/acceleration.c \

@@ -32,16 +32,9 @@
 #include "rx/rx.h"
 #include "rx/xbus.h"
 
-//
-// Serial driver for JR's XBus (MODE B) receiver
-//
 
-#define XBUS_CHANNEL_COUNT 12
 #define XBUS_RJ01_CHANNEL_COUNT 12
 
-// Frame is: ID(1 byte) + 12*channel(2 bytes) + CRC(2 bytes) = 27
-#define XBUS_FRAME_SIZE_A1 27
-#define XBUS_FRAME_SIZE_A2 35
 
 #define XBUS_RJ01_FRAME_SIZE 33
 #define XBUS_RJ01_MESSAGE_LENGTH 30
@@ -78,7 +71,6 @@ static bool xBusDataIncoming = false;
 static uint8_t xBusFramePosition;
 static uint8_t xBusFrameLength;
 static uint8_t xBusChannelCount;
-static uint8_t xBusProvider;
 
 
 // Use max values for ram areas
@@ -91,31 +83,13 @@ static uint16_t xBusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 bool xBusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     uint32_t baudRate;
-
-    switch (rxConfig()->serialrx_provider) {
-        case SERIALRX_XBUS_MODE_B:
-            rxRuntimeConfig->channelCount = XBUS_CHANNEL_COUNT;
-            xBusFrameReceived = false;
-            xBusDataIncoming = false;
-            xBusFramePosition = 0;
-            baudRate = XBUS_BAUDRATE;
-            xBusFrameLength = XBUS_FRAME_SIZE_A1;		//default for 12 channel
-            xBusChannelCount = XBUS_CHANNEL_COUNT;
-            xBusProvider = SERIALRX_XBUS_MODE_B;
-            break;
-        case SERIALRX_XBUS_MODE_B_RJ01:
-            rxRuntimeConfig->channelCount = XBUS_RJ01_CHANNEL_COUNT;
-            xBusFrameReceived = false;
-            xBusDataIncoming = false;
-            xBusFramePosition = 0;
-            baudRate = XBUS_RJ01_BAUDRATE;
-            xBusFrameLength = XBUS_RJ01_FRAME_SIZE;
-            xBusChannelCount = XBUS_RJ01_CHANNEL_COUNT;
-            xBusProvider = SERIALRX_XBUS_MODE_B_RJ01;
-            break;
-        default:
-            return false;
-            break;
+    rxRuntimeConfig->channelCount = XBUS_RJ01_CHANNEL_COUNT;
+    xBusFrameReceived = false;
+    xBusDataIncoming = false;
+    xBusFramePosition = 0;
+    baudRate = XBUS_RJ01_BAUDRATE;
+    xBusFrameLength = XBUS_RJ01_FRAME_SIZE;
+    xBusChannelCount = XBUS_RJ01_CHANNEL_COUNT;
     }
 
     if (callback) {
@@ -292,14 +266,10 @@ static void xBusDataReceive(uint16_t c)
     
     // Done?
     if (xBusFramePosition == xBusFrameLength) {
-        switch (xBusProvider) {
-            case SERIALRX_XBUS_MODE_B:
-                xBusUnpackModeBFrame(0);
-            case SERIALRX_XBUS_MODE_B_RJ01:
-                xBusUnpackRJ01Frame();
-        }
-        xBusDataIncoming = false;
-        xBusFramePosition = 0;
+		xBusUnpackRJ01Frame();
+		
+    xBusDataIncoming = false;
+    xBusFramePosition = 0;
     }
 }
 

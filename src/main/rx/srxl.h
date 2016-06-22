@@ -17,5 +17,8 @@
 
 #pragma once
 
+#include "rx/rx.h"
 
+bool srxlInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback);
 uint8_t srxlFrameStatus(void);
+

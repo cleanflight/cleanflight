@@ -30,38 +30,35 @@
 #include "rx/rx.h"
 #include "rx/srxl.h"
 
-//
-// Serial driver for JR's XBus (MODE B) receiver
-//
 
-#define XBUS_CHANNEL_COUNT 12
-#define XBUS_RJ01_CHANNEL_COUNT 12
+
+#define SRXL_CHANNEL_COUNT_A1 12
+#define SRXL_CHANNEL_COUNT_A2 16
+
+#define SRXL_CHANNEL_COUNT_MAX SRXL_CHANNEL_COUNT_A2
+
+
 
 // Frame is: ID(1 byte) + 12*channel(2 bytes) + CRC(2 bytes) = 27
-#define XBUS_FRAME_SIZE_A1 27
-#define XBUS_FRAME_SIZE_A2 35
+#define SRXL_FRAME_SIZE_A1 27
+// Frame is: ID(1 byte) + 16*channel(2 bytes) + CRC(2 bytes) = 35
+#define SRXL_FRAME_SIZE_A2 35
 
-#define XBUS_RJ01_FRAME_SIZE 33
-#define XBUS_RJ01_MESSAGE_LENGTH 30
-#define XBUS_RJ01_OFFSET_BYTES 3
+#define SRXL_CRC_AND_VALUE 0x8000
+#define SRXL_CRC_POLY 0x1021
 
-#define XBUS_CRC_AND_VALUE 0x8000
-#define XBUS_CRC_POLY 0x1021
-
-#define XBUS_BAUDRATE 115200
-#define XBUS_RJ01_BAUDRATE 250000
-#define XBUS_MAX_FRAME_TIME 8000
+#define SRXL_BAUDRATE 115200
+#define SRXL_MAX_FRAME_TIME 8000
 
 // NOTE!
 // This is actually based on ID+LENGTH (nibble each)
 // 0xA - Multiplex ID (also used by JR, no idea why)
 // 0x1 - 12 channels
 // 0x2 - 16 channels
-// However, the JR XG14 that is used for test at the moment
-// does only use 0xA1 as its output. This is why the implementation
-// is based on these numbers only. Maybe update this in the future?
-#define XBUS_START_OF_FRAME_BYTE_A1 (0xA1)		//12 channels
-#define XBUS_START_OF_FRAME_BYTE_A2 (0xA2)		//16 channels transfare, but only 12 channels use for
+// Add identifier here if another manufacturer uses another ID
+
+#define SRXL_START_OF_FRAME_BYTE_A1 (0xA1)		//12 channels
+#define SRXL_START_OF_FRAME_BYTE_A2 (0xA2)		//16 channels transfer
 
 // Pulse length convertion from [0...4095] to µs:
 //      800µs  -> 0x000
@@ -69,39 +66,36 @@
 //      2200µs -> 0xFFF
 // Total range is: 2200 - 800 = 1400 <==> 4095
 // Use formula: 800 + value * 1400 / 4096 (i.e. a shift by 12)
-#define XBUS_CONVERT_TO_USEC(V)	(800 + ((V * 1400) >> 12))
+#define SRXL_CONVERT_TO_USEC(V)	(800 + ((V * 1400) >> 12))
 
-static bool xBusFrameReceived = false;
-static bool xBusDataIncoming = false;
-static uint8_t xBusFramePosition;
-static uint8_t xBusFrameLength;
-static uint8_t xBusChannelCount;
+static bool srxlFrameReceived = false;
+static bool srxlDataIncoming = false;
+static uint8_t srxlFramePosition;
+static uint8_t srxlFrameLength;
+static uint8_t srxlChannelCount;
 
 static void srxlDataReceive(uint16_t c);
 
 // Use max values for ram areas
-static volatile uint8_t xBusFrame[XBUS_FRAME_SIZE_A2];	//siz 35 for 16 channels in xbus_Mode_B
-static uint16_t xBusChannelData[XBUS_RJ01_CHANNEL_COUNT];
+static volatile uint8_t srxlFrame[SRXL_FRAME_SIZE_A2];	//size 35 for 16 channels in SRXL 0xA2
+static uint16_t srxlChannelData[XBUS_RJ01_CHANNEL_COUNT];
 
-static uint16_t xBusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
+static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 bool srxlInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     uint32_t baudRate;
 
-            rxRuntimeConfig->channelCount = XBUS_CHANNEL_COUNT;
-            xBusFrameReceived = false;
-            xBusDataIncoming = false;
-            xBusFramePosition = 0;
-            baudRate = XBUS_BAUDRATE;
-            xBusFrameLength = XBUS_FRAME_SIZE_A1;		//default for 12 channel
-            xBusChannelCount = XBUS_CHANNEL_COUNT;
-
-
-    
+            rxRuntimeConfig->channelCount = SRXL_CHANNEL_COUNT_MAX;
+            srxlFrameReceived = false;
+            srxlDataIncoming = false;
+            srxlFramePosition = 0;
+            baudRate = SRXL_BAUDRATE;
+            srxlFrameLength = SRXL_FRAME_SIZE_A2;		//default for 12 channel
+            srxlChannelCount = SRXL_CHANNEL_COUNT;
 
     if (callback) {
-        *callback = xBusReadRawRC;
+        *callback = srxlReadRawRC;
     }
 
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
@@ -109,12 +103,12 @@ bool srxlInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
         return false;
     }
 
-    serialPort_t *xBusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, srxlDataReceive, baudRate, MODE_RX, SERIAL_NOT_INVERTED);
+    serialPort_t *srxlPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, srxlDataReceive, baudRate, MODE_RX, SERIAL_NOT_INVERTED);
 
-    return xBusPort != NULL;
+    return srxlPort != NULL;
 }
 
-// The xbus mode B CRC calculations
+// The srxl CRC calculations
 static uint16_t srxlCRC16(uint16_t crc, uint8_t value)
 {
     uint8_t i;
@@ -122,8 +116,8 @@ static uint16_t srxlCRC16(uint16_t crc, uint8_t value)
     crc = crc ^ (int16_t)value << 8;
 
     for (i = 0; i < 8; i++) {
-        if (crc & XBUS_CRC_AND_VALUE) {
-            crc = crc << 1 ^ XBUS_CRC_POLY;
+        if (crc & SRXL_CRC_AND_VALUE) {
+            crc = crc << 1 ^ SRXL_CRC_POLY;
         } else {
             crc = crc << 1;
         }
@@ -132,9 +126,7 @@ static uint16_t srxlCRC16(uint16_t crc, uint8_t value)
 }
 
 
-
-
-static void srxlUnpackModeBFrame(uint8_t offsetBytes)
+static void srxlUnpackFrame()
 {
     // Calculate the CRC of the incoming frame
     uint16_t crc = 0;
@@ -144,27 +136,27 @@ static void srxlUnpackModeBFrame(uint8_t offsetBytes)
     uint8_t frameAddr;
 
     // Calculate on all bytes except the final two CRC bytes
-    for (i = 0; i < xBusFrameLength - 2; i++) {
-        inCrc = srxlCRC16(inCrc, xBusFrame[i+offsetBytes]);
+    for (i = 0; i < srxlFrameLength - 2; i++) {
+        inCrc = srxlCRC16(inCrc, srxlFrame[i]);
     }
 
     // Get the received CRC
-    crc = ((uint16_t)xBusFrame[offsetBytes + xBusFrameLength - 2]) << 8;
-    crc = crc + ((uint16_t)xBusFrame[offsetBytes + xBusFrameLength - 1]);
+    crc = ((uint16_t)srxlFrame[srxlFrameLength - 2]) << 8;
+    crc = crc + ((uint16_t)srxlFrame[srxlFrameLength - 1]);
 
     if (crc == inCrc) {
         // Unpack the data, we have a valid frame, only 12 channel unpack also when receive 16 channel
-        for (i = 0; i < xBusChannelCount; i++) {
+        for (i = 0; i < srxlChannelCount; i++) {
 
-            frameAddr = offsetBytes + 1 + i * 2;
-            value = ((uint16_t)xBusFrame[frameAddr]) << 8;
-            value = value + ((uint16_t)xBusFrame[frameAddr + 1]);
+            frameAddr = 1 + i * 2;
+            value = ((uint16_t)srxlFrame[frameAddr]) << 8;
+            value = value + ((uint16_t)srxlFrame[frameAddr + 1]);
 
             // Convert to internal format
-            xBusChannelData[i] = XBUS_CONVERT_TO_USEC(value);
+            srxlChannelData[i] = SRXL_CONVERT_TO_USEC(value);
         }
 
-        xBusFrameReceived = true;
+        srxlFrameReceived = true;
     }
 
 }
@@ -174,68 +166,60 @@ static void srxlUnpackModeBFrame(uint8_t offsetBytes)
 static void srxlDataReceive(uint16_t c)
 {
     uint32_t now;
-    static uint32_t xBusTimeLast, xBusTimeInterval;
+    static uint32_t srxlTimeLast, srxlTimeInterval;
 
     // Check if we shall reset frame position due to time
     now = micros();
-    xBusTimeInterval = now - xBusTimeLast;
-    xBusTimeLast = now;
-    if (xBusTimeInterval > XBUS_MAX_FRAME_TIME) {
-        xBusFramePosition = 0;
-        xBusDataIncoming = false;
+    srxlTimeInterval = now - srxlTimeLast;
+    srxlTimeLast = now;
+    if (srxlTimeInterval > SRXL_MAX_FRAME_TIME) {
+        SRXLFramePosition = 0;
+        SRXLDataIncoming = false;
     }
     
     // Check if we shall start a frame?
-    if (xBusFramePosition == 0)	{
-    	if (c == XBUS_START_OF_FRAME_BYTE_A1) {
-    		xBusDataIncoming = true;
-    		xBusFrameLength = XBUS_FRAME_SIZE_A1;	//decrease framesize (when receiver change, otherwise board must reboot)
+    if (SRXLFramePosition == 0)	{
+    	if (c == SRXL_START_OF_FRAME_BYTE_A1) {
+    		srxlDataIncoming = true;
+    		srxlFrameLength = SRXL_FRAME_SIZE_A1;	//decrease framesize (when receiver change, otherwise board must reboot)
+				srxlChannelCount = SRXL_CHANNEL_COUNT_A1;
     	}
-    	else if (c == XBUS_START_OF_FRAME_BYTE_A2) {//16channel packet
-    		xBusDataIncoming = true;
-    		xBusFrameLength = XBUS_FRAME_SIZE_A2;	//increase framesize
+    	else if (c == SRXL_START_OF_FRAME_BYTE_A2) {//16channel packet
+    		srxlDataIncoming = true;
+    		srxlFrameLength = srxl_FRAME_SIZE_A2;	//increase framesize
+				srxlChannelCount = SRXL_CHANNEL_COUNT_A2;
     	}
-
     }
 
     // Only do this if we are receiving to a frame
-    if (xBusDataIncoming == true) {
+    if (srxlDataIncoming == true) {
         // Store in frame copy
-        xBusFrame[xBusFramePosition] = (uint8_t)c;
-        xBusFramePosition++;
+        srxlFrame[srxlFramePosition] = (uint8_t)c;
+        srxlFramePosition++;
     }
     
     // Done?
-    if (xBusFramePosition == xBusFrameLength) {
-        srxlUnpackModeBFrame(0);
+    if (srxlFramePosition == srxlFrameLength) {
+        srxlUnpackFrame();
 
-        xBusDataIncoming = false;
-        xBusFramePosition = 0;
+        srxlDataIncoming = false;
+        srxlFramePosition = 0;
     }
 }
 
 // Indicate time to read a frame from the data...
 uint8_t srxlFrameStatus(void)
 {
-    if (!xBusFrameReceived) {
+    if (!srxlFrameReceived) {
         return SERIAL_RX_FRAME_PENDING;
     }
 
-    xBusFrameReceived = false;
+    srxlFrameReceived = false;
 
     return SERIAL_RX_FRAME_COMPLETE;
 }
 
-static uint16_t xBusReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
+static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
 {
-    uint16_t data;
-
-    // Deliver the data wanted
-    if (chan >= rxRuntimeConfig->channelCount) {
-        return 0;
-    }
-
-    data = xBusChannelData[chan];
-
-    return data;
-}
+    UNUSED(rxRuntimeConfig);
+    return srxlChannelData[chan];
