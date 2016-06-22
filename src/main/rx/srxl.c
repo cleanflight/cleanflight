@@ -19,7 +19,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "platform.h"
+#include <platform.h>
+
+#include "config/parameter_group.h"
 
 #include "drivers/system.h"
 
@@ -78,11 +80,11 @@ static void srxlDataReceive(uint16_t c);
 
 // Use max values for ram areas
 static volatile uint8_t srxlFrame[SRXL_FRAME_SIZE_A2];	//size 35 for 16 channels in SRXL 0xA2
-static uint16_t srxlChannelData[XBUS_RJ01_CHANNEL_COUNT];
+static uint16_t srxlChannelData[SRXL_CHANNEL_COUNT_MAX];
 
 static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
-bool srxlInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
+bool xBusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     uint32_t baudRate;
 
@@ -92,7 +94,7 @@ bool srxlInit(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig, rcReadRa
             srxlFramePosition = 0;
             baudRate = SRXL_BAUDRATE;
             srxlFrameLength = SRXL_FRAME_SIZE_A2;		//default for 12 channel
-            srxlChannelCount = SRXL_CHANNEL_COUNT;
+            srxlChannelCount = SRXL_CHANNEL_COUNT_MAX;
 
     if (callback) {
         *callback = srxlReadRawRC;
@@ -173,12 +175,12 @@ static void srxlDataReceive(uint16_t c)
     srxlTimeInterval = now - srxlTimeLast;
     srxlTimeLast = now;
     if (srxlTimeInterval > SRXL_MAX_FRAME_TIME) {
-        SRXLFramePosition = 0;
-        SRXLDataIncoming = false;
+        srxlFramePosition = 0;
+        srxlDataIncoming = false;
     }
     
     // Check if we shall start a frame?
-    if (SRXLFramePosition == 0)	{
+    if (srxlFramePosition == 0)	{
     	if (c == SRXL_START_OF_FRAME_BYTE_A1) {
     		srxlDataIncoming = true;
     		srxlFrameLength = SRXL_FRAME_SIZE_A1;	//decrease framesize (when receiver change, otherwise board must reboot)
@@ -186,7 +188,7 @@ static void srxlDataReceive(uint16_t c)
     	}
     	else if (c == SRXL_START_OF_FRAME_BYTE_A2) {//16channel packet
     		srxlDataIncoming = true;
-    		srxlFrameLength = srxl_FRAME_SIZE_A2;	//increase framesize
+    		srxlFrameLength = SRXL_FRAME_SIZE_A2;	//increase framesize
 				srxlChannelCount = SRXL_CHANNEL_COUNT_A2;
     	}
     }
@@ -223,3 +225,4 @@ static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
 {
     UNUSED(rxRuntimeConfig);
     return srxlChannelData[chan];
+}

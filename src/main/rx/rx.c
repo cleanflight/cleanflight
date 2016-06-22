@@ -244,7 +244,7 @@ void serialRxInit(rxConfig_t *rxConfig)
             enabled = sumhInit(&rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_SRXL:
-				    rxRefreshRate = 11000;
+			rxRefreshRate = 11000;
             enabled = srxlInit(&rxRuntimeConfig, &rcReadRawFunc);
             break;
         case SERIALRX_XBUS_MODE_B_RJ01:

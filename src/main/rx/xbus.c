@@ -47,16 +47,6 @@
 #define XBUS_RJ01_BAUDRATE 250000
 #define XBUS_MAX_FRAME_TIME 8000
 
-// NOTE!
-// This is actually based on ID+LENGTH (nibble each)
-// 0xA - Multiplex ID (also used by JR, no idea why)
-// 0x1 - 12 channels
-// 0x2 - 16 channels
-// However, the JR XG14 that is used for test at the moment
-// does only use 0xA1 as its output. This is why the implementation
-// is based on these numbers only. Maybe update this in the future?
-#define XBUS_START_OF_FRAME_BYTE_A1 (0xA1)		//12 channels
-#define XBUS_START_OF_FRAME_BYTE_A2 (0xA2)		//16 channels transfare, but only 12 channels use for
 
 // Pulse length convertion from [0...4095] to µs:
 //      800µs  -> 0x000
@@ -74,7 +64,7 @@ static uint8_t xBusChannelCount;
 
 
 // Use max values for ram areas
-static volatile uint8_t xBusFrame[XBUS_FRAME_SIZE_A2];	//siz 35 for 16 channels in xbus_Mode_B
+static volatile uint8_t xBusFrame[XBUS_RJ01_FRAME_SIZE];	//siz 35 for 16 channels in xbus_Mode_B
 static uint16_t xBusChannelData[XBUS_RJ01_CHANNEL_COUNT];
 
 static void xBusDataReceive(uint16_t c);
@@ -90,7 +80,7 @@ bool xBusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
     baudRate = XBUS_RJ01_BAUDRATE;
     xBusFrameLength = XBUS_RJ01_FRAME_SIZE;
     xBusChannelCount = XBUS_RJ01_CHANNEL_COUNT;
-    }
+    
 
     if (callback) {
         *callback = xBusReadRawRC;
@@ -246,15 +236,7 @@ static void xBusDataReceive(uint16_t c)
     
     // Check if we shall start a frame?
     if (xBusFramePosition == 0)	{
-    	if (c == XBUS_START_OF_FRAME_BYTE_A1) {
-    		xBusDataIncoming = true;
-    		xBusFrameLength = XBUS_FRAME_SIZE_A1;	//decrease framesize (when receiver change, otherwise board must reboot)
-    	}
-    	else if (c == XBUS_START_OF_FRAME_BYTE_A2) {//16channel packet
-    		xBusDataIncoming = true;
-    		xBusFrameLength = XBUS_FRAME_SIZE_A2;	//increase framesize
-    	}
-
+    	xBusDataIncoming = true;
     }
 
     // Only do this if we are receiving to a frame
