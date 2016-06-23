@@ -33,6 +33,8 @@
 #include "rx/rx.h"
 #include "rx/srxl.h"
 
+#include "common/crc.h"
+
 
 
 #define SRXL_CHANNEL_COUNT_A1 12
@@ -43,9 +45,9 @@
 
 
 // Frame is: ID(1 byte) + 12*channel(2 bytes) + CRC(2 bytes) = 27
-#define SRXL_FRAME_SIZE_A1 27
+#define SRXL_FRAME_SIZE_A1 (SRXL_CHANNEL_COUNT_A1*2 + 3)
 // Frame is: ID(1 byte) + 16*channel(2 bytes) + CRC(2 bytes) = 35
-#define SRXL_FRAME_SIZE_A2 35
+#define SRXL_FRAME_SIZE_A2 (SRXL_CHANNEL_COUNT_A2*2 + 3)
 
 #define SRXL_CRC_AND_VALUE 0x8000
 #define SRXL_CRC_POLY 0x1021
@@ -88,14 +90,13 @@ static uint16_t srxlReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 bool srxlInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
     uint32_t baudRate;
-
-            rxRuntimeConfig->channelCount = SRXL_CHANNEL_COUNT_MAX;
-            srxlFrameReceived = false;
-            srxlDataIncoming = false;
-            srxlFramePosition = 0;
-            baudRate = SRXL_BAUDRATE;
-            srxlFrameLength = SRXL_FRAME_SIZE_A2;		//default for 12 channel
-            srxlChannelCount = SRXL_CHANNEL_COUNT_MAX;
+    rxRuntimeConfig->channelCount = SRXL_CHANNEL_COUNT_MAX;
+    srxlFrameReceived = false;
+    srxlDataIncoming = false;
+    srxlFramePosition = 0;
+    baudRate = SRXL_BAUDRATE;
+    srxlFrameLength = SRXL_FRAME_SIZE_A2;		//default for 12 channel
+    srxlChannelCount = SRXL_CHANNEL_COUNT_MAX;
 
     if (callback) {
         *callback = srxlReadRawRC;
@@ -111,23 +112,6 @@ bool srxlInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
     return srxlPort != NULL;
 }
 
-// The srxl CRC calculations
-static uint16_t srxlCRC16(uint16_t crc, uint8_t value)
-{
-    uint8_t i;
-    
-    crc = crc ^ (int16_t)value << 8;
-
-    for (i = 0; i < 8; i++) {
-        if (crc & SRXL_CRC_AND_VALUE) {
-            crc = crc << 1 ^ SRXL_CRC_POLY;
-        } else {
-            crc = crc << 1;
-        }
-    }
-    return crc;
-}
-
 
 static void srxlUnpackFrame()
 {
@@ -140,7 +124,7 @@ static void srxlUnpackFrame()
 
     // Calculate on all bytes except the final two CRC bytes
     for (i = 0; i < srxlFrameLength - 2; i++) {
-        inCrc = srxlCRC16(inCrc, srxlFrame[i]);
+        inCrc =  crc16(SRXL_CRC_AND_VALUE, SRXL_CRC_POLY, inCrc, srxlFrame[i]);
     }
 
     // Get the received CRC
@@ -148,7 +132,7 @@ static void srxlUnpackFrame()
     crc = crc + ((uint16_t)srxlFrame[srxlFrameLength - 1]);
 
     if (crc == inCrc) {
-        // Unpack the data, we have a valid frame, only 12 channel unpack also when receive 16 channel
+        // Unpack the data, we have a valid frame
         for (i = 0; i < srxlChannelCount; i++) {
 
             frameAddr = 1 + i * 2;
@@ -185,12 +169,12 @@ static void srxlDataReceive(uint16_t c)
     	if (c == SRXL_START_OF_FRAME_BYTE_A1) {
     		srxlDataIncoming = true;
     		srxlFrameLength = SRXL_FRAME_SIZE_A1;	//decrease framesize (when receiver change, otherwise board must reboot)
-				srxlChannelCount = SRXL_CHANNEL_COUNT_A1;
+			srxlChannelCount = SRXL_CHANNEL_COUNT_A1;
     	}
     	else if (c == SRXL_START_OF_FRAME_BYTE_A2) {//16channel packet
     		srxlDataIncoming = true;
     		srxlFrameLength = SRXL_FRAME_SIZE_A2;	//increase framesize
-				srxlChannelCount = SRXL_CHANNEL_COUNT_A2;
+			srxlChannelCount = SRXL_CHANNEL_COUNT_A2;
     	}
     }
 
@@ -204,7 +188,6 @@ static void srxlDataReceive(uint16_t c)
     // Done?
     if (srxlFramePosition == srxlFrameLength) {
         srxlUnpackFrame();
-
         srxlDataIncoming = false;
         srxlFramePosition = 0;
     }

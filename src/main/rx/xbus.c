@@ -32,6 +32,7 @@
 #include "rx/rx.h"
 #include "rx/xbus.h"
 
+#include "common/crc.h"
 
 #define XBUS_RJ01_CHANNEL_COUNT 12
 
@@ -96,23 +97,6 @@ bool xBusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
     return xBusPort != NULL;
 }
 
-// The xbus mode B CRC calculations
-static uint16_t xBusCRC16(uint16_t crc, uint8_t value)
-{
-    uint8_t i;
-    
-    crc = crc ^ (int16_t)value << 8;
-
-    for (i = 0; i < 8; i++) {
-        if (crc & XBUS_CRC_AND_VALUE) {
-            crc = crc << 1 ^ XBUS_CRC_POLY;
-        } else {
-            crc = crc << 1;
-        }
-    }
-    return crc;
-}
-
 // Full RJ01 message CRC calculations
 uint8_t xBusRj01CRC8(uint8_t inData, uint8_t seed)
 {
@@ -148,7 +132,7 @@ static void xBusUnpackModeBFrame(uint8_t offsetBytes)
 
     // Calculate on all bytes except the final two CRC bytes
     for (i = 0; i < xBusFrameLength - 2; i++) {
-        inCrc = xBusCRC16(inCrc, xBusFrame[i+offsetBytes]);
+        inCrc =  crc16(XBUS_CRC_AND_VALUE, XBUS_CRC_POLY, inCrc, xBusFrame[i]);
     }
 
     // Get the received CRC
