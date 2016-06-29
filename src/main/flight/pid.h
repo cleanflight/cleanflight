@@ -57,6 +57,7 @@ typedef struct pidProfile_s {
     uint8_t pidController;
     uint16_t yaw_p_limit;                   // set P term limit (fixed value was 300)
     uint16_t dterm_cut_hz;                  // dterm filtering
+    uint8_t horizon_incl_fact;              // inclination factor for Horizon mode
 } pidProfile_t;
 
 PG_DECLARE_PROFILE(pidProfile_t, pidProfile);
@@ -77,3 +78,5 @@ void pidSetController(pidControllerType_e type);
 void pidResetITermAngle(void);
 void pidResetITerm(void);
 
+int calcHorizonLevelStrength(uint16_t rxConfigMidrc, int horizonInclFact,
+                                                         int horizonSensit);
