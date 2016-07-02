@@ -60,6 +60,7 @@
 #include "drivers/sdcard.h"
 #include "drivers/usb_io.h"
 #include "drivers/transponder_ir.h"
+#include "drivers/sonar.h"
 #include "drivers/gyro_sync.h"
 
 #include "rx/rx.h"
@@ -120,8 +121,6 @@ void mixerUsePWMIOConfiguration(pwmIOConfiguration_t *pwmIOConfiguration);
 void rxInit(modeActivationCondition_t *modeActivationConditions);
 
 void navigationInit(pidProfile_t *pidProfile);
-const sonarHardware_t *sonarGetHardwareConfiguration(currentSensor_e  currentMeterType);
-void sonarInit(const sonarHardware_t *sonarHardware);
 
 #ifdef STM32F303xC
 // from system_stm32f30x.c
@@ -251,7 +250,12 @@ void init(void)
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(systemConfig()->emf_avoidance);
 #endif
+#ifdef SONAR
+    // SRF10 does not work with overclocked I2C bus, so don't allow overclocking if using SONAR
+    i2cSetOverclock(feature(FEATURE_SONAR) ? 0 : systemConfig()->i2c_highspeed);
+#else
     i2cSetOverclock(systemConfig()->i2c_highspeed);
+#endif
 
     systemInit();
 
@@ -335,11 +339,10 @@ void init(void)
 
 #ifdef SONAR
     const sonarHardware_t *sonarHardware = NULL;
-
     if (feature(FEATURE_SONAR)) {
         sonarHardware = sonarGetHardwareConfiguration(batteryConfig()->currentMeterType);
         sonarGPIOConfig_t sonarGPIOConfig = {
-            .gpio = SONAR_GPIO,
+            .gpio = sonarHardware->echo_gpio,
             .triggerPin = sonarHardware->echo_pin,
             .echoPin = sonarHardware->trigger_pin,
         };

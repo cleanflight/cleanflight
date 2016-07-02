@@ -134,5 +134,6 @@
 #define USE_CLI
 #define TARGET_MOTOR_COUNT 6
 
+#define SKIP_CLI_COMMAND_HELP
 
 

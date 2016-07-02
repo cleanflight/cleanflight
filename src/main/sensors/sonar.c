@@ -23,15 +23,16 @@
 #include "build_config.h"
 
 #include "common/maths.h"
-#include "common/axis.h"
 
 #include "config/parameter_group.h"
 #include "config/runtime_config.h"
 #include "config/config.h"
 #include "config/feature.h"
 
-#include "drivers/sonar_hcsr04.h"
 #include "drivers/gpio.h"
+#include "drivers/sonar_hcsr04.h"
+#include "drivers/sonar_srf10.h"
+#include "drivers/sonar.h"
 
 #include "io/rc_controls.h"
 
@@ -41,19 +42,18 @@
 
 // Sonar measurements are in cm, a value of SONAR_OUT_OF_RANGE indicates sonar is not in range.
 // Inclination is adjusted by imu
-    float baro_cf_vel;                      // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity)
-    float baro_cf_alt;                      // apply CF to use ACC for height estimation
 
 #ifdef SONAR
 int16_t sonarMaxRangeCm;
 int16_t sonarMaxAltWithTiltCm;
 int16_t sonarCfAltCm; // Complimentary Filter altitude
 STATIC_UNIT_TESTED int16_t sonarMaxTiltDeciDegrees;
+static sonarFunctionPointers_t sonarFunctionPointers;
 float sonarMaxTiltCos;
 
 static int32_t calculatedAltitude;
 
-const sonarHardware_t *sonarGetHardwareConfiguration(currentSensor_e  currentMeterType)
+static const sonarHardware_t *sonarGetHardwareConfigurationForHCSR04(currentSensor_e currentSensor)
 {
 #if defined(SONAR_PWM_TRIGGER_PIN)
     static const sonarHardware_t const sonarPWM = {
@@ -81,65 +81,119 @@ const sonarHardware_t *sonarGetHardwareConfiguration(currentSensor_e  currentMet
     // If we are using softserial, parallel PWM or ADC current sensor, then use motor pins 5 and 6 for sonar, otherwise use RC pins 7 and 8
     if (feature(FEATURE_SOFTSERIAL)
             || feature(FEATURE_RX_PARALLEL_PWM )
-            || (feature(FEATURE_CURRENT_METER) && currentMeterType == CURRENT_SENSOR_ADC)) {
+            || (feature(FEATURE_CURRENT_METER) && currentSensor == CURRENT_SENSOR_ADC)) {
         return &sonarPWM;
     } else {
         return &sonarRC;
     }
 #elif defined(SONAR_TRIGGER_PIN)
-    UNUSED(currentMeterType);
+    UNUSED(currentSensor);
     return &sonarRC;
 #elif defined(UNIT_TEST)
-    UNUSED(currentMeterType);
-    return 0;
+   UNUSED(currentSensor);
+   return 0;
 #else
 #error Sonar not defined for target
 #endif
 }
 
+STATIC_UNIT_TESTED void sonarSetFunctionPointers(sonarHardwareType_e sonarHardwareType)
+{
+
+    switch (sonarHardwareType) {
+    case SONAR_NONE:
+        break;
+    case SONAR_HCSR04:
+        sonarFunctionPointers.init = hcsr04_init;
+        sonarFunctionPointers.update = hcsr04_start_reading;
+        sonarFunctionPointers.read = hcsr04_get_distance;
+        break;
+    case SONAR_SRF10:
+        sonarFunctionPointers.init = srf10_init;
+        sonarFunctionPointers.update = srf10_start_reading;
+        sonarFunctionPointers.read = srf10_get_distance;
+        break;
+    }
+}
+
+/*
+ * Get the HCSR04 sonar hardware configuration.
+ * NOTE: sonarInit() must be subsequently called before using any of the sonar functions.
+ */
+const sonarHardware_t *sonarGetHardwareConfiguration(currentSensor_e currentSensor)
+{
+    // Return the configuration for the HC-SR04 hardware.
+    // Unfortunately the I2C bus is not initialised at this point
+    // so cannot detect if another sonar device is present
+    return sonarGetHardwareConfigurationForHCSR04(currentSensor);
+}
+
+/*
+ * Detect what sonar hardware is present and set the function pointers accordingly
+ */
+static sonarHardwareType_e sonarDetect(void)
+{
+    sonarHardwareType_e sonarHardwareType;
+    if (srf10_detect()) {
+        sonarHardwareType = SONAR_SRF10;
+    } else {
+        // the user has set the sonar feature, so assume they have an HC-SR04 plugged in,
+        // since there is no way to detect it
+        sonarHardwareType = SONAR_HCSR04;
+    }
+    sensorsSet(SENSOR_SONAR);
+#ifndef UNIT_TEST
+    sonarSetFunctionPointers(sonarHardwareType);
+#endif
+    return sonarHardwareType;
+}
+
 void sonarInit(const sonarHardware_t *sonarHardware)
 {
-    sonarRange_t sonarRange;
+    calculatedAltitude = SONAR_OUT_OF_RANGE;
+    const sonarHardwareType_e sonarHardwareType = sonarDetect();
+    if (sonarHardwareType == SONAR_HCSR04) {
+        hcsr04_set_sonar_hardware(sonarHardware);
+    }
 
-    hcsr04_init(sonarHardware, &sonarRange);
-    sensorsSet(SENSOR_SONAR);
+    sonarRange_t sonarRange;
+    sonarFunctionPointers.init(&sonarRange);
     sonarMaxRangeCm = sonarRange.maxRangeCm;
     sonarCfAltCm = sonarMaxRangeCm / 2;
     sonarMaxTiltDeciDegrees =  sonarRange.detectionConeExtendedDeciDegrees / 2;
     sonarMaxTiltCos = cos_approx(sonarMaxTiltDeciDegrees / 10.0f * RAD);
     sonarMaxAltWithTiltCm = sonarMaxRangeCm * sonarMaxTiltCos;
-    calculatedAltitude = SONAR_OUT_OF_RANGE;
 }
 
-#define DISTANCE_SAMPLES_MEDIAN 5
 
 static int32_t applySonarMedianFilter(int32_t newSonarReading)
 {
+    #define DISTANCE_SAMPLES_MEDIAN 5
     static int32_t sonarFilterSamples[DISTANCE_SAMPLES_MEDIAN];
     static int currentFilterSampleIndex = 0;
     static bool medianFilterReady = false;
     int nextSampleIndex;
 
-    if (newSonarReading > SONAR_OUT_OF_RANGE) // only accept samples that are in range
-    {
+    if (newSonarReading > SONAR_OUT_OF_RANGE) {// only accept samples that are in range
         nextSampleIndex = (currentFilterSampleIndex + 1);
         if (nextSampleIndex == DISTANCE_SAMPLES_MEDIAN) {
             nextSampleIndex = 0;
             medianFilterReady = true;
         }
-
         sonarFilterSamples[currentFilterSampleIndex] = newSonarReading;
         currentFilterSampleIndex = nextSampleIndex;
     }
-    if (medianFilterReady)
-        return quickMedianFilter5(sonarFilterSamples);
-    else
-        return newSonarReading;
+    return medianFilterReady ? quickMedianFilter5(sonarFilterSamples) : newSonarReading;
 }
 
+/*
+ * This is called periodically by the scheduler
+ */
 void sonarUpdate(void)
 {
-    hcsr04_start_reading();
+    if (sonarFunctionPointers.update) {
+        sonarFunctionPointers.update();
+    }
 }
 
 /**
@@ -147,11 +201,11 @@ void sonarUpdate(void)
  */
 int32_t sonarRead(void)
 {
-    int32_t distance = hcsr04_get_distance();
-    if (distance > HCSR04_MAX_RANGE_CM)
-        distance = SONAR_OUT_OF_RANGE;
-
-    return applySonarMedianFilter(distance);
+    if (sonarFunctionPointers.read) {
+        const int32_t distance = sonarFunctionPointers.read();
+        return applySonarMedianFilter(distance);
+    }
+    return 0;
 }
 
 /**
@@ -163,10 +217,11 @@ int32_t sonarRead(void)
 int32_t sonarCalculateAltitude(int32_t sonarDistance, float cosTiltAngle)
 {
     // calculate sonar altitude only if the ground is in the sonar cone
-    if (cosTiltAngle <= sonarMaxTiltCos)
+    if (cosTiltAngle < sonarMaxTiltCos)
+        calculatedAltitude = SONAR_OUT_OF_RANGE;
+    else if (sonarDistance == SONAR_OUT_OF_RANGE)
         calculatedAltitude = SONAR_OUT_OF_RANGE;
     else
-        // altitude = distance * cos(tiltAngle), use approximation
         calculatedAltitude = sonarDistance * cosTiltAngle;
     return calculatedAltitude;
 }
@@ -179,5 +234,5 @@ int32_t sonarGetLatestAltitude(void)
 {
     return calculatedAltitude;
 }
-
 #endif
+
