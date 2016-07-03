@@ -89,6 +89,60 @@
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2) // Flex port - SCL/PB10, SDA/PB11
 
+//#define USE_RX_NRF24
+#ifdef USE_RX_NRF24
+#define SKIP_RX_MSP
+#define SKIP_RX_PWM
+
+#define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
+#define USE_RX_V202
+#define USE_RX_SYMA
+#define USE_RX_CX10
+#define NRF24_DEFAULT_PROTOCOL NRF24RX_SYMA_X5C
+//#define NRF24_DEFAULT_PROTOCOL NRF24RX_V202_1M
+
+#define USE_SOFTSPI
+#define USE_NRF24_SOFTSPI
+
+#else
+
+#define SPEKTRUM_BIND
+#define SERIAL_RX
+// USART3, PB11 (Flexport)
+#define BIND_PORT  GPIOB
+#define BIND_PIN   Pin_11
+#endif // USE_RX_NRF24
+
+#ifdef USE_NRF24_SOFTSPI
+
+#undef USE_SOFTSERIAL1
+#undef SERIAL_PORT_COUNT
+#define SERIAL_PORT_COUNT 3
+
+// RC pinouts
+// RC3  PB6/TIM4    unused
+// RC4  PB5/TIM3    SCK / softserial1 TX / sonar trigger
+// RC5  PB0/TIM3    MISO / softserial1 RX / sonar echo / RSSI ADC
+// RC6  PB1/TIM3    MOSI / current
+// RC7  PA0/TIM2    CSN / battery voltage
+// RC8  PA1/TIM2    CE / RX_PPM
+
+// Nordic Semiconductor uses 'CSN', STM uses 'NSS'
+#define NRF24_CE_GPIO                   GPIOA
+#define NRF24_CE_PIN                    GPIO_Pin_1
+#define NRF24_CE_GPIO_CLK_PERIPHERAL    RCC_APB2Periph_GPIOA
+#define NRF24_CSN_GPIO                  GPIOA
+#define NRF24_CSN_PIN                   GPIO_Pin_0
+#define NRF24_CSN_GPIO_CLK_PERIPHERAL   RCC_APB2Periph_GPIOA
+#define NRF24_SCK_GPIO                  GPIOB
+#define NRF24_SCK_PIN                   GPIO_Pin_5
+#define NRF24_MOSI_GPIO                 GPIOB
+#define NRF24_MOSI_PIN                  GPIO_Pin_1
+#define NRF24_MISO_GPIO                 GPIOB
+#define NRF24_MISO_PIN                  GPIO_Pin_0
+
+#else
+
 #define USE_ADC
 
 #define CURRENT_METER_ADC_GPIO      GPIOB
@@ -103,18 +157,6 @@
 #define RSSI_ADC_GPIO_PIN           GPIO_Pin_0
 #define RSSI_ADC_CHANNEL            ADC_Channel_8
 
-#define LED_STRIP
-#define LED_STRIP_TIMER TIM3
-#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
-#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
-
-#define SPEKTRUM_BIND
-// UART3, PB11 (Flexport)
-#define BIND_PORT  GPIOB
-#define BIND_PIN   Pin_11
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
-
 #define SONAR
 #define SONAR_TRIGGER_PIN           Pin_5   // (PB5)
 #define SONAR_TRIGGER_GPIO          GPIOB
@@ -124,15 +166,23 @@
 #define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource0
 #define SONAR_EXTI_IRQN             EXTI0_IRQn
 
+// LED strip is on PWM5 output pin
+#define LED_STRIP
+#define LED_STRIP_TIMER TIM3
+#define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
+
+#define USE_SERIAL_4WAY_BLHELI_INTERFACE
+
+#endif // USE_NRF24_SOFTSPI
+
 #define GPS
 #define BLACKBOX
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
 
-#define TELEMETRY
-#define SERIAL_RX
+//#define TELEMETRY
+#define SKIP_MAVLINK
 #define USE_SERVOS
 #define USE_CLI
 #define TARGET_MOTOR_COUNT 6
-
-
 

@@ -22,27 +22,32 @@
 
 #define BOARD_HAS_VOLTAGE_DIVIDER
 
+#define LED0
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_3 // PB3 (LED)
 #define LED0_PERIPHERAL RCC_APB2Periph_GPIOB
+
+#define LED1
 #define LED1_GPIO   GPIOB
 #define LED1_PIN    Pin_4 // PB4 (LED)
 #define LED1_PERIPHERAL RCC_APB2Periph_GPIOB
 
+#define BEEPER
 #define BEEP_GPIO   GPIOA
 #define BEEP_PIN    Pin_12 // PA12 (Beeper)
 #define BEEP_PERIPHERAL RCC_APB2Periph_GPIOA
+
+#define INVERTER
+#define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
+#define INVERTER_GPIO GPIOB
+#define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
+#define INVERTER_USART USART2
 
 #define BARO_XCLR_GPIO   GPIOC
 #define BARO_XCLR_PIN    Pin_13
 #define BARO_EOC_GPIO    GPIOC
 #define BARO_EOC_PIN     Pin_14
 #define BARO_APB2_PERIPHERALS RCC_APB2Periph_GPIOC
-
-#define INVERTER_PIN Pin_2 // PB2 (BOOT1) abused as inverter select GPIO
-#define INVERTER_GPIO GPIOB
-#define INVERTER_PERIPHERAL RCC_APB2Periph_GPIOB
-#define INVERTER_USART USART2
 
 // SPI2
 // PB15 28 SPI2_MOSI
@@ -57,6 +62,7 @@
 #define NAZE_SPI_CS_GPIO      GPIOB
 #define NAZE_SPI_CS_PIN       GPIO_Pin_12
 #define NAZE_CS_GPIO_CLK_PERIPHERAL RCC_APB2Periph_GPIOB
+
 
 // We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
 #define M25P16_CS_GPIO        NAZE_SPI_CS_GPIO
@@ -87,7 +93,6 @@
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
 
-
 #define GYRO_MPU3050_ALIGN CW0_DEG
 #define GYRO_MPU6050_ALIGN CW0_DEG
 #define GYRO_MPU6500_ALIGN CW0_DEG
@@ -115,28 +120,6 @@
 #define USE_MAG_HMC5883
 
 #define MAG_HMC5883_ALIGN CW180_DEG
-
-#define BEEPER
-#define LED0
-#define LED1
-#define INVERTER
-#define DISPLAY
-
-#define SONAR
-#define SONAR_PWM_TRIGGER_PIN       Pin_8   // PWM5 (PB8) - 5v tolerant
-#define SONAR_PWM_TRIGGER_GPIO      GPIOB
-#define SONAR_PWM_ECHO_PIN          Pin_9   // PWM6 (PB9) - 5v tolerant
-#define SONAR_PWM_ECHO_GPIO         GPIOB
-#define SONAR_PWM_EXTI_LINE         EXTI_Line9
-#define SONAR_PWM_EXTI_PIN_SOURCE   GPIO_PinSource9
-#define SONAR_PWM_EXTI_IRQN         EXTI9_5_IRQn
-#define SONAR_TRIGGER_PIN           Pin_0   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
-#define SONAR_TRIGGER_GPIO          GPIOB
-#define SONAR_ECHO_PIN              Pin_1   // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
-#define SONAR_ECHO_GPIO             GPIOB
-#define SONAR_EXTI_LINE             EXTI_Line1
-#define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource1
-#define SONAR_EXTI_IRQN             EXTI1_IRQn
 
 #define USE_UART1
 #define USE_UART2
@@ -166,6 +149,63 @@
 // #define SOFT_I2C_PB1011 // If SOFT_I2C is enabled above, need to define pinout as well (I2C1 = PB67, I2C2 = PB1011)
 // #define SOFT_I2C_PB67
 
+//#define USE_RX_NRF24
+#ifdef USE_RX_NRF24
+#define SKIP_RX_MSP
+#define SKIP_RX_PWM
+
+#define DEFAULT_RX_FEATURE FEATURE_RX_NRF24
+#define USE_RX_V202
+#define USE_RX_SYMA
+#define USE_RX_CX10
+#define NRF24_DEFAULT_PROTOCOL NRF24RX_SYMA_X5C
+//#define NRF24_DEFAULT_PROTOCOL NRF24RX_V202_1M
+#define USE_SOFTSPI
+#define USE_NRF24_SOFTSPI
+
+#else
+
+#define SERIAL_RX
+#define SPEKTRUM_BIND
+// UART2, PA3
+#define BIND_PORT  GPIOA
+#define BIND_PIN   Pin_3
+
+#endif //USE_RX_NRF24
+
+#ifdef USE_NRF24_SOFTSPI
+
+#undef USE_SOFTSERIAL1
+#undef USE_SOFTSERIAL2
+#undef SERIAL_PORT_COUNT
+#define SERIAL_PORT_COUNT 3
+
+// RC pinouts
+// RC3              RX_PPM
+// RC4  PA1         CE / RSSI_ADC
+// RC5  PA2         USART2 TX
+// RC6  PA3         USART2 RX
+// RC7  PA6/TIM3    CSN / softserial1 RX / LED_STRIP
+// RC8  PA7         SCK / softserial1 TX
+// RC9  PB0         MISO / softserial2 RX / sonar trigger
+// RC10 PB1         MOSI /softserial2 TX / sonar echo / current
+
+// Nordic Semiconductor uses 'CSN', STM uses 'NSS'
+#define NRF24_CE_GPIO                   GPIOA
+#define NRF24_CE_PIN                    GPIO_Pin_1
+#define NRF24_CE_GPIO_CLK_PERIPHERAL    RCC_APB2Periph_GPIOA
+#define NRF24_CSN_GPIO                  GPIOA
+#define NRF24_CSN_PIN                   GPIO_Pin_6
+#define NRF24_CSN_GPIO_CLK_PERIPHERAL   RCC_APB2Periph_GPIOA
+#define NRF24_SCK_GPIO                  GPIOA
+#define NRF24_SCK_PIN                   GPIO_Pin_7
+#define NRF24_MOSI_GPIO                 GPIOB
+#define NRF24_MOSI_PIN                  GPIO_Pin_1
+#define NRF24_MISO_GPIO                 GPIOB
+#define NRF24_MISO_PIN                  GPIO_Pin_0
+
+#else
+
 #define USE_ADC
 
 #define CURRENT_METER_ADC_GPIO      GPIOB
@@ -184,26 +224,40 @@
 #define EXTERNAL1_ADC_GPIO_PIN      GPIO_Pin_5
 #define EXTERNAL1_ADC_CHANNEL       ADC_Channel_5
 
+#define SONAR
+#define SONAR_PWM_TRIGGER_PIN       Pin_8   // PWM5 (PB8) - 5v tolerant
+#define SONAR_PWM_TRIGGER_GPIO      GPIOB
+#define SONAR_PWM_ECHO_PIN          Pin_9   // PWM6 (PB9) - 5v tolerant
+#define SONAR_PWM_ECHO_GPIO         GPIOB
+#define SONAR_PWM_EXTI_LINE         EXTI_Line9
+#define SONAR_PWM_EXTI_PIN_SOURCE   GPIO_PinSource9
+#define SONAR_PWM_EXTI_IRQN         EXTI9_5_IRQn
+#define SONAR_TRIGGER_PIN           Pin_0   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
+#define SONAR_TRIGGER_GPIO          GPIOB
+#define SONAR_ECHO_PIN              Pin_1   // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
+#define SONAR_ECHO_GPIO             GPIOB
+#define SONAR_EXTI_LINE             EXTI_Line1
+#define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource1
+#define SONAR_EXTI_IRQN             EXTI1_IRQn
 
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
 #define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
 #define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
 
+#define USE_SERIAL_4WAY_BLHELI_INTERFACE
+
+#endif // USE_NRF24_SOFTSPI
+
+#define DISPLAY
+
 #define GPS
 #define GTUNE
 #define BLACKBOX
 #define TELEMETRY
-#define SERIAL_RX
+#define SKIP_MAVLINK
 #define USE_SERVOS
 #define USE_CLI
-
-#define SPEKTRUM_BIND
-// UART2, PA3
-#define BIND_PORT  GPIOA
-#define BIND_PIN   Pin_3
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 // alternative defaults for AlienFlight F1 target
 #ifdef ALIENFLIGHT

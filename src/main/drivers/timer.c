@@ -391,6 +391,20 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
 #endif
 
+#ifdef CRAZEPONYMINI
+const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    { TIM2, GPIOA, Pin_0, TIM_Channel_1, TIM2_IRQn, 0, Mode_IPD},          // PWM1 - OUT1
+    { TIM2, GPIOA, Pin_1, TIM_Channel_2, TIM2_IRQn, 0, Mode_IPD},          // PWM2 - OUT2
+    { TIM2, GPIOA, Pin_2, TIM_Channel_3, TIM2_IRQn, 0, Mode_IPD},          // PWM3 - OUT3
+    { TIM2, GPIOA, Pin_3, TIM_Channel_4, TIM2_IRQn, 0, Mode_IPD},          // PWM4 - OUT4
+};
+
+#define USED_TIMERS         TIM_N(2)
+
+#define TIMER_APB1_PERIPHERALS RCC_APB1Periph_TIM2
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB)
+#endif // CRAZEPONYMINI
+
 #define USED_TIMER_COUNT BITCOUNT(USED_TIMERS)
 #define CC_CHANNELS_PER_TIMER 4              // TIM_Channel_1..4
 

@@ -914,6 +914,7 @@ static int processOutCommand(mspPacket_t *cmd, mspPacket_t *reply)
 
             sbufWriteU16(dst, batteryConfig()->currentMeterScale);
             sbufWriteU16(dst, batteryConfig()->currentMeterOffset);
+            sbufWriteU8(dst, rxConfig()->nrf24rx_protocol);
             break;
 
         case MSP_CF_SERIAL_CONFIG:
@@ -1066,19 +1067,22 @@ static int processInCommand(mspPacket_t *cmd)
             break;
 
         case MSP_SET_RAW_RC: {
-            uint8_t channelCount = len / sizeof(uint16_t);
-            if (channelCount > MAX_SUPPORTED_RC_CHANNEL_COUNT)
+#ifndef SKIP_RX_MSP
+            const uint8_t channelCount = len / sizeof(uint16_t);
+            if (channelCount > MAX_SUPPORTED_RC_CHANNEL_COUNT) {
                 return -1;
+            }
             uint16_t frame[MAX_SUPPORTED_RC_CHANNEL_COUNT];
-
             for (unsigned i = 0; i < channelCount; i++) {
                 frame[i] = sbufReadU16(src);
             }
 
             rxMspFrameReceive(frame, channelCount);
             break;
+#else
+            return -1;
+#endif
         }
-
         case MSP_SET_ACC_TRIM:
             accelerometerConfig()->accelerometerTrims.values.pitch = sbufReadU16(src);
             accelerometerConfig()->accelerometerTrims.values.roll  = sbufReadU16(src);
@@ -1390,6 +1394,7 @@ static int processInCommand(mspPacket_t *cmd)
                 break;
             rxConfig()->rx_min_usec = sbufReadU16(src);
             rxConfig()->rx_max_usec = sbufReadU16(src);
+            rxConfig()->nrf24rx_protocol = sbufReadU8(src);
             break;
 
         case MSP_SET_RXFAIL_CONFIG: {

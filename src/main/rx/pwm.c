@@ -28,6 +28,8 @@
 #include "config/config.h"
 #include "config/parameter_group.h"
 
+#ifndef SKIP_RX_PWM
+
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
@@ -65,3 +67,4 @@ void rxPwmInit(rxRuntimeConfig_t *rxRuntimeConfigPtr, rcReadRawDataPtr *callback
     }
 }
 
+#endif

@@ -56,6 +56,7 @@
 #include "rx/msp.h"
 #include "rx/xbus.h"
 #include "rx/ibus.h"
+#include "rx/nrf24.h"
 
 #include "rx/rx.h"
 
@@ -99,6 +100,9 @@ PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 0);
 PG_REGISTER_ARR_WITH_RESET_FN(rxFailsafeChannelConfig_t, MAX_SUPPORTED_RC_CHANNEL_COUNT, failsafeChannelConfigs, PG_FAILSAFE_CHANNEL_CONFIG, 0);
 PG_REGISTER_ARR_WITH_RESET_FN(rxChannelRangeConfiguration_t, NON_AUX_CHANNEL_COUNT, channelRanges, PG_CHANNEL_RANGE_CONFIG, 0);
 
+#ifndef NRF24_DEFAULT_PROTOCOL
+#define NRF24_DEFAULT_PROTOCOL 0
+#endif
 PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .sbus_inversion = 1,
     .midrc = 1500,
@@ -107,6 +111,7 @@ PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .rx_min_usec = 885,          // any of first 4 channels below this value will trigger rx loss detection
     .rx_max_usec = 2115,         // any of first 4 channels above this value will trigger rx loss detection
     .rssi_scale = RSSI_SCALE_DEFAULT,
+    .nrf24rx_protocol = NRF24_DEFAULT_PROTOCOL,
 );
 
 void pgResetFn_channelRanges(rxChannelRangeConfiguration_t *instance)
@@ -205,15 +210,30 @@ void rxInit(modeActivationCondition_t *modeActivationConditions)
     }
 #endif
 
+#ifndef SKIP_RX_MSP
     if (feature(FEATURE_RX_MSP)) {
         rxRefreshRate = 20000;
         rxMspInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
+#endif
 
+#ifdef USE_RX_NRF24
+    if (feature(FEATURE_RX_NRF24)) {
+        rxRefreshRate = 10000;
+        const bool enabled = rxNrf24Init(rxConfig(), &rxRuntimeConfig, &rcReadRawFunc);
+        if (!enabled) {
+            featureClear(FEATURE_RX_NRF24);
+            rcReadRawFunc = nullReadRawRC;
+        }
+    }
+#endif
+
+#ifndef SKIP_RX_PWM
     if (feature(FEATURE_RX_PPM) || feature(FEATURE_RX_PARALLEL_PWM)) {
         rxRefreshRate = 20000;
         rxPwmInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
+#endif
 }
 
 #ifdef SERIAL_RX
@@ -286,7 +306,7 @@ uint8_t serialRxFrameStatus(void)
     }
     return SERIAL_RX_FRAME_PENDING;
 }
-#endif
+#endif // SERIAL_RX
 
 uint8_t calculateChannelRemapping(uint8_t *channelMap, uint8_t channelMapEntryCount, uint8_t channelToRemap)
 {
@@ -358,6 +378,18 @@ void updateRx(uint32_t currentTime)
     }
 #endif
 
+#ifdef USE_RX_NRF24
+    if (feature(FEATURE_RX_NRF24)) {
+        rxDataReceived = rxNrf24DataReceived();
+        if (rxDataReceived) {
+            rxSignalReceived = true;
+            rxIsInFailsafeMode = false;
+            needRxSignalBefore = currentTime + DELAY_10_HZ;
+        }
+    }
+#endif
+
+#ifndef SKIP_RX_MSP
     if (feature(FEATURE_RX_MSP)) {
         rxDataReceived = rxMspFrameComplete();
 
@@ -367,7 +399,9 @@ void updateRx(uint32_t currentTime)
             needRxSignalBefore = currentTime + DELAY_5_HZ;
         }
     }
+#endif
 
+#ifndef SKIP_RX_PWM
     if (feature(FEATURE_RX_PPM)) {
         if (isPPMDataBeingReceived()) {
             rxSignalReceivedNotDataDriven = true;
@@ -384,7 +418,7 @@ void updateRx(uint32_t currentTime)
             needRxSignalBefore = currentTime + DELAY_10_HZ;
         }
     }
-
+#endif
 }
 
 bool shouldProcessRx(uint32_t currentTime)
