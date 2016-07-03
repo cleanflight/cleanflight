@@ -164,6 +164,8 @@
 
 #define MSP_TRANSPONDER_CONFIG          82 //out message         Get transponder settings
 #define MSP_SET_TRANSPONDER_CONFIG      83 //in  message         Set transponder settings
+#define MSP_FLASHCHIP_CONFIG            88 //out  message        Get flash chip settings
+#define MSP_SET_FLASHCHIP_CONFIG        89 //in  message         Set flash chip settings
 
 #define MSP_LED_STRIP_MODECOLOR         86 //out message         Get LED strip mode_color settings
 #define MSP_SET_LED_STRIP_MODECOLOR     87 //in  message         Set LED strip mode_color settings
