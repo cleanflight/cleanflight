@@ -697,6 +697,7 @@ const clivalue_t valueTable[] = {
 
     { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, .config.minmax = { YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX } , PG_PID_PROFILE, offsetof(pidProfile_t, yaw_p_limit)},
     { "dterm_cut_hz",               VAR_UINT16 | PROFILE_VALUE, .config.minmax = {0, 500 } , PG_PID_PROFILE, offsetof(pidProfile_t, dterm_cut_hz)},
+    { "horizon_incl_fact",          VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0, 250 } , PG_PID_PROFILE, offsetof(pidProfile_t, horizon_incl_fact)},
 
 #ifdef GTUNE
     { "gtune_loP_rll",              VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 10,  200 } , PG_GTUNE_CONFIG, offsetof(gtuneConfig_t, gtune_lolimP[FD_ROLL])},
