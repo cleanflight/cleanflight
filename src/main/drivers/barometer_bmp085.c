@@ -26,6 +26,7 @@
 
 #include "gpio.h"
 #include "system.h"
+#include "system_interrupts.h"
 #include "bus_i2c.h"
 #include "nvic.h"
 
