@@ -37,6 +37,8 @@ extern "C" {
 //uint32_t testFeatureMask = 0;
 uint8_t cliMode = 0;
 
+PG_REGISTER(serialConfig_t, serialConfig, PG_SERIAL_CONFIG, 0);
+
 extern uint8_t serialPortCount;
 
 TEST(IoSerialTest, TestSoftSerialPortsEnabled)
@@ -71,7 +73,7 @@ TEST(IoSerialTest, TestFindPortConfig)
     serialInit(true);
 
     // and
-    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP);
+    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP_SERVER);
 
     // then
     EXPECT_EQ(NULL, portConfig);
@@ -92,7 +94,7 @@ void cliProcess(void) {}
 bool isSerialTransmitBufferEmpty(serialPort_t *) {
     return true;
 }
-void mspProcess(void) {}
+void mspSerialProcess(void) {}
 void systemResetToBootloader(void) {}
 
 serialPort_t *usbVcpOpen(void) { return NULL; }

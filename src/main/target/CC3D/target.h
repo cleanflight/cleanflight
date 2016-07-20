@@ -91,31 +91,40 @@
 
 #define USE_ADC
 
-#define CURRENT_METER_ADC_GPIO      GPIOB
-#define CURRENT_METER_ADC_GPIO_PIN  GPIO_Pin_1
-#define CURRENT_METER_ADC_CHANNEL   ADC_Channel_9
+#define ADC_INSTANCE                ADC1
+#define ADC_ABP2_PERIPHERAL         RCC_APB2Periph_ADC1
+#define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA1
+#define ADC_DMA_CHANNEL             DMA1_Channel1
 
-#define VBAT_ADC_GPIO               GPIOA
-#define VBAT_ADC_GPIO_PIN           GPIO_Pin_0
-#define VBAT_ADC_CHANNEL            ADC_Channel_0
+#define ADC0_GPIO                   GPIOB
+#define ADC0_GPIO_PIN               GPIO_Pin_1
+#define ADC0_CHANNEL                ADC_Channel_9
 
-#define RSSI_ADC_GPIO               GPIOA
-#define RSSI_ADC_GPIO_PIN           GPIO_Pin_1
-#define RSSI_ADC_CHANNEL            ADC_Channel_1
+#define ADC1_GPIO                   GPIOA
+#define ADC1_GPIO_PIN               GPIO_Pin_0
+#define ADC1_CHANNEL                ADC_Channel_0
+
+#define ADC2_GPIO                   GPIOB
+#define ADC2_GPIO_PIN               GPIO_Pin_0
+#define ADC2_CHANNEL                ADC_Channel_8
+
+#define ADC_CHANNEL_COUNT 3
+
+#define ADC_CURRENT     ADC_CHANNEL0
+#define ADC_BATTERY     ADC_CHANNEL1
+#define ADC_RSSI        ADC_CHANNEL2
 
 #define LED_STRIP
 #define LED_STRIP_TIMER TIM3
 #define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
-#define WS2811_DMA_HANDLER_IDENTIFER DMA1_CH6_HANDLER
+#define WS2811_DMA_HANDLER_IDENTIFER DMA1Channel6Descriptor
 
-#define GPS
-#define BLACKBOX
-#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
+#define SPEKTRUM_BIND
+// UART3, PB11 (Flexport)
+#define BIND_PORT  GPIOB
+#define BIND_PIN   Pin_11
 
-#define TELEMETRY
-#define SERIAL_RX
-#define USE_SERVOS
-#define USE_CLI
+#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 #define SONAR
 #define SONAR_TRIGGER_PIN           Pin_5   // (PB5)
@@ -126,20 +135,15 @@
 #define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource0
 #define SONAR_EXTI_IRQN             EXTI0_IRQn
 
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
+#define GPS
+#define BLACKBOX
+#define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
 
-#define USE_SERIAL_1WIRE
+#define TELEMETRY
+#define SERIAL_RX
+#define USE_SERVOS
+#define USE_CLI
+#define TARGET_MOTOR_COUNT 6
 
-// FlexPort (pin 21/22, TX/RX respectively):
-// Note, FlexPort has 10k pullups on both TX and RX
-// JST Pin3 TX - connect to external UART/USB RX
-#define S1W_TX_GPIO         GPIOB
-#define S1W_TX_PIN          GPIO_Pin_10
-// JST Pin4 RX - connect to external UART/USB TX
-#define S1W_RX_GPIO         GPIOB
-#define S1W_RX_PIN          GPIO_Pin_11
 
-#define SPEKTRUM_BIND
-// UART3, PB11 (Flexport)
-#define BIND_PORT  GPIOB
-#define BIND_PIN   Pin_11
+

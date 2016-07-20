@@ -22,13 +22,14 @@
 
 extern "C" {
     #include <platform.h>
-    #include "build_config.h"
+    #include "build/build_config.h"
 
     #include "common/maths.h"
     #include "common/axis.h"
 
     #include "config/parameter_group.h"
     #include "config/parameter_group_ids.h"
+    #include "config/profile.h"
 
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
@@ -38,13 +39,12 @@ extern "C" {
 
     #include "io/beeper.h"
     #include "io/motor_and_servo.h"
-    #include "io/rc_controls.h"
-    #include "io/rate_profile.h"
-    #include "io/rc_adjustments.h"
+    #include "fc/rc_controls.h"
+    #include "fc/rate_profile.h"
+    #include "fc/rc_adjustments.h"
 
     #include "rx/rx.h"
 
-    #include "config/config.h"
 
     #include "flight/pid.h"
 
@@ -57,6 +57,11 @@ extern "C" {
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
+
+extern "C" {
+extern void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions);
+extern uint32_t rcModeActivationMask;
+}
 
 class RcControlsModesTest : public ::testing::Test {
 protected:
@@ -82,14 +87,14 @@ TEST_F(RcControlsModesTest, updateActivatedModesWithAllInputsAtMidde)
     }
 
     // when
-    updateActivatedModes(modeActivationConditions);
+    rcModeUpdateActivated(modeActivationConditions);
 
     // then
     for (index = 0; index < CHECKBOX_ITEM_COUNT; index++) {
 #ifdef DEBUG_RC_CONTROLS
         printf("iteration: %d\n", index);
 #endif
-        EXPECT_EQ(false, IS_RC_MODE_ACTIVE(index));
+        EXPECT_EQ(false, rcModeIsActive((boxId_e)index));
     }
 }
 
@@ -171,7 +176,7 @@ TEST_F(RcControlsModesTest, updateActivatedModesUsingValidAuxConfigurationAndRXV
     expectedMask |= (0 << 6);
 
     // when
-    updateActivatedModes(modeActivationConditions);
+    rcModeUpdateActivated(modeActivationConditions);
 
     // then
     for (index = 0; index < CHECKBOX_ITEM_COUNT; index++) {

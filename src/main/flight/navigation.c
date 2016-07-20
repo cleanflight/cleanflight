@@ -24,15 +24,18 @@
 
 #include <platform.h>
 
-#include "build_config.h"
-#include "debug.h"
+#include "build/build_config.h"
+#include "build/debug.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
+#include "config/profile.h"
+#include "config/config_reset.h"
 
+#include "drivers/dma.h"
 #include "drivers/system.h"
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
@@ -50,16 +53,17 @@
 #include "flight/gps_conversion.h"
 #include "flight/imu.h"
 
+#include "fc/fc_serial.h"
+
 #include "io/beeper.h"
 #include "io/serial.h"
 #include "io/gps.h"
-#include "io/rc_controls.h"
+
+#include "fc/rc_controls.h"
 
 #include "rx/rx.h"
 
-#include "config/config.h"
-#include "config/config_reset.h"
-#include "config/runtime_config.h"
+#include "fc/runtime_config.h"
 
 extern int16_t magHold;
 
@@ -684,7 +688,7 @@ void updateGpsWaypointsAndMode(void)
         //
         // HOME mode takes priority over HOLD mode.
 
-        if (IS_RC_MODE_ACTIVE(BOXGPSHOME)) {
+        if (rcModeIsActive(BOXGPSHOME)) {
             if (!FLIGHT_MODE(GPS_HOME_MODE)) {
 
                 // Transition to HOME mode
@@ -707,7 +711,7 @@ void updateGpsWaypointsAndMode(void)
             // process HOLD mode
             //
 
-            if (IS_RC_MODE_ACTIVE(BOXGPSHOLD) && areSticksInApModePosition(gpsProfile()->ap_mode)) {
+            if (rcModeIsActive(BOXGPSHOLD) && areSticksInApModePosition(gpsProfile()->ap_mode)) {
                 if (!FLIGHT_MODE(GPS_HOLD_MODE)) {
 
                     // Transition to HOLD mode

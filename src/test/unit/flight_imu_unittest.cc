@@ -25,14 +25,15 @@
 
 extern "C" {
     #include <platform.h>
-    #include "build_config.h"
-    #include "debug.h"
+    #include "build/build_config.h"
+    #include "build/debug.h"
 
     #include "common/axis.h"
     #include "common/maths.h"
 
     #include "config/parameter_group.h"
     #include "config/parameter_group_ids.h"
+    #include "config/profile.h"
 
     #include "sensors/sensors.h"
 
@@ -45,13 +46,14 @@ extern "C" {
     #include "sensors/acceleration.h"
     #include "sensors/barometer.h"
 
-    #include "config/runtime_config.h"
-    #include "config/config.h"
+    #include "fc/runtime_config.h"
 
     #include "io/motor_and_servo.h"
-    #include "io/rc_controls.h"
+    #include "fc/rc_controls.h"
 
     #include "rx/rx.h"
+
+    #include "fc/rc_controls.h"
 
     #include "flight/mixer.h"
     #include "flight/pid.h"
@@ -152,7 +154,7 @@ uint32_t rcModeActivationMask;
 int16_t rcCommand[4];
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
-uint16_t acc_1G;
+acc_t acc;
 int16_t heading;
 gyro_t gyro;
 int32_t magADC[XYZ_AXIS_COUNT];
@@ -174,6 +176,8 @@ int16_t GPS_ground_course;
 int16_t GPS_numSat;
 
 float magneticDeclination = 0.0f;
+
+bool rcModeIsActive(boxId_e modeId) { return rcModeActivationMask & (1 << modeId); }
 
 uint16_t enableFlightMode(flightModeFlags_e mask)
 {

@@ -32,8 +32,6 @@
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
-#include "config/runtime_config.h"
-#include "config/config.h"
 #include "config/feature.h"
 
 #include "drivers/system.h"
@@ -43,7 +41,10 @@
 #include "drivers/timer.h"
 #include "drivers/serial.h"
 
-#include "io/rc_controls.h"
+#include "fc/runtime_config.h"
+#include "fc/config.h"
+#include "fc/rc_controls.h"
+#include "fc/fc_serial.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -152,8 +153,7 @@ static void serializeFrsky(uint8_t data)
 
 static void serialize16(int16_t a)
 {
-    uint8_t t;
-    t = a;
+    uint8_t t = a;
     serializeFrsky(t);
     t = a >> 8 & 0xff;
     serializeFrsky(t);
@@ -161,11 +161,9 @@ static void serialize16(int16_t a)
 
 static void sendAccel(void)
 {
-    int i;
-
-    for (i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
         sendDataHead(ID_ACC_X + i);
-        serialize16(((float)accSmooth[i] / acc_1G) * 1000);
+        serialize16(1000 * (int32_t)accSmooth[i] / acc.acc_1G);
     }
 }
 

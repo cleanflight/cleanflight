@@ -57,22 +57,25 @@
 #include <string.h>
 
 #include <platform.h>
-#include "build_config.h"
-#include "debug.h"
+#include "build/build_config.h"
+#include "build/debug.h"
 
 #ifdef TELEMETRY
 
 #include "common/axis.h"
 
-#include "config/runtime_config.h"
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
 #include "drivers/system.h"
 
+#include "fc/rc_controls.h"
+#include "fc/fc_serial.h"
+#include "fc/runtime_config.h"
+
 #include "drivers/serial.h"
 #include "io/serial.h"
-#include "io/rc_controls.h"
+
 
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
@@ -333,14 +336,16 @@ static inline void hottSendEAMResponse(void)
     hottSendResponse((uint8_t *)&hottEAMMessage, sizeof(hottEAMMessage));
 }
 
-static void hottPrepareMessages(void) {
+static void hottPrepareMessages(void)
+{
     hottPrepareEAMResponse(&hottEAMMessage);
 #ifdef GPS
     hottPrepareGPSResponse(&hottGPSMessage);
 #endif
 }
 
-static void processBinaryModeRequest(uint8_t address) {
+static void processBinaryModeRequest(uint8_t address)
+{
 
 #ifdef HOTT_DEBUG
     static uint8_t hottBinaryRequests = 0;

@@ -26,12 +26,13 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "common/utils.h"
 #include "gpio.h"
 #include "inverter.h"
 
+#include "dma.h"
 #include "serial.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
@@ -95,7 +96,8 @@ void usartInitAllIOSignals(void)
 #endif
 }
 
-static void usartConfigurePinInversion(uartPort_t *uartPort) {
+static void usartConfigurePinInversion(uartPort_t *uartPort)
+{
 #if !defined(INVERTER) && !defined(STM32F303xC)
     UNUSED(uartPort);
 #else

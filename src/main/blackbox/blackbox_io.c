@@ -22,7 +22,7 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "common/maths.h"
 #include "common/encoding.h"
@@ -31,11 +31,16 @@
 
 #include "drivers/serial.h"
 #include "drivers/gyro_sync.h"
+#include "common/streambuf.h"
 
-#include "io/rc_controls.h"
+
+#include "fc/rc_controls.h"
+#include "fc/fc_serial.h"
 
 #include "io/serial.h"
-#include "io/serial_msp.h"
+#include "msp/msp.h"
+#include "msp/msp_serial.h"
+
 #include "common/printf.h"
 
 #include "io/flashfs.h"
@@ -227,7 +232,8 @@ void blackboxWriteS16(int16_t value)
 /**
  * Write a 2 bit tag followed by 3 signed fields of 2, 4, 6 or 32 bits
  */
-void blackboxWriteTag2_3S32(int32_t *values) {
+void blackboxWriteTag2_3S32(int32_t *values)
+{
     static const int NUM_FIELDS = 3;
 
     //Need to be enums rather than const ints if we want to switch on them (due to being C)
@@ -351,7 +357,8 @@ void blackboxWriteTag2_3S32(int32_t *values) {
 /**
  * Write an 8-bit selector followed by four signed fields of size 0, 4, 8 or 16 bits.
  */
-void blackboxWriteTag8_4S16(int32_t *values) {
+void blackboxWriteTag8_4S16(int32_t *values)
+{
 
     //Need to be enums rather than const ints if we want to switch on them (due to being C)
     enum {
@@ -556,7 +563,7 @@ bool blackboxDeviceOpen(void)
                 }
 
                 blackboxPortSharing = determinePortSharing(portConfig, FUNCTION_BLACKBOX);
-                baudRateIndex = portConfig->blackbox_baudrateIndex;
+                baudRateIndex = portConfig->baudRates[BAUDRATE_BLACKBOX];
 
                 if (baudRates[baudRateIndex] == 230400) {
                     /*
@@ -629,7 +636,7 @@ void blackboxDeviceClose(void)
              * of time to shut down asynchronously, we're the only ones that know when to call it.
              */
             if (blackboxPortSharing == PORTSHARING_SHARED) {
-                mspAllocateSerialPorts();
+                mspSerialAllocatePorts();
             }
         break;
         default:

@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 #include <platform.h>
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "common/axis.h"
 #include "common/maths.h"
@@ -34,8 +34,6 @@
 #include "accgyro.h"
 #include "accgyro_mpu.h"
 #include "accgyro_mpu6500.h"
-
-extern uint16_t acc_1G;
 
 bool mpu6500AccDetect(acc_t *acc)
 {
@@ -65,11 +63,11 @@ bool mpu6500GyroDetect(gyro_t *gyro)
     return true;
 }
 
-void mpu6500AccInit(void)
+void mpu6500AccInit(acc_t *acc)
 {
     mpuIntExtiInit();
 
-    acc_1G = 512 * 8;
+    acc->acc_1G = 512 * 8;
 }
 
 void mpu6500GyroInit(uint8_t lpf)

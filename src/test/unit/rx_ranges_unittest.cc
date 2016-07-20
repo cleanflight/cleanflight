@@ -27,7 +27,7 @@ extern "C" {
     #include "config/parameter_group_ids.h"
 
     #include "rx/rx.h"
-    #include "io/rc_controls.h"
+    #include "fc/rc_controls.h"
     #include "common/maths.h"
 }
 
@@ -103,6 +103,8 @@ TEST(RxChannelRangeTest, TestRxChannelRanges)
 
 // stubs
 extern "C" {
+
+bool rcModeIsActive(boxId_e modeId) { return rcModeActivationMask & (1 << modeId); }
 
 void failsafeOnRxSuspend(uint32_t ) {}
 void failsafeOnRxResume(void) {}

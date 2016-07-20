@@ -22,8 +22,8 @@
 #include <string.h>
 
 #include <platform.h>
-#include "build_config.h"
-#include "debug.h"
+#include "build/build_config.h"
+#include "build/debug.h"
 
 #include "common/maths.h"
 #include "common/utils.h"
@@ -31,7 +31,6 @@
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
-#include "config/config.h"
 #include "config/feature.h"
 #include "config/config_reset.h"
 
@@ -39,7 +38,9 @@
 #include "drivers/adc.h"
 
 #include "io/serial.h"
-#include "io/rc_controls.h"
+
+#include "fc/rc_controls.h"
+#include "fc/config.h"
 
 #include "flight/failsafe.h"
 
@@ -109,7 +110,8 @@ PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .rssi_scale = RSSI_SCALE_DEFAULT,
 );
 
-void pgResetFn_channelRanges(rxChannelRangeConfiguration_t *instance) {
+void pgResetFn_channelRanges(rxChannelRangeConfiguration_t *instance)
+{
     // set default calibration to full range and 1:1 mapping
     for (int i = 0; i < NON_AUX_CHANNEL_COUNT; i++) {
         instance[i].min = PWM_RANGE_MIN;
@@ -127,7 +129,8 @@ void pgResetFn_failsafeChannelConfigs(rxFailsafeChannelConfig_t *instance)
     }
 }
 
-static uint16_t nullReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t channel) {
+static uint16_t nullReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t channel)
+{
     UNUSED(rxRuntimeConfig);
     UNUSED(channel);
 
@@ -143,7 +146,8 @@ void serialRxInit(rxConfig_t *rxConfig);
 
 static uint8_t validFlightChannelMask;
 
-STATIC_UNIT_TESTED void rxResetFlightChannelStatus(void) {
+STATIC_UNIT_TESTED void rxResetFlightChannelStatus(void)
+{
     validFlightChannelMask = REQUIRED_CHANNEL_MASK;
 }
 
@@ -203,6 +207,7 @@ void rxInit(modeActivationCondition_t *modeActivationConditions)
 #endif
 
     if (feature(FEATURE_RX_MSP)) {
+        rxRefreshRate = 20000;
         rxMspInit(&rxRuntimeConfig, &rcReadRawFunc);
     }
 
@@ -301,7 +306,8 @@ bool rxAreFlightChannelsValid(void)
 {
     return rxFlightChannelsValid;
 }
-static bool isRxDataDriven(void) {
+static bool isRxDataDriven(void)
+{
     return !(feature(FEATURE_RX_PARALLEL_PWM | FEATURE_RX_PPM));
 }
 
@@ -533,7 +539,7 @@ static void detectAndApplySignalLossBehaviour(void)
 
     rxFlightChannelsValid = rxHaveValidFlightChannels();
 
-    if ((rxFlightChannelsValid) && !(IS_RC_MODE_ACTIVE(BOXFAILSAFE) && feature(FEATURE_FAILSAFE))) {
+    if ((rxFlightChannelsValid) && !(rcModeIsActive(BOXFAILSAFE) && feature(FEATURE_FAILSAFE))) {
         failsafeOnValidDataReceived();
     } else {
         rxIsInFailsafeMode = rxIsInFailsafeModeNotDataDriven = true;
@@ -598,7 +604,7 @@ void updateRSSIPWM(void)
 
 void updateRSSIADC(uint32_t currentTime)
 {
-#ifndef USE_ADC
+#ifndef ADC_RSSI
     UNUSED(currentTime);
 #else
     static uint8_t adcRssiSamples[RSSI_ADC_SAMPLE_COUNT];
@@ -640,7 +646,8 @@ void updateRSSI(uint32_t currentTime)
     }
 }
 
-void initRxRefreshRate(uint16_t *rxRefreshRatePtr) {
+void initRxRefreshRate(uint16_t *rxRefreshRatePtr)
+{
     *rxRefreshRatePtr = rxRefreshRate;
 }
 

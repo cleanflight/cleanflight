@@ -22,20 +22,21 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 //#define DEBUG_ALTITUDE_HOLD
 
 #define BARO
 
 extern "C" {
-    #include "debug.h"
+    #include "build/debug.h"
 
     #include "common/axis.h"
     #include "common/maths.h"
 
     #include "config/parameter_group_ids.h"
     #include "config/parameter_group.h"
+    #include "config/profile.h"
 
     #include "drivers/sensor.h"
     #include "drivers/accgyro.h"
@@ -45,7 +46,7 @@ extern "C" {
     #include "sensors/barometer.h"
 
     #include "io/motor_and_servo.h"
-    #include "io/rc_controls.h"
+    #include "fc/rc_controls.h"
 
     #include "rx/rx.h"
 
@@ -54,14 +55,15 @@ extern "C" {
     #include "flight/imu.h"
     #include "flight/altitudehold.h"
 
-    #include "config/runtime_config.h"
-    #include "config/config.h"
+    #include "fc/runtime_config.h"
 
     PG_REGISTER_PROFILE(pidProfile_t, pidProfile, PG_PID_PROFILE, 0);
     PG_REGISTER_PROFILE(rcControlsConfig_t, rcControlsConfig, PG_RC_CONTROLS_CONFIG, 0);
     PG_REGISTER_PROFILE(barometerConfig_t, barometerConfig, PG_BAROMETER_CONFIG, 0);
 
     PG_REGISTER(motorAndServoConfig_t, motorAndServoConfig, PG_MOTOR_AND_SERVO_CONFIG, 0);
+
+    extern uint32_t rcModeActivationMask;
 }
 
 #include "unittest_macros.h"
@@ -124,7 +126,7 @@ TEST(AltitudeHoldTest, applyMultirotorAltHold)
     
     rcData[THROTTLE] = 1400;
     rcCommand[THROTTLE] = 1500;
-    ACTIVATE_RC_MODE(BOXBARO);
+    rcModeActivationMask |= (1 << BOXBARO);
     updateAltHoldState();
     
     // when
@@ -147,6 +149,7 @@ TEST(AltitudeHoldTest, applyMultirotorAltHold)
 
 extern "C" {
 uint32_t rcModeActivationMask;
+bool rcModeIsActive(boxId_e modeId) { return rcModeActivationMask & (1 << modeId); }
 int16_t rcCommand[4];
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 

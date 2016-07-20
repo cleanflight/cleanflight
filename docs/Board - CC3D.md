@@ -22,12 +22,14 @@ The 8 pin RC_Input connector has the following pinouts when used in RX_PPM/RX_SE
 | --- | --------- | -------------------------------- |
 | 1   | Ground    |                                  |
 | 2   | +5V       |                                  |
-| 3   | PPM Input | Enable `feature RX_PPM`          | 
+| 3   | Unused |  | 
 | 4   | SoftSerial1 TX / Sonar trigger | |
-| 5   | SoftSerial1 RX / Sonar Echo    | |
+| 5   | SoftSerial1 RX / Sonar Echo / RSSI_ADC    | Used either for SOFTSERIAL, SONAR or RSSI_ADC*. Only one feature can be enabled at any time. |
 | 6   | Current   | Enable `feature CURRENT_METER`.  Connect to the output of a current sensor, 0v-3.3v input |
 | 7   | Battery Voltage sensor | Enable `feature VBAT`. Connect to main battery using a voltage divider, 0v-3.3v input |
-| 8   | RSSI      | Enable `feature RSSI_ADC`.  Connect to the output of a PWM-RSSI conditioner, 0v-3.3v input |
+| 8   | PPM Input | Enable `feature RX_PPM` |
+
+*Connect to the output of a PWM-RSSI conditioner, 0v-3.3v input. 
 
 The 6 pin RC_Output connector has the following pinouts when used in RX_PPM/RX_SERIAL mode
 
@@ -103,28 +105,13 @@ You cannot use USART3 and I2C at the same time.
 
 # Flashing
 
-There are two primary ways to get Cleanflight onto a CC3D board.
-
-* Single binary image mode - best mode if you don't want to use OpenPilot.
-* OpenPilot Bootloader compatible image mode - best mode if you want to switch between OpenPilot and Cleanflight.
+Since CleanFlight version 1.11.0 "single binary image mode" is the only way to get CleanFlight on CC3D. Prior the version 1.11.0 there was a possibility to use "OpenPilot Bootloader compatible image mode", which allows you to easily switch between OpenPilot and CleanFlight, please refer to documentation from releases prior to 1.11.0 for more details.
 
 ## Single binary image mode.
 
 The entire flash ram on the target processor is flashed with a single image.
 
 The image can be flashed by using a USB to UART adapter connected to the main port when the CC3D is put into the STM32 bootloader mode, achieved by powering on the CC3D with the SBL/3.3v pads bridged.  
-
-## OpenPilot Bootloader compatible image mode.
-
-The initial section of flash ram on the target process is flashed with a bootloader which can then run the code in the
-remaining area of flash ram.
-
-The OpenPilot bootloader code also allows the remaining section of flash to be reconfigured and re-flashed by the
-OpenPilot Ground Station (GCS) via USB without requiring a USB to uart adapter.
-
-The following features are not available:
- * Display
- * Sonar
 
 # Restoring OpenPilot bootloader
 
