@@ -54,17 +54,29 @@ static uint16_t sumdReadRawRC(rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 
 bool sumdInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
 {
-    if (callback)
-        *callback = sumdReadRawRC;
+	rxRuntimeConfig->channelCount = SUMD_MAX_CHANNEL;
 
-    rxRuntimeConfig->channelCount = SUMD_MAX_CHANNEL;
+	if (callback)
+        *callback = sumdReadRawRC;
 
     serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
         return false;
     }
 
-    serialPort_t *sumdPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sumdDataReceive, SUMD_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    portMode_t serialPortMode;
+    portSharing_e serialPortSharing = determinePortSharing(portConfig, FUNCTION_RX_SERIAL);
+    if (serialPortSharing == PORTSHARING_SHARED){
+    	if (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL)
+    		serialPortMode = MODE_RXTX;
+    	else
+    		return false;
+    }
+    else {
+    	serialPortMode = MODE_RX;
+    }
+
+    serialPort_t *sumdPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, sumdDataReceive, SUMD_BAUDRATE, serialPortMode, SERIAL_NOT_INVERTED);
 
     return sumdPort != NULL;
 }

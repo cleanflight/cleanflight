@@ -66,6 +66,9 @@ typedef enum {
 
 extern const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT];
 
+#define ALL_FUNCTIONS_SHARABLE_WITH_BLACKBOX (FUNCTION_RX_SERIAL)
+#define ALL_FUNCTIONS_SHARABLE_WITH_RX_SERIAL (FUNCTION_BLACKBOX)
+
 void serialInit(bool softserialEnabled);
 
 //
@@ -80,6 +83,7 @@ typedef struct serialPortUsage_s {
 
 serialPort_t *findSharedSerialPort(uint16_t functionMask, serialPortFunction_e sharedWithFunction);
 serialPort_t *findNextSharedSerialPort(uint16_t functionMask, serialPortFunction_e sharedWithFunction);
+serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier);
 
 //
 // configuration
@@ -133,7 +137,6 @@ void closeSerialPort(serialPort_t *serialPort);
 void waitForSerialPortToFinishTransmitting(serialPort_t *serialPort);
 
 baudRate_e lookupBaudRateIndex(uint32_t baudRate);
-
 
 //
 // msp/cli/bootloader
