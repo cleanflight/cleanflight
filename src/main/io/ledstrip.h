@@ -132,7 +132,7 @@ typedef struct ledCounts_s {
     uint8_t ringSeqLen;
 } ledCounts_t;
 
-#define DEFINE_LED(x, y, col, dir, func, ol, params) (LED_MOV_POS(CALCULATE_LED_XY(x, y)) | LED_MOV_COLOR(col) | LED_MOV_DIRECTION(dir) | LED_MOV_FUNCTION(func) | LED_MOV_OVERLAY(ol) | LED_MOV_PARAMS(params))
+#define DEFINE_LED(x, y, col, dir, func, ovl, params) (LED_MOV_POS(CALCULATE_LED_XY(x, y)) | LED_MOV_COLOR(col) | LED_MOV_DIRECTION(dir) | LED_MOV_FUNCTION(func) | LED_MOV_OVERLAY(ovl) | LED_MOV_PARAMS(params))
 
 static inline uint8_t ledGetXY(const ledConfig_t *lcfg)         { return ((*lcfg >> LED_POS_OFFSET) & LED_BIT_MASK(LED_POS_BITCNT)); }
 static inline uint8_t ledGetX(const ledConfig_t *lcfg)          { return ((*lcfg >> (LED_POS_OFFSET + LED_X_BIT_OFFSET)) & LED_XY_MASK); }
@@ -150,6 +150,7 @@ PG_DECLARE_ARR(ledConfig_t, LED_MAX_STRIP_LENGTH, ledConfigs);
 PG_DECLARE_ARR(hsvColor_t, LED_CONFIGURABLE_COLOR_COUNT, colors);
 PG_DECLARE_ARR(modeColorIndexes_t, LED_MODE_COUNT, modeColors);
 PG_DECLARE(specialColorIndexes_t, specialColors);
+PG_DECLARE(ledType_t, ledType);
 
 bool parseColor(int index, const char *colorConfig);
 

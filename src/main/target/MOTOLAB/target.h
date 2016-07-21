@@ -155,6 +155,7 @@
 #define ADC_RSSI        ADC_CHANNEL1
 
 #define LED_STRIP
+#define LED_RGBW
 #define LED_STRIP_TIMER TIM16
 
 #define USE_LED_STRIP_ON_DMA1_CHANNEL3

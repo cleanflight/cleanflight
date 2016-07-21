@@ -26,6 +26,7 @@
 #define GPS
 #define TELEMETRY
 #define LED_STRIP
+#define LED_RGBW
 #define USE_SERVOS
 
 #define USART1              ((USART_TypeDef *) 1)

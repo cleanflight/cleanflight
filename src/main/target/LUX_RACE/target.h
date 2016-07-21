@@ -139,6 +139,7 @@
 #define GPS
 #define GTUNE
 #define LED_STRIP
+#define LED_RGBW
 
 #define LED_STRIP_TIMER TIM16
 

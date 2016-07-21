@@ -143,6 +143,7 @@
 #define ADC_RSSI        ADC_CHANNEL2
 
 #define LED_STRIP
+#define LED_RGBW
 #define LED_STRIP_TIMER TIM1
 
 #define WS2811_GPIO                     GPIOA

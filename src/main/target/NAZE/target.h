@@ -201,6 +201,7 @@
 
 
 #define LED_STRIP
+#undef  LED_RGBW
 #define LED_STRIP_TIMER TIM3
 #define WS2811_DMA_TC_FLAG           DMA1_FLAG_TC6
 #define WS2811_DMA_HANDLER_IDENTIFER DMA1Channel6Descriptor
@@ -235,6 +236,7 @@
 // Hardware bind plug at PB5 (Pin 41)
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5
+#undef LED_RGBW
 #endif
 // IO - assuming all IOs on 48pin package
 #define TARGET_IO_PORTA 0xffff

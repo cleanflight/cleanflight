@@ -19,12 +19,14 @@
 
 
 typedef enum {
-    RGB_RED = 0,
-    RGB_GREEN,
-    RGB_BLUE
+    RGBW_RED = 0,
+    RGBW_GREEN,
+    RGBW_BLUE,
+    RGBW_WHITE,
 } colorComponent_e;
 
-#define RGB_COLOR_COMPONENT_COUNT (RGB_BLUE + 1)
+#define RGB_COLOR_COMPONENT_COUNT (RGBW_BLUE + 1)
+#define RGBW_COLOR_COMPONENT_COUNT (RGBW_WHITE + 1)
 
 typedef union {
     struct {
@@ -35,10 +37,19 @@ typedef union {
     uint8_t raw[RGB_COLOR_COMPONENT_COUNT];
 } rgbColor24bpp_t;
 
+typedef union {
+    struct {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+        uint8_t w;
+    } rgbw;
+    uint8_t raw[RGBW_COLOR_COMPONENT_COUNT];
+} rgbwColor32bpp_t;
+
 #define HSV_HUE_MAX 359
 #define HSV_SATURATION_MAX 255
 #define HSV_VALUE_MAX 255
-
 typedef enum {
     HSV_HUE = 0,
     HSV_SATURATION,
@@ -46,7 +57,6 @@ typedef enum {
 } hsvColorComponent_e;
 
 #define HSV_COLOR_COMPONENT_COUNT (HSV_VALUE + 1)
-
 typedef struct hsvColor_s {
     uint16_t h; // 0 - 359
     uint8_t s; // 0 - 255

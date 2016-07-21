@@ -92,6 +92,11 @@ rgbColor24bpp_t hsvToRgb24(const hsvColor_t *c) {
     return (rgbColor24bpp_t){.raw = {0,0,0}};
 }
 
+rgbwColor32bpp_t hsvToRgbw32(const hsvColor_t *c) {
+    UNUSED(c);
+    return (rgbwColor32bpp_t){.raw = {0,0,0,0}};
+}
+
 void ws2811LedStripHardwareInit(void) {}
 void ws2811LedStripDMAEnable(void) {}
 

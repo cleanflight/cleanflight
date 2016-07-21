@@ -146,6 +146,7 @@
 #define SONAR_ECHO_IO               PA1
 
 #define LED_STRIP
+#define LED_RGBW
 #if 1
 // LED strip configuration using PWM motor output pin 5.
 #define LED_STRIP_TIMER TIM16

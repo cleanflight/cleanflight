@@ -159,6 +159,7 @@
 
 
 #define LED_STRIP // LED strip configuration using PWM motor output pin 5.
+#define LED_RGBW
 #define LED_STRIP_TIMER TIM16
 
 #define WS2811_GPIO                     GPIOB

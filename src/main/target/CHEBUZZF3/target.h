@@ -170,6 +170,7 @@
 
 #define GPS
 #define LED_STRIP
+#define LED_RGBW
 #if 1
 #define LED_STRIP_TIMER TIM16
 #define WS2811_GPIO                     GPIOB

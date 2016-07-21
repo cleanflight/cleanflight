@@ -21,8 +21,9 @@ Support for more than 32 LEDs is possible, it just requires additional developme
 
 ## Supported hardware
 
-Only strips of 32 WS2811/WS2812 LEDs are supported currently.  If the strip is longer than 32 LEDs it does not matter,
-but only the first 32 are used.
+Supported LEDs types are WS2811/WS2812 RGB, and SK6812 RGBW (except Naze32, CC3D and AlienFlightF1). Default setting is RGB. The RGBW mode can be activated with the CLI command `set led_type = RGBW`.
+
+Strips of maximum 32 LEDs are supported currently.  If the strip is longer than 32 LEDs it does not matter, but only the first 32 are used.
 
 WS2812 LEDs require an 800khz signal and precise timings and thus requires the use of a dedicated hardware timer.
 
@@ -210,7 +211,9 @@ Note: this mode requires a current sensor. If you don't have the actual device y
 
 #### Blink
 
-This mode blinks the current LED, alternatively from black to the current active color.
+On RGB LED strips, this mode blinks the current LED alternatively from the current active color to black.
+On RGBW LED strips, this mode blinks the extra white LED.
+
 
 #### Blink on landing
 
@@ -333,9 +336,11 @@ led 0 0,0::C:10
 
 Colors can be configured using the cli `color` command.
 
-The `color` command takes either zero or two arguments - an zero-based color number and a sequence which indicates pair of hue, saturation and value (HSV).
+The `color` command takes either zero or two arguments - an zero-based color number and a sequence which indicates pair of hue, saturation, value, and white (HSVW) (except boards without support for RGBW, which only use HSV).
 
 See http://en.wikipedia.org/wiki/HSL_and_HSV
+
+The W parameter is ignored when using an RGB LED strip. With RGBW LED strips, it sets the brightness of the extra white LED.
 
 If used with zero arguments it prints out the color configuration which can be copied for future reference.
 
@@ -361,22 +366,22 @@ The default color configuration is as follows:
 |    15 | black       |
 
 ```
-color 0 0,0,0
-color 1 0,255,255
-color 2 0,0,255
-color 3 30,0,255
-color 4 60,0,255
-color 5 90,0,255
-color 6 120,0,255
-color 7 150,0,255
-color 8 180,0,255
-color 9 210,0,255
-color 10 240,0,255
-color 11 270,0,255
-color 12 300,0,255
-color 13 330,0,255
-color 14 0,0,0
-color 15 0,0,0
+color 0 0,0,0,0
+color 1 0,255,255,255
+color 2 0,0,255,0
+color 3 30,0,255,0
+color 4 60,0,255,0
+color 5 90,0,255,0
+color 6 120,0,255,0
+color 7 150,0,255,0
+color 8 180,0,255,0
+color 9 210,0,255,0
+color 10 240,0,255,0
+color 11 270,0,255,0
+color 12 300,0,255,0
+color 13 330,0,255,0
+color 14 0,0,0,0
+color 15 0,0,0,0
 ```
 
 ### Mode Colors Assignement

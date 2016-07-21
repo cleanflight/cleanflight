@@ -168,6 +168,7 @@
 #define ADC_EXTERNAL    ADC_CHANNEL3
 
 #define LED_STRIP
+#define LED_RGBW
 #define LED_STRIP_TIMER TIM16
 #define WS2811_GPIO                     GPIOB
 #define WS2811_GPIO_AHB_PERIPHERAL      RCC_AHBPeriph_GPIOB
