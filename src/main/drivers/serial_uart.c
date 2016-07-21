@@ -26,12 +26,13 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "common/utils.h"
 #include "gpio.h"
 #include "inverter.h"
 
+#include "dma.h"
 #include "serial.h"
 #include "serial_uart.h"
 #include "serial_uart_impl.h"
