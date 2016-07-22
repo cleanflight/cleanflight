@@ -95,7 +95,6 @@ bool sbusInit(rxRuntimeConfig_t *rxRuntimeConfig, rcReadRawDataPtr *callback)
     if (!portConfig) {
         return false;
     }
-    portOptions_t options = (rxConfig()->sbus_inversion) ? (SBUS_PORT_OPTIONS | SERIAL_INVERTED) : SBUS_PORT_OPTIONS;
     portMode_t serialPortMode;
     portSharing_e serialPortSharing = determinePortSharing(portConfig, FUNCTION_RX_SERIAL);
     if (serialPortSharing == PORTSHARING_SHARED){
