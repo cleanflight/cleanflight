@@ -226,7 +226,7 @@ void i2c_ev_handler(void)
         I2Cx->CR1 &= ~0x0800;                                           // reset the POS bit so ACK/NACK applied to the current byte
         I2C_AcknowledgeConfig(I2Cx, ENABLE);                            // make sure ACK is on
         index = 0;                                                      // reset the index
-        if (reading && (subaddress_sent || -1 == reg)) {                // we have sent the subaddr
+        if (reading && (subaddress_sent || reg == -1)) {                // we have sent the subaddr
             subaddress_sent = 1;                                        // make sure this is set in case of no subaddress, so following code runs correctly
             if (bytes == 2)
                 I2Cx->CR1 |= 0x0800;                                    // set the POS bit so NACK applied to the final byte in the two byte read
