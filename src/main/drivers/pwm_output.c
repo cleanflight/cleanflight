@@ -17,8 +17,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
 #include <stdlib.h>
+#include <math.h>
 
 #include "platform.h"
 
@@ -144,6 +144,11 @@ static void pwmWriteStandard(uint8_t index, uint16_t value)
     *motors[index]->ccr = value;
 }
 
+static void pwmWriteOneShot125(uint8_t index, uint16_t value)
+{
+    *motors[index]->ccr = lrintf((float)(value * ONESHOT125_TIMER_MHZ/8.0f));
+}
+
 void pwmWriteMotor(uint8_t index, uint16_t value)
 {
     if (motors[index] && index < MAX_MOTORS && pwmMotorsEnabled)
@@ -170,48 +175,38 @@ void pwmEnableMotors(void)
     pwmMotorsEnabled = true;
 }
 
-void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
-{
-    uint8_t index;
-    TIM_TypeDef *lastTimerPtr = NULL;
-
-    for (index = 0; index < motorCount; index++) {
-
-        // Force the timer to overflow if it's the first motor to output, or if we change timers
-        if (motors[index]->tim != lastTimerPtr) {
-            lastTimerPtr = motors[index]->tim;
-            timerForceOverflow(motors[index]->tim);
-        }
-
-        // Set the compare register to 0, which stops the output pulsing if the timer overflows before the main loop completes again.
-        // This compare register will be set to the output value on the next main loop.
-        *motors[index]->ccr = 0;
-    }
-}
-
 bool isMotorBrushed(uint16_t motorPwmRate)
 {
     return (motorPwmRate > 500);
 }
 
-void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+void pwmMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse, motorPwmProtocolTypes_e proto)
 {
-    uint32_t hz = PWM_BRUSHED_TIMER_MHZ * 1000000;
-    motors[motorIndex] = pwmOutConfig(timerHardware, PWM_BRUSHED_TIMER_MHZ, hz / motorPwmRate, idlePulse);
-    motors[motorIndex]->pwmWritePtr = pwmWriteBrushed;
-}
+    uint32_t timerMhzCounter;
+    pwmWriteFuncPtr pwmWritePtr;
 
-void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
-{
-    uint32_t hz = PWM_TIMER_MHZ * 1000000;
-    motors[motorIndex] = pwmOutConfig(timerHardware, PWM_TIMER_MHZ, hz / motorPwmRate, idlePulse);
-    motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
-}
+    switch (proto) {
+        case PWM_TYPE_BRUSHED:
+            timerMhzCounter = PWM_BRUSHED_TIMER_MHZ;
+            pwmWritePtr = pwmWriteBrushed;
+            idlePulse = 0;
+            break;
 
-void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex)
-{
-    motors[motorIndex] = pwmOutConfig(timerHardware, ONESHOT125_TIMER_MHZ, 0xFFFF, 0);
-    motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
+        case PWM_TYPE_ONESHOT125:
+            timerMhzCounter = ONESHOT125_TIMER_MHZ;
+            pwmWritePtr = pwmWriteOneShot125;
+            break;
+
+        case PWM_TYPE_CONVENTIONAL:
+        default:
+            timerMhzCounter = PWM_TIMER_MHZ;
+            pwmWritePtr = pwmWriteStandard;
+            break;
+    }
+
+    const uint32_t hz = timerMhzCounter * 1000000;
+    motors[motorIndex] = pwmOutConfig(timerHardware, timerMhzCounter, hz / motorPwmRate, idlePulse);
+    motors[motorIndex]->pwmWritePtr = pwmWritePtr;
 }
 
 #ifdef USE_SERVOS

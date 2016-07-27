@@ -436,6 +436,10 @@ static const char * const lookupTableAuxOperator[] = {
     "OR", "AND"
 };
 
+static const char * const lookupTablePwmProtocol[] = {
+    "PWM", "ONESHOT125", "BRUSHED"
+};
+
 typedef struct lookupTableEntry_s {
     const char * const *values;
     const uint8_t valueCount;
@@ -471,6 +475,7 @@ typedef enum {
     TABLE_NAV_RTH_ALT_MODE,
 #endif
     TABLE_AUX_OPERATOR,
+    TABLE_MOTOR_PWM_PROTOCOL,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -503,6 +508,7 @@ static const lookupTableEntry_t lookupTables[] = {
     { lookupTableNavRthAltMode, sizeof(lookupTableNavRthAltMode) / sizeof(char *) },
 #endif
     { lookupTableAuxOperator, sizeof(lookupTableAuxOperator) / sizeof(char *) },
+    { lookupTablePwmProtocol, sizeof(lookupTablePwmProtocol) / sizeof(char *) },
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -582,6 +588,7 @@ const clivalue_t valueTable[] = {
     { "3d_neutral",                 VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.neutral3d, .config.minmax = { PWM_RANGE_ZERO,  PWM_RANGE_MAX }, 0 },
     { "3d_deadband_throttle",       VAR_UINT16 | MASTER_VALUE,  &masterConfig.flight3DConfig.deadband3d_throttle, .config.minmax = { PWM_RANGE_ZERO,  PWM_RANGE_MAX }, 0 },
 
+    { "motor_pwm_protocol",         VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, &masterConfig.motor_pwm_protocol, .config.lookup = { TABLE_MOTOR_PWM_PROTOCOL } },
     { "motor_pwm_rate",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.motor_pwm_rate, .config.minmax = { 50,  32000 }, 0 },
 #ifdef USE_SERVOS
     { "servo_pwm_rate",             VAR_UINT16 | MASTER_VALUE,  &masterConfig.servo_pwm_rate, .config.minmax = { 50,  498 }, 0 },
@@ -2410,7 +2417,8 @@ static void cliReboot(void) {
     bufWriterFlush(cliWriter);
     waitForSerialPortToFinishTransmitting(cliPort);
     stopMotors();
-    handleOneshotFeatureChangeOnRestart();
+    StopPwmAllMotors();
+    delay(1000);
     systemReset();
 }
 

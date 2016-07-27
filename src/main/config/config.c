@@ -35,6 +35,7 @@
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
+#include "drivers/pwm_output.h"
 #include "drivers/rx_nrf24l01.h"
 #include "drivers/serial.h"
 
@@ -542,8 +543,10 @@ static void resetConf(void)
     resetFlight3DConfig(&masterConfig.flight3DConfig);
 
 #ifdef BRUSHED_MOTORS
+    masterConfig.motor_pwm_protocol = PWM_TYPE_BRUSHED;
     masterConfig.motor_pwm_rate = BRUSHED_MOTORS_PWM_RATE;
 #else
+    masterConfig.motor_pwm_protocol = PWM_TYPE_CONVENTIONAL;
     masterConfig.motor_pwm_rate = BRUSHLESS_MOTORS_PWM_RATE;
 #endif
     masterConfig.servo_pwm_rate = 50;
@@ -653,7 +656,6 @@ static void resetConf(void)
     masterConfig.rxConfig.rcmap[6] = 6;
     masterConfig.rxConfig.rcmap[7] = 7;
 
-    featureSet(FEATURE_ONESHOT125);
     featureSet(FEATURE_VBAT);
     featureSet(FEATURE_LED_STRIP);
     featureSet(FEATURE_FAILSAFE);
@@ -899,12 +901,8 @@ static void validateAndFixConfig(void)
         // which is only possible when using brushless motors w/o oneshot (timer tick rate is PWM_TIMER_MHZ)
 
         // On CC3D OneShot is incompatible with PWM RX
-        featureClear(FEATURE_ONESHOT125);
-
-        // Brushed motors on CC3D are not possible when using PWM RX
-        if (masterConfig.motor_pwm_rate > BRUSHLESS_MOTORS_PWM_RATE) {
-            masterConfig.motor_pwm_rate = BRUSHLESS_MOTORS_PWM_RATE;
-        }
+        masterConfig.motor_pwm_protocol = PWM_TYPE_CONVENTIONAL;
+        masterConfig.motor_pwm_rate = BRUSHLESS_MOTORS_PWM_RATE;
 #endif
 #endif
 
@@ -1148,17 +1146,6 @@ void changeControlRateProfile(uint8_t profileIndex)
     }
     setControlRateProfile(profileIndex);
     activateControlRateConfig();
-}
-
-void handleOneshotFeatureChangeOnRestart(void)
-{
-    // Shutdown PWM on all motors prior to soft restart
-    StopPwmAllMotors();
-    delay(50);
-    // Apply additional delay when OneShot125 feature changed from on to off state
-    if (feature(FEATURE_ONESHOT125) && !featureConfigured(FEATURE_ONESHOT125)) {
-        delay(ONESHOT_FEATURE_CHANGED_DELAY_ON_BOOT_MS);
-    }
 }
 
 void latchActiveFeatures()

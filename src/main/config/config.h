@@ -41,7 +41,7 @@ typedef enum {
     FEATURE_RSSI_ADC = 1 << 15,
     FEATURE_LED_STRIP = 1 << 16,
     FEATURE_DISPLAY = 1 << 17,
-    FEATURE_ONESHOT125 = 1 << 18,
+    //FEATURE_ONESHOT125 = 1 << 18,
     FEATURE_BLACKBOX = 1 << 19,
     FEATURE_CHANNEL_FORWARDING = 1 << 20,
     FEATURE_TRANSPONDER = 1 << 21,
@@ -57,7 +57,6 @@ typedef enum {
     FLAG_MAG_CALIBRATION_DONE = 1 << 0,
 } persistent_flags_e;
 
-void handleOneshotFeatureChangeOnRestart(void);
 void latchActiveFeatures(void);
 bool featureConfigured(uint32_t mask);
 bool feature(uint32_t mask);

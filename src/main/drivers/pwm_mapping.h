@@ -38,15 +38,13 @@
 #define MAX_SERVOS  8
 #endif
 
-
-#define PULSE_1MS   (1000)      // 1ms pulse width
-
-#define MAX_INPUTS  8
-
 #define PWM_TIMER_MHZ 1
 #define ONESHOT125_TIMER_MHZ 8
 #define PWM_BRUSHED_TIMER_MHZ 8
 
+#define PULSE_1MS   (1000)      // 1ms pulse width
+
+#define MAX_INPUTS  8
 
 typedef struct sonarGPIOConfig_s {
     GPIO_TypeDef *gpio;
@@ -67,7 +65,7 @@ typedef struct drv_pwm_config_s {
     bool useUART3;
 #endif
     bool useVbat;
-    bool useOneshot;
+    bool useFastPwm;
     bool useSoftSerial;
     bool useLEDStrip;
 #ifdef SONAR
@@ -80,6 +78,7 @@ typedef struct drv_pwm_config_s {
     uint16_t servoCenterPulse;
 #endif
     bool airplane;       // fixed wing hardware config, lots of servos etc
+    uint8_t pwmProtocolType;
     uint16_t motorPwmRate;
     uint16_t idlePulse;  // PWM value to use when initializing the driver. set this to either PULSE_1MS (regular pwm),
                          // some higher value (used by 3d mode), or 0, for brushed pwm drivers.
