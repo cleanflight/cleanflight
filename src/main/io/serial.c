@@ -105,7 +105,7 @@ baudRate_e lookupBaudRateIndex(uint32_t baudRate)
     return BAUD_AUTO;
 }
 
-static serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier)
+serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e identifier)
 {
     uint8_t index;
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
@@ -221,7 +221,8 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
         serialPortConfig_t *portConfig = &serialConfigToCheck->portConfigs[index];
 
-        if (portConfig->functionMask & (FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT)) {
+        if ((portConfig->functionMask & (FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT))
+        	|| (portConfig->functionMask & (FUNCTION_RX_SERIAL + FUNCTION_BLACKBOX))) {
             mspPortCount++;
         }
 
@@ -232,11 +233,13 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
                 return false;
             }
 
-            if (!(portConfig->functionMask & FUNCTION_MSP_SERVER)) {
+            if ((!(portConfig->functionMask & FUNCTION_MSP_SERVER)
+            	&& !(portConfig->functionMask & (FUNCTION_RX_SERIAL + FUNCTION_BLACKBOX))))  {
                 return false;
             }
 
-            if (!(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER)) {
+            if (!(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER)
+            	&& !(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_BLACKBOX)) {
                 // some other bit must have been set.
                 return false;
             }
