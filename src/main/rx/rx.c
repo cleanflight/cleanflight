@@ -493,8 +493,8 @@ static void readRxChannelsApplyRanges(void)
 
         // apply the rx calibration
         if (channel < NON_AUX_CHANNEL_COUNT) {
-            msp_sample = applyRxChannelRangeConfiguraton(msp_sample, rxConfig->channelRanges[channel]);
-            rc_sample = applyRxChannelRangeConfiguraton(rc_sample, rxConfig->channelRanges[channel]);
+            msp_sample = applyRxChannelRangeConfiguraton(msp_sample, channelRanges(channel));
+            rc_sample = applyRxChannelRangeConfiguraton(rc_sample, channelRanges(channel));
         }
 
         bool validPulse = isPulseValid(msp_sample);
