@@ -505,9 +505,9 @@ static void readRxChannelsApplyRanges(void)
     }
     // filter through buddy-box
     for(channel = 0; channel < rxRuntimeConfig.channelCount; channel++){
-        if((channel == ROLL || channel == PITCH || channel == YAW) && RC_channels[AUX1] > 1500){ // allow MSP to take control if AUX1 is high
+        if((channel == ROLL || channel == PITCH || channel == YAW) && RC_channels[AUX2] < 1300){ // allow MSP to take control if AUX2 is low
             rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 50) ? MSP_channels[channel] : RC_channels[channel]; // allow RC override if sticks are moved
-        } else if(channel == THROTTLE && RC_channels[AUX1] > 1500 ){ // saturate thrust at RC value if on buddybox
+        } else if(channel == THROTTLE && RC_channels[AUX2] < 1300 ){ // saturate thrust at RC value even when accepting MSP commands. This allows the throttle to be cut easily.
             rcRaw[channel] = (RC_channels[channel] < MSP_channels[channel]) ? RC_channels[channel] : MSP_channels[channel];
         } else if(channel == AUX3 || channel == AUX4){ // aux3 and aux4 belong to MSP
             rcRaw[channel]  = MSP_channels[channel];
