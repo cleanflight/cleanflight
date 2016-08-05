@@ -15,7 +15,7 @@
 #
 
 # The target to build, see VALID_TARGETS below
-TARGET		?= NAZE
+TARGET		?= SPRACINGF3
 
 # Compile-time options
 OPTIONS		?=
@@ -538,6 +538,7 @@ STM32F3DISCOVERY_COMMON_SRC = \
 		   drivers/accgyro_l3gd20.c \
 		   drivers/accgyro_lsm303dlhc.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/compass_ist8310.c \
 		   $(VCP_SRC)
 
 STM32F3DISCOVERY_SRC = \
@@ -679,6 +680,7 @@ SPRACINGF3_SRC = \
 		   drivers/barometer_ms5611.c \
 		   drivers/compass_ak8975.c \
 		   drivers/compass_hmc5883l.c \
+		   drivers/compass_ist8310.c \
 		   drivers/display_ug2864hsweg01.h \
 		   drivers/flash_m25p16.c \
 		   drivers/light_ws2811strip.c \
