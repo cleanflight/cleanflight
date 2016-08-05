@@ -24,7 +24,7 @@ typedef enum {
     MAG_HMC5883 = 2,
     MAG_AK8975 = 3,
     MAG_AK8963 = 4,
-    MAG_IST8310 = 5
+    MAG_IST8310 = 5,
 } magSensor_e;
 
 #define MAG_MAX  MAG_IST8310
