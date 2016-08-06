@@ -18,14 +18,32 @@
 #pragma once
 
 typedef enum {
-    ADC_BATTERY = 0,
-    ADC_RSSI = 1,
-    ADC_EXTERNAL1 = 2,
-    ADC_CURRENT = 3,
-    ADC_CHANNEL_MAX = ADC_CURRENT
-} AdcChannel;
+    ADC_CHANNEL0_ENABLE = (1 << 0),
+    ADC_CHANNEL1_ENABLE = (1 << 1),
+    ADC_CHANNEL2_ENABLE = (1 << 2),
+    ADC_CHANNEL3_ENABLE = (1 << 3),
+    ADC_CHANNEL4_ENABLE = (1 << 4),
+    ADC_CHANNEL5_ENABLE = (1 << 5),
+} adcChannelEnableMask_e;
 
-#define ADC_CHANNEL_COUNT (ADC_CHANNEL_MAX + 1)
+#ifndef ADC_CHANNEL_COUNT
+#define ADC_CHANNEL_COUNT 4
+#endif
+
+typedef enum {
+    ADC_CHANNEL0 = 0,
+    ADC_CHANNEL1 = 1,
+    ADC_CHANNEL2 = 2,
+    ADC_CHANNEL3 = 3,
+#if ADC_CHANNEL_COUNT > 4
+    ADC_CHANNEL4 = 4,
+#endif
+#if ADC_CHANNEL_COUNT > 5
+    ADC_CHANNEL5 = 5,
+#endif
+} adcChannelIndex_e;
+
+#define ADC_CHANNEL_MASK(adcChannel) (1 << adcChannel)
 
 typedef struct adc_config_s {
     uint8_t adcChannel;         // ADC1_INxx channel number
@@ -35,10 +53,7 @@ typedef struct adc_config_s {
 } adc_config_t;
 
 typedef struct drv_adc_config_s {
-    bool enableVBat;
-    bool enableRSSI;
-    bool enableCurrentMeter;
-    bool enableExternal1;
+    uint32_t channelMask;
 } drv_adc_config_t;
 
 void adcInit(drv_adc_config_t *init);

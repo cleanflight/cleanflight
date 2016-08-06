@@ -20,7 +20,9 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
+
+#include "config/parameter_group.h"
 
 #include "common/axis.h"
 
@@ -59,8 +61,7 @@
 
 #include "drivers/sonar_hcsr04.h"
 
-#include "config/runtime_config.h"
-#include "config/parameter_group.h"
+#include "fc/runtime_config.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -138,7 +139,7 @@ const extiConfig_t *selectMPUIntExtiConfig(void)
     return &cc3dMPUIntExtiConfig;
 #endif
 
-#ifdef MOTOLAB
+#if defined(MOTOLAB) || defined(RCEXPLORERF3)
     static const extiConfig_t MotolabF3MPUIntExtiConfig = {
             .gpioAHBPeripherals = RCC_AHBPeriph_GPIOA,
             .gpioPort = GPIOA,
