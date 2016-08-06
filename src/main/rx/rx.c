@@ -22,8 +22,8 @@
 #include <string.h>
 
 #include <platform.h>
-#include "build_config.h"
-#include "debug.h"
+#include "build/build_config.h"
+#include "build/debug.h"
 
 #include "common/maths.h"
 #include "common/utils.h"
@@ -31,7 +31,6 @@
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
-#include "config/config.h"
 #include "config/feature.h"
 #include "config/config_reset.h"
 
@@ -39,7 +38,9 @@
 #include "drivers/adc.h"
 
 #include "io/serial.h"
-#include "io/rc_controls.h"
+
+#include "fc/rc_controls.h"
+#include "fc/config.h"
 
 #include "flight/failsafe.h"
 
@@ -56,7 +57,11 @@
 #include "rx/msp.h"
 #include "rx/xbus.h"
 #include "rx/ibus.h"
+<<<<<<< HEAD
 #include "rx/jetiexbus.h"
+=======
+#include "rx/srxl.h"
+>>>>>>> refs/remotes/origin/master
 
 #include "rx/rx.h"
 
@@ -242,7 +247,10 @@ void serialRxInit(rxConfig_t *rxConfig)
             rxRefreshRate = 11000;
             enabled = sumhInit(&rxRuntimeConfig, &rcReadRawFunc);
             break;
-        case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_SRXL:
+			rxRefreshRate = 11000;
+            enabled = srxlInit(&rxRuntimeConfig, &rcReadRawFunc);
+            break;
         case SERIALRX_XBUS_MODE_B_RJ01:
             rxRefreshRate = 11000;
             enabled = xBusInit(&rxRuntimeConfig, &rcReadRawFunc);
@@ -283,7 +291,8 @@ uint8_t serialRxFrameStatus(void)
             return sumdFrameStatus();
         case SERIALRX_SUMH:
             return sumhFrameStatus();
-        case SERIALRX_XBUS_MODE_B:
+        case SERIALRX_SRXL:
+						return srxlFrameStatus();
         case SERIALRX_XBUS_MODE_B_RJ01:
             return xBusFrameStatus();
         case SERIALRX_IBUS:
@@ -610,7 +619,7 @@ void updateRSSIPWM(void)
 
 void updateRSSIADC(uint32_t currentTime)
 {
-#ifndef USE_ADC
+#ifndef ADC_RSSI
     UNUSED(currentTime);
 #else
     static uint8_t adcRssiSamples[RSSI_ADC_SAMPLE_COUNT];

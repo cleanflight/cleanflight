@@ -21,7 +21,7 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "config/parameter_group.h"
 
@@ -35,13 +35,6 @@
 #include "adc.h"
 #include "adc_impl.h"
 
-#ifndef ADC_INSTANCE
-#define ADC_INSTANCE                ADC1
-#define ADC_ABP2_PERIPHERAL         RCC_APB2Periph_ADC1
-#define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA1
-#define ADC_DMA_CHANNEL             DMA1_Channel1
-#endif
-
 // Driver for STM32F103CB onboard ADC
 //
 // Naze32
@@ -52,13 +45,13 @@
 // NAZE rev.5 hardware has PA5 (ADC1_IN5) on breakout pad on bottom of board
 //
 
+#ifdef USE_ADC
 
 void adcInit(drv_adc_config_t *init)
 {
 #if defined(CJMCU) || defined(CC3D)
     UNUSED(init);
 #endif
-
 
     uint8_t i;
     uint8_t configuredAdcChannels = 0;
@@ -69,47 +62,47 @@ void adcInit(drv_adc_config_t *init)
     GPIO_StructInit(&GPIO_InitStructure);
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AIN;
 
-#ifdef VBAT_ADC_GPIO
-    if (init->enableVBat) {
-        GPIO_InitStructure.GPIO_Pin = VBAT_ADC_GPIO_PIN;
-        GPIO_Init(VBAT_ADC_GPIO, &GPIO_InitStructure);
-        adcConfig[ADC_BATTERY].adcChannel = VBAT_ADC_CHANNEL;
-        adcConfig[ADC_BATTERY].dmaIndex = configuredAdcChannels++;
-        adcConfig[ADC_BATTERY].enabled = true;
-        adcConfig[ADC_BATTERY].sampleTime = ADC_SampleTime_239Cycles5;
+#ifdef ADC0_GPIO
+    if (init->channelMask & ADC_CHANNEL0_ENABLE) {
+        GPIO_InitStructure.GPIO_Pin = ADC0_GPIO_PIN;
+        GPIO_Init(ADC0_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_CHANNEL0].adcChannel = ADC0_CHANNEL;
+        adcConfig[ADC_CHANNEL0].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_CHANNEL0].enabled = true;
+        adcConfig[ADC_CHANNEL0].sampleTime = ADC_SampleTime_239Cycles5;
     }
 #endif
 
-#ifdef RSSI_ADC_GPIO
-    if (init->enableRSSI) {
-        GPIO_InitStructure.GPIO_Pin = RSSI_ADC_GPIO_PIN;
-        GPIO_Init(RSSI_ADC_GPIO, &GPIO_InitStructure);
-        adcConfig[ADC_RSSI].adcChannel = RSSI_ADC_CHANNEL;
-        adcConfig[ADC_RSSI].dmaIndex = configuredAdcChannels++;
-        adcConfig[ADC_RSSI].enabled = true;
-        adcConfig[ADC_RSSI].sampleTime = ADC_SampleTime_239Cycles5;
+#ifdef ADC1_GPIO
+    if (init->channelMask & ADC_CHANNEL1_ENABLE) {
+        GPIO_InitStructure.GPIO_Pin = ADC1_GPIO_PIN;
+        GPIO_Init(ADC1_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_CHANNEL1].adcChannel = ADC1_CHANNEL;
+        adcConfig[ADC_CHANNEL1].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_CHANNEL1].enabled = true;
+        adcConfig[ADC_CHANNEL1].sampleTime = ADC_SampleTime_239Cycles5;
     }
 #endif
 
-#ifdef EXTERNAL1_ADC_GPIO
-    if (init->enableExternal1) {
-        GPIO_InitStructure.GPIO_Pin = EXTERNAL1_ADC_GPIO_PIN;
-        GPIO_Init(EXTERNAL1_ADC_GPIO, &GPIO_InitStructure);
-        adcConfig[ADC_EXTERNAL1].adcChannel = EXTERNAL1_ADC_CHANNEL;
-        adcConfig[ADC_EXTERNAL1].dmaIndex = configuredAdcChannels++;
-        adcConfig[ADC_EXTERNAL1].enabled = true;
-        adcConfig[ADC_EXTERNAL1].sampleTime = ADC_SampleTime_239Cycles5;
+#ifdef ADC2_GPIO
+    if (init->channelMask & ADC_CHANNEL2_ENABLE) {
+        GPIO_InitStructure.GPIO_Pin = ADC2_GPIO_PIN;
+        GPIO_Init(ADC2_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_CHANNEL2].adcChannel = ADC2_CHANNEL;
+        adcConfig[ADC_CHANNEL2].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_CHANNEL2].enabled = true;
+        adcConfig[ADC_CHANNEL2].sampleTime = ADC_SampleTime_239Cycles5;
     }
 #endif
 
-#ifdef CURRENT_METER_ADC_GPIO
-    if (init->enableCurrentMeter) {
-        GPIO_InitStructure.GPIO_Pin   = CURRENT_METER_ADC_GPIO_PIN;
-        GPIO_Init(CURRENT_METER_ADC_GPIO, &GPIO_InitStructure);
-        adcConfig[ADC_CURRENT].adcChannel = CURRENT_METER_ADC_CHANNEL;
-        adcConfig[ADC_CURRENT].dmaIndex = configuredAdcChannels++;
-        adcConfig[ADC_CURRENT].enabled = true;
-        adcConfig[ADC_CURRENT].sampleTime = ADC_SampleTime_239Cycles5;
+#ifdef ADC3_GPIO
+    if (init->channelMask & ADC_CHANNEL3_ENABLE) {
+        GPIO_InitStructure.GPIO_Pin   = ADC3_GPIO_PIN;
+        GPIO_Init(ADC3_GPIO, &GPIO_InitStructure);
+        adcConfig[ADC_CHANNEL3].adcChannel = ADC3_CHANNEL;
+        adcConfig[ADC_CHANNEL3].dmaIndex = configuredAdcChannels++;
+        adcConfig[ADC_CHANNEL3].enabled = true;
+        adcConfig[ADC_CHANNEL3].sampleTime = ADC_SampleTime_239Cycles5;
     }
 #endif
 
@@ -164,3 +157,5 @@ void adcInit(drv_adc_config_t *init)
 
     ADC_SoftwareStartConvCmd(ADC_INSTANCE, ENABLE);
 }
+
+#endif
