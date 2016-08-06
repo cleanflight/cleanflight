@@ -57,11 +57,8 @@
 #include "rx/msp.h"
 #include "rx/xbus.h"
 #include "rx/ibus.h"
-<<<<<<< HEAD
 #include "rx/jetiexbus.h"
-=======
 #include "rx/srxl.h"
->>>>>>> refs/remotes/origin/master
 
 #include "rx/rx.h"
 

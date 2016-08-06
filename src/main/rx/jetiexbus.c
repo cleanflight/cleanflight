@@ -39,32 +39,49 @@
 #include <stdint.h>
 
 #include "common/utils.h"
-#include "platform.h"
-#include "build_config.h"
+
+#include <platform.h>
+
 #include "config/parameter_group.h"
 
 #include "drivers/system.h"
 #include "drivers/serial.h"
+#include "drivers/dma.h"
 #include "drivers/serial_uart.h"
+
 #include "io/serial.h"
+
 #include "rx/rx.h"
 #include "rx/jetiexbus.h"
 
 #ifdef TELEMETRY
 
 #include <string.h>
-#include "io/rc_controls.h"
-#include "sensors/sensors.h"
-#include "sensors/battery.h"
-#include "sensors/barometer.h"
-#include "telemetry/telemetry.h"
-#include "config/runtime_config.h"
-#include "config/config.h"
+
+#include "common/axis.h"
+#include "common/maths.h"
+
 #include "config/feature.h"
 
-#ifdef GPS
-#include "io/gps.h"
-#endif //GPS
+#include "drivers/sensor.h"
+#include "drivers/accgyro.h"
+#include "drivers/serial.h"
+
+#include "rx/rx.h"
+
+#include "fc/rc_controls.h"
+#include "fc/fc_serial.h"
+
+#include "sensors/sensors.h"
+#include "sensors/battery.h"
+
+#include "flight/altitudehold.h"
+
+#include "telemetry/telemetry.h"
+#include "telemetry/smartport.h"
+
+#include "fc/runtime_config.h"
+#include "fc/config.h"
 
 #endif //TELEMETRY
 
@@ -176,13 +193,7 @@ exBusSensor_t jetiExSensors[] = {
     { "Voltage",        "V",    0,      EX_TYPE_14b,   DECIMAL_MASK(1), false},
     { "Current",        "A",    0,      EX_TYPE_14b,   DECIMAL_MASK(2), false},
     { "Altitude",       "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(2), false},
-    { "Capacity",       "mAh",  0,      EX_TYPE_22b,   DECIMAL_MASK(0), false},
-    { "Longitude",      "",     0,      EX_TYPE_GPS,   DECIMAL_MASK(0), false},
-    { "Latitude",       "",     0,      EX_TYPE_GPS,   DECIMAL_MASK(0), false},
-    { "GPS Lock",       "",     0,      EX_TYPE_6b,    DECIMAL_MASK(0), false},
-    { "GPS Speed",      "km/h", 0,      EX_TYPE_14b,   DECIMAL_MASK(0), false},
-    { "GPS Altitude",   "m",    0,      EX_TYPE_14b,   DECIMAL_MASK(0), false},
-    { "GPS HDOP",        "",    0,      EX_TYPE_14b,   DECIMAL_MASK(0), false}
+    { "Capacity",       "mAh",  0,      EX_TYPE_22b,   DECIMAL_MASK(0), false}
 };
 
 
@@ -191,13 +202,7 @@ enum exSensors_e {
     EX_VOLTAGE = 1,
     EX_CURRENT,
     EX_ALTITUDE,
-    EX_CAPACITY,
-    EX_GPS_LONGTITUDE,
-    EX_GPS_LATITUDE,
-    EX_GPS_LOCK,
-    EX_GPS_SPEED,
-    EX_GPS_ALTITUDE,
-    EX_GPS_HDOP
+    EX_CAPACITY
 };
 
 #define JETI_EX_SENSOR_COUNT (ARRAYLEN(jetiExSensors))
@@ -473,16 +478,6 @@ void initJetiExBusTelemetry()
         jetiExSensors[EX_ALTITUDE].active = true;
     }
 
-#ifdef GPS
-    if (sensors(SENSOR_GPS)) {
-        jetiExSensors[EX_GPS_LATITUDE].active = true;
-        jetiExSensors[EX_GPS_LONGTITUDE].active = true;
-        jetiExSensors[EX_GPS_LOCK].active = true;
-        jetiExSensors[EX_GPS_SPEED].active = true;
-        jetiExSensors[EX_GPS_ALTITUDE].active = true;
-        jetiExSensors[EX_GPS_HDOP].active = true;
-    }
-#endif
 
 }
 
@@ -593,14 +588,7 @@ void handleJetiExBusTelemetry(void)
             jetiExSensors[EX_CURRENT].value = amperage;
             jetiExSensors[EX_ALTITUDE].value = BaroAlt;
             jetiExSensors[EX_CAPACITY].value = mAhDrawn;
-#ifdef GPS
-            jetiExSensors[EX_GPS_LATITUDE].value = GPS_coord[LAT];
-            jetiExSensors[EX_GPS_LONGTITUDE].value = GPS_coord[LON];
-            jetiExSensors[EX_GPS_LOCK].value = GPS_numSat;
-            jetiExSensors[EX_GPS_SPEED].value = GPS_speed;
-            jetiExSensors[EX_GPS_ALTITUDE].value = GPS_altitude;
-            jetiExSensors[EX_GPS_HDOP].value = GPS_hdop;
-#endif
+
             // switch to TX mode
             if (uartTotalRxBytesWaiting(jetiExBusPort) == 0) {
                 serialSetMode(jetiExBusPort, MODE_TX);
