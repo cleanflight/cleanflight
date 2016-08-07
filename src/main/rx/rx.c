@@ -509,8 +509,8 @@ static void readRxChannelsApplyRanges(void)
             rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 50) ? MSP_channels[channel] : RC_channels[channel]; // allow RC override if sticks are moved
         } else if(channel == THROTTLE && RC_channels[AUX1] < 1300 ){ // saturate thrust at RC value even when accepting MSP commands. This allows the throttle to be cut easily.
             rcRaw[channel] = (RC_channels[channel] < MSP_channels[channel]) ? RC_channels[channel] : MSP_channels[channel];
-        } else if(channel == AUX3 || channel == AUX4){ // aux3 and aux4 belong to MSP
-            rcRaw[channel]  = MSP_channels[channel];
+        //} else if(channel == AUX3 || channel == AUX4){ // aux3 and aux4 belong to MSP
+        //    rcRaw[channel]  = MSP_channels[channel];
         } else{
             rcRaw[channel]  = RC_channels[channel];     
         }
