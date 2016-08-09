@@ -67,8 +67,6 @@
 #include "drivers/accgyro.h"
 #include "drivers/serial.h"
 
-#include "rx/rx.h"
-
 #include "fc/rc_controls.h"
 #include "fc/fc_serial.h"
 
@@ -90,7 +88,7 @@
 //
 #define JETIEXBUS_BAUDRATE 125000                       // EX Bus 125000; EX Bus HS 250000 not supported
 #define JETIEXBUS_OPTIONS (SERIAL_STOPBITS_1 | SERIAL_PARITY_NO | SERIAL_NOT_INVERTED)
-#define JETIEXBUS_MIN_FRAME_GAP     1000
+#define JETIEXBUS_MIN_FRAME_GAP     20000
 #define JETIEXBUS_CHANNEL_COUNT     16                  // most Jeti TX transmit 16 channels
 
 #define EXBUS_HEADER_LEN                6
@@ -348,12 +346,13 @@ static void jetiExBusDataReceive(uint16_t c)
 
     static uint8_t *jetiExBusFrame;
 
-    // Check if we shall reset frame position due to time
     now = micros();
 
     jetiExBusTimeInterval = now - jetiExBusTimeLast;
     jetiExBusTimeLast = now;
 
+
+    // Check if we shall reset frame position due to time
     if (jetiExBusTimeInterval > JETIEXBUS_MIN_FRAME_GAP) {
         jetiExBusFrameReset();
         jetiExBusFrameState = EXBUS_STATE_ZERO;
