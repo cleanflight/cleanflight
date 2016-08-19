@@ -685,7 +685,7 @@ pwmIOConfiguration_t *pwmGetOutputConfiguration(void){
     return &pwmIOConfiguration;
 }
 
-bool pwmIsUsed(const drv_pwm_config_t *init, uint8_t type, const timerHardware_t *timerHardwarePtr, uint8_t timerIndex)
+bool pwmChannelCanBeUsed(const drv_pwm_config_t *init, uint8_t type, const timerHardware_t *timerHardwarePtr, uint8_t timerIndex)
 {
 #ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
     // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
@@ -821,7 +821,7 @@ pwmIOConfiguration_t *pwmInit(const drv_pwm_config_t *init)
         uint8_t type = (setup[i] & 0xFF00) >> 8;
         const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
 
-        if (pwmIsUsed(init, type, timerHardwarePtr, timerIndex)) {
+        if (pwmChannelCanBeUsed(init, type, timerHardwarePtr, timerIndex)) {
             continue;
         }
 
