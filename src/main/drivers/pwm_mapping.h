@@ -140,6 +140,6 @@ enum {
     PWM16
 };
 
-pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init);
+pwmIOConfiguration_t *pwmInit(const drv_pwm_config_t *init);
 pwmIOConfiguration_t *pwmGetOutputConfiguration(void);
 
