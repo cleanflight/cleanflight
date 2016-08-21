@@ -18,68 +18,98 @@
 #pragma once
 
 //#define SCHEDULER_DEBUG
+//#define SCHEDULER_DEBUG_PRINT
 
 typedef enum {
-    TASK_PRIORITY_IDLE = 0,     // Disables dynamic scheduling, task is executed only if no other task is active this cycle
-    TASK_PRIORITY_LOW = 1,
+    TASK_PRIORITY_IDLE = 0,     // This task will only run if there is nothing else to run. If your cpu is quite busy there is no guarantee this will ever run!
+    TASK_PRIORITY_LOW = 1,   
     TASK_PRIORITY_MEDIUM = 3,
     TASK_PRIORITY_HIGH = 5,
-    TASK_PRIORITY_REALTIME = 6,
+    TASK_PRIORITY_REALTIME = 6, // This task will be ran as close to realtime as possible. linze
     TASK_PRIORITY_MAX = 255
 } cfTaskPriority_e;
 
+// A special task type that will reference the current task.
 #define TASK_SELF -1
 
 typedef struct {
     const char * taskName;
-    bool         isEnabled;
-    uint32_t     desiredPeriod;
-    uint8_t      staticPriority;
-    uint32_t     maxExecutionTime;
-    uint32_t     totalExecutionTime;
-    uint32_t     averageExecutionTime;
-    uint32_t     latestDeltaTime;
+    bool         isEnabled;                 // Indicates if the task is enabled.
+    uint32_t     desiredPeriod;             // the desired amount of time between each execution (in microseconds)
+    uint8_t      priority;                  // the priority of the task
+    uint32_t     maxExecutionTime;          // keeps track of the longest this task has ever ran (in microseconds)
+    uint32_t     totalExecutionTime;        // keeps track of the total amount of time this task has ran (in microseconds)
+    uint32_t     averageExecutionTime;      // keeps track of the average run time (in microseconds)
+    uint32_t     latestDeltaTime;           // keeps track of the last amount of time between executions.
 } cfTaskInfo_t;
 
 typedef struct {
+
+    // The function that is called when the task is executed.
+    void (*taskFunc)(void);  
+
+    // If this function is defined the task will be considered event driven. This means
+    // it will not be scheduled due to a period, instead when this function returns true the task will 
+    // be scheduled. Note, once this function returns true it will not be called again until the task is ran.
+    // currentDeltaTime (micros) time time since the last execution. 
+    bool (*checkFunc)(uint32_t currentDeltaTime); 
+
     /* Configuration */
     const char * taskName;
-    bool (*checkFunc)(uint32_t currentDeltaTime);
-    void (*taskFunc)(void);
-    uint32_t desiredPeriod;         // target period of execution
-    const uint8_t staticPriority;   // dynamicPriority grows in steps of this size, shouldn't be zero
+    bool isEnabled;                 // Indicates if the task is enabled or not.
+    uint32_t desiredPeriod;         // If not an event based task, this is the target time (micros) between executions 
+    const uint8_t priority;         // The priority of the task. 
 
     /* Scheduling */
-    uint16_t dynamicPriority;       // measurement of how old task was last executed, used to avoid task starvation
-    uint16_t taskAgeCycles;
-    uint32_t lastExecutedAt;        // last time of invocation
-    uint32_t lastSignaledAt;        // time of invocation event for event-driven tasks
+    bool isWaitingToBeRan;          // Indicates if the task is waiting to be ran or not.
+    uint32_t lastIdealExecutionTime;// Time in (micros) when the task should have ideally been ran.
+    uint32_t lastExecutedAt;        // last time (micros) when the task was executed
 
     /* Statistics */
-    uint32_t averageExecutionTime;  // Moving average over 6 samples, used to calculate guard interval
-    uint32_t taskLatestDeltaTime;   //
+    uint32_t averageExecutionTime;  // Moving average over 31 samples, used to calculate the realtime guard interval
+    uint32_t taskLatestDeltaTime;   // keeps track of the last amount of time between executions. 
 #ifndef SKIP_TASK_STATISTICS
-    uint32_t maxExecutionTime;
+    uint32_t maxExecutionTime;      // keeps track of the longest this task has ever ran (in microseconds)
     uint32_t totalExecutionTime;    // total time consumed by task since boot
 #endif
 } cfTask_t;
 
-extern uint16_t cpuLoad;
-extern uint16_t averageSystemLoadPercent;
 
-extern cfTask_t* taskQueueArray[];
-extern const uint32_t taskQueueArraySize;
-extern const uint32_t taskCount;
+// An array of all possible tasks. This is defined in the fc folder.
 extern cfTask_t cfTasks[];
 
-void getTaskInfo(const int taskId, cfTaskInfo_t *taskInfo);
-void rescheduleTask(const int taskId, uint32_t newPeriodMicros);
+// The total number of tasks we have in the array.
+extern const uint32_t taskCount;
+
+// Sets up the scheduler
+void schedulerInit(void);
+
+// Preforms the scheduling logic and executes one task if possible.
+void schedulerExecute(void);
+
+// Enables or disables a given task.
 void setTaskEnabled(const int taskId, bool newEnabledState);
+
+// Returns info for the given task.
+void getTaskInfo(const int taskId, cfTaskInfo_t *taskInfo);
+
+// Updates the task period (micros) between executions. This does nothing if the task is event driven.
+void updateTaskExecutionPeriod(const int taskId, uint32_t newPeriodMicros);
+
+// Returns the last amount of time between the execution of the given task.
 uint32_t getTaskDeltaTime(const int taskId);
 
-void schedulerInit(void);
-void scheduler(void);
+//
+// CPU Stats
+
+// The average cpu load sampled from a short time.
+extern uint16_t averageSystemLoadPercent;
+
+// Indicates if we had to skip task periods in this time span or not. 
+// If we skipped time slots we are trying to catch up.
+extern bool isCpuOverloaded;
 
 #define LOAD_PERCENTAGE_ONE 100
+#define isSystemOverloaded() (averageSystemLoadPercent >= LOAD_PERCENTAGE_ONE || isCpuOverloaded)
 
-#define isSystemOverloaded() (averageSystemLoadPercent >= LOAD_PERCENTAGE_ONE)
+

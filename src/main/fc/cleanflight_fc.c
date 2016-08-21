@@ -896,7 +896,7 @@ void taskUpdateBaro(void)
 {
     if (sensors(SENSOR_BARO)) {
         uint32_t newDeadline = baroUpdate();
-        rescheduleTask(TASK_SELF, newDeadline);
+        updateTaskExecutionPeriod(TASK_SELF, newDeadline);
     }
 }
 #endif

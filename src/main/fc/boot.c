@@ -711,7 +711,7 @@ void configureScheduler(void)
     schedulerInit();
     setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_GYROPID, true);
-    rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
+    updateTaskExecutionPeriod(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
     setTaskEnabled(TASK_ACCEL, sensors(SENSOR_ACC));
     setTaskEnabled(TASK_SERIAL, true);
 #ifdef BEEPER
@@ -726,7 +726,7 @@ void configureScheduler(void)
     setTaskEnabled(TASK_COMPASS, sensors(SENSOR_MAG));
 #if defined(MPU6500_SPI_INSTANCE) && defined(USE_MAG_AK8963)
     // fixme temporary solution for AK6983 via slave I2C on MPU9250
-    rescheduleTask(TASK_COMPASS, 1000000 / 40);
+    updateTaskExecutionPeriod(TASK_COMPASS, 1000000 / 40);
 #endif
 #endif
 #ifdef BARO
@@ -758,7 +758,7 @@ int main(void) {
 	configureScheduler();
 
     while (true) {
-        scheduler();
+        schedulerExecute();
         processLoopback();
     }
 }
