@@ -52,8 +52,11 @@ void taskSystem(void)
 {
     // Calc the current cpu work load.
     if (currentSchedulerExecutionPasses > 0) {
+
+#if defined SCHEDULER_DEBUG
         debug[1] = currentSchedulerExecutionPassesWithWork;
         debug[2] = currentSchedulerExecutionPasses;
+#endif
         averageSystemLoadPercent = 100 * currentSchedulerExecutionPassesWithWork / currentSchedulerExecutionPasses;
         currentSchedulerExecutionPasses = 0;
         currentSchedulerExecutionPassesWithWork = 0;
@@ -71,19 +74,50 @@ void taskSystem(void)
 #endif
 }
 
-#ifndef SKIP_TASK_STATISTICS
-void getTaskInfo(const int taskId, cfTaskInfo_t * taskInfo)
+void getTaskInfo(int taskId, cfTaskInfo_t * taskInfo)
 {
+    // Param check.
+    if(taskId >= (int)taskCount || taskId < TASK_SELF || taskInfo == NULL)
+    {
+        return;
+    }
+
+    // Get the current task number.
+    if(taskId == TASK_SELF)
+    {
+        if(currentTask == NULL)
+        {
+            return;
+        }
+
+        // Find the task.
+        for(uint16_t ii = 0; ii < taskCount; ii++)
+        {
+            if(&cfTasks[ii] == currentTask)
+            {
+                taskId = ii;
+                break;
+            }
+        }
+
+        // Failed to find the task.
+        if(taskId < 0)
+        {
+            return;
+        }
+    }
+
+    // Fill the stats
     taskInfo->taskName = cfTasks[taskId].taskName;
     taskInfo->isEnabled = cfTasks[taskId].isEnabled;
     taskInfo->desiredPeriod = cfTasks[taskId].desiredPeriod;
     taskInfo->priority = cfTasks[taskId].priority;
+    taskInfo->isWaitingToBeRan = cfTasks[taskId].isWaitingToBeRan;
+    taskInfo->lastExecutionTime = cfTasks[taskId].lastExecutionTime;
     taskInfo->maxExecutionTime = cfTasks[taskId].maxExecutionTime;
     taskInfo->totalExecutionTime = cfTasks[taskId].totalExecutionTime;
     taskInfo->averageExecutionTime = cfTasks[taskId].averageExecutionTime;
-    taskInfo->latestDeltaTime = cfTasks[taskId].taskLatestDeltaTime;
 }
-#endif
 
 void updateTaskExecutionPeriod(const int taskId, uint32_t newPeriodMicros)
 {
@@ -101,11 +135,12 @@ void setTaskEnabled(const int taskId, bool enabled)
     }
 }
 
-uint32_t getTaskDeltaTime(const int taskId)
+uint32_t getTaskTimeSinceLastRun(const int taskId)
 {
     if ((taskId == TASK_SELF && currentTask != NULL) || (taskId < (int)taskCount && taskId >= 0)) {
+        // Return the amount of time since the task last ran.
         cfTask_t *task = taskId == TASK_SELF ? currentTask : &cfTasks[taskId];
-        return task->taskLatestDeltaTime;
+        return currentTime - task->lastExecutionTime;
     } else {
         return 0;
     }
@@ -120,7 +155,7 @@ void schedulerInit(void)
         cfTasks[ii].isWaitingToBeRan = false;
         cfTasks[ii].lastIdealExecutionTime = 0;
         cfTasks[ii].averageExecutionTime = 0;
-        cfTasks[ii].lastExecutedAt = 0;
+        cfTasks[ii].lastExecutionTime = 0;
     }
 }
 
@@ -169,7 +204,7 @@ void schedulerExecute(void)
             // Check if this is an event driven task.
             if (task->checkFunc != NULL) {
                 // Ask if we should run this task.
-                if(task->checkFunc(currentTime - task->lastExecutedAt))
+                if(task->checkFunc(currentTime - task->lastExecutionTime))
                 {
                     // We should run this task, set the ideal execution time to now.
                     task->lastIdealExecutionTime = currentTime;
@@ -259,10 +294,8 @@ void schedulerExecute(void)
         currentSchedulerExecutionPassesWithWork++;
     }
 
+    // See if we have something to run.
     if (selectedTask != NULL) {
-        // Found a task that should be run
-        selectedTask->taskLatestDeltaTime = currentTime - selectedTask->lastExecutedAt;
-        selectedTask->lastExecutedAt = currentTime;    
 
 #ifdef SCHEDULER_DEBUG_PRINT
         printf("Running Task (%s)\n",selectedTask->taskName); 
@@ -287,13 +320,14 @@ void schedulerExecute(void)
 
         // Clear our current task 
         currentTask = NULL;
-        selectedTask->isWaitingToBeRan = false;
 
+        // Update the task stats.
+        selectedTask->lastExecutionTime = currentTime; // Note we have to update this AFTER the task runs incase getTaskTimeSinceLastRun is called while executing.
+        selectedTask->isWaitingToBeRan = false; 
         selectedTask->averageExecutionTime = ((uint32_t)selectedTask->averageExecutionTime * 31 + taskExecutionTime) / 32;
-#ifndef SKIP_TASK_STATISTICS
         selectedTask->totalExecutionTime += taskExecutionTime;   // time consumed by scheduler + task
         selectedTask->maxExecutionTime = MAX(selectedTask->maxExecutionTime, taskExecutionTime);
-#endif
+
 #if defined SCHEDULER_DEBUG
         debug[3] = (micros() - currentTime) - taskExecutionTime;
     } else {

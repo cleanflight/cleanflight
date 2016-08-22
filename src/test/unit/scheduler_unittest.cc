@@ -42,27 +42,20 @@ enum {
     updateDisplayTime = 15,
     telemetryTime = 16,
     ledStripTime = 17,
-    transponderTime = 18
+    transponderTime = 18,
+    selfTaskCheckDelay = 300,
 };
 
  extern "C" {
     uint32_t simulatedTime = 0;
     uint32_t taskDelayTime = 0;
     bool rxCheckReturnValue = false;
+
+    bool doSelfTaskChecks = false;
+    uint32_t doSelfTaskCheckExpectedTimeSinceLastRun = 0;
+
     uint32_t micros(void) {return simulatedTime;}
     void taskMainPidLoopChecker(void) {simulatedTime+=pidLoopCheckerTime;}
-    void taskUpdateAccelerometer(void) 
-    {
-        if(taskDelayTime == 0)
-        {
-            simulatedTime += updateAccelerometerTime;
-        }
-        else
-        {
-            simulatedTime += taskDelayTime;
-            usleep(taskDelayTime);
-        }        
-    }
     void taskHandleSerial(void) {simulatedTime+=handleSerialTime;}
     void taskUpdateBeeper(void) {simulatedTime+=updateBeeperTime;}
     void taskUpdateBattery(void) {simulatedTime+=updateBatteryTime;}
@@ -77,6 +70,53 @@ enum {
     void taskTelemetry(void) {simulatedTime+=telemetryTime;}
     void taskLedStrip(void) {simulatedTime+=ledStripTime;}
     void taskTransponder(void) {simulatedTime+=transponderTime;}
+
+    // Special task.
+    void taskUpdateAccelerometer(void) 
+    {
+        // Do time simulation.
+        if(taskDelayTime == 0) {
+            simulatedTime += updateAccelerometerTime;
+        }
+        else {
+            simulatedTime += taskDelayTime;
+            usleep(taskDelayTime);
+        }
+
+        // Make sure the self calls work.
+        if(doSelfTaskChecks){
+
+            // Test enable
+            EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+            setTaskEnabled(TASK_SELF, false);
+            EXPECT_FALSE(cfTasks[TASK_ACCEL].isEnabled);
+            setTaskEnabled(TASK_SELF, true);            
+            EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+
+            // Test get info
+            cfTaskInfo_t info;
+            getTaskInfo(TASK_SELF, &info);
+            EXPECT_TRUE(info.taskName);
+            EXPECT_EQ(strcmp(info.taskName,"ACCEL"), 0);            
+            EXPECT_TRUE(info.isEnabled);
+            EXPECT_EQ(info.priority, TASK_PRIORITY_MEDIUM);
+            EXPECT_TRUE(info.isWaitingToBeRan);
+
+            // Test the time delta 
+            uint32_t timeSinceLastRun = getTaskTimeSinceLastRun(TASK_SELF);
+            EXPECT_EQ(timeSinceLastRun, doSelfTaskCheckExpectedTimeSinceLastRun);
+
+            // Test period Updates
+            EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000);
+            updateTaskExecutionPeriod(TASK_SELF, 500);
+            EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 500);
+            updateTaskExecutionPeriod(TASK_SELF, 1000);
+            EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000);  
+
+            // Add to simulated time.
+            simulatedTime += selfTaskCheckDelay; 
+        }
+    }
  }
 
 TEST(SchedulerUnittest, TestPriorites)
@@ -96,6 +136,12 @@ TEST(SchedulerUnittest, TestPriorites)
     EXPECT_EQ(TASK_PRIORITY_MEDIUM, 3);
     EXPECT_EQ(TASK_PRIORITY_LOW, 1);
     EXPECT_EQ(TASK_PRIORITY_IDLE, 0);
+
+    // Make sure the array size is correct
+    for(uint16_t ii = 0; ii < taskCount; ii++)
+    {
+        EXPECT_TRUE(cfTasks[ii].taskName);
+    }
 }
 
 // Inits the scheduler
@@ -184,6 +230,93 @@ TEST(SchedulerUnittest, DriveEmptySchedule)
     EXPECT_EQ(simulatedTime, 3030000);
 }
 
+// Test to make sure task functions and info works.
+TEST(SchedulerUnittest, TaskFunctionsAndInfoTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+    schedulerExecute();
+
+    //
+    // Test functions
+
+    // Test enable and enable
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isEnabled);
+    setTaskEnabled(TASK_ACCEL, true);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+    setTaskEnabled(TASK_ACCEL, false);            
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isEnabled);
+    setTaskEnabled(TASK_ACCEL, true);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+
+    // This should be ignored
+    setTaskEnabled(55, true);
+    setTaskEnabled(-2, true);
+    
+    // These should be ignored.
+    cfTaskInfo_t info;
+    info.taskName = "empty";
+    getTaskInfo(55, &info);
+    EXPECT_EQ(strcmp(info.taskName,"empty"), 0);
+    getTaskInfo(-2, &info);    
+    EXPECT_EQ(strcmp(info.taskName,"empty"), 0);    
+
+    // Test get info
+    getTaskInfo(TASK_ACCEL, &info);
+    EXPECT_EQ(strcmp(info.taskName,"ACCEL"), 0);
+    EXPECT_TRUE(info.isEnabled);
+    EXPECT_EQ(info.priority, TASK_PRIORITY_MEDIUM);
+    EXPECT_FALSE(info.isWaitingToBeRan);
+
+    // Test the time delta 
+    uint32_t timeSinceLastRun = getTaskTimeSinceLastRun(TASK_ACCEL);
+    EXPECT_EQ(timeSinceLastRun, 0);
+
+    // Test period Updates
+    EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000);
+    updateTaskExecutionPeriod(TASK_ACCEL, 500);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 500);
+    updateTaskExecutionPeriod(TASK_ACCEL, 1000);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000); 
+
+    // These should be ingored.
+    updateTaskExecutionPeriod(-2, 1000);
+    updateTaskExecutionPeriod(55, 1000);
+
+    // Enable the self checks
+    doSelfTaskChecks = true;    
+
+    // Set the time just before we should run, nothing should happen.
+    simulatedTime = expectedTime = 999;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // Test the time since last ran. 
+    EXPECT_EQ(getTaskTimeSinceLastRun(TASK_ACCEL), 999);
+
+    // Now set the time just at when it just should run.
+    // This will also preform the self checks while the execute function is called.
+    simulatedTime = expectedTime = 1000;
+    doSelfTaskCheckExpectedTimeSinceLastRun = 1000;
+    expectedTime += updateAccelerometerTime;
+    expectedTime += selfTaskCheckDelay;    
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // Make sure now the time since last run is 0.
+    EXPECT_EQ(getTaskTimeSinceLastRun(TASK_ACCEL), 0);
+
+    // Now test that time since last runs is updated correctly.
+    simulatedTime = expectedTime = 1320;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_EQ(getTaskTimeSinceLastRun(TASK_ACCEL), 320); 
+    
+    // Done
+    doSelfTaskChecks = false;    
+}
+
 TEST(SchedulerUnittest, BasicTask)
 {
     simulatedTime = 0;
@@ -192,7 +325,7 @@ TEST(SchedulerUnittest, BasicTask)
     // Try to init the scheduler 
     schedulerInit();
 
-    // Enable the system task 
+    // Enable the task 
     setTaskEnabled(TASK_ACCEL, true);
     updateTaskExecutionPeriod(TASK_ACCEL, 30000);
 

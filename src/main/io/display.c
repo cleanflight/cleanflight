@@ -555,7 +555,7 @@ static void showTasksPage(void)
     for (cfTaskId_e taskId = 0; taskId < TASK_COUNT; ++taskId) {
         getTaskInfo(taskId, &taskInfo);
         if (taskInfo.isEnabled && taskId != TASK_SERIAL) {// don't waste a line of the display showing serial taskInfo
-            const int taskFrequency = (int)(1000000.0f / ((float)taskInfo.latestDeltaTime));
+            const int taskFrequency = (int)(1000000.0f / ((float) taskInfo.desiredPeriod));
             const int maxLoad = (taskInfo.maxExecutionTime * taskFrequency + 5000) / 10000;
             const int averageLoad = (taskInfo.averageExecutionTime * taskFrequency + 5000) / 10000;
             tfp_sprintf(lineBuffer, format, taskId, taskInfo.maxExecutionTime, taskInfo.averageExecutionTime, maxLoad, averageLoad);

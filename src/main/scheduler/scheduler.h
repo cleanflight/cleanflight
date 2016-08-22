@@ -21,11 +21,11 @@
 //#define SCHEDULER_DEBUG_PRINT
 
 typedef enum {
-    TASK_PRIORITY_IDLE = 0,     // This task will only run if there is nothing else to run. If your cpu is quite busy there is no guarantee this will ever run!
-    TASK_PRIORITY_LOW = 1,   
+    TASK_PRIORITY_IDLE = 0,         // This task will only run if there is nothing else to run. There is no guarantee this will ever run if the cpu is always under load!
+    TASK_PRIORITY_LOW = 1,          
     TASK_PRIORITY_MEDIUM = 3,
     TASK_PRIORITY_HIGH = 5,
-    TASK_PRIORITY_REALTIME = 6, // This task will be ran as close to realtime as possible. linze
+    TASK_PRIORITY_REALTIME = 6,     // This task will be ran as close to realtime as possible. This will aggressively preempt any other task.
     TASK_PRIORITY_MAX = 255
 } cfTaskPriority_e;
 
@@ -37,10 +37,11 @@ typedef struct {
     bool         isEnabled;                 // Indicates if the task is enabled.
     uint32_t     desiredPeriod;             // the desired amount of time between each execution (in microseconds)
     uint8_t      priority;                  // the priority of the task
+    bool         isWaitingToBeRan;          // Indicates if the task is waiting to be ran or not.
+    uint32_t     lastExecutionTime;         // Last time (micros) when the task was executed.
     uint32_t     maxExecutionTime;          // keeps track of the longest this task has ever ran (in microseconds)
     uint32_t     totalExecutionTime;        // keeps track of the total amount of time this task has ran (in microseconds)
-    uint32_t     averageExecutionTime;      // keeps track of the average run time (in microseconds)
-    uint32_t     latestDeltaTime;           // keeps track of the last amount of time between executions.
+    uint32_t     averageExecutionTime;      // keeps track of the average run time (in microseconds) 
 } cfTaskInfo_t;
 
 typedef struct {
@@ -55,22 +56,21 @@ typedef struct {
     bool (*checkFunc)(uint32_t currentDeltaTime); 
 
     /* Configuration */
-    const char * taskName;
-    bool isEnabled;                 // Indicates if the task is enabled or not.
-    uint32_t desiredPeriod;         // If not an event based task, this is the target time (micros) between executions 
-    const uint8_t priority;         // The priority of the task. 
+    const char *    taskName;              // The name of the task.
+    bool            isEnabled;             // Indicates if the task is enabled or not.
+    uint32_t        desiredPeriod;         // If not an event based task, this is the target time (micros) between executions 
+    const uint8_t   priority;              // The priority of the task. 
 
     /* Scheduling */
-    bool isWaitingToBeRan;          // Indicates if the task is waiting to be ran or not.
-    uint32_t lastIdealExecutionTime;// Time in (micros) when the task should have ideally been ran.
-    uint32_t lastExecutedAt;        // last time (micros) when the task was executed
+    bool            isWaitingToBeRan;      // Indicates if the task is waiting to be ran or not.
+    uint32_t        lastIdealExecutionTime;// Time in (micros) when the task should have ideally been ran.
+    uint32_t        lastExecutionTime;     // Last time (micros) when the task was executed.
 
     /* Statistics */
-    uint32_t averageExecutionTime;  // Moving average over 31 samples, used to calculate the realtime guard interval
-    uint32_t taskLatestDeltaTime;   // keeps track of the last amount of time between executions. 
+    uint32_t        averageExecutionTime;  // Moving average over 31 samples, used to calculate the realtime guard.
 #ifndef SKIP_TASK_STATISTICS
-    uint32_t maxExecutionTime;      // keeps track of the longest this task has ever ran (in microseconds)
-    uint32_t totalExecutionTime;    // total time consumed by task since boot
+    uint32_t        maxExecutionTime;      // keeps track of the longest this task has ever ran (in microseconds)
+    uint32_t        totalExecutionTime;    // total time consumed by task since boot
 #endif
 } cfTask_t;
 
@@ -91,13 +91,14 @@ void schedulerExecute(void);
 void setTaskEnabled(const int taskId, bool newEnabledState);
 
 // Returns info for the given task.
-void getTaskInfo(const int taskId, cfTaskInfo_t *taskInfo);
+void getTaskInfo(int taskId, cfTaskInfo_t *taskInfo);
+
+// Returns the amount of time (in micros) since the task last ran. 
+// Note: This is updated after the task is ran, so it can be called while the task is running to get the time since it last ran.
+uint32_t getTaskTimeSinceLastRun(const int taskId);
 
 // Updates the task period (micros) between executions. This does nothing if the task is event driven.
 void updateTaskExecutionPeriod(const int taskId, uint32_t newPeriodMicros);
-
-// Returns the last amount of time between the execution of the given task.
-uint32_t getTaskDeltaTime(const int taskId);
 
 //
 // CPU Stats

@@ -2532,7 +2532,7 @@ static void cliTasks(char *cmdline)
     for (taskId = 0; taskId < TASK_COUNT; taskId++) {
         getTaskInfo(taskId, &taskInfo);
         if (taskInfo.isEnabled) {
-            const int taskFrequency = (int)(1000000.0f / ((float)taskInfo.latestDeltaTime));
+            const int taskFrequency = (int)(1000000.0f / ((float)taskInfo.desiredPeriod));
             const int maxLoad = (taskInfo.maxExecutionTime * taskFrequency + 5000) / 1000;
             const int averageLoad = (taskInfo.averageExecutionTime * taskFrequency + 5000) / 1000;
             cliPrintf("%2d - %12s  %6d   %5d   %5d %4d.%1d%% %4d.%1d%%  %8d\r\n",
