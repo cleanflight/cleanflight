@@ -53,7 +53,7 @@
 #define PORT103R_SPI_CS_GPIO      GPIOB
 #define PORT103R_SPI_CS_PIN       GPIO_Pin_12
 
-// We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
+#define CUSTOM_FLASHCHIP
 #define M25P16_CS_GPIO        PORT103R_SPI_CS_GPIO
 #define M25P16_CS_PIN         PORT103R_SPI_CS_PIN
 #define M25P16_SPI_INSTANCE   PORT103R_SPI_INSTANCE
@@ -109,16 +109,15 @@
 #define SONAR_PWM_TRIGGER_GPIO      GPIOB
 #define SONAR_PWM_ECHO_PIN          Pin_9   // PWM6 (PB9) - 5v tolerant
 #define SONAR_PWM_ECHO_GPIO         GPIOB
-#define SONAR_PWM_EXTI_LINE         EXTI_Line9
-#define SONAR_PWM_EXTI_PIN_SOURCE   GPIO_PinSource9
-#define SONAR_PWM_EXTI_IRQN         EXTI9_5_IRQn
+#define SONAR_PWM_TRIGGER_IO        PB8
+#define SONAR_PWM_ECHO_IO           PB9
+
 #define SONAR_TRIGGER_PIN           Pin_0   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_TRIGGER_GPIO          GPIOB
 #define SONAR_ECHO_PIN              Pin_1   // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_ECHO_GPIO             GPIOB
-#define SONAR_EXTI_LINE             EXTI_Line1
-#define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource1
-#define SONAR_EXTI_IRQN             EXTI1_IRQn
+#define SONAR_TRIGGER_IO            PB0
+#define SONAR_ECHO_IO               PB1
 
 #define USE_UART1
 #define USE_UART2
@@ -135,6 +134,8 @@
 #define SOFTSERIAL_2_TIMER TIM3
 #define SOFTSERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
 #define SOFTSERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
+
+#define USE_UART1_TX_DMA
 
 #define USE_I2C
 #define I2C_DEVICE (I2CDEV_2)
@@ -168,7 +169,7 @@
 
 #define ADC_CHANNEL_COUNT 4
 
-#define ADC_CURRENT     ADC_CHANNEL0
+#define ADC_AMPERAGE     ADC_CHANNEL0
 #define ADC_BATTERY     ADC_CHANNEL1
 #define ADC_RSSI        ADC_CHANNEL2
 #define ADC_EXTERNAL    ADC_CHANNEL3
@@ -187,5 +188,12 @@
 #define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
+
+// IO - stm32f103RCT6 in 64pin package
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD (BIT(0)|BIT(1)|BIT(2))

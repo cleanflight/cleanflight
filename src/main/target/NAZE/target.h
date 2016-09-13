@@ -1,3 +1,4 @@
+
 /*
  * This file is part of Cleanflight.
  *
@@ -56,6 +57,7 @@
 #define NAZE_SPI_CS_PIN       GPIO_Pin_12
 #define NAZE_CS_GPIO_CLK_PERIPHERAL RCC_APB2Periph_GPIOB
 
+#define CUSTOM_FLASHCHIP
 // We either have this 16mbit flash chip on SPI or the MPU6500 acc/gyro depending on board revision:
 #define M25P16_CS_GPIO        NAZE_SPI_CS_GPIO
 #define M25P16_CS_PIN         NAZE_SPI_CS_PIN
@@ -71,7 +73,7 @@
 
 #define USE_FLASH_M25P16
 
-#define EXTI_CALLBACK_HANDLER_COUNT 3 // MPU data ready, MAG data ready, BMP085 EOC
+#define USE_EXTI
 
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
@@ -125,16 +127,15 @@
 #define SONAR_PWM_TRIGGER_GPIO      GPIOB
 #define SONAR_PWM_ECHO_PIN          Pin_9   // PWM6 (PB9) - 5v tolerant
 #define SONAR_PWM_ECHO_GPIO         GPIOB
-#define SONAR_PWM_EXTI_LINE         EXTI_Line9
-#define SONAR_PWM_EXTI_PIN_SOURCE   GPIO_PinSource9
-#define SONAR_PWM_EXTI_IRQN         EXTI9_5_IRQn
+#define SONAR_PWM_TRIGGER_IO        PB8
+#define SONAR_PWM_ECHO_IO           PB9
+
 #define SONAR_TRIGGER_PIN           Pin_0   // RX7 (PB0) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_TRIGGER_GPIO          GPIOB
 #define SONAR_ECHO_PIN              Pin_1   // RX8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_ECHO_GPIO             GPIOB
-#define SONAR_EXTI_LINE             EXTI_Line1
-#define SONAR_EXTI_PIN_SOURCE       GPIO_PinSource1
-#define SONAR_EXTI_IRQN             EXTI1_IRQn
+#define SONAR_TRIGGER_IO            PB0
+#define SONAR_ECHO_IO               PB1
 
 #define USE_UART1
 #define USE_UART2
@@ -149,6 +150,8 @@
 #define SOFTSERIAL_2_TIMER TIM3
 #define SOFTSERIAL_2_TIMER_RX_HARDWARE 6 // PWM 7
 #define SOFTSERIAL_2_TIMER_TX_HARDWARE 7 // PWM 8
+
+#define USE_UART1_TX_DMA
 
 // UART3 only on NAZE32_SP - Flex Port
 #define UART3_RX_PIN Pin_11
@@ -191,7 +194,7 @@
 
 #define ADC_CHANNEL_COUNT 4
 
-#define ADC_CURRENT     ADC_CHANNEL0
+#define ADC_AMPERAGE     ADC_CHANNEL0
 #define ADC_BATTERY     ADC_CHANNEL1
 #define ADC_RSSI        ADC_CHANNEL2
 #define ADC_EXTERNAL    ADC_CHANNEL3
@@ -222,6 +225,7 @@
 #undef TARGET_BOARD_IDENTIFIER
 #define TARGET_BOARD_IDENTIFIER "AFF1" // AlienFlight F1.
 #undef BOARD_HAS_VOLTAGE_DIVIDER
+#undef GTUNE
 
 #define DEFAULT_RX_FEATURE FEATURE_RX_SERIAL
 #define DEFAULT FEATURES FEATURE_MOTOR_STOP
@@ -232,3 +236,7 @@
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_5
 #endif
+// IO - assuming all IOs on 48pin package
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC (BIT(13)|BIT(14)|BIT(15))

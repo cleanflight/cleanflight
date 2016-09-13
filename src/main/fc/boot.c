@@ -24,13 +24,14 @@
 
 #include "build/build_config.h"
 #include "build/debug.h"
+#include "build/atomic.h"
 
 #include "common/axis.h"
 #include "common/color.h"
-#include "build/atomic.h"
 #include "common/maths.h"
 #include "common/printf.h"
 #include "common/streambuf.h"
+#include "common/filter.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
@@ -61,6 +62,8 @@
 #include "drivers/usb_io.h"
 #include "drivers/transponder_ir.h"
 #include "drivers/gyro_sync.h"
+#include "drivers/exti.h"
+#include "drivers/io.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
@@ -88,6 +91,8 @@
 #include "sensors/compass.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
+#include "sensors/voltage.h"
+#include "sensors/amperage.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "sensors/initialisation.h"
@@ -124,7 +129,7 @@ void mixerUsePWMIOConfiguration(pwmIOConfiguration_t *pwmIOConfiguration);
 void rxInit(modeActivationCondition_t *modeActivationConditions);
 
 void navigationInit(pidProfile_t *pidProfile);
-const sonarHardware_t *sonarGetHardwareConfiguration(currentSensor_e  currentMeterType);
+const sonarHardware_t *sonarGetHardwareConfiguration(amperageMeter_e amperageMeter);
 void sonarInit(const sonarHardware_t *sonarHardware);
 
 #ifdef STM32F303xC
@@ -143,6 +148,14 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .i2c_highspeed = 1,
 );
 
+#ifdef CUSTOM_FLASHCHIP
+PG_REGISTER(flashchipConfig_t, flashchipConfig, PG_DRIVER_FLASHCHIP_CONFIG, 0);
+PG_RESET_TEMPLATE(flashchipConfig_t, flashchipConfig,
+    .flashchip_id = 0,
+    .flashchip_nsect = 0,
+    .flashchip_pps = 0,
+);
+#endif
 
 typedef enum {
     SYSTEM_STATE_INITIALISING        = 0,
@@ -265,6 +278,14 @@ void init(void)
 
     // Latch active features to be used for feature() in the remainder of init().
     latchActiveFeatures();
+
+    // initialize IO (needed for all IO operations)
+    IOInitGlobal();
+
+#ifdef USE_EXTI
+    EXTIInit();
+#endif
+
 #ifdef ALIENFLIGHTF3
     if (hardwareRevision == AFF3_REV_1) {
         ledInit(false);
@@ -339,14 +360,14 @@ void init(void)
 
 #ifdef SONAR
     const sonarHardware_t *sonarHardware = NULL;
-
+    sonarGPIOConfig_t sonarGPIOConfig;
     if (feature(FEATURE_SONAR)) {
-        sonarHardware = sonarGetHardwareConfiguration(batteryConfig()->currentMeterType);
-        sonarGPIOConfig_t sonarGPIOConfig = {
-            .gpio = SONAR_GPIO,
-            .triggerPin = sonarHardware->echo_pin,
-            .echoPin = sonarHardware->trigger_pin,
-        };
+        bool usingCurrentMeterIOPins = (feature(FEATURE_AMPERAGE_METER) && batteryConfig()->amperageMeterSource == AMPERAGE_METER_ADC);
+        sonarHardware = sonarGetHardwareConfiguration(usingCurrentMeterIOPins);
+        sonarGPIOConfig.triggerGPIO = sonarHardware->trigger_gpio;
+        sonarGPIOConfig.triggerPin = sonarHardware->trigger_pin;
+        sonarGPIOConfig.echoGPIO = sonarHardware->echo_gpio;
+        sonarGPIOConfig.echoPin = sonarHardware->echo_pin;
         pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
     }
 #endif
@@ -373,8 +394,8 @@ void init(void)
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
     pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
     pwm_params.useCurrentMeterADC = (
-        feature(FEATURE_CURRENT_METER)
-        && batteryConfig()->currentMeterType == CURRENT_SENSOR_ADC
+        feature(FEATURE_AMPERAGE_METER)
+        && batteryConfig()->amperageMeterSource == AMPERAGE_METER_ADC
     );
     pwm_params.useLEDStrip = feature(FEATURE_LED_STRIP);
     pwm_params.usePPM = feature(FEATURE_RX_PPM);
@@ -488,8 +509,8 @@ void init(void)
 #ifdef ADC_RSSI
     adc_params.channelMask |= (feature(FEATURE_RSSI_ADC) ? ADC_CHANNEL_MASK(ADC_RSSI) : 0);
 #endif
-#ifdef ADC_CURRENT
-    adc_params.channelMask |=  (feature(FEATURE_CURRENT_METER) ? ADC_CHANNEL_MASK(ADC_CURRENT) : 0);
+#ifdef ADC_AMPERAGE
+    adc_params.channelMask |=  (feature(FEATURE_AMPERAGE_METER) ? ADC_CHANNEL_MASK(ADC_AMPERAGE) : 0);
 #endif
 
 #ifdef ADC_POWER_12V
@@ -534,11 +555,6 @@ void init(void)
 
 #ifdef USE_SERVOS
     mixerInitialiseServoFiltering(targetLooptime);
-#endif
-
-#ifdef MAG
-    if (sensors(SENSOR_MAG))
-        compassInit();
 #endif
 
     imuInit();
@@ -655,10 +671,17 @@ void init(void)
     serialPrint(loopbackPort, "LOOPBACK\r\n");
 #endif
 
-    // Now that everything has powered up the voltage and cell count be determined.
 
-    if (feature(FEATURE_VBAT | FEATURE_CURRENT_METER))
+    if (feature(FEATURE_VBAT)) {
+        // Now that everything has powered up the voltage and cell count be determined.
+
+        voltageMeterInit();
         batteryInit();
+    }
+
+    if (feature(FEATURE_AMPERAGE_METER)) {
+        amperageMeterInit();
+    }
 
 #ifdef DISPLAY
     if (feature(FEATURE_DISPLAY)) {
@@ -707,7 +730,7 @@ void configureScheduler(void)
 #ifdef BEEPER
     setTaskEnabled(TASK_BEEPER, true);
 #endif
-    setTaskEnabled(TASK_BATTERY, feature(FEATURE_VBAT) || feature(FEATURE_CURRENT_METER));
+    setTaskEnabled(TASK_BATTERY, feature(FEATURE_VBAT) || feature(FEATURE_AMPERAGE_METER));
     setTaskEnabled(TASK_RX, true);
 #ifdef GPS
     setTaskEnabled(TASK_GPS, feature(FEATURE_GPS));

@@ -58,6 +58,7 @@
 #define USE_UART3 // Servo out - 10/RX (PB11) 11/TX (PB10)
 #define SERIAL_PORT_COUNT 4
 
+#define USE_UART1_TX_DMA
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
 #define UART1_RX_PIN        GPIO_Pin_7 // PB7
 #define UART1_GPIO          GPIOB
@@ -115,7 +116,7 @@
 #define ADC_CHANNEL_COUNT 2
 
 #define ADC_BATTERY     ADC_CHANNEL0
-#define ADC_CURRENT     ADC_CHANNEL1
+#define ADC_AMPERAGE     ADC_CHANNEL1
 
 
 #define DEFAULT_RX_FEATURE FEATURE_RX_PPM
@@ -128,15 +129,15 @@
 #define TELEMETRY
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 #define SONAR
 #define SONAR_TRIGGER_PIN           Pin_2   // PWM6 (PA2) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_TRIGGER_GPIO          GPIOA
 #define SONAR_ECHO_PIN              Pin_1   // PWM7 (PB1) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_ECHO_GPIO             GPIOB
-#define SONAR_EXTI_LINE             EXTI_Line1
-#define SONAR_EXTI_PIN_SOURCE       EXTI_PinSource1
-#define SONAR_EXTI_IRQN             EXTI1_IRQn
+#define SONAR_TRIGGER_IO            PA2
+#define SONAR_ECHO_IO               PA1
 
 #define LED_STRIP
 #if 1
@@ -183,3 +184,7 @@
 // UART2, PA3
 #define BIND_PORT GPIOA
 #define BIND_PIN Pin_3
+
+// available IO pins (from schematics)
+#define TARGET_IO_PORTA (BIT(1)|BIT(2)|BIT(3)|BIT(4)|BIT(6)|BIT(7)|BIT(8)|BIT(9)|BIT(10)|BIT(11)|BIT(12)|BIT(13)|BIT(14)|BIT(15))
+#define TARGET_IO_PORTB (BIT(0)|BIT(1)|BIT(10)|BIT(11)|BIT(14)|BIT(15)|BIT(3)|BIT(4)|BIT(5)|BIT(6)|BIT(7)|BIT(8)|BIT(9))

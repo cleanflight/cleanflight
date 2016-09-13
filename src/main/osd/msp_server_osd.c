@@ -33,13 +33,16 @@
 #include "common/color.h"
 #include "common/maths.h"
 #include "common/streambuf.h"
+#include "common/filter.h"
+#include "common/pilot.h"
 
 #include "drivers/adc.h"
 #include "drivers/system.h"
 #include "drivers/serial.h"
 #include "drivers/video_textscreen.h"
+#include "drivers/video.h"
 
-#include "fc/rc_controls.h" // FIXME virtual current sensor needs it
+#include "sensors/voltage.h"
 #include "sensors/battery.h"
 
 #include "io/serial.h"
@@ -53,11 +56,12 @@
 #include "scheduler/scheduler.h"
 
 #include "osd/config.h"
+#include "osd/osd_element.h"
 #include "osd/osd.h"
 #include "osd/osd_serial.h"
+#include "osd/osd_screen.h"
 #include "osd/msp_server_osd.h"
-
-#define MAX_VOLTAGE_METERS 4 // FIXME move this
+#include "../sensors/amperage.h"
 
 extern uint16_t cycleTime;
 
@@ -153,19 +157,17 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_VOLTAGE_METER_CONFIG:
             for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
-                // FIXME update for multiple voltage sources  i.e.  use `i` and support at least OSD VBAT, OSD 12V, OSD 5V
-                sbufWriteU8(dst, batteryConfig()->vbatscale);
-                sbufWriteU8(dst, batteryConfig()->vbatmincellvoltage);
-                sbufWriteU8(dst, batteryConfig()->vbatmaxcellvoltage);
-                sbufWriteU8(dst, batteryConfig()->vbatwarningcellvoltage);
+                sbufWriteU8(dst, voltageMeterConfig(i)->vbatscale);
+                sbufWriteU8(dst, voltageMeterConfig(i)->vbatresdivval);
+                sbufWriteU8(dst, voltageMeterConfig(i)->vbatresdivmultiplier);
             }
             break;
 
-        case MSP_CURRENT_METER_CONFIG:
-            sbufWriteU16(dst, batteryConfig()->currentMeterScale);
-            sbufWriteU16(dst, batteryConfig()->currentMeterOffset);
-            sbufWriteU8(dst, batteryConfig()->currentMeterType);
-            sbufWriteU16(dst, batteryConfig()->batteryCapacity);
+        case MSP_AMPERAGE_METER_CONFIG:
+            for (int i = 0; i < MAX_AMPERAGE_METERS; i++) {
+                sbufWriteU16(dst, amperageMeterConfig(i)->scale);
+                sbufWriteU16(dst, amperageMeterConfig(i)->offset);
+            }
             break;
 
         case MSP_CF_SERIAL_CONFIG:
@@ -195,39 +197,112 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU32(dst, 0);
             break;
 
-        case MSP_BATTERY_STATES:
-            // write out battery states, once for each battery
+        case MSP_BATTERY_STATES: {
+            amperageMeter_t *amperageMeter = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
             sbufWriteU8(dst, (uint8_t)getBatteryState() == BATTERY_NOT_PRESENT ? 0 : 1); // battery connected - 0 not connected, 1 connected
             sbufWriteU8(dst, (uint8_t)constrain(vbat, 0, 255));
-            sbufWriteU16(dst, (uint16_t)constrain(mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
+            sbufWriteU16(dst, (uint16_t)constrain(amperageMeter->mAhDrawn, 0, 0xFFFF)); // milliamp hours drawn from battery
             break;
+        }
 
         case MSP_CURRENT_METERS:
-            // write out amperage, once for each current meter.
-            sbufWriteU16(dst, (uint16_t)constrain(amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
-            break;
-
-        case MSP_VOLTAGE_METERS:
-            // write out voltage, once for each meter.
-            for (int i = 0; i < 3; i++) {
-                // FIXME hack that needs cleanup, see issue #2221
-                // This works for now, but the vbat scale also changes the 12V and 5V readings.
-                switch(i) {
-                    case 0:
-                        sbufWriteU8(dst, (uint8_t)constrain(vbat, 0, 255));
-                        break;
-                    case 1:
-                        sbufWriteU8(dst, (uint8_t)constrain(batteryAdcToVoltage(adcGetChannel(ADC_POWER_12V)), 0, 255));
-                        break;
-                    case 2:
-                        sbufWriteU8(dst, (uint8_t)constrain(batteryAdcToVoltage(adcGetChannel(ADC_POWER_5V)), 0, 255));
-                        break;
-                }
+            for (int i = 0; i < MAX_AMPERAGE_METERS; i++) {
+                amperageMeter_t *meter = getAmperageMeter(i);
+                // write out amperage, once for each current meter.
+                sbufWriteU16(dst, (uint16_t)constrain(meter->amperage * 10, 0, 0xFFFF)); // send amperage in 0.001 A steps. Negative range is truncated to zero
+                sbufWriteU32(dst, meter->mAhDrawn);
             }
             break;
+        case MSP_VOLTAGE_METERS:
+            // write out voltage, once for each meter.
+            for (int i = 0; i < MAX_VOLTAGE_METERS; i++) {
+                uint16_t voltage = getVoltageMeter(i)->vbat;
+                sbufWriteU8(dst, (uint8_t)constrain(voltage, 0, 255));
+            }
+            break;
+
+        case MSP_PILOT: {
+            uint8_t *callsign = pilotConfig()->callsign;
+            sbufWriteU8(dst, strlen((char *)callsign));
+            sbufWriteString(dst, (char *)pilotConfig()->callsign);
+            break;
+        }
+        case MSP_SET_PILOT: {
+            uint8_t callsignMessageBytesRemaining = sbufReadU8(src);
+            uint8_t *callsign = pilotConfig()->callsign;
+            uint8_t callsignBytesToRemaining = MIN(callsignMessageBytesRemaining, CALLSIGN_LENGTH);
+
+            while(sbufBytesRemaining(src) && callsignMessageBytesRemaining--) {
+                uint8_t c = sbufReadU8(src);
+                if (callsignBytesToRemaining > 0) {
+                    callsignBytesToRemaining--;
+                    *callsign++ = c;
+                }
+            };
+            *callsign = 0;
+            break;
+        }
         case MSP_OSD_VIDEO_CONFIG:
             sbufWriteU8(dst, osdVideoConfig()->videoMode); // 0 = NTSC, 1 = PAL
             break;
+
+        case MSP_OSD_VIDEO_STATUS:
+            sbufWriteU8(dst, osdState.videoMode);
+            sbufWriteU8(dst, osdState.cameraConnected);
+            sbufWriteU8(dst, osdTextScreen.width);
+            sbufWriteU8(dst, osdTextScreen.height);
+            break;
+
+        case MSP_OSD_ELEMENT_SUMMARY: {
+            for (int i = 0; i < osdSupportedElementIdsCount; i++) {
+                sbufWriteU16(dst, osdSupportedElementIds[i]);
+            }
+            break;
+        }
+
+        case MSP_OSD_LAYOUT_CONFIG:
+            sbufWriteU8(dst, MAX_OSD_ELEMENT_COUNT);
+            for (int i = 0; i < MAX_OSD_ELEMENT_COUNT; i++) {
+                element_t *element = &osdElementConfig()->elements[i];
+
+                // use 16bit to allow for current and future element IDs
+                sbufWriteU16(dst, element->id);
+
+                // use 16bit to allow for current future flags
+                sbufWriteU16(dst, element->flags);
+
+                sbufWriteU8(dst, element->x);
+                sbufWriteU8(dst, element->y);
+            }
+            break;
+
+        case MSP_SET_OSD_LAYOUT_CONFIG: {
+            uint8_t elementIndex = sbufReadU8(src);
+            if (elementIndex >= MAX_OSD_ELEMENT_COUNT) {
+                return -1;
+            }
+
+            element_t *element = &osdElementConfig()->elements[elementIndex];
+
+            element->id = sbufReadU16(src);
+            element->flags = sbufReadU16(src);
+            element->x = sbufReadU8(src);
+            element->y = sbufReadU8(src);;
+            break;
+        }
+
+        case MSP_SET_OSD_VIDEO_CONFIG:
+            osdVideoConfig()->videoMode = sbufReadU8(src);
+            mspPostProcessFn = mspApplyVideoConfigurationFn;
+            break;
+
+        case MSP_OSD_CHAR_WRITE: {
+            uint8_t address = sbufReadU8(src);
+
+            osdSetFontCharacter(address, src);
+            break;
+        }
 
         case MSP_RESET_CONF:
             resetEEPROM();
@@ -240,23 +315,36 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_SET_VOLTAGE_METER_CONFIG: {
-            uint8_t i = sbufReadU8(src);
-            if (i >= MAX_VOLTAGE_METERS) {
+            int index = sbufReadU8(src);
+
+            if (index >= MAX_VOLTAGE_METERS) {
                 return -1;
             }
-            // FIXME use `i`, see MSP_VOLTAGE_METER_CONFIG
-            batteryConfig()->vbatscale = sbufReadU8(src);               // actual vbatscale as intended
-            batteryConfig()->vbatmincellvoltage = sbufReadU8(src);      // vbatlevel_warn1 in MWC2.3 GUI
-            batteryConfig()->vbatmaxcellvoltage = sbufReadU8(src);      // vbatlevel_warn2 in MWC2.3 GUI
-            batteryConfig()->vbatwarningcellvoltage = sbufReadU8(src);  // vbatlevel when buzzer starts to alert
+
+            voltageMeterConfig(index)->vbatscale = sbufReadU8(src);
+            voltageMeterConfig(index)->vbatresdivval = sbufReadU8(src);
+            voltageMeterConfig(index)->vbatresdivmultiplier = sbufReadU8(src);
             break;
         }
 
-        case MSP_SET_CURRENT_METER_CONFIG:
-            batteryConfig()->currentMeterScale = sbufReadU16(src);
-            batteryConfig()->currentMeterOffset = sbufReadU16(src);
-            batteryConfig()->currentMeterType = sbufReadU8(src);
+        case MSP_SET_AMPERAGE_METER_CONFIG: {
+            int index = sbufReadU8(src);
+
+            if (index >= MAX_AMPERAGE_METERS) {
+                return -1;
+            }
+
+            amperageMeterConfig(index)->scale = sbufReadU16(src);
+            amperageMeterConfig(index)->offset = sbufReadU16(src);
+            break;
+        }
+
+        case MSP_SET_BATTERY_CONFIG:
+            batteryConfig()->vbatmincellvoltage = sbufReadU8(src);      // vbatlevel_warn1 in MWC2.3 GUI
+            batteryConfig()->vbatmaxcellvoltage = sbufReadU8(src);      // vbatlevel_warn2 in MWC2.3 GUI
+            batteryConfig()->vbatwarningcellvoltage = sbufReadU8(src);  // vbatlevel when buzzer starts to alert
             batteryConfig()->batteryCapacity = sbufReadU16(src);
+            batteryConfig()->amperageMeterSource = sbufReadU8(src);
             break;
 
         case MSP_SET_CF_SERIAL_CONFIG: {
@@ -284,11 +372,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_REBOOT:
             mspPostProcessFn = mspRebootFn;
-            break;
-
-        case MSP_SET_OSD_VIDEO_CONFIG:
-            osdVideoConfig()->videoMode = sbufReadU8(src);
-            mspPostProcessFn = mspApplyVideoConfigurationFn;
             break;
 
         default:

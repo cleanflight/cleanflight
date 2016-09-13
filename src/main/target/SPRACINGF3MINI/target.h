@@ -33,8 +33,6 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 12 // 8 Outputs; PPM; LED Strip; 2 additional PWM pins also on UART3 RX/TX pins.
 
-#define EXTI15_10_CALLBACK_HANDLER_COUNT 2 // MPU_INT, SDCardDetect
-
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 
@@ -71,9 +69,9 @@
 #define SONAR_TRIGGER_GPIO          GPIOB
 #define SONAR_ECHO_PIN              Pin_1   // RC_CH8 (PB1) - only 3.3v ( add a 1K Ohms resistor )
 #define SONAR_ECHO_GPIO             GPIOB
-#define SONAR_EXTI_LINE             EXTI_Line1
-#define SONAR_EXTI_PIN_SOURCE       EXTI_PinSource1
-#define SONAR_EXTI_IRQN             EXTI1_IRQn
+#define SONAR_TRIGGER_IO            PB0
+#define SONAR_ECHO_IO               PB1
+
 
 #define USB_IO
 #define USB_CABLE_DETECTION
@@ -89,14 +87,13 @@
 #define USE_SOFTSERIAL1
 #define SERIAL_PORT_COUNT 5
 
-#ifndef UART1_GPIO
+#define USE_UART1_TX_DMA
 #define UART1_TX_PIN        GPIO_Pin_9  // PA9
 #define UART1_RX_PIN        GPIO_Pin_10 // PA10
 #define UART1_GPIO          GPIOA
 #define UART1_GPIO_AF       GPIO_AF_7
 #define UART1_TX_PINSOURCE  GPIO_PinSource9
 #define UART1_RX_PINSOURCE  GPIO_PinSource10
-#endif
 
 #define UART2_TX_PIN        GPIO_Pin_14 // PA14 / SWCLK
 #define UART2_RX_PIN        GPIO_Pin_15 // PA15
@@ -105,14 +102,12 @@
 #define UART2_TX_PINSOURCE  GPIO_PinSource14
 #define UART2_RX_PINSOURCE  GPIO_PinSource15
 
-#ifndef UART3_GPIO
 #define UART3_TX_PIN        GPIO_Pin_10 // PB10 (AF7)
 #define UART3_RX_PIN        GPIO_Pin_11 // PB11 (AF7)
 #define UART3_GPIO_AF       GPIO_AF_7
 #define UART3_GPIO          GPIOB
 #define UART3_TX_PINSOURCE  GPIO_PinSource10
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
-#endif
 
 #define SOFTSERIAL_1_TIMER TIM2
 #define SOFTSERIAL_1_TIMER_RX_HARDWARE 9  // PA0
@@ -141,12 +136,9 @@
 #define SDCARD_DETECT_INVERTED
 
 #define SDCARD_DETECT_PIN                   GPIO_Pin_14
-#define SDCARD_DETECT_EXTI_LINE             EXTI_Line14
-#define SDCARD_DETECT_EXTI_PIN_SOURCE       EXTI_PinSource14
 #define SDCARD_DETECT_GPIO_PORT             GPIOC
 #define SDCARD_DETECT_GPIO_CLK              RCC_AHBPeriph_GPIOC
-#define SDCARD_DETECT_EXTI_PORT_SOURCE      EXTI_PortSourceGPIOC
-#define SDCARD_DETECT_EXTI_IRQn             EXTI15_10_IRQn
+#define SDCARD_DETECT_IO                    PC14
 
 #define SDCARD_SPI_INSTANCE                 SPI2
 #define SDCARD_SPI_CS_GPIO                  SPI2_GPIO
@@ -186,7 +178,7 @@
 #define ADC_CHANNEL_COUNT 3
 
 #define ADC_BATTERY     ADC_CHANNEL0
-#define ADC_CURRENT     ADC_CHANNEL1
+#define ADC_AMPERAGE     ADC_CHANNEL1
 #define ADC_RSSI        ADC_CHANNEL2
 
 #define LED_STRIP
@@ -230,6 +222,7 @@
 #define DISPLAY
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 #define BUTTONS
 #define BUTTON_A_PORT  GPIOB
@@ -247,3 +240,9 @@
 #define BINDPLUG_PIN   BUTTON_B_PIN
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
+
+// IO - stm32f303cc in 48pin package
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC (BIT(13)|BIT(14)|BIT(15))
+#define TARGET_IO_PORTF (BIT(0)|BIT(1))

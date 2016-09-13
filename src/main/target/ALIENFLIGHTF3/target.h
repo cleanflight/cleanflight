@@ -46,8 +46,6 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 11
 
-#define EXTI_CALLBACK_HANDLER_COUNT 1 // MPU data ready
-
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
 
@@ -90,6 +88,7 @@
 #define USE_UART3 // Not connected - 10/RX (PB11) 11/TX (PB10)
 #define SERIAL_PORT_COUNT 4
 
+#define USE_UART1_TX_DMA
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
 #define UART1_RX_PIN        GPIO_Pin_7 // PB7
 #define UART1_GPIO          GPIOB
@@ -165,6 +164,7 @@
 //#define DISPLAY
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 #define SPEKTRUM_BIND
 // UART2, PA3
@@ -179,3 +179,9 @@
 #define BINDPLUG_PORT  GPIOB
 #define BINDPLUG_PIN   Pin_12
 
+// IO - assuming 303 in 64pin package, TODO
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD (BIT(2))
+#define TARGET_IO_PORTF (BIT(0)|BIT(1)|BIT(4))

@@ -54,12 +54,9 @@
 #define USE_SDCARD_SPI2
 
 #define SDCARD_DETECT_PIN                    GPIO_Pin_14
-#define SDCARD_DETECT_EXTI_LINE              EXTI_Line14
-#define SDCARD_DETECT_EXTI_PIN_SOURCE        EXTI_PinSource14
 #define SDCARD_DETECT_GPIO_PORT              GPIOC
 #define SDCARD_DETECT_GPIO_CLK               RCC_AHBPeriph_GPIOC
-#define SDCARD_DETECT_EXTI_PORT_SOURCE       EXTI_PortSourceGPIOC
-#define SDCARD_DETECT_EXTI_IRQn              EXTI15_10_IRQn
+#define SDCARD_DETECT_IO                     PC14
 
 #define SDCARD_SPI_INSTANCE                  SPI2
 #define SDCARD_SPI_CS_GPIO                   SPI2_GPIO
@@ -77,6 +74,7 @@
 //#define USE_FLASHFS
 //#define USE_FLASH_M25P16
 
+//#define CUSTOM_FLASHCHIP
 //#define M25P16_CS_GPIO          GPIOB
 //#define M25P16_CS_PIN           GPIO_Pin_12
 //#define M25P16_SPI_INSTANCE     SPI2
@@ -122,6 +120,7 @@
 
 #define SERIAL_PORT_COUNT 6
 
+#define USE_UART1_TX_DMA
 #define UART1_TX_PIN        GPIO_Pin_9  // PA9
 #define UART1_RX_PIN        GPIO_Pin_10 // PA10
 #define UART1_GPIO          GPIOA
@@ -161,7 +160,7 @@
 #define ADC3_GPIO_PIN               GPIO_Pin_3
 #define ADC3_CHANNEL                ADC_Channel_9
 
-#define ADC_CURRENT     ADC_CHANNEL0
+#define ADC_AMPERAGE     ADC_CHANNEL0
 #define ADC_BATTERY     ADC_CHANNEL1
 #define ADC_RSSI        ADC_CHANNEL2
 #define ADC_EXTERNAL    ADC_CHANNEL3
@@ -206,3 +205,10 @@
 #define SERIAL_RX
 #define USE_SERVOS
 #define USE_CLI
+
+// IO - assuming 303 in 64pin package, TODO
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD (BIT(2))
+#define TARGET_IO_PORTF (BIT(0)|BIT(1)|BIT(4))

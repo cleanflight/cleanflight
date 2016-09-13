@@ -53,6 +53,13 @@ typedef struct
 } TIM_TypeDef;
 
 typedef enum {RESET = 0, SET = !RESET} FlagStatus, ITStatus;
+
+typedef enum {
+  EXTI_Trigger_Rising = 0x08,
+  EXTI_Trigger_Falling = 0x0C,
+  EXTI_Trigger_Rising_Falling = 0x10
+} EXTITrigger_TypeDef;
+
 typedef enum {DISABLE = 0, ENABLE = !DISABLE} FunctionalState;
 
 typedef enum {TEST_IRQ = 0 } IRQn_Type;
@@ -80,11 +87,13 @@ void DMA_ClearFlag(uint32_t);
 
 #define USE_ADC
 
-#define ADC_CHANNEL_COUNT 3
+#define ADC_CHANNEL_COUNT 5
 
 #define ADC_BATTERY     ADC_CHANNEL0
-#define ADC_CURRENT     ADC_CHANNEL1
+#define ADC_AMPERAGE     ADC_CHANNEL1
 #define ADC_EXTERNAL    ADC_CHANNEL2
+#define ADC_POWER_12V   ADC_CHANNEL3
+#define ADC_POWER_5V    ADC_CHANNEL4
 
 typedef enum
 {

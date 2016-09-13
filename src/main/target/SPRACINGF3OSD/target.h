@@ -46,33 +46,28 @@
 #define MAX7456_CS_PIN         SPI2_CS_PIN
 #define MAX7456_SPI_INSTANCE   SPI2
 
+#define MAX7456_DMA_CHANNEL_TX              DMA1_Channel5
+#define MAX7456_DMA_CHANNEL_RX              DMA1_Channel4
+#define MAX7456_DMA_IRQ_HANDLER_ID          DMA1Channel4Descriptor
+
 #define MAX7456_NRST_GPIO_PERIPHERAL    RCC_AHBPeriph_GPIOB
 #define MAX7456_NRST_GPIO               GPIOB
 #define MAX7456_NRST_PIN                Pin_2
 
 #define MAX7456_LOS_GPIO_PERIPHERAL     RCC_AHBPeriph_GPIOC
 #define MAX7456_LOS_GPIO                GPIOC
-#define MAX7456_LOS_PIN					Pin_13
-#define MAX7456_LOS_PORT_SOURCE			EXTI_PortSourceGPIOC
-#define MAX7456_LOS_PIN_SOURCE			EXTI_PinSource13
-#define MAX7456_LOS_EXTI_LINE			EXTI_Line13
-#define MAX7456_LOS_EXTI_IRQ			EXTI15_10_IRQn
+#define MAX7456_LOS_PIN                 Pin_13
+#define MAX7456_LOS_IO                  PC13
 
 #define MAX7456_VSYNC_GPIO_PERIPHERAL   RCC_AHBPeriph_GPIOC
-#define MAX7456_VSYNC_GPIO 				GPIOC
-#define MAX7456_VSYNC_PIN				Pin_14
-#define MAX7456_VSYNC_PORT_SOURCE		EXTI_PortSourceGPIOC
-#define MAX7456_VSYNC_PIN_SOURCE		EXTI_PinSource14
-#define MAX7456_VSYNC_EXTI_LINE			EXTI_Line14
-#define MAX7456_VSYNC_EXTI_IRQ			EXTI15_10_IRQn
+#define MAX7456_VSYNC_GPIO              GPIOC
+#define MAX7456_VSYNC_PIN               Pin_14
+#define MAX7456_VSYNC_IO                PC14
 
 #define MAX7456_HSYNC_GPIO_PERIPHERAL   RCC_AHBPeriph_GPIOC
-#define MAX7456_HSYNC_GPIO 				GPIOC
-#define MAX7456_HSYNC_PIN				Pin_15
-#define MAX7456_HSYNC_PORT_SOURCE		EXTI_PortSourceGPIOC
-#define MAX7456_HSYNC_PIN_SOURCE		EXTI_PinSource15
-#define MAX7456_HSYNC_EXTI_LINE			EXTI_Line15
-#define MAX7456_HSYNC_EXTI_IRQ			EXTI15_10_IRQn
+#define MAX7456_HSYNC_GPIO              GPIOC
+#define MAX7456_HSYNC_PIN               Pin_15
+#define MAX7456_HSYNC_IO                PC15
 
 #define EXTI_CALLBACK_HANDLER_COUNT 3 // LOS, HSYNC, VSYNC
 
@@ -90,24 +85,22 @@
 #define USE_UART2
 #define SERIAL_PORT_COUNT 3
 
-#ifndef UART1_GPIO
 #define UART1_TX_PIN        GPIO_Pin_9  // PA9
 #define UART1_RX_PIN        GPIO_Pin_10 // PA10
 #define UART1_GPIO          GPIOA
 #define UART1_GPIO_AF       GPIO_AF_7
 #define UART1_TX_PINSOURCE  GPIO_PinSource9
 #define UART1_RX_PINSOURCE  GPIO_PinSource10
-#endif
 
 #define USE_MSP_CLIENT
 
+#define USE_EXTI
+
 #define USE_ADC
 
-#ifndef ADC_INSTANCE
 #define ADC_INSTANCE                ADC1
 #define ADC_AHB_PERIPHERAL          RCC_AHBPeriph_DMA1
 #define ADC_DMA_CHANNEL             DMA1_Channel1
-#endif
 
 // 12v
 #define ADC0_GPIO               GPIOA
@@ -124,7 +117,7 @@
 #define ADC2_GPIO_PIN           GPIO_Pin_2
 #define ADC2_CHANNEL            ADC_Channel_3
 
-// current
+// amperage
 #define ADC3_GPIO               GPIOA
 #define ADC3_GPIO_PIN           GPIO_Pin_3
 #define ADC3_CHANNEL            ADC_Channel_4
@@ -134,6 +127,14 @@
 #define ADC_POWER_12V ADC_CHANNEL0
 #define ADC_POWER_5V ADC_CHANNEL1
 #define ADC_BATTERY ADC_CHANNEL2
-#define ADC_CURRENT ADC_CHANNEL3
+#define ADC_AMPERAGE ADC_CHANNEL3
 
+#define MAX_VOLTAGE_METERS 3
 
+#define BOARD_HAS_AMPERAGE_METER
+
+// IO - stm32f303cc in 48pin package
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC (BIT(13)|BIT(14)|BIT(15))
+#define TARGET_IO_PORTF (BIT(0)|BIT(1))

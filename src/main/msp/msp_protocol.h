@@ -59,7 +59,7 @@
 #define MSP_PROTOCOL_VERSION                0
 
 #define API_VERSION_MAJOR                   1 // increment when major changes are made
-#define API_VERSION_MINOR                   19 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
+#define API_VERSION_MINOR                   22 // increment when any change is made, reset to zero when major changes are released after changing API_VERSION_MAJOR
 
 #define API_VERSION_LENGTH                  2
 
@@ -105,6 +105,9 @@
 //
 // MSP commands for Cleanflight original features
 //
+#define MSP_BATTERY_CONFIG              32
+#define MSP_SET_BATTERY_CONFIG          33
+
 #define MSP_MODE_RANGES                 34    //out message         Returns all mode ranges
 #define MSP_SET_MODE_RANGE              35    //in message          Sets a single mode range
 
@@ -114,8 +117,8 @@
 #define MSP_BOARD_ALIGNMENT             38
 #define MSP_SET_BOARD_ALIGNMENT         39
 
-#define MSP_CURRENT_METER_CONFIG        40
-#define MSP_SET_CURRENT_METER_CONFIG    41
+#define MSP_AMPERAGE_METER_CONFIG       40
+#define MSP_SET_AMPERAGE_METER_CONFIG   41
 
 #define MSP_MIXER                       42
 #define MSP_SET_MIXER                   43
@@ -188,20 +191,25 @@
 #define MSP_TRANSPONDER_CONFIG          82 //out message         Get transponder settings
 #define MSP_SET_TRANSPONDER_CONFIG      83 //in message          Set transponder settings
 
+// DEPRECATED (single responsibility principle violation in betaflight)
 #define MSP_OSD_CONFIG                  84 //out message         Get osd settings - betaflight
+// DEPRECATED (single responsibility principle violation in betaflight)
 #define MSP_SET_OSD_CONFIG              85 //in message          Set osd settings - betaflight
 
-#define MSP_LED_STRIP_MODECOLOR         86 //out message         Get LED strip mode_color settings
-#define MSP_SET_LED_STRIP_MODECOLOR     87 //in message          Set LED strip mode_color settings
+#define MSP_OSD_CHAR_READ               86 //out message         Read a font character.
+#define MSP_OSD_CHAR_WRITE              87 //in message          Write a font character.
 
 #define MSP_VTX_CONFIG                  88 //out message         Get vtx settings - betaflight
 #define MSP_SET_VTX_CONFIG              89 //in message          Set vtx settings - betaflight
 
-#define MSP_VOLTAGE_METERS              92 //out message         Voltage (per meter)
-#define MSP_CURRENT_METERS              93 //out message         Amperage (per meter)
-#define MSP_BATTERY_STATES              94 //out message         Connected/Disconnected, Voltage, Current Used (per battery)
-
 // Betaflight Additional Commands
+#define MSP_PID_ADVANCED_CONFIG         90
+#define MSP_SET_PID_ADVANCED_CONFIG     91
+
+#define MSP_FILTER_CONFIG               92
+#define MSP_SET_FILTER_CONFIG           93
+
+#define MSP_ADVANCED_TUNING             94
 #define MSP_SET_ADVANCED_TUNING         95
 
 #define MSP_SENSOR_CONFIG               96
@@ -215,7 +223,10 @@
 //
 #define MSP_OSD_VIDEO_CONFIG            180
 #define MSP_SET_OSD_VIDEO_CONFIG        181
-
+#define MSP_OSD_VIDEO_STATUS            182
+#define MSP_OSD_ELEMENT_SUMMARY         183
+#define MSP_OSD_LAYOUT_CONFIG           184
+#define MSP_SET_OSD_LAYOUT_CONFIG       185
 //
 // Multwii original MSP commands
 //
@@ -249,6 +260,11 @@
 #define MSP_3D                   124    //out message         Settings needed for reversible ESCs
 #define MSP_RC_DEADBAND          125    //out message         deadbands for yaw alt pitch roll
 #define MSP_SENSOR_ALIGNMENT     126    //out message         orientation of acc,gyro,mag
+#define MSP_LED_STRIP_MODECOLOR  127    //out message         Get LED strip mode_color settings
+#define MSP_VOLTAGE_METERS       128    //out message         Voltage (per meter)
+#define MSP_CURRENT_METERS       129    //out message         Amperage (per meter)
+#define MSP_BATTERY_STATES       130    //out message         Connected/Disconnected, Voltage, Current Used (per battery)
+#define MSP_PILOT                131    //out message         callsign, etc
 
 #define MSP_SET_RAW_RC           200    //in message          8 rc chan
 #define MSP_SET_RAW_GPS          201    //in message          fix, numsat, lat, lon, alt, speed
@@ -269,6 +285,8 @@
 #define MSP_SET_RC_DEADBAND      218    //in message          deadbands for yaw alt pitch roll
 #define MSP_SET_RESET_CURR_PID   219    //in message          resetting the current pid profile to defaults
 #define MSP_SET_SENSOR_ALIGNMENT 220    //in message          set the orientation of the acc,gyro,mag
+#define MSP_SET_LED_STRIP_MODECOLOR 221 //in  message         Set LED strip mode_color settings
+#define MSP_SET_PILOT            222    //in message          callsign, etc
 
 // #define MSP_BIND                 240    //in message          no param
 // #define MSP_ALARMS               242

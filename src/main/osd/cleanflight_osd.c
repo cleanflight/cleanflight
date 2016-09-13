@@ -21,7 +21,7 @@
 #include <math.h>
 
 #include <platform.h>
-#include "scheduler/scheduler.h"
+
 #include "build/debug.h"
 
 #include "config/parameter_group.h"
@@ -35,6 +35,8 @@
 #include "common/printf.h"
 #include "common/streambuf.h"
 
+#include "scheduler/scheduler.h"
+
 #include "drivers/light_led.h"
 
 #include "drivers/buf_writer.h"
@@ -42,9 +44,10 @@
 #include "drivers/system.h"
 #include "drivers/serial.h"
 #include "drivers/video_textscreen.h"
+#include "drivers/video.h"
 
-#include "fc/rc_controls.h" // FIXME required due to virtual current meter.
-
+#include "sensors/voltage.h"
+#include "sensors/amperage.h"
 #include "sensors/battery.h"
 
 #include "io/statusindicator.h"
@@ -56,6 +59,7 @@
 #include "osd/msp_server_osd.h"
 #include "osd/msp_client_osd.h"
 
+#include "osd/osd_element.h"
 #include "osd/osd.h"
 
 #include "osd/config.h"
@@ -117,7 +121,8 @@ void taskUpdateBattery(void)
 
     if (cmp32(currentTime, vbatLastServiced) >= VBATINTERVAL) {
         vbatLastServiced = currentTime;
-        updateBattery();
+        voltageMeterUpdate();
+        batteryUpdate();
     }
 
     int32_t ibatTimeSinceLastServiced = cmp32(currentTime, ibatLastServiced);
@@ -125,6 +130,6 @@ void taskUpdateBattery(void)
     if (ibatTimeSinceLastServiced >= IBATINTERVAL) {
         ibatLastServiced = currentTime;
 
-        updateCurrentMeter(ibatTimeSinceLastServiced);
+        amperageUpdateMeter(ibatTimeSinceLastServiced);
     }
 }

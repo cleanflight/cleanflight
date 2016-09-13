@@ -55,8 +55,6 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 11
 
-#define EXTI_CALLBACK_HANDLER_COUNT 1 // MPU data ready
-
 #define GYRO
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
@@ -80,6 +78,7 @@
 #define USE_UART3
 #define SERIAL_PORT_COUNT 4
 
+#define USE_UART1_TX_DMA
 #define UART1_TX_PIN        GPIO_Pin_4
 #define UART1_RX_PIN        GPIO_Pin_5
 #define UART1_GPIO          GPIOC
@@ -130,7 +129,7 @@
 #define ADC_CHANNEL_COUNT 4
 
 #define ADC_BATTERY     ADC_CHANNEL0
-#define ADC_CURRENT     ADC_CHANNEL1
+#define ADC_AMPERAGE     ADC_CHANNEL1
 #define ADC_RSSI        ADC_CHANNEL2
 #define ADC_EXTERNAL    ADC_CHANNEL3
 
@@ -165,6 +164,7 @@
 #define SERIAL_RX
 #define USE_SERVOS
 #define USE_CLI
+#define USE_EXTI
 
 #define SPEKTRUM_BIND
 // USART1, PC5
@@ -172,3 +172,10 @@
 #define BIND_PIN   Pin_5
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
+
+// IO - assuming 303 in 64pin package, TODO
+#define TARGET_IO_PORTA 0xffff
+#define TARGET_IO_PORTB 0xffff
+#define TARGET_IO_PORTC 0xffff
+#define TARGET_IO_PORTD (BIT(2))
+#define TARGET_IO_PORTF (BIT(0)|BIT(1)|BIT(4))

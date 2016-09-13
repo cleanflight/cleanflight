@@ -40,16 +40,12 @@
 #include "drivers/system.h"
 #include "drivers/serial.h"
 
-#include "fc/rate_profile.h"
-#include "fc/rc_controls.h"
-#include "fc/rc_adjustments.h"
-#include "fc/config.h"
-
 #include "io/beeper.h"
 #include "io/serial.h"
 
 #include "sensors/sensors.h"
 #include "sensors/compass.h"
+#include "sensors/amperage.h"
 #include "sensors/acceleration.h"
 
 #include "telemetry/telemetry.h"
@@ -76,6 +72,10 @@
 STATIC_UNIT_TESTED void resetConf(void)
 {
     pgResetAll(MAX_PROFILE_COUNT);
+
+#ifdef BOARD_HAS_AMPERAGE_METER
+    batteryConfig()->amperageMeterSource = AMPERAGE_METER_ADC;
+#endif
 }
 
 static void activateConfig(void)
@@ -109,18 +109,18 @@ void writeEEPROM(void)
     writeConfigToEEPROM();
 }
 
+void resetEEPROM(void)
+{
+    resetConf();
+    writeEEPROM();
+}
+
 void ensureEEPROMContainsValidData(void)
 {
     if (isEEPROMContentValid()) {
         return;
     }
     resetEEPROM();
-}
-
-void resetEEPROM(void)
-{
-    resetConf();
-    writeEEPROM();
 }
 
 // FIXME stub out the profile code, unused in the OSD but the msp.c parameter group code still references getCurrentProfile

@@ -149,7 +149,7 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_$(FLASH_SIZE)k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
-TARGET_FLAGS = -D$(TARGET) -pedantic
+TARGET_FLAGS = -D$(TARGET)
 DEVICE_FLAGS = -DSTM32F10X_HD -DSTM32F10X
 
 DEVICE_STDPERIPH_SRC = $(STDPERIPH_SRC)
@@ -194,7 +194,7 @@ endif
 LD_SCRIPT	 = $(LINKER_DIR)/stm32_flash_f103_$(FLASH_SIZE)k.ld
 
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3
-TARGET_FLAGS = -D$(TARGET) -pedantic
+TARGET_FLAGS = -D$(TARGET)
 DEVICE_FLAGS = -DSTM32F10X_MD -DSTM32F10X
 
 endif #TARGETS
@@ -246,7 +246,8 @@ SYSTEM_SRC = \
 		   common/printf.c \
 		   common/streambuf.c \
 		   common/typeconversion.c \
-			 common/crc.c \
+		   common/crc.c \
+		   common/pilot.c \
 		   drivers/buf_writer.c \
 		   drivers/dma.c \
 		   drivers/serial.c \
@@ -256,6 +257,7 @@ SYSTEM_SRC = \
 		   io/statusindicator.c \
 		   msp/msp.c \
 		   msp/msp_serial.c \
+		   msp/msp_server.c \
 		   $(TARGET_SRC) \
 		   $(CMSIS_SRC) \
 		   $(DEVICE_STDPERIPH_SRC)
@@ -284,6 +286,9 @@ FC_COMMON_SRC = \
 		   flight/mixer.c \
 		   flight/servos.c \
 		   drivers/bus_i2c_soft.c \
+		   drivers/exti.c \
+		   drivers/io.c \
+		   drivers/rcc.c \
 		   drivers/sound_beeper.c \
 		   drivers/gyro_sync.c \
 		   io/beeper.c \
@@ -303,10 +308,12 @@ FC_COMMON_SRC = \
 		   rx/spektrum.c \
 		   rx/xbus.c \
 		   rx/ibus.c \
-			 rx/srxl.c \
+		   rx/srxl.c \
 		   sensors/sensors.c \
 		   sensors/acceleration.c \
 		   sensors/battery.c \
+		   sensors/voltage.c \
+		   sensors/amperage.c \
 		   sensors/boardalignment.c \
 		   sensors/compass.c \
 		   sensors/gyro.c \
@@ -318,11 +325,16 @@ OSD_COMMON_SRC = \
 		   osd/fc_state.c \
 		   osd/config.c \
 		   osd/osd.c \
+		   osd/osd_screen.c \
+		   osd/osd_element.c \
+		   osd/osd_element_render.c \
 		   osd/osd_serial.c \
 		   osd/msp_server_osd.c \
 		   osd/msp_client_osd.c \
 		   osd/osd_tasks.c \
 		   sensors/battery.c \
+		   sensors/voltage.c \
+		   sensors/amperage.c \
 		   io/beeper.c
 
 HIGHEND_SRC = \
@@ -701,6 +713,7 @@ SPRACINGF3EVO_SRC	 = \
 		   drivers/display_ug2864hsweg01.h \
 		   drivers/light_ws2811strip.c \
 		   drivers/light_ws2811strip_stm32f30x.c \
+		   drivers/serial_softserial.c \
 		   drivers/serial_usb_vcp.c \
 		   drivers/sdcard.c \
 		   drivers/sdcard_standard.c \
@@ -778,6 +791,9 @@ SPRACINGF1OSD_SRC = \
 		   drivers/bus_spi.c \
 		   drivers/video_max7456.c \
 		   drivers/flash_m25p16.c \
+		   drivers/io.c \
+		   drivers/exti.c \
+		   drivers/rcc.c \
 		   io/flashfs.c \
 		   osd/fonts/font_max7456_12x18.c \
 		   osd/osd_max7456.c \
@@ -789,6 +805,9 @@ SPRACINGF3OSD_SRC = \
 		   $(STM32F30x_COMMON_SRC) \
 		   drivers/video_max7456.c \
 		   drivers/flash_m25p16.c \
+		   drivers/io.c \
+		   drivers/exti.c \
+		   drivers/rcc.c \
 		   io/flashfs.c \
 		   osd/fonts/font_max7456_12x18.c \
 		   osd/osd_max7456.c \
@@ -803,10 +822,17 @@ VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
 # Things that might need changing to use different tools
 #
 
+# Find out if ccache is installed on the system
+CCACHE := ccache
+RESULT = $(shell (which $(CCACHE) > /dev/null 2>&1; echo $$?) )
+ifneq ($(RESULT),0)
+CCACHE :=
+endif
+
 # Tool names
-CC		 = arm-none-eabi-gcc
-OBJCOPY		 = arm-none-eabi-objcopy
-SIZE		 = arm-none-eabi-size
+CC          := $(CCACHE) arm-none-eabi-gcc
+OBJCOPY     := arm-none-eabi-objcopy
+SIZE        := arm-none-eabi-size
 
 #
 # Tool options.
@@ -833,7 +859,7 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
 		   $(DEBUG_FLAGS) \
 		   -std=gnu99 \
-		   -Wall -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef \
+		   -Wall -Wpedantic -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef \
 		   -ffunction-sections \
 		   -fdata-sections \
 		   $(DEVICE_FLAGS) \
