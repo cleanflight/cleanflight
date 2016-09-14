@@ -46,8 +46,9 @@ e.g. after configuring a port for GPS enable the GPS feature.
 * If SoftSerial is used, then all SoftSerial ports must use the same baudrate.
 * Softserial is limited to 19200 baud.
 * All telemetry systems except MSP will ignore any attempts to override the baudrate.
-* MSP/CLI can be shared with EITHER Blackbox OR telemetry.  In shared mode blackbox or telemetry will be output only when armed.
+* MSP/CLI can be shared with EITHER Blackbox OR telemetry. In shared mode blackbox or telemetry will be output only when armed.
 * Smartport telemetry cannot be shared with MSP.
+* FrSky and LTM telemetry can be shared with serial RX. In this case, the serial port's RX pin on the flight controller will be used for serial RX, the TX pin for telemetry output. When used this way, the baudrate used for telemetry will be set to the baudrate that is used by serial RX, make sure to check your RX supports this (currently only confirmed working with openLRSng modules).
 * No other serial port sharing combinations are valid.
 * You can use as many different telemetry systems as you like at the same time.
 * You can only use each telemetry system once.  e.g.  FrSky telemetry cannot be used on two port, but MSP Telemetry + FrSky on different ports is fine.
