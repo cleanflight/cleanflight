@@ -75,6 +75,8 @@
 #include "rx/rx.h"
 #include "rx/spektrum.h"
 
+#include "io/beeper.h"
+
 #include "fc/rc_controls.h"
 #include "fc/fc_serial.h"
 #include "fc/fc_debug.h"
@@ -191,9 +193,15 @@ void flashLedsAndBeep(void)
         LED1_TOGGLE;
         LED0_TOGGLE;
         delay(25);
-        BEEP_ON;
+
+#ifdef BEEPER
+        if (!(getBeeperOffMask() & (1 << (BEEPER_SYSTEM_INIT - 1)))) {
+            BEEP_ON;
+        }
         delay(25);
         BEEP_OFF;
+#endif
+
     }
     LED0_OFF;
     LED1_OFF;
@@ -334,7 +342,7 @@ void init(void)
 #endif
 
 #ifdef BEEPER
-    beeperConfig_t beeperConfig = {
+    beeperIOConfig_t beeperIOConfig = {
         .gpioPeripheral = BEEP_PERIPHERAL,
         .gpioPin = BEEP_PIN,
         .gpioPort = BEEP_GPIO,
@@ -349,12 +357,12 @@ void init(void)
 #ifdef NAZE
     if (hardwareRevision >= NAZE32_REV5) {
         // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
-        beeperConfig.gpioMode = Mode_Out_PP;
-        beeperConfig.isInverted = true;
+        beeperIOConfig.gpioMode = Mode_Out_PP;
+        beeperIOConfig.isInverted = true;
     }
 #endif
 
-    beeperInit(&beeperConfig);
+    beeperInit(&beeperIOConfig);
 #endif
 
 #ifdef BUTTONS

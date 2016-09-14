@@ -29,6 +29,7 @@
 #include "config/parameter_group.h"
 
 #include "drivers/serial.h"
+
 #include "drivers/system.h"
 
 #ifdef OSD
