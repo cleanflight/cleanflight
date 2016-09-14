@@ -88,6 +88,7 @@ Click on a command to jump to the relevant documentation page.
 | `get`                                   | get variable value                             |
 | [`gpspassthrough`](Gps.md)              | passthrough gps to serial                      |
 | `help`                                  |                                                |
+| `beeper`                               | enable/disable beeper for a given condition    |
 | [`led`](LedStrip.md)                    | configure leds                                 |
 | [`map`](Rx.md)                          | mapping of rc channel order                    |
 | [`mixer`](Mixer.md)                     | mixer name or list                             |
