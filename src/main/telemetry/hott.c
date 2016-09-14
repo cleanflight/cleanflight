@@ -57,24 +57,27 @@
 #include <string.h>
 
 #include <platform.h>
-#include "build_config.h"
-#include "debug.h"
+#include "build/build_config.h"
+#include "build/debug.h"
 
 #ifdef TELEMETRY
 
 #include "common/axis.h"
 
-#include "config/runtime_config.h"
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
 #include "drivers/system.h"
 
+#include "fc/fc_serial.h"
+#include "fc/runtime_config.h"
+
 #include "drivers/serial.h"
 #include "io/serial.h"
-#include "io/rc_controls.h"
+
 
 #include "sensors/sensors.h"
+#include "../sensors/amperage.h"
 #include "sensors/battery.h"
 
 #include "flight/pid.h"
@@ -253,14 +256,18 @@ static inline void hottEAMUpdateBattery(HOTT_EAM_MSG_t *hottEAMMessage)
 
 static inline void hottEAMUpdateCurrentMeter(HOTT_EAM_MSG_t *hottEAMMessage)
 {
-    int32_t amp = amperage / 10;
+    amperageMeter_t *state = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
+    int32_t amp = state->amperage / 10;
     hottEAMMessage->current_L = amp & 0xFF;
     hottEAMMessage->current_H = amp >> 8;
 }
 
 static inline void hottEAMUpdateBatteryDrawnCapacity(HOTT_EAM_MSG_t *hottEAMMessage)
 {
-    int32_t mAh = mAhDrawn / 10;
+    amperageMeter_t *state = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
+    int32_t mAh = state->mAhDrawn / 10;
     hottEAMMessage->batt_cap_L = mAh & 0xFF;
     hottEAMMessage->batt_cap_H = mAh >> 8;
 }
@@ -333,14 +340,16 @@ static inline void hottSendEAMResponse(void)
     hottSendResponse((uint8_t *)&hottEAMMessage, sizeof(hottEAMMessage));
 }
 
-static void hottPrepareMessages(void) {
+static void hottPrepareMessages(void)
+{
     hottPrepareEAMResponse(&hottEAMMessage);
 #ifdef GPS
     hottPrepareGPSResponse(&hottGPSMessage);
 #endif
 }
 
-static void processBinaryModeRequest(uint8_t address) {
+static void processBinaryModeRequest(uint8_t address)
+{
 
 #ifdef HOTT_DEBUG
     static uint8_t hottBinaryRequests = 0;
@@ -482,18 +491,20 @@ static inline bool shouldCheckForHoTTRequest()
     return true;
 }
 
-void checkHoTTTelemetryState(void)
+bool checkHoTTTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(hottPortSharing);
 
     if (newTelemetryEnabledValue == hottTelemetryEnabled) {
-        return;
+        return false;
     }
 
     if (newTelemetryEnabledValue)
         configureHoTTTelemetryPort();
     else
         freeHoTTTelemetryPort();
+
+    return true;
 }
 
 void handleHoTTTelemetry(void)

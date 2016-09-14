@@ -26,7 +26,7 @@
 
 #include "platform.h"
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #ifdef TELEMETRY
 
@@ -34,9 +34,7 @@
 #include "common/axis.h"
 #include "common/color.h"
 
-#include "config/config.h"
 #include "config/parameter_group.h"
-#include "config/runtime_config.h"
 #include "config/feature.h"
 
 #include "drivers/system.h"
@@ -47,8 +45,11 @@
 #include "drivers/serial.h"
 #include "drivers/pwm_rx.h"
 
+#include "fc/fc_serial.h"
+#include "fc/config.h"
+#include "fc/runtime_config.h"
+
 #include "io/serial.h"
-#include "io/rc_controls.h"
 #include "io/gimbal.h"
 #include "io/gps.h"
 #include "io/ledstrip.h"
@@ -58,6 +59,7 @@
 #include "sensors/gyro.h"
 #include "sensors/barometer.h"
 #include "sensors/boardalignment.h"
+#include "../sensors/amperage.h"
 #include "sensors/battery.h"
 
 #include "rx/rx.h"
@@ -74,7 +76,7 @@
 
 #include "mavlink/common/mavlink.h"
 
-#include "mw.h"
+#include "fc/cleanflight_fc.h"
 
 #define TELEMETRY_MAVLINK_INITIAL_PORT_MODE MODE_TX
 #define TELEMETRY_MAVLINK_MAXRATE 50
@@ -153,7 +155,7 @@ void configureMAVLinkTelemetryPort(void)
         return;
     }
 
-    baudRate_e baudRateIndex = portConfig->telemetry_baudrateIndex;
+    baudRate_e baudRateIndex = portConfig->baudRates[BAUDRATE_TELEMETRY];
     if (baudRateIndex == BAUD_AUTO) {
         // default rate for minimOSD
         baudRateIndex = BAUD_57600;
@@ -168,18 +170,20 @@ void configureMAVLinkTelemetryPort(void)
     mavlinkTelemetryEnabled = true;
 }
 
-void checkMAVLinkTelemetryState(void)
+bool checkMAVLinkTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(mavlinkPortSharing);
 
     if (newTelemetryEnabledValue == mavlinkTelemetryEnabled) {
-        return;
+        return false;
     }
 
     if (newTelemetryEnabledValue)
         configureMAVLinkTelemetryPort();
     else
         freeMAVLinkTelemetryPort();
+
+    return true;
 }
 
 void mavlinkSendSystemStatus(void)
@@ -201,6 +205,8 @@ void mavlinkSendSystemStatus(void)
     if (sensors(SENSOR_MAG))  onboardControlAndSensors |=  4100;
     if (sensors(SENSOR_BARO)) onboardControlAndSensors |=  8200;
     if (sensors(SENSOR_GPS))  onboardControlAndSensors |= 16416;
+
+    amperageMeter_t *amperageMeter = getAmperageMeter(batteryConfig()->amperageMeterSource);
     
     mavlink_msg_sys_status_pack(0, 200, &mavMsg,
         // onboard_control_sensors_present Bitmask showing which onboard controllers and sensors are present. 
@@ -217,10 +223,10 @@ void mavlinkSendSystemStatus(void)
         0,
         // voltage_battery Battery voltage, in millivolts (1 = 1 millivolt)
         feature(FEATURE_VBAT) ? vbat * 100 : 0,
-        // current_battery Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current
-        feature(FEATURE_VBAT) ? amperage : -1,
+        // current_battery Battery amperage, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current
+        feature(FEATURE_AMPERAGE_METER) ? amperageMeter->amperage : -1,
         // battery_remaining Remaining battery energy: (0%: 0, 100%: 100), -1: autopilot estimate the remaining battery
-        feature(FEATURE_VBAT) ? calculateBatteryPercentage() : 100,
+        feature(FEATURE_VBAT) ? batteryVoltagePercentage() : 100,
         // drop_rate_comm Communication drops in percent, (0%: 0, 100%: 10'000), (UART, I2C, SPI, CAN), dropped packets on all links (packets that were corrupted on reception on the MAV)
         0,
         // errors_comm Communication errors (UART, I2C, SPI, CAN), dropped packets on all links (packets that were corrupted on reception on the MAV)

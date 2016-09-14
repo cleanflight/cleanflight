@@ -22,7 +22,7 @@
 
 #include <platform.h>
 #include "common/utils.h"
-#include "common/atomic.h"
+#include "build/atomic.h"
 
 #include "nvic.h"
 
@@ -388,6 +388,23 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3 | RCC_APB1Periph_TIM4)
 #define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_TIM15 | RCC_APB2Periph_TIM16 | RCC_APB2Periph_TIM17)
 #define TIMER_AHB_PERIPHERALS (RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB)
+#endif
+
+#if defined(RCEXPLORERF3)
+const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    { TIM3,  GPIOA, Pin_4,  TIM_Channel_2, TIM3_IRQn,               1, Mode_AF_PP, GPIO_PinSource4,  GPIO_AF_2}, // PWM1 - PA4
+    { TIM17, GPIOA, Pin_7,  TIM_Channel_1, TIM1_TRG_COM_TIM17_IRQn, 1, Mode_AF_PP, GPIO_PinSource7,  GPIO_AF_1}, // PWM2 - PA7
+    { TIM1,  GPIOA, Pin_8,  TIM_Channel_1, TIM1_CC_IRQn,            1, Mode_AF_PP, GPIO_PinSource8,  GPIO_AF_6}, // PWM3 - PA8
+    { TIM3,  GPIOB, Pin_0,  TIM_Channel_3, TIM3_IRQn,               1, Mode_AF_PP, GPIO_PinSource0,  GPIO_AF_2}, // PWM4 - PB0
+    { TIM3,  GPIOB, Pin_1,  TIM_Channel_4, TIM3_IRQn,               1, Mode_AF_PP, GPIO_PinSource1,  GPIO_AF_2}, // PWM5 - PB1
+    { TIM2,  GPIOA, Pin_1,  TIM_Channel_2, TIM2_IRQn,               0, Mode_AF_PP, GPIO_PinSource1,  GPIO_AF_1}, // PWM6 - PPM
+};
+
+#define USED_TIMERS  (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(17))
+
+#define TIMER_APB1_PERIPHERALS (RCC_APB1Periph_TIM2 | RCC_APB1Periph_TIM3)
+#define TIMER_APB2_PERIPHERALS (RCC_APB2Periph_TIM1 | RCC_APB2Periph_TIM17)
+#define TIMER_AHB_PERIPHERALS (RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB)
 
 #endif
 
@@ -584,7 +601,8 @@ void timerChOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *
 
 // update overflow callback list
 // some synchronization mechanism is neccesary to avoid disturbing other channels (BASEPRI used now)
-static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef *tim) {
+static void timerChConfig_UpdateOverflow(timerConfig_t *cfg, TIM_TypeDef *tim)
+{
     timerOvrHandlerRec_t **chain = &cfg->overflowCallbackActive;
     ATOMIC_BLOCK(NVIC_PRIO_TIMER) {
         for(int i = 0; i < CC_CHANNELS_PER_TIMER; i++)
@@ -656,7 +674,8 @@ void timerChConfigCallbacksDual(const timerHardware_t *timHw, timerCCHandlerRec_
 }
 
 // enable/disable IRQ for low channel in dual configuration
-void timerChITConfigDualLo(const timerHardware_t *timHw, FunctionalState newState) {
+void timerChITConfigDualLo(const timerHardware_t *timHw, FunctionalState newState)
+{
     TIM_ITConfig(timHw->tim, TIM_IT_CCx(timHw->channel&~TIM_Channel_2), newState);
 }
 

@@ -21,19 +21,19 @@
 #include <math.h>
 
 #include <platform.h>
-#include "build_config.h"
-#include "scheduler.h"
+#include "build/build_config.h"
 
 #include "common/maths.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
+#include "config/config_reset.h"
+#include "config/profile.h"
 
 #include "drivers/barometer.h"
 #include "drivers/system.h"
 
-#include "config/config.h"
-#include "config/config_reset.h"
+//#include "fc/config.h"
 
 #include "sensors/barometer.h"
 
@@ -161,10 +161,14 @@ int32_t baroCalculateAltitude(void)
 
     // calculates height from ground via baro readings
     // see: https://github.com/diydrones/ardupilot/blob/master/libraries/AP_Baro/AP_Baro.cpp#L140
-    BaroAlt_tmp = lrintf((1.0f - powf((float)(baroPressureSum / PRESSURE_SAMPLE_COUNT) / 101325.0f, 0.190295f)) * 4433000.0f); // in cm
-    BaroAlt_tmp -= baroGroundAltitude;
-    BaroAlt = lrintf((float)BaroAlt * barometerConfig()->baro_noise_lpf + (float)BaroAlt_tmp * (1.0f - barometerConfig()->baro_noise_lpf)); // additional LPF to reduce baro noise
-
+    if (isBaroCalibrationComplete()) {
+        BaroAlt_tmp = lrintf((1.0f - powf((float)(baroPressureSum / PRESSURE_SAMPLE_COUNT) / 101325.0f, 0.190295f)) * 4433000.0f); // in cm
+        BaroAlt_tmp -= baroGroundAltitude;
+        BaroAlt = lrintf((float)BaroAlt * barometerConfig()->baro_noise_lpf + (float)BaroAlt_tmp * (1.0f - barometerConfig()->baro_noise_lpf)); // additional LPF to reduce baro noise
+    }
+    else {
+        BaroAlt = 0;
+    }
     return BaroAlt;
 }
 

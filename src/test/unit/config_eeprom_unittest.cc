@@ -20,12 +20,13 @@
 
 extern "C" {
     #include "platform.h"
-    #include "build_config.h"
+    #include "build/build_config.h"
     
     #include "common/axis.h"
     #include "common/maths.h"
     #include "common/color.h"
     #include "common/utils.h"
+    #include "common/filter.h"
 
     #include "config/parameter_group.h"
     #include "config/parameter_group_ids.h"
@@ -39,9 +40,9 @@ extern "C" {
     #include "drivers/pwm_rx.h"
     #include "drivers/serial.h"
 
-    #include "io/rc_controls.h"
-    #include "io/rate_profile.h"
-    #include "io/rc_adjustments.h"
+    #include "fc/rc_controls.h"
+    #include "fc/rate_profile.h"
+    #include "fc/rc_adjustments.h"
     #include "io/motor_and_servo.h"
     #include "io/gimbal.h"
     #include "io/gps.h"
@@ -54,6 +55,8 @@ extern "C" {
     #include "sensors/barometer.h"
     #include "sensors/compass.h"
     #include "sensors/gyro.h"
+    #include "../../main/sensors/amperage.h"
+    #include "sensors/voltage.h"
     #include "sensors/battery.h"
     #include "sensors/boardalignment.h"
 
@@ -64,15 +67,18 @@ extern "C" {
     #include "flight/failsafe.h"
     #include "flight/altitudehold.h"
 
+    #include "msp/msp_server.h"
+
     #include "telemetry/telemetry.h"
     #include "telemetry/frsky.h"
     #include "telemetry/hott.h"
 
-    #include "config/config.h"
     #include "config/config_eeprom.h"
     #include "config/config_system.h"
     #include "config/feature.h"
     #include "config/profile.h"
+
+    #include "fc/config.h"
 
     #include "platform.h"
 
@@ -92,7 +98,10 @@ extern "C" {
     PG_REGISTER(motorAndServoConfig_t, motorAndServoConfig, PG_MOTOR_AND_SERVO_CONFIG, 0);
     PG_REGISTER(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
     PG_REGISTER(sensorTrims_t, sensorTrims, PG_SENSOR_TRIMS, 0);
+    PG_REGISTER(mspServerConfig_t, mspServerConfig, PG_MSP_SERVER_CONFIG, 0);
     PG_REGISTER(batteryConfig_t, batteryConfig, PG_BATTERY_CONFIG, 0);
+    PG_REGISTER_ARR(amperageMeterConfig_t, MAX_AMPERAGE_METERS, amperageMeterConfig, PG_AMPERAGE_METER_CONFIG, 0);
+    PG_REGISTER_ARR(voltageMeterConfig_t, MAX_VOLTAGE_METERS, voltageMeterConfig, PG_VOLTAGE_METER_CONFIG, 0);
     PG_REGISTER_ARR(controlRateConfig_t, MAX_CONTROL_RATE_PROFILE_COUNT, controlRateProfiles, PG_CONTROL_RATE_PROFILES, 0);
     PG_REGISTER(serialConfig_t, serialConfig, PG_SERIAL_CONFIG, 0);
     PG_REGISTER(pwmRxConfig_t, pwmRxConfig, PG_DRIVER_PWM_RX_CONFIG, 0);
@@ -353,11 +362,14 @@ TEST(ConfigUnittest, TestResetConfigZeroValues)
     EXPECT_EQ(MAG_DEFAULT, sensorSelectionConfig()->mag_hardware);   // default/autodetect
     EXPECT_EQ(BARO_DEFAULT, sensorSelectionConfig()->baro_hardware); // default/autodetect
 
-    EXPECT_EQ(0, batteryConfig()->currentMeterOffset);
+    for (int i = 0; i < MAX_AMPERAGE_METERS; i++) {
+        EXPECT_EQ(0, amperageMeterConfig(i)->offset);
+    }
     EXPECT_EQ(0, batteryConfig()->batteryCapacity);
 
     EXPECT_EQ(0, telemetryConfig()->telemetry_inversion);
     EXPECT_EQ(0, telemetryConfig()->telemetry_switch);
+    EXPECT_EQ(0, telemetryConfig()->telemetry_flvss_cells);
 
     EXPECT_EQ(0, frskyTelemetryConfig()->gpsNoFixLatitude);
     EXPECT_EQ(0, frskyTelemetryConfig()->gpsNoFixLongitude);

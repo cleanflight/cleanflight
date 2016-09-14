@@ -32,8 +32,6 @@
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
-#include "config/runtime_config.h"
-#include "config/config.h"
 #include "config/feature.h"
 
 #include "drivers/system.h"
@@ -43,12 +41,15 @@
 #include "drivers/timer.h"
 #include "drivers/serial.h"
 
-#include "io/rc_controls.h"
+#include "fc/runtime_config.h"
+#include "fc/config.h"
+#include "fc/fc_serial.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "sensors/barometer.h"
+#include "../sensors/amperage.h"
 #include "sensors/battery.h"
 
 #include "io/serial.h"
@@ -356,37 +357,39 @@ static void sendVario(void)
  */
 static void sendVoltage(void)
 {
-    static uint16_t currentCell = 0;
-    uint32_t cellVoltage;
-    uint16_t payload;
+    if (telemetryConfig()->telemetry_flvss_cells) {
+        static uint16_t currentCell = 0;
+        uint32_t cellVoltage;
+        uint16_t payload;
 
-    /*
-     * Format for Voltage Data for single cells is like this:
-     *
-     *  llll llll cccc hhhh
-     *  l: Low voltage bits
-     *  h: High voltage bits
-     *  c: Cell number (starting at 0)
-     *
-     * The actual value sent for cell voltage has resolution of 0.002 volts
-     * Since vbat has resolution of 0.1 volts it has to be multiplied by 50
-     */
-    cellVoltage = ((uint32_t)vbat * 100 + batteryCellCount) / (batteryCellCount * 2);
+        /*
+         * Format for Voltage Data for single cells is like this:
+         *
+         *  llll llll cccc hhhh
+         *  l: Low voltage bits
+         *  h: High voltage bits
+         *  c: Cell number (starting at 0)
+         *
+         * The actual value sent for cell voltage has resolution of 0.002 volts
+         * Since vbat has resolution of 0.1 volts it has to be multiplied by 50
+         */
+        cellVoltage = ((uint32_t)vbat * 100 + batteryCellCount) / (batteryCellCount * 2);
 
-    // Cell number is at bit 9-12
-    payload = (currentCell << 4);
+        // Cell number is at bit 9-12
+        payload = (currentCell << 4);
 
-    // Lower voltage bits are at bit 0-8
-    payload |= ((cellVoltage & 0x0ff) << 8);
+        // Lower voltage bits are at bit 0-8
+        payload |= ((cellVoltage & 0x0ff) << 8);
 
-    // Higher voltage bits are at bits 13-15
-    payload |= ((cellVoltage & 0xf00) >> 8);
+        // Higher voltage bits are at bits 13-15
+        payload |= ((cellVoltage & 0xf00) >> 8);
 
-    sendDataHead(ID_VOLT);
-    serialize16(payload);
+        sendDataHead(ID_VOLT);
+        serialize16(payload);
 
-    currentCell++;
-    currentCell %= batteryCellCount;
+        currentCell++;
+        currentCell %= batteryCellCount;
+    }
 }
 
 /*
@@ -412,18 +415,22 @@ static void sendVoltageAmp(void)
 
 static void sendAmperage(void)
 {
+    amperageMeter_t *state = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
     sendDataHead(ID_CURRENT);
-    serialize16((uint16_t)(amperage / 10));
+    serialize16((uint16_t)(state->amperage / 10));
 }
 
 static void sendFuelLevel(void)
 {
+
     sendDataHead(ID_FUEL_LEVEL);
 
     if (batteryConfig()->batteryCapacity > 0) {
-        serialize16((uint16_t)calculateBatteryCapacityRemainingPercentage());
+        serialize16((uint16_t)batteryCapacityRemainingPercentage());
     } else {
-        serialize16((uint16_t)constrain(mAhDrawn, 0, 0xFFFF));
+        amperageMeter_t *state = getAmperageMeter(batteryConfig()->amperageMeterSource);
+        serialize16((uint16_t)constrain(state->mAhDrawn, 0, 0xFFFF));
     }
 }
 
@@ -467,18 +474,20 @@ bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
     return currentMillis - lastCycleTime >= CYCLETIME;
 }
 
-void checkFrSkyTelemetryState(void)
+bool checkFrSkyTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(frskyPortSharing);
 
     if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
-        return;
+        return false;
     }
 
     if (newTelemetryEnabledValue)
         configureFrSkyTelemetryPort();
     else
         freeFrSkyTelemetryPort();
+
+    return true;
 }
 
 void handleFrSkyTelemetry(uint16_t deadband3d_throttle)

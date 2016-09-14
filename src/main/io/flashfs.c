@@ -33,6 +33,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifdef CUSTOM_FLASHCHIP
+#include "config/parameter_group.h"
+#endif
+
 #include "drivers/flash_m25p16.h"
 #include "flashfs.h"
 
@@ -551,7 +555,8 @@ int flashfsIdentifyStartOfFreeSpace()
 /**
  * Returns true if the file pointer is at the end of the device.
  */
-bool flashfsIsEOF() {
+bool flashfsIsEOF()
+{
     return tailAddress >= flashfsGetSize();
 }
 

@@ -23,8 +23,6 @@
 
 #ifdef TELEMETRY
 
-#include "config/runtime_config.h"
-#include "config/config.h"
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
@@ -32,10 +30,15 @@
 #include "drivers/timer.h"
 #include "drivers/serial.h"
 #include "drivers/serial_softserial.h"
+
+#include "fc/runtime_config.h"
+#include "fc/config.h"
+#include "fc/rc_controls.h"
+#include "fc/fc_serial.h"
 #include "io/serial.h"
 
 #include "rx/rx.h"
-#include "io/rc_controls.h"
+
 
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
@@ -56,6 +59,7 @@ PG_REGISTER_WITH_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig, PG_TELEMETRY
 
 PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
     .telemetry_inversion = DEFAULT_TELEMETRY_INVERSION,
+    .telemetry_flvss_cells = 1,
 );
 
 void telemetryInit(void)
@@ -82,13 +86,17 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing)
     return enabled;
 }
 
-void telemetryCheckState(void)
+// 0 =  no states changed, > 0, some state changed.
+uint8_t telemetryCheckState(void)
 {
-    checkFrSkyTelemetryState();
-    checkHoTTTelemetryState();
-    checkSmartPortTelemetryState();
-    checkLtmTelemetryState();
-    checkMAVLinkTelemetryState();
+    uint8_t telemetryStateChangeMask = 0;
+    telemetryStateChangeMask |= (checkFrSkyTelemetryState() << 0);
+    telemetryStateChangeMask |= (checkHoTTTelemetryState() << 1);
+    telemetryStateChangeMask |= (checkSmartPortTelemetryState() << 2);
+    telemetryStateChangeMask |= (checkLtmTelemetryState() << 3);
+    telemetryStateChangeMask |= (checkMAVLinkTelemetryState() << 4);
+
+    return telemetryStateChangeMask;
 }
 
 void telemetryProcess(uint16_t deadband3d_throttle)

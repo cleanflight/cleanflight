@@ -22,23 +22,27 @@
 #include <limits.h>
 
 extern "C" {
-    #include "debug.h"
+    #include "build/debug.h"
 
     #include <platform.h>
 
     #include "common/axis.h"
+    #include "common/filter.h"
 
     #include "config/parameter_group.h"
-    #include "config/runtime_config.h"
+    #include "config/parameter_group_ids.h"
+    #include "config/profile.h"
 
     #include "drivers/system.h"
     #include "drivers/serial.h"
 
-    #include "io/rc_controls.h"
+    #include "fc/runtime_config.h"
     #include "io/serial.h"
     #include "io/gps.h"
 
     #include "sensors/sensors.h"
+    #include "sensors/voltage.h"
+    #include "../../main/sensors/amperage.h"
     #include "sensors/battery.h"
 
     #include "telemetry/telemetry.h"
@@ -46,6 +50,10 @@ extern "C" {
 
     #include "flight/pid.h"
     #include "flight/gps_conversion.h"
+
+    PG_REGISTER(batteryConfig_t, batteryConfig, PG_BATTERY_CONFIG, 0);
+
+    amperageMeter_t amperageMeter;
 }
 
 #include "unittest_macros.h"
@@ -220,7 +228,7 @@ void closeSerialPort(serialPort_t *serialPort) {
     UNUSED(serialPort);
 }
 
-serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function) {
+serialPortConfig_t *findSerialPortConfig(uint16_t function) {
     UNUSED(function);
 
     return NULL;
@@ -243,5 +251,9 @@ batteryState_e getBatteryState(void) {
 	return BATTERY_OK;
 }
 
+amperageMeter_t *getAmperageMeter(amperageMeter_e index) {
+    UNUSED(index);
+    return &amperageMeter;
+}
 }
 

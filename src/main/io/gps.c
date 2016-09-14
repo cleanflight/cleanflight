@@ -23,8 +23,8 @@
 #include <math.h>
 
 #include <platform.h>
-#include "build_config.h"
-#include "debug.h"
+#include "build/build_config.h"
+#include "build/debug.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
@@ -32,10 +32,9 @@
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
-#include "config/config.h"
-#include "config/runtime_config.h"
 #include "config/feature.h"
 
+#include "drivers/dma.h"
 #include "drivers/system.h"
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
@@ -43,6 +42,10 @@
 #include "drivers/light_led.h"
 
 #include "sensors/sensors.h"
+
+#include "fc/config.h"
+#include "fc/runtime_config.h"
+#include "fc/fc_serial.h"
 
 #include "io/serial.h"
 #include "io/display.h"
@@ -105,6 +108,7 @@ uint32_t GPS_garbageByteCount = 0;
 // How many entries in gpsInitData array below
 #define GPS_INIT_ENTRIES (GPS_BAUDRATE_MAX + 1)
 #define GPS_BAUDRATE_CHANGE_DELAY (200)
+#define GPS_BOOT_DELAY          (2500)
 
 static serialPort_t *gpsPort;
 
@@ -231,7 +235,7 @@ void gpsInit(void)
         return;
     }
 
-    while (gpsInitData[gpsData.baudrateIndex].baudrateIndex != gpsPortConfig->gps_baudrateIndex) {
+    while (gpsInitData[gpsData.baudrateIndex].baudrateIndex != gpsPortConfig->baudRates[BAUDRATE_GPS]) {
         gpsData.baudrateIndex++;
         if (gpsData.baudrateIndex >= GPS_INIT_DATA_ENTRY_COUNT) {
             gpsData.baudrateIndex = DEFAULT_BAUD_RATE_INDEX;
@@ -362,6 +366,12 @@ void gpsInitHardware(void)
 
 void gpsThread(void)
 {
+    // Extra delay for at least 2 seconds after booting to give GPS time to initialise
+    if (!isMPUSoftReset() && (millis() < GPS_BOOT_DELAY)) {
+        sensorsClear(SENSOR_GPS);
+        DISABLE_STATE(GPS_FIX);
+        return;
+    }
     // read out available GPS bytes
     if (gpsPort) {
         while (serialRxBytesWaiting(gpsPort))

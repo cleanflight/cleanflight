@@ -33,7 +33,7 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #ifdef TELEMETRY
 
@@ -47,7 +47,7 @@
 #include "drivers/accgyro.h"
 #include "drivers/serial.h"
 
-#include "io/rc_controls.h"
+#include "fc/fc_serial.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"
@@ -66,7 +66,7 @@
 #include "telemetry/telemetry.h"
 #include "telemetry/ltm.h"
 
-#include "config/runtime_config.h"
+#include "fc/runtime_config.h"
 
 #define TELEMETRY_LTM_INITIAL_PORT_MODE MODE_TX
 #define LTM_CYCLETIME   100
@@ -272,7 +272,7 @@ void configureLtmTelemetryPort(void)
     if (!portConfig) {
         return;
     }
-    baudRate_e baudRateIndex = portConfig->telemetry_baudrateIndex;
+    baudRate_e baudRateIndex = portConfig->baudRates[BAUDRATE_TELEMETRY];
     if (baudRateIndex == BAUD_AUTO) {
         baudRateIndex = BAUD_19200;
     }
@@ -282,14 +282,19 @@ void configureLtmTelemetryPort(void)
     ltmEnabled = true;
 }
 
-void checkLtmTelemetryState(void)
+bool checkLtmTelemetryState(void)
 {
     bool newTelemetryEnabledValue = telemetryDetermineEnabledState(ltmPortSharing);
-    if (newTelemetryEnabledValue == ltmEnabled)
-        return;
+
+    if (newTelemetryEnabledValue == ltmEnabled) {
+        return false;
+    }
+
     if (newTelemetryEnabledValue)
         configureLtmTelemetryPort();
     else
         freeLtmTelemetryPort();
+
+    return true;
 }
 #endif

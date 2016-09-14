@@ -24,7 +24,7 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #ifndef SKIP_PID_LUXFLOAT
 
@@ -33,7 +33,6 @@
 #include "common/filter.h"
 
 #include "config/parameter_group.h"
-#include "config/runtime_config.h"
 
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
@@ -45,8 +44,9 @@
 
 #include "rx/rx.h"
 
-#include "io/rc_controls.h"
-#include "io/rate_profile.h"
+#include "fc/runtime_config.h"
+#include "fc/rc_controls.h"
+#include "fc/rate_profile.h"
 
 #include "flight/pid.h"
 #include "config/config_unittest.h"
@@ -59,7 +59,8 @@ extern float dT;
 extern uint8_t PIDweight[3];
 extern float lastITermf[3], ITermLimitf[3];
 
-extern biquad_t deltaFilterState[3];
+extern pt1Filter_t deltaFilter[3];
+extern pt1Filter_t yawFilter;
 
 extern uint8_t motorCount;
 
@@ -70,13 +71,12 @@ extern int32_t axisPID_P[3], axisPID_I[3], axisPID_D[3];
 // constants to scale pidLuxFloat so output is same as pidMultiWiiRewrite
 static const float luxPTermScale = 1.0f / 128;
 static const float luxITermScale = 1000000.0f / 0x1000000;
-static const float luxDTermScale = (0.000001f * (float)0xFFFF) / 256;
+static const float luxDTermScale = (0.000001f * (float)0xFFFF) / 512;
 static const float luxGyroScale = 16.4f / 4; // the 16.4 is needed because mwrewrite does not scale according to the gyro model gyro.scale
 
 STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProfile, float gyroRate, float angleRate)
 {
     static float lastRateForDelta[3];
-    static float deltaState[3][DTERM_AVERAGE_COUNT];
 
     SET_PID_LUX_FLOAT_CORE_LOCALS(axis);
 
@@ -85,8 +85,13 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
     // -----calculate P component
     float PTerm = luxPTermScale * rateError * pidProfile->P8[axis] * PIDweight[axis] / 100;
     // Constrain YAW by yaw_p_limit value if not servo driven, in that case servolimits apply
-    if (axis == YAW && pidProfile->yaw_p_limit && motorCount >= 4) {
-        PTerm = constrainf(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
+    if (axis == YAW) {
+        if (pidProfile->yaw_lpf) {
+            PTerm = pt1FilterApply4(&yawFilter, PTerm, pidProfile->yaw_lpf, dT);
+        }
+        if (pidProfile->yaw_p_limit && motorCount >= 4) {
+            PTerm = constrainf(PTerm, -pidProfile->yaw_p_limit, pidProfile->yaw_p_limit);
+        }
     }
 
     // -----calculate I component
@@ -110,17 +115,19 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
         // optimisation for when D8 is zero, often used by YAW axis
         DTerm = 0;
     } else {
-        // delta calculated from measurement
-        float delta = -(gyroRate - lastRateForDelta[axis]);
-        lastRateForDelta[axis] = gyroRate;
+        float delta;
+        if (pidProfile->deltaMethod == PID_DELTA_FROM_MEASUREMENT) {
+            delta = -(gyroRate - lastRateForDelta[axis]);
+            lastRateForDelta[axis] = gyroRate;
+        } else {
+            delta = rateError - lastRateForDelta[axis];
+            lastRateForDelta[axis] = rateError;
+        }
         // Divide delta by dT to get differential (ie dr/dt)
         delta *= (1.0f / dT);
-        if (pidProfile->dterm_cut_hz) {
+        if (pidProfile->dterm_lpf) {
             // DTerm delta low pass filter
-            delta = applyBiQuadFilter(delta, &deltaFilterState[axis]);
-        } else {
-            // When DTerm low pass filter disabled apply moving average to reduce noise
-            delta = filterApplyAveragef(delta, DTERM_AVERAGE_COUNT, deltaState[axis]);
+            delta = pt1FilterApply4(&deltaFilter[axis], delta, pidProfile->dterm_lpf, dT);
         }
         DTerm = luxDTermScale * delta * pidProfile->D8[axis] * PIDweight[axis] / 100;
         DTerm = constrainf(DTerm, -PID_MAX_D, PID_MAX_D);
@@ -139,22 +146,11 @@ STATIC_UNIT_TESTED int16_t pidLuxFloatCore(int axis, const pidProfile_t *pidProf
 void pidLuxFloat(const pidProfile_t *pidProfile, const controlRateConfig_t *controlRateConfig,
         uint16_t max_angle_inclination, const rollAndPitchTrims_t *angleTrim, const rxConfig_t *rxConfig)
 {
-    pidFilterIsSetCheck(pidProfile);
-
-    float horizonLevelStrength;
+    float horizonLevelStrength = 0.0f;
     if (FLIGHT_MODE(HORIZON_MODE)) {
-        // Figure out the most deflected stick position
-        const int32_t stickPosAil = ABS(getRcStickDeflection(ROLL, rxConfig->midrc));
-        const int32_t stickPosEle = ABS(getRcStickDeflection(PITCH, rxConfig->midrc));
-        const int32_t mostDeflectedPos =  MAX(stickPosAil, stickPosEle);
-
-        // Progressively turn off the horizon self level strength as the stick is banged over
-        horizonLevelStrength = (float)(500 - mostDeflectedPos) / 500;  // 1 at centre stick, 0 = max stick deflection
-        if(pidProfile->D8[PIDLEVEL] == 0){
-            horizonLevelStrength = 0;
-        } else {
-            horizonLevelStrength = constrainf(((horizonLevelStrength - 1) * (100 / pidProfile->D8[PIDLEVEL])) + 1, 0, 1);
-        }
+        // (convert 0-100 range to 0.0-1.0 range)
+        horizonLevelStrength = (float)calcHorizonLevelStrength(rxConfig->midrc, pidProfile->horizon_tilt_effect,
+                pidProfile->horizon_tilt_mode, pidProfile->D8[PIDLEVEL]) / 100.0f;
     }
 
     // ----------PID controller----------

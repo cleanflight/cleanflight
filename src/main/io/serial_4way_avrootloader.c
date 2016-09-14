@@ -32,7 +32,7 @@
 #include "drivers/pwm_mapping.h"
 #include "drivers/gpio.h"
 #include "io/serial.h"
-#include "io/serial_msp.h"
+//#include "io/serial_msp.h"
 #include "io/serial_4way.h"
 #include "io/serial_4way_impl.h"
 #include "io/serial_4way_avrootloader.h"
@@ -71,7 +71,8 @@
 
 #define BIT_TIME          52                       // 52uS
 #define BIT_TIME_HALVE    (BIT_TIME >> 1)          // 26uS
-#define START_BIT_TIME    (BIT_TIME_HALVE + 1)
+#define BIT_TIME_3_4      (BIT_TIME_HALVE + (BIT_TIME_HALVE >> 1))   // 39uS
+#define START_BIT_TIME    (BIT_TIME_3_4)
 
 static int suart_getc(void)
 {

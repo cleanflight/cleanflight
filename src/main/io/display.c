@@ -21,12 +21,12 @@
 #include <string.h>
 
 #include <platform.h>
-#include "build_config.h"
+#include "build/build_config.h"
 
 #ifdef DISPLAY
 
-#include "version.h"
-#include "debug.h"
+#include "build/version.h"
+#include "build/debug.h"
 
 #include "drivers/serial.h"
 #include "drivers/system.h"
@@ -41,16 +41,16 @@
 #include "common/typeconversion.h"
 
 #include "config/parameter_group.h"
-#include "config/runtime_config.h"
-#include "config/config.h"
 #include "config/feature.h"
 #include "config/profile.h"
 
-#include "io/rate_profile.h"
-#include "io/rc_controls.h"
+#include "fc/rate_profile.h"
+#include "fc/rc_controls.h"
+
 #include "io/display.h"
 #include "io/gps.h"
 
+#include "sensors/amperage.h"
 #include "sensors/battery.h"
 #include "sensors/sensors.h"
 #include "sensors/compass.h"
@@ -63,7 +63,11 @@
 #include "flight/failsafe.h"
 #include "flight/navigation.h"
 
-#include "scheduler.h"
+#include "fc/runtime_config.h"
+#include "fc/config.h"
+#include "fc/fc_tasks.h"
+
+#include "scheduler/scheduler.h"
 
 static uint32_t nextDisplayUpdateAt = 0;
 static bool displayPresent = false;
@@ -173,7 +177,8 @@ static void padHalfLineBuffer(void)
 #endif
 
 // LCDbar(n,v) : draw a bar graph - n number of chars for width, v value in % to display
-static void drawHorizonalPercentageBar(uint8_t width,uint8_t percent) {
+static void drawHorizonalPercentageBar(uint8_t width,uint8_t percent)
+{
     uint8_t i, j;
 
     if (percent > 100)
@@ -475,18 +480,20 @@ static void showBatteryPage(void)
         i2c_OLED_set_line(rowIndex++);
         i2c_OLED_send_string(lineBuffer);
 
-        uint8_t batteryPercentage = calculateBatteryPercentage();
+        uint8_t voltagePercentage = batteryVoltagePercentage();
         i2c_OLED_set_line(rowIndex++);
-        drawHorizonalPercentageBar(SCREEN_CHARACTER_COLUMN_COUNT, batteryPercentage);
+        drawHorizonalPercentageBar(SCREEN_CHARACTER_COLUMN_COUNT, voltagePercentage);
     }
 
-    if (feature(FEATURE_CURRENT_METER)) {
-        tfp_sprintf(lineBuffer, "Amps: %d.%2d mAh: %d", amperage / 100, amperage % 100, mAhDrawn);
+    if (feature(FEATURE_AMPERAGE_METER)) {
+        amperageMeter_t *state = getAmperageMeter(batteryConfig()->amperageMeterSource);
+
+        tfp_sprintf(lineBuffer, "Amps: %d.%2d mAh: %d", state->amperage / 100, state->amperage % 100, state->mAhDrawn);
         padLineBuffer();
         i2c_OLED_set_line(rowIndex++);
         i2c_OLED_send_string(lineBuffer);
 
-        uint8_t capacityPercentage = calculateBatteryCapacityRemainingPercentage();
+        uint8_t capacityPercentage = batteryCapacityRemainingPercentage();
         i2c_OLED_set_line(rowIndex++);
         drawHorizonalPercentageBar(SCREEN_CHARACTER_COLUMN_COUNT, capacityPercentage);
     }
@@ -614,7 +621,7 @@ void updateDisplay(void)
                 (((int32_t)(now - pageState.nextPageAt) >= 0L && (pageState.pageFlags & PAGE_STATE_FLAG_CYCLE_ENABLED)));
         if (pageState.pageChanging && (pageState.pageFlags & PAGE_STATE_FLAG_CYCLE_ENABLED)) {
             pageState.cycleIndex++;
-            if (cyclePageIds[pageState.cycleIndex] == PAGE_BATTERY && !(feature(FEATURE_VBAT) || feature(FEATURE_CURRENT_METER))) {
+            if (cyclePageIds[pageState.cycleIndex] == PAGE_BATTERY && !(feature(FEATURE_VBAT) || feature(FEATURE_AMPERAGE_METER))) {
                 pageState.cycleIndex++;
             }
 #ifdef GPS

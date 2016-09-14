@@ -19,7 +19,7 @@
 #include <math.h>
 
 extern "C" {
-    #include "build_config.h"
+    #include "build/build_config.h"
     #include "drivers/sonar_hcsr04.h"
     #include "sensors/sonar.h"
     extern int32_t measurement;
@@ -109,6 +109,8 @@ TEST(SonarUnittest, TestAltitude)
 
 // STUBS
 extern "C" {
-void sensorsSet(uint32_t mask) {UNUSED(mask);}
+    void sensorsSet(uint32_t mask) { UNUSED(mask); }
+    uint32_t micros(void) { return 0; }
+    uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i) { UNUSED(p); UNUSED(i); return 0; }
 }
 

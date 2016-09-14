@@ -24,16 +24,16 @@
 #include <ctype.h>
 
 #include <platform.h>
-#include "scheduler.h"
-#include "version.h"
+#include "build/version.h"
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "common/utils.h"
 #include "common/axis.h"
 #include "common/maths.h"
 #include "common/color.h"
 #include "common/typeconversion.h"
+#include "common/filter.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
@@ -53,11 +53,16 @@
 
 #include "drivers/buf_writer.h"
 
+#include "fc/rc_controls.h"
+#include "fc/rate_profile.h"
+#include "fc/rc_adjustments.h"
+#include "fc/fc_serial.h"
+#include "fc/fc_tasks.h"
+
+#include "scheduler/scheduler.h"
+
 #include "io/gps.h"
 #include "io/gimbal.h"
-#include "io/rc_controls.h"
-#include "io/rate_profile.h"
-#include "io/rc_adjustments.h"
 #include "io/serial.h"
 #include "io/ledstrip.h"
 #include "io/flashfs.h"
@@ -67,6 +72,7 @@
 #include "rx/rx.h"
 #include "rx/spektrum.h"
 
+#include "sensors/voltage.h"
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
@@ -90,15 +96,19 @@
 #include "telemetry/frsky.h"
 #include "telemetry/hott.h"
 
-#include "config/runtime_config.h"
-#include "config/config.h"
+#include "msp/msp_server.h"
+
+#include "fc/runtime_config.h"
+#include "fc/config.h"
 #include "config/config_system.h"
 #include "config/feature.h"
 #include "config/profile.h"
+#include "drivers/flash_m25p16.h"
 
 #include "common/printf.h"
 
 #include "serial_cli.h"
+#include "../sensors/amperage.h"
 
 // FIXME remove this for targets that don't need a CLI.  Perhaps use a no-op macro when USE_CLI is not enabled
 // signal that we're in cli mode
@@ -198,7 +208,7 @@ static const char * const mixerNames[] = {
 static const char * const featureNames[] = {
     "RX_PPM", "VBAT", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
-    "SONAR", "TELEMETRY", "CURRENT_METER", "3D", "RX_PARALLEL_PWM",
+    "SONAR", "TELEMETRY", "AMPERAGE_METER", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
     "BLACKBOX", "CHANNEL_FORWARDING", "TRANSPONDER", NULL
 };
@@ -361,8 +371,8 @@ static const char * const lookupTableGPSSBASMode[] = {
 };
 #endif
 
-static const char * const lookupTableCurrentSensor[] = {
-    "NONE", "ADC", "VIRTUAL"
+static const char * const lookupTableAmperageMeter[] = {
+    "VIRTUAL", "ADC"
 };
 
 static const char * const lookupTableGimbalMode[] = {
@@ -401,6 +411,14 @@ static const char * const lookupTableGyroLpf[] = {
     "10HZ"
 };
 
+static const char * const lookupTablePidDeltaMethod[] = {
+    "MEASUREMENT", "ERROR"
+};
+
+static const char * const lookupTableHorizonTiltMode[] = {
+    "SAFE", "EXPERT"
+};
+
 typedef struct lookupTableEntry_s {
     const char * const *values;
     const uint8_t valueCount;
@@ -417,12 +435,14 @@ typedef enum {
 #ifdef BLACKBOX
     TABLE_BLACKBOX_DEVICE,
 #endif
-    TABLE_CURRENT_SENSOR,
+    TABLE_AMPERAGE_METER,
     TABLE_GIMBAL_MODE,
     TABLE_PID_CONTROLLER,
     TABLE_SERIAL_RX,
     TABLE_GYRO_FILTER,
     TABLE_GYRO_LPF,
+    TABLE_PID_DELTA_METHOD,
+    TABLE_HORIZON_TILT_MODE,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -436,12 +456,14 @@ static const lookupTableEntry_t lookupTables[] = {
 #ifdef BLACKBOX
     { lookupTableBlackboxDevice, sizeof(lookupTableBlackboxDevice) / sizeof(char *) },
 #endif
-    { lookupTableCurrentSensor, sizeof(lookupTableCurrentSensor) / sizeof(char *) },
+    { lookupTableAmperageMeter, sizeof(lookupTableAmperageMeter) / sizeof(char *) },
     { lookupTableGimbalMode, sizeof(lookupTableGimbalMode) / sizeof(char *) },
     { lookupTablePidController, sizeof(lookupTablePidController) / sizeof(char *) },
     { lookupTableSerialRX, sizeof(lookupTableSerialRX) / sizeof(char *) },
     { lookupTableGyroFilter, sizeof(lookupTableGyroFilter) / sizeof(char *) },
     { lookupTableGyroLpf, sizeof(lookupTableGyroLpf) / sizeof(char *) },
+    { lookupTablePidDeltaMethod, sizeof(lookupTablePidDeltaMethod) / sizeof(char *) },
+    { lookupTableHorizonTiltMode, sizeof(lookupTableHorizonTiltMode) / sizeof(char *) },
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -499,6 +521,12 @@ const clivalue_t valueTable[] = {
     { "looptime",                   VAR_UINT16 | MASTER_VALUE, .config.minmax = {0, 9000} , PG_IMU_CONFIG, offsetof(imuConfig_t, looptime)},
     { "emf_avoidance",              VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_SYSTEM_CONFIG, offsetof(systemConfig_t, emf_avoidance)},
     { "i2c_highspeed",              VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_SYSTEM_CONFIG, offsetof(systemConfig_t, i2c_highspeed)},
+#ifdef CUSTOM_FLASHCHIP
+    { "flashchip_id",                VAR_UINT32 | MASTER_VALUE, .config.minmax = { 0,  0xffffff } ,   PG_DRIVER_FLASHCHIP_CONFIG, offsetof(flashchipConfig_t, flashchip_id)},
+    { "flashchip_nsect",             VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  0xffff } ,   PG_DRIVER_FLASHCHIP_CONFIG, offsetof(flashchipConfig_t, flashchip_nsect)},
+    { "flashchip_pps",               VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  0xffff } ,   PG_DRIVER_FLASHCHIP_CONFIG, offsetof(flashchipConfig_t, flashchip_pps)},
+#endif
+
     { "gyro_sync",                  VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_IMU_CONFIG, offsetof(imuConfig_t, gyroSync)},
     { "gyro_sync_denom",            VAR_UINT8  | MASTER_VALUE, .config.minmax = { 1,  32 } , PG_IMU_CONFIG, offsetof(imuConfig_t, gyroSyncDenominator)},
 
@@ -569,6 +597,7 @@ const clivalue_t valueTable[] = {
 #ifdef TELEMETRY
     { "telemetry_switch",           VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, telemetry_switch)},
     { "telemetry_inversion",        VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, telemetry_inversion)},
+	{ "telemetry_flvss_cells",      VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, telemetry_flvss_cells)},
 
     { "frsky_default_lattitude",    VAR_FLOAT  | MASTER_VALUE, .config.minmax = { -90.0,  90.0 } , PG_FRSKY_TELEMETRY_CONFIG, offsetof(frskyTelemetryConfig_t, gpsNoFixLatitude)},
     { "frsky_default_longitude",    VAR_FLOAT  | MASTER_VALUE, .config.minmax = { -180.0,  180.0 } , PG_FRSKY_TELEMETRY_CONFIG, offsetof(frskyTelemetryConfig_t, gpsNoFixLongitude)},
@@ -580,14 +609,14 @@ const clivalue_t valueTable[] = {
 #endif
 
     { "battery_capacity",           VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  20000 } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, batteryCapacity)},
-    { "vbat_scale",                 VAR_UINT8  | MASTER_VALUE, .config.minmax = { VBAT_SCALE_MIN,  VBAT_SCALE_MAX } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, vbatscale)},
+    { "vbat_scale",                 VAR_UINT8  | MASTER_VALUE, .config.minmax = { VBAT_SCALE_MIN,  VBAT_SCALE_MAX } , PG_VOLTAGE_METER_CONFIG, offsetof(voltageMeterConfig_t, vbatscale)},
     { "vbat_max_cell_voltage",      VAR_UINT8  | MASTER_VALUE, .config.minmax = { 10,  50 } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, vbatmaxcellvoltage)},
     { "vbat_min_cell_voltage",      VAR_UINT8  | MASTER_VALUE, .config.minmax = { 10,  50 } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, vbatmincellvoltage)},
     { "vbat_warning_cell_voltage",  VAR_UINT8  | MASTER_VALUE, .config.minmax = { 10,  50 } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, vbatwarningcellvoltage)},
-    { "current_meter_scale",        VAR_INT16  | MASTER_VALUE, .config.minmax = { -10000,  10000 } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, currentMeterScale)},
-    { "current_meter_offset",       VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  3300 } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, currentMeterOffset)},
-    { "multiwii_current_meter_output", VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, multiwiiCurrentMeterOutput)},
-    { "current_meter_type",         VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_CURRENT_SENSOR } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, currentMeterType)},
+    { "amperage_meter_scale",       VAR_INT16  | MASTER_VALUE, .config.minmax = { -10000,  10000 } , PG_AMPERAGE_METER_CONFIG, offsetof(amperageMeterConfig_t, scale)},
+    { "amperage_meter_offset",      VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0,  3300 } , PG_AMPERAGE_METER_CONFIG, offsetof(amperageMeterConfig_t, offset)},
+    { "multiwii_amperage_meter_output", VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON } , PG_MSP_SERVER_CONFIG, offsetof(mspServerConfig_t, multiwiiCurrentMeterOutput)},
+    { "amperage_meter_source",      VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_AMPERAGE_METER } , PG_BATTERY_CONFIG, offsetof(batteryConfig_t, amperageMeterSource)},
 
     { "align_gyro",                 VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_ALIGNMENT } , PG_SENSOR_ALIGNMENT_CONFIG, offsetof(sensorAlignmentConfig_t, gyro_align)},
     { "align_acc",                  VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_ALIGNMENT } , PG_SENSOR_ALIGNMENT_CONFIG, offsetof(sensorAlignmentConfig_t, acc_align)},
@@ -699,8 +728,12 @@ const clivalue_t valueTable[] = {
     { "i_vel",                      VAR_UINT8  | PROFILE_VALUE, .config.minmax = { PID_MIN,  PID_MAX } , PG_PID_PROFILE, offsetof(pidProfile_t, I8[PIDVEL])},
     { "d_vel",                      VAR_UINT8  | PROFILE_VALUE, .config.minmax = { PID_MIN,  PID_MAX } , PG_PID_PROFILE, offsetof(pidProfile_t, D8[PIDVEL])},
 
+    { "pid_delta_method",           VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP,  .config.lookup = { TABLE_PID_DELTA_METHOD }, PG_PID_PROFILE, offsetof(pidProfile_t, deltaMethod) },
     { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, .config.minmax = { YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX } , PG_PID_PROFILE, offsetof(pidProfile_t, yaw_p_limit)},
-    { "dterm_cut_hz",               VAR_UINT16 | PROFILE_VALUE, .config.minmax = {0, 500 } , PG_PID_PROFILE, offsetof(pidProfile_t, dterm_cut_hz)},
+    { "yaw_lpf",                    VAR_UINT16 | PROFILE_VALUE, .config.minmax = {0, 500 } , PG_PID_PROFILE, offsetof(pidProfile_t, yaw_lpf)},
+    { "dterm_cut_hz",               VAR_UINT16 | PROFILE_VALUE, .config.minmax = {0, 500 } , PG_PID_PROFILE, offsetof(pidProfile_t, dterm_lpf)},
+    { "horizon_tilt_effect",        VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0, 250 } , PG_PID_PROFILE, offsetof(pidProfile_t, horizon_tilt_effect)},
+    { "horizon_tilt_mode",          VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_HORIZON_TILT_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, horizon_tilt_mode)},
 
 #ifdef GTUNE
     { "gtune_loP_rll",              VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 10,  200 } , PG_GTUNE_CONFIG, offsetof(gtuneConfig_t, gtune_lolimP[FD_ROLL])},
@@ -929,10 +962,10 @@ static void cliSerial(char *cmdline)
             cliPrintf("serial %d %d %ld %ld %ld %ld\r\n" ,
                 serialConfig()->portConfigs[i].identifier,
                 serialConfig()->portConfigs[i].functionMask,
-                baudRates[serialConfig()->portConfigs[i].msp_baudrateIndex],
-                baudRates[serialConfig()->portConfigs[i].gps_baudrateIndex],
-                baudRates[serialConfig()->portConfigs[i].telemetry_baudrateIndex],
-                baudRates[serialConfig()->portConfigs[i].blackbox_baudrateIndex]
+                baudRates[serialConfig()->portConfigs[i].baudRates[0]],
+                baudRates[serialConfig()->portConfigs[i].baudRates[1]],
+                baudRates[serialConfig()->portConfigs[i].baudRates[2]],
+                baudRates[serialConfig()->portConfigs[i].baudRates[3]]
             );
         }
         return;
@@ -979,25 +1012,25 @@ static void cliSerial(char *cmdline)
                 if (baudRateIndex < BAUD_9600 || baudRateIndex > BAUD_115200) {
                     continue;
                 }
-                portConfig.msp_baudrateIndex = baudRateIndex;
+                portConfig.baudRates[BAUDRATE_MSP_SERVER] = baudRateIndex;
                 break;
             case 1:
                 if (baudRateIndex < BAUD_9600 || baudRateIndex > BAUD_115200) {
                     continue;
                 }
-                portConfig.gps_baudrateIndex = baudRateIndex;
+                portConfig.baudRates[BAUDRATE_GPS] = baudRateIndex;
                 break;
             case 2:
                 if (baudRateIndex != BAUD_AUTO && baudRateIndex > BAUD_115200) {
                     continue;
                 }
-                portConfig.telemetry_baudrateIndex = baudRateIndex;
+                portConfig.baudRates[BAUDRATE_TELEMETRY] = baudRateIndex;
                 break;
             case 3:
                 if (baudRateIndex < BAUD_19200 || baudRateIndex > BAUD_250000) {
                     continue;
                 }
-                portConfig.blackbox_baudrateIndex = baudRateIndex;
+                portConfig.baudRates[BAUDRATE_BLACKBOX] = baudRateIndex;
                 break;
         }
 
@@ -1215,24 +1248,23 @@ static void cliRxRange(char *cmdline)
 static void cliLed(char *cmdline)
 {
     int i;
-    char *ptr;
     char ledConfigBuffer[20];
 
     if (isEmpty(cmdline)) {
-        for (i = 0; i < MAX_LED_STRIP_LENGTH; i++) {
+        for (i = 0; i < LED_MAX_STRIP_LENGTH; i++) {
             generateLedConfig(i, ledConfigBuffer, sizeof(ledConfigBuffer));
             cliPrintf("led %u %s\r\n", i, ledConfigBuffer);
         }
     } else {
-        ptr = cmdline;
+        char *ptr = cmdline;
         i = atoi(ptr);
-        if (i < MAX_LED_STRIP_LENGTH) {
-            ptr = strchr(cmdline, ' ');
-            if (!parseLedStripConfig(i, ++ptr)) {
+        if (i < LED_MAX_STRIP_LENGTH) {
+            ptr = strchr(ptr, ' ');
+            if (!ptr || !parseLedStripConfig(i, ptr + 1)) {
                 cliShowParseError();
             }
         } else {
-            cliShowArgumentRangeError("index", 0, MAX_LED_STRIP_LENGTH - 1);
+            cliShowArgumentRangeError("index", 0, LED_MAX_STRIP_LENGTH - 1);
         }
     }
 }
@@ -1240,10 +1272,9 @@ static void cliLed(char *cmdline)
 static void cliColor(char *cmdline)
 {
     int i;
-    char *ptr;
 
     if (isEmpty(cmdline)) {
-        for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
+        for (i = 0; i < LED_CONFIGURABLE_COLOR_COUNT; i++) {
             cliPrintf("color %u %d,%u,%u\r\n",
                 i,
                 colors(i)->h,
@@ -1252,113 +1283,57 @@ static void cliColor(char *cmdline)
             );
         }
     } else {
-        ptr = cmdline;
+        char *ptr = cmdline;
         i = atoi(ptr);
-        if (i < CONFIGURABLE_COLOR_COUNT) {
-            ptr = strchr(cmdline, ' ');
-            if (!parseColor(i, ++ptr)) {
+        if (i < LED_CONFIGURABLE_COLOR_COUNT) {
+            ptr = strchr(ptr, ' ');
+            if (!ptr || !parseColor(i, ptr + 1)) {
                 cliShowParseError();
             }
         } else {
-            cliShowArgumentRangeError("index", 0, CONFIGURABLE_COLOR_COUNT - 1);
+            cliShowArgumentRangeError("index", 0, LED_CONFIGURABLE_COLOR_COUNT - 1);
         }
     }
 }
 
 static void cliModeColor(char *cmdline)
 {
-    int i, j;
-    char *ptr;
-    int args[4], check = 0;
-    uint8_t colorIndex;
-
     if (isEmpty(cmdline)) {
-        for (i = 0; i < MODE_COUNT; i++) {
-            for (j = 0; j < DIRECTIONS_COUNT; j++) {
-
-                switch (j) {
-                    case 0: colorIndex = modeColors(i)->north; break;
-                    case 1: colorIndex = modeColors(i)->east; break;
-                    case 2: colorIndex = modeColors(i)->south; break;
-                    case 3: colorIndex = modeColors(i)->west; break;
-                    case 4: colorIndex = modeColors(i)->up; break;
-                    case 5: colorIndex = modeColors(i)->down; break;
-                }
-
-                cliPrintf("mode_color %u %u %u\r\n",
-                    i,
-                    j,
-                    colorIndex
-                );
+        for (int i = 0; i < LED_MODE_COUNT; i++) {
+            for (int j = 0; j < LED_DIRECTION_COUNT; j++) {
+                int colorIndex = modeColors(i)->color[j];
+                cliPrintf("mode_color %u %u %u\r\n", i, j, colorIndex);
             }
         }
 
-        for (j = 0; j < SPECIAL_COLORS_COUNT; j++) {
-            switch (j) {
-                case 0: colorIndex = specialColors(0)->disarmed; break;
-                case 1: colorIndex = specialColors(0)->armed; break;
-                case 2: colorIndex = specialColors(0)->animation; break;
-                case 3: colorIndex = specialColors(0)->background; break;
-                case 4: colorIndex = specialColors(0)->blink_background; break;
-                case 5: colorIndex = specialColors(0)->gps_nosats; break;
-                case 6: colorIndex = specialColors(0)->gps_nolock; break;
-                case 7: colorIndex = specialColors(0)->gps_locked; break;
-            }
-            cliPrintf("mode_color %u %u %u\r\n",
-                MODE_COUNT,
-                j,
-                colorIndex
-            );
+        for (int j = 0; j < LED_SPECIAL_COLOR_COUNT; j++) {
+            int colorIndex = specialColors()->color[j];
+            cliPrintf("mode_color %u %u %u\r\n", LED_SPECIAL, j, colorIndex);
         }
     } else {
         enum {MODE = 0, FUNCTION, COLOR, ARGS_COUNT};
-        ptr = strtok(cmdline, " ");
-        while (ptr != NULL && check < ARGS_COUNT) {
-            args[check++] = atoi(ptr);
+        int args[ARGS_COUNT];
+        int argNo = 0;
+        char* ptr = strtok(cmdline, " ");
+        while (ptr && argNo < ARGS_COUNT) {
+            args[argNo++] = atoi(ptr);
             ptr = strtok(NULL, " ");
         }
 
-        if (ptr != NULL || check != ARGS_COUNT) {
+        if (ptr != NULL || argNo != ARGS_COUNT) {
             cliShowParseError();
             return;
         }
 
-        i = args[MODE];
-
-        if (i >= 0 && i < MODE_COUNT) {
-            switch (args[FUNCTION]) {
-                case 0: modeColors(i)->north = args[COLOR]; break;
-                case 1: modeColors(i)->east = args[COLOR]; break;
-                case 2: modeColors(i)->south = args[COLOR]; break;
-                case 3: modeColors(i)->west = args[COLOR]; break;
-                case 4: modeColors(i)->up = args[COLOR]; break;
-                case 5: modeColors(i)->down = args[COLOR]; break;
-                default: cliShowParseError(); return;
-            }
-
-        } else if (i == MODE_COUNT) {
-            // special colors
-            switch (args[FUNCTION]) {
-                case 0: specialColors(0)->disarmed = args[COLOR]; break;
-                case 1: specialColors(0)->armed = args[COLOR]; break;
-                case 2: specialColors(0)->animation = args[COLOR]; break;
-                case 3: specialColors(0)->background = args[COLOR]; break;
-                case 4: specialColors(0)->blink_background = args[COLOR]; break;
-                case 5: specialColors(0)->gps_nosats = args[COLOR]; break;
-                case 6: specialColors(0)->gps_nolock = args[COLOR]; break;
-                case 7: specialColors(0)->gps_locked = args[COLOR]; break;
-                default: cliShowParseError(); return;
-            }
-        } else {
+        int modeIdx  = args[MODE];
+        int funIdx = args[FUNCTION];
+        int color = args[COLOR];
+        if(!setModeColor(modeIdx, funIdx, color)) {
             cliShowParseError();
             return;
         }
-
-        cliPrintf("mode_color %u %u %u\r\n",
-                            i,
-                            args[FUNCTION],
-                            args[COLOR]
-                        );
+        // values are validated
+        cliPrintf("mode_color %u %u %u\r\n", modeIdx, funIdx, color);
     }
 }
 #endif
@@ -1599,7 +1574,8 @@ static void cliWriteBytes(const uint8_t *buffer, int count)
     }
 }
 
-static void cliSdInfo(char *cmdline) {
+static void cliSdInfo(char *cmdline)
+{
     UNUSED(cmdline);
 
     cliPrint("SD card: ");
@@ -1876,7 +1852,7 @@ static void cliDump(char *cmdline)
 
         uint8_t beeperCount = beeperTableEntryCount();
         mask = getBeeperOffMask();
-        for (int i = 0; i < (beeperCount-2); i++) {
+        for (i = 0; i < (beeperCount-2); i++) {
             if (mask & (1 << i))
                 cliPrintf("beeper -%s\r\n", beeperNameForTableIndex(i));
             else
@@ -2075,23 +2051,22 @@ static void cliBeeper(char *cmdline)
 
     if (len == 0) {
         cliPrintf("Disabled:");
-        for (int i = 0; ; i++) {
-            if (i == beeperCount - 2) {
-                if (mask == 0)
-                    cliPrint("  none");
-                break;
-            }
-            if (mask & (1 << i))
-                cliPrintf("  %s", beeperNameForTableIndex(i));
+        if (mask) {
+           for (int i = 0; i < beeperCount - 1; i++)
+               if (mask & (1 << i))
+                   cliPrintf("  %s", beeperNameForTableIndex(i));
+        } else {
+           cliPrint("  none");
         }
-        cliPrint("\r\n");
         return;
     }
-   while (cmdline[0] == ' ') {
+
+    while (cmdline[0] == ' ') {
         cmdline++;
         len--;
     }
-    if (strncasecmp(cmdline, "list", len) == 0) {
+
+    if (strcasecmp(cmdline, "list") == 0) {
         cliPrint("Available:");
         for (i = 0; i < beeperCount; i++)
             cliPrintf("  %s", beeperNameForTableIndex(i));
@@ -2347,7 +2322,8 @@ static void cliRateProfile(char *cmdline)
     }
 }
 
-static void cliReboot(void) {
+static void cliReboot(void)
+{
     cliPrint("\r\nRebooting");
     bufWriterFlush(cliWriter);
     waitForSerialPortToFinishTransmitting(cliPort);

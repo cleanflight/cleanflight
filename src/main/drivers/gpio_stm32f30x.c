@@ -20,7 +20,7 @@
 
 #include <platform.h>
 
-#include "build_config.h"
+#include "build/build_config.h"
 
 #include "gpio.h"
 
@@ -68,9 +68,4 @@ void gpioInit(GPIO_TypeDef *gpio, const gpio_config_t *config)
             GPIO_Init(gpio, &GPIO_InitStructure);
         }
     }
-}
-
-void gpioExtiLineConfig(uint8_t portsrc, uint8_t pinsrc)
-{
-    SYSCFG_EXTILineConfig(portsrc, pinsrc);
 }
