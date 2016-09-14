@@ -76,8 +76,7 @@ Please subscribe and '+1' the videos if you find them useful.
 ## Configuration Tool
 
 To configure Cleanflight you should use the [Cleanflight-configurator GUI tool](https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb
-) (Windows/OSX/Linux) that can be found [here](https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb
-).
+) (Windows/OSX/Linux).
 
 The source for it is here:
 
