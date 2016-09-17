@@ -657,7 +657,7 @@ static bool haveUpdatedRcCommandsOnce = false;
 
 void taskMainPidLoop(void)
 {
-    cycleTime = getTaskDeltaTime(TASK_SELF);
+    cycleTime = getTaskTimeSinceLastRun(TASK_SELF);
     dT = (float)cycleTime * 0.000001f;
 
     // Calculate average cycle time and average jitter
@@ -766,7 +766,7 @@ void taskMainPidLoop(void)
 void taskMainPidLoopChecker(void) {
     // getTaskDeltaTime() returns delta time freezed at the moment of entering the scheduler. currentTime is freezed at the very same point.
     // To make busy-waiting timeout work we need to account for time spent within busy-waiting loop
-    uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
+    uint32_t currentDeltaTime = getTaskTimeSinceLastRun(TASK_SELF);
 
     if (imuConfig()->gyroSync) {
         while (1) {
@@ -900,7 +900,7 @@ void taskUpdateBaro(void)
 {
     if (sensors(SENSOR_BARO)) {
         uint32_t newDeadline = baroUpdate();
-        rescheduleTask(TASK_SELF, newDeadline);
+        updateTaskExecutionPeriod(TASK_SELF, newDeadline);
     }
 }
 #endif

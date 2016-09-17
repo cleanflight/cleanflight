@@ -27,41 +27,39 @@ extern "C" {
 #include "gtest/gtest.h"
 enum {
     systemTime = 10,
-    pidLoopCheckerTime = 650,
-    updateAccelerometerTime = 192,
+    pidLoopCheckerTime = 50,
+    updateAccelerometerTime = 200,
     handleSerialTime = 30,
     updateBeeperTime = 1,
-    updateBatteryTime = 1,
+    updateBatteryTime = 2,
     updateRxCheckTime = 34,
-    updateRxMainTime = 10,
-    processGPSTime = 10,
+    updateRxMainTime = 12,
+    processGPSTime = 13,
     updateCompassTime = 195,
     updateBaroTime = 201,
-    updateSonarTime = 10,
+    updateSonarTime = 14,
     calculateAltitudeTime = 154,
-    updateDisplayTime = 10,
-    telemetryTime = 10,
-    ledStripTime = 10,
-    transponderTime = 10
+    updateDisplayTime = 15,
+    telemetryTime = 16,
+    ledStripTime = 17,
+    transponderTime = 18,
+    selfTaskCheckDelay = 300,
 };
 
-extern "C" {
-    cfTask_t * unittest_scheduler_selectedTask;
-    uint8_t unittest_scheduler_selectedTaskDynPrio;
-    uint16_t unittest_scheduler_waitingTasks;
-    uint32_t unittest_scheduler_timeToNextRealtimeTask;
-    bool unittest_outsideRealtimeGuardInterval;
-
-// set up micros() to simulate time
+ extern "C" {
     uint32_t simulatedTime = 0;
+    uint32_t taskDelayTime = 0;
+    bool rxCheckReturnValue = false;
+
+    bool doSelfTaskChecks = false;
+    uint32_t doSelfTaskCheckExpectedTimeSinceLastRun = 0;
+
     uint32_t micros(void) {return simulatedTime;}
-// set up tasks to take a simulated representative time to execute
     void taskMainPidLoopChecker(void) {simulatedTime+=pidLoopCheckerTime;}
-    void taskUpdateAccelerometer(void) {simulatedTime+=updateAccelerometerTime;}
     void taskHandleSerial(void) {simulatedTime+=handleSerialTime;}
     void taskUpdateBeeper(void) {simulatedTime+=updateBeeperTime;}
     void taskUpdateBattery(void) {simulatedTime+=updateBatteryTime;}
-    bool taskUpdateRxCheck(uint32_t currentDeltaTime) {UNUSED(currentDeltaTime);simulatedTime+=updateRxCheckTime;return false;}
+    bool taskUpdateRxCheck(uint32_t currentDeltaTime) {UNUSED(currentDeltaTime);simulatedTime+=updateRxCheckTime;return rxCheckReturnValue;}
     void taskUpdateRxMain(void) {simulatedTime+=updateRxMainTime;}
     void taskProcessGPS(void) {simulatedTime+=processGPSTime;}
     void taskUpdateCompass(void) {simulatedTime+=updateCompassTime;}
@@ -73,334 +71,876 @@ extern "C" {
     void taskLedStrip(void) {simulatedTime+=ledStripTime;}
     void taskTransponder(void) {simulatedTime+=transponderTime;}
 
-    extern void queueClear(void);
-    extern int queueSize();
-    extern bool queueContains(cfTask_t *task);
-    extern bool queueAdd(cfTask_t *task);
-    extern bool queueRemove(cfTask_t *task);
-    extern cfTask_t *queueFirst(void);
-    extern cfTask_t *queueNext(void);
-}
+    // Special task.
+    void taskUpdateAccelerometer(void) 
+    {
+        // Do time simulation.
+        if(taskDelayTime == 0) {
+            simulatedTime += updateAccelerometerTime;
+        }
+        else {
+            simulatedTime += taskDelayTime;
+            usleep(taskDelayTime);
+        }
+
+        // Make sure the self calls work.
+        if(doSelfTaskChecks){
+
+            // Test enable
+            EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+            setTaskEnabled(TASK_SELF, false);
+            EXPECT_FALSE(cfTasks[TASK_ACCEL].isEnabled);
+            setTaskEnabled(TASK_SELF, true);            
+            EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+
+            // Test get info
+            cfTaskInfo_t info;
+            getTaskInfo(TASK_SELF, &info);
+            EXPECT_TRUE(info.taskName);
+            EXPECT_EQ(strcmp(info.taskName,"ACCEL"), 0);            
+            EXPECT_TRUE(info.isEnabled);
+            EXPECT_EQ(info.priority, TASK_PRIORITY_MEDIUM);
+            EXPECT_TRUE(info.isWaitingToBeRan);
+
+            // Test the time delta 
+            uint32_t timeSinceLastRun = getTaskTimeSinceLastRun(TASK_SELF);
+            EXPECT_EQ(timeSinceLastRun, doSelfTaskCheckExpectedTimeSinceLastRun);
+
+            // Test period Updates
+            EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000);
+            updateTaskExecutionPeriod(TASK_SELF, 500);
+            EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 500);
+            updateTaskExecutionPeriod(TASK_SELF, 1000);
+            EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000);  
+
+            // Add to simulated time.
+            simulatedTime += selfTaskCheckDelay; 
+        }
+    }
+ }
 
 TEST(SchedulerUnittest, TestPriorites)
 {
     EXPECT_EQ(14, taskCount);
-          // if any of these fail then task priorities have changed and ordering in TestQueue needs to be re-checked
-    EXPECT_EQ(TASK_PRIORITY_HIGH, cfTasks[TASK_SYSTEM].staticPriority);
-    EXPECT_EQ(TASK_PRIORITY_REALTIME, cfTasks[TASK_GYROPID].staticPriority);
-    EXPECT_EQ(TASK_PRIORITY_MEDIUM, cfTasks[TASK_ACCEL].staticPriority);
-    EXPECT_EQ(TASK_PRIORITY_LOW, cfTasks[TASK_SERIAL].staticPriority);
-    EXPECT_EQ(TASK_PRIORITY_MEDIUM, cfTasks[TASK_BATTERY].staticPriority);
-}
+    // if any of these fail then task priorities have changed and ordering in TestQueue needs to be re-checked
+    EXPECT_EQ(TASK_PRIORITY_HIGH, cfTasks[TASK_SYSTEM].priority);
+    EXPECT_EQ(TASK_PRIORITY_REALTIME, cfTasks[TASK_GYROPID].priority);
+    EXPECT_EQ(TASK_PRIORITY_MEDIUM, cfTasks[TASK_ACCEL].priority);
+    EXPECT_EQ(TASK_PRIORITY_LOW, cfTasks[TASK_SERIAL].priority);
+    EXPECT_EQ(TASK_PRIORITY_MEDIUM, cfTasks[TASK_BATTERY].priority);
+    EXPECT_EQ(TASK_PRIORITY_IDLE, cfTasks[TASK_TELEMETRY].priority);
 
-TEST(SchedulerUnittest, TestQueueInit)
-{
-    queueClear();
-    EXPECT_EQ(0, queueSize());
-    EXPECT_EQ(0, queueFirst());
-    EXPECT_EQ(0, queueNext());
-    for (unsigned int ii = 0; ii <= taskCount; ++ii) {
-        EXPECT_EQ(0, taskQueueArray[ii]);
+    // Make sure priories didn't change. If they change they will change starvation calculations.
+    EXPECT_EQ(TASK_PRIORITY_REALTIME, 6);
+    EXPECT_EQ(TASK_PRIORITY_HIGH, 5);
+    EXPECT_EQ(TASK_PRIORITY_MEDIUM, 3);
+    EXPECT_EQ(TASK_PRIORITY_LOW, 1);
+    EXPECT_EQ(TASK_PRIORITY_IDLE, 0);
+
+    // Make sure the array size is correct
+    for(uint16_t ii = 0; ii < taskCount; ii++)
+    {
+        EXPECT_TRUE(cfTasks[ii].taskName);
     }
 }
 
-cfTask_t *deadBeefPtr = reinterpret_cast<cfTask_t*>(0xDEADBEEF);
-
-TEST(SchedulerUnittest, TestQueue)
+// Inits the scheduler
+TEST(SchedulerUnittest, InitTest)
 {
-    queueClear();
-    taskQueueArray[taskCount + 1] = deadBeefPtr;
+    // Make sure we have some tasks
+    EXPECT_GT(taskCount, 13);
 
-    queueAdd(&cfTasks[TASK_SYSTEM]); // TASK_PRIORITY_HIGH
-    EXPECT_EQ(1, queueSize());
-    EXPECT_EQ(&cfTasks[TASK_SYSTEM], queueFirst());
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
+    // Try to init the scheduler 
+    schedulerInit();
 
-    queueAdd(&cfTasks[TASK_GYROPID]); // TASK_PRIORITY_REALTIME
-    EXPECT_EQ(2, queueSize());
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], queueFirst());
-    EXPECT_EQ(&cfTasks[TASK_SYSTEM], queueNext());
-    EXPECT_EQ(NULL, queueNext());
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    queueAdd(&cfTasks[TASK_SERIAL]); // TASK_PRIORITY_LOW
-    EXPECT_EQ(3, queueSize());
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], queueFirst());
-    EXPECT_EQ(&cfTasks[TASK_SYSTEM], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_SERIAL], queueNext());
-    EXPECT_EQ(NULL, queueNext());
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    queueAdd(&cfTasks[TASK_BATTERY]); // TASK_PRIORITY_MEDIUM
-    EXPECT_EQ(4, queueSize());
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], queueFirst());
-    EXPECT_EQ(&cfTasks[TASK_SYSTEM], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_BATTERY], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_SERIAL], queueNext());
-    EXPECT_EQ(NULL, queueNext());
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    queueAdd(&cfTasks[TASK_RX]); // TASK_PRIORITY_HIGH
-    EXPECT_EQ(5, queueSize());
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], queueFirst());
-    EXPECT_EQ(&cfTasks[TASK_SYSTEM], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_RX], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_BATTERY], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_SERIAL], queueNext());
-    EXPECT_EQ(NULL, queueNext());
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    queueRemove(&cfTasks[TASK_SYSTEM]); // TASK_PRIORITY_HIGH
-    EXPECT_EQ(4, queueSize());
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], queueFirst());
-    EXPECT_EQ(&cfTasks[TASK_RX], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_BATTERY], queueNext());
-    EXPECT_EQ(&cfTasks[TASK_SERIAL], queueNext());
-    EXPECT_EQ(NULL, queueNext());
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
+    // Make sure all of the tasks are disabled
+    for(uint16_t ii = 0; ii < taskCount; ii++)
+    {
+        EXPECT_FALSE(cfTasks[ii].isEnabled);
+        EXPECT_EQ(cfTasks[ii].lastIdealExecutionTime, 0);
+    }    
 }
 
-TEST(SchedulerUnittest, TestQueueAddAndRemove)
+// Disables and Enables tasks.
+TEST(SchedulerUnittest, EnableDisableTest)
 {
-    queueClear();
-    taskQueueArray[taskCount + 1] = deadBeefPtr;
+    // Make sure we have some tasks
+    EXPECT_GT(taskCount, 13);
 
-    // fill up the queue
-    for (unsigned int taskId = 0; taskId < taskCount; ++taskId) {
-        const bool added = queueAdd(&cfTasks[taskId]);
-        EXPECT_EQ(true, added);
-        EXPECT_EQ(taskId + 1, queueSize());
-        EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-    }
-    // double check end of queue
-    EXPECT_EQ(taskCount, queueSize());
-    EXPECT_NE(static_cast<cfTask_t*>(0), taskQueueArray[taskCount - 1]); // last item was indeed added to queue
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]); // null pointer at end of queue is preserved
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]); // there hasn't been an out by one error
+    // Try to init the scheduler 
+    schedulerInit();
 
-    // and empty it again
-    for (unsigned int taskId = 0; taskId < taskCount; ++taskId) {
-        const bool removed = queueRemove(&cfTasks[taskId]);
-        EXPECT_EQ(true, removed);
-        EXPECT_EQ(taskCount - taskId - 1, queueSize());
-        EXPECT_EQ(NULL, taskQueueArray[taskCount - taskId]);
-        EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-    }
-    // double check size and end of queue
-    EXPECT_EQ(0, queueSize()); // queue is indeed empty
-    EXPECT_EQ(NULL, taskQueueArray[0]); // there is a null pointer at the end of the queueu
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]); // no accidental overwrites past end of queue
-}
+    // Make sure it's off 
+    EXPECT_FALSE(cfTasks[TASK_SYSTEM].isEnabled);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isEnabled);
 
-TEST(SchedulerUnittest, TestQueueArray)
-{
-    // test there are no "out by one" errors or buffer overruns when items are added and removed
-    queueClear();
-    taskQueueArray[taskCount + 1] = deadBeefPtr; // note, must set deadBeefPtr after queueClear
-
-    for (unsigned int taskId = 0; taskId < taskCount - 1; ++taskId) {
-        setTaskEnabled(static_cast<cfTaskId_e>(taskId), true);
-        EXPECT_EQ(taskId + 1, queueSize());
-        EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-    }
-    EXPECT_EQ(taskCount - 1, queueSize());
-    EXPECT_NE(static_cast<cfTask_t*>(0), taskQueueArray[taskCount - 2]);
-    const cfTask_t *lastTaskPrev = taskQueueArray[taskCount - 2];
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]);
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    setTaskEnabled(TASK_SYSTEM, false);
-    EXPECT_EQ(taskCount - 2, queueSize());
-    EXPECT_EQ(lastTaskPrev, taskQueueArray[taskCount - 3]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 2]); // NULL at end of queue
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]);
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    taskQueueArray[taskCount - 2] = 0;
+    // Enable one
     setTaskEnabled(TASK_SYSTEM, true);
-    EXPECT_EQ(taskCount - 1, queueSize());
-    EXPECT_EQ(lastTaskPrev, taskQueueArray[taskCount - 2]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]);
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
 
-    cfTaskInfo_t taskInfo;
-    getTaskInfo(static_cast<cfTaskId_e>(taskCount - 1), &taskInfo);
-    EXPECT_EQ(false, taskInfo.isEnabled);
-    setTaskEnabled(static_cast<cfTaskId_e>(taskCount - 1), true);
-    EXPECT_EQ(taskCount, queueSize());
-    EXPECT_EQ(lastTaskPrev, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]); // check no buffer overrun
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
+    // Check 
+    EXPECT_TRUE(cfTasks[TASK_SYSTEM].isEnabled);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isEnabled);
 
+    // Enable two
+    setTaskEnabled(TASK_GYROPID, true);
+
+    // Check 
+    EXPECT_TRUE(cfTasks[TASK_SYSTEM].isEnabled);
+    EXPECT_TRUE(cfTasks[TASK_GYROPID].isEnabled);
+
+    // Disable them
     setTaskEnabled(TASK_SYSTEM, false);
-    EXPECT_EQ(taskCount - 1, queueSize());
-    //EXPECT_EQ(lastTaskPrev, taskQueueArray[taskCount - 3]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]);
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
+    setTaskEnabled(-1, false);
+    setTaskEnabled(9999, false);    
 
+    // Check 
+    EXPECT_FALSE(cfTasks[TASK_SYSTEM].isEnabled);
+    EXPECT_TRUE(cfTasks[TASK_GYROPID].isEnabled);
+}
+
+// Does an empty schedule
+TEST(SchedulerUnittest, DriveEmptySchedule)
+{
+    // Try to init the scheduler 
+    schedulerInit();
+
+    // Ensure the system time is 0
+    EXPECT_EQ(simulatedTime, 0);
+
+    // Run the scheduler
+    schedulerExecute();
+
+    // If anything fired the time would be greater than 0
+    EXPECT_EQ(simulatedTime, 0);
+
+    // Update the time and run Run the scheduler
+    simulatedTime += 30000;
+    schedulerExecute();
+
+    // If anything fired the time would be greater than 0
+    EXPECT_EQ(simulatedTime, 30000);
+
+     // Run the scheduler
+    simulatedTime += 3000000;     
+    schedulerExecute();
+    schedulerExecute();
+    schedulerExecute();
+
+    // If anything fired the time would be greater than 0
+    EXPECT_EQ(simulatedTime, 3030000);
+}
+
+// Test to make sure task functions and info works.
+TEST(SchedulerUnittest, TaskFunctionsAndInfoTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+    schedulerExecute();
+
+    //
+    // Test functions
+
+    // Test enable and enable
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isEnabled);
+    setTaskEnabled(TASK_ACCEL, true);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+    setTaskEnabled(TASK_ACCEL, false);            
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isEnabled);
+    setTaskEnabled(TASK_ACCEL, true);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isEnabled);
+
+    // This should be ignored
+    setTaskEnabled(55, true);
+    setTaskEnabled(-2, true);
+    
+    // These should be ignored.
+    cfTaskInfo_t info;
+    info.taskName = "empty";
+    getTaskInfo(55, &info);
+    EXPECT_EQ(strcmp(info.taskName,"empty"), 0);
+    getTaskInfo(-2, &info);    
+    EXPECT_EQ(strcmp(info.taskName,"empty"), 0);    
+
+    // Test get info
+    getTaskInfo(TASK_ACCEL, &info);
+    EXPECT_EQ(strcmp(info.taskName,"ACCEL"), 0);
+    EXPECT_TRUE(info.isEnabled);
+    EXPECT_EQ(info.priority, TASK_PRIORITY_MEDIUM);
+    EXPECT_FALSE(info.isWaitingToBeRan);
+
+    // Test the time delta 
+    uint32_t timeSinceLastRun = getTaskTimeSinceLastRun(TASK_ACCEL);
+    EXPECT_EQ(timeSinceLastRun, 0);
+
+    // Test period Updates
+    EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000);
+    updateTaskExecutionPeriod(TASK_ACCEL, 500);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 500);
+    updateTaskExecutionPeriod(TASK_ACCEL, 1000);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].desiredPeriod, 1000); 
+
+    // These should be ingored.
+    updateTaskExecutionPeriod(-2, 1000);
+    updateTaskExecutionPeriod(55, 1000);
+
+    // Enable the self checks
+    doSelfTaskChecks = true;    
+
+    // Set the time just before we should run, nothing should happen.
+    simulatedTime = expectedTime = 999;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // Test the time since last ran. 
+    EXPECT_EQ(getTaskTimeSinceLastRun(TASK_ACCEL), 999);
+
+    // Now set the time just at when it just should run.
+    // This will also preform the self checks while the execute function is called.
+    simulatedTime = expectedTime = 1000;
+    doSelfTaskCheckExpectedTimeSinceLastRun = 1000;
+    expectedTime += updateAccelerometerTime;
+    expectedTime += selfTaskCheckDelay;    
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // Make sure now the time since last run is 0.
+    EXPECT_EQ(getTaskTimeSinceLastRun(TASK_ACCEL), 0);
+
+    // Now test that time since last runs is updated correctly.
+    simulatedTime = expectedTime = 1320;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_EQ(getTaskTimeSinceLastRun(TASK_ACCEL), 320); 
+    
+    // Done
+    doSelfTaskChecks = false;    
+}
+
+TEST(SchedulerUnittest, BasicTask)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+
+    // Try to init the scheduler 
+    schedulerInit();
+
+    // Enable the task 
+    setTaskEnabled(TASK_ACCEL, true);
+    updateTaskExecutionPeriod(TASK_ACCEL, 30000);
+
+    // Run the scheduler, this shouldn't do anything
+    expectedTime = simulatedTime = 29999;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);    
+
+    // Now update the time and make sure we are called. 
+    expectedTime = simulatedTime = 30000;
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime); 
+
+    // Run it again and make sure it doesn't fire
+    expectedTime = simulatedTime = 40000;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime); 
+
+    // Now set the time past when it should have ran and make sure it does. 
+    // It should run at 60000, so set the time to 70000
+    expectedTime = simulatedTime = 70000;
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;    
+    EXPECT_EQ(simulatedTime, expectedTime); 
+
+    // Now set the time to be just before the next fire.
+    // Note since we didn't fire exactly at 60000 this should still fire exactly at 90000
+    expectedTime = simulatedTime = 89999;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime); 
+
+    // Now make sure it fires at 90000
+    expectedTime = simulatedTime = 90000;
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;  
+    EXPECT_EQ(simulatedTime, expectedTime); 
+
+    // Disable it and make sure it doesn't fire
     setTaskEnabled(TASK_ACCEL, false);
-    EXPECT_EQ(taskCount - 2, queueSize());
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 2]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]);
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
-
-    setTaskEnabled(TASK_BATTERY, false);
-    EXPECT_EQ(taskCount - 3, queueSize());
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 3]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 2]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount - 1]);
-    EXPECT_EQ(NULL, taskQueueArray[taskCount]);
-    EXPECT_EQ(deadBeefPtr, taskQueueArray[taskCount + 1]);
+    expectedTime = simulatedTime = 500000;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime); 
 }
 
-TEST(SchedulerUnittest, TestSchedulerInit)
+TEST(SchedulerUnittest, BasicEventTask)
 {
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
     schedulerInit();
-    EXPECT_EQ(0, queueSize());
-}
 
-TEST(SchedulerUnittest, TestScheduleEmptyQueue)
-{
-    queueClear();
-    simulatedTime = 4000;
-    // run the with an empty queue
-    scheduler();
-    EXPECT_EQ(NULL, unittest_scheduler_selectedTask);
-}
+    // Setup the RX task as our testing task, this task uses a 
+    // event based timer.
+    setTaskEnabled(TASK_RX, true);
 
-TEST(SchedulerUnittest, TestSingleTask)
-{
-    schedulerInit();
-    // disable all tasks except TASK_GYROPID
-    for (unsigned int taskId=0; taskId < taskCount; ++taskId) {
-        setTaskEnabled(static_cast<cfTaskId_e>(taskId), false);
-    }
+    // Setup for the first call
+    rxCheckReturnValue = false;
+    expectedTime += updateRxCheckTime;
+    schedulerExecute();
+
+    // We should see a small time bump from the check function.
+    // But not a big bump from the check and the task running.
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // Do it once again.
+    expectedTime += updateRxCheckTime;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // Now enable the callback and see if we get the task call.
+    rxCheckReturnValue = true;
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // and again.
+    rxCheckReturnValue = true;
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // and once more off.
+    rxCheckReturnValue = false;
+    expectedTime += updateRxCheckTime;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+
+    // For the final test, turn on the callback but also a higher pri task. We should see the callback fire
+    // but not the task execution for the RX, then on the next call we jump the time again so it we shouldn't see
+    // the callback nor the execute, then on the next call we should see RX execute without the callback
+    // being fired.
+    rxCheckReturnValue = true;
     setTaskEnabled(TASK_GYROPID, true);
-    cfTasks[TASK_GYROPID].lastExecutedAt = 1000;
-    simulatedTime = 4000;
-    // run the scheduler and check the task has executed
-    scheduler();
-    EXPECT_NE(static_cast<cfTask_t*>(0), unittest_scheduler_selectedTask);
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], unittest_scheduler_selectedTask);
-    EXPECT_EQ(3000, cfTasks[TASK_GYROPID].taskLatestDeltaTime);
-    EXPECT_EQ(4000, cfTasks[TASK_GYROPID].lastExecutedAt);
-    EXPECT_EQ(pidLoopCheckerTime, cfTasks[TASK_GYROPID].totalExecutionTime);
-    // task has run, so its dynamic priority should have been set to zero
-    EXPECT_EQ(0, cfTasks[TASK_GYROPID].dynamicPriority);
+    simulatedTime = 40000;
+    expectedTime = 40000;
+
+    // Should see RX check and pid execute, we should also see the ideal execute time be !0
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_GT(cfTasks[TASK_RX].lastIdealExecutionTime, 0);
+
+    // Now we should see the check not fire and the pid execute again.
+    simulatedTime = expectedTime = 50000;
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_GT(cfTasks[TASK_RX].lastIdealExecutionTime, 0);
+
+    // Now we should see rx execute without the check call  
+    setTaskEnabled(TASK_GYROPID, false);    
+    schedulerExecute();
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);   
 }
 
-TEST(SchedulerUnittest, TestTwoTasks)
+TEST(SchedulerUnittest, BasicPriorityTest)
 {
-    // disable all tasks except TASK_GYROPID  and TASK_SERIAL
-    for (unsigned int taskId=0; taskId < taskCount; ++taskId) {
-        setTaskEnabled(static_cast<cfTaskId_e>(taskId), false);
-    }
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Enable a task of each pri 
+    setTaskEnabled(TASK_GYROPID, true); // realtime
+    setTaskEnabled(TASK_RX, true); // high
+    setTaskEnabled(TASK_ACCEL, true); // medium
+    setTaskEnabled(TASK_SERIAL, true); // low
+    setTaskEnabled(TASK_TELEMETRY, true); // idle
+
+    // Set all of their periods to be the same
+    updateTaskExecutionPeriod(TASK_GYROPID, 3000);    
+    updateTaskExecutionPeriod(TASK_RX, 3000);    
+    updateTaskExecutionPeriod(TASK_ACCEL, 3000);    
+    updateTaskExecutionPeriod(TASK_SERIAL, 3000);    
+    updateTaskExecutionPeriod(TASK_TELEMETRY, 3000);    
+    rxCheckReturnValue = false;
+
+    // Ensure no run except for the check
+    simulatedTime = expectedTime = 2999;
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // After this pass they should all be waiting to run, the rx check should have ran and the gyro
+    simulatedTime = expectedTime = 3000;
+    rxCheckReturnValue = true;    
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += pidLoopCheckerTime;
+    rxCheckReturnValue = false; 
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // And now keep going down the line
+    schedulerExecute();
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // And now keep going down the line
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    expectedTime += updateRxCheckTime;    
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // And now keep going down the line
+    schedulerExecute();
+    expectedTime += handleSerialTime;
+    expectedTime += updateRxCheckTime;    
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // And now keep going down the line
+    schedulerExecute();
+    expectedTime += telemetryTime;
+    expectedTime += updateRxCheckTime;    
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+}
+
+TEST(SchedulerUnittest, TaskExecutionAveTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Setup the task 
+    setTaskEnabled(TASK_ACCEL, true);
+    updateTaskExecutionPeriod(TASK_ACCEL, 5000);   
+
+    // Run the test 
+    simulatedTime = expectedTime = 10000;
+    taskDelayTime = 500;
+    expectedTime += 500;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].averageExecutionTime, 15);
+
+    // Run it again
+    simulatedTime = expectedTime = 15000;    
+    taskDelayTime = 200;
+    expectedTime += 200;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].averageExecutionTime, 20);
+
+    // One more time.
+    simulatedTime = expectedTime = 20000;    
+    taskDelayTime = 20000;
+    expectedTime += 20000;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_EQ(cfTasks[TASK_ACCEL].averageExecutionTime, 644);
+
+    // Disable the delay.
+    taskDelayTime = 0;
+}
+
+TEST(SchedulerUnittest, RealtimeGuardTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Setup some tasks
+    setTaskEnabled(TASK_GYROPID, true); // realtime
+    setTaskEnabled(TASK_ACCEL, true); // medium
+    updateTaskExecutionPeriod(TASK_GYROPID, 10000);    
+    updateTaskExecutionPeriod(TASK_ACCEL, 5000);
+
+    // Fake that the accel takes 1000 to run.
+    cfTasks[TASK_ACCEL].averageExecutionTime = 1000;
+
+    // Set the time so we just don't have enough time to run TASK_ACCEL
+    // Nothing should get ran this execute.
+    simulatedTime = expectedTime = 9000;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+
+    // Test it again, this time the realtime task will run.
+    simulatedTime = expectedTime = 19000;
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+
+    // Now we need to run it one more time, so the pid just ran before the next test. 
+    // If we don't do this the time of the pid will be too high and the medium task won't preempt it.
+    simulatedTime = expectedTime = 197000;
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+
+    // Now too much time has passed and they medium task hasn't ran, so it should preempt the realtime task.
+    simulatedTime = expectedTime = 209000;
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_TRUE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+
+    // And now the realtime task should run.
+    simulatedTime = expectedTime = 209500;
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+}
+
+TEST(SchedulerUnittest, AdvanceHighPriTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Enable a task of each pri 
+    setTaskEnabled(TASK_GYROPID, false); // realtime
+    setTaskEnabled(TASK_RX, true); // high
+
+    // Set all of their periods to be the same
+    updateTaskExecutionPeriod(TASK_GYROPID, 10000);    
+    updateTaskExecutionPeriod(TASK_RX, 5000);
+    rxCheckReturnValue = false;
+
+    // Ensure no run except for the check
+    simulatedTime = expectedTime = 2999;
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Make sure RX runs
+    simulatedTime = expectedTime = 5000;
+    rxCheckReturnValue = true;    
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Make sure RX runs again
+    simulatedTime = expectedTime = 10000; 
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Now make sure realtime preempts it. 
+    setTaskEnabled(TASK_GYROPID, true); // realtime
+    simulatedTime = expectedTime = 20000;
+    rxCheckReturnValue = true;    
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Again, make sure it preempts it. Note we shouldn't get the check again.
+    setTaskEnabled(TASK_GYROPID, true); // realtime
+    simulatedTime = expectedTime = 30000;   
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Now, the high pri should get fired so it doesn't get starved out.
+    setTaskEnabled(TASK_GYROPID, true); // realtime
+    simulatedTime = expectedTime = 40000;   
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);  
+}
+
+TEST(SchedulerUnittest, AdvanceMedPriTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Setup the tasks
+    setTaskEnabled(TASK_RX, false);   // high
+    setTaskEnabled(TASK_ACCEL, true); // medium
+    updateTaskExecutionPeriod(TASK_RX, 10000);    
+    updateTaskExecutionPeriod(TASK_ACCEL, 5000);
+    rxCheckReturnValue = false;
+
+    // Ensure no run except for the check
+    simulatedTime = expectedTime = 2999;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Make sure MED runs
+    simulatedTime = expectedTime = 5000;  
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Make sure MED runs again
+    simulatedTime = expectedTime = 15000; 
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+
+    // Now make sure high prempts it. 
+    setTaskEnabled(TASK_RX, true);
+    simulatedTime = expectedTime = 20000;
+    rxCheckReturnValue = true;    
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+
+    // Now, the med pri should get fired so it doesn't get starved out.
+    setTaskEnabled(TASK_RX, true);
+    simulatedTime = expectedTime = 40000;   
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    expectedTime += updateRxCheckTime;    
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_RX].isWaitingToBeRan);  
+}
+
+TEST(SchedulerUnittest, AdvanceLowPriTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Setup the tasks
+    setTaskEnabled(TASK_ACCEL, false);   // med
+    setTaskEnabled(TASK_SERIAL, true); // low
+    updateTaskExecutionPeriod(TASK_ACCEL, 8000);    
+    updateTaskExecutionPeriod(TASK_SERIAL, 5000);
+
+    // Ensure no run except for the check
+    simulatedTime = expectedTime = 4999;
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+
+    // Make sure low runs
+    simulatedTime = expectedTime = 5000;  
+    schedulerExecute();
+    expectedTime += handleSerialTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+
+    // Make sure low runs again
+    simulatedTime = expectedTime = 15000; 
+    schedulerExecute();
+    expectedTime += handleSerialTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+
+    // Now make sure med preempts it. 
+    setTaskEnabled(TASK_ACCEL, true);
+    simulatedTime = expectedTime = 40000;
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+
+    // Now, the med pri should get fired so it doesn't get starved out.
+    simulatedTime = expectedTime = 50000;   
+    schedulerExecute();
+    expectedTime += handleSerialTime; 
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_ACCEL].isWaitingToBeRan);  
+}
+
+TEST(SchedulerUnittest, AdvanceIdlePriTest)
+{
+    simulatedTime = 0;
+    uint32_t expectedTime = 0;
+    schedulerInit();
+
+    // Setup the tasks  
+    setTaskEnabled(TASK_TELEMETRY, true);              // idle
+    updateTaskExecutionPeriod(TASK_TELEMETRY, 1000);   // Give it a really low cycle time.  
+    updateTaskExecutionPeriod(TASK_GYROPID, 5000);     // realtime
+    updateTaskExecutionPeriod(TASK_RX, 5000);          // high
+    updateTaskExecutionPeriod(TASK_ACCEL, 5000);       // med
+    updateTaskExecutionPeriod(TASK_SERIAL, 5000);      // low
+    rxCheckReturnValue = true;  
+
+    // Set the clock super high out, this should make the idle task really want to run.
+    simulatedTime = expectedTime = 50000000;  
+     
+    // Make sure realtime preempts it 
+    setTaskEnabled(TASK_GYROPID, true);
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // Once again    
+    simulatedTime = expectedTime += 10000;
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+    setTaskEnabled(TASK_GYROPID, false);
+
+    // Make sure high preempts it 
+    setTaskEnabled(TASK_RX, true);
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // Once again    
+    simulatedTime = expectedTime += 10000;
+    schedulerExecute();
+    expectedTime += updateRxCheckTime;
+    expectedTime += updateRxMainTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_RX].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+    setTaskEnabled(TASK_RX, false);
+
+    // Make sure med preempts it 
+    setTaskEnabled(TASK_ACCEL, true);
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+
+    // Once again    
+    simulatedTime = expectedTime += 10000;
+    schedulerExecute();
+    expectedTime += updateAccelerometerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_ACCEL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+    setTaskEnabled(TASK_ACCEL, false);
+
+    // Make sure low preempts it
     setTaskEnabled(TASK_SERIAL, true);
-    setTaskEnabled(TASK_GYROPID, true);
+    schedulerExecute();
+    expectedTime += handleSerialTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
 
-    // set it up so that TASK_SERIAL ran just before TASK_GYROPID
-    static const uint32_t startTime = 4000;
-    simulatedTime = startTime;
-    cfTasks[TASK_GYROPID].lastExecutedAt = simulatedTime;
-    cfTasks[TASK_SERIAL].lastExecutedAt = cfTasks[TASK_GYROPID].lastExecutedAt - updateAccelerometerTime;
-    EXPECT_EQ(0, cfTasks[TASK_SERIAL].taskAgeCycles);
-    // run the scheduler
-    scheduler();
-    // no tasks should have run, since neither task's desired time has elapsed
-    EXPECT_EQ(static_cast<cfTask_t*>(0), unittest_scheduler_selectedTask);
+    // Once again    
+    simulatedTime = expectedTime += 10000;
+    schedulerExecute();
+    expectedTime += handleSerialTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_SERIAL].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
+    setTaskEnabled(TASK_SERIAL, false);
 
-    // NOTE:
-    // TASK_GYROPID desiredPeriod is  1000 microseconds
-    // TASK_SERIAL   desiredPeriod is 10000 microseconds
-    // 500 microseconds later
-    simulatedTime += 500;
-    // no tasks should run, since neither task's desired time has elapsed
-    scheduler();
-    EXPECT_EQ(static_cast<cfTask_t*>(0), unittest_scheduler_selectedTask);
-    EXPECT_EQ(0, unittest_scheduler_waitingTasks);
+    // Last make sure it doesn't run if a realtime is about to run. First we need to run the gyro
+    setTaskEnabled(TASK_GYROPID, true);    
+    simulatedTime = expectedTime = 80000000;  
+    schedulerExecute();
+    expectedTime += pidLoopCheckerTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
 
-    // 500 microseconds later, TASK_GYROPID desiredPeriod has elapsed
-    simulatedTime += 500;
-    // TASK_GYROPID should now run
-    scheduler();
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], unittest_scheduler_selectedTask);
-    EXPECT_EQ(1, unittest_scheduler_waitingTasks);
-    EXPECT_EQ(5000 + pidLoopCheckerTime, simulatedTime);
+    // Now make sure the telemetry doesn't run in the gap, set the time just after where the idle wouldn't have enough time to run.
+    simulatedTime = expectedTime = 80001000;
+    cfTasks[TASK_TELEMETRY].averageExecutionTime = 4000;
 
-    simulatedTime += 1000 - pidLoopCheckerTime;
-    scheduler();
-    // TASK_GYROPID should run again
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], unittest_scheduler_selectedTask);
+    // Nothing should happen.
+    schedulerExecute();
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_GYROPID].isWaitingToBeRan);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
 
-    scheduler();
-    EXPECT_EQ(static_cast<cfTask_t*>(0), unittest_scheduler_selectedTask);
-    EXPECT_EQ(0, unittest_scheduler_waitingTasks);
+    // Last, let all of them run...
+    simulatedTime = expectedTime = 90000000;      
+    setTaskEnabled(TASK_GYROPID, true); // realtime
+    setTaskEnabled(TASK_RX, true); // high
+    setTaskEnabled(TASK_ACCEL, true); // medium
+    setTaskEnabled(TASK_SERIAL, true); // low 
+    schedulerExecute();
+    schedulerExecute();
+    schedulerExecute();
+    schedulerExecute();
+    expectedTime += (pidLoopCheckerTime + updateRxCheckTime + updateRxMainTime + updateAccelerometerTime + handleSerialTime);
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_TRUE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan); 
 
-    simulatedTime = startTime + 10500; // TASK_GYROPID and TASK_SERIAL desiredPeriods have elapsed
-    // of the two TASK_GYROPID should run first
-    scheduler();
-    EXPECT_EQ(&cfTasks[TASK_GYROPID], unittest_scheduler_selectedTask);
-    // and finally TASK_SERIAL should now run
-    scheduler();
-    EXPECT_EQ(&cfTasks[TASK_SERIAL], unittest_scheduler_selectedTask);
+    // Now finally let it run when there is nothing else todo. 
+    rxCheckReturnValue = false;
+    schedulerExecute();
+    expectedTime += telemetryTime;
+    expectedTime += updateRxCheckTime;
+    EXPECT_EQ(simulatedTime, expectedTime);
+    EXPECT_FALSE(cfTasks[TASK_TELEMETRY].isWaitingToBeRan);
 }
-
-TEST(SchedulerUnittest, TestRealTimeGuardInNoTaskRun)
-{
-    // disable all tasks except TASK_GYROPID and TASK_SYSTEM
-    for (unsigned int taskId=0; taskId < taskCount; ++taskId) {
-        setTaskEnabled(static_cast<cfTaskId_e>(taskId), false);
-    }
-    setTaskEnabled(TASK_GYROPID, true);
-    cfTasks[TASK_GYROPID].lastExecutedAt = 200000;
-    simulatedTime = 200700;
-
-    setTaskEnabled(TASK_SYSTEM, true);
-    cfTasks[TASK_SYSTEM].lastExecutedAt = 100000;
-
-    scheduler();
-
-    EXPECT_EQ(false, unittest_outsideRealtimeGuardInterval);
-    EXPECT_EQ(300, unittest_scheduler_timeToNextRealtimeTask);
-
-    // Nothing should be scheduled in guard period
-    EXPECT_EQ(NULL, unittest_scheduler_selectedTask);
-    EXPECT_EQ(100000, cfTasks[TASK_SYSTEM].lastExecutedAt);
-
-    EXPECT_EQ(200000, cfTasks[TASK_GYROPID].lastExecutedAt);
-}
-
-TEST(SchedulerUnittest, TestRealTimeGuardOutTaskRun)
-{
-    // disable all tasks except TASK_GYROPID and TASK_SYSTEM
-    for (unsigned int taskId=0; taskId < taskCount; ++taskId) {
-        setTaskEnabled(static_cast<cfTaskId_e>(taskId), false);
-    }
-    setTaskEnabled(TASK_GYROPID, true);
-    cfTasks[TASK_GYROPID].lastExecutedAt = 200000;
-    simulatedTime = 200699;
-
-    setTaskEnabled(TASK_SYSTEM, true);
-    cfTasks[TASK_SYSTEM].lastExecutedAt = 100000;
-
-    scheduler();
-
-    EXPECT_EQ(true, unittest_outsideRealtimeGuardInterval);
-    EXPECT_EQ(301, unittest_scheduler_timeToNextRealtimeTask);
-
-    // System should be scheduled as not in guard period
-    EXPECT_EQ(&cfTasks[TASK_SYSTEM], unittest_scheduler_selectedTask);
-    EXPECT_EQ(200699, cfTasks[TASK_SYSTEM].lastExecutedAt);
-
-    EXPECT_EQ(200000, cfTasks[TASK_GYROPID].lastExecutedAt);
-}
-
-// STUBS
-extern "C" {
-}
-
