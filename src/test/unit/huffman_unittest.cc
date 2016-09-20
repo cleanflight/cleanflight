@@ -333,6 +333,10 @@ int huffmanDecodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int i
     uint8_t testBit = 0x80;
     bool eof = false;
     while (!eof && outCount < outBufLen && inCount < inBufLen) {
+        if (outCount == inBufCharacterCount) {
+            // we've exhausted the input stream, discard any odd bits on the end
+            return outCount;
+        }
         if (inCount >= inBufLen) {
             return -1;
         }
@@ -378,9 +382,12 @@ TEST(HuffmanUnittest, TestHuffmanEncode)
 {
     #define INBUF_LEN1 3
     const uint8_t inBuf1[INBUF_LEN1] = {0,1,1};
+    // 11 101 101
+    // 1110 1101
+    // e    d
     int len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf1, INBUF_LEN1);
     EXPECT_EQ(1, len);
-    EXPECT_EQ(0xed, (int)outBuf[0]); // 11101101
+    EXPECT_EQ(0xed, (int)outBuf[0]);
 
     #define INBUF_LEN2 4
     const uint8_t inBuf2[INBUF_LEN2] = {0,1,2,3};
@@ -428,11 +435,25 @@ TEST(HuffmanUnittest, TestHuffmanDecode)
     #define HUFF_BUF_LEN2 1
     #define HUFF_BUF_COUNT2 3
     const uint8_t inBuf2[HUFF_BUF_LEN2] = {0xed}; // 11 101 101
-    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf2, INBUF_LEN2, HUFF_BUF_COUNT2);
+    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf2, HUFF_BUF_LEN2, HUFF_BUF_COUNT2);
     EXPECT_EQ(3, len);
     EXPECT_EQ(0x00, (int)outBuf[0]);
     EXPECT_EQ(0x01, (int)outBuf[1]);
     EXPECT_EQ(0x01, (int)outBuf[2]);
+
+    #define HUFF_BUF_LEN3 5
+    #define HUFF_BUF_COUNT3 8
+    const uint8_t inBuf3[HUFF_BUF_LEN3] = {0xec, 0xc6, 0x0e, 0xb8, 0xd8};
+    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf3, HUFF_BUF_LEN3, HUFF_BUF_COUNT3);
+    EXPECT_EQ(8, len);
+    EXPECT_EQ(0x00, (int)outBuf[0]);
+    EXPECT_EQ(0x01, (int)outBuf[1]);
+    EXPECT_EQ(0x02, (int)outBuf[2]);
+    EXPECT_EQ(0x03, (int)outBuf[3]);
+    EXPECT_EQ(0x04, (int)outBuf[4]);
+    EXPECT_EQ(0x05, (int)outBuf[5]);
+    EXPECT_EQ(0x06, (int)outBuf[6]);
+    EXPECT_EQ(0x07, (int)outBuf[7]);
 }
 
 // STUBS
