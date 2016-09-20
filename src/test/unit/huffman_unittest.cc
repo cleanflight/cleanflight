@@ -36,7 +36,7 @@ static uint8_t outBuf[OUTBUF_LEN];
 #define HUFFMAN_TREE_SIZE 257 // 256 characters plus EOF
 typedef struct huffmanTree_s {
     int16_t     value;
-    uint16_t    len;
+    uint16_t    codeLen;
     uint16_t    code;
 } huffmanTree_t;
 
@@ -310,8 +310,8 @@ void huffmanInitDecodeLenIndex(void)
         huffManLenIndex[ii] = -1;
     }
     for (int ii = 0; ii < HUFFMAN_TREE_SIZE; ++ii) {
-        if (huffManLenIndex[huffmanTree[ii].len] == -1) {
-            huffManLenIndex[huffmanTree[ii].len] = ii;
+        if (huffManLenIndex[huffmanTree[ii].codeLen] == -1) {
+            huffManLenIndex[huffmanTree[ii].codeLen] = ii;
         }
     }
 }
@@ -353,10 +353,10 @@ int huffmanDecodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int i
             ++inBuf;
             ++inCount;
         }
-        // check if the code is a leaf node or a composite node
+        // check if the code is a leaf node or an interior node
         if (huffManLenIndex[codeLen] != -1) {
-            // look for code in the tree, only leaf nodes are stored in the tree
-            for(int ii = huffManLenIndex[codeLen]; (ii < HUFFMAN_TREE_SIZE) && (huffmanTree[ii].len == codeLen); ++ii) {
+            // look for the code in the tree, only leaf nodes are stored in the tree
+            for(int ii = huffManLenIndex[codeLen]; (ii < HUFFMAN_TREE_SIZE) && (huffmanTree[ii].codeLen == codeLen); ++ii) {
                 if (huffmanTree[ii].code == code) {
                     // we've found the code, so it is a leaf node
                     const int16_t value = huffmanTree[ii].value;
