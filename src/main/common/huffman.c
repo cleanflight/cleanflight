@@ -36,8 +36,6 @@ int huffmanEncodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int i
         for (int jj = 0; jj < huffCodeLen; ++jj) {
             if (huffCode & testBit) {
                 *outByte |= outBit;
-            } else {
-                *outByte &= (~outBit);
             }
             testBit >>= 1;
             outBit >>= 1;
