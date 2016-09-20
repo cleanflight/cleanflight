@@ -27,13 +27,6 @@ typedef struct huffmanTable_s {
     uint16_t    code;
 } huffmanTable_t;
 
-#define HUFFMAN_TREE_SIZE 257 // 256 characters plus EOF
-typedef struct huffmanTree_s {
-    int16_t     value;
-    uint16_t    len;
-    uint16_t    code;
-} huffmanTree_t;
-
+extern const huffmanTable_t huffmanTable[HUFFMAN_TABLE_SIZE];
 
 int huffmanEncodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int inLen);
-int huffmanDecodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int inBufLen, int inBufCharacterCount);
