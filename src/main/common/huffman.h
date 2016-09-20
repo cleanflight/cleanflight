@@ -23,7 +23,7 @@
 
 #define HUFFMAN_TABLE_SIZE 257 // 256 characters plus EOF
 typedef struct huffmanTable_s {
-    uint8_t     len;
+    uint8_t     codeLen;
     uint16_t    code;
 } huffmanTable_t;
 
