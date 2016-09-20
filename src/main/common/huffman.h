@@ -29,4 +29,4 @@ typedef struct huffmanTable_s {
 
 extern const huffmanTable_t huffmanTable[HUFFMAN_TABLE_SIZE];
 
-int huffmanEncodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int inLen);
+int huffmanEncodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int inLen, const huffmanTable_t *huffmanTable);

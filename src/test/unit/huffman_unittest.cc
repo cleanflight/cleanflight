@@ -316,7 +316,7 @@ void huffmanInitDecodeLenIndex(void)
     }
 }
 
-int huffmanDecodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int inBufLen, int inBufCharacterCount)
+int huffmanDecodeBuf(uint8_t *outBuf, int outBufLen, const uint8_t *inBuf, int inBufLen, int inBufCharacterCount, const huffmanTree_t *huffmanTree)
 {
     static bool initialized = false;
     if (!initialized) {
@@ -386,7 +386,7 @@ TEST(HuffmanUnittest, TestHuffmanEncode)
     // 11 101 101
     // 1110 1101
     // e    d
-    int len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf1, INBUF_LEN1);
+    int len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf1, INBUF_LEN1, huffmanTable);
     EXPECT_EQ(1, len);
     EXPECT_EQ(0xed, (int)outBuf[0]);
 
@@ -395,7 +395,7 @@ TEST(HuffmanUnittest, TestHuffmanEncode)
     // 11 101 1001 10001
     // 1110 1100 1100 01
     // e    c    c    8
-    len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf2, INBUF_LEN2);
+    len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf2, INBUF_LEN2, huffmanTable);
     EXPECT_EQ(2, len);
     EXPECT_EQ(0xec, (int)outBuf[0]);
     EXPECT_EQ(0xc4, (int)outBuf[1]);
@@ -405,7 +405,7 @@ TEST(HuffmanUnittest, TestHuffmanEncode)
     // 11 101 1001 10001 10000 011101 011100 011011
     // 1110 1100 1100 0110 0000 1110 1011 1000 1101 1
     // e    c    c    6    0    e    b    8    d    8
-    len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf3, INBUF_LEN3);
+    len = huffmanEncodeBuf(outBuf, OUTBUF_LEN, inBuf3, INBUF_LEN3, huffmanTable);
     EXPECT_EQ(5, len);
     EXPECT_EQ(0xec, (int)outBuf[0]);
     EXPECT_EQ(0xc6, (int)outBuf[1]);
@@ -421,7 +421,7 @@ TEST(HuffmanUnittest, TestHuffmanDecode)
     #define HUFF_BUF_LEN1 1
     #define HUFF_BUF_COUNT1 1
     const uint8_t inBuf1[HUFF_BUF_LEN1] = {0xc0}; // 11
-    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf1, HUFF_BUF_LEN1, HUFF_BUF_COUNT1);
+    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf1, HUFF_BUF_LEN1, HUFF_BUF_COUNT1, huffmanTree);
     EXPECT_EQ(1, len);
     EXPECT_EQ(0x00, (int)outBuf[0]);
     EXPECT_EQ(-1, huffManLenIndex[0]);
@@ -436,7 +436,7 @@ TEST(HuffmanUnittest, TestHuffmanDecode)
     #define HUFF_BUF_LEN2 1
     #define HUFF_BUF_COUNT2 3
     const uint8_t inBuf2[HUFF_BUF_LEN2] = {0xed}; // 11 101 101
-    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf2, HUFF_BUF_LEN2, HUFF_BUF_COUNT2);
+    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf2, HUFF_BUF_LEN2, HUFF_BUF_COUNT2, huffmanTree);
     EXPECT_EQ(3, len);
     EXPECT_EQ(0x00, (int)outBuf[0]);
     EXPECT_EQ(0x01, (int)outBuf[1]);
@@ -445,7 +445,7 @@ TEST(HuffmanUnittest, TestHuffmanDecode)
     #define HUFF_BUF_LEN3 5
     #define HUFF_BUF_COUNT3 8
     const uint8_t inBuf3[HUFF_BUF_LEN3] = {0xec, 0xc6, 0x0e, 0xb8, 0xd8};
-    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf3, HUFF_BUF_LEN3, HUFF_BUF_COUNT3);
+    len = huffmanDecodeBuf(outBuf, OUTBUF_LEN, inBuf3, HUFF_BUF_LEN3, HUFF_BUF_COUNT3, huffmanTree);
     EXPECT_EQ(8, len);
     EXPECT_EQ(0x00, (int)outBuf[0]);
     EXPECT_EQ(0x01, (int)outBuf[1]);
