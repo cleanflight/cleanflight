@@ -1,3 +1,6 @@
+Other files to be done definitely i think. These are optional I believe
+
+stm32f10x:
 stm32f10x_bkp.c
 stm32f10x_cec.c
 stm32f10x_fsmc.c
@@ -14,7 +17,7 @@ stm32f10x_sdio.h
 
 
 
-
+stm32f30x:
 stm32f30x_comp.c
 stm32f30x_hrtim.c
 stm32f30x_opamp.c
