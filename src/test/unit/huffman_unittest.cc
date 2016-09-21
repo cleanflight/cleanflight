@@ -33,7 +33,10 @@ static uint8_t outBuf[OUTBUF_LEN];
  * The leaf nodes of the Huffman tree are stored in an array.
  */
 
+#define HUFFMAN_EOF (-1)
+
 #define HUFFMAN_TREE_SIZE 257 // 256 characters plus EOF
+
 typedef struct huffmanTree_s {
     int16_t     value;
     uint16_t    codeLen;

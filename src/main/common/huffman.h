@@ -19,8 +19,6 @@
 
 #include <stdint.h>
 
-#define HUFFMAN_EOF (-1)
-
 #define HUFFMAN_TABLE_SIZE 257 // 256 characters plus EOF
 typedef struct huffmanTable_s {
     uint8_t     codeLen;
