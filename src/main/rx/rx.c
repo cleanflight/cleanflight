@@ -503,17 +503,57 @@ static void readRxChannelsApplyRanges(void)
         MSP_channels[channel] = msp_sample;
         RC_channels[channel] = rc_sample;
     }
-    // filter through buddy-box
+
+    // Autopilot variable is preset here to make further if statements easier
+    bool autopilot = false;
+    if(RC_channels[AUX5] > 1800)
+    {
+        autopilot = true;
+    }
+
+    // Filter through the channels and set appropriately
     for(channel = 0; channel < rxRuntimeConfig.channelCount; channel++){
-        if((channel == ROLL || channel == PITCH || channel == YAW) && RC_channels[AUX1] < 1300){ // allow MSP to take control if AUX2 is low
-            rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 50) ? MSP_channels[channel] : RC_channels[channel]; // allow RC override if sticks are moved
-        } else if(channel == THROTTLE && RC_channels[AUX1] < 1300 ){ // saturate thrust at RC value even when accepting MSP commands. This allows the throttle to be cut easily.
-            rcRaw[channel] = (RC_channels[channel] < MSP_channels[channel]) ? RC_channels[channel] : MSP_channels[channel];
-        //} else if(channel == AUX3 || channel == AUX4){ // aux3 and aux4 belong to MSP
-        //    rcRaw[channel]  = MSP_channels[channel];
-        } else{
-            rcRaw[channel]  = RC_channels[channel];     
+        if(autopilot)
+        {
+            if((channel == ROLL || channel == PITCH || channel == YAW))
+            {
+                // allow RC override if control sticks are moved
+                rcRaw[channel]  = (abs(RC_channels[channel] - 1500) < 50) ? MSP_channels[channel] : RC_channels[channel];
+            }
+            else if(channel == THROTTLE){
+                // saturate thrust at RC value even when accepting MSP commands. This allows the throttle to be cut easily.
+                rcRaw[channel] = (RC_channels[channel] < MSP_channels[channel]) ? RC_channels[channel] : MSP_channels[channel];
+            } 
+            else if(channel==AUX2 || channel == AUX3 || channel == AUX4){
+                // These channels always belong to the MSP
+                rcRaw[channel]  = MSP_channels[channel];
+            }
+            // Channels AUX5 and on are owned by the RC controller at all times
+            else if(channel > AUX4)
+            {
+                rcRaw[channel] = RC_channels[channel];
+            }
         }
+        // If the auto-pilot is off the RC controller owns everything armed is controlled in above code
+        else
+        {
+            // Don't touch the autopilot channel its done by the below auto-pilot code
+            if(channel != AUX1)
+            {
+                rcRaw[channel]  = RC_channels[channel]; 
+            }    
+        }
+    }
+
+    // Allow the autopilot to control the arming if the RC arm is on and autopilot is on
+    if((RC_channels[AUX1] > 1800) && autopilot)
+    {
+        rcRaw[AUX1] = MSP_channels[AUX1];
+    }
+    else
+    {
+        // Rc controller controls arming
+        rcRaw[AUX1] = RC_channels[AUX1];
     }
 }
 
