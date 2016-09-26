@@ -103,6 +103,9 @@
 /* ADC JDRx registers offset */
 #define JDR_Offset                  ((uint8_t)0x80)
 
+
+#define MAX_ANALOG_PINS				6
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -169,9 +172,10 @@ void ADC_DeInit(ADC_TypeDef* ADCx)                                              
   * @retval None
   */
 //void ADC_Init(ADC_TypeDef* ADCx, ADC_InitTypeDef* ADC_InitStruct)                             //First argument struct contains device specific details. Refer to stm32f30x.h. Unnecessary after porting I think
-void ADC_Init(ADC_InitTypeDef* ADC_InitStruct)                                                  //Replaced above definition
+void ADC_Init(ADC_InitTypeDef* ADC_InitStruct)              //Used in code                                            //Replaced above definition
 {
   uint32_t tmpreg1 = 0;
+  int i = 0;
   /* Check the parameters */
   /*assert_param(IS_ADC_ALL_PERIPH(ADCx));
   assert_param(IS_ADC_CONVMODE(ADC_InitStruct->ADC_ContinuousConvMode));
@@ -184,48 +188,51 @@ void ADC_Init(ADC_InitTypeDef* ADC_InitStruct)                                  
   assert_param(IS_ADC_REGULAR_LENGTH(ADC_InitStruct->ADC_NbrOfRegChannel));*/
 
   //ADC using the MRAA always runs in continuous mode. Discrete mode not used in code
-  
-  ADC_InitStruct->ADC_Context_number = mraa_aio_init(ADC_InitStruct->ADC_gpio_pin);               //Initialize the ADC context
-  
 
-  if (ADC_InitStruct->ADC_gpio_pin == NULL) {                                                     //Break if unassigned
-      printf("ADC%d not assigned",ADC_InitStruct->ADC_gpio_pin);
+  ADC_InitStruct->mraa_adc_context = (mraa_aio_context*)malloc(sizeof(mraa_aio_context)*ADC_InitStruct->ADC_NbrOfRegChannel);		/*Allocate memory for mraa_aio context 
+  																																	based on number of channels being used*/		
+
+
+
+  for(i=0;i<ADC_InitStruct->ADC_NbrOfRegChannel;i++)
+  {
+  	ADC_InitStruct->mraa_adc_context[i] = mraa_aio_init(i);               //Initialize the ADC context based on number of channels.
+  																	                                      //i represents physical analog pin number on the breakout board
+    mraa_aio_set_bit(ADC_InitStruct->mraa_adc_context[i], ADC_InitStruct->ADC_Resolution);    //Set resolution as specified in the ADC_InitTypeDef struct
   }
   
-
-  mraa_aio_set_bit(ADC_InitStruct->ADC_Context_number);                                           //Set resolution based on the value in ADC_InitStruct
-
+  
   
 
 
-  /*---------------------------- ADCx CFGR Configuration -----------------*/
+  /*---------------------------- ADCx CFGR Configuration -----------------*/			//Not required for edison
   /* Get the ADCx CFGR value */
-  tmpreg1 = ADCx->CFGR;
+  //tmpreg1 = ADCx->CFGR;
   /* Clear SCAN bit */
-  tmpreg1 &= CFGR_CLEAR_Mask; 
+  //tmpreg1 &= CFGR_CLEAR_Mask; 
   /* Configure ADCx: scan conversion mode */
   /* Set SCAN bit according to ADC_ScanConvMode value */
-  tmpreg1 |= (uint32_t)ADC_InitStruct->ADC_ContinuousConvMode | 
+  /*tmpreg1 |= (uint32_t)ADC_InitStruct->ADC_ContinuousConvMode | 
   ADC_InitStruct->ADC_Resolution|                 
   ADC_InitStruct->ADC_ExternalTrigConvEvent|         
   ADC_InitStruct->ADC_ExternalTrigEventEdge|     
   ADC_InitStruct->ADC_DataAlign|                 
   ADC_InitStruct->ADC_OverrunMode|        
-  ADC_InitStruct->ADC_AutoInjMode;
+  ADC_InitStruct->ADC_AutoInjMode;*/
   
   /* Write to ADCx CFGR */
-  ADCx->CFGR = tmpreg1;
+  //ADCx->CFGR = tmpreg1;
   
   /*---------------------------- ADCx SQR1 Configuration -----------------*/
   /* Get the ADCx SQR1 value */
-  tmpreg1 = ADCx->SQR1;
+  ///tmpreg1 = ADCx->SQR1;
   /* Clear L bits */
-  tmpreg1 &= ~(uint32_t)(ADC_SQR1_L);
+  //tmpreg1 &= ~(uint32_t)(ADC_SQR1_L);
   /* Configure ADCx: regular channel sequence length */
   /* Set L bits according to ADC_NbrOfRegChannel value */
-  tmpreg1 |= (uint32_t) (ADC_InitStruct->ADC_NbrOfRegChannel - 1);
+  //tmpreg1 |= (uint32_t) (ADC_InitStruct->ADC_NbrOfRegChannel - 1);
   /* Write to ADCx SQR1 */
-  ADCx->SQR1 = tmpreg1; 
+  //ADCx->SQR1 = tmpreg1; 
    
 }  
 
@@ -234,7 +241,7 @@ void ADC_Init(ADC_InitTypeDef* ADC_InitStruct)                                  
   * @param  ADC_InitStruct : pointer to an ADC_InitTypeDef structure which will be initialized.
   * @retval None
   */
-void ADC_StructInit(ADC_InitTypeDef* ADC_InitStruct)
+void ADC_StructInit(ADC_InitTypeDef* ADC_InitStruct)            //Used in code
 {                                                                                   
   /* Reset ADC init structure parameters values */                                  
   ADC_InitStruct->ADC_ContinuousConvMode = DISABLE;                                 //Enabled in code. Same as mraa output
@@ -244,7 +251,7 @@ void ADC_StructInit(ADC_InitTypeDef* ADC_InitStruct)
   ADC_InitStruct->ADC_DataAlign = ADC_DataAlign_Right;                              //Aligned right by default in the mraa library
   ADC_InitStruct->ADC_OverrunMode = DISABLE;                                        //Don't have to take care of this
   ADC_InitStruct->ADC_AutoInjMode = DISABLE;                                        //Don't have to take care of this
-  ADC_InitStruct->ADC_NbrOfRegChannel = 1;                                          
+  ADC_InitStruct->ADC_NbrOfRegChannel = 1;                                          //Use pointers to assign mraa adc context. Done in ADC_Init() function
 }
 
 /**
@@ -255,7 +262,7 @@ void ADC_StructInit(ADC_InitTypeDef* ADC_InitStruct)
   *         the configuration information for the specified ADC injected channel.
   * @retval None
   */
-void ADC_InjectedInit(ADC_TypeDef* ADCx, ADC_InjectedInitTypeDef* ADC_InjectedInitStruct)
+void ADC_InjectedInit(ADC_TypeDef* ADCx, ADC_InjectedInitTypeDef* ADC_InjectedInitStruct)         //Not used in code
 {
   uint32_t tmpreg1 = 0;
   /* Check the parameters */
@@ -292,7 +299,7 @@ void ADC_InjectedInit(ADC_TypeDef* ADCx, ADC_InjectedInitTypeDef* ADC_InjectedIn
   * @param  ADC_InjectedInitStruct : pointer to an ADC_InjectedInitTypeDef structure which will be initialized.
   * @retval None
   */
-void ADC_InjectedStructInit(ADC_InjectedInitTypeDef* ADC_InjectedInitStruct)
+void ADC_InjectedStructInit(ADC_InjectedInitTypeDef* ADC_InjectedInitStruct)          //Not used in code
 {
   ADC_InjectedInitStruct->ADC_ExternalTrigInjecConvEvent = ADC_ExternalTrigInjecConvEvent_0;    
   ADC_InjectedInitStruct->ADC_ExternalTrigInjecEventEdge = ADC_ExternalTrigInjecEventEdge_None;     
