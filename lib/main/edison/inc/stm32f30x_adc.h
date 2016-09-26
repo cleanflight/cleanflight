@@ -74,11 +74,14 @@ typedef struct
   uint8_t ADC_NbrOfRegChannel;            /*!< Specifies the number of ADC channels that will be converted
                                                using the sequencer for regular channel group.
                                                This parameter must range from 1 to 16. */
-  mraa_aio_context ADC_Context_number;     //Specifies the pin number being used for the Analog in. Uses the mraa library for accessing the ADC pin
-
-  uint8_t ADC_gpio_pin;                    //Analog pin number used as input pin for ADC
-
 }ADC_InitTypeDef;
+
+typedef struct 
+{
+  mraa_aio_context* mraa_adc_context;     //mraa context for accessing pin referenced by ADC_gpio_pin
+
+  uint8_t ADC_gpio_pin;                    //Analog pin number used as input pin for ADC. Ranges from 0-5
+}mraa_ADCtypedef;
 
 /**
   * @}

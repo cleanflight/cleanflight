@@ -73,8 +73,10 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f30x_adc.h"          //Change to endion header definitions
+#include "stm32f30x_adc.h"          //Change to edison header definitions
 #include "stm32f30x_rcc.h"      
+
+
 #include <mraa.h>                   //For implementing peripheral access on the edison using the mraa library
 
 /** @addtogroup STM32F30x_StdPeriph_Driver
@@ -137,7 +139,7 @@
   * @param  ADCx: where x can be 1, 2,3 or 4 to select the ADC peripheral.
   * @retval None
   */
-void ADC_DeInit(ADC_TypeDef* ADCx)                //Not used in the code anywhere
+void ADC_DeInit(ADC_TypeDef* ADCx)                                                              //Not used in the code anywhere
 {
   //Check the parameters
   /*assert_param(IS_ADC_ALL_PERIPH(ADCx));
@@ -166,8 +168,8 @@ void ADC_DeInit(ADC_TypeDef* ADCx)                //Not used in the code anywher
   *         the configuration information for the specified ADC peripheral.
   * @retval None
   */
-//void ADC_Init(ADC_TypeDef* ADCx, ADC_InitTypeDef* ADC_InitStruct)
-void ADC_Init(ADC_InitTypeDef* ADC_InitStruct)                          //Replaced above definition
+//void ADC_Init(ADC_TypeDef* ADCx, ADC_InitTypeDef* ADC_InitStruct)                             //First argument struct contains device specific details. Refer to stm32f30x.h. Unnecessary after porting I think
+void ADC_Init(ADC_InitTypeDef* ADC_InitStruct)                                                  //Replaced above definition
 {
   uint32_t tmpreg1 = 0;
   /* Check the parameters */
@@ -237,11 +239,11 @@ void ADC_StructInit(ADC_InitTypeDef* ADC_InitStruct)
   /* Reset ADC init structure parameters values */                                  
   ADC_InitStruct->ADC_ContinuousConvMode = DISABLE;                                 //Enabled in code. Same as mraa output
   ADC_InitStruct->ADC_Resolution = ADC_Resolution_12b;                              //Change with mraa_aio_set_bit()
-  ADC_InitStruct->ADC_ExternalTrigConvEvent = ADC_ExternalTrigConvEvent_0;          
-  ADC_InitStruct->ADC_ExternalTrigEventEdge = ADC_ExternalTrigEventEdge_None;       
-  ADC_InitStruct->ADC_DataAlign = ADC_DataAlign_Right;                              
-  ADC_InitStruct->ADC_OverrunMode = DISABLE;                                        
-  ADC_InitStruct->ADC_AutoInjMode = DISABLE;                                        
+  ADC_InitStruct->ADC_ExternalTrigConvEvent = ADC_ExternalTrigConvEvent_0;          //Conversion started based on software    
+  ADC_InitStruct->ADC_ExternalTrigEventEdge = ADC_ExternalTrigEventEdge_None;       //No external trigger required
+  ADC_InitStruct->ADC_DataAlign = ADC_DataAlign_Right;                              //Aligned right by default in the mraa library
+  ADC_InitStruct->ADC_OverrunMode = DISABLE;                                        //Don't have to take care of this
+  ADC_InitStruct->ADC_AutoInjMode = DISABLE;                                        //Don't have to take care of this
   ADC_InitStruct->ADC_NbrOfRegChannel = 1;                                          
 }
 
@@ -1295,7 +1297,7 @@ void ADC_RegularChannelSequencerLengthConfig(ADC_TypeDef* ADCx, uint8_t Sequence
   *     @arg ADC_ExternalTrigger_Event15: External trigger event 15	  
   * @param  ADC_ExternalTrigEventEdge: ADC external Trigger Polarity.
   *   This parameter can be one of the following values:
-  *     @arg ADC_ExternalTrigEventEdge_OFF: Hardware trigger detection disabled 
+  *     @arg ADC_ExternalTrigEventEdge_None: Hardware trigger detection disabled 
   *                                          (conversions can be launched by software)
   *     @arg ADC_ExternalTrigEventEdge_RisingEdge: Hardware trigger detection on the rising edge
   *     @arg ADC_ExternalTrigEventEdge_FallingEdge: Hardware trigger detection on the falling edge
