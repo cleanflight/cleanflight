@@ -378,7 +378,8 @@ STM32F10x_COMMON_SRC = \
 		   drivers/serial_uart_stm32f10x.c \
 		   drivers/system_stm32f10x.c
 
-NAZE_SRC = \
+NAZE_SRC = 
+#NAZE_SRC = \
 		   startup_stm32f10x_md_gcc.S \
 		   $(STM32F10x_COMMON_SRC) \
 		   drivers/accgyro_adxl345.c \
@@ -834,9 +835,11 @@ CCACHE :=
 endif
 
 # Tool names
-CC          := $(CCACHE) arm-none-eabi-gcc
-OBJCOPY     := arm-none-eabi-objcopy
-SIZE        := arm-none-eabi-size
+#CC          := $(CCACHE) arm-none-eabi-gcc
+CC          := $(CCACHE) gcc
+#OBJCOPY     := arm-none-eabi-objcopy
+OBJCOPY     := objcopy
+SIZE        := size
 
 #
 # Tool options.
@@ -844,10 +847,10 @@ SIZE        := arm-none-eabi-size
 
 ifeq ($(DEBUG),GDB)
 OPTIMIZE	 = -O0
-LTO_FLAGS	 = $(OPTIMIZE)
+#LTO_FLAGS	 = $(OPTIMIZE)
 else
 OPTIMIZE	 = -Os
-LTO_FLAGS	 =  -flto -fuse-linker-plugin $(OPTIMIZE)
+#LTO_FLAGS	 =  -flto -fuse-linker-plugin $(OPTIMIZE)
 endif
 
 ifneq ($(filter $(OPTIONS),FAIL_ON_WARNINGS),)
@@ -856,9 +859,10 @@ endif
 
 DEBUG_FLAGS	 = -ggdb3 -DDEBUG
 
-CFLAGS		 = $(ARCH_FLAGS) \
-		   $(LTO_FLAGS) \
-		   $(WARN_FLAGS) \
+#$(ARCH_FLAGS) \
+$(LTO_FLAGS) \
+
+CFLAGS		 = $(WARN_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
 		   $(DEBUG_FLAGS) \
@@ -876,19 +880,21 @@ CFLAGS		 = $(ARCH_FLAGS) \
 		   -save-temps=obj \
 		   -MMD -MP
 
-ASFLAGS		 = $(ARCH_FLAGS) \
-		   $(WARN_FLAGS) \
+#$(ARCH_FLAGS) \
+
+ASFLAGS		 = $(WARN_FLAGS) \
 		   -x assembler-with-cpp \
 		   $(addprefix -I,$(INCLUDE_DIRS)) \
 		  -MMD -MP
 
+#$(ARCH_FLAGS) \
+$(LTO_FLAGS) \
+--specs=nano.specs \
+-lnosys \
+
 LDFLAGS		 = -lm \
 		   -nostartfiles \
-		   --specs=nano.specs \
 		   -lc \
-		   -lnosys \
-		   $(ARCH_FLAGS) \
-		   $(LTO_FLAGS) \
 		   $(WARN_FLAGS) \
 		   $(DEBUG_FLAGS) \
 		   -static \

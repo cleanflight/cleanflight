@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <platform.h>
+/*#include <platform.h>
 
 #include "build/build_config.h"
 #include "build/debug.h"
@@ -117,7 +117,7 @@
 #endif
 
 #include "fc/fc_tasks.h"
-#include "scheduler/scheduler.h"
+#include "scheduler/scheduler.h"*/
 
 extern uint8_t motorControlEnable;
 
@@ -766,14 +766,15 @@ void configureScheduler(void)
 }
 
 int main(void) {
-    init();
+    printf("Hello World\n");
+    /*init();
 
 	configureScheduler();
 
     while (true) {
         scheduler();
         processLoopback();
-    }
+    }*/
 }
 
 void HardFault_Handler(void)
