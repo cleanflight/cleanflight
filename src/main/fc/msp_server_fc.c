@@ -53,6 +53,8 @@
 #include "rx/rx.h"
 #include "rx/msp.h"
 
+#include "io/beeper.h"
+
 #include "msp/msp.h"
 #include "msp/msp_protocol.h"
 #include "msp/msp_serial.h"
@@ -814,10 +816,16 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU32(dst, featureMask());
             break;
 
+#ifdef BEEPER
+        case MSP_BEEPER:
+            sbufWriteU32(dst, getBeeperOffMask());
+            break;
+#endif
+
         case MSP_BOARD_ALIGNMENT:
-        	sbufWriteU16(dst, boardAlignment()->rollDegrees);
-        	sbufWriteU16(dst, boardAlignment()->pitchDegrees);
-        	sbufWriteU16(dst, boardAlignment()->yawDegrees);
+            sbufWriteU16(dst, boardAlignment()->rollDegrees);
+            sbufWriteU16(dst, boardAlignment()->pitchDegrees);
+            sbufWriteU16(dst, boardAlignment()->yawDegrees);
             break;
 
         case MSP_VOLTAGE_METER_CONFIG:
@@ -1339,6 +1347,13 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             featureClearAll();
             featureSet(sbufReadU32(src)); // features bitmap
             break;
+
+#ifdef BEEPER
+        case MSP_SET_BEEPER:
+            beeperOffClearAll();
+            beeperOffSet(sbufReadU32(src)); // beeper conditions bitmap
+            break;
+#endif
 
         case MSP_SET_BOARD_ALIGNMENT:
             boardAlignment()->rollDegrees = sbufReadU16(src);

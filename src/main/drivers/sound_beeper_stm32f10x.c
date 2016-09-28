@@ -28,7 +28,7 @@
 
 #include "sound_beeper.h"
 
-void initBeeperHardware(beeperConfig_t *config)
+void initBeeperHardware(beeperIOConfig_t *config)
 {
 #ifndef BEEPER
     UNUSED(config);

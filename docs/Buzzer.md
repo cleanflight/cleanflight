@@ -44,6 +44,38 @@ Sequences available in Cleanflight v1.9 and above are :
     15   ARMED                 0, 245, 10, 5	Board is armed (after pause ; repeats until board is disarmed or throttle is increased)
 
 
+### CLI " beeper "  command
+
+The beeper can be enabled/disabled with the **beeper** CLI command.
+
+Under CLI, all beeping conditions are listed either with *dump* or *beeper list*.
+
+- *beeper XX* and *beeper -XX* respectively enable / disable the XX beeping condition.
+- *beeper ALL* and *beeper -ALL* respectively enable / disable all beeping conditions.
+- *beeper* lists all disabled conditions.
+
+The XX conditions are listed below :
+
+    GYRO_CALIBRATED
+    RX_LOST                // Beeps when TX is turned off or signal lost (repeat until TX is okay)
+    RX_LOST_LANDING        // Beeps SOS when armed and TX is turned off or signal lost (autolanding/autodisarm)
+    DISARMING              // Beep when disarming the board
+    ARMING                 // Beep when arming the board
+    ARMING_GPS_FIX         // Beep a special tone when arming the board and GPS has fix
+    BAT_CRIT_LOW           // Longer warning beeps when battery is critically low (repeats)
+    BAT_LOW                // Warning beeps when battery is getting low (repeats)
+    GPS_STATUS	           // 
+    RX_SET                 // Beeps when aux channel is set for beep or beep sequence how many satellites has found if GPS enabled
+    DISARM_REPEAT          // Beeps sounded while stick held in disarm position
+    ACC_CALIBRATION        // ACC inflight calibration completed confirmation
+    ACC_CALIBRATION_FAIL   // ACC inflight calibration failed
+    READY_BEEP             // Ring a tone when GPS is locked and ready
+    MULTI_BEEPS            // Internal value used by 'beeperConfirmationBeeps()'.
+    ARMED                  // Warning beeps when board is armed (repeats until board is disarmed or throttle is increased)
+    SYSTEM_INIT            // Initialisation beeps when board is powered on
+
+    ALL                    // Turn ON or OFF all conditions
+    
 ## Types of buzzer supported
 
 The buzzers are enabled/disabled by simply enabling or disabling a GPIO output pin on the board.

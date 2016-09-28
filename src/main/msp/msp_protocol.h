@@ -105,6 +105,9 @@
 //
 // MSP commands for Cleanflight original features
 //
+#define MSP_BEEPER                      30 //in message          Get beeper disabled settings
+#define MSP_SET_BEEPER                  31 //out message         Set beeper disabled settings
+
 #define MSP_BATTERY_CONFIG              32
 #define MSP_SET_BATTERY_CONFIG          33
 
