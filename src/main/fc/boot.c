@@ -767,6 +767,7 @@ void configureScheduler(void)
 
 int main(void) {
     printf("Hello World\n");
+    //exit(0);
     /*init();
 
 	configureScheduler();
