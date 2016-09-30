@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /*#include <platform.h>
 
@@ -118,7 +119,7 @@
 
 #include "fc/fc_tasks.h"
 #include "scheduler/scheduler.h"*/
-
+/*
 extern uint8_t motorControlEnable;
 
 #ifdef SOFTSERIAL_LOOPBACK
@@ -241,7 +242,7 @@ void buttonsHandleColdBootButtonPresses(void)
 }
 
 #endif
-
+*/
 void init(void)
 {
     drv_pwm_config_t pwm_params;
@@ -704,7 +705,7 @@ void init(void)
 
     systemState |= SYSTEM_STATE_READY;
 }
-
+/*
 #ifdef SOFTSERIAL_LOOPBACK
 void processLoopback(void) {
     if (loopbackPort) {
@@ -763,21 +764,20 @@ void configureScheduler(void)
 #ifdef TRANSPONDER
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
 #endif
-}
+}*/
 
 int main(void) {
-    printf("Hello World\n");
-    //exit(0);
-    /*init();
+    //printf("Hello World\n");
+    init();
 
-	configureScheduler();
+	/*configureScheduler();
 
     while (true) {
         scheduler();
         processLoopback();
     }*/
 }
-
+/*
 void HardFault_Handler(void)
 {
     // fall out of the sky
@@ -794,4 +794,4 @@ void HardFault_Handler(void)
 #endif
 
     while (1);
-}
+}*/

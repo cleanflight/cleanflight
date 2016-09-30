@@ -36,6 +36,8 @@ FLASH_SIZE ?=
 
 FORKNAME			 = cleanflight
 
+OUTPUT_DIR = obj
+FILE_NAME = out
 64K_TARGETS  = CJMCU
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO SPRACINGF1OSD
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB PORT103R RCEXPLORERF3 SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY SPRACINGF3OSD
@@ -378,8 +380,8 @@ STM32F10x_COMMON_SRC = \
 		   drivers/serial_uart_stm32f10x.c \
 		   drivers/system_stm32f10x.c
 
-NAZE_SRC = 
-#NAZE_SRC = \
+EDISON_SRC = ./src/main/fc/boot.c
+NAZE_SRC = \
 		   startup_stm32f10x_md_gcc.S \
 		   $(STM32F10x_COMMON_SRC) \
 		   drivers/accgyro_adxl345.c \
@@ -861,6 +863,7 @@ DEBUG_FLAGS	 = -ggdb3 -DDEBUG
 
 #$(ARCH_FLAGS) \
 $(LTO_FLAGS) \
+$(DEVICE_FLAGS) \
 
 CFLAGS		 = $(WARN_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
@@ -870,7 +873,6 @@ CFLAGS		 = $(WARN_FLAGS) \
 		   -Wall -Wpedantic -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef \
 		   -ffunction-sections \
 		   -fdata-sections \
-		   $(DEVICE_FLAGS) \
 		   -DUSE_STDPERIPH_DRIVER \
 		   $(TARGET_FLAGS) \
 		   -D'__FORKNAME__="$(FORKNAME)"' \
@@ -929,11 +931,12 @@ TARGET_MAP	 = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
 
 ## Default make goal:
 ## hex         : Make filetype hex only
-.DEFAULT_GOAL := hex
+.DEFAULT_GOAL := compile
 
 ## Optional make goals:
 ## all         : Make all filetypes, binary and hex
-all: hex bin
+all: 
+	hex bin
 
 ## binary      : Make binary filetype
 ## bin         : Alias of 'binary'
@@ -941,6 +944,7 @@ all: hex bin
 bin:    $(TARGET_BIN)
 binary: $(TARGET_BIN)
 hex:    $(TARGET_HEX)
+
 
 # rule to reinvoke make with TARGET= parameter
 # rules that should be handled in toplevel Makefile, not dependent on TARGET
@@ -956,9 +960,7 @@ all_targets : $(VALID_TARGETS)
 
 ## clean       : clean up all temporary / machine-generated files
 clean:
-	rm -f $(TARGET_BIN) $(TARGET_HEX) $(TARGET_ELF) $(TARGET_OBJS) $(TARGET_MAP)
-	rm -rf $(OBJECT_DIR)/$(TARGET)
-	cd src/test && $(MAKE) clean || true
+	rm -rf $(OBJECT_DIR)
 
 flash_$(TARGET): $(TARGET_HEX)
 	stty -F $(SERIAL_DEVICE) raw speed 115200 -crtscts cs8 -parenb -cstopb -ixon
@@ -1019,7 +1021,7 @@ $(TARGET_BIN): $(TARGET_ELF)
 
 $(TARGET_ELF):  $(TARGET_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
-	$(SIZE) $(TARGET_ELF)
+	#(SIZE) $(TARGET_ELF)
 
 # Compile
 $(OBJECT_DIR)/$(TARGET)/%.o: %.c
@@ -1038,7 +1040,11 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
-
+compile:
+	mkdir $(OBJECT_DIR)
+	$(CC) $(CFLAGS) -g $(EDISON_SRC) -o $(OUTPUT_DIR)/$(FILE_NAME)
+	mkdir ./obj/tmp_files
+	mv $(OUTPUT_DIR)/$(FILE_NAME).d $(OUTPUT_DIR)/$(FILE_NAME).i $(OUTPUT_DIR)/$(FILE_NAME).s $(OUTPUT_DIR)/$(FILE_NAME).o ./obj/tmp_files/ 
 
 # include auto-generated dependencies
 -include $(TARGET_DEPS)
