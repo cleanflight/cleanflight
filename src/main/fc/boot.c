@@ -243,11 +243,12 @@ void buttonsHandleColdBootButtonPresses(void)
 
 #endif
 */
+
 void init(void)
 {
     drv_pwm_config_t pwm_params;
 
-    printfSupportInit();
+    //printfSupportInit();
 
     initEEPROM();
 

@@ -960,7 +960,7 @@ all_targets : $(VALID_TARGETS)
 
 ## clean       : clean up all temporary / machine-generated files
 clean:
-	rm -rf $(OBJECT_DIR)
+	rm -rf $(OUTPUT_DIR)
 
 flash_$(TARGET): $(TARGET_HEX)
 	stty -F $(SERIAL_DEVICE) raw speed 115200 -crtscts cs8 -parenb -cstopb -ixon
@@ -1041,7 +1041,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
 compile:
-	mkdir $(OBJECT_DIR)
+	mkdir $(OUTPUT_DIR)
 	$(CC) $(CFLAGS) -g $(EDISON_SRC) -o $(OUTPUT_DIR)/$(FILE_NAME)
 	mkdir ./obj/tmp_files
 	mv $(OUTPUT_DIR)/$(FILE_NAME).d $(OUTPUT_DIR)/$(FILE_NAME).i $(OUTPUT_DIR)/$(FILE_NAME).s $(OUTPUT_DIR)/$(FILE_NAME).o ./obj/tmp_files/ 
