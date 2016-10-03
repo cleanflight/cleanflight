@@ -1040,7 +1040,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
-compile:
+compile: clean
 	mkdir $(OUTPUT_DIR)
 	$(CC) $(CFLAGS) -g $(EDISON_SRC) -o $(OUTPUT_DIR)/$(FILE_NAME)
 	mkdir ./obj/tmp_files

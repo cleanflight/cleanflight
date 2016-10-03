@@ -765,11 +765,11 @@ void configureScheduler(void)
 #ifdef TRANSPONDER
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
 #endif
-}*/
+}
 
 int main(void) {
-    //printf("Hello World\n");
-    init();
+    printf("Hello World\n");
+    //init();
 
 	/*configureScheduler();
 
