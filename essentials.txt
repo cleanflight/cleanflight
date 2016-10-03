@@ -1,0 +1,7 @@
+List of modules:
+
+Flash			->				Used by blackbox and cli. 
+								cli not required because we have Linux on edison. 
+								It's is used for changing parameters during runtime. Not essential.
+								Black box not part of essential features
+EEPROM			->				

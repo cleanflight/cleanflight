@@ -1,0 +1,32 @@
+src/main/fc/config.c:315:void writeEEPROM(void)
+src/main/fc/config.c:335:    writeEEPROM();
+src/main/fc/config.c:340:    writeEEPROM();
+src/main/fc/config.c:348:    writeEEPROM();
+
+
+src/main/fc/config.h:53:void writeEEPROM();
+
+
+src/main/fc/msp_server_fc.c:1266:            writeEEPROM();
+
+
+src/main/io/serial_cli.c:2242:    writeEEPROM();
+
+
+src/main/osd/config.c:85:void writeEEPROM(void)
+src/main/osd/config.c:93:    writeEEPROM();
+
+
+src/main/osd/config.h:27:void writeEEPROM();
+
+
+src/main/osd/msp_server_osd.c:312:            writeEEPROM();
+
+
+src/main/osd/osd_max7456.c:141:        writeEEPROM();
+
+
+src/test/unit/config_eeprom_unittest.cc:288:    writeEEPROM();
+
+
+src/test/unit/msp_fc_unittest.cc:509:void writeEEPROM(void) {}
