@@ -259,7 +259,7 @@ void init(void)
 
 #ifdef STM32F303
     // start fpu
-    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));
+    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));             //For accessing co processors. CPACR-> Co-processor access control register
 #endif
 
 #ifdef STM32F303xC
@@ -281,7 +281,7 @@ void init(void)
     // Latch active features to be used for feature() in the remainder of init().
     latchActiveFeatures();
 
-    // initialize IO (needed for all IO operations)
+    // initialize IO (needed for all IO operations). When porting, use this function to initialize MRAA GPIO
     IOInitGlobal();
 
 #ifdef USE_EXTI

@@ -2,6 +2,7 @@
 
 Cleanflight has various modes that can be toggled on or off.  Modes can be enabled/disabled by stick positions,
 auxillary receiver channels and other events such as failsafe detection.
+MSP (MultiWii Serial Protocol )
 
 | MSP ID  | CLI ID | Short Name | Function                                                             |
 | ------- | ------ | ---------- | -------------------------------------------------------------------- |

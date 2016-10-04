@@ -237,12 +237,13 @@ void IOConfigGPIOAF(IO_t io, ioConfig_t cfg, uint8_t af)
 
 static const uint16_t ioDefUsedMask[DEFIO_PORT_USED_COUNT] = {DEFIO_PORT_USED_LIST};
 static const uint8_t ioDefUsedOffset[DEFIO_PORT_USED_COUNT] = {DEFIO_PORT_OFFSET_LIST};
-ioRec_t ioRecs[DEFIO_IO_USED_COUNT];
+ioRec_t ioRecs[DEFIO_IO_USED_COUNT];                    //DEFIO_IO_USED_COUNT is the number of io pins supported on target
 
 // initialize all ioRec_t structures from ROM
 // currently only bitmask is used, this may change in future
+
 void IOInitGlobal(void) {
-    ioRec_t *ioRec = ioRecs;
+    ioRec_t *ioRec = ioRecs;                    //Pointer to first element of ioRecs declared previously
 
     for(unsigned port = 0; port < ARRAYLEN(ioDefUsedMask); port++)
         for(unsigned pin = 0; pin < sizeof(ioDefUsedMask[0]) * 8; pin++)

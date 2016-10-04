@@ -5,3 +5,6 @@ Flash			->				Used by blackbox and cli.
 								It's is used for changing parameters during runtime. Not essential.
 								Black box not part of essential features
 EEPROM			->				
+
+GPIO			->				Use IOInitGlobal() from /src/main/drivers/io.c for initializing GPIO pins 
+								through MRAA using data stored in GPIO_TypeDef struct
