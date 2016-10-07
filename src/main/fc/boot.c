@@ -263,7 +263,7 @@ void init(void)
 #endif
 
 #ifdef STM32F303xC
-    SetSysClock();
+    SetSysClock();			//Setup system clock. Find clock speed used to set edison clock to the same value?
 #endif
 #ifdef STM32F10X
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
@@ -275,14 +275,14 @@ void init(void)
     systemInit();
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
-    detectHardwareRevision();
+    detectHardwareRevisio(n);
 #endif
 
     // Latch active features to be used for feature() in the remainder of init().
     latchActiveFeatures();
 
     // initialize IO (needed for all IO operations). When porting, use this function to initialize MRAA GPIO
-    IOInitGlobal();
+    IOInitGlobal();	
 
 #ifdef USE_EXTI
     EXTIInit();
@@ -298,7 +298,7 @@ void init(void)
     ledInit(false);
 #endif
 
-#ifdef BEEPER
+#ifdef BEEPER 									//Non essestial
     beeperConfig_t beeperConfig = {
         .gpioPeripheral = BEEP_PERIPHERAL,
         .gpioPin = BEEP_PIN,
@@ -312,14 +312,14 @@ void init(void)
 #endif
     };
 #ifdef NAZE
-    if (hardwareRevision >= NAZE32_REV5) {
+    if (hardwareRevision >= NAZE32_REV5) { 		//Non essential
         // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
         beeperConfig.gpioMode = Mode_Out_PP;
         beeperConfig.isInverted = true;
     }
 #endif
 
-    beeperInit(&beeperConfig);
+    beeperInit(&beeperConfig);  				
 #endif
 
 #ifdef BUTTONS

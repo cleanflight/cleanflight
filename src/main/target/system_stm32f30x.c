@@ -289,7 +289,7 @@ void SystemCoreClockUpdate (void)
   */
 void SetSysClock(void)
 {
-  __IO uint32_t StartUpCounter = 0, HSEStatus = 0;
+  __IO uint32_t StartUpCounter = 0, HSEStatus = 0;      //Compiler directive for volatile
 
 /******************************************************************************/
 /*            PLL (clocked by HSE) used as System clock source                */
