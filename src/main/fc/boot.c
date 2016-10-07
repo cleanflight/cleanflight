@@ -319,7 +319,7 @@ void init(void)
     }
 #endif
 
-    beeperInit(&beeperConfig);  				
+    beeperInit(&beeperConfig);  				//#define UNUSED(x) (void)(x) #ifndef BEE 		
 #endif
 
 #ifdef BUTTONS
