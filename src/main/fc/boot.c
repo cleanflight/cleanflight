@@ -263,7 +263,7 @@ void init(void)
 #endif
 
 #ifdef STM32F303xC
-    SetSysClock();			//Setup system clock. Find clock speed used to set edison clock to the same value?
+    SetSysClock();			//Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines
 #endif
 #ifdef STM32F10X
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
@@ -319,18 +319,18 @@ void init(void)
     }
 #endif
 
-    beeperInit(&beeperConfig);  				//#define UNUSED(x) (void)(x) #ifndef BEE 		
+    beeperInit(&beeperConfig);  				//#define UNUSED(x) (void)(x) #ifndef BEEPER. Not necessary.	
 #endif
 
 #ifdef BUTTONS
-    buttonsInit();
+    buttonsInit();                              //Program button A and B with speeds of 2MHz. Speed of GPIO in edison?
 
     if (!isMPUSoftReset()) {
         buttonsHandleColdBootButtonPresses();
     }
 #endif
 
-#ifdef SPEKTRUM_BIND
+#ifdef SPEKTRUM_BIND                            //Non essential
     if (feature(FEATURE_RX_SERIAL)) {
         switch (rxConfig()->serialrx_provider) {
             case SERIALRX_SPEKTRUM1024:
@@ -344,14 +344,14 @@ void init(void)
     }
 #endif
 
-    delay(100);
+    delay(100);    //Delay in ms. Has to rewritten to produce accurate delays
 
     timerInit();  // timer must be initialized before any channel is allocated
 
-    dmaInit();
+    dmaInit();      //Does nothing
 
 
-    serialInit(feature(FEATURE_SOFTSERIAL));
+    serialInit(feature(FEATURE_SOFTSERIAL));        
 
     mixerInit(customMotorMixer(0));
 #ifdef USE_SERVOS
