@@ -362,7 +362,7 @@ void init(void)
 
     memset(&pwm_params, 0, sizeof(pwm_params));
 
-#ifdef SONAR
+#ifdef SONAR                                            //Non essential
     const sonarHardware_t *sonarHardware = NULL;
     sonarGPIOConfig_t sonarGPIOConfig;
     if (feature(FEATURE_SONAR)) {
@@ -380,9 +380,9 @@ void init(void)
     if (mixerConfig()->mixerMode == MIXER_AIRPLANE || mixerConfig()->mixerMode == MIXER_FLYING_WING || mixerConfig()->mixerMode == MIXER_CUSTOM_AIRPLANE)
         pwm_params.airplane = true;
     else
-        pwm_params.airplane = false;
-#if defined(USE_UART2) && defined(STM32F10X)
-    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_UART2);
+        pwm_params.airplane = false;            //Not using airplane mode for the mixer. So probably this case
+#if defined(USE_UART2) && defined(STM32F10X)    //Only three hardware ports on the edison?
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_UART2);      //Returns true of the port configurations are defined 
 #endif
 #if defined(USE_UART3)
     pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_UART3);
@@ -390,10 +390,11 @@ void init(void)
 #if defined(USE_UART4)
     pwm_params.useUART4 = doesConfigurationUsePort(SERIAL_PORT_UART4);
 #endif
-#if defined(USE_UART5)
+#if defined(USE_UART5)                                                      //Same as the above three
     pwm_params.useUART5 = doesConfigurationUsePort(SERIAL_PORT_UART5);
-#endif
-    pwm_params.useVbat = feature(FEATURE_VBAT);
+#endif                                                                      
+    //PWM used on the drone to receive radio control signals and translate them for the drone
+    pwm_params.useVbat = feature(FEATURE_VBAT);                             //feature() returns true or false based on the argument is part of enabledFeatures field in the featureConfig struct
     pwm_params.useSoftSerial = feature(FEATURE_SOFTSERIAL);
     pwm_params.useParallelPWM = feature(FEATURE_RX_PARALLEL_PWM);
     pwm_params.useRSSIADC = feature(FEATURE_RSSI_ADC);
@@ -408,7 +409,7 @@ void init(void)
     pwm_params.useSonar = feature(FEATURE_SONAR);
 #endif
 
-#ifdef USE_SERVOS
+#ifdef USE_SERVOS                                                           //Not used for all mixer modes. Especially if looking to use quadcopter mode, might not be required
     pwm_params.useServos = isMixerUsingServos();
     pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
     pwm_params.servoCenterPulse = motorAndServoConfig()->servoCenterPulse;
@@ -423,7 +424,7 @@ void init(void)
     if (pwm_params.motorPwmRate > 500)
         pwm_params.idlePulse = 0; // brushed motors
 
-    pwmRxInit();
+    pwmRxInit();                            //Does not do anything. why add this?? Refer next comment for possible explanation
 
     // pwmInit() needs to be called as soon as possible for ESC compatibility reasons
     pwmIOConfiguration_t *pwmIOConfiguration = pwmInit(&pwm_params);

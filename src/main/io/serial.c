@@ -253,7 +253,7 @@ serialPortConfig_t *serialFindPortConfiguration(serialPortIdentifier_e identifie
 {
     uint8_t index;
     for (index = 0; index < SERIAL_PORT_COUNT; index++) {
-        serialPortConfig_t *candidate = &serialConfig()->portConfigs[index];
+        serialPortConfig_t *candidate = &serialConfig()->portConfigs[index];        //Returns serial port configuration as stored in the struct serialConfig_t
         if (candidate->identifier == identifier) {
             return candidate;
         }

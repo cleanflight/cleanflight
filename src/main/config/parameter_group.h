@@ -95,14 +95,14 @@ extern const uint8_t __pg_resetdata_end[];
     /**/
 
 // Declare system config
-#define PG_DECLARE(_type, _name)                                        \
-    extern _type _name ## _System;                                      \
+#define PG_DECLARE(_type, _name)                                        \               //Declaration of PG_DECLARE
+    extern _type _name ## _System;                                      \               //Declare a function with second argument as name and argument's address as return value
     static inline _type* _name(void) { return &_name ## _System; }      \
     struct _dummy                                                       \
     /**/
 
 // Declare system config array
-#define PG_DECLARE_ARR(_type, _size, _name)                             \
+#define PG_DECLARE_ARR(_type, _size, _name)                             \               //Declaration of PG_DECLARE_ARR
     extern _type _name ## _SystemArray[_size];                          \
     static inline _type* _name(int _index) { return &_name ## _SystemArray[_index]; } \
     static inline _type (* _name ## _arr(void))[_size] { return &_name ## _SystemArray; } \
@@ -110,7 +110,7 @@ extern const uint8_t __pg_resetdata_end[];
     /**/
 
 // Declare profile config
-#define PG_DECLARE_PROFILE(_type, _name)                                \
+#define PG_DECLARE_PROFILE(_type, _name)                                \               //Declaration of PG_DECLARE_PROFILE
     extern _type *_name ## _ProfileCurrent;                             \
     static inline _type* _name(void) { return _name ## _ProfileCurrent; } \
     struct _dummy                                                       \

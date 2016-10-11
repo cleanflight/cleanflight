@@ -98,7 +98,7 @@ typedef struct serialConfig_s {
     serialPortConfig_t portConfigs[SERIAL_PORT_COUNT];
 } serialConfig_t;
 
-PG_DECLARE(serialConfig_t, serialConfig);
+PG_DECLARE(serialConfig_t, serialConfig);   //refer to /src/main/config/parameter_group.h line 98
 
 //
 // configuration
