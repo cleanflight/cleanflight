@@ -581,7 +581,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_SERVO_MIX_RULES:
             for (unsigned i = 0; i < MAX_SERVO_RULES; i++) {
-                sbufWriteU8(dst, customServoMixer(i)->targetChannel);
+                sbufWriteU8(dst, customServoMixer(i)->targetChannel);       //sbufWriteU8 simply writes to location pointed by dst
                 sbufWriteU8(dst, customServoMixer(i)->inputSource);
                 sbufWriteU8(dst, customServoMixer(i)->rate);
                 sbufWriteU8(dst, customServoMixer(i)->speed);
@@ -815,9 +815,9 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
         case MSP_BOARD_ALIGNMENT:
-        	sbufWriteU16(dst, boardAlignment()->rollDegrees);
-        	sbufWriteU16(dst, boardAlignment()->pitchDegrees);
-        	sbufWriteU16(dst, boardAlignment()->yawDegrees);
+            sbufWriteU16(dst, boardAlignment()->rollDegrees);
+            sbufWriteU16(dst, boardAlignment()->pitchDegrees);
+            sbufWriteU16(dst, boardAlignment()->yawDegrees);
             break;
 
         case MSP_VOLTAGE_METER_CONFIG:
@@ -902,7 +902,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 sbufWriteU8(dst, serialConfig()->portConfigs[i].identifier);
                 sbufWriteU16(dst, serialConfig()->portConfigs[i].functionMask);
                 for (int baudRateIndex = 0; baudRateIndex < FUNCTION_BAUD_RATE_COUNT; baudRateIndex++) {
-                	sbufWriteU8(dst, serialConfig()->portConfigs[i].baudRates[baudRateIndex]);
+                    sbufWriteU8(dst, serialConfig()->portConfigs[i].baudRates[baudRateIndex]);
                 }
             }
             break;
@@ -1460,7 +1460,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
                 portConfig->identifier = identifier;
                 portConfig->functionMask = sbufReadU16(src);
                 for (int baudRateIndex = 0; baudRateIndex < FUNCTION_BAUD_RATE_COUNT; baudRateIndex++) {
-                	portConfig->baudRates[baudRateIndex] = sbufReadU8(src);
+                    portConfig->baudRates[baudRateIndex] = sbufReadU8(src);
                 }
             }
             break;

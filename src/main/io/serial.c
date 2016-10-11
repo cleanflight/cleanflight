@@ -369,10 +369,10 @@ void serialInit(bool softserialEnabled)
 {
     uint8_t index;
 
-    serialPortCount = SERIAL_PORT_COUNT;
+    serialPortCount = SERIAL_PORT_COUNT;                //defined in target.h of each board
     memset(&serialPortUsageList, 0, sizeof(serialPortUsageList));
 
-    for (index = 0; index < SERIAL_PORT_COUNT; index++) {
+    for (index = 0; index < SERIAL_PORT_COUNT; index++) {               //Iterate through all serialports based on SERIAL_PORT_COUNT defined in target.h
         serialPortUsageList[index].identifier = serialPortIdentifiers[index];
 
         if (!softserialEnabled) {
@@ -384,7 +384,8 @@ void serialInit(bool softserialEnabled)
                 || serialPortUsageList[index].identifier == SERIAL_PORT_SOFTSERIAL2
 #endif
             ) {
-                serialPortUsageList[index].identifier = SERIAL_PORT_NONE;
+                serialPortUsageList[index].identifier = SERIAL_PORT_NONE;       //If USE_SOFTSERIAL1 and USE_SOFTSERIAL2 are not defined, set that port to none
+                                                                                //The remaining ports are initialized later?
                 serialPortCount--;
             }
         }

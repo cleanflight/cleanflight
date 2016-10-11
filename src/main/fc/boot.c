@@ -263,7 +263,7 @@ void init(void)
 #endif
 
 #ifdef STM32F303xC
-    SetSysClock();			//Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines
+    SetSysClock();          //Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines
 #endif
 #ifdef STM32F10X
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
@@ -282,7 +282,7 @@ void init(void)
     latchActiveFeatures();
 
     // initialize IO (needed for all IO operations). When porting, use this function to initialize MRAA GPIO
-    IOInitGlobal();	
+    IOInitGlobal(); 
 
 #ifdef USE_EXTI
     EXTIInit();
@@ -298,7 +298,7 @@ void init(void)
     ledInit(false);
 #endif
 
-#ifdef BEEPER 									//Non essestial
+#ifdef BEEPER                                   //Non essestial
     beeperConfig_t beeperConfig = {
         .gpioPeripheral = BEEP_PERIPHERAL,
         .gpioPin = BEEP_PIN,
@@ -312,14 +312,14 @@ void init(void)
 #endif
     };
 #ifdef NAZE
-    if (hardwareRevision >= NAZE32_REV5) { 		//Non essential
+    if (hardwareRevision >= NAZE32_REV5) {      //Non essential
         // naze rev4 and below used opendrain to PNP for buzzer. Rev5 and above use PP to NPN.
         beeperConfig.gpioMode = Mode_Out_PP;
         beeperConfig.isInverted = true;
     }
 #endif
 
-    beeperInit(&beeperConfig);  				//#define UNUSED(x) (void)(x) #ifndef BEEPER. Not necessary.	
+    beeperInit(&beeperConfig);                                //#define UNUSED(x) (void)(x) #ifndef BEEPER. Not necessary.
 #endif
 
 #ifdef BUTTONS
@@ -351,11 +351,13 @@ void init(void)
     dmaInit();      //Does nothing
 
 
-    serialInit(feature(FEATURE_SOFTSERIAL));        
+    serialInit(feature(FEATURE_SOFTSERIAL));            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
+                                                        //Edison soft or hard?
 
-    mixerInit(customMotorMixer(0));
+    mixerInit(customMotorMixer(0));                     //Check fc/config.c to get reference to customMotorMixer(0)
+                                                        //Initializes pointer in this function. That is all
 #ifdef USE_SERVOS
-    mixerInitServos(customServoMixer(0));
+    mixerInitServos(customServoMixer(0));               //customServoMixerin /fc/msp_server.c, line 582
 #endif
 
     memset(&pwm_params, 0, sizeof(pwm_params));
@@ -771,7 +773,7 @@ int main(void) {
     printf("Hello World\n");
     //init();
 
-	/*configureScheduler();
+    /*configureScheduler();
 
     while (true) {
         scheduler();
