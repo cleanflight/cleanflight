@@ -375,7 +375,7 @@ void init(void)
         pwm_params.sonarGPIOConfig = &sonarGPIOConfig;
     }
 #endif
-
+    //Checking each of the pwm params in the param struct
     // when using airplane/wing mixer, servo/motor outputs are remapped
     if (mixerConfig()->mixerMode == MIXER_AIRPLANE || mixerConfig()->mixerMode == MIXER_FLYING_WING || mixerConfig()->mixerMode == MIXER_CUSTOM_AIRPLANE)
         pwm_params.airplane = true;
@@ -415,7 +415,6 @@ void init(void)
     pwm_params.servoCenterPulse = motorAndServoConfig()->servoCenterPulse;
     pwm_params.servoPwmRate = motorAndServoConfig()->servo_pwm_rate;
 #endif
-
     pwm_params.useOneshot = feature(FEATURE_ONESHOT125);
     pwm_params.motorPwmRate = motorAndServoConfig()->motor_pwm_rate;
     pwm_params.idlePulse = motorAndServoConfig()->mincommand;
@@ -445,10 +444,10 @@ void init(void)
     initInverter();
 #endif
 
-
+//SPI used for transmitting accelerometer and gyro data also. Not just blackbox and video streaming
 #ifdef USE_SPI
-    spiInit(SPI1);
-    spiInit(SPI2);
+    spiInit(SPI1);		//calls initSpi1 or initSpi2 or initSpi3 based on the argument
+    spiInit(SPI2);		
 #ifdef STM32F303xC
 #ifdef ALIENFLIGHTF3
     if (hardwareRevision == AFF3_REV_2) {
@@ -460,11 +459,11 @@ void init(void)
 #endif
 #endif
 
-#ifdef USE_HARDWARE_REVISION_DETECTION
+#ifdef USE_HARDWARE_REVISION_DETECTION			//Not needed
     updateHardwareRevision();
 #endif
 
-#if defined(NAZE)
+#if defined(NAZE)								//Not needed
     if (hardwareRevision == NAZE32_SP) {
         serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
     } else  {
@@ -472,13 +471,13 @@ void init(void)
     }
 #endif
 
-#if defined(SPRACINGF3) && defined(SONAR) && defined(USE_SOFTSERIAL2)
+#if defined(SPRACINGF3) && defined(SONAR) && defined(USE_SOFTSERIAL2)		//Not needed
     if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
         serialRemovePort(SERIAL_PORT_SOFTSERIAL2);
     }
 #endif
 
-#if defined(SPRACINGF3MINI) && defined(SONAR) && defined(USE_SOFTSERIAL1)
+#if defined(SPRACINGF3MINI) && defined(SONAR) && defined(USE_SOFTSERIAL1)	//Not needed
     if (feature(FEATURE_SONAR) && feature(FEATURE_SOFTSERIAL)) {
         serialRemovePort(SERIAL_PORT_SOFTSERIAL1);
     }
