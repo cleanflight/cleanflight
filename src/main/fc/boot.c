@@ -382,7 +382,7 @@ void init(void)
     else
         pwm_params.airplane = false;            //Not using airplane mode for the mixer. So probably this case
 #if defined(USE_UART2) && defined(STM32F10X)    //Only three hardware ports on the edison?
-    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_UART2);      //Returns true of the port configurations are defined 
+    pwm_params.useUART2 = doesConfigurationUsePort(SERIAL_PORT_UART2);      //Returns true if the port configurations are defined 
 #endif
 #if defined(USE_UART3)
     pwm_params.useUART3 = doesConfigurationUsePort(SERIAL_PORT_UART3);
@@ -487,9 +487,9 @@ void init(void)
 #ifdef USE_I2C
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
-        i2cInit(I2C_DEVICE);
+        i2cInit(I2C_DEVICE);									//Simply set GPIO pins to I2C mode
     } else {
-        if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {
+        if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {		//Initialize I2C device if UART is not used on that port
             i2cInit(I2C_DEVICE);
         }
     }
@@ -498,10 +498,11 @@ void init(void)
         i2cInit(I2C_DEVICE);
     }
 #else
-    i2cInit(I2C_DEVICE);
+    i2cInit(I2C_DEVICE);				//Only one I2C device for each device(obviously!!)
 #endif
 #endif
 
+//Assign values to ADC struct values based on definitions and initialize ADC accordingly using adcinit()
 #ifdef USE_ADC
     drv_adc_config_t adc_params;
 
@@ -574,20 +575,20 @@ void init(void)
 
     rxInit(modeActivationProfile()->modeActivationConditions);
 
-#ifdef GPS
+#ifdef GPS   												//Not essential
     if (feature(FEATURE_GPS)) {
         gpsInit();
         navigationInit(pidProfile());
     }
 #endif
 
-#ifdef SONAR
+#ifdef SONAR        										//Not essential
     if (feature(FEATURE_SONAR)) {
         sonarInit(sonarHardware);
     }
 #endif
 
-#ifdef LED_STRIP
+#ifdef LED_STRIP    										//Not essential
     ledStripInit();
 
     if (feature(FEATURE_LED_STRIP)) {
@@ -595,17 +596,17 @@ void init(void)
     }
 #endif
 
-#ifdef TELEMETRY
+#ifdef TELEMETRY  											//Necessary? Ask rich
     if (feature(FEATURE_TELEMETRY)) {
         telemetryInit();
     }
 #endif
 
-#ifdef USB_CABLE_DETECTION
+#ifdef USB_CABLE_DETECTION 									//Defined only for one target. Probably non essential
     usbCableDetectInit();
 #endif
 
-#ifdef TRANSPONDER
+#ifdef TRANSPONDER 											//Non essential
     if (feature(FEATURE_TRANSPONDER)) {
         transponderInit(transponderConfig()->data);
         transponderEnable();
