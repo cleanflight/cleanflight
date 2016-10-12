@@ -546,7 +546,7 @@ void init(void)
         displayInit();
     }
 #endif
-
+    //TBD
     gyroSetSampleRate(imuConfig()->looptime, gyroConfig()->gyro_lpf, imuConfig()->gyroSync, imuConfig()->gyroSyncDenominator);   // Set gyro sampling rate divider before initialization
 
     if (!sensorsAutodetect()) {
@@ -561,7 +561,7 @@ void init(void)
 #ifdef USE_SERVOS
     mixerInitialiseServoFiltering(targetLooptime);
 #endif
-
+    //TBD
     imuInit();
 
     mspInit();
@@ -606,7 +606,7 @@ void init(void)
     usbCableDetectInit();
 #endif
 
-#ifdef TRANSPONDER 											//Non essential
+#ifdef TRANSPONDER 											//Non essential. Used for transmitting code as drone passes through checkpoints in races
     if (feature(FEATURE_TRANSPONDER)) {
         transponderInit(transponderConfig()->data);
         transponderEnable();
@@ -615,7 +615,7 @@ void init(void)
     }
 #endif
 
-#ifdef USE_FLASHFS
+#ifdef USE_FLASHFS                                        //What is this?(unknown)
 #ifdef NAZE
     if (hardwareRevision == NAZE32_REV5) {
         m25p16_init();
@@ -627,7 +627,7 @@ void init(void)
     flashfsInit();
 #endif
 
-#ifdef USE_SDCARD
+#ifdef USE_SDCARD 										//Non essential. Confirm!!!
     bool sdcardUseDMA = false;
 
     sdcardInsertionDetectInit();
@@ -643,12 +643,12 @@ void init(void)
 
 #endif
 
-    sdcard_init(sdcardUseDMA);
+    sdcard_init(sdcardUseDMA);                       
 
     afatfs_init();
 #endif
 
-#ifdef BLACKBOX
+#ifdef BLACKBOX 										//Non essential
     initBlackbox();
 #endif
 
