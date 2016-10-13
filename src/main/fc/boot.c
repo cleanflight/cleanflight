@@ -562,18 +562,18 @@ void init(void)
     mixerInitialiseServoFiltering(targetLooptime);
 #endif
     //TBD
-    imuInit();
+    imuInit();              //Initialize IMU angle input based on the imu init struct
 
-    mspInit();
+    mspInit();              //Function to be examined
     mspSerialInit();
 
 #ifdef USE_CLI
     cliInit();
 #endif
 
-    failsafeInit();
+    failsafeInit();         //Initialize fali safe mode to false. So doesn't really intialize fail safe mode
 
-    rxInit(modeActivationProfile()->modeActivationConditions);
+    rxInit(modeActivationProfile()->modeActivationConditions);          //Function to be examined
 
 #ifdef GPS   												//Not essential
     if (feature(FEATURE_GPS)) {
@@ -615,7 +615,7 @@ void init(void)
     }
 #endif
 
-#ifdef USE_FLASHFS                                        //What is this?(unknown)
+#ifdef USE_FLASHFS                                          //What is this?(unknown)
 #ifdef NAZE
     if (hardwareRevision == NAZE32_REV5) {
         m25p16_init();
@@ -624,10 +624,10 @@ void init(void)
     m25p16_init();
 #endif
 
-    flashfsInit();
+    flashfsInit();                                          //What is this?(unknown)
 #endif
 
-#ifdef USE_SDCARD 										//Non essential. Confirm!!!
+#ifdef USE_SDCARD 										    //Non essential. Confirm!!!
     bool sdcardUseDMA = false;
 
     sdcardInsertionDetectInit();
@@ -655,19 +655,19 @@ void init(void)
     if (mixerConfig()->mixerMode == MIXER_GIMBAL) {
         accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
     }
-    gyroSetCalibrationCycles(CALIBRATING_GYRO_CYCLES);
+    gyroSetCalibrationCycles(CALIBRATING_GYRO_CYCLES);  //Simply assign to calibration value in the gyro.c file 
 #ifdef BARO
-    baroSetCalibrationCycles(CALIBRATING_BARO_CYCLES);
+    baroSetCalibrationCycles(CALIBRATING_BARO_CYCLES);  //Non essential probably. Baro not needed
 #endif
 
     // start all timers
     // TODO - not implemented yet
-    timerStart();
+    timerStart();           //Not doing anything
 
-    ENABLE_STATE(SMALL_ANGLE);
-    DISABLE_ARMING_FLAG(PREVENT_ARMING);
+    ENABLE_STATE(SMALL_ANGLE);                  //Logical or SMALL_ANGLE flag to list of state flags
+    DISABLE_ARMING_FLAG(PREVENT_ARMING);        //Un OR PREVENT_ARMING to list of arming flag
 
-#ifdef SOFTSERIAL_LOOPBACK
+#ifdef SOFTSERIAL_LOOPBACK                      //To check if loopback is working on soft_serial. Non essential
     // FIXME this is a hack, perhaps add a FUNCTION_LOOPBACK to support it properly
     loopbackPort = (serialPort_t*)&(softSerialPorts[0]);
     if (!loopbackPort->vTable) {
@@ -677,18 +677,18 @@ void init(void)
 #endif
 
 
-    if (feature(FEATURE_VBAT)) {
+    if (feature(FEATURE_VBAT)) {            //To check if Voltage from battery is proper. Probably non essential.
         // Now that everything has powered up the voltage and cell count be determined.
 
         voltageMeterInit();
         batteryInit();
     }
 
-    if (feature(FEATURE_AMPERAGE_METER)) {
+    if (feature(FEATURE_AMPERAGE_METER)) {  //Same as FEATURE_VBAT
         amperageMeterInit();
     }
 
-#ifdef DISPLAY
+#ifdef DISPLAY                              //Same as osd? Non essential
     if (feature(FEATURE_DISPLAY)) {
 #ifdef USE_OLED_GPS_DEBUG_PAGE_ONLY
         displayShowFixedPage(PAGE_GPS);
