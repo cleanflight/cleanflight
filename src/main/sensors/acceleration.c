@@ -234,7 +234,7 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 
         if (accFilterInitialised) {
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                accSmooth[axis] = lrintf(biquadFilterApply(&accFilter[axis], (float)accSmooth[axis]));
+                accSmooth[axis] = lrintf(biquadFilterApply(&accFilter[axis], (float)accADCRaw[axis]));
             }
         }
     }
