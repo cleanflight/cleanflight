@@ -250,25 +250,25 @@ void init(void)
 
     //printfSupportInit();
 
-    initEEPROM();
+    initEEPROM();								//skip for now
 
-    ensureEEPROMContainsValidData();
-    readEEPROM();
+    ensureEEPROMContainsValidData();			//skip for now
+    readEEPROM();								//skip for now
 
     systemState |= SYSTEM_STATE_CONFIG_LOADED;
 
 #ifdef STM32F303
     // start fpu
-    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));             //For accessing co processors. CPACR-> Co-processor access control register
+    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));             //For accessing co processors. CPACR-> Co-processor access control register. Non essential?
 #endif
 
 #ifdef STM32F303xC
-    SetSysClock();          //Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines
+    SetSysClock();          //Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines. Redundant
 #endif
 #ifdef STM32F10X
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
     // Configure the Flash Latency cycles and enable prefetch buffer
-    SetSysClock(systemConfig()->emf_avoidance);
+    SetSysClock(systemConfig()->emf_avoidance);			//Redundant as clock is already taken care of by the kernel and I don't have to start it manually
 #endif
     i2cSetOverclock(systemConfig()->i2c_highspeed);
 
