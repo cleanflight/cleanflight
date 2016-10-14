@@ -206,7 +206,7 @@ static void convertRawACCADCReadingsToInternalType(int16_t *accADCRaw)
 
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
-	int16_t accADCRaw[XYZ_AXIS_COUNT];
+    int16_t accADCRaw[XYZ_AXIS_COUNT];
 
     if (!acc.read(accADCRaw)) {
         return;
