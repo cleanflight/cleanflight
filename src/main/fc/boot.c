@@ -747,30 +747,13 @@ void configureScheduler(void)
 
     rescheduleTask(TASK_PID, gyroPeriodUs);
     setTaskEnabled(TASK_PID, true);
-
-	if (sensors(SENSOR_ACC)) {
-        setTaskEnabled(TASK_ACCEL, true);
-        switch (gyroPeriodUs) {  // Switch statement kept in place to change acc rates in the future
-        case 500:
-        case 375:
-        case 250:
-        case 125:
-            accTargetLooptime = 1000;
-            break;
-        default:
-        case 1000:
-#ifdef STM32F10X
-            accTargetLooptime = 1000;
-#else
-            accTargetLooptime = 1000;
-#endif
-        }
-        rescheduleTask(TASK_ACCEL, accTargetLooptime);
-    }
+	
     if (sensors(SENSOR_ACC)) {
+        accTargetLooptime = 1000;
+        rescheduleTask(TASK_ACCEL, accTargetLooptime);
         setTaskEnabled(TASK_ACCEL, true);
     }
-
+    
     setTaskEnabled(TASK_ATTITUDE, sensors(SENSOR_ACC));
     setTaskEnabled(TASK_SERIAL, true);
 #ifdef BEEPER
