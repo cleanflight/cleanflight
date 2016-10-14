@@ -40,6 +40,12 @@ extern uint32_t accTargetLooptime;
 extern int32_t accADC[XYZ_AXIS_COUNT];
 extern int32_t accSmooth[XYZ_AXIS_COUNT];
 
+extern uint16_t InflightcalibratingA;
+extern bool AccInflightCalibrationArmed;
+extern bool AccInflightCalibrationMeasurementDone;
+extern bool AccInflightCalibrationSavetoEEProm;
+extern bool AccInflightCalibrationActive;
+
 typedef struct rollAndPitchTrims_s {
     int16_t roll;
     int16_t pitch;
