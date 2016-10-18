@@ -38,19 +38,6 @@
 
 #include "msp/msp.h"
 
-// handle received command, possibly generate reply.
-// return nonzero when reply was generated (including reported error)
-int mspProcessCommand(mspPacket_t *command, mspPacket_t *reply)
-{
-    // initialize reply by default
-    reply->cmd = command->cmd;
-
-    int status = mspServerCommandHandler(command, reply);
-    reply->result = status;
-
-    return status;
-}
-
 #ifdef USE_MSP_CLIENT
 void mspProcessReply(mspPacket_t *reply)
 {

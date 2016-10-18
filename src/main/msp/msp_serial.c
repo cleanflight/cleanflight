@@ -41,6 +41,7 @@
 #include "msp/msp.h"
 #include "msp/msp_serial.h"
 
+static mspProcessCommandFnPtr mspProcessCommandFn;
 mspPostProcessFuncPtr mspPostProcessFn = NULL;
 
 mspPort_t mspPorts[MAX_MSP_PORT_COUNT];
@@ -113,15 +114,6 @@ void mspSerialReleasePortIfAllocated(serialPort_t *serialPort)
     }
 }
 
-void mspSerialInit(void)
-{
-    for(int i = 0; i < MAX_MSP_PORT_COUNT; i++) {
-        resetMspPort(&mspPorts[i], NULL);
-    }
-
-    mspSerialAllocatePorts();
-}
-
 static uint8_t mspSerialChecksum(uint8_t checksum, uint8_t byte)
 {
     return checksum ^ byte;
@@ -178,7 +170,7 @@ STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
 
     uint8_t *outBufHead = reply->buf.ptr;
 
-    int status = mspProcessCommand(&command, reply);
+    const int status = mspProcessCommandFn(&command, reply);
 
     if (status) {
         // reply should be sent back
@@ -331,3 +323,14 @@ void mspSerialProcess(void)
         }
     }
 }
+
+void mspSerialInit(mspProcessCommandFnPtr mspProcessCommandFnToUse)
+{
+    mspProcessCommandFn = mspProcessCommandFnToUse;
+    for(int i = 0; i < MAX_MSP_PORT_COUNT; i++) {
+        resetMspPort(&mspPorts[i], NULL);
+    }
+
+    mspSerialAllocatePorts();
+}
+

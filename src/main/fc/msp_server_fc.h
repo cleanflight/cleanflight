@@ -16,3 +16,7 @@
  */
 
 #pragma once
+
+#include "msp/msp.h"
+
+mspProcessCommandFnPtr mspFcInit(void);

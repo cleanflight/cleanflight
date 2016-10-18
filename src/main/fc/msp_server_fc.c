@@ -486,7 +486,7 @@ static void serializeDataflashReadReply(mspPacket_t *reply, uint32_t address, in
 #endif
 
 // return positive for ACK, negative on error, zero for no reply
-int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
+static int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 {
     sbuf_t *dst = &reply->buf;
     sbuf_t *src = &cmd->buf;
@@ -1515,7 +1515,24 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
     return 1;     // message was handled successfully
 }
 
-void mspInit(void)
+// handle received command, possibly generate reply.
+// return nonzero when reply was generated (including reported error)
+static int mspProcessCommand(mspPacket_t *command, mspPacket_t *reply)
+{
+    // initialize reply by default
+    reply->cmd = command->cmd;
+
+    int status = mspServerCommandHandler(command, reply);
+    reply->result = status;
+
+    return status;
+}
+
+/*
+ * Return a pointer to the process command function
+ */
+mspProcessCommandFnPtr mspFcInit(void)
 {
     initActiveBoxIds();
+    return mspProcessCommand;
 }

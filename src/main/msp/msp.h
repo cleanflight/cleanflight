@@ -23,15 +23,7 @@ typedef struct mspPacket_s {
     int16_t result;
 } mspPacket_t;
 
-void mspInit(void);
-
-//
-// server
-//
-int mspProcessCommand(mspPacket_t *command, mspPacket_t *reply);
-
-// return positive for ACK, negative on error, zero for no reply
-int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply);
+typedef int (*mspProcessCommandFnPtr)(mspPacket_t *command, mspPacket_t *reply);
 
 //
 // client

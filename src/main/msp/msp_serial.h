@@ -96,7 +96,7 @@ typedef void (*mspPostProcessFuncPtr)(mspPort_t *); // msp post process function
 
 extern mspPostProcessFuncPtr mspPostProcessFn;
 
-void mspSerialInit(void);
+void mspSerialInit(mspProcessCommandFnPtr mspProcessCommandFn);
 void mspSerialProcess();
 void mspSerialAllocatePorts(void);
 void mspSerialReleasePortIfAllocated(serialPort_t *serialPort);

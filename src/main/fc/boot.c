@@ -562,8 +562,7 @@ void init(void)
 
     flashLedsAndBeep();
 
-    mspInit();
-    mspSerialInit();
+    mspSerialInit(mspFcInit());
 
     const uint16_t pidPeriodUs = US_FROM_HZ(gyro.sampleFrequencyHz);
     pidSetTargetLooptime(pidPeriodUs * gyroConfig()->pid_process_denom);
