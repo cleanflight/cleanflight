@@ -59,6 +59,7 @@ extern "C" {
 extern "C" {
     void mspSerialProcessReceivedCommand(mspPort_t *msp);
     extern mspPort_t mspPorts[];
+    extern mspProcessCommandFnPtr mspProcessCommandFn;
 
     PG_REGISTER(serialConfig_t, serialConfig, PG_SERIAL_CONFIG, 0);
 }
@@ -154,7 +155,7 @@ uint8_t msp_echo_data[]="PING\0PONG";
 uint8_t msp_request_data[]={0xbe, 0xef};
 uint8_t msp_reply_data[]={0x55,0xaa};
 
-int mspServerCommandHandler(mspPacket_t *command, mspPacket_t *reply)
+static int mspServerCommandHandler(mspPacket_t *command, mspPacket_t *reply)
 {
     sbuf_t *src = &command->buf;
     sbuf_t *dst = &reply->buf;
@@ -207,6 +208,7 @@ static uint8_t csumData(uint8_t csum, uint8_t* data, int len)
 
 TEST_F(SerialMspUnitTest, Test_MspSerialOutFraming)
 {
+    mspProcessCommandFn = mspServerCommandHandler;
     mspPort->cmdMSP = MSP_TEST_REPLY;
     mspPort->dataSize = 0;
     mspSerialProcessReceivedCommand(mspPort);

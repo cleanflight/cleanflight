@@ -41,7 +41,7 @@
 #include "msp/msp.h"
 #include "msp/msp_serial.h"
 
-static mspProcessCommandFnPtr mspProcessCommandFn;
+STATIC_UNIT_TESTED mspProcessCommandFnPtr mspProcessCommandFn;
 mspPostProcessFuncPtr mspPostProcessFn = NULL;
 
 mspPort_t mspPorts[MAX_MSP_PORT_COUNT];

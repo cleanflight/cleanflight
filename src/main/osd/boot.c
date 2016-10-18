@@ -188,8 +188,7 @@ void init(void)
 
     flashLed();
 
-    mspInit();
-    mspSerialInit();
+    mspSerialInit(mspOsdInit());
 
 #ifdef TRANSPONDER
     if (feature(FEATURE_TRANSPONDER)) {

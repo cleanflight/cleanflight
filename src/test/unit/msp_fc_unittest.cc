@@ -58,6 +58,7 @@ extern "C" {
     #include "io/transponder_ir.h"
     #include "io/serial.h"
 
+    #include "fc/msp_server_fc.h"
     #include "msp/msp_protocol.h"
     #include "msp/msp.h"
     #include "msp/msp_server.h"
@@ -179,7 +180,8 @@ TEST_F(MspTest, TestMsp_API_VERSION)
 {
     cmd.cmd = MSP_API_VERSION;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(3, reply.buf.ptr - rbuf) << "Reply size";
     EXPECT_EQ(MSP_API_VERSION, reply.cmd);
@@ -192,7 +194,8 @@ TEST_F(MspTest, TestMsp_FC_VARIANT)
 {
     cmd.cmd = MSP_FC_VARIANT;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(FLIGHT_CONTROLLER_IDENTIFIER_LENGTH, reply.buf.ptr - rbuf) << "Reply size";
     EXPECT_EQ(MSP_FC_VARIANT, reply.cmd);
@@ -206,7 +209,8 @@ TEST_F(MspTest, TestMsp_FC_VERSION)
 {
     cmd.cmd = MSP_FC_VERSION;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(FLIGHT_CONTROLLER_VERSION_LENGTH, reply.buf.ptr - rbuf) << "Reply size";
     EXPECT_EQ(MSP_FC_VERSION, reply.cmd);
@@ -222,7 +226,8 @@ TEST_F(MspTest, TestMsp_PID_CONTROLLER)
 
     cmd.cmd = MSP_PID_CONTROLLER;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(1, reply.buf.ptr - rbuf) << "Reply size";
     EXPECT_EQ(MSP_PID_CONTROLLER, reply.cmd);
@@ -237,7 +242,8 @@ TEST_F(MspTest, TestMsp_SET_PID_CONTROLLER)
     cmd.cmd = MSP_SET_PID_CONTROLLER;
     *cmd.buf.end++ = PID_CONTROLLER_MWREWRITE;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(PID_CONTROLLER_MWREWRITE, pidProfile()->pidController);
 }
@@ -311,7 +317,8 @@ TEST_F(MspTest, TestMsp_PID)
     // use the MSP to write out the PID values
     cmd.cmd = MSP_PID;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(3 * PID_ITEM_COUNT, reply.buf.ptr - rbuf) << "Reply size";
     // check few values, just to make sure they have been written correctly
@@ -327,7 +334,7 @@ TEST_F(MspTest, TestMsp_PID)
     copyReplyDataToCmd();
     resetReply();
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     // check the values are as expected
     EXPECT_EQ(P8_ROLL, pidProfile()->P8[PIDROLL]);
@@ -370,7 +377,8 @@ TEST_F(MspTest, TestMsp_BOARD_ALIGNMENT)
 
     cmd.cmd = MSP_BOARD_ALIGNMENT;
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     EXPECT_EQ(sizeof(boardAlignment_t), reply.buf.ptr - rbuf) << "Reply size";
     EXPECT_EQ(MSP_BOARD_ALIGNMENT, reply.cmd);
@@ -385,7 +393,7 @@ TEST_F(MspTest, TestMsp_BOARD_ALIGNMENT)
     copyReplyDataToCmd();
     resetReply();
 
-    EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+    EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
     // check the values are as expected
     EXPECT_FLOAT_EQ(testBoardAlignment.rollDegrees, boardAlignment()->rollDegrees);
@@ -470,11 +478,12 @@ TEST_F(MspTest, TestMspCommands)
         MSP_ACC_TRIM,            // 240    //out message         get acc angle trim values
         MSP_SERVO_MIX_RULES,     // 241    //out message         Returns servo mixer configuration
     };
+    mspProcessCommandFnPtr mspProcessCommandFn = mspFcInit();
     for (uint ii = 0; ii < ARRAYLEN(outMessages); ii++) {
         resetPackets();
         cmd.cmd = outMessages[ii];
 
-        EXPECT_GT(mspProcessCommand(&cmd, &reply), 0);
+        EXPECT_GT(mspProcessCommandFn(&cmd, &reply), 0);
 
         EXPECT_EQ(outMessages[ii], reply.cmd) << "Command index " << ii;
         EXPECT_LT(0, reply.result) << "Command index " << ii;

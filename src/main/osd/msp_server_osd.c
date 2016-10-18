@@ -416,6 +416,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
     return 1;     // message was handled successfully
 }
 
-void mspInit(void)
+mspProcessCommandFnPtr mspOsdInit(void)
 {
+    return mspServerCommandHandler;
 }
