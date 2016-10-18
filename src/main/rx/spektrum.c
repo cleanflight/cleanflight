@@ -50,6 +50,8 @@
 
 #define SPEKTRUM_BAUDRATE 115200
 
+static uint8_t initialPacket = 0;
+static uint8_t frameLoss = 0;
 static uint8_t spek_chan_shift;
 static uint8_t spek_chan_mask;
 static bool rcFrameComplete = false;
@@ -123,7 +125,7 @@ static void spektrumDataReceive(uint16_t c)
 
 static uint32_t spekChannelData[SPEKTRUM_MAX_SUPPORTED_CHANNEL_COUNT];
 
-uint8_t spektrumFrameStatus(void)
+uint8_t spektrumFrameStatus(rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
 {
     uint8_t b;
 
@@ -132,6 +134,56 @@ uint8_t spektrumFrameStatus(void)
     }
 
     rcFrameComplete = false;
+
+	//Check for bind type in the first packet after startup. This is provided in the second byte in a data packet from the internal remote.
+    //This packet wont contain any data if the remote was bound using a separate receiver (bound as external remote)
+    if(!initialPacket){
+
+        //save current resolution to variable in case remote rx is bound as external.
+        //This will prevent the if statement (after the switch case) from setting the resolution to an incorrect value if no resolution data is received.
+        uint8_t spmResolution = rxConfig->serialrx_provider;
+
+        switch (spekFrame[1]){
+            case 0xb2:       //11MS 2048 DSMX
+                spmResolution = SERIALRX_SPEKTRUM2048;
+                break;
+            case 0xa2:  //22MS 2048 DSMX
+                spmResolution = SERIALRX_SPEKTRUM2048;
+                break;
+            case 0x12:  //11MS 2048 DSM2
+                spmResolution = SERIALRX_SPEKTRUM2048;
+                break;
+            case 0x01:  //22MS 1024 DSM2
+                spmResolution = SERIALRX_SPEKTRUM1024;
+                break;
+        }
+
+    if(rxConfig->serialrx_provider != spmResolution){
+        rxConfig->serialrx_provider = spmResolution;
+        saveConfigAndNotify();
+    }
+        //Immediately set the resolution settings so that a reboot isn't required after binding.
+        switch (rxConfig->serialrx_provider) {
+            case SERIALRX_SPEKTRUM2048:
+                // 11 bit frames
+                spek_chan_shift = 3;
+                spek_chan_mask = 0x07;
+                spekHiRes = true;
+                rxRuntimeConfig->channelCount = SPEKTRUM_2048_CHANNEL_COUNT;
+                break;
+            case SERIALRX_SPEKTRUM1024:
+                // 10 bit frames
+                spek_chan_shift = 2;
+                spek_chan_mask = 0x03;
+                spekHiRes = false;
+                rxRuntimeConfig->channelCount = SPEKTRUM_1024_CHANNEL_COUNT;
+                break;
+        }
+
+        initialPacket=1;    //prevent this byte from being read every packet. It's only necessary to determine bind type at startup.
+    }
+
+    frameLoss = spekFrame[0];   //fades (or frame loss if single sat rx) is provided in the first byte of a sat rx packet
 
     for (b = 3; b < SPEK_FRAME_SIZE; b += 2) {
         uint8_t spekChannel = 0x0F & (spekFrame[b - 1] >> spek_chan_shift);
@@ -151,11 +203,17 @@ static uint16_t spektrumReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint
         return 0;
     }
 
+#ifdef SPEKTRUM_PROPER_SCALING //To match intended spektrum pulse range. This will allow consistent travel between ppm and serial rx's
     if (spekHiRes)
-        data = 988 + (spekChannelData[chan] >> 1);   // 2048 mode
+        data = 903 + (spekChannelData[chan]*.583);    // 2048 mode
     else
-        data = 988 + spekChannelData[chan];          // 1024 mode
-
+        data = 903 + (spekChannelData[chan]*1.166);   // 1024 mode
+#else
+    if (spekHiRes)
+        data = 988 + (spekChannelData[chan] >> 1);      // 2048 mode
+    else
+        data = 988 + spekChannelData[chan];             // 1024 mode
+#endif
     return data;
 }
 

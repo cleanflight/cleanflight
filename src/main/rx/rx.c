@@ -276,7 +276,7 @@ uint8_t serialRxFrameStatus(void)
     switch (rxConfig()->serialrx_provider) {
         case SERIALRX_SPEKTRUM1024:
         case SERIALRX_SPEKTRUM2048:
-            return spektrumFrameStatus();
+            return spektrumFrameStatus(rxConfig, &rxRuntimeConfig);
         case SERIALRX_SBUS:
             return sbusFrameStatus();
         case SERIALRX_SUMD:
@@ -594,12 +594,12 @@ void updateRSSIPWM(void)
     int16_t pwmRssi = 0;
     // Read value of AUX channel as rssi
     pwmRssi = rcData[rxConfig()->rssi_channel - 1];
-	
-	// RSSI_Invert option	
+
+	// RSSI_Invert option
 	if (rxConfig()->rssi_ppm_invert) {
 	    pwmRssi = ((2000 - pwmRssi) + 1000);
 	}
-	
+
     // Range of rawPwmRssi is [1000;2000]. rssi should be in [0;1023];
     rssi = (uint16_t)((constrain(pwmRssi - 1000, 0, 1000) / 1000.0f) * 1023.0f);
 }
