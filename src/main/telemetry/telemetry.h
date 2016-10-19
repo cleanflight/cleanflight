@@ -37,6 +37,9 @@ PG_DECLARE(telemetryConfig_t, telemetryConfig);
 
 void telemetryInit(void);
 
+bool telemetryIsPortSharedWithRx(serialPortConfig_t *portConfig);
+extern serialPort_t *telemetrySharedPort;
+
 uint8_t telemetryCheckState(void);
 void telemetryProcess(uint16_t deadband3d_throttle);
 
@@ -44,3 +47,4 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing);
 
 void telemetryUseConfig(telemetryConfig_t *telemetryConfig);
 
+#define TELEMETRY_SHAREABLE_PORT_FUNCTIONS_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_LTM)

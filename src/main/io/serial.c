@@ -203,7 +203,11 @@ serialPort_t *findNextSharedSerialPort(uint16_t functionMask, serialPortFunction
     return NULL;
 }
 
+#ifdef TELEMETRY
+#define ALL_TELEMETRY_FUNCTIONS_MASK (TELEMETRY_SHAREABLE_PORT_FUNCTIONS_MASK | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_SMARTPORT)
+#else
 #define ALL_TELEMETRY_FUNCTIONS_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_SMARTPORT | FUNCTION_TELEMETRY_LTM | FUNCTION_TELEMETRY_MAVLINK)
+#endif
 #define ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER (FUNCTION_BLACKBOX | ALL_TELEMETRY_FUNCTIONS_MASK)
 
 bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
@@ -212,7 +216,8 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
     /*
      * rules:
      * - 1 MSP port minimum, max MSP ports is defined and must be adhered to.
-     * - Only MSP SERVER is allowed to be shared with EITHER any telemetry OR blackbox.
+     * - MSP SERVER is allowed to be shared with EITHER any telemetry OR blackbox.
+     * - serial RX and FrSky / LTM telemetry can be shared
      * - No other sharing combinations are valid.
      */
     uint8_t mspPortCount = 0;
@@ -232,12 +237,14 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
                 return false;
             }
 
-            if (!(portConfig->functionMask & FUNCTION_MSP_SERVER)) {
-                return false;
-            }
-
-            if (!(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER)) {
-                // some other bit must have been set.
+            if ((portConfig->functionMask & FUNCTION_MSP_SERVER) && (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER)) {
+                // MSP & telemetry
+#ifdef TELEMETRY
+            } else if (telemetryIsPortSharedWithRx(portConfig)) {
+                // serial RX & telemetry
+#endif
+            } else {
+                // some other combination
                 return false;
             }
         }

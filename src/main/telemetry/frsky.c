@@ -475,16 +475,23 @@ bool hasEnoughTimeLapsedSinceLastTelemetryTransmission(uint32_t currentMillis)
 
 bool checkFrSkyTelemetryState(void)
 {
-    bool newTelemetryEnabledValue = telemetryDetermineEnabledState(frskyPortSharing);
+    if (portConfig && telemetryIsPortSharedWithRx(portConfig)) {
+        if (!frskyTelemetryEnabled && telemetrySharedPort != NULL) {
+            frskyPort = telemetrySharedPort;
+            frskyTelemetryEnabled = true;
+        }
+    } else {
+        bool newTelemetryEnabledValue = telemetryDetermineEnabledState(frskyPortSharing);
 
-    if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
-        return false;
+        if (newTelemetryEnabledValue == frskyTelemetryEnabled) {
+            return false;
+        }
+
+        if (newTelemetryEnabledValue)
+            configureFrSkyTelemetryPort();
+        else
+            freeFrSkyTelemetryPort();
     }
-
-    if (newTelemetryEnabledValue)
-        configureFrSkyTelemetryPort();
-    else
-        freeFrSkyTelemetryPort();
 
     return true;
 }

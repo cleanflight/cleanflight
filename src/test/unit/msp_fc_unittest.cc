@@ -595,5 +595,11 @@ bool isSerialTransmitBufferEmpty(const serialPort_t *) { return true; }
 amperageMeter_t *getAmperageMeter(amperageMeter_e index) { UNUSED(index); return &amperageMeter; }
 batteryState_e getBatteryState(void) { return BATTERY_NOT_PRESENT; }
 voltageMeterState_t *getVoltageMeter(uint8_t ) { return &voltageMeter; }
-}
 
+bool telemetryIsPortSharedWithRx(serialPortConfig_t *portConfig)
+{
+    UNUSED(portConfig);
+
+    return false;
+}
+}

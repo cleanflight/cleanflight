@@ -86,6 +86,13 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing)
     return enabled;
 }
 
+bool telemetryIsPortSharedWithRx(serialPortConfig_t *portConfig)
+{
+    return portConfig->functionMask & FUNCTION_RX_SERIAL && portConfig->functionMask & TELEMETRY_SHAREABLE_PORT_FUNCTIONS_MASK;
+}
+
+serialPort_t *telemetrySharedPort = NULL;
+
 // 0 =  no states changed, > 0, some state changed.
 uint8_t telemetryCheckState(void)
 {
