@@ -35,7 +35,7 @@
 #include "system.h"
 
 // cycles per microsecond
-static uint32_t usTicks = 0;
+static uint32_t usTicks = 0;            //Used to calculate time elapsed in microseconds
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
 // cached value of RCC->CSR
@@ -77,41 +77,43 @@ uint32_t millis(void)
     return sysTickUptime;
 }
 
-void systemInit(void)
+void systemInit(void)               //Only needed to initialize uart?
 {
-#ifdef CC3D
-    /* Accounts for OP Bootloader, set the Vector Table base address as specified in .ld file */
+/*#ifdef CC3D               //Not needed for edison
+    //Accounts for OP Bootloader, set the Vector Table base address as specified in .ld file
     extern void *isr_vector_table_base;
 
-    NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);
+    NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);             //Not needed. Necessary interrupts are initialized when writing code for the peripherals
+*/
 #endif
     // Configure NVIC preempt/priority groups
-    NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);
+    //NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);                       //Priority handled by the mraa library.
 
-#ifdef STM32F10X
+/*#ifdef STM32F10X                                                            //Not necessary.
     // Turn on clocks for stuff we use
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 #endif
-
+*/
     // cache RCC->CSR value to use it in isMPUSoftreset() and others
-    cachedRccCsrValue = RCC->CSR;
+    /*cachedRccCsrValue = RCC->CSR;                         //Gets the cached value of register. Unnecessary.
     RCC_ClearFlag();
+    */
+    //enableGPIOPowerUsageAndNoiseReductions();             //Not necessary for now
 
-    enableGPIOPowerUsageAndNoiseReductions();
+    usartInitAllIOSignals();                                //Replace with code for initializing uart
 
-    usartInitAllIOSignals();
-
+/*
 #ifdef STM32F10X
     // Turn off JTAG port 'cause we're using the GPIO for leds
 #define AFIO_MAPR_SWJ_CFG_NO_JTAG_SW            (0x2 << 24)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;
 #endif
-
+*/                                                           //No JTAG port on the edison
     // Init cycle counter
-    cycleCounterInit();
+    //cycleCounterInit();                                    //Calculates cycles per Microsecond. Unecessary
 
     // SysTick
-    SysTick_Config(SystemCoreClock / 1000);
+    //SysTick_Config(SystemCoreClock / 1000);             //Systick generates interrupts at a regular interval. OS is gonna do this anyway. Not needed
 }
 
 #if 1

@@ -1,3 +1,4 @@
+
 /*
  * This file is part of Cleanflight.
  *
@@ -270,14 +271,15 @@ void init(void)
     // Configure the Flash Latency cycles and enable prefetch buffer
     SetSysClock(systemConfig()->emf_avoidance);			//Redundant as clock is already taken care of by the kernel and I don't have to start it manually
 #endif
-    i2cSetOverclock(systemConfig()->i2c_highspeed);
+    i2cSetOverclock(systemConfig()->i2c_highspeed);		//Use mraa_intel_edison_i2c_freq() from intel_edison_fab_c.c
+                                                        //Insted writing to the file pointed to by the function on startup to set it to high speed mode
 
-    systemInit();
+    systemInit();										//UART initialize happening only inside this function. Replace this with the function to initialize UART
 
-#ifdef USE_HARDWARE_REVISION_DETECTION
-    detectHardwareRevisio(n);
+/*#ifdef USE_HARDWARE_REVISION_DETECTION                //Unnecessary
+    detectHardwareRevision();
 #endif
-
+*/
     // Latch active features to be used for feature() in the remainder of init().
     latchActiveFeatures();
 
@@ -498,7 +500,7 @@ void init(void)
         i2cInit(I2C_DEVICE);
     }
 #else
-    i2cInit(I2C_DEVICE);				//Only one I2C device for each device(obviously!!)
+    i2cInit(I2C_DEVICE);				//Only one I2C device for each device(obviously!!) since it is serial
 #endif
 #endif
 
