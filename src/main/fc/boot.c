@@ -260,18 +260,18 @@ void init(void)
 
 #ifdef STM32F303
     // start fpu
-    SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));             //For accessing co processors. CPACR-> Co-processor access control register. Non essential?
+    //SCB->CPACR = (0x3 << (10*2)) | (0x3 << (11*2));             //For accessing co processors. CPACR-> Co-processor access control register. Non essential?
 #endif
 
 #ifdef STM32F303xC
-    SetSysClock();          //Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines. Redundant
+    //SetSysClock();          //Setup system clock. Find clock speed used to set edison clock to the same value? Probably faster to meet RT deadlines. Redundant
 #endif
 #ifdef STM32F10X
     // Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
     // Configure the Flash Latency cycles and enable prefetch buffer
-    SetSysClock(systemConfig()->emf_avoidance);			//Redundant as clock is already taken care of by the kernel and I don't have to start it manually
+    //SetSysClock(systemConfig()->emf_avoidance);			//Redundant as clock is already taken care of by the kernel and I don't have to start it manually
 #endif
-    i2cSetOverclock(systemConfig()->i2c_highspeed);		//Use mraa_intel_edison_i2c_freq() from intel_edison_fab_c.c
+    //i2cSetOverclock(systemConfig()->i2c_highspeed);		//Use mraa_intel_edison_i2c_freq() from intel_edison_fab_c.c
                                                         //Insted writing to the file pointed to by the function on startup to set it to high speed mode
 
     systemInit();										//UART initialize happening only inside this function. Replace this with the function to initialize UART
@@ -771,7 +771,7 @@ void configureScheduler(void)
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
 #endif
 }
-
+*/
 int main(void) {
     printf("Hello World\n");
     //init();
