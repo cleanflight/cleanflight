@@ -21,7 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#include "mraa.h"
+ 
 /*#include <platform.h>
 
 #include "build/build_config.h"
@@ -256,6 +257,9 @@ void init(void)
     ensureEEPROMContainsValidData();			//skip for now
     readEEPROM();								//skip for now
 
+
+    mraa_init();                                //initialize mraa operation for system
+
     systemState |= SYSTEM_STATE_CONFIG_LOADED;
 
 #ifdef STM32F303
@@ -486,10 +490,10 @@ void init(void)
 #endif
 
 
-#ifdef USE_I2C
+#ifdef USE_I2C                                                  //Mandatory
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
-        i2cInit(I2C_DEVICE);									//Simply set GPIO pins to I2C mode
+        i2cInit(I2C_DEVICE);									//Simply set GPIO pins to I2C mode. I2C_DEVICE enum set to bus 0 and 6
     } else {
         if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {		//Initialize I2C device if UART is not used on that port
             i2cInit(I2C_DEVICE);
