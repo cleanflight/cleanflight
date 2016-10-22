@@ -190,16 +190,9 @@ void i2cInitPort(I2C_TypeDef *I2Cx)
 
 void i2cInit(I2CDevice index)               //initialize i2c mraa context
 {
-    /*if (index == I2CDEV_1) {
-        I2Cx = I2C1;
-    } else {
-        I2Cx = I2C2;
-    }
-    i2cInitPort(I2Cx);*/
     mraa_add_subplatform(MRAA_GENERIC_FIRMATA, "/dev/ttyACM0");
-    mraa_i2c_context i2c;
+    mraa_i2c_context i2c;                    //Declare i2c context
     i2c = mraa_i2c_init(index);             //Bus number for A4-A5 pins
-
 }
 
 uint16_t i2cGetErrorCounter(void)

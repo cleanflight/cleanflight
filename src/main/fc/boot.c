@@ -490,10 +490,11 @@ void init(void)
 #endif
 
 
-#ifdef USE_I2C                                                  //Mandatory
+#ifdef USE_I2C                                                  //Mandatory, done
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);									//Simply set GPIO pins to I2C mode. I2C_DEVICE enum set to bus 0 and 6
+                                                                //code used for initializing i2c from i2c_firmata.c from mraa examples
     } else {
         if (!doesConfigurationUsePort(SERIAL_PORT_UART3)) {		//Initialize I2C device if UART is not used on that port
             i2cInit(I2C_DEVICE);

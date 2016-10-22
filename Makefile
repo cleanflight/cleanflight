@@ -381,7 +381,7 @@ STM32F10x_COMMON_SRC = \
 		   drivers/system_stm32f10x.c
 
 EDISON_SRC = src/main/fc/boot.c \
-			 src/main/target/target.h
+			 src/main/target/edison/target.h
 NAZE_SRC = \
 		   startup_stm32f10x_md_gcc.S \
 		   $(STM32F10x_COMMON_SRC) \
