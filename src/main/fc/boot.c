@@ -22,6 +22,9 @@
 #include <string.h>
 #include <stdio.h>
 #include "mraa.h"
+#include "drivers/bus_i2c.h"
+#include "edison.h"
+
  
 /*#include <platform.h>
 
@@ -56,7 +59,6 @@
 #include "drivers/pwm_mapping.h"
 #include "drivers/pwm_rx.h"
 #include "drivers/adc.h"
-#include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
 #include "drivers/inverter.h"
 #include "drivers/flash_m25p16.h"
@@ -246,7 +248,7 @@ void buttonsHandleColdBootButtonPresses(void)
 #endif
 */
 
-void init(void)
+/*void init(void)
 {
     drv_pwm_config_t pwm_params;
 
@@ -280,10 +282,10 @@ void init(void)
 
     systemInit();										//UART initialize happening only inside this function. Replace this with the function to initialize UART
 
-/*#ifdef USE_HARDWARE_REVISION_DETECTION                //Unnecessary
+#ifdef USE_HARDWARE_REVISION_DETECTION                //Unnecessary
     detectHardwareRevision();
 #endif
-*/
+
     // Latch active features to be used for feature() in the remainder of init().
     latchActiveFeatures();
 
@@ -490,7 +492,10 @@ void init(void)
 #endif
 
 
-#ifdef USE_I2C                                                  //Mandatory, done
+#ifdef USE_I2C                                                  //Mandatory, done for edison
+    #ifdef (EDISON)
+        i2cInit(I2C_DEVICE);
+    #endif
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {
         i2cInit(I2C_DEVICE);									//Simply set GPIO pins to I2C mode. I2C_DEVICE enum set to bus 0 and 6
@@ -715,7 +720,7 @@ void init(void)
     motorControlEnable = true;
 
     systemState |= SYSTEM_STATE_READY;
-}
+}*/
 /*
 #ifdef SOFTSERIAL_LOOPBACK
 void processLoopback(void) {
@@ -779,6 +784,14 @@ void configureScheduler(void)
 */
 int main(void) {
     printf("Hello World\n");
+    mraa_init();
+    #ifdef USE_I2C
+        printf("Defined\n");
+        i2cInit(I2C_DEVICE);
+    #endif
+    #ifndef USE_I2C
+        printf("Not defined\n");
+    #endif
     //init();
 
     /*configureScheduler();

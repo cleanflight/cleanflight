@@ -16,9 +16,9 @@
  */
 
 #pragma once
-
-#define TARGET_BOARD_IDENTIFIER "AFF3" // AlienFlight F3.
-#define USE_HARDWARE_REVISION_DETECTION
+#define EDISON
+#define TARGET_BOARD_IDENTIFIER "EDISON" // AlienFlight F3.
+//#define USE_HARDWARE_REVISION_DETECTION
 
 #define HW_GPIO     GPIOB
 #define HW_PIN      Pin_2
@@ -103,8 +103,8 @@
 #define UART2_TX_PINSOURCE  GPIO_PinSource2
 #define UART2_RX_PINSOURCE  GPIO_PinSource3
 
-#define UART3_TX_PIN        GPIO_Pin_10 // PB10 (AF7)
-#define UART3_RX_PIN        GPIO_Pin_11 // PB11 (AF7)
+#define UART3_TX_PIN        GPIO_Pin_10 		// PB10 (AF7)
+#define UART3_RX_PIN        GPIO_Pin_11 		// PB11 (AF7)
 #define UART3_GPIO_AF       GPIO_AF_7
 #define UART3_GPIO          GPIOB
 #define UART3_TX_PINSOURCE  GPIO_PinSource10
@@ -112,7 +112,7 @@
 
 
 #define USE_I2C
-#define I2C_DEVICE (I2CDEV_6) // SDA (PA10/AF4), SCL (PA9/AF4)
+#define I2C_DEVICE 			 I2CDEV_6 			// SDA (PA10/AF4), SCL (PA9/AF4)
 
 #define I2C2_SCL_GPIO        GPIOA
 #define I2C2_SCL_GPIO_AF     GPIO_AF_4
