@@ -248,7 +248,7 @@ void buttonsHandleColdBootButtonPresses(void)
 #endif
 */
 
-/*void init(void)
+void init(void)
 {
     drv_pwm_config_t pwm_params;
 
@@ -493,7 +493,7 @@ void buttonsHandleColdBootButtonPresses(void)
 
 
 #ifdef USE_I2C                                                  //Mandatory, done for edison
-    #ifdef (EDISON)
+    #ifdef (EDISON)                                             //Working
         i2cInit(I2C_DEVICE);
     #endif
 #if defined(NAZE)
@@ -720,7 +720,7 @@ void buttonsHandleColdBootButtonPresses(void)
     motorControlEnable = true;
 
     systemState |= SYSTEM_STATE_READY;
-}*/
+}
 /*
 #ifdef SOFTSERIAL_LOOPBACK
 void processLoopback(void) {
@@ -784,12 +784,6 @@ void configureScheduler(void)
 */
 int main(void) {
     printf("Hello World\n");
-    mraa_init();
-    printf("Init done\n");
-    #ifdef USE_I2C
-        printf("Defined\n");
-        i2cInit(I2C_DEVICE);
-    #endif
     return 0;
     //init();
 

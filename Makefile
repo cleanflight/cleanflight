@@ -986,10 +986,6 @@ $(VALID_TARGETS):
 .PHONY: all_targets
 all_targets : $(VALID_TARGETS)
 
-## clean       : clean up all temporary / machine-generated files
-clean:
-	rm -rf $(OUTPUT_DIR)
-
 flash_$(TARGET): $(TARGET_HEX)
 	stty -F $(SERIAL_DEVICE) raw speed 115200 -crtscts cs8 -parenb -cstopb -ixon
 	echo -n 'R' >$(SERIAL_DEVICE)
@@ -1068,13 +1064,22 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
-compile: clean objs
-	cd $(OBJ_DIR)
-	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(MRAA_FLAG)
+#Main target. Link all .o files to create executable
+compile: clean objs  	
+	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(MRAA_FLAG)		#Compile .o files into executable
 
+
+#Create object files based on the input source files and move them to /out/obj
 objs:
 	mkdir -p $(OBJ_DIR) && $(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(MRAA_FLAG)    
 	mv *.i *.d *.o *.s $(OBJ_DIR)
+
+#Clean up all temporary / machine-generated files
+clean:
+	rm -rf $(OUTPUT_DIR)
+
+
+#test target
 echo:
 	echo $(EDISON_INC)	
 
