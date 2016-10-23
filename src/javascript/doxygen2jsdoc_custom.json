@@ -1,0 +1,77 @@
+{
+  "Uart": {
+    "read": {
+      "description": "Read length bytes from the device",
+      "params": {
+        "length": {
+          "type": "Number",
+          "description": "Size of read in bytes to make"
+        }
+      },
+      "return": {
+        "type": "Buffer",
+        "description": "Data read"
+      }
+    },
+    "write": {
+      "description": "Write length bytes to the device",
+      "params": {
+        "length": {
+          "type": "Number",
+          "description": "Size of buffer to send"
+        }
+      },
+      "return": {
+        "type": "mraa_result_t",
+        "description": "Result of operation"
+      }
+    }
+  },
+  "I2c": {
+    "read": {
+      "description": "Read length bytes from the bus",
+      "params": {
+        "length": {
+          "type": "Number",
+          "description": "Size of read in bytes to make"
+        }
+      },
+      "return": {
+        "type": "Buffer",
+        "description": "Data read"
+      }
+    },
+    "write": {
+      "description": "Write length bytes to the bus, the first byte in the Buffer is the command/register to write",
+      "params": {
+        "length": {
+          "type": "Number",
+          "description": "Size of buffer to send"
+        }
+      },
+      "return": {
+        "type": "mraa_result_t",
+        "description": "Result of operation"
+      }
+    }
+  },
+  "Gpio": {
+    "isr": {
+      "description": "Sets a callback to be called when pin value changes",
+      "params": {
+        "mode": {
+          "type": "Edge",
+          "description": "The edge mode to set"
+        },
+        "func": {
+          "type": "Function",
+          "description": "Function to be called when interrupt is triggered"
+        }
+      },
+      "return": {
+        "type": "mraa_result_t",
+        "description": "Result of operation"
+      }
+    }
+  }
+}

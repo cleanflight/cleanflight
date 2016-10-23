@@ -30,14 +30,17 @@ SERIAL_DEVICE	?= $(firstword $(wildcard /dev/ttyUSB*) no-port-found)
 # Flash size (KB).  Some low-end chips actually have more flash than advertised, use this to override.
 FLASH_SIZE ?=
 
+EDISON_OBJS ?=
 ###############################################################################
 # Things that need to be maintained as the source changes
 #
 
 FORKNAME			 = cleanflight
 
-OUTPUT_DIR = obj
-FILE_NAME = out
+OUTPUT_DIR = out/
+OBJ_DIR = out/obj
+FILE_NAME = cleanflight
+MRAA_FLAG = -lmraa
 64K_TARGETS  = CJMCU
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO SPRACINGF1OSD
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB PORT103R RCEXPLORERF3 SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY SPRACINGF3OSD, EDISON
@@ -70,9 +73,10 @@ SRC_DIR		 = $(ROOT)/src/main
 OBJECT_DIR	 = $(ROOT)/obj/main
 BIN_DIR		 = $(ROOT)/obj
 CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
-INCLUDE_DIRS	 = $(SRC_DIR) \
+INCLUDE_DIRS = $(SRC_DIR) \
 				$(ROOT)/src/main/target
 LINKER_DIR	 = $(ROOT)/src/main/target
+EDISON_INC	 = $(ROOT)
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
@@ -386,7 +390,8 @@ STM32F10x_COMMON_SRC = \
 		   drivers/system_stm32f10x.c
 
 EDISON_SRC = \
-		   src/main/fc/boot.c 
+		   src/main/fc/boot.c \
+		   src/main/drivers/bus_i2c_edison.c 
 
 NAZE_SRC = \
 		   startup_stm32f10x_md_gcc.S \
@@ -831,7 +836,6 @@ SPRACINGF3OSD_SRC = \
 
 # Search path and source files for the ST stdperiph library
 VPATH		:= $(VPATH):$(STDPERIPH_DIR)/src
-
 ###############################################################################
 # Things that might need changing to use different tools
 #
@@ -888,6 +892,23 @@ CFLAGS		 = $(WARN_FLAGS) \
 		   -fverbose-asm -ffat-lto-objects \
 		   -save-temps=obj \
 		   -MMD -MP
+EDISON_CFLAGS		 = $(WARN_FLAGS) \
+		   $(addprefix -D,$(OPTIONS)) \
+		   $(addprefix -I,$(EDISON_INC)) \
+		   $(DEBUG_FLAGS) \
+		   -std=gnu99 \
+		   -Wall -Wpedantic -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef \
+		   -ffunction-sections \
+		   -fdata-sections \
+		   -DUSE_STDPERIPH_DRIVER \
+		   $(TARGET_FLAGS) \
+		   -D'__FORKNAME__="$(FORKNAME)"' \
+		   -D'__TARGET__="$(TARGET)"' \
+		   -D'__REVISION__="$(REVISION)"' \
+		   -fverbose-asm -ffat-lto-objects \
+		   -save-temps=obj \
+		   -MMD -MP
+
 
 #$(ARCH_FLAGS) \
 
@@ -1047,12 +1068,15 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
-compile: clean
-	echo $(INCLUDE_DIRS)
-	mkdir $(OUTPUT_DIR)
-	$(CC) $(CFLAGS) -g $(EDISON_SRC) -o $(OUTPUT_DIR)/$(FILE_NAME) -lmraa
-	mkdir ./obj/tmp_files
-	mv $(OUTPUT_DIR)/$(FILE_NAME).d $(OUTPUT_DIR)/$(FILE_NAME).i $(OUTPUT_DIR)/$(FILE_NAME).s $(OUTPUT_DIR)/$(FILE_NAME).o ./obj/tmp_files/ 
+compile: clean objs
+	cd $(OBJ_DIR)
+	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(MRAA_FLAG)
+
+objs:
+	mkdir -p $(OBJ_DIR) && $(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(MRAA_FLAG)    
+	mv *.i *.d *.o *.s $(OBJ_DIR)
+echo:
+	echo $(EDISON_INC)	
 
 # include auto-generated dependencies
 -include $(TARGET_DEPS)

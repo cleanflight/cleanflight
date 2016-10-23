@@ -17,7 +17,6 @@
 
 #pragma once
 #define EDISON
-#define TARGET_BOARD_IDENTIFIER "EDISON" // AlienFlight F3.
 //#define USE_HARDWARE_REVISION_DETECTION
 
 #define HW_GPIO     GPIOB

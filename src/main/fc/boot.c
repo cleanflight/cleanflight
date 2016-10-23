@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "mraa.h"
-#include "drivers/bus_i2c.h"
-#include "edison.h"
+#include <src/includes.h>
+#include "src/main/drivers/bus_i2c.h"
+#include "src/main/target/edison/target.h"
 
  
 /*#include <platform.h>
@@ -785,13 +785,12 @@ void configureScheduler(void)
 int main(void) {
     printf("Hello World\n");
     mraa_init();
+    printf("Init done\n");
     #ifdef USE_I2C
         printf("Defined\n");
         i2cInit(I2C_DEVICE);
     #endif
-    #ifndef USE_I2C
-        printf("Not defined\n");
-    #endif
+    return 0;
     //init();
 
     /*configureScheduler();

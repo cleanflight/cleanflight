@@ -1,0 +1,7 @@
+Manifest-version: 1.0
+
+Name: mraa/
+Specification-Title: mraa
+Specification-Version: @VERSION_SHORT@
+Package-Title: mraa
+Package-Version: @VERSION_SHORT@
