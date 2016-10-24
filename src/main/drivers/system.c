@@ -20,62 +20,26 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <platform.h>
+//#include <platform.h>
 
-#include "build/build_config.h"
+//#include "build/build_config.h"
 
-#include "dma.h"
-#include "gpio.h"
-#include "light_led.h"
-#include "sound_beeper.h"
-#include "nvic.h"
-#include "serial.h"
+//#include "dma.h"
+//#include "gpio.h"
+//#include "light_led.h"
+//#include "sound_beeper.h"
+//#include "nvic.h"
+//#include "serial.h"
 #include "serial_uart.h"
 
-#include "system.h"
+//#include "system.h"
 
 // cycles per microsecond
 static uint32_t usTicks = 0;            //Used to calculate time elapsed in microseconds
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
 static volatile uint32_t sysTickUptime = 0;
 // cached value of RCC->CSR
-uint32_t cachedRccCsrValue;
-
-static void cycleCounterInit(void)
-{
-    RCC_ClocksTypeDef clocks;
-    RCC_GetClocksFreq(&clocks);
-    usTicks = clocks.SYSCLK_Frequency / 1000000;
-}
-
-// SysTick
-void SysTick_Handler(void)
-{
-    sysTickUptime++;
-}
-
-// Return system uptime in microseconds (rollover in 70minutes)
-uint32_t micros(void)
-{
-    register uint32_t ms, cycle_cnt;
-    do {
-        ms = sysTickUptime;
-        cycle_cnt = SysTick->VAL;
-
-        /*
-         * If the SysTick timer expired during the previous instruction, we need to give it a little time for that
-         * interrupt to be delivered before we can recheck sysTickUptime:
-         */
-        asm volatile("\tnop\n");
-    } while (ms != sysTickUptime);
-    return (ms * 1000) + (usTicks * 1000 - cycle_cnt) / usTicks;
-}
-
-// Return system uptime in milliseconds (rollover in 49 days)
-uint32_t millis(void)
-{
-    return sysTickUptime;
-}
+//uint32_t cachedRccCsrValue;
 
 void systemInit(void)               //Only needed to initialize uart?
 {
@@ -84,8 +48,9 @@ void systemInit(void)               //Only needed to initialize uart?
     extern void *isr_vector_table_base;
 
     NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);             //Not needed. Necessary interrupts are initialized when writing code for the peripherals
-*/
+
 #endif
+*/
     // Configure NVIC preempt/priority groups
     //NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);                       //Priority handled by the mraa library.
 
@@ -115,6 +80,46 @@ void systemInit(void)               //Only needed to initialize uart?
     // SysTick
     //SysTick_Config(SystemCoreClock / 1000);             //Systick generates interrupts at a regular interval. OS is gonna do this anyway. Not needed
 }
+
+
+
+/*
+static void cycleCounterInit(void)
+{
+    RCC_ClocksTypeDef clocks;
+    RCC_GetClocksFreq(&clocks);
+    usTicks = clocks.SYSCLK_Frequency / 1000000;
+}
+
+// SysTick
+void SysTick_Handler(void)
+{
+    sysTickUptime++;
+}
+
+// Return system uptime in microseconds (rollover in 70minutes)
+uint32_t micros(void)
+{
+    register uint32_t ms, cycle_cnt;
+    do {
+        ms = sysTickUptime;
+        cycle_cnt = SysTick->VAL;
+
+        
+         // If the SysTick timer expired during the previous instruction, we need to give it a little time for that
+         // interrupt to be delivered before we can recheck sysTickUptime:
+         
+        asm volatile("\tnop\n");
+    } while (ms != sysTickUptime);
+    return (ms * 1000) + (usTicks * 1000 - cycle_cnt) / usTicks;
+}
+
+// Return system uptime in milliseconds (rollover in 49 days)
+uint32_t millis(void)
+{
+    return sysTickUptime;
+}
+
 
 #if 1
 void delayMicroseconds(uint32_t us)
@@ -202,3 +207,4 @@ void failureMode(failureMode_e mode)
     systemResetToBootloader();
 #endif
 }
+*/

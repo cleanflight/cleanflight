@@ -39,9 +39,9 @@
 #define LED1_PIN_2    Pin_9  // Green LEDs - PB9
 #define LED1_PERIPHERAL_2 RCC_AHBPeriph_GPIOB
 
-#define BEEP_GPIO   GPIOA
-#define BEEP_PIN    Pin_5  // White LEDs - PA5
-#define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOA
+//#define BEEP_GPIO   GPIOA
+//#define BEEP_PIN    Pin_5  // White LEDs - PA5
+//#define BEEP_PERIPHERAL RCC_AHBPeriph_GPIOA
 
 #define USABLE_TIMER_CHANNEL_COUNT 11
 
@@ -75,16 +75,17 @@
 
 #define MAG_AK8963_ALIGN CW0_DEG_FLIP
 
-#define BEEPER
+//#define BEEPER
 #define LED0
 #define LED1
 
 #define USB_IO
 
 #define USE_VCP
-#define USE_UART1 // Not connected - TX (PB6) RX PB7 (AF7)
-#define USE_UART2 // Receiver - RX (PA3)
-#define USE_UART3 // Not connected - 10/RX (PB11) 11/TX (PB10)
+#define USE_UART0 // Pin 0 and 1 on the breakout board
+//#define USE_UART1 // Not connected - TX (PB6) RX PB7 (AF7)
+//#define USE_UART2 // Receiver - RX (PA3)
+//#define USE_UART3 // Not connected - 10/RX (PB11) 11/TX (PB10)
 #define SERIAL_PORT_COUNT 4
 
 #define USE_UART1_TX_DMA
@@ -163,9 +164,9 @@
 //#define DISPLAY
 #define USE_SERVOS
 #define USE_CLI
-#define USE_EXTI
+//#define USE_EXTI
 
-#define SPEKTRUM_BIND
+//#define SPEKTRUM_BIND
 // UART2, PA3
 #define BIND_PORT  GPIOA
 #define BIND_PIN   Pin_3

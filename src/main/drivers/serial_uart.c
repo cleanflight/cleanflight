@@ -23,79 +23,40 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+//#include <src/includes.h>
+#include <mraa.h>
+//#include <platform.h>
 
-#include <platform.h>
+//#include "build/build_config.h"
 
-#include "build/build_config.h"
+//#include "common/utils.h"
+//#include "gpio.h"
+//#include "inverter.h"
 
-#include "common/utils.h"
-#include "gpio.h"
-#include "inverter.h"
+//#include "dma.h"
+//#include "serial.h"
+//#include "serial_uart.h"
+//#include "serial_uart_impl.h"
 
-#include "dma.h"
-#include "serial.h"
-#include "serial_uart.h"
-#include "serial_uart_impl.h"
-#ifdef STM32F10X
-#include "serial_uart_stm32f10x.h"
-#endif
-#ifdef STM32F303xC
-#include "serial_uart_stm32f30x.h"
-#endif
+//UART context for channel 0
+mraa_uart_context uart_0;               //redefine in header file for all files to access
+
 
 void usartInitAllIOSignals(void)
 {
-#ifdef STM32F10X
-    // Set UART1 TX to output and high state to prevent a rs232 break condition on reset.
-    // See issue https://github.com/cleanflight/cleanflight/issues/1433
-    gpio_config_t gpio;
-
-    gpio.mode = Mode_Out_PP;
-    gpio.speed = Speed_2MHz;
-    gpio.pin = UART1_TX_PIN;
-    digitalHi(UART1_GPIO, gpio.pin);
-    gpioInit(UART1_GPIO, &gpio);
-
-    // Set TX of UART2 and UART3 to input with pull-up to prevent floating TX outputs.
-    gpio.mode = Mode_IPU;
-
-#ifdef USE_UART2
-    gpio.pin = UART2_TX_PIN;
-    gpioInit(UART2_GPIO, &gpio);
-#endif
-
-#ifdef USE_UART3
-    gpio.pin = UART3_TX_PIN;
-    gpioInit(UART3_GPIO, &gpio);
-#endif
-
-#endif
-
-#ifdef STM32F303
-    // Set TX for UART1, UART2 and UART3 to input with pull-up to prevent floating TX outputs.
-    gpio_config_t gpio;
-
-    gpio.mode = Mode_IPU;
-    gpio.speed = Speed_2MHz;
-
-#ifdef USE_UART1
-    gpio.pin = UART1_TX_PIN;
-    gpioInit(UART1_GPIO, &gpio);
-#endif
-
-//#ifdef USE_UART2
-//    gpio.pin = UART2_TX_PIN;
-//    gpioInit(UART2_GPIO, &gpio);
-//#endif
-
-#ifdef USE_UART3
-    gpio.pin = UART3_TX_PIN;
-    gpioInit(UART3_GPIO, &gpio);
-#endif
-
+#ifdef EDISON
+    #ifdef USE_UART0
+        uart_0 = mraa_uart_init(0);                     //Pin 0 and 1 for UART communication
+        //mraa_uart_set_baudrate(uart_0,9600);          //Baudrate depending on the peripheral on the other end
+        if (uart_0 == NULL)                             //UART not initialized. Error.
+        {
+            printf("UART failed to setup\n");
+            return EXIT_FAILURE;
+        }
+    #endif
 #endif
 }
-
+/*
 static void usartConfigurePinInversion(uartPort_t *uartPort)
 {
 #if !defined(INVERTER) && !defined(STM32F303xC)
@@ -312,20 +273,20 @@ uint8_t uartTotalTxBytesFree(serialPort_t *instance)
     }
 
     if (s->txDMAChannel) {
-        /*
-         * When we queue up a DMA request, we advance the Tx buffer tail before the transfer finishes, so we must add
-         * the remaining size of that in-progress transfer here instead:
-         */
+        
+         // When we queue up a DMA request, we advance the Tx buffer tail before the transfer finishes, so we must add
+         // the remaining size of that in-progress transfer here instead:
+         
         bytesUsed += s->txDMAChannel->CNDTR;
 
-        /*
-         * If the Tx buffer is being written to very quickly, we might have advanced the head into the buffer
-         * space occupied by the current DMA transfer. In that case the "bytesUsed" total will actually end up larger
-         * than the total Tx buffer size, because we'll end up transmitting the same buffer region twice. (So we'll be
-         * transmitting a garbage mixture of old and new bytes).
-         *
-         * Be kind to callers and pretend like our buffer can only ever be 100% full.
-         */
+        
+        //  If the Tx buffer is being written to very quickly, we might have advanced the head into the buffer
+        //  space occupied by the current DMA transfer. In that case the "bytesUsed" total will actually end up larger
+        //  than the total Tx buffer size, because we'll end up transmitting the same buffer region twice. (So we'll be
+        //  transmitting a garbage mixture of old and new bytes).
+         
+        //  Be kind to callers and pretend like our buffer can only ever be 100% full.
+         
         if (bytesUsed >= s->port.txBufferSize - 1) {
             return 0;
         }
@@ -396,3 +357,4 @@ const struct serialPortVTable uartVTable[] = {
         .endWrite = NULL,
     }
 };
+*/

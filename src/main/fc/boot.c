@@ -24,6 +24,8 @@
 #include <src/includes.h>
 #include "src/main/drivers/bus_i2c.h"
 #include "src/main/target/edison/target.h"
+#include "src/main/drivers/system.h"
+
 
  
 /*#include <platform.h>
@@ -281,17 +283,24 @@ void init(void)
                                                         //Insted writing to the file pointed to by the function on startup to set it to high speed mode
 
     systemInit();										//UART initialize happening only inside this function. Replace this with the function to initialize UART
+                                                        //Working
 
-#ifdef USE_HARDWARE_REVISION_DETECTION                //Unnecessary
-    detectHardwareRevision();
-#endif
+//Not needed as hardware revision does not exist for intel edison
+//#ifdef USE_HARDWARE_REVISION_DETECTION                //Unnecessary
+//    detectHardwareRevision();
+//#endif
 
+    //Checks if features have been defined. Not needed for now.
     // Latch active features to be used for feature() in the remainder of init().
-    latchActiveFeatures();
+    //latchActiveFeatures();        //
 
+
+    
     // initialize IO (needed for all IO operations). When porting, use this function to initialize MRAA GPIO
-    IOInitGlobal(); 
+    //IOInitGlobal(); 
 
+
+//Not sure as of now
 #ifdef USE_EXTI
     EXTIInit();
 #endif
@@ -721,6 +730,8 @@ void init(void)
 
     systemState |= SYSTEM_STATE_READY;
 }
+*/
+
 /*
 #ifdef SOFTSERIAL_LOOPBACK
 void processLoopback(void) {
@@ -781,9 +792,11 @@ void configureScheduler(void)
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
 #endif
 }
-*/
+
 int main(void) {
     printf("Hello World\n");
+    //systemInit();   
+    //i2cInit(I2C_DEVICE);
     return 0;
     //init();
 

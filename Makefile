@@ -391,7 +391,9 @@ STM32F10x_COMMON_SRC = \
 
 EDISON_SRC = \
 		   src/main/fc/boot.c \
-		   src/main/drivers/bus_i2c_edison.c 
+		   src/main/drivers/bus_i2c_edison.c \
+		   src/main/drivers/system.c \
+		   src/main/drivers/serial_uart.c 
 
 NAZE_SRC = \
 		   startup_stm32f10x_md_gcc.S \
@@ -1064,6 +1066,8 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	@echo %% $(notdir $<)
 	@$(CC) -c -o $@ $(ASFLAGS) $<
 
+
+################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
 compile: clean objs  	
 	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(MRAA_FLAG)		#Compile .o files into executable
@@ -1077,6 +1081,7 @@ objs:
 #Clean up all temporary / machine-generated files
 clean:
 	rm -rf $(OUTPUT_DIR)
+	rm -rf *.i *.d *.o *.s
 
 
 #test target
