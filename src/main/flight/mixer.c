@@ -125,8 +125,9 @@ static const motorMixer_t mixerQuadX[] = {
      |
     1CW
 */
+
 static const motorMixer_t mixerQuadP[] = {
-    { 1.0f,  0.0f,  1.0f, -1.0f },          // REAR
+    { 1.0f,  0.0f,  1.0f, -1.0f },          // REAR             Throttle roll pitch yaw
     { 1.0f, -1.0f,  0.0f,  1.0f },          // RIGHT
     { 1.0f,  1.0f,  0.0f,  1.0f },          // LEFT
     { 1.0f,  0.0f, -1.0f, -1.0f },          // FRONT

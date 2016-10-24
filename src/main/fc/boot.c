@@ -21,10 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <src/includes.h>
-#include "src/main/drivers/bus_i2c.h"
-#include "src/main/target/edison/target.h"
-#include "src/main/drivers/system.h"
+#include <includes.h>
+#include "drivers/bus_i2c.h"
+#include "target/edison/target.h"
+#include "drivers/system.h"
 
 
  
@@ -292,12 +292,12 @@ void init(void)
 
     //Checks if features have been defined. Not needed for now.
     // Latch active features to be used for feature() in the remainder of init().
-    //latchActiveFeatures();        //
+    //latchActiveFeatures();        
 
 
     
     // initialize IO (needed for all IO operations). When porting, use this function to initialize MRAA GPIO
-    //IOInitGlobal(); 
+    IOInitGlobal(); 
 
 
 //Not sure as of now
@@ -370,7 +370,7 @@ void init(void)
 
     serialInit(feature(FEATURE_SOFTSERIAL));            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
                                                         //Edison soft or hard?
-
+    //No need to touch this. Initiazized for specific roll pitch yaw and throttle
     mixerInit(customMotorMixer(0));                     //Check fc/config.c to get reference to customMotorMixer(0)
                                                         //Initializes pointer in this function. That is all
 #ifdef USE_SERVOS
@@ -427,6 +427,7 @@ void init(void)
 #endif
 
 #ifdef USE_SERVOS                                                           //Not used for all mixer modes. Especially if looking to use quadcopter mode, might not be required
+                                                                            //refer flight/mixer.c line 112 to look at how different components of the quad are initialized 
     pwm_params.useServos = isMixerUsingServos();
     pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
     pwm_params.servoCenterPulse = motorAndServoConfig()->servoCenterPulse;

@@ -76,7 +76,7 @@ CMSIS_DIR	 = $(ROOT)/lib/main/CMSIS
 INCLUDE_DIRS = $(SRC_DIR) \
 				$(ROOT)/src/main/target
 LINKER_DIR	 = $(ROOT)/src/main/target
-EDISON_INC	 = $(ROOT)
+EDISON_INC	 = $(ROOT)/src/main
 
 # Search path for sources
 VPATH		:= $(SRC_DIR):$(SRC_DIR)/startup
