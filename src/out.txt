@@ -1,2 +1,0 @@
-main/drivers/adc_stm32f10x.c:140:    ADC_Init(ADC_INSTANCE, &ADC_InitStructure);
-main/drivers/adc_stm32f30x.c:182:    ADC_Init(ADC_INSTANCE, &ADC_InitStructure);
