@@ -463,6 +463,7 @@ void init(void)
 #endif
 
 //SPI used for transmitting accelerometer and gyro data also. Not just blackbox and video streaming
+//But by using the 9DOF sparkfun block, i don't have to worry about the SPI. So nit necessary for now?
 #ifdef USE_SPI
     spiInit(SPI1);		//calls initSpi1 or initSpi2 or initSpi3 based on the argument
     spiInit(SPI2);		

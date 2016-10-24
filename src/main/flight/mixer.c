@@ -109,6 +109,8 @@ PG_RESET_TEMPLATE(mixerConfig_t, mixerConfig,
    / \
 3CCW  1CW
 */
+
+//Defined for each of the motors used by the quadcoptor 
 static const motorMixer_t mixerQuadX[] = {
 //throttle,  roll, pitch,   yaw
     { 1.0f, -1.0f,  1.0f, -1.0f },          // REAR_R  (M1)
