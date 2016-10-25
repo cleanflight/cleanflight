@@ -56,7 +56,7 @@ typedef struct serialPort_s {
     uint32_t txBufferTail;
 
     // FIXME rename member to rxCallback
-    serialReceiveCallbackPtr callback;
+    serialReceiveCallbackPtr callback;              //function typedef for serialcallback as defined in line 37
 } serialPort_t;
 
 struct serialPortVTable {
@@ -80,7 +80,7 @@ struct serialPortVTable {
     void (*endWrite)(serialPort_t *instance);
 };
 
-void serialWrite(serialPort_t *instance, uint8_t ch);
+void serialWrite(serialPort_t *instance, uint8_t ch);               //How are these functions called? Ask TOM
 uint8_t serialRxBytesWaiting(serialPort_t *instance);
 uint8_t serialTxBytesFree(serialPort_t *instance);
 void serialWriteBuf(serialPort_t *instance, uint8_t *data, int count);

@@ -504,8 +504,8 @@ void init(void)
 
 
 #ifdef USE_I2C                                                  //Mandatory, done for edison
-    #ifdef (EDISON)                                             //Working
-        i2cInit(I2C_DEVICE);
+    #ifdef (EDISON)                                             //Working, might be needed for the IMU
+        i2cInit(I2C_DEVICE);                                    //Used for communicating with IMUs in original cleanflight code
     #endif
 #if defined(NAZE)
     if (hardwareRevision != NAZE32_SP) {

@@ -42,7 +42,7 @@
 mraa_uart_context uart_0;               //redefine in header file for all files to access
 
 
-void usartInitAllIOSignals(void)
+void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the original version of cleanflight in this function
 {
 #ifdef EDISON
     #ifdef USE_UART0
@@ -56,7 +56,7 @@ void usartInitAllIOSignals(void)
     #endif
 #endif
 }
-/*
+
 static void usartConfigurePinInversion(uartPort_t *uartPort)
 {
 #if !defined(INVERTER) && !defined(STM32F303xC)
@@ -304,8 +304,8 @@ bool isUartTransmitBufferEmpty(serialPort_t *instance)
         return s->port.txBufferTail == s->port.txBufferHead;
 }
 
-uint8_t uartRead(serialPort_t *instance)
-{
+uint8_t uartRead(serialPort_t *instance)                    //If dma not defined, then the uart buffer is read directly
+{                                                           //So the edison not having dma is not a problem
     uint8_t ch;
     uartPort_t *s = (uartPort_t *)instance;
 
@@ -313,7 +313,7 @@ uint8_t uartRead(serialPort_t *instance)
         ch = s->port.rxBuffer[s->port.rxBufferSize - s->rxDMAPos];
         if (--s->rxDMAPos == 0)
             s->rxDMAPos = s->port.rxBufferSize;
-    } else {
+    } else {                                                                    //DMA not defined for UART
         ch = s->port.rxBuffer[s->port.rxBufferTail];
         if (s->port.rxBufferTail + 1 >= s->port.rxBufferSize) {
             s->port.rxBufferTail = 0;
@@ -357,4 +357,3 @@ const struct serialPortVTable uartVTable[] = {
         .endWrite = NULL,
     }
 };
-*/
