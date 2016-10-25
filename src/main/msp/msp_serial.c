@@ -116,8 +116,8 @@ void mspSerialReleasePortIfAllocated(serialPort_t *serialPort)
 void mspSerialInit(void)
 {
     for(int i = 0; i < MAX_MSP_PORT_COUNT; i++) {
-        resetMspPort(&mspPorts[i], NULL);
-    }
+        resetMspPort(&mspPorts[i], NULL);                   //Reset all msp ports to null
+    }   
 
     mspSerialAllocatePorts();
 }

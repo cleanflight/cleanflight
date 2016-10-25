@@ -586,15 +586,17 @@ void init(void)
 #endif
     //TBD
     imuInit();              //Initialize IMU angle input based on the imu init struct
+                            //Can be replaced with the code for reading from the sparkfun imu
 
-    mspInit();              //Function to be examined
-    mspSerialInit();
+    mspInit();              //initialize values based on enabled features
+    mspSerialInit();        //allocate serial ports for each of the msp ports
 
 #ifdef USE_CLI
     cliInit();
 #endif
 
     failsafeInit();         //Initialize fali safe mode to false. So doesn't really intialize fail safe mode
+                            //can be safely ignored?
 
     rxInit(modeActivationProfile()->modeActivationConditions);          //Function to be examined
 
