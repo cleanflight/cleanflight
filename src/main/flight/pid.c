@@ -75,7 +75,7 @@ pidControllerFuncPtr pid_controller = pidMultiWiiRewrite;
 
 PG_REGISTER_PROFILE_WITH_RESET_TEMPLATE(pidProfile_t, pidProfile, PG_PID_PROFILE, 0);
 
-PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
+PG_RESET_TEMPLATE(pidProfile_t, pidProfile,                 //Define members of pidProfile_t struct for different parameters for steering the drone
     .pidController = PID_CONTROLLER_LUX_FLOAT,
     .P8[PIDROLL] = 40,
     .I8[PIDROLL] = 30,

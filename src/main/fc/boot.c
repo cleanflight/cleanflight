@@ -249,7 +249,7 @@ void buttonsHandleColdBootButtonPresses(void)
 
 #endif
 */
-
+#if 1
 void init(void)
 {
     drv_pwm_config_t pwm_params;
@@ -734,7 +734,7 @@ void init(void)
 
     systemState |= SYSTEM_STATE_READY;
 }
-
+#endif
 
 /*
 #ifdef SOFTSERIAL_LOOPBACK
