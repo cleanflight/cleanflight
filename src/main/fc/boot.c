@@ -734,7 +734,7 @@ void init(void)
 
     systemState |= SYSTEM_STATE_READY;
 }
-*/
+
 
 /*
 #ifdef SOFTSERIAL_LOOPBACK
@@ -796,7 +796,7 @@ void configureScheduler(void)
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
 #endif
 }
-
+*/
 int main(void) {
     printf("Hello World\n");
     //systemInit();   
