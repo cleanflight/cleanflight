@@ -26,7 +26,6 @@
 #include "target/edison/target.h"
 #include "drivers/system.h"
 #include "drivers/serial_uart.h"
-
  
 /*#include <platform.h>
 
