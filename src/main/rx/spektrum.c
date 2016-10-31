@@ -50,6 +50,9 @@
 
 #define SPEKTRUM_BAUDRATE 115200
 
+static uint16_t spek_lastlostframes;
+static uint16_t spek_lostframes;
+float spek_rssi;
 static uint8_t spek_chan_shift;
 static uint8_t spek_chan_mask;
 static bool rcFrameComplete = false;
@@ -130,9 +133,40 @@ static uint32_t spekChannelData[SPEKTRUM_MAX_SUPPORTED_CHANNEL_COUNT];
 uint8_t spektrumFrameStatus(void)
 {
     uint8_t b;
+    uint16_t cycleFramesLost = 0;
+    uint32_t spekTime, spekTimeInterval;
+    static uint32_t spekTimeLast=0;
 
-    if (!rcFrameComplete) {
+    spekTime = micros();
+    spekTimeInterval = spekTime - spekTimeLast;
+    
+
+    if ( !rcFrameComplete ) {
+        if( spekTimeInterval > 50000 ){
+            spek_rssi *= .9f;
+            spekTimeLast = spekTime;
+        }
         return RX_FRAME_PENDING;
+    }
+
+    spekTimeLast = spekTime;
+
+    if( spek_lostframes != spek_lastlostframes ){
+
+        if( spek_lastlostframes > spek_lostframes ){
+            spek_lostframes += 256;
+        }
+
+        cycleFramesLost = spek_lostframes - spek_lastlostframes;
+
+        spek_lastlostframes = spek_lostframes;
+    }
+
+    if( cycleFramesLost <= 32 ){
+        spek_rssi = spek_rssi * .9f + ( ( 32 - cycleFramesLost ) / 32 ) * .1f;
+    }
+    else{
+        spek_rssi *= .9f;
     }
 
     rcFrameComplete = false;

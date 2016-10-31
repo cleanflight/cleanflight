@@ -639,8 +639,10 @@ void updateRSSIADC(uint32_t currentTime)
 
 void updateRSSI(uint32_t currentTime)
 {
-
-    if (rxConfig()->rssi_channel > 0) {
+    if( rxConfig()->serialrx_provider == SERIALRX_SPEKTRUM1024 || rxConfig()->serialrx_provider == SERIALRX_SPEKTRUM2048 ){
+        rssi = spek_rssi * 1023;
+    }
+    else if (rxConfig()->rssi_channel > 0) {
         updateRSSIPWM();
     } else if (feature(FEATURE_RSSI_ADC)) {
         updateRSSIADC(currentTime);
