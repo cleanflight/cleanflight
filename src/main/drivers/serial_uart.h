@@ -55,9 +55,19 @@ typedef struct {
     USART_TypeDef *USARTx;
 } uartPort_t;
 
+
+typedef struct {
+    uint32_t bitrate;
+    uint8_t format;
+    uint8_t paritytype;
+    uint8_t datatype;
+} LINE_CODING;
+
+
 //serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options);
 
 void usartInitAllIOSignals(void);
+void usbInit(void);
 /*
 // serialPort API
 void uartWrite(serialPort_t *instance, uint8_t ch);

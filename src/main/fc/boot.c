@@ -249,7 +249,7 @@ void buttonsHandleColdBootButtonPresses(void)
 
 #endif
 */
-
+#if 0
 void init(void)
 {
     drv_pwm_config_t pwm_params;
@@ -734,7 +734,7 @@ void init(void)
 
     systemState |= SYSTEM_STATE_READY;
 }
-
+#endif
 
 /*
 #ifdef SOFTSERIAL_LOOPBACK
@@ -799,6 +799,7 @@ void configureScheduler(void)
 */
 int main(void) {
     printf("Hello World\n");
+    usartInitAllIOSignals();
     //systemInit();   
     //i2cInit(I2C_DEVICE);
     return 0;

@@ -51,6 +51,7 @@
 /* Private variables ---------------------------------------------------------*/
 ErrorStatus HSEStartUpStatus;
 EXTI_InitTypeDef EXTI_InitStructure;
+//__IO means volatile so that the compiler does not optimize it away
 __IO uint32_t packetSent;                                     // HJI
 extern __IO uint32_t receiveLength;                          // HJI
 

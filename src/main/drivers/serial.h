@@ -38,7 +38,7 @@ typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial dri
 
 typedef struct serialPort_s {
 
-    const struct serialPortVTable *vTable;
+    const struct serialPortVTable *vTable;      //Struct to hold all the serialport function pointers
 
     uint8_t identifier;
     portMode_t mode;

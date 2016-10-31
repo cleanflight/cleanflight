@@ -38,6 +38,14 @@
 //#include "serial_uart.h"
 //#include "serial_uart_impl.h"
 
+LINE_CODING linecoding = { 115200, /* baud rate*/
+0x00, /* stop bits-1*/
+0x00, /* parity - none*/
+0x08 /* no. of bits 8*/
+};
+
+
+
 //UART context for channel 0
 mraa_uart_context uart_0;               //redefine in header file for all files to access
 
@@ -45,6 +53,7 @@ mraa_uart_context uart_0;               //redefine in header file for all files 
 void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the original version of cleanflight in this function
 {
 #ifdef EDISON
+    usbInit();
     #ifdef USE_UART0
         uart_0 = mraa_uart_init(0);                     //Pin 0 and 1 for UART communication
         //mraa_uart_set_baudrate(uart_0,9600);          //Baudrate depending on the peripheral on the other end
@@ -56,6 +65,38 @@ void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the ori
     #endif
 #endif
 }
+
+void usbInit(void)
+{
+    struct termios tty;
+    
+    char *fd = "/dev/ttyUSB0";
+
+    if (tcgetattr(fd, &tty) < 0) {
+        printf("Error from tcgetattr: %s\n", strerror(errno));
+        return -1;
+    }
+
+    cfsetospeed(&tty, (speed_t)(linecoding.bitrate));
+    cfsetispeed(&tty, (speed_t)(linecoding.bitrate));
+
+
+    //These values are hardcoded for now
+    //Todo is to change this based on the value defined in the struct LINE_CODING
+    tty.c_cflag |= (CLOCAL | CREAD);    //ignore modem controls
+    tty.c_cflag &= ~CSIZE;
+    tty.c_cflag |= CS8;         //8-bit characters
+    tty.c_cflag &= ~PARENB;     //no parity bit
+    tty.c_cflag &= ~CSTOPB;     //only need 1 stop bit
+    tty.c_cflag &= ~CRTSCTS;    //no hardware flowcontrol
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0) {
+        printf("Error from tcsetattr: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
 
 static void usartConfigurePinInversion(uartPort_t *uartPort)
 {
