@@ -800,13 +800,15 @@ void configureScheduler(void)
 */
 int main(void) {
     printf("Hello World\n");
+    usartInitAllIOSignals();
+    usbWrite("hello",5);
     return 0;
 
     //Working functions
     
     //systemInit();   
     //i2cInit(I2C_DEVICE);
-    //usartInitAllIOSignals();
+    //
 
 
     //init();           //Original function defined in this file

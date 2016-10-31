@@ -88,6 +88,7 @@ int usbOpen(void)
         exit(EXIT_FAILURE);
     }
     USB.fd = fd;
+    USB.isconnected = 1;
     return fd;
 }
 
@@ -121,21 +122,34 @@ void usbAttributesSet(int fd)       //UART characteristics hardcoded here!!!
  
 }
 
+bool usbIsConnected(void)
+{
+    if(USB.isconnected)
+        return true;
+    else
+        return false;
+}
+
 int usbWrite(char* str, int len)
 {
     int wlen;
-    wlen = write(USB.fd, str, len);
-    
-    if (wlen != len) 
+
+    //Don't write if USB is not connected
+    if(!usbIsConnected())
+        return -1;
+    while(1)
     {
-        printf("Error from write: %d, %d\n", wlen, errno);
-        exit(EXIT_FAILURE);
+        wlen = write(USB.fd, str, len);
+            
+        if (wlen != len) 
+        {
+            printf("Error from write: %d, %d\n", wlen, errno);
+            exit(EXIT_FAILURE);
+        }
     }
 
-    return wlen
-
+    return wlen;
 }
-
 
 /*
 static void usartConfigurePinInversion(uartPort_t *uartPort)

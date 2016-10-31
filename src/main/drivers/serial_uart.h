@@ -50,6 +50,8 @@ typedef struct {
     uint32_t rxDMAPeripheralBaseAddr;
 
     int fd;
+
+    int isconnected;
 //    dmaCallbackHandler_t    dmaTxHandler;
 //    dmaCallbackHandler_t    dmaRxHandler;
 
@@ -72,7 +74,7 @@ void usbInit(void);
 int usbOpen(void);
 void usbAttributesSet(int fd);
 int usbWrite(char* str, int len);
-
+bool usbIsConnected(void);
 /*
 // serialPort API
 void uartWrite(serialPort_t *instance, uint8_t ch);
