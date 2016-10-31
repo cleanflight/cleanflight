@@ -25,7 +25,7 @@
 #include "drivers/bus_i2c.h"
 #include "target/edison/target.h"
 #include "drivers/system.h"
-
+#include "drivers/serial_uart.h"
 
  
 /*#include <platform.h>
@@ -799,11 +799,16 @@ void configureScheduler(void)
 */
 int main(void) {
     printf("Hello World\n");
-    usartInitAllIOSignals();
+    return 0;
+
+    //Working functions
+    
     //systemInit();   
     //i2cInit(I2C_DEVICE);
-    return 0;
-    //init();
+    //usartInitAllIOSignals();
+
+
+    //init();           //Original function defined in this file
 
     /*configureScheduler();
 

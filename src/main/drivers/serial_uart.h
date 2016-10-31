@@ -33,7 +33,7 @@
 #define UART4_TX_BUFFER_SIZE    256
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
-
+/*
 typedef struct {
     serialPort_t port;
 
@@ -54,7 +54,7 @@ typedef struct {
 
     USART_TypeDef *USARTx;
 } uartPort_t;
-
+*/
 
 typedef struct {
     uint32_t bitrate;

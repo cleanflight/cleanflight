@@ -23,8 +23,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-//#include <src/includes.h>
+
+
+#include "../includes.h"
 #include <mraa.h>
+#include "serial_uart.h"
 //#include <platform.h>
 
 //#include "build/build_config.h"
@@ -35,7 +38,7 @@
 
 //#include "dma.h"
 //#include "serial.h"
-//#include "serial_uart.h"
+
 //#include "serial_uart_impl.h"
 
 LINE_CODING linecoding = { 115200, /* baud rate*/
@@ -70,11 +73,15 @@ void usbInit(void)
 {
     struct termios tty;
     
-    char *fd = "/dev/ttyUSB0";
-
+    char *portname = "/dev/ttyUSB0";
+    int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+    if (fd < 0) {
+        printf("Error opening %s: %s\n", portname, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     if (tcgetattr(fd, &tty) < 0) {
         printf("Error from tcgetattr: %s\n", strerror(errno));
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     cfsetospeed(&tty, (speed_t)(linecoding.bitrate));
@@ -94,10 +101,11 @@ void usbInit(void)
         printf("Error from tcsetattr: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
+    printf("Setup\n");
     return;
 }
 
-
+/*
 static void usartConfigurePinInversion(uartPort_t *uartPort)
 {
 #if !defined(INVERTER) && !defined(STM32F303xC)
@@ -398,3 +406,4 @@ const struct serialPortVTable uartVTable[] = {
         .endWrite = NULL,
     }
 };
+*/

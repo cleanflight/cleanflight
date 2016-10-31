@@ -40,7 +40,7 @@ FORKNAME			 = cleanflight
 OUTPUT_DIR = out/
 OBJ_DIR = out/obj
 FILE_NAME = cleanflight
-MRAA_FLAG = -lmraa
+LIB_FLAGS = -lmraa -lrt
 64K_TARGETS  = CJMCU
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO SPRACINGF1OSD
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB PORT103R RCEXPLORERF3 SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY SPRACINGF3OSD, EDISON
@@ -1070,12 +1070,12 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 ################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
 compile: clean objs  	
-	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(MRAA_FLAG)		#Compile .o files into executable
+	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(LIB_FLAGS)		#Compile .o files into executable
 
 
 #Create object files based on the input source files and move them to /out/obj
 objs:
-	mkdir -p $(OBJ_DIR) && $(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(MRAA_FLAG)    
+	mkdir -p $(OBJ_DIR) && $(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(LIB_FLAGS)    
 	mv *.i *.d *.o *.s $(OBJ_DIR)
 
 #Clean up all temporary / machine-generated files
