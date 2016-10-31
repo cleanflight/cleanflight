@@ -248,6 +248,7 @@ void buttonsHandleColdBootButtonPresses(void)
 
 #endif
 */
+
 #if 0
 void init(void)
 {
@@ -795,6 +796,7 @@ void configureScheduler(void)
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
 #endif
 }
+
 */
 int main(void) {
     printf("Hello World\n");
