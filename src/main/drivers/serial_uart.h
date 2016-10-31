@@ -33,9 +33,9 @@
 #define UART4_TX_BUFFER_SIZE    256
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
-/*
+
 typedef struct {
-    serialPort_t port;
+//    serialPort_t port;
 
 //    DMA_Channel_TypeDef *rxDMAChannel;
 //    DMA_Channel_TypeDef *txDMAChannel;
@@ -49,12 +49,13 @@ typedef struct {
     uint32_t txDMAPeripheralBaseAddr;
     uint32_t rxDMAPeripheralBaseAddr;
 
+    int fd;
 //    dmaCallbackHandler_t    dmaTxHandler;
 //    dmaCallbackHandler_t    dmaRxHandler;
 
-    USART_TypeDef *USARTx;
+//    USART_TypeDef *USARTx;
 } uartPort_t;
-*/
+
 
 typedef struct {
     uint32_t bitrate;
@@ -68,6 +69,10 @@ typedef struct {
 
 void usartInitAllIOSignals(void);
 void usbInit(void);
+int usbOpen(void);
+void usbAttributesSet(int fd);
+int usbWrite(char* str, int len);
+
 /*
 // serialPort API
 void uartWrite(serialPort_t *instance, uint8_t ch);

@@ -47,7 +47,10 @@ LINE_CODING linecoding = { 115200, /* baud rate*/
 0x08 /* no. of bits 8*/
 };
 
+uartPort_t USB;
 
+//Serial file name
+char *portname = "/dev/ttyMFD2";            //Change to ttyMFD2 on the edison to communicate with PC
 
 //UART context for channel 0
 mraa_uart_context uart_0;               //redefine in header file for all files to access
@@ -71,14 +74,27 @@ void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the ori
 
 void usbInit(void)
 {
-    struct termios tty;
     
-    char *portname = "/dev/ttyUSB0";
+    int fd = usbOpen();
+    usbAttributesSet(fd);    
+    return;
+}
+
+int usbOpen(void)
+{
     int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
         printf("Error opening %s: %s\n", portname, strerror(errno));
         exit(EXIT_FAILURE);
     }
+    USB.fd = fd;
+    return fd;
+}
+
+void usbAttributesSet(int fd)       //UART characteristics hardcoded here!!!
+{
+    struct termios tty;
+
     if (tcgetattr(fd, &tty) < 0) {
         printf("Error from tcgetattr: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -101,9 +117,25 @@ void usbInit(void)
         printf("Error from tcsetattr: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
-    printf("Setup\n");
     return;
+ 
 }
+
+int usbWrite(char* str, int len)
+{
+    int wlen;
+    wlen = write(USB.fd, str, len);
+    
+    if (wlen != len) 
+    {
+        printf("Error from write: %d, %d\n", wlen, errno);
+        exit(EXIT_FAILURE);
+    }
+
+    return wlen
+
+}
+
 
 /*
 static void usartConfigurePinInversion(uartPort_t *uartPort)
