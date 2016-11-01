@@ -196,9 +196,9 @@ static uint16_t spektrumReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint
     return data;
 }
 
-float spek_RSSI(void)
+static uint16_t spek_RSSI(void)
 {
-    return spek_rssi;
+    return (uint16_t) ( spek_rssi * 1024 );
 }
 
 #ifdef SPEKTRUM_BIND
