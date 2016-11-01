@@ -22,5 +22,5 @@
 
 uint8_t spektrumFrameStatus(void);
 bool spektrumInit(const rxConfig_t *initialRxConfig, rxRuntimeConfig_t *rxRuntimeConfig);
-extern float spek_rssi;
+float spek_RSSI(void);
 void spektrumBind(rxConfig_t *rxConfig);

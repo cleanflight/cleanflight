@@ -52,7 +52,7 @@
 
 static uint16_t spek_lastlostframes;
 static uint16_t spek_lostframes;
-float spek_rssi;
+static float spek_rssi;
 static uint8_t spek_chan_shift;
 static uint8_t spek_chan_mask;
 static bool rcFrameComplete = false;
@@ -143,7 +143,7 @@ uint8_t spektrumFrameStatus(void)
 
     if ( !rcFrameComplete ) {
         if( spekTimeInterval > 50000 ){
-            spek_rssi *= .9f;
+            spek_rssi *= 0.9f;
             spekTimeLast = spekTime;
         }
         return RX_FRAME_PENDING;
@@ -162,13 +162,12 @@ uint8_t spektrumFrameStatus(void)
         spek_lastlostframes = spek_lostframes;
     }
 
+    spek_rssi *= 0.9f;
+    
     if( cycleFramesLost <= 32 ){
-        spek_rssi = spek_rssi * .9f + ( ( 32 - cycleFramesLost ) / 32 ) * .1f;
+        spek_rssi += ( ( 32 - cycleFramesLost ) / 32 ) * .1f;
     }
-    else{
-        spek_rssi *= .9f;
-    }
-
+    
     rcFrameComplete = false;
 
     for (b = 3; b < SPEK_FRAME_SIZE; b += 2) {
@@ -195,6 +194,11 @@ static uint16_t spektrumReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint
         data = 988 + spekChannelData[chan];          // 1024 mode
 
     return data;
+}
+
+float spek_RSSI(void)
+{
+    return spek_rssi;
 }
 
 #ifdef SPEKTRUM_BIND
