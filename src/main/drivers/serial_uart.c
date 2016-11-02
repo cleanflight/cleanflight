@@ -25,7 +25,7 @@
 #include <stdlib.h>
 
 
-#include "../includes.h"
+#include <includes.h>
 #include <mraa.h>
 #include "serial_uart.h"
 //#include <platform.h>
@@ -76,7 +76,7 @@ void usbInit(void)
 {
     
     int fd = usbOpen();
-    usbAttributesSet(fd);    
+    SetUsbAttributes(fd);    
     return;
 }
 
@@ -92,7 +92,7 @@ int usbOpen(void)
     return fd;
 }
 
-void usbAttributesSet(int fd)       //UART characteristics hardcoded here!!!
+void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
 {
     struct termios tty;
 
@@ -137,18 +137,33 @@ int usbWrite(char* str, int len)
     //Don't write if USB is not connected
     if(!usbIsConnected())
         return -1;
-    while(1)
+    wlen = write(USB.fd, str, len);
+        
+    if (wlen != len) 
     {
-        wlen = write(USB.fd, str, len);
-            
-        if (wlen != len) 
-        {
-            printf("Error from write: %d, %d\n", wlen, errno);
-            exit(EXIT_FAILURE);
-        }
+        printf("Error from write: %d, %d\n", wlen, errno);
+        exit(EXIT_FAILURE);
+        usleep(1000);
     }
 
     return wlen;
+}
+
+char* usbRead(int len)
+{
+    int rdlen;
+    char* buf;
+    buf = (char*)malloc(len*sizeof(char));
+    rdlen = read(USB.fd, buf, len);
+    if (rdlen > 0) 
+    {
+        return buf;
+    }
+    else
+    {
+        printf("Error from read\n");
+        return (char*)(-1);
+    }
 }
 
 /*

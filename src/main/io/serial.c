@@ -346,7 +346,8 @@ serialPort_t *openSerialPort(
     serialPortUsage->function = function;
     serialPortUsage->serialPort = serialPort;
 
-    return serialPort;
+    return serialPort;                  //Store details about the serial port and what it is being used for and return the serialport_t struct object.
+                                        //This will allow me to control the serialport functions using the serialPortVTable member
 }
 
 void closeSerialPort(serialPort_t *serialPort)

@@ -80,16 +80,18 @@ struct serialPortVTable {
     void (*endWrite)(serialPort_t *instance);
 };
 
-void serialWrite(serialPort_t *instance, uint8_t ch);               //How are these functions called? Ask TOM
-uint8_t serialRxBytesWaiting(serialPort_t *instance);
-uint8_t serialTxBytesFree(serialPort_t *instance);
+void serialWrite(serialPort_t *instance, uint8_t ch);               //Function pointers in serialPortVTable refer to these functions somewhere else in the code?
 void serialWriteBuf(serialPort_t *instance, uint8_t *data, int count);
 uint8_t serialRead(serialPort_t *instance);
+
 void serialSetBaudRate(serialPort_t *instance, uint32_t baudRate);
 void serialSetMode(serialPort_t *instance, portMode_t mode);
+
 bool isSerialTransmitBufferEmpty(serialPort_t *instance);
 void serialPrint(serialPort_t *instance, const char *str);
 uint32_t serialGetBaudRate(serialPort_t *instance);
+uint8_t serialRxBytesWaiting(serialPort_t *instance);
+uint8_t serialTxBytesFree(serialPort_t *instance);
 
 // A shim that adapts the bufWriter API to the serialWriteBuf() API.
 void serialWriteBufShim(void *instance, uint8_t *data, int count);

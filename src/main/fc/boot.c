@@ -22,11 +22,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <includes.h>
-#include "drivers/bus_i2c.h"
-#include "target/edison/target.h"
-#include "drivers/system.h"
-#include "drivers/serial_uart.h"
- 
+#include <drivers/bus_i2c.h>
+#include <target/edison/target.h>
+#include <drivers/system.h>
+#include <drivers/serial_uart.h>
+#include <drivers/serial.h> 
 /*#include <platform.h>
 
 #include "build/build_config.h"
@@ -800,17 +800,21 @@ void configureScheduler(void)
 */
 int main(void) {
     printf("Hello World\n");
-    usartInitAllIOSignals();
-    usbWrite("hello",5);
     return 0;
 
-    //Working functions
-    
+
+//*****************************Working functions******************************************//
+  
     //systemInit();   
     //i2cInit(I2C_DEVICE);
-    //
+    //usartInitAllIOSignals();
+    //usbWrite("hello",5);
+    //char* str = usbRead(5);
 
 
+
+
+//***********************************************************************//
     //init();           //Original function defined in this file
 
     /*configureScheduler();

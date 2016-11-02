@@ -72,8 +72,9 @@ typedef struct {
 void usartInitAllIOSignals(void);
 void usbInit(void);
 int usbOpen(void);
-void usbAttributesSet(int fd);
+void SetUsbAttributes(int fd);
 int usbWrite(char* str, int len);
+char* usbRead(int len);
 bool usbIsConnected(void);
 /*
 // serialPort API
