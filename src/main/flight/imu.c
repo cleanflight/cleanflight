@@ -408,10 +408,8 @@ static bool isMagnetometerHealthy(void)
 
 static void imuCalculateEstimatedAttitude(void)
 {
-    static pt1Filter_t accLPFState[3];
     static uint32_t previousIMUUpdateTime;
     float rawYawError = 0;
-    int32_t axis;
     bool useAcc = false;
     bool useMag = false;
     bool useYaw = false;
@@ -420,15 +418,7 @@ static void imuCalculateEstimatedAttitude(void)
     uint32_t deltaT = currentTime - previousIMUUpdateTime;
     previousIMUUpdateTime = currentTime;
 
-    // Smooth and use only valid accelerometer readings
-    for (axis = 0; axis < 3; axis++) {
-        if (imuRuntimeConfig->acc_cut_hz > 0) {
-            accSmooth[axis] = pt1FilterApply4(&accLPFState[axis], accADC[axis], imuRuntimeConfig->acc_cut_hz, deltaT * 1e-6f);
-        } else {
-            accSmooth[axis] = accADC[axis];
-        }
-    }
-
+    // Use only valid accelerometer readings
     if (imuIsAccelerometerHealthy()) {
         useAcc = true;
     }
@@ -459,9 +449,26 @@ static void imuCalculateEstimatedAttitude(void)
 
 void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
 {
+    static pt1Filter_t accLPFState[3];
+    static uint32_t previousAccUpdateTime;
+	
     if (sensors(SENSOR_ACC)) {
         updateAccelerationReadings(accelerometerTrims);
         isAccelUpdatedAtLeastOnce = true;
+        
+        uint32_t currentTime = micros();
+		uint32_t deltaT = currentTime - previousAccUpdateTime;
+        float dT = deltaT * 1e-6f;
+        previousAccUpdateTime = currentTime;
+        
+        // Smooth accelerometer readings
+        for (axis = 0; axis < 3; axis++) {
+            if (imuRuntimeConfig->acc_cut_hz > 0) {
+                accSmooth[axis] = pt1FilterApply4(&accLPFState[axis], accADC[axis], imuRuntimeConfig->acc_cut_hz, dT);
+            } else {
+                accSmooth[axis] = accADC[axis];
+            }
+        }
     }
 }
 
