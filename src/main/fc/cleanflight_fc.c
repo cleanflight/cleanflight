@@ -787,6 +787,7 @@ void taskUpdateAccelerometer(void)
 void taskHandleSerial(void)
 {
 #ifdef USE_CLI
+    //No need to worry about this as only the GUI of the configurator is used
     // in cli mode, all serial stuff goes to here. enter cli mode by sending #
     if (cliMode) {
         cliProcess();
