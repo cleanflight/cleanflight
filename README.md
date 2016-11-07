@@ -13,6 +13,8 @@ This fork differs from baseflight in that it attempts to use modern software dev
 
 The MultiWii software, from which baseflight originated, violates many good software development best-practices. Hopefully this fork will go some way to address them. If you see any bad code in this fork please immediately raise an issue so it can be fixed, or better yet submit a pull request.
 
+[![Coverage Status](https://coveralls.io/repos/github/unitware/cleanflight/badge.svg?branch=master)](https://coveralls.io/github/unitware/cleanflight?branch=master)
+
 ## Additional Features
 
 Cleanflight also has additional features not found in baseflight.
