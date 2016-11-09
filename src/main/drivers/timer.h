@@ -154,3 +154,4 @@ void timerChClearCCFlag(const timerHardware_t* timHw);
 
 //not used
 void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority);
+
