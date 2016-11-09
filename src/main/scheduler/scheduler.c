@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
+//constrain defined in maths.h
+//MAX defined in maths.h
 
 #define SRC_MAIN_SCHEDULER_C_
 
@@ -25,9 +27,9 @@
 
 #include "scheduler/scheduler.h"
 #include "build/debug.h"
-#include "build/build_config.h"
+#include "build/build_config.h"                 //required by config_unittest.h?
 
-#include "common/maths.h"
+#include "common/maths.h"                       //builds
 
 #include "drivers/system.h"
 #include "config/config_unittest.h"
@@ -193,6 +195,7 @@ void schedulerInit(void)
 void scheduler(void)
 {
     // Cache currentTime
+    //Replace with milli seconds?
     currentTime = micros();
 
     // Check for realtime tasks
@@ -279,5 +282,6 @@ void scheduler(void)
         debug[3] = (micros() - currentTime);
 #endif
     }
+    //Used for unit testing. Probably not needed
     GET_SCHEDULER_LOCALS();
 }

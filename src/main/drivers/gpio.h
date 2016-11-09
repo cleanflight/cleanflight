@@ -71,6 +71,15 @@ typedef enum
 } GPIO_Mode;
 #endif
 
+#ifdef EDISON
+typedef enum                    //Defining enum for mode for edison
+{
+    In,
+    Out,
+    PWM
+} GPIO_Mode;
+#endif
+
 typedef enum
 {
     Speed_10MHz = 1,

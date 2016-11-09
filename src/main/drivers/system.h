@@ -18,9 +18,11 @@
 #pragma once
 
 void systemInit(void);
+
 void delayMicroseconds(uint32_t us);
 void delay(uint32_t ms);
-
+void Systick_setup(void);
+void print(void);
 uint32_t micros(void);
 uint32_t millis(void);
 

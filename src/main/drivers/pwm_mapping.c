@@ -921,7 +921,7 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
             }
 #endif
             ppmInConfig(timerHardwarePtr);
-            pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_PPM;
+            pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_PPM;             //initializing pwmIOConfiguration based on selections
             pwmIOConfiguration.ppmInputCount++;
         } else if (type == MAP_TO_PWM_INPUT) {
             pwmInConfig(timerHardwarePtr, channelIndex);

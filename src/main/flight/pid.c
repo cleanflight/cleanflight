@@ -147,7 +147,7 @@ int calcHorizonLevelStrength(uint16_t rxConfigMidrc, int horizonTiltEffect,
         uint8_t horizonTiltMode, int horizonSensitivity)
 {
     // get raw stick positions (-500 to 500):
-    const int32_t stickPosAil = getRcStickDeflection(FD_ROLL, rxConfigMidrc);
+    const int32_t stickPosAil = getRcStickDeflection(FD_ROLL, rxConfigMidrc);           //Gets RC stick data. Duh!
     const int32_t stickPosEle = getRcStickDeflection(FD_PITCH, rxConfigMidrc);
 
     // 0 at center stick, 500 at max stick deflection:

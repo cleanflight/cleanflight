@@ -393,7 +393,9 @@ EDISON_SRC = \
 		   src/main/fc/boot.c \
 		   src/main/drivers/bus_i2c_edison.c \
 		   src/main/drivers/system.c \
+		   src/main/drivers/timer_setup.c \
 		   src/main/drivers/serial_uart.c 
+
 
 NAZE_SRC = \
 		   startup_stm32f10x_md_gcc.S \

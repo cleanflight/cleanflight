@@ -18,7 +18,7 @@
 #pragma once
 
 //#define SCHEDULER_DEBUG
-
+//These #defines convert the value from hz, ms , us and represent them in us
 #define TASK_PERIOD_HZ(hz) (1000000 / (hz))
 #define TASK_PERIOD_MS(ms) ((ms) * 1000)
 #define TASK_PERIOD_US(us) (us)

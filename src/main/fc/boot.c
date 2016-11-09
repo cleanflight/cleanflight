@@ -249,7 +249,7 @@ void buttonsHandleColdBootButtonPresses(void)
 #endif
 */
 
-#if 1
+#if 0
 void init(void)
 {
     drv_pwm_config_t pwm_params;
@@ -590,6 +590,8 @@ void init(void)
 
 
     //MSP serial starts in mspSerialProcess of cleanflight_fc.c in src/main/fc.
+    //MSP task is started in configureScheduler function below
+	//TASK_SERIAL is uses mspSerialProcess to start the handling serial data
     mspInit();              //initialize values based on enabled features
     mspSerialInit();        //allocate serial ports for each of the msp ports
 
@@ -812,12 +814,13 @@ int main(void) {
     //usartInitAllIOSignals();
     //usbWrite("hello",5);
     //char* str = usbRead(5);
+    //start_timer() working. refer system.c
 
 
 
 
 //***********************************************************************//
-    //init();           //Original function defined in this file
+    //init();           //Original functions defined in this file
 
     /*configureScheduler();
 

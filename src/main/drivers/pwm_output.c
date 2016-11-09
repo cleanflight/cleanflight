@@ -31,14 +31,23 @@
 
 #include "common/maths.h"
 
+#include <includes.h>
+
 #define MAX_PWM_OUTPUT_PORTS MAX(MAX_MOTORS, MAX_SERVOS)
+
+/*
+#define BRUSHED_MOTORS_PWM_RATE 16000
+#define BRUSHLESS_MOTORS_PWM_RATE 400
+*/
+
 
 typedef void (*pwmWriteFuncPtr)(uint8_t index, uint16_t value);  // function pointer used to write motors
 
 typedef struct {
-    volatile timCCR_t *ccr;
-    TIM_TypeDef *tim;
-    uint16_t period;
+//    volatile timCCR_t *ccr;
+//    TIM_TypeDef *tim;                   //Contains register addrsses for controlling the timer
+    mraa_pwm_context pwm;
+    //uint16_t period;
     pwmWriteFuncPtr pwmWritePtr;
 } pwmOutputPort_t;
 
@@ -53,9 +62,10 @@ static pwmOutputPort_t *servos[MAX_PWM_SERVOS];
 static uint8_t allocatedOutputPortCount = 0;
 
 static bool pwmMotorsEnabled = true;
-static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value)
+/*static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value)          //initialize the timer for generating pwm signal
 {
-    TIM_OCInitTypeDef  TIM_OCInitStructure;
+    //Value field contains the value that is to be stored in the CCR
+    TIM_OCInitTypeDef  TIM_OCInitStructure;         //Contains info about the timer
 
     TIM_OCStructInit(&TIM_OCInitStructure);
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
@@ -65,7 +75,7 @@ static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value)
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
     TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
 
-    switch (channel) {
+    switch (channel) {                                          //Initialize timer channel based on the channel number passed to the function
         case TIM_Channel_1:
             TIM_OC1Init(tim, &TIM_OCInitStructure);
             TIM_OC1PreloadConfig(tim, TIM_OCPreload_Enable);
@@ -84,31 +94,53 @@ static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value)
             break;
     }
 }
-
+*/
 static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
 {
     gpio_config_t cfg;
 
     cfg.pin = pin;
-    cfg.mode = mode;
+    cfg.mode = PWM;
     cfg.speed = Speed_2MHz;
-    gpioInit(gpio, &cfg);
+    gpioInit(gpio, &cfg);         //Change to something else
 }
 
-static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8_t mhz, uint16_t period, uint16_t value)
+mraa_init_pwm(mraa_pwm_context *pwm, uint16_t period, uint16_t value)
 {
+    pwm = mraa_pwm_init(3);
+    
+}
+
+//static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8_t mhz, uint16_t period, uint16_t value)
+
+//for brushless motors, pwm clock frequency is 1MHz
+//So period and pulse width for edison calculation will result in divison by 1Mhz giving a time of 1MHz
+//pwmOutConfig(const timerHardware_t *timerHardware, uint8_t mhz, uint16_t period, uint16_t value)
+static pwmOutputPort_t *pwmOutConfig(uint32_t pin, uint16_t period, uint16_t value)         //period - use mraa_pwm_period_us
+                                                                                            //value - use mraa_pwm_pulsewidth_us
+{                                                                                           //mhz determines clock frequency and adjusts timer clock prescaler based on that
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
-    configTimeBase(timerHardware->tim, period, mhz);
+
+    //modify pwm context in pwmOutputPort_t and disable pwm for now
+    p->pwm = mraa_pwm_init(pin);
+    mraa_pwm_period_us(p->pwm, period);
+    mraa_pwm_pulsewidth_us(p->pwm,period-value);                                    //pulse width on stm32 is given by difference between ARR and CCR.
+    mraa_pwm_enable(pwm,0);                        
+
+    /*configTimeBase(timerHardware->tim, period, mhz);                              //Configure timer clock and ARR
+                                                                                    //mhz is for the timer clock frequency
+                                                                                    //CCR - start of pulse. ARR - end of pulse
+                                                                                    //ARR is given by period
+                                                                                    //CCR is given by value
     pwmGPIOConfig(timerHardware->gpio, timerHardware->pin, Mode_AF_PP);
-
-
-    pwmOCConfig(timerHardware->tim, timerHardware->channel, value);
+    
+    pwmOCConfig(timerHardware->tim, timerHardware->channel, value);             //Configure timer gpio properties
     if (timerHardware->outputEnable)
-        TIM_CtrlPWMOutputs(timerHardware->tim, ENABLE);
+        TIM_CtrlPWMOutputs(timerHardware->tim, ENABLE);                         //Enable timer to send output
     TIM_Cmd(timerHardware->tim, ENABLE);
 
-    switch (timerHardware->channel) {
+    switch (timerHardware->channel) {                                           //Get value of CCR for the appropriate timer
         case TIM_Channel_1:
             p->ccr = &timerHardware->tim->CCR1;
             break;
@@ -124,7 +156,7 @@ static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8
     }
     p->period = period;
     p->tim = timerHardware->tim;
-
+    */
     return p;
 }
 
@@ -189,23 +221,28 @@ bool isMotorBrushed(uint16_t motorPwmRate)
     return (motorPwmRate > 500);
 }
 
-void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+//void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+void pwmBrushedMotorConfig(uint32_t pin, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
     uint32_t hz = PWM_BRUSHED_TIMER_MHZ * 1000000;
-    motors[motorIndex] = pwmOutConfig(timerHardware, PWM_BRUSHED_TIMER_MHZ, hz / motorPwmRate, idlePulse);
+    motors[motorIndex] = pwmOutConfig(pin, hz / motorPwmRate, idlePulse);
     motors[motorIndex]->pwmWritePtr = pwmWriteBrushed;
 }
 
-void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+
+//for motorPwmRate refer top of document
+//void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
+void pwmBrushlessMotorConfig(uint32_t pin, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse)
 {
     uint32_t hz = PWM_TIMER_MHZ * 1000000;
-    motors[motorIndex] = pwmOutConfig(timerHardware, PWM_TIMER_MHZ, hz / motorPwmRate, idlePulse);
+    motors[motorIndex] = pwmOutConfig(pin, hz / motorPwmRate, idlePulse);          //idlePulse signifies the value of timer at which the pulse starts
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 
-void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex)
+//void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex)
+void pwmOneshotMotorConfig(uint32_t pin, uint8_t motorIndex)
 {
-    motors[motorIndex] = pwmOutConfig(timerHardware, ONESHOT125_TIMER_MHZ, 0xFFFF, 0);
+    motors[motorIndex] = pwmOutConfig(pin, 0xFFFF, 0);
     motors[motorIndex]->pwmWritePtr = pwmWriteStandard;
 }
 

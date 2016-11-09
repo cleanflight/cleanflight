@@ -91,30 +91,66 @@ typedef enum {
     TYPE_TIMER
 } channelType_t;
 
+
+//used in pwm_rx.c and serial_softserial.c
 void timerConfigure(const timerHardware_t *timHw, uint16_t period, uint8_t mhz);  // This interface should be replaced.
 
-void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);
-void timerChConfigICDual(const timerHardware_t* timHw, bool polarityRising, unsigned inputFilterSamples);
-void timerChICPolarity(const timerHardware_t *timHw, bool polarityRising);
-volatile timCCR_t* timerChCCR(const timerHardware_t* timHw);
-volatile timCCR_t* timerChCCRLo(const timerHardware_t* timHw);
-volatile timCCR_t* timerChCCRHi(const timerHardware_t* timHw);
-void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool stateHigh);
-void timerChConfigGPIO(const timerHardware_t* timHw, GPIO_Mode mode);
-
+//used in pwm_rx.c and serial_softserial.c
 void timerChCCHandlerInit(timerCCHandlerRec_t *self, timerCCHandlerCallback *fn);       
+
+//used in pwm_rx.c
 void timerChOvrHandlerInit(timerOvrHandlerRec_t *self, timerOvrHandlerCallback *fn);
+
+//used in pwm_rx.c and serial_softserial.c
 void timerChConfigCallbacks(const timerHardware_t *channel, timerCCHandlerRec_t *edgeCallback, timerOvrHandlerRec_t *overflowCallback);     //Used to initialize callback fot the timer
-void timerChConfigCallbacksDual(const timerHardware_t *channel, timerCCHandlerRec_t *edgeCallbackLo, timerCCHandlerRec_t *edgeCallbackHi, timerOvrHandlerRec_t *overflowCallback);
-void timerChITConfigDualLo(const timerHardware_t* timHw, FunctionalState newState);
-void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
-void timerChClearCCFlag(const timerHardware_t* timHw);
 
-void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority);
-
+//used in boot.c
 void timerInit(void);
+
+//used in boot.c
 void timerStart(void);
+
+//used in pwm_output.c
 void timerForceOverflow(TIM_TypeDef *tim);
 
+//used in pwm_output.c
 void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint8_t mhz);  // TODO - just for migration
 
+//not used
+void timerChConfigIC(const timerHardware_t *timHw, bool polarityRising, unsigned inputFilterSamples);
+
+//not used
+void timerChConfigICDual(const timerHardware_t* timHw, bool polarityRising, unsigned inputFilterSamples);
+
+//not used
+void timerChICPolarity(const timerHardware_t *timHw, bool polarityRising);
+
+//not used
+volatile timCCR_t* timerChCCR(const timerHardware_t* timHw);
+
+//not used
+volatile timCCR_t* timerChCCRLo(const timerHardware_t* timHw);
+
+//not used
+volatile timCCR_t* timerChCCRHi(const timerHardware_t* timHw);
+
+//not used
+void timerChConfigOC(const timerHardware_t* timHw, bool outEnable, bool stateHigh);
+
+//not used
+void timerChConfigGPIO(const timerHardware_t* timHw, GPIO_Mode mode);
+
+//not used
+void timerChConfigCallbacksDual(const timerHardware_t *channel, timerCCHandlerRec_t *edgeCallbackLo, timerCCHandlerRec_t *edgeCallbackHi, timerOvrHandlerRec_t *overflowCallback);
+
+//not used
+void timerChITConfigDualLo(const timerHardware_t* timHw, FunctionalState newState);
+
+//not used
+void timerChITConfig(const timerHardware_t* timHw, FunctionalState newState);
+
+//not used
+void timerChClearCCFlag(const timerHardware_t* timHw);
+
+//not used
+void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriority);

@@ -30,7 +30,9 @@
 //#include "sound_beeper.h"
 //#include "nvic.h"
 //#include "serial.h"
+
 #include "serial_uart.h"
+#include "timer_setup.h"
 
 //#include "system.h"
 
@@ -40,6 +42,37 @@ static uint32_t usTicks = 0;            //Used to calculate time elapsed in micr
 static volatile uint32_t sysTickUptime = 0;
 // cached value of RCC->CSR
 //uint32_t cachedRccCsrValue;
+
+
+// SysTick
+//Setup timer to go off every millisecond with this as the handler. Use this to then measure system up time
+void SysTick_Handler(void)
+{
+    sysTickUptime++;
+}
+
+uint32_t micros(void)
+{
+    return sysTickUptime*1000;   
+}
+
+
+uint32_t millis(void)
+{
+    return sysTickUptime;
+}
+
+void print(void)                        //for testing. uncomment the line in systick_setup to enable this function
+{
+    printf("%d\n",millis());
+}
+
+void Systick_setup(void)
+{
+    start_timer(SysTick_Handler, 1000, 1);
+    //start_timer(print, 1, 1);
+}
+
 
 void systemInit(void)               //Only needed to initialize uart?
 {
@@ -65,7 +98,8 @@ void systemInit(void)               //Only needed to initialize uart?
     */
     //enableGPIOPowerUsageAndNoiseReductions();             //Not necessary for now
 
-    usartInitAllIOSignals();                                //Replace with code for initializing uart
+    //usartInitAllIOSignals();                                //Replace with code for initializing uart
+    Systick_setup();
 
 /*
 #ifdef STM32F10X
@@ -91,12 +125,7 @@ static void cycleCounterInit(void)
     usTicks = clocks.SYSCLK_Frequency / 1000000;
 }
 */
-// SysTick
-//Setup timer to go off every millisecond with this as the handler. Use this to then measure system up time
-void SysTick_Handler(void)
-{
-    sysTickUptime++;
-}
+
 /*
 // Return system uptime in microseconds (rollover in 70minutes)
 uint32_t micros(void)
@@ -117,10 +146,6 @@ uint32_t micros(void)
 */
 
 // Return system uptime in milliseconds (rollover in 49 days)
-uint32_t millis(void)
-{
-    return sysTickUptime;
-}
 
 /*
 #if 1
