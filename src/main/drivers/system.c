@@ -98,7 +98,7 @@ void systemInit(void)               //Only needed to initialize uart?
     */
     //enableGPIOPowerUsageAndNoiseReductions();             //Not necessary for now
 
-    //usartInitAllIOSignals();                                //Replace with code for initializing uart
+    usartInitAllIOSignals();                                //Replace with code for initializing uart
     Systick_setup();
 
 /*
