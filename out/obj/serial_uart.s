@@ -8172,8 +8172,8 @@ usbRead:
 	.string	"B57600 0010001"
 .LASF1284:
 	.string	"_SC_V6_ILP32_OFFBIG _SC_V6_ILP32_OFFBIG"
-.LASF428:
-	.string	"UINT_FAST8_MAX (255)"
+.LASF248:
+	.string	"__REVISION__ \"c69f0d5\""
 .LASF655:
 	.string	"__intN_t(N,MODE) typedef int int ##N ##_t __attribute__ ((__mode__ (MODE)))"
 .LASF82:
@@ -9314,8 +9314,6 @@ usbRead:
 	.string	"F_RDLCK 0"
 .LASF723:
 	.string	"__need_mbstate_t "
-.LASF248:
-	.string	"__REVISION__ \"375ed53\""
 .LASF691:
 	.string	"__fsfilcnt_t_defined "
 .LASF1165:
@@ -9650,6 +9648,8 @@ usbRead:
 	.string	"_SC_JOB_CONTROL _SC_JOB_CONTROL"
 .LASF244:
 	.string	"USE_STDPERIPH_DRIVER 1"
+.LASF1752:
+	.string	"CSTATUS _POSIX_VDISABLE"
 .LASF1131:
 	.string	"_SC_DELAYTIMER_MAX _SC_DELAYTIMER_MAX"
 .LASF330:
@@ -9686,8 +9686,8 @@ usbRead:
 	.string	"O_DSYNC __O_DSYNC"
 .LASF1417:
 	.string	"CLOCK_MONOTONIC 1"
-.LASF1752:
-	.string	"CSTATUS _POSIX_VDISABLE"
+.LASF428:
+	.string	"UINT_FAST8_MAX (255)"
 .LASF161:
 	.string	"__LDBL_MAX_10_EXP__ 4932"
 .LASF1294:

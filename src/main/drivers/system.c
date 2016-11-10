@@ -19,6 +19,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
+#include "serial_uart.h"
+#include "timer_setup.h"
+
+#define CLOCK CLOCK_MONOTONIC_RAW
+#define BILLION 1000000000L
 
 //#include <platform.h>
 
@@ -30,92 +36,93 @@
 //#include "sound_beeper.h"
 //#include "nvic.h"
 //#include "serial.h"
-
-#include "serial_uart.h"
-#include "timer_setup.h"
-
 //#include "system.h"
 
 // cycles per microsecond
 static uint32_t usTicks = 0;            //Used to calculate time elapsed in microseconds
+                                        //Same as sysTickUptime. Maintained for compatibility reasons
+                                        
+
 // current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
-static volatile uint32_t sysTickUptime = 0;
+static volatile uint32_t sysTickUptime = 0;     //gives time in us
+
+//Start value of system time
+struct timespec start;
+struct timespec current;
+
 // cached value of RCC->CSR
 //uint32_t cachedRccCsrValue;
 
 
-// SysTick
-//Setup timer to go off every millisecond with this as the handler. Use this to then measure system up time
-void SysTick_Handler(void)
-{
-    sysTickUptime++;
-}
-
+//return system up time in microseconds
 uint32_t micros(void)
 {
-    return sysTickUptime*1000;   
-}
-
-
-uint32_t millis(void)
-{
+    clock_gettime(CLOCK, &current);             //mark the current time
+    sysTickUptime = (BILLION * (current.tv_sec - start.tv_sec) + current.tv_nsec - start.tv_nsec)/1000;   
+    usTicks = sysTickUptime;                    //For compatibility
+    //For checking
+    //printf("Original:%lu\tCurrent:%lu\tDifference:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000, (current.tv_sec*BILLION + current.tv_nsec)/1000, (BILLION * (current.tv_sec - start.tv_sec) + current.tv_nsec - start.tv_nsec)/1000);
     return sysTickUptime;
 }
 
-void print(void)                        //for testing. uncomment the line in systick_setup to enable this function
+//return system up time in milliseconds
+uint32_t millis(void)
 {
-    printf("%d\n",millis());
+    return sysTickUptime/1000;
 }
 
-void Systick_setup(void)
+//Initialize critical system components
+void systemInit(void)                                       //Refer below for original function
 {
-    start_timer(SysTick_Handler, 1000, 1);
-    //start_timer(print, 1, 1);
+    //usartInitAllIOSignals();                                //Replace with code for initializing uart
+    //required for system up time
+    clock_gettime(CLOCK, &start);                           //mark start time
+    printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
 }
 
 
-void systemInit(void)               //Only needed to initialize uart?
+/*
+void systemInit(void)
 {
-/*#ifdef CC3D               //Not needed for edison
+#ifdef CC3D               //Not needed for edison
     //Accounts for OP Bootloader, set the Vector Table base address as specified in .ld file
     extern void *isr_vector_table_base;
 
     NVIC_SetVectorTable((uint32_t)&isr_vector_table_base, 0x0);             //Not needed. Necessary interrupts are initialized when writing code for the peripherals
 
 #endif
-*/
+
     // Configure NVIC preempt/priority groups
     //NVIC_PriorityGroupConfig(NVIC_PRIORITY_GROUPING);                       //Priority handled by the mraa library.
 
-/*#ifdef STM32F10X                                                            //Not necessary.
+#ifdef STM32F10X                                                            //Not necessary.
     // Turn on clocks for stuff we use
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 #endif
-*/
+
     // cache RCC->CSR value to use it in isMPUSoftreset() and others
-    /*cachedRccCsrValue = RCC->CSR;                         //Gets the cached value of register. Unnecessary.
+    cachedRccCsrValue = RCC->CSR;                         //Gets the cached value of register. Unnecessary.
     RCC_ClearFlag();
-    */
+    
     //enableGPIOPowerUsageAndNoiseReductions();             //Not necessary for now
 
     usartInitAllIOSignals();                                //Replace with code for initializing uart
-    Systick_setup();
+    clock_gettime(CLOCK, &start);                           //mark start time
 
-/*
+
 #ifdef STM32F10X
     // Turn off JTAG port 'cause we're using the GPIO for leds
 #define AFIO_MAPR_SWJ_CFG_NO_JTAG_SW            (0x2 << 24)
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_NO_JTAG_SW;
 #endif
-*/                                                           //No JTAG port on the edison
+                                                           //No JTAG port on the edison
     // Init cycle counter
     //cycleCounterInit();                                    //Calculates cycles per Microsecond. Unecessary
 
     // SysTick
     //SysTick_Config(SystemCoreClock / 1000);             //Systick generates interrupts at a regular interval. OS is gonna do this anyway. Not needed
 }
-
-
+*/
 
 /*
 static void cycleCounterInit(void)

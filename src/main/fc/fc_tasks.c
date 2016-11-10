@@ -33,7 +33,6 @@
 
 const uint32_t taskQueueArraySize = TASK_QUEUE_ARRAY_SIZE;
 const uint32_t taskCount = TASK_COUNT;
-cfTask_t* taskQueueArray[TASK_QUEUE_ARRAY_SIZE];
 
 cfTask_t cfTasks[] = {
     [TASK_SYSTEM] = {

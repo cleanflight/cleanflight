@@ -47,21 +47,22 @@
 main:
 .LFB2:
 	.file 1 "src/main/fc/boot.c"
-	.loc 1 805 0
+	.loc 1 807 0
 	.cfi_startproc
 	pushq	%rbp	#
 	.cfi_def_cfa_offset 16
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp	#,
 	.cfi_def_cfa_register 6
-	.loc 1 806 0
+	.loc 1 808 0
 	movl	$.LC0, %edi	#,
 	call	puts	#
-	.loc 1 807 0
-	call	systemInit	#
-.L2:
-	.loc 1 808 0 discriminator 1
-	jmp	.L2	#
+	.loc 1 809 0
+	movl	$0, %eax	#, D.4928
+	.loc 1 834 0
+	popq	%rbp	#
+	.cfi_def_cfa 7, 8
+	ret
 	.cfi_endproc
 .LFE2:
 	.size	main, .-main
@@ -74,10 +75,10 @@ main:
 	.long	.Ldebug_abbrev0
 	.byte	0x8
 	.uleb128 0x1
-	.long	.LASF1896
+	.long	.LASF1902
 	.byte	0xc
-	.long	.LASF1897
-	.long	.LASF1898
+	.long	.LASF1903
+	.long	.LASF1904
 	.long	.Ldebug_ranges0+0
 	.quad	0
 	.long	.Ldebug_line0
@@ -85,11 +86,11 @@ main:
 	.uleb128 0x2
 	.byte	0x1
 	.byte	0x6
-	.long	.LASF1884
+	.long	.LASF1890
 	.uleb128 0x2
 	.byte	0x2
 	.byte	0x5
-	.long	.LASF1885
+	.long	.LASF1891
 	.uleb128 0x3
 	.byte	0x4
 	.byte	0x5
@@ -97,47 +98,47 @@ main:
 	.uleb128 0x2
 	.byte	0x8
 	.byte	0x5
-	.long	.LASF1886
-	.uleb128 0x2
-	.byte	0x1
-	.byte	0x8
-	.long	.LASF1887
-	.uleb128 0x2
-	.byte	0x2
-	.byte	0x7
-	.long	.LASF1888
-	.uleb128 0x2
-	.byte	0x4
-	.byte	0x7
-	.long	.LASF1889
-	.uleb128 0x2
-	.byte	0x8
-	.byte	0x7
-	.long	.LASF1890
-	.uleb128 0x2
-	.byte	0x8
-	.byte	0x7
-	.long	.LASF1891
-	.uleb128 0x2
-	.byte	0x1
-	.byte	0x6
 	.long	.LASF1892
 	.uleb128 0x2
+	.byte	0x1
 	.byte	0x8
-	.byte	0x5
 	.long	.LASF1893
 	.uleb128 0x2
-	.byte	0x8
+	.byte	0x2
 	.byte	0x7
 	.long	.LASF1894
 	.uleb128 0x2
+	.byte	0x4
+	.byte	0x7
+	.long	.LASF1895
+	.uleb128 0x2
+	.byte	0x8
+	.byte	0x7
+	.long	.LASF1896
+	.uleb128 0x2
+	.byte	0x8
+	.byte	0x7
+	.long	.LASF1897
+	.uleb128 0x2
+	.byte	0x1
+	.byte	0x6
+	.long	.LASF1898
+	.uleb128 0x2
+	.byte	0x8
+	.byte	0x5
+	.long	.LASF1899
+	.uleb128 0x2
+	.byte	0x8
+	.byte	0x7
+	.long	.LASF1900
+	.uleb128 0x2
 	.byte	0x1
 	.byte	0x2
-	.long	.LASF1895
+	.long	.LASF1901
 	.uleb128 0x4
-	.long	.LASF1899
+	.long	.LASF1905
 	.byte	0x1
-	.value	0x325
+	.value	0x326
 	.long	0x3b
 	.quad	.LFB2
 	.quad	.LFE2-.LFB2
@@ -1735,6 +1736,13 @@ main:
 	.byte	0x3
 	.uleb128 0x1d
 	.uleb128 0x4e
+	.byte	0x4
+	.file 79 "./src/main/scheduler/scheduler.h"
+	.byte	0x3
+	.uleb128 0x1e
+	.uleb128 0x4f
+	.byte	0x7
+	.long	.Ldebug_macro79
 	.byte	0x4
 	.byte	0x4
 	.byte	0
@@ -7102,6 +7110,29 @@ main:
 	.uleb128 0x23
 	.long	.LASF1883
 	.byte	0
+	.section	.debug_macro,"G",@progbits,wm4.scheduler.h.22.67b0f3cbb70e9dc5f74939aa0db55023,comdat
+.Ldebug_macro79:
+	.value	0x4
+	.byte	0
+	.byte	0x5
+	.uleb128 0x16
+	.long	.LASF1884
+	.byte	0x5
+	.uleb128 0x17
+	.long	.LASF1885
+	.byte	0x5
+	.uleb128 0x18
+	.long	.LASF1886
+	.byte	0x5
+	.uleb128 0x23
+	.long	.LASF1887
+	.byte	0x5
+	.uleb128 0x57
+	.long	.LASF1888
+	.byte	0x5
+	.uleb128 0x59
+	.long	.LASF1889
+	.byte	0
 	.section	.debug_line,"",@progbits
 .Ldebug_line0:
 	.section	.debug_str,"MS",@progbits,1
@@ -7231,7 +7262,7 @@ main:
 	.string	"__STDC__ 1"
 .LASF927:
 	.string	"_STATBUF_ST_RDEV "
-.LASF1895:
+.LASF1901:
 	.string	"_Bool"
 .LASF370:
 	.string	"__LDBL_REDIR(name,proto) name proto"
@@ -7551,8 +7582,8 @@ main:
 	.string	"PTHREAD_BARRIER_SERIAL_THREAD -1"
 .LASF1286:
 	.string	"_SC_V6_ILP32_OFFBIG _SC_V6_ILP32_OFFBIG"
-.LASF428:
-	.string	"UINT_FAST8_MAX (255)"
+.LASF248:
+	.string	"__REVISION__ \"c69f0d5\""
 .LASF1834:
 	.string	"I2C2_SCL_PIN GPIO_Pin_9"
 .LASF655:
@@ -7981,6 +8012,8 @@ main:
 	.string	"_SC_XOPEN_XPG3 _SC_XOPEN_XPG3"
 .LASF1544:
 	.string	"ERESTART 85"
+.LASF1889:
+	.string	"isSystemOverloaded() (averageSystemLoadPercent >= LOAD_PERCENTAGE_ONE)"
 .LASF1185:
 	.string	"_SC_THREAD_THREADS_MAX _SC_THREAD_THREADS_MAX"
 .LASF994:
@@ -8005,7 +8038,7 @@ main:
 	.string	"PTHREAD_CANCEL_ASYNCHRONOUS PTHREAD_CANCEL_ASYNCHRONOUS"
 .LASF1674:
 	.string	"B1800 0000012"
-.LASF1887:
+.LASF1893:
 	.string	"unsigned char"
 .LASF1663:
 	.string	"CBAUD 0010017"
@@ -8073,6 +8106,8 @@ main:
 	.string	"ENXIO 6"
 .LASF25:
 	.string	"__SIZEOF_SIZE_T__ 8"
+.LASF1886:
+	.string	"TASK_PERIOD_US(us) (us)"
 .LASF188:
 	.string	"__DEC128_MAX__ 9.999999999999999999999999999999999E6144DL"
 .LASF1851:
@@ -8139,6 +8174,8 @@ main:
 	.string	"__DBL_DECIMAL_DIG__ 17"
 .LASF20:
 	.string	"__SIZEOF_LONG_LONG__ 8"
+.LASF1887:
+	.string	"TASK_SELF -1"
 .LASF1730:
 	.string	"TCOON 1"
 .LASF519:
@@ -8599,7 +8636,7 @@ main:
 	.string	"__has_include(STR) __has_include__(STR)"
 .LASF946:
 	.string	"UTIME_NOW ((1l << 30) - 1l)"
-.LASF1898:
+.LASF1904:
 	.string	"/home/aravind/git/cleanflight"
 .LASF187:
 	.string	"__DEC128_MIN__ 1E-6143DL"
@@ -8719,8 +8756,6 @@ main:
 	.string	"F_RDLCK 0"
 .LASF725:
 	.string	"__need_mbstate_t "
-.LASF248:
-	.string	"__REVISION__ \"375ed53\""
 .LASF691:
 	.string	"__fsfilcnt_t_defined "
 .LASF1167:
@@ -9051,6 +9086,8 @@ main:
 	.string	"_SC_JOB_CONTROL _SC_JOB_CONTROL"
 .LASF244:
 	.string	"USE_STDPERIPH_DRIVER 1"
+.LASF1752:
+	.string	"CSTATUS _POSIX_VDISABLE"
 .LASF1133:
 	.string	"_SC_DELAYTIMER_MAX _SC_DELAYTIMER_MAX"
 .LASF1820:
@@ -9091,8 +9128,8 @@ main:
 	.string	"O_DSYNC __O_DSYNC"
 .LASF1419:
 	.string	"CLOCK_MONOTONIC 1"
-.LASF1752:
-	.string	"CSTATUS _POSIX_VDISABLE"
+.LASF428:
+	.string	"UINT_FAST8_MAX (255)"
 .LASF1789:
 	.string	"USE_MPU_DATA_READY_SIGNAL "
 .LASF161:
@@ -9101,7 +9138,7 @@ main:
 	.string	"_SC_LEVEL1_ICACHE_LINESIZE _SC_LEVEL1_ICACHE_LINESIZE"
 .LASF1772:
 	.string	"EDISON "
-.LASF1891:
+.LASF1897:
 	.string	"sizetype"
 .LASF1492:
 	.string	"EDOM 33"
@@ -9139,13 +9176,13 @@ main:
 	.string	"__SIZEOF_INT128__ 16"
 .LASF1309:
 	.string	"_SC_IPV6 _SC_IPV6"
-.LASF1888:
+.LASF1894:
 	.string	"short unsigned int"
 .LASF1793:
 	.string	"USE_GYRO_SPI_MPU6500 "
 .LASF1855:
 	.string	"ADC_CHANNEL_COUNT 1"
-.LASF1884:
+.LASF1890:
 	.string	"signed char"
 .LASF1750:
 	.string	"CERASE 0177"
@@ -9381,12 +9418,16 @@ main:
 	.string	"__linux__ 1"
 .LASF512:
 	.string	"P_PGID"
+.LASF1888:
+	.string	"LOAD_PERCENTAGE_ONE 100"
 .LASF1786:
 	.string	"LED1_PIN_2 Pin_9"
 .LASF1307:
 	.string	"_SC_LEVEL4_CACHE_ASSOC _SC_LEVEL4_CACHE_ASSOC"
 .LASF323:
 	.string	"__ptr_t void *"
+.LASF1885:
+	.string	"TASK_PERIOD_MS(ms) ((ms) * 1000)"
 .LASF834:
 	.string	"FOPEN_MAX 16"
 .LASF384:
@@ -9419,7 +9460,7 @@ main:
 	.string	"_IO_peekc_unlocked(_fp) (_IO_BE ((_fp)->_IO_read_ptr >= (_fp)->_IO_read_end, 0) && __underflow (_fp) == EOF ? EOF : *(unsigned char *) (_fp)->_IO_read_ptr)"
 .LASF1631:
 	.string	"IUTF8 0040000"
-.LASF1886:
+.LASF1892:
 	.string	"long int"
 .LASF1657:
 	.string	"FF0 0000000"
@@ -9613,7 +9654,7 @@ main:
 	.string	"__ASMNAME2(prefix,cname) __STRING (prefix) cname"
 .LASF537:
 	.string	"_BITS_TYPES_H 1"
-.LASF1890:
+.LASF1896:
 	.string	"long unsigned int"
 .LASF1421:
 	.string	"CLOCK_THREAD_CPUTIME_ID 3"
@@ -9639,7 +9680,7 @@ main:
 	.string	"__CPUMASK(cpu) ((__cpu_mask) 1 << ((cpu) % __NCPUBITS))"
 .LASF1475:
 	.string	"EBUSY 16"
-.LASF1897:
+.LASF1903:
 	.string	"src/main/fc/boot.c"
 .LASF482:
 	.string	"_T_WCHAR_ "
@@ -9689,7 +9730,7 @@ main:
 	.string	"LED1 "
 .LASF1141:
 	.string	"_SC_SEM_VALUE_MAX _SC_SEM_VALUE_MAX"
-.LASF1892:
+.LASF1898:
 	.string	"char"
 .LASF700:
 	.string	"__SIZEOF_PTHREAD_BARRIER_T 32"
@@ -10316,7 +10357,7 @@ main:
 	.string	"S_IWGRP (S_IWUSR >> 3)"
 .LASF1029:
 	.string	"_POSIX_THREAD_ROBUST_PRIO_PROTECT -1"
-.LASF1894:
+.LASF1900:
 	.string	"long long unsigned int"
 .LASF630:
 	.string	"__ino_t_defined "
@@ -10534,6 +10575,8 @@ main:
 	.string	"DEFAULT_RX_FEATURE FEATURE_RX_SERIAL"
 .LASF255:
 	.string	"bool _Bool"
+.LASF1884:
+	.string	"TASK_PERIOD_HZ(hz) (1000000 / (hz))"
 .LASF1339:
 	.string	"_CS_LFS64_LINTFLAGS _CS_LFS64_LINTFLAGS"
 .LASF771:
@@ -10564,7 +10607,7 @@ main:
 	.string	"__GNU_LIBRARY__ 6"
 .LASF679:
 	.string	"NFDBITS __NFDBITS"
-.LASF1893:
+.LASF1899:
 	.string	"long long int"
 .LASF1523:
 	.string	"ENONET 64"
@@ -10576,7 +10619,7 @@ main:
 	.string	"_SC_V6_LP64_OFF64 _SC_V6_LP64_OFF64"
 .LASF737:
 	.string	"_IO_size_t size_t"
-.LASF1896:
+.LASF1902:
 	.string	"GNU C99 5.4.1 20160904 -mtune=generic -march=x86-64 -ggdb3 -std=gnu99 -ffunction-sections -fdata-sections -ffat-lto-objects -fstack-protector-strong"
 .LASF1277:
 	.string	"_SC_2_PBS _SC_2_PBS"
@@ -10760,7 +10803,7 @@ main:
 	.string	"_SC_LOGIN_NAME_MAX _SC_LOGIN_NAME_MAX"
 .LASF22:
 	.string	"__SIZEOF_FLOAT__ 4"
-.LASF1899:
+.LASF1905:
 	.string	"main"
 .LASF1491:
 	.string	"EPIPE 32"
@@ -10802,7 +10845,7 @@ main:
 	.string	"__USE_FORTIFY_LEVEL 0"
 .LASF1024:
 	.string	"_POSIX_THREAD_ATTR_STACKSIZE 200809L"
-.LASF1889:
+.LASF1895:
 	.string	"unsigned int"
 .LASF1573:
 	.string	"EALREADY 114"
@@ -10842,7 +10885,7 @@ main:
 	.string	"__LDBL_MAX_EXP__ 16384"
 .LASF252:
 	.string	"__STDC_ISO_10646__ 201505L"
-.LASF1885:
+.LASF1891:
 	.string	"short int"
 .LASF1600:
 	.string	"VINTR 0"

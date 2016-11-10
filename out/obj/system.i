@@ -250,7 +250,7 @@
 #define EDISON 1
 #define __FORKNAME__ "cleanflight"
 #define __TARGET__ "EDISON"
-#define __REVISION__ "375ed53"
+#define __REVISION__ "c69f0d5"
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 19 "/usr/include/stdc-predef.h" 3 4
 #define _STDC_PREDEF_H 1
@@ -2846,7 +2846,293 @@ extern int getloadavg (double __loadavg[], int __nelem)
 
 
 # 22 "src/main/drivers/system.c" 2
-# 34 "src/main/drivers/system.c"
+# 1 "/usr/include/time.h" 1 3 4
+# 26 "/usr/include/time.h" 3 4
+#define _TIME_H 1
+
+
+
+
+
+
+
+
+#define __need_size_t 
+#define __need_NULL 
+# 1 "/usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h" 1 3 4
+# 238 "/usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h" 3 4
+#undef __need_size_t
+# 401 "/usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h" 3 4
+#undef NULL
+
+
+
+
+#define NULL ((void *)0)
+
+
+
+
+
+#undef __need_NULL
+# 38 "/usr/include/time.h" 2 3 4
+
+
+
+# 1 "/usr/include/x86_64-linux-gnu/bits/time.h" 1 3 4
+# 40 "/usr/include/x86_64-linux-gnu/bits/time.h" 3 4
+#define _BITS_TIME_H 1
+
+
+
+
+
+
+
+#define CLOCKS_PER_SEC ((clock_t) 1000000)
+# 61 "/usr/include/x86_64-linux-gnu/bits/time.h" 3 4
+#define CLOCK_REALTIME 0
+
+#define CLOCK_MONOTONIC 1
+
+#define CLOCK_PROCESS_CPUTIME_ID 2
+
+#define CLOCK_THREAD_CPUTIME_ID 3
+
+#define CLOCK_MONOTONIC_RAW 4
+
+#define CLOCK_REALTIME_COARSE 5
+
+#define CLOCK_MONOTONIC_COARSE 6
+
+#define CLOCK_BOOTTIME 7
+
+#define CLOCK_REALTIME_ALARM 8
+
+#define CLOCK_BOOTTIME_ALARM 9
+
+#define CLOCK_TAI 11
+
+
+#define TIMER_ABSTIME 1
+# 101 "/usr/include/x86_64-linux-gnu/bits/time.h" 3 4
+#undef __need_timeval
+# 42 "/usr/include/time.h" 2 3 4
+# 66 "/usr/include/time.h" 3 4
+#undef __need_clock_t
+# 82 "/usr/include/time.h" 3 4
+#undef __need_time_t
+# 94 "/usr/include/time.h" 3 4
+#undef __clockid_time_t
+# 106 "/usr/include/time.h" 3 4
+#undef __need_timer_t
+# 127 "/usr/include/time.h" 3 4
+#undef __need_timespec
+
+
+
+
+
+struct tm
+{
+  int tm_sec;
+  int tm_min;
+  int tm_hour;
+  int tm_mday;
+  int tm_mon;
+  int tm_year;
+  int tm_wday;
+  int tm_yday;
+  int tm_isdst;
+
+
+  long int tm_gmtoff;
+  const char *tm_zone;
+
+
+
+
+};
+
+
+
+
+
+
+
+
+struct itimerspec
+  {
+    struct timespec it_interval;
+    struct timespec it_value;
+  };
+
+
+struct sigevent;
+# 186 "/usr/include/time.h" 3 4
+
+
+
+extern clock_t clock (void) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern time_t time (time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern double difftime (time_t __time1, time_t __time0)
+     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__const__));
+
+
+extern time_t mktime (struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+
+extern size_t strftime (char *__restrict __s, size_t __maxsize,
+   const char *__restrict __format,
+   const struct tm *__restrict __tp) __attribute__ ((__nothrow__ , __leaf__));
+
+# 223 "/usr/include/time.h" 3 4
+extern size_t strftime_l (char *__restrict __s, size_t __maxsize,
+     const char *__restrict __format,
+     const struct tm *__restrict __tp,
+     __locale_t __loc) __attribute__ ((__nothrow__ , __leaf__));
+# 236 "/usr/include/time.h" 3 4
+
+
+
+extern struct tm *gmtime (const time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+extern struct tm *localtime (const time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+
+extern struct tm *gmtime_r (const time_t *__restrict __timer,
+       struct tm *__restrict __tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+extern struct tm *localtime_r (const time_t *__restrict __timer,
+          struct tm *__restrict __tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+
+extern char *asctime (const struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern char *ctime (const time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+
+
+
+extern char *asctime_r (const struct tm *__restrict __tp,
+   char *__restrict __buf) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern char *ctime_r (const time_t *__restrict __timer,
+        char *__restrict __buf) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+extern char *__tzname[2];
+extern int __daylight;
+extern long int __timezone;
+
+
+
+
+extern char *tzname[2];
+
+
+
+extern void tzset (void) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+extern int daylight;
+extern long int timezone;
+
+
+
+
+
+extern int stime (const time_t *__when) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+
+#define __isleap(year) ((year) % 4 == 0 && ((year) % 100 != 0 || (year) % 400 == 0))
+# 319 "/usr/include/time.h" 3 4
+extern time_t timegm (struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern time_t timelocal (struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int dysize (int __year) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__const__));
+# 334 "/usr/include/time.h" 3 4
+extern int nanosleep (const struct timespec *__requested_time,
+        struct timespec *__remaining);
+
+
+
+extern int clock_getres (clockid_t __clock_id, struct timespec *__res) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int clock_gettime (clockid_t __clock_id, struct timespec *__tp) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int clock_settime (clockid_t __clock_id, const struct timespec *__tp)
+     __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+
+
+extern int clock_nanosleep (clockid_t __clock_id, int __flags,
+       const struct timespec *__req,
+       struct timespec *__rem);
+
+
+extern int clock_getcpuclockid (pid_t __pid, clockid_t *__clock_id) __attribute__ ((__nothrow__ , __leaf__));
+
+
+
+
+extern int timer_create (clockid_t __clock_id,
+    struct sigevent *__restrict __evp,
+    timer_t *__restrict __timerid) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int timer_delete (timer_t __timerid) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int timer_settime (timer_t __timerid, int __flags,
+     const struct itimerspec *__restrict __value,
+     struct itimerspec *__restrict __ovalue) __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int timer_gettime (timer_t __timerid, struct itimerspec *__value)
+     __attribute__ ((__nothrow__ , __leaf__));
+
+
+extern int timer_getoverrun (timer_t __timerid) __attribute__ ((__nothrow__ , __leaf__));
+# 430 "/usr/include/time.h" 3 4
+
+# 23 "src/main/drivers/system.c" 2
 # 1 "src/main/drivers/serial_uart.h" 1
 # 18 "src/main/drivers/serial_uart.h"
        
@@ -2920,7 +3206,7 @@ char* usbRead(int len);
 _Bool 
 # 78 "src/main/drivers/serial_uart.h"
     usbIsConnected(void);
-# 35 "src/main/drivers/system.c" 2
+# 24 "src/main/drivers/system.c" 2
 # 1 "src/main/drivers/timer_setup.h" 1
 
 #define TIMER_SETUP_H 
@@ -5547,18 +5833,7 @@ typedef __sig_atomic_t sig_atomic_t;
 # 58 "/usr/include/signal.h" 2 3 4
 # 74 "/usr/include/signal.h" 3 4
 #define __need_timespec 
-# 1 "/usr/include/time.h" 1 3 4
-# 66 "/usr/include/time.h" 3 4
-#undef __need_clock_t
-# 82 "/usr/include/time.h" 3 4
-#undef __need_time_t
-# 94 "/usr/include/time.h" 3 4
-#undef __clockid_time_t
-# 106 "/usr/include/time.h" 3 4
-#undef __need_timer_t
-# 127 "/usr/include/time.h" 3 4
-#undef __need_timespec
-# 76 "/usr/include/signal.h" 2 3 4
+
 
 
 
@@ -6351,293 +6626,7 @@ extern int __libc_current_sigrtmax (void) __attribute__ ((__nothrow__ , __leaf__
 
 
 # 9 "src/main/drivers/timer_setup.h" 2
-# 1 "/usr/include/time.h" 1 3 4
-# 26 "/usr/include/time.h" 3 4
-#define _TIME_H 1
 
-
-
-
-
-
-
-
-#define __need_size_t 
-#define __need_NULL 
-# 1 "/usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h" 1 3 4
-# 238 "/usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h" 3 4
-#undef __need_size_t
-# 401 "/usr/lib/gcc/x86_64-linux-gnu/5/include/stddef.h" 3 4
-#undef NULL
-
-
-
-
-#define NULL ((void *)0)
-
-
-
-
-
-#undef __need_NULL
-# 38 "/usr/include/time.h" 2 3 4
-
-
-
-# 1 "/usr/include/x86_64-linux-gnu/bits/time.h" 1 3 4
-# 40 "/usr/include/x86_64-linux-gnu/bits/time.h" 3 4
-#define _BITS_TIME_H 1
-
-
-
-
-
-
-
-#define CLOCKS_PER_SEC ((clock_t) 1000000)
-# 61 "/usr/include/x86_64-linux-gnu/bits/time.h" 3 4
-#define CLOCK_REALTIME 0
-
-#define CLOCK_MONOTONIC 1
-
-#define CLOCK_PROCESS_CPUTIME_ID 2
-
-#define CLOCK_THREAD_CPUTIME_ID 3
-
-#define CLOCK_MONOTONIC_RAW 4
-
-#define CLOCK_REALTIME_COARSE 5
-
-#define CLOCK_MONOTONIC_COARSE 6
-
-#define CLOCK_BOOTTIME 7
-
-#define CLOCK_REALTIME_ALARM 8
-
-#define CLOCK_BOOTTIME_ALARM 9
-
-#define CLOCK_TAI 11
-
-
-#define TIMER_ABSTIME 1
-# 101 "/usr/include/x86_64-linux-gnu/bits/time.h" 3 4
-#undef __need_timeval
-# 42 "/usr/include/time.h" 2 3 4
-# 66 "/usr/include/time.h" 3 4
-#undef __need_clock_t
-# 82 "/usr/include/time.h" 3 4
-#undef __need_time_t
-# 94 "/usr/include/time.h" 3 4
-#undef __clockid_time_t
-# 106 "/usr/include/time.h" 3 4
-#undef __need_timer_t
-# 127 "/usr/include/time.h" 3 4
-#undef __need_timespec
-
-
-
-
-
-struct tm
-{
-  int tm_sec;
-  int tm_min;
-  int tm_hour;
-  int tm_mday;
-  int tm_mon;
-  int tm_year;
-  int tm_wday;
-  int tm_yday;
-  int tm_isdst;
-
-
-  long int tm_gmtoff;
-  const char *tm_zone;
-
-
-
-
-};
-
-
-
-
-
-
-
-
-struct itimerspec
-  {
-    struct timespec it_interval;
-    struct timespec it_value;
-  };
-
-
-struct sigevent;
-# 186 "/usr/include/time.h" 3 4
-
-
-
-extern clock_t clock (void) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern time_t time (time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern double difftime (time_t __time1, time_t __time0)
-     __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__const__));
-
-
-extern time_t mktime (struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-
-extern size_t strftime (char *__restrict __s, size_t __maxsize,
-   const char *__restrict __format,
-   const struct tm *__restrict __tp) __attribute__ ((__nothrow__ , __leaf__));
-
-# 223 "/usr/include/time.h" 3 4
-extern size_t strftime_l (char *__restrict __s, size_t __maxsize,
-     const char *__restrict __format,
-     const struct tm *__restrict __tp,
-     __locale_t __loc) __attribute__ ((__nothrow__ , __leaf__));
-# 236 "/usr/include/time.h" 3 4
-
-
-
-extern struct tm *gmtime (const time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-extern struct tm *localtime (const time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-
-extern struct tm *gmtime_r (const time_t *__restrict __timer,
-       struct tm *__restrict __tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-extern struct tm *localtime_r (const time_t *__restrict __timer,
-          struct tm *__restrict __tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-
-extern char *asctime (const struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern char *ctime (const time_t *__timer) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-
-
-
-extern char *asctime_r (const struct tm *__restrict __tp,
-   char *__restrict __buf) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern char *ctime_r (const time_t *__restrict __timer,
-        char *__restrict __buf) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-extern char *__tzname[2];
-extern int __daylight;
-extern long int __timezone;
-
-
-
-
-extern char *tzname[2];
-
-
-
-extern void tzset (void) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-extern int daylight;
-extern long int timezone;
-
-
-
-
-
-extern int stime (const time_t *__when) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-
-#define __isleap(year) ((year) % 4 == 0 && ((year) % 100 != 0 || (year) % 400 == 0))
-# 319 "/usr/include/time.h" 3 4
-extern time_t timegm (struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern time_t timelocal (struct tm *__tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int dysize (int __year) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__const__));
-# 334 "/usr/include/time.h" 3 4
-extern int nanosleep (const struct timespec *__requested_time,
-        struct timespec *__remaining);
-
-
-
-extern int clock_getres (clockid_t __clock_id, struct timespec *__res) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int clock_gettime (clockid_t __clock_id, struct timespec *__tp) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int clock_settime (clockid_t __clock_id, const struct timespec *__tp)
-     __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-
-
-extern int clock_nanosleep (clockid_t __clock_id, int __flags,
-       const struct timespec *__req,
-       struct timespec *__rem);
-
-
-extern int clock_getcpuclockid (pid_t __pid, clockid_t *__clock_id) __attribute__ ((__nothrow__ , __leaf__));
-
-
-
-
-extern int timer_create (clockid_t __clock_id,
-    struct sigevent *__restrict __evp,
-    timer_t *__restrict __timerid) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int timer_delete (timer_t __timerid) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int timer_settime (timer_t __timerid, int __flags,
-     const struct itimerspec *__restrict __value,
-     struct itimerspec *__restrict __ovalue) __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int timer_gettime (timer_t __timerid, struct itimerspec *__value)
-     __attribute__ ((__nothrow__ , __leaf__));
-
-
-extern int timer_getoverrun (timer_t __timerid) __attribute__ ((__nothrow__ , __leaf__));
-# 430 "/usr/include/time.h" 3 4
-
-# 10 "src/main/drivers/timer_setup.h" 2
 
 #define CLOCKID CLOCK_REALTIME
 #define SIG SIGRTMIN
@@ -6659,51 +6648,56 @@ void timercreate(timer_t* timerid, struct sigevent* sev, void (* handler)(int, s
 void timer_start(struct itimerspec* its, timer_t* timerid, float freq, int mode);
 void timer_info_init(timer_info_t* timer_info, void (* timer_handler)());
 void start_timer(void (*timerspecific_handler)(void), float freq, int mode);
-# 36 "src/main/drivers/system.c" 2
+# 25 "src/main/drivers/system.c" 2
 
-
-
-
+#define CLOCK CLOCK_MONOTONIC_RAW
+#define BILLION 1000000000L
+# 42 "src/main/drivers/system.c"
 static uint32_t usTicks = 0;
+
+
+
 
 static volatile uint32_t sysTickUptime = 0;
 
 
+struct timespec start;
+struct timespec current;
 
 
 
 
-void SysTick_Handler(void)
-{
-    sysTickUptime++;
-}
+
 
 uint32_t micros(void)
 {
-    return sysTickUptime*1000;
+    clock_gettime(
+# 60 "src/main/drivers/system.c" 3 4
+                 4
+# 60 "src/main/drivers/system.c"
+                      , &current);
+    sysTickUptime = (1000000000L * (current.tv_sec - start.tv_sec) + current.tv_nsec - start.tv_nsec)/1000;
+    usTicks = sysTickUptime;
+
+
+    return sysTickUptime;
 }
 
 
 uint32_t millis(void)
 {
-    return sysTickUptime;
-}
-
-void print(void)
-{
-    printf("%d\n",millis());
-}
-
-void Systick_setup(void)
-{
-    start_timer(SysTick_Handler, 1000, 1);
-    start_timer(print, 1, 1);
+    return sysTickUptime/1000;
 }
 
 
 void systemInit(void)
 {
-# 102 "src/main/drivers/system.c"
-    Systick_setup();
-# 116 "src/main/drivers/system.c"
+
+
+    clock_gettime(
+# 79 "src/main/drivers/system.c" 3 4
+                 4
+# 79 "src/main/drivers/system.c"
+                      , &start);
+    printf("Original:%lu\n",(start.tv_sec*1000000000L + start.tv_nsec)/1000);
 }

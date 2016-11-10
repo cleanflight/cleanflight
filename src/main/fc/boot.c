@@ -27,6 +27,7 @@
 #include <drivers/system.h>
 #include <drivers/serial_uart.h>
 #include <drivers/serial.h> 
+#include <scheduler/scheduler.h>
 /*#include <platform.h>
 
 #include "build/build_config.h"
@@ -802,10 +803,10 @@ void configureScheduler(void)
 }
 
 */
-int main(void) {
+int main(void) 
+{
     printf("Hello World\n");
     return 0;
-
 
 //*****************************Working functions******************************************//
   
@@ -815,6 +816,8 @@ int main(void) {
     //usbWrite("hello",5);
     //char* str = usbRead(5);
     //start_timer() working. refer system.c
+    //micros() returns time elapsed since start of program in us
+    //millis() returns time elapsed since start of program in ms
 
 
 
@@ -829,6 +832,7 @@ int main(void) {
         processLoopback();
     }*/
 }
+
 /*
 void HardFault_Handler(void)
 {

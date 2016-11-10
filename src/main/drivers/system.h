@@ -21,10 +21,8 @@ void systemInit(void);
 
 void delayMicroseconds(uint32_t us);
 void delay(uint32_t ms);
-void Systick_setup(void);
-void print(void);
-uint32_t micros(void);
-uint32_t millis(void);
+uint64_t micros(void);
+uint64_t millis(void);
 
 // failure
 void failureMode(uint8_t mode);

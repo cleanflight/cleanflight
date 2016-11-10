@@ -7039,6 +7039,8 @@ start_timer:
 	.string	"__INT_FAST64_MAX__ 0x7fffffffffffffffL"
 .LASF723:
 	.string	"_XBS5_LPBIG_OFFBIG -1"
+.LASF1184:
+	.string	"__sigmask(sig) (((unsigned long int) 1) << (((sig) - 1) % (8 * sizeof (unsigned long int))))"
 .LASF1055:
 	.string	"F_ULOCK 0"
 .LASF30:
@@ -7555,8 +7557,8 @@ start_timer:
 	.string	"_CS_XBS5_ILP32_OFFBIG_LINTFLAGS _CS_XBS5_ILP32_OFFBIG_LINTFLAGS"
 .LASF1189:
 	.string	"__need_sig_atomic_t"
-.LASF563:
-	.string	"__off_t_defined "
+.LASF248:
+	.string	"__REVISION__ \"c69f0d5\""
 .LASF556:
 	.string	"__u_char_defined "
 .LASF399:
@@ -8037,8 +8039,8 @@ start_timer:
 	.string	"__INT_LEAST64_TYPE__ long int"
 .LASF1389:
 	.string	"sival_ptr"
-.LASF356:
-	.string	"__va_arg_pack() __builtin_va_arg_pack ()"
+.LASF827:
+	.string	"_SC_PII_INTERNET _SC_PII_INTERNET"
 .LASF297:
 	.string	"_ATFILE_SOURCE"
 .LASF736:
@@ -8901,8 +8903,6 @@ start_timer:
 	.string	"__ORDER_LITTLE_ENDIAN__ 1234"
 .LASF1274:
 	.string	"ILL_BADSTK ILL_BADSTK"
-.LASF1185:
-	.string	"__sigword(sig) (((sig) - 1) / (8 * sizeof (unsigned long int)))"
 .LASF1328:
 	.string	"SIG_UNBLOCK 1"
 .LASF1359:
@@ -8979,8 +8979,8 @@ start_timer:
 	.string	"__dev_t_defined "
 .LASF40:
 	.string	"__CHAR16_TYPE__ short unsigned int"
-.LASF1184:
-	.string	"__sigmask(sig) (((unsigned long int) 1) << (((sig) - 1) % (8 * sizeof (unsigned long int))))"
+.LASF563:
+	.string	"__off_t_defined "
 .LASF1158:
 	.string	"_IO_peekc(_fp) _IO_peekc_unlocked (_fp)"
 .LASF528:
@@ -9311,8 +9311,8 @@ start_timer:
 	.string	"_SYS_CDEFS_H 1"
 .LASF216:
 	.string	"__SIZEOF_PTRDIFF_T__ 8"
-.LASF827:
-	.string	"_SC_PII_INTERNET _SC_PII_INTERNET"
+.LASF1185:
+	.string	"__sigword(sig) (((sig) - 1) / (8 * sizeof (unsigned long int)))"
 .LASF1255:
 	.string	"si_call_addr _sifields._sigsys._call_addr"
 .LASF9:
@@ -9513,8 +9513,8 @@ start_timer:
 	.string	"si_uid _sifields._kill.si_uid"
 .LASF400:
 	.string	"_SIZE_T_DECLARED "
-.LASF248:
-	.string	"__REVISION__ \"375ed53\""
+.LASF356:
+	.string	"__va_arg_pack() __builtin_va_arg_pack ()"
 .LASF35:
 	.string	"__PTRDIFF_TYPE__ long int"
 .LASF228:

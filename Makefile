@@ -40,7 +40,7 @@ FORKNAME			 = cleanflight
 OUTPUT_DIR = out/
 OBJ_DIR = out/obj
 FILE_NAME = cleanflight
-LIB_FLAGS = -lmraa -lrt
+LIB_FLAGS = -lmraa -lrt -lm
 64K_TARGETS  = CJMCU
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO SPRACINGF1OSD
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB PORT103R RCEXPLORERF3 SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY SPRACINGF3OSD, EDISON
@@ -394,7 +394,17 @@ EDISON_SRC = \
 		   src/main/drivers/bus_i2c_edison.c \
 		   src/main/drivers/system.c \
 		   src/main/drivers/timer_setup.c \
-		   src/main/drivers/serial_uart.c 
+		   src/main/drivers/serial_uart.c \
+		   src/main/scheduler/scheduler.c \
+		   src/main/common/maths.c \
+		   src/main/fc/fc_tasks.c \
+		   src/main/config/parameter_group.c
+
+#EDISON_SRC = \
+			src/main/fc/boot.c \
+			src/main/common/maths.c \
+			src/main/config/parameter_group.c 
+
 
 
 NAZE_SRC = \
@@ -853,7 +863,7 @@ endif
 
 # Tool names
 #CC          := $(CCACHE) arm-none-eabi-gcc
-CC          := $(CCACHE) gcc
+CC          := gcc
 #OBJCOPY     := arm-none-eabi-objcopy
 OBJCOPY     := objcopy
 SIZE        := size
@@ -879,6 +889,8 @@ DEBUG_FLAGS	 = -ggdb3 -DDEBUG
 #$(ARCH_FLAGS) \
 $(LTO_FLAGS) \
 $(DEVICE_FLAGS) \
+
+IFLAGS = $(addprefix -I,$(INCLUDE_DIRS))
 
 CFLAGS		 = $(WARN_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
@@ -1072,7 +1084,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 ################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
 compile: clean objs  	
-	$(CC) -o $(OUTPUT_DIR)$(FILE_NAME) $(shell find $(OBJ_DIR) -name '*.o') $(LIB_FLAGS)		#Compile .o files into executable
+	$(CC) $(shell find $(OBJ_DIR) -name '*.o') -o $(OUTPUT_DIR)$(FILE_NAME) $(LIB_FLAGS)		#Compile .o files into executable
 
 
 #Create object files based on the input source files and move them to /out/obj
@@ -1088,7 +1100,7 @@ clean:
 
 #test target
 echo:
-	echo $(EDISON_INC)	
+	echo $(IFLAGS)	
 
 # include auto-generated dependencies
 -include $(TARGET_DEPS)

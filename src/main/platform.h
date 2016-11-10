@@ -16,7 +16,7 @@
  */
 
 #pragma once
-
+/*
 #ifdef STM32F303xC
 #include "stm32f30x_conf.h"
 #include "stm32f30x_rcc.h"
@@ -44,4 +44,4 @@
 #endif // STM32F10X
 
 #include "target.h"
-
+*/

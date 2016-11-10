@@ -22,12 +22,13 @@
 
 #include "config/parameter_group.h"
 
+/*
 #include "drivers/gpio.h"
 #include "drivers/timer.h"
 #include "drivers/pwm_mapping.h"
 #include "flight/mixer.h"
 #include "flight/servos.h"
-
+*/
 #include "build/build_config.h"
 
 #if MAX_PWM_MOTORS != MAX_SUPPORTED_MOTORS

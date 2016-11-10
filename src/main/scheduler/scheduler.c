@@ -23,16 +23,16 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "platform.h"
+//#include "platform.h"                               
 
-#include "scheduler/scheduler.h"
-#include "build/debug.h"
-#include "build/build_config.h"                 //required by config_unittest.h?
+#include "scheduler.h"                
+#include "build/debug.h"                            //builds
+#include "build/build_config.h"                   //required by config_unittest.h?
 
-#include "common/maths.h"                       //builds
+#include "common/maths.h"                           //builds
 
-#include "drivers/system.h"
-#include "config/config_unittest.h"
+#include "drivers/system.h"                         //builds
+//#include "config/config_unittest.h"
 
 static cfTask_t *currentTask = NULL;
 
@@ -283,5 +283,5 @@ void scheduler(void)
 #endif
     }
     //Used for unit testing. Probably not needed
-    GET_SCHEDULER_LOCALS();
+    //GET_SCHEDULER_LOCALS();
 }

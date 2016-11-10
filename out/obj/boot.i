@@ -250,7 +250,7 @@
 #define EDISON 1
 #define __FORKNAME__ "cleanflight"
 #define __TARGET__ "EDISON"
-#define __REVISION__ "375ed53"
+#define __REVISION__ "c69f0d5"
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 19 "/usr/include/stdc-predef.h" 3 4
 #define _STDC_PREDEF_H 1
@@ -8519,10 +8519,8 @@ void systemInit(void);
 
 void delayMicroseconds(uint32_t us);
 void delay(uint32_t ms);
-void Systick_setup(void);
-void print(void);
-uint32_t micros(void);
-uint32_t millis(void);
+uint64_t micros(void);
+uint64_t millis(void);
 
 
 void failureMode(uint8_t mode);
@@ -8531,9 +8529,9 @@ void failureMode(uint8_t mode);
 void systemReset(void);
 void systemResetToBootloader(void);
 
-# 35 "./src/main/drivers/system.h" 3 4
+# 33 "./src/main/drivers/system.h" 3 4
 _Bool 
-# 35 "./src/main/drivers/system.h"
+# 33 "./src/main/drivers/system.h"
     isMPUSoftReset(void);
 
 void enableGPIOPowerUsageAndNoiseReductions(void);
@@ -8717,11 +8715,97 @@ void serialWriteBufShim(void *instance, uint8_t *data, int count);
 void serialBeginWrite(serialPort_t *instance);
 void serialEndWrite(serialPort_t *instance);
 # 30 "src/main/fc/boot.c" 2
-# 805 "src/main/fc/boot.c"
-int main(void) {
+# 1 "./src/main/scheduler/scheduler.h" 1
+# 18 "./src/main/scheduler/scheduler.h"
+       
+
+
+
+#define TASK_PERIOD_HZ(hz) (1000000 / (hz))
+#define TASK_PERIOD_MS(ms) ((ms) * 1000)
+#define TASK_PERIOD_US(us) (us)
+
+typedef enum {
+    TASK_PRIORITY_IDLE = 0,
+    TASK_PRIORITY_LOW = 1,
+    TASK_PRIORITY_MEDIUM = 3,
+    TASK_PRIORITY_HIGH = 5,
+    TASK_PRIORITY_REALTIME = 6,
+    TASK_PRIORITY_MAX = 255
+} cfTaskPriority_e;
+
+#define TASK_SELF -1
+
+typedef struct {
+    const char * taskName;
+    
+# 39 "./src/main/scheduler/scheduler.h" 3 4
+   _Bool 
+# 39 "./src/main/scheduler/scheduler.h"
+                isEnabled;
+    uint32_t desiredPeriod;
+    uint8_t staticPriority;
+    uint32_t maxExecutionTime;
+    uint32_t totalExecutionTime;
+    uint32_t averageExecutionTime;
+    uint32_t latestDeltaTime;
+} cfTaskInfo_t;
+
+typedef struct {
+
+    const char * taskName;
+    
+# 51 "./src/main/scheduler/scheduler.h" 3 4
+   _Bool 
+# 51 "./src/main/scheduler/scheduler.h"
+        (*checkFunc)(uint32_t currentDeltaTime);
+    void (*taskFunc)(void);
+    uint32_t desiredPeriod;
+    const uint8_t staticPriority;
+
+
+    uint16_t dynamicPriority;
+    uint16_t taskAgeCycles;
+    uint32_t lastExecutedAt;
+    uint32_t lastSignaledAt;
+
+
+    uint32_t averageExecutionTime;
+    uint32_t taskLatestDeltaTime;
+
+    uint32_t maxExecutionTime;
+    uint32_t totalExecutionTime;
+
+} cfTask_t;
+
+extern uint16_t cpuLoad;
+extern uint16_t averageSystemLoadPercent;
+
+extern cfTask_t* taskQueueArray[];
+extern const uint32_t taskQueueArraySize;
+extern const uint32_t taskCount;
+extern cfTask_t cfTasks[];
+
+void getTaskInfo(const int taskId, cfTaskInfo_t *taskInfo);
+void rescheduleTask(const int taskId, uint32_t newPeriodMicros);
+void setTaskEnabled(const int taskId, 
+# 81 "./src/main/scheduler/scheduler.h" 3 4
+                                     _Bool 
+# 81 "./src/main/scheduler/scheduler.h"
+                                          newEnabledState);
+uint32_t getTaskDeltaTime(const int taskId);
+
+void schedulerInit(void);
+void scheduler(void);
+
+#define LOAD_PERCENTAGE_ONE 100
+
+#define isSystemOverloaded() (averageSystemLoadPercent >= LOAD_PERCENTAGE_ONE)
+# 31 "src/main/fc/boot.c" 2
+# 806 "src/main/fc/boot.c"
+int main(void)
+{
     printf("Hello World\n");
-    systemInit();
-    while(1);
     return 0;
-# 832 "src/main/fc/boot.c"
+# 834 "src/main/fc/boot.c"
 }

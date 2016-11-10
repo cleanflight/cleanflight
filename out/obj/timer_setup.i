@@ -250,7 +250,7 @@
 #define EDISON 1
 #define __FORKNAME__ "cleanflight"
 #define __TARGET__ "EDISON"
-#define __REVISION__ "375ed53"
+#define __REVISION__ "c69f0d5"
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 19 "/usr/include/stdc-predef.h" 3 4
 #define _STDC_PREDEF_H 1
