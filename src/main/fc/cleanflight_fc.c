@@ -21,17 +21,27 @@
 #include <math.h>
 
 #include <platform.h>
-#include "build/debug.h"
+#include "build/debug.h"                
 
-#include "common/maths.h"
-#include "common/axis.h"
-#include "common/color.h"
-#include "common/utils.h"
-#include "common/filter.h"
-#include "common/streambuf.h"
+#include "common/maths.h"               //builds
+#include "common/axis.h"                //builds
+#include "common/color.h"               //builds
+#include "common/utils.h"               //no source file. builds
+#include "common/filter.h"              //builds
+#include "common/streambuf.h"           //builds
 
 #include "config/parameter_group.h"
+#include "fc/fc_serial.h"
+#include "fc/fc_tasks.h"
 
+#include "msp/msp.h"
+#include "msp/msp_serial.h"
+
+#include "scheduler/scheduler.h"
+
+#include "drivers/system.h"
+
+/*
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
@@ -47,9 +57,6 @@
 #include "fc/rc_adjustments.h"
 #include "fc/rc_curves.h"
 #include "fc/fc_serial.h"
-#include "fc/fc_tasks.h"
-
-#include "scheduler/scheduler.h"
 
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
@@ -70,9 +77,6 @@
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/transponder_ir.h"
 
-#include "msp/msp.h"
-#include "msp/msp_serial.h"
-
 #include "rx/rx.h"
 #include "rx/msp.h"
 
@@ -91,7 +95,7 @@
 #include "fc/runtime_config.h"
 #include "fc/config.h"
 #include "config/feature.h"
-
+*/
 // June 2013     V2.2-dev
 
 enum {

@@ -21,7 +21,6 @@
 
 #include "parameter_group.h"
 #include "common/maths.h"
-//#include "maths.h"
 
 const pgRegistry_t* pgFind(pgn_t pgn)
 {

@@ -16,6 +16,9 @@
  */
 
 #pragma once
+#include <includes.h>
+#include <drivers/serial.h>
+#include <pthread.h>
 
 // Since serial ports can be used for any function these buffer sizes should be equal
 // The two largest things that need to be sent are: 1, MSP responses, 2, UBLOX SVINFO packet.
@@ -23,6 +26,7 @@
 // Size must be a power of two due to various optimizations which use 'and' instead of 'mod'
 // Various serial routines return the buffer occupied size as uint8_t which would need to be extended in order to
 // increase size further.
+
 #define UART1_RX_BUFFER_SIZE    256
 #define UART1_TX_BUFFER_SIZE    256
 #define UART2_RX_BUFFER_SIZE    256
@@ -33,31 +37,18 @@
 #define UART4_TX_BUFFER_SIZE    256
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
+#define NUM_THREADS 2
 
-typedef struct {
-//    serialPort_t port;
+__IO uint32_t receiveLength;
 
-//    DMA_Channel_TypeDef *rxDMAChannel;
-//    DMA_Channel_TypeDef *txDMAChannel;
-
-    uint32_t rxDMAIrq;
-    uint32_t txDMAIrq;
-
-    uint32_t rxDMAPos;
-    bool txDMAEmpty;
-
-    uint32_t txDMAPeripheralBaseAddr;
-    uint32_t rxDMAPeripheralBaseAddr;
-
-    int fd;
-
-    int isconnected;
-//    dmaCallbackHandler_t    dmaTxHandler;
-//    dmaCallbackHandler_t    dmaRxHandler;
-
-//    USART_TypeDef *USARTx;
-} uartPort_t;
-
+typedef enum _DEVICE_STATE {
+    UNCONNECTED,
+    ATTACHED,
+    POWERED,
+    SUSPENDED,
+    ADDRESSED,
+    CONFIGURED
+} DEVICE_STATE;
 
 typedef struct {
     uint32_t bitrate;
@@ -67,15 +58,28 @@ typedef struct {
 } LINE_CODING;
 
 
+
+typedef struct {
+    serialPort_t port;
+    int fd;
+    int deviceState;
+    bool buffering;
+} uartPort_t;
+
+
 //serialPort_t *uartOpen(USART_TypeDef *USARTx, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options);
 
 void usartInitAllIOSignals(void);
-void usbInit(void);
+serialPort_t* usbInit(void);
 int usbOpen(void);
 void SetUsbAttributes(int fd);
-int usbWrite(char* str, int len);
-char* usbRead(int len);
-bool usbIsConnected(void);
+uint32_t usbWrite(uint8_t* str, int len);
+uint32_t usbRead(uint8_t* buf, int len);
+uint8_t usbIsConnected(void);
+uint8_t usbIsConfigured(void);
+void EP3_OUT_Callback(void);
+uint32_t Virtual_Com_Port_GetBaudRate(void);
+bool usb_txbuffer_empty(serialPort_t *instance);
 /*
 // serialPort API
 void uartWrite(serialPort_t *instance, uint8_t ch);

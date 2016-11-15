@@ -23,6 +23,7 @@ void delayMicroseconds(uint32_t us);
 void delay(uint32_t ms);
 uint64_t micros(void);
 uint64_t millis(void);
+void delay(uint32_t ms);
 
 // failure
 void failureMode(uint8_t mode);

@@ -40,7 +40,7 @@ FORKNAME			 = cleanflight
 OUTPUT_DIR = out/
 OBJ_DIR = out/obj
 FILE_NAME = cleanflight
-LIB_FLAGS = -lmraa -lrt -lm
+LIB_FLAGS = -lmraa -lrt -lm -pthread
 64K_TARGETS  = CJMCU
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO SPRACINGF1OSD
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB PORT103R RCEXPLORERF3 SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY SPRACINGF3OSD, EDISON
@@ -244,6 +244,58 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 
 VPATH		:= $(VPATH):$(TARGET_DIR)
 
+COMMON = 	\
+			src/main/common/colorconversion.c \
+			src/main/common/crc.c \
+			src/main/common/encoding.c \
+			src/main/common/filter.c \
+			src/main/common/maths.c \
+			src/main/common/pilot.c \
+			src/main/common/streambuf.c \
+			src/main/common/typeconversion.c
+
+DRIVERS = 	\
+			src/main/drivers/serial.c \
+			src/main/drivers/bus_i2c_edison.c \
+			src/main/drivers/system.c \
+			src/main/drivers/timer_setup.c \
+			src/main/drivers/serial.c \
+			src/main/drivers/serial_uart.c \
+			src/main/drivers/serial_usb_vcp.c
+
+VCP = 		\
+			src/main/vcp/hw_config.c
+
+FC = 		\
+			src/main/fc/fc_tasks.c 
+
+IO = 		\
+			src/main/io/serial.c
+MSP = 		\
+			src/main/msp/msp.c \
+			src/main/msp/msp_serial.c
+		   
+EDISON_SRC = \
+			src/main/fc/boot.c \
+			src/main/scheduler/scheduler.c \
+			$(FC) \
+			$(COMMON) \
+			$(MSP) \
+			$(IO) \
+			$(DRIVERS) 
+
+#EDISON_SRC = \
+			src/main/fc/boot.c \
+		    src/main/config/parameter_group.c
+
+
+
+
+
+
+
+
+###########################################End of edison source files###############################################################
 SYSTEM_SRC = \
 		   build/build_config.c \
 		   build/debug.c \
@@ -388,23 +440,6 @@ STM32F10x_COMMON_SRC = \
 		   drivers/serial_uart.c \
 		   drivers/serial_uart_stm32f10x.c \
 		   drivers/system_stm32f10x.c
-
-EDISON_SRC = \
-		   src/main/fc/boot.c \
-		   src/main/drivers/bus_i2c_edison.c \
-		   src/main/drivers/system.c \
-		   src/main/drivers/timer_setup.c \
-		   src/main/drivers/serial_uart.c \
-		   src/main/scheduler/scheduler.c \
-		   src/main/common/maths.c \
-		   src/main/fc/fc_tasks.c \
-		   src/main/config/parameter_group.c
-
-#EDISON_SRC = \
-			src/main/fc/boot.c \
-			src/main/common/maths.c \
-			src/main/config/parameter_group.c 
-
 
 
 NAZE_SRC = \
@@ -908,12 +943,12 @@ CFLAGS		 = $(WARN_FLAGS) \
 		   -fverbose-asm -ffat-lto-objects \
 		   -save-temps=obj \
 		   -MMD -MP
+#-Wall -Wpedantic -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef
 EDISON_CFLAGS		 = $(WARN_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
 		   $(addprefix -I,$(EDISON_INC)) \
 		   $(DEBUG_FLAGS) \
 		   -std=gnu99 \
-		   -Wall -Wpedantic -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef \
 		   -ffunction-sections \
 		   -fdata-sections \
 		   -DUSE_STDPERIPH_DRIVER \
@@ -1089,7 +1124,8 @@ compile: clean objs
 
 #Create object files based on the input source files and move them to /out/obj
 objs:
-	mkdir -p $(OBJ_DIR) && $(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(LIB_FLAGS)    
+	mkdir -p $(OBJ_DIR) 
+	$(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(LIB_FLAGS)    
 	mv *.i *.d *.o *.s $(OBJ_DIR)
 
 #Clean up all temporary / machine-generated files

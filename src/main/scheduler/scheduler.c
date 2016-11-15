@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
+#include <stdio.h>
 //#include "platform.h"                               
 
 #include "scheduler.h"                
@@ -32,6 +32,7 @@
 #include "common/maths.h"                           //builds
 
 #include "drivers/system.h"                         //builds
+#include <fc/fc_tasks.h>
 //#include "config/config_unittest.h"
 
 static cfTask_t *currentTask = NULL;
@@ -168,10 +169,12 @@ void rescheduleTask(const int taskId, uint32_t newPeriodMicros)
 void setTaskEnabled(const int taskId, bool enabled)
 {
     if (taskId == TASK_SELF || taskId < (int)taskCount) {
-        cfTask_t *task = taskId == TASK_SELF ? currentTask : &cfTasks[taskId];
+        cfTask_t *task = ((taskId == TASK_SELF) ? currentTask : &cfTasks[taskId]);
         if (enabled && task->taskFunc) {
+            printf("1\n");
             queueAdd(task);
         } else {
+            printf("2\n");
             queueRemove(task);
         }
     }
@@ -197,7 +200,10 @@ void scheduler(void)
     // Cache currentTime
     //Replace with milli seconds?
     currentTime = micros();
-
+    cfTask_t *temp = queueFirst();
+    if(temp != NULL)
+        printf("current take:%s\n",temp->taskName);
+    
     // Check for realtime tasks
     uint32_t timeToNextRealtimeTask = UINT32_MAX;
     for (const cfTask_t *task = queueFirst(); task != NULL && task->staticPriority >= TASK_PRIORITY_REALTIME; task = queueNext()) {

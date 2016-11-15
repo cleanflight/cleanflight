@@ -21,7 +21,7 @@
 
 #include "build/build_config.h"
 #include <platform.h>
-#include "target.h"
+#include <includes.h>
 
 #include "common/streambuf.h"
 #include "common/utils.h"
@@ -34,12 +34,12 @@
 #ifdef OSD
 #include "osd/osd_serial.h"
 #else
-#include "fc/fc_serial.h"
+#include "fc/fc_serial.h"               
 #endif
 
 #include "io/serial.h"
-#include "msp/msp.h"
-#include "msp/msp_serial.h"
+#include "msp/msp.h"                    //builds
+#include "msp/msp_serial.h"             //no problem
 
 mspPostProcessFuncPtr mspPostProcessFn = NULL;
 

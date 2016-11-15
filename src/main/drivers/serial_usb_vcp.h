@@ -28,6 +28,6 @@ typedef struct {
     // Set if the port is in bulk write mode and can buffer.
     bool buffering;
 } vcpPort_t;
-
+extern __IO uint32_t receiveLength;  
 serialPort_t *usbVcpOpen(void);
 uint32_t usbVcpGetBaudRate(serialPort_t *instance);

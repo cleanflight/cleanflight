@@ -74,10 +74,15 @@ uint32_t millis(void)
 //Initialize critical system components
 void systemInit(void)                                       //Refer below for original function
 {
-    //usartInitAllIOSignals();                                //Replace with code for initializing uart
+    usartInitAllIOSignals();                                //Replace with code for initializing uart
     //required for system up time
     clock_gettime(CLOCK, &start);                           //mark start time
     printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
+}
+
+void delay(uint32_t ms)         //delay by the given number of milli seconds
+{
+    usleep(1000*ms);
 }
 
 
@@ -188,12 +193,6 @@ void delayMicroseconds(uint32_t us)
     }
 }
 #endif
-
-void delay(uint32_t ms)
-{
-    while (ms--)
-        delayMicroseconds(1000);
-}
 
 #define SHORT_FLASH_DURATION 50
 #define CODE_FLASH_DURATION 250

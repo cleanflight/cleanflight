@@ -25,13 +25,14 @@
 #include "build/build_config.h"
 #include "common/utils.h"
 
-#include "usb_core.h"
-#include "usb_init.h"
-#include "hw_config.h"
+//#include "usb_core.h"
+//#include "usb_init.h"
+//#include "hw_config.h"
 
 #include "drivers/system.h"
 
-#include "serial.h"
+#include <drivers/serial.h>
+#include <drivers/serial_uart.h>
 #include "serial_usb_vcp.h"
 
 
@@ -43,8 +44,8 @@ static void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate)
 {
     UNUSED(instance);
     UNUSED(baudRate);
-
-    // TODO implement
+    return;
+    //does nothing for now
 }
 
 static void usbVcpSetMode(serialPort_t *instance, portMode_t mode)
@@ -74,15 +75,12 @@ static uint8_t usbVcpRead(serialPort_t *instance)
 
     uint8_t buf[1];
 
-    uint32_t rxed = 0;
-
-    while (rxed < 1) {
-        rxed += CDC_Receive_DATA((uint8_t*)buf + rxed, 1 - rxed);
-    }
+    int len = usbRead(buf, 1);
 
     return buf[0];
 }
 
+/*
 static void usbVcpWriteBuf(serialPort_t *instance, void *data, int count)
 {
     UNUSED(instance);
@@ -103,8 +101,8 @@ static void usbVcpWriteBuf(serialPort_t *instance, void *data, int count)
         }
     }
 }
-
-static bool usbVcpFlush(vcpPort_t *port)
+*/
+/*static bool usbVcpFlush(vcpPort_t *port)
 {
     uint8_t count = port->txAt;
     port->txAt = 0;
@@ -124,22 +122,16 @@ static bool usbVcpFlush(vcpPort_t *port)
     } while (txed != count && (millis() - start < USB_TIMEOUT));
 
     return txed == count;
-}
+}*/
 
 static void usbVcpWrite(serialPort_t *instance, uint8_t c)
 {
-    vcpPort_t *port = container_of(instance, vcpPort_t, port);
-
-    port->txBuf[port->txAt++] = c;
-    if (!port->buffering || port->txAt >= ARRAYLEN(port->txBuf)) {
-        usbVcpFlush(port);
-    }
+    usbWrite(&c,1);
 }
 
 static void usbVcpBeginWrite(serialPort_t *instance)
 {
-    vcpPort_t *port = container_of(instance, vcpPort_t, port);
-    port->buffering = true;
+    return;
 }
 
 uint8_t usbTxBytesFree()
@@ -148,45 +140,36 @@ uint8_t usbTxBytesFree()
     return 255;
 }
 
-static void usbVcpEndWrite(serialPort_t *instance)
+/*static void usbVcpEndWrite(serialPort_t *instance)
 {
-    vcpPort_t *port = container_of(instance, vcpPort_t, port);
-    port->buffering = false;
-    usbVcpFlush(port);
+    usb_txbuffer_flush(instance);
 }
+*/
 
 static const struct serialPortVTable usbVTable[] = {
     {
-        .serialWrite = usbVcpWrite,
-        .serialTotalRxWaiting = usbVcpAvailable,
-        .serialTotalTxFree = usbTxBytesFree,
-        .serialRead = usbVcpRead,
-        .serialSetBaudRate = usbVcpSetBaudRate,
-        .isSerialTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,
-        .setMode = usbVcpSetMode,
-        .beginWrite = usbVcpBeginWrite,
-        .endWrite = usbVcpEndWrite,
-        .writeBuf = usbVcpWriteBuf
+        .serialWrite = usbVcpWrite,                                     //used
+        .serialTotalRxWaiting = usbVcpAvailable,                        //not used
+        .serialTotalTxFree = usbTxBytesFree,                            //not used
+        .serialRead = usbVcpRead,                                       //used
+        .serialSetBaudRate = usbVcpSetBaudRate,                         //used only in gps
+        .isSerialTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,     //used
+        .setMode = usbVcpSetMode,                                       //used, TBD
+        .beginWrite = NULL,                                 //not needed
+        .endWrite = NULL,                                     //not needed
+        .writeBuf = NULL                                      //not needed
     }
 };
 
-serialPort_t *usbVcpOpen(void)
+serialPort_t* usbVcpOpen(void)
 {
-    vcpPort_t *s;
-
-    Set_System();
-    Set_USBClock();
-    USB_Interrupts_Config();
-    USB_Init();
-
-    s = &vcpPort;
-    s->port.vTable = usbVTable;
+    serialPort_t *s = usbInit();
 
     return (serialPort_t *)s;
 }
+
 uint32_t usbVcpGetBaudRate(serialPort_t *instance)
 {
     UNUSED(instance);
-
-    return CDC_BaudRate();
+    return Virtual_Com_Port_GetBaudRate();
 }

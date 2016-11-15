@@ -16,13 +16,17 @@
  */
 
 #pragma once
-#define EDISON
+#ifndef EDISON
+	#define EDISON
+	#define __APPLE__
+#endif
 //#define USE_HARDWARE_REVISION_DETECTION
+
+#define __IO volatile
 
 #define HW_GPIO     GPIOB
 #define HW_PIN      Pin_2
 #define HW_PERIPHERAL RCC_AHBPeriph_GPIOB
-
 // LED's V1
 #define LED0_GPIO   GPIOB
 #define LED0_PIN    Pin_4 // Blue LEDs - PB4
@@ -82,7 +86,8 @@
 #define USB_IO
 
 #define USE_VCP
-#define USE_UART0 // Pin 0 and 1 on the breakout board
+//#define SERIAL_PORT_USB_VCP
+//#define USE_UART0 // Pin 0 and 1 on the breakout board
 //#define USE_UART1 // Not connected - TX (PB6) RX PB7 (AF7)
 //#define USE_UART2 // Receiver - RX (PA3)
 //#define USE_UART3 // Not connected - 10/RX (PB11) 11/TX (PB10)

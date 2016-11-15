@@ -28,6 +28,7 @@
 #include <drivers/serial_uart.h>
 #include <drivers/serial.h> 
 #include <scheduler/scheduler.h>
+#include <fc/fc_tasks.h>
 /*#include <platform.h>
 
 #include "build/build_config.h"
@@ -755,11 +756,13 @@ void processLoopback(void) {
 #else
 #define processLoopback()
 #endif
+*/
 
 void configureScheduler(void)
 {
     schedulerInit();
-    setTaskEnabled(TASK_SYSTEM, true);
+    setTaskEnabled(TEST, true);
+    /*setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_GYROPID, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
     setTaskEnabled(TASK_ACCEL, sensors(SENSOR_ACC));
@@ -799,13 +802,18 @@ void configureScheduler(void)
 #endif
 #ifdef TRANSPONDER
     setTaskEnabled(TASK_TRANSPONDER, feature(FEATURE_TRANSPONDER));
-#endif
+#endif*/
 }
 
-*/
+
 int main(void) 
 {
     printf("Hello World\n");
+    configureScheduler();
+
+    while (true) {
+        scheduler();
+    }
     return 0;
 
 //*****************************Working functions******************************************//

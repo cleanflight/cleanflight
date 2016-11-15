@@ -28,18 +28,22 @@
 #include <includes.h>
 #include <mraa.h>
 #include "serial_uart.h"
-//#include <platform.h>
+#include <vcp/hw_config.h>
+#include <drivers/system.h>
+#include <platform.h>
 
-//#include "build/build_config.h"
+#include "build/build_config.h"
 
-//#include "common/utils.h"
+#include "common/utils.h"
 //#include "gpio.h"
 //#include "inverter.h"
 
 //#include "dma.h"
-//#include "serial.h"
+#include "serial.h"
 
 //#include "serial_uart_impl.h"
+
+uartPort_t USB;
 
 LINE_CODING linecoding = { 115200, /* baud rate*/
 0x00, /* stop bits-1*/
@@ -47,19 +51,28 @@ LINE_CODING linecoding = { 115200, /* baud rate*/
 0x08 /* no. of bits 8*/
 };
 
-uartPort_t USB;
-
 //Serial file name
 char *portname = "/dev/ttyMFD2";            //Change to ttyMFD2 on the edison to communicate with PC
+int rdlen;                                  //for measring the number of data bytes read
 
 //UART context for channel 0
 mraa_uart_context uart_0;               //redefine in header file for all files to access
+serialPort_t usb_port;
 
+static const struct serialPortVTable usbTable[] = {
+    {
+        .isSerialTransmitBufferEmpty = usb_txbuffer_empty
+    }
+};
 
 void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the original version of cleanflight in this function
 {
 #ifdef EDISON
-    usbInit();
+    //usbInit();
+    USB.deviceState = UNCONNECTED;
+    USB.port = usb_port;
+    USB.port.vTable = usbTable;
+    
     #ifdef USE_UART0
         uart_0 = mraa_uart_init(0);                     //Pin 0 and 1 for UART communication
         //mraa_uart_set_baudrate(uart_0,9600);          //Baudrate depending on the peripheral on the other end
@@ -72,25 +85,28 @@ void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the ori
 #endif
 }
 
-void usbInit(void)
+
+serialPort_t* usbInit(void)
 {
     
     int fd = usbOpen();
     SetUsbAttributes(fd);    
-    return;
+    return &USB.port;
 }
+
 
 int usbOpen(void)
 {
-    int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+    int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC | O_NONBLOCK);
     if (fd < 0) {
         printf("Error opening %s: %s\n", portname, strerror(errno));
         exit(EXIT_FAILURE);
     }
     USB.fd = fd;
-    USB.isconnected = 1;
+    USB.deviceState = CONFIGURED;
     return fd;
 }
+
 
 void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
 {
@@ -122,48 +138,72 @@ void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
  
 }
 
-bool usbIsConnected(void)
-{
-    if(USB.isconnected)
-        return true;
-    else
-        return false;
-}
 
-int usbWrite(char* str, int len)
+uint32_t usbWrite(uint8_t* str, int len)
 {
-    int wlen;
-
     //Don't write if USB is not connected
     if(!usbIsConnected())
         return -1;
+    int wlen;
     wlen = write(USB.fd, str, len);
-        
     if (wlen != len) 
     {
         printf("Error from write: %d, %d\n", wlen, errno);
         exit(EXIT_FAILURE);
-        usleep(1000);
     }
 
     return wlen;
 }
 
-char* usbRead(int len)
+
+uint32_t usbRead(uint8_t* buf, int len)
 {
-    int rdlen;
-    char* buf;
-    buf = (char*)malloc(len*sizeof(char));
     rdlen = read(USB.fd, buf, len);
     if (rdlen > 0) 
     {
-        return buf;
+        return len;
     }
     else
     {
         printf("Error from read\n");
-        return (char*)(-1);
+        return -1;
     }
+}
+
+void *read_child(void *i)
+{
+
+}
+
+uint8_t usbIsConnected(void)
+{
+    return (USB.deviceState != UNCONNECTED);
+}
+
+uint8_t usbIsConfigured(void)
+{
+    return (USB.deviceState == CONFIGURED);
+}
+
+void EP3_OUT_Callback(void)
+{
+    receiveLength = rdlen;                                                            // HJI  
+    //PMAToUserBufferCopy((unsigned char*)receiveBuffer, ENDP3_RXADDR, receiveLength);  // HJI
+}
+
+uint32_t Virtual_Com_Port_GetBaudRate(void)
+{
+    return linecoding.bitrate;
+}
+
+bool usb_txbuffer_empty(serialPort_t *instance)
+{
+    return true;
+}
+
+void usb_txbuffer_flush(serialPort_t *instance)
+{
+    return;
 }
 
 /*

@@ -30,16 +30,13 @@
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
 
-#include "drivers/dma.h"
-#include "drivers/serial.h"
+//#include "drivers/dma.h"
+#include <drivers/serial.h>
 #include "drivers/system.h"
+#include "drivers/serial_uart.h"
 
 #if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 #include "drivers/serial_softserial.h"
-#endif
-
-#if defined(USE_UART1) || defined(USE_UART2) || defined(USE_UART3) || defined(USE_UART4) || defined(USE_UART5)
-#include "drivers/serial_uart.h"
 #endif
 
 #if defined(USE_VCP)
@@ -52,6 +49,7 @@
 #include "msp/msp_serial.h"
 
 #include "fc/config.h"
+//#include <drivers/serial_usb_vcp.h>
 
 
 #ifdef TELEMETRY

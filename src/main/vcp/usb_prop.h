@@ -24,7 +24,7 @@
  *
  ******************************************************************************
  */
-
+#include <stdint.h>
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __usb_prop_H
 #define __usb_prop_H
@@ -41,6 +41,18 @@ typedef struct {
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported define -----------------------------------------------------------*/
+
+
+typedef enum _RESULT
+{
+  USB_SUCCESS = 0,    /* Process successfully */
+  USB_ERROR,
+  USB_UNSUPPORT,
+  USB_NOT_READY       /* The process has not been finished, endpoint will be
+                         NAK to further request */
+} RESULT;				//Copied from usb_core.h
+
+
 
 #define Virtual_Com_Port_GetConfiguration          NOP_Process
 //#define Virtual_Com_Port_SetConfiguration          NOP_Process

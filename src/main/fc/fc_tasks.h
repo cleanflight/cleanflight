@@ -20,6 +20,7 @@
 typedef enum {
     /* Actual tasks */
     TASK_SYSTEM = 0,
+    TEST,
     TASK_GYROPID,
     TASK_ACCEL,
     TASK_SERIAL,
@@ -55,7 +56,6 @@ typedef enum {
 #ifdef TRANSPONDER
     TASK_TRANSPONDER,
 #endif
-
     /* Count of real tasks */
     TASK_COUNT
 } cfTaskId_e;
@@ -77,3 +77,4 @@ void taskTelemetry(void);
 void taskLedStrip(void);
 void taskTransponder(void);
 void taskSystem(void);
+void print(void);

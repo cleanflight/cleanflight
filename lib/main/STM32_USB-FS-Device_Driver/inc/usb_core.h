@@ -62,7 +62,7 @@ typedef enum _RESULT
   USB_UNSUPPORT,
   USB_NOT_READY       /* The process has not been finished, endpoint will be
                          NAK to further request */
-} RESULT;
+} RESULT;             //copied from lib->usb_core.h
 
 
 /*-*-*-*-*-*-*-*-*-*-* Definitions for endpoint level -*-*-*-*-*-*-*-*-*-*-*-*/

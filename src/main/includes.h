@@ -6,3 +6,4 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <target/edison/target.h>

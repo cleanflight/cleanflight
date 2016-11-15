@@ -17,7 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
+#include <stdio.h>
 #include <platform.h>
 
 #include "fc/fc_tasks.h"
@@ -33,7 +33,23 @@
 
 const uint32_t taskQueueArraySize = TASK_QUEUE_ARRAY_SIZE;
 const uint32_t taskCount = TASK_COUNT;
+cfTask_t* taskQueueArray[TASK_QUEUE_ARRAY_SIZE];
 
+void print(void)
+{
+    printf("Scheduled!\n");
+}
+
+cfTask_t cfTasks[] = {
+    [TASK_SERIAL] = {
+        .taskName = "TEST",
+        .taskFunc = print,
+        .desiredPeriod = TASK_PERIOD_HZ(100),           //100 Hz should be enough to flush up to 115 bytes @ 115200 baud
+                                                           //period of 10 ms
+        .staticPriority = TASK_PRIORITY_REALTIME,
+    }
+};
+/*
 cfTask_t cfTasks[] = {
     [TASK_SYSTEM] = {
         .taskName = "SYSTEM",
@@ -170,4 +186,4 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_IDLE,
     },
 #endif
-};
+};*/
