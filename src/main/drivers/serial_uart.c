@@ -28,7 +28,7 @@
 #include <includes.h>
 #include <mraa.h>
 #include "serial_uart.h"
-#include <vcp/hw_config.h>
+//#include <vcp/hw_config.h>
 #include <drivers/system.h>
 #include <platform.h>
 

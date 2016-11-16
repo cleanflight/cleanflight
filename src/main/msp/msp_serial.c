@@ -37,10 +37,9 @@
 #include "fc/fc_serial.h"               
 #endif
 
-#include "io/serial.h"
 #include "msp/msp.h"                    //builds
 #include "msp/msp_serial.h"             //no problem
-
+#include <io/serial.h>
 mspPostProcessFuncPtr mspPostProcessFn = NULL;
 
 mspPort_t mspPorts[MAX_MSP_PORT_COUNT];

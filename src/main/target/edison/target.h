@@ -18,7 +18,6 @@
 #pragma once
 #ifndef EDISON
 	#define EDISON
-	#define __APPLE__
 #endif
 //#define USE_HARDWARE_REVISION_DETECTION
 

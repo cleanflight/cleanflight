@@ -40,7 +40,7 @@ FORKNAME			 = cleanflight
 OUTPUT_DIR = out/
 OBJ_DIR = out/obj
 FILE_NAME = cleanflight
-LIB_FLAGS = -lmraa -lrt -lm -pthread
+LIB_FLAGS = -lmraa -lrt -lm
 64K_TARGETS  = CJMCU
 128K_TARGETS = ALIENFLIGHTF1 CC3D NAZE OLIMEXINO RMDO SPRACINGF1OSD
 256K_TARGETS = ALIENFLIGHTF3 CHEBUZZF3 COLIBRI_RACE EUSTM32F103RC IRCFUSIONF3 LUX_RACE MOTOLAB PORT103R RCEXPLORERF3 SPARKY SPRACINGF3 SPRACINGF3EVO SPRACINGF3MINI STM32F3DISCOVERY SPRACINGF3OSD, EDISON
@@ -271,18 +271,26 @@ FC = 		\
 
 IO = 		\
 			src/main/io/serial.c
+
 MSP = 		\
 			src/main/msp/msp.c \
 			src/main/msp/msp_serial.c
-		   
+
+CONFIG = 	\
+		    src/main/config/parameter_group.c		   
+
+SCHEDULER = \
+			src/main/scheduler/scheduler.c		    
+
 EDISON_SRC = \
 			src/main/fc/boot.c \
-			src/main/scheduler/scheduler.c \
 			$(FC) \
 			$(COMMON) \
 			$(MSP) \
 			$(IO) \
-			$(DRIVERS) 
+			$(DRIVERS) \
+			$(SCHEDULER) \
+			$(CONFIG)
 
 #EDISON_SRC = \
 			src/main/fc/boot.c \

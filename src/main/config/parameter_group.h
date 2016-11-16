@@ -16,6 +16,7 @@
  */
 
 #pragma once
+//#include <includes.h>
 
 typedef uint16_t pgn_t;
 
@@ -55,21 +56,21 @@ static inline uint16_t pgIsSystem(const pgRegistry_t* reg) {return (reg->size & 
 #define PG_PACKED __attribute__((packed))
 
 #ifdef __APPLE__
-extern const pgRegistry_t __pg_registry_start[] __asm("section$start$__DATA$__pg_registry");
-extern const pgRegistry_t __pg_registry_end[] __asm("section$end$__DATA$__pg_registry");
-#define PG_REGISTER_ATTRIBUTES __attribute__ ((section("__DATA,__pg_registry"), used, aligned(4)))
+    extern const pgRegistry_t __pg_registry_start[] __asm("section$start$__DATA$__pg_registry");
+    extern const pgRegistry_t __pg_registry_end[] __asm("section$end$__DATA$__pg_registry");
+    #define PG_REGISTER_ATTRIBUTES __attribute__ ((section("__DATA,__pg_registry"), used, aligned(4)))
 
-extern const uint8_t __pg_resetdata_start[] __asm("section$start$__DATA$__pg_resetdata");
-extern const uint8_t __pg_resetdata_end[] __asm("section$end$__DATA$__pg_resetdata");
-#define PG_RESETDATA_ATTRIBUTES __attribute__ ((section("__DATA,__pg_resetdata"), used, aligned(2)))
+    extern const uint8_t __pg_resetdata_start[] __asm("section$start$__DATA$__pg_resetdata");
+    extern const uint8_t __pg_resetdata_end[] __asm("section$end$__DATA$__pg_resetdata");
+    #define PG_RESETDATA_ATTRIBUTES __attribute__ ((section("__DATA,__pg_resetdata"), used, aligned(2)))
 #else
-extern const pgRegistry_t __pg_registry_start[];
-extern const pgRegistry_t __pg_registry_end[];
-#define PG_REGISTER_ATTRIBUTES __attribute__ ((section(".pg_registry"), used, aligned(4)))
+    extern const pgRegistry_t __pg_registry_start[];
+    extern const pgRegistry_t __pg_registry_end[];
+    #define PG_REGISTER_ATTRIBUTES __attribute__ ((section(".pg_registry"), used, aligned(4)))
 
-extern const uint8_t __pg_resetdata_start[];
-extern const uint8_t __pg_resetdata_end[];
-#define PG_RESETDATA_ATTRIBUTES __attribute__ ((section(".pg_resetdata"), used, aligned(2)))
+    extern const uint8_t __pg_resetdata_start[];
+    extern const uint8_t __pg_resetdata_end[];
+    #define PG_RESETDATA_ATTRIBUTES __attribute__ ((section(".pg_resetdata"), used, aligned(2)))
 #endif
 
 #define PG_REGISTRY_SIZE (__pg_registry_end - __pg_registry_start)

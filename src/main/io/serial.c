@@ -31,7 +31,7 @@
 #include "config/parameter_group_ids.h"
 
 //#include "drivers/dma.h"
-#include <drivers/serial.h>
+#include "drivers/serial.h"
 #include "drivers/system.h"
 #include "drivers/serial_uart.h"
 
