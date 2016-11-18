@@ -274,8 +274,8 @@ VCP = 		\
 			src/main/vcp/hw_config.c
 
 FC = 		\
-			src/main/fc/fc_tasks.c \
-			src/main/fc/msp_server_fc.c 
+			src/main/fc/fc_tasks.c
+			#src/main/fc/msp_server_fc.c 
 
 IO = 		\
 			src/main/io/io_serial.c
@@ -305,7 +305,7 @@ EDISON_SRC = \
 			$(FC) \
 			$(SCHEDULER)
 
-EDISON_SRC = \
+#EDISON_SRC = \
 			src/main/fc/boot.c \
 			$(DRIVERS)
 
