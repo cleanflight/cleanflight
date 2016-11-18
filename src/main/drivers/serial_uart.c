@@ -54,6 +54,8 @@ LINE_CODING linecoding = { 115200, /* baud rate*/
 //Serial file name
 char *portname = "/dev/ttyMFD2";            //Change to ttyMFD2 on the edison to communicate with PC
 int rdlen;                                  //for measring the number of data bytes read
+fd_set readset;                             //for the select function
+
 
 //UART context for channel 0
 mraa_uart_context uart_0;               //redefine in header file for all files to access
@@ -158,15 +160,30 @@ uint32_t usbWrite(uint8_t* str, int len)
 
 uint32_t usbRead(uint8_t* buf, int len)
 {
-    rdlen = read(USB.fd, buf, len);
-    if (rdlen > 0) 
+    FD_ZERO(&readset);
+    FD_SET(USB.fd, &readset);
+    int result;
+    while(1)
     {
-        return len;
-    }
-    else
-    {
-        printf("Error from read\n");
-        return -1;
+        result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
+        if(result == -1)
+        {
+            FD_ZERO(&readset);
+            FD_SET(USB.fd, &readset);
+        }
+        else if(result>0)
+        {
+            rdlen = read(USB.fd, buf, len);
+            if (rdlen > 0) 
+            {
+                return len;
+            }
+            else
+            {
+                printf("Error from read\n");
+                return -1;
+            }            
+        }
     }
 }
 

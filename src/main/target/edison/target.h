@@ -14,8 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+
+#include <stdint.h>
+
+
 #ifndef EDISON
 	#define EDISON
 #endif
@@ -90,7 +93,7 @@
 //#define USE_UART1 // Not connected - TX (PB6) RX PB7 (AF7)
 //#define USE_UART2 // Receiver - RX (PA3)
 //#define USE_UART3 // Not connected - 10/RX (PB11) 11/TX (PB10)
-#define SERIAL_PORT_COUNT 4
+#define SERIAL_PORT_COUNT 2
 
 #define USE_UART1_TX_DMA
 #define UART1_TX_PIN        GPIO_Pin_6 // PB6
@@ -190,3 +193,10 @@
 #define TARGET_IO_PORTC 0xffff
 #define TARGET_IO_PORTD (BIT(2))
 #define TARGET_IO_PORTF (BIT(0)|BIT(1)|BIT(4))
+
+//TARGET_BOARD_IDENTIFIER
+#define TARGET_BOARD_IDENTIFIER "EDISON"
+
+uint32_t U_ID_0;
+uint32_t U_ID_1;
+uint32_t U_ID_2;

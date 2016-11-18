@@ -40,6 +40,7 @@
 #include "scheduler/scheduler.h"
 
 #include "drivers/system.h"
+#include "drivers/serial.h"
 
 /*
 #include "drivers/sensor.h"
@@ -48,8 +49,6 @@
 #include "drivers/light_led.h"
 
 #include "drivers/gpio.h"
-#include "drivers/system.h"
-#include "drivers/serial.h"
 #include "drivers/gyro_sync.h"
 
 #include "fc/rc_controls.h"

@@ -39,7 +39,9 @@
 
 #include "msp/msp.h"                    //builds
 #include "msp/msp_serial.h"             //no problem
-#include <io/serial.h>
+
+#include <io/io_serial.h>
+
 mspPostProcessFuncPtr mspPostProcessFn = NULL;
 
 mspPort_t mspPorts[MAX_MSP_PORT_COUNT];
@@ -280,9 +282,9 @@ void mspSerialProcess(void)
             uint8_t c = serialRead(msp->port);
             bool consumed = mspSerialProcessReceivedByte(msp, c);
 
-            if (!consumed) {
+            /*if (!consumed) {
                 evaluateOtherData(msp->port, c);
-            }
+            }*/
 
             if (msp->c_state == MESSAGE_RECEIVED) {
             	if (msp->mode == MSP_MODE_SERVER) {

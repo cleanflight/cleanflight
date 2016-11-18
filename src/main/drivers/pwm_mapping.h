@@ -16,8 +16,10 @@
  */
 
 #pragma once
+
 #include "gpio.h"
-#include "timer.h"
+#include <drivers/timer_setup.h>
+
 
 #if defined(USE_QUAD_MIXER_ONLY)
 #define MAX_PWM_MOTORS  4
@@ -91,6 +93,9 @@ typedef struct drv_pwm_config_s {
     uint16_t idlePulse;  // PWM value to use when initializing the driver. set this to either PULSE_1MS (regular pwm),
                          // some higher value (used by 3d mode), or 0, for brushed pwm drivers.
     sonarGPIOConfig_t *sonarGPIOConfig;
+
+    GPIO_TypeDef pwm_gpio_config;
+
 } drv_pwm_config_t;
 
 

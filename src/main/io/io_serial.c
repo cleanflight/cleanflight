@@ -35,6 +35,8 @@
 #include "drivers/system.h"
 #include "drivers/serial_uart.h"
 
+#include "io/io_serial.h"
+
 #if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 #include "drivers/serial_softserial.h"
 #endif
@@ -43,13 +45,11 @@
 #include "drivers/serial_usb_vcp.h"
 #endif
 
-#include "io/serial.h"
-
 #include "msp/msp.h"
 #include "msp/msp_serial.h"
 
 #include "fc/config.h"
-//#include <drivers/serial_usb_vcp.h>
+#include <drivers/serial_usb_vcp.h>
 
 
 #ifdef TELEMETRY

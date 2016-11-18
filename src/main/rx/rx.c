@@ -37,7 +37,7 @@
 #include "drivers/serial.h"
 #include "drivers/adc.h"
 
-#include "io/serial.h"
+//#include "io/serial.h"
 
 #include "fc/rc_controls.h"
 #include "fc/config.h"

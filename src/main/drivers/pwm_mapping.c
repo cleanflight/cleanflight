@@ -25,7 +25,9 @@
 #include "config/parameter_group.h"
 
 #include "gpio.h"
-#include "timer.h"
+
+#include "mraa/gpio.h"
+#include "drivers/timer_setup.h"
 #include "drivers/bus_i2c.h"
 
 #include "pwm_output.h"
@@ -39,10 +41,10 @@
 #include "serial_uart_stm32f30x.h"
 #endif
 
-void pwmBrushedMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
-void pwmBrushlessMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
-void pwmOneshotMotorConfig(const timerHardware_t *timerHardware, uint8_t motorIndex);
-void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse);
+void pwmBrushedMotorConfig(uint32_t pin, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
+void pwmBrushlessMotorConfig(uint32_t pin, uint8_t motorIndex, uint16_t motorPwmRate, uint16_t idlePulse);
+void pwmOneshotMotorConfig(uint32_t pin, uint8_t motorIndex);
+//void pwmServoConfig(const timerHardware_t *timerHardware, uint8_t servoIndex, uint16_t servoPwmRate, uint16_t servoCenterPulse);
 
 /*
     Configuration maps
@@ -85,7 +87,7 @@ enum {
     MAP_TO_SERVO_OUTPUT,
 };
 
-#if defined(NAZE) || defined(OLIMEXINO) || defined(NAZE32PRO) || defined(STM32F3DISCOVERY) || defined(EUSTM32F103RC) || defined(PORT103R) || defined(PORT103V)
+#if defined(NAZE) || defined(OLIMEXINO) || defined(NAZE32PRO) || defined(STM32F3DISCOVERY) || defined(EUSTM32F103RC) || defined(PORT103R) || defined(PORT103V) || defined(EDISON)
 static const uint16_t multiPPM[] = {
     PWM1  | (MAP_TO_PPM_INPUT << 8),     // PPM input
     PWM9  | (MAP_TO_MOTOR_OUTPUT << 8),      // Swap to servo if needed
@@ -674,7 +676,7 @@ static const uint16_t * const hardwareMaps[] = {
     multiPWM,
     multiPPM,
     airPWM,
-    airPPM,
+    airPPM
 };
 
 static pwmIOConfiguration_t pwmIOConfiguration;
@@ -705,7 +707,10 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
         uint8_t timerIndex = setup[i] & 0x00FF;
         uint8_t type = (setup[i] & 0xFF00) >> 8;
 
-        const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
+        //const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
+        const timerHardware_t *timerHardwarePtr = NULL;         //refer line above for original code
+                                                                //this will not be used in the edison
+                                                                //so replacing it with a NULL pointer
 
 #ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
         // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
@@ -938,17 +943,17 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
 #endif
             if (init->useOneshot) {
 
-                pwmOneshotMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount);
+                pwmOneshotMotorConfig(init->pwm_gpio_config.pin, pwmIOConfiguration.motorCount);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_OUTPUT_PROTOCOL_ONESHOT|PWM_PF_OUTPUT_PROTOCOL_PWM;
 
             } else if (isMotorBrushed(init->motorPwmRate)) {
 
-                pwmBrushedMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
+                pwmBrushedMotorConfig(init->pwm_gpio_config.pin, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_MOTOR_MODE_BRUSHED | PWM_PF_OUTPUT_PROTOCOL_PWM;
 
             } else {
 
-                pwmBrushlessMotorConfig(timerHardwarePtr, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
+                pwmBrushlessMotorConfig(init->pwm_gpio_config.pin, pwmIOConfiguration.motorCount, init->motorPwmRate, init->idlePulse);
                 pwmIOConfiguration.ioConfigurations[pwmIOConfiguration.ioCount].flags = PWM_PF_MOTOR | PWM_PF_OUTPUT_PROTOCOL_PWM ;
             }
 

@@ -760,8 +760,8 @@ void processLoopback(void) {
 
 void configureScheduler(void)
 {
-    schedulerInit();
-    setTaskEnabled(TEST, true);
+    //schedulerInit();
+    //setTaskEnabled(TEST, true);
     /*setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_GYROPID, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
@@ -809,11 +809,11 @@ void configureScheduler(void)
 int main(void) 
 {
     printf("Hello World\n");
-    configureScheduler();
+/*    configureScheduler();
 
     while (true) {
         scheduler();
-    }
+    }*/
     return 0;
 
 //*****************************Working functions******************************************//

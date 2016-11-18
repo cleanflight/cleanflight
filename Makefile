@@ -244,6 +244,11 @@ INCLUDE_DIRS := $(INCLUDE_DIRS) \
 
 VPATH		:= $(VPATH):$(TARGET_DIR)
 
+
+
+###########################################Start of edison source files#############################################################
+
+
 COMMON = 	\
 			src/main/common/colorconversion.c \
 			src/main/common/crc.c \
@@ -261,20 +266,22 @@ DRIVERS = 	\
 			src/main/drivers/timer_setup.c \
 			src/main/drivers/serial.c \
 			src/main/drivers/serial_uart.c \
-			src/main/drivers/serial_usb_vcp.c
+			src/main/drivers/serial_usb_vcp.c \
+			src/main/drivers/pwm_output.c \
+			src/main/drivers/pwm_mapping.c
 
 VCP = 		\
 			src/main/vcp/hw_config.c
 
 FC = 		\
-			src/main/fc/fc_tasks.c 
+			src/main/fc/fc_tasks.c \
+			src/main/fc/msp_server_fc.c 
 
 IO = 		\
-			src/main/io/serial.c
+			src/main/io/io_serial.c
 
 MSP = 		\
-			src/main/msp/msp.c \
-			src/main/msp/msp_serial.c
+			src/main/msp/msp.c
 
 CONFIG = 	\
 		    src/main/config/parameter_group.c		   
@@ -282,24 +289,25 @@ CONFIG = 	\
 SCHEDULER = \
 			src/main/scheduler/scheduler.c		    
 
+BUILD = 	\
+			src/main/build/build_config.c
+
+RX = 		\
+			src/main/rx/rx.c									
+
 EDISON_SRC = \
 			src/main/fc/boot.c \
-			$(FC) \
+			$(BUILD) \
+			$(CONFIG) \
 			$(COMMON) \
-			$(MSP) \
-			$(IO) \
 			$(DRIVERS) \
-			$(SCHEDULER) \
-			$(CONFIG)
+			$(IO) \
+			$(FC) \
+			$(SCHEDULER)
 
-#EDISON_SRC = \
+EDISON_SRC = \
 			src/main/fc/boot.c \
-		    src/main/config/parameter_group.c
-
-
-
-
-
+			$(DRIVERS)
 
 
 
@@ -1126,12 +1134,12 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 
 ################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
-compile: clean objs  	
+compile: objs  	
 	$(CC) $(shell find $(OBJ_DIR) -name '*.o') -o $(OUTPUT_DIR)$(FILE_NAME) $(LIB_FLAGS)		#Compile .o files into executable
 
 
 #Create object files based on the input source files and move them to /out/obj
-objs:
+objs: clean
 	mkdir -p $(OBJ_DIR) 
 	$(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(LIB_FLAGS)    
 	mv *.i *.d *.o *.s $(OBJ_DIR)

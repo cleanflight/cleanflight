@@ -33,7 +33,7 @@
 #include "fc/fc_serial.h"
 #include "fc/runtime_config.h"
 
-#include "io/serial_cli.h"
+//#include "io/serial_cli.h"
 
 #include "io/serial.h"
 
@@ -73,13 +73,13 @@ void evaluateOtherData(serialPort_t *serialPort, uint8_t receivedChar)
         return;
     }
 
-#ifndef USE_CLI
+/*#ifndef USE_CLI
     UNUSED(serialPort);
 #else
     if (receivedChar == '#') {
         cliEnter(serialPort);
     }
-#endif
+#endif*/
     if (receivedChar == serialConfig()->reboot_character) {
         systemResetToBootloader();
     }

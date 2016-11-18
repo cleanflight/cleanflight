@@ -22,8 +22,8 @@
 
 #include <platform.h>
 
-#include "gpio.h"
-#include "timer.h"
+//#include "gpio.h"
+//#include "timer.h"
 
 #include "pwm_mapping.h"
 
@@ -47,7 +47,8 @@ typedef struct {
 //    volatile timCCR_t *ccr;
 //    TIM_TypeDef *tim;                   //Contains register addrsses for controlling the timer
     mraa_pwm_context pwm;
-    //uint16_t period;
+    uint16_t period;
+    uint16_t value;
     pwmWriteFuncPtr pwmWritePtr;
 } pwmOutputPort_t;
 
@@ -95,7 +96,7 @@ static bool pwmMotorsEnabled = true;
     }
 }
 */
-static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
+/*static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
 {
     gpio_config_t cfg;
 
@@ -103,13 +104,7 @@ static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
     cfg.mode = PWM;
     cfg.speed = Speed_2MHz;
     gpioInit(gpio, &cfg);         //Change to something else
-}
-
-mraa_init_pwm(mraa_pwm_context *pwm, uint16_t period, uint16_t value)
-{
-    pwm = mraa_pwm_init(3);
-    
-}
+}*/
 
 //static pwmOutputPort_t *pwmOutConfig(const timerHardware_t *timerHardware, uint8_t mhz, uint16_t period, uint16_t value)
 
@@ -121,53 +116,40 @@ static pwmOutputPort_t *pwmOutConfig(uint32_t pin, uint16_t period, uint16_t val
 {                                                                                           //mhz determines clock frequency and adjusts timer clock prescaler based on that
     pwmOutputPort_t *p = &pwmOutputPorts[allocatedOutputPortCount++];
 
+    
+    p->period = period;
+    p->value = period-value;
+    
 
     //modify pwm context in pwmOutputPort_t and disable pwm for now
     p->pwm = mraa_pwm_init(pin);
-    mraa_pwm_period_us(p->pwm, period);
-    mraa_pwm_pulsewidth_us(p->pwm,period-value);                                    //pulse width on stm32 is given by difference between ARR and CCR.
-    mraa_pwm_enable(pwm,0);                        
-
-    /*configTimeBase(timerHardware->tim, period, mhz);                              //Configure timer clock and ARR
-                                                                                    //mhz is for the timer clock frequency
-                                                                                    //CCR - start of pulse. ARR - end of pulse
-                                                                                    //ARR is given by period
-                                                                                    //CCR is given by value
-    pwmGPIOConfig(timerHardware->gpio, timerHardware->pin, Mode_AF_PP);
     
-    pwmOCConfig(timerHardware->tim, timerHardware->channel, value);             //Configure timer gpio properties
-    if (timerHardware->outputEnable)
-        TIM_CtrlPWMOutputs(timerHardware->tim, ENABLE);                         //Enable timer to send output
-    TIM_Cmd(timerHardware->tim, ENABLE);
+    mraa_pwm_period_us(p->pwm, p->period);
 
-    switch (timerHardware->channel) {                                           //Get value of CCR for the appropriate timer
-        case TIM_Channel_1:
-            p->ccr = &timerHardware->tim->CCR1;
-            break;
-        case TIM_Channel_2:
-            p->ccr = &timerHardware->tim->CCR2;
-            break;
-        case TIM_Channel_3:
-            p->ccr = &timerHardware->tim->CCR3;
-            break;
-        case TIM_Channel_4:
-            p->ccr = &timerHardware->tim->CCR4;
-            break;
-    }
-    p->period = period;
-    p->tim = timerHardware->tim;
+    //pulse width on stm32 is given by difference between ARR and CCR.
+    mraa_pwm_pulsewidth_us(p->pwm,p->value);                                    
+    
+    mraa_pwm_enable(p->pwm,0);                        
+
+    /*configTimeBase(timerHardware->tim, period, mhz);  
+    //Configure timer clock and ARR
+    //mhz is for the timer clock frequency
+    //CCR - start of pulse. ARR - end of pulse
+    //ARR is given by period
+    //CCR is given by value
     */
+
     return p;
 }
 
 static void pwmWriteBrushed(uint8_t index, uint16_t value)
 {
-    *motors[index]->ccr = (value - 1000) * motors[index]->period / 1000;
+    //*motors[index]->ccr = (value - 1000) * motors[index]->period / 1000;
 }
 
 static void pwmWriteStandard(uint8_t index, uint16_t value)
 {
-    *motors[index]->ccr = value;
+    motors[index]->value = (motors[index]->period) - value;
 }
 
 void pwmWriteMotor(uint8_t index, uint16_t value)
@@ -182,7 +164,7 @@ void pwmShutdownPulsesForAllMotors(uint8_t motorCount)
 
     for(index = 0; index < motorCount; index++){
         // Set the compare register to 0, which stops the output pulsing if the timer overflows
-        *motors[index]->ccr = 0;
+        motors[index]->value = 0;
     }
 }
 
@@ -196,6 +178,7 @@ void pwmEnableMotors(void)
     pwmMotorsEnabled = true;
 }
 
+/*
 void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
 {
     uint8_t index;
@@ -214,7 +197,7 @@ void pwmCompleteOneshotMotorUpdate(uint8_t motorCount)
         // This compare register will be set to the output value on the next main loop.
         *motors[index]->ccr = 0;
     }
-}
+}*/
 
 bool isMotorBrushed(uint16_t motorPwmRate)
 {

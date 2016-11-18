@@ -64,12 +64,12 @@ static inline uint16_t pgIsSystem(const pgRegistry_t* reg) {return (reg->size & 
     extern const uint8_t __pg_resetdata_end[] __asm("section$end$__DATA$__pg_resetdata");
     #define PG_RESETDATA_ATTRIBUTES __attribute__ ((section("__DATA,__pg_resetdata"), used, aligned(2)))
 #else
-    extern const pgRegistry_t __pg_registry_start[];
-    extern const pgRegistry_t __pg_registry_end[];
+    pgRegistry_t* __pg_registry_start;
+    pgRegistry_t* __pg_registry_end;
     #define PG_REGISTER_ATTRIBUTES __attribute__ ((section(".pg_registry"), used, aligned(4)))
 
-    extern const uint8_t __pg_resetdata_start[];
-    extern const uint8_t __pg_resetdata_end[];
+    uint8_t* __pg_resetdata_start;
+    uint8_t* __pg_resetdata_end;
     #define PG_RESETDATA_ATTRIBUTES __attribute__ ((section(".pg_resetdata"), used, aligned(2)))
 #endif
 
@@ -95,11 +95,11 @@ static inline uint16_t pgIsSystem(const pgRegistry_t* reg) {return (reg->size & 
     } while(0)                                                          \
     /**/
 
-// Declare system config
 //Declaration of PG_DECLARE
-    //Declare a function with second argument as name and argument's address as return value
+//Declare a function with second argument as name and second argument's address as return value
+
 #define PG_DECLARE(_type, _name)                                        \
-    extern _type _name ## _System;                                      \
+    _type _name ## _System;                                      \
     static inline _type* _name(void) { return &_name ## _System; }      \
     struct _dummy                                                       \
     /**/

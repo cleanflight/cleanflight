@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include "mraa/gpio.h"
 
 #if defined(STM32F10X)
 typedef enum
@@ -115,11 +116,19 @@ typedef struct
     GPIO_Speed speed;
 } gpio_config_t;
 
+
+typedef struct GPIO_TypeDef_s
+{
+    uint16_t pin;
+    mraa_gpio_context context;
+    int mode;
+}GPIO_TypeDef;
+
 #ifndef UNIT_TEST
-static inline void digitalHi(GPIO_TypeDef *p, uint16_t i) { p->BSRR = i; }
-static inline void digitalLo(GPIO_TypeDef *p, uint16_t i)     { p->BRR = i; }
-static inline void digitalToggle(GPIO_TypeDef *p, uint16_t i) { p->ODR ^= i; }
-static inline uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i) {return p->IDR & i; }
+static inline void digitalHi(GPIO_TypeDef *p) {mraa_gpio_write(p->context, 1);}
+static inline void digitalLo(GPIO_TypeDef *p) {mraa_gpio_write(p->context, 0);}
+static inline void digitalToggle(GPIO_TypeDef *p) { uint16_t val = mraa_gpio_read(p->context); mraa_gpio_write(p->context, ~val&(0x01)); }
+static inline uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i) { return mraa_gpio_read(p->context); }
 #else
 uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i);
 #endif
