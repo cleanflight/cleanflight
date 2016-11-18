@@ -39,6 +39,7 @@ extern "C" {
     #include "drivers/compass.h"
     #include "drivers/pwm_rx.h"
     #include "drivers/serial.h"
+    #include "drivers/light_ws2811strip.h"
 
     #include "fc/rc_controls.h"
     #include "fc/rate_profile.h"
@@ -91,7 +92,7 @@ extern "C" {
     PG_REGISTER_PROFILE(rateProfileSelection_t, rateProfileSelection, PG_RATE_PROFILE_SELECTION, 0);
     PG_REGISTER_PROFILE(barometerConfig_t, barometerConfig, PG_BAROMETER_CONFIG, 0);
     PG_REGISTER_PROFILE(throttleCorrectionConfig_t, throttleCorrectionConfig, PG_THROTTLE_CORRECTION_CONFIG, 0);
-    PG_REGISTER_PROFILE(compassConfig_t, compassConfig, PG_COMPASS_CONFIGURATION, 0);
+    PG_REGISTER_PROFILE(compassConfig_t, compassConfig, PG_COMPASS_CONFIG, 0);
     PG_REGISTER_PROFILE(gpsProfile_t, gpsProfile, PG_NAVIGATION_CONFIG, 0);
     PG_REGISTER_PROFILE(modeActivationProfile_t, modeActivationProfile, PG_MODE_ACTIVATION_PROFILE, 0);
     PG_REGISTER_PROFILE(servoProfile_t, servoProfile, PG_SERVO_PROFILE, 0);
@@ -124,6 +125,7 @@ extern "C" {
     PG_REGISTER(sensorSelectionConfig_t, sensorSelectionConfig, PG_SENSOR_SELECTION_CONFIG, 0);
     PG_REGISTER(sensorAlignmentConfig_t, sensorAlignmentConfig, PG_SENSOR_ALIGNMENT_CONFIG, 0);
     PG_REGISTER_ARR(motorMixer_t, MAX_SUPPORTED_MOTORS, customMotorMixer, PG_MOTOR_MIXER, 0);
+
 
     typedef struct someSystemData_s {
         uint32_t uint32;

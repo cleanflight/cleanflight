@@ -38,10 +38,12 @@
 #include "drivers/light_ws2811strip.h"
 
 uint8_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
+
 volatile uint8_t ws2811LedDataTransferInProgress = 0;
 
 static hsvColor_t ledColorBuffer[WS2811_LED_STRIP_LENGTH];
 static dmaCallbackHandler_t ws2811DMAHandlerRec;
+ledType_e ws2811LedType;
 
 void setLedHsv(int index, const hsvColor_t *color)
 {
@@ -71,10 +73,8 @@ void setStripColor(const hsvColor_t *color)
 
 void setStripColors(const hsvColor_t *colors)
 {
-    uint16_t index;
-    for (index = 0; index < WS2811_LED_STRIP_LENGTH; index++) {
+    for (int index = 0; index < WS2811_LED_STRIP_LENGTH; index++)
         setLedHsv(index, colors++);
-    }
 }
 
 void ws2811DMAHandler(dmaChannel_t* descriptor, dmaCallbackHandler_t* handler)
@@ -88,8 +88,9 @@ void ws2811DMAHandler(dmaChannel_t* descriptor, dmaCallbackHandler_t* handler)
     }
 }
 
-void ws2811LedStripInit(void)
+void ws2811LedStripInit(ledType_e ledType)
 {
+    ws2811LedType = ledType;
     memset(&ledStripDMABuffer, 0, WS2811_DMA_BUFFER_SIZE);
     dmaHandlerInit(&ws2811DMAHandlerRec, ws2811DMAHandler);
     dmaSetHandler(WS2811_DMA_HANDLER_IDENTIFER, &ws2811DMAHandlerRec, NVIC_PRIO_WS2811_DMA);
@@ -105,12 +106,24 @@ bool isWS2811LedStripReady(void)
 STATIC_UNIT_TESTED void fastUpdateLEDDMABuffer(uint8_t **buffer, rgbColor24bpp_t color)
 {
     uint32_t grb = (color.rgb.g << 16) | (color.rgb.r << 8) | (color.rgb.b);
-//    uint32_t grb = (color.rgb.r << 16) | (color.rgb.g << 8) | (color.rgb.b);
+
     for (int bit = 0; bit < 24; bit++) {
         *(*buffer)++ = (grb & (1 << 23)) ? BIT_COMPARE_1 : BIT_COMPARE_0;
         grb <<= 1;
     }
 }
+
+#ifdef LED_RGBW
+STATIC_UNIT_TESTED void fastUpdateLEDDMABuffer32(uint8_t **buffer, rgbwColor32bpp_t color)
+{
+    uint32_t grbw = (color.rgbw.g << 24) | (color.rgbw.r << 16) | (color.rgbw.b << 8) | (color.rgbw.w);
+
+    for (int bit = 0; bit < 32; bit++) {
+        *(*buffer)++ = (grbw & (1 << 31)) ? BIT_COMPARE_1 : BIT_COMPARE_0;
+        grbw <<= 1;
+    }
+}
+#endif
 
 /*
  * This method is non-blocking unless an existing LED update is in progress.
@@ -125,10 +138,25 @@ void ws2811UpdateStrip(void)
 
     // fill transmit buffer with correct compare values to achieve
     // correct pulse widths according to color values
+    rgbColor24bpp_t rgb24;
+#ifdef LED_RGBW
+    rgbwColor32bpp_t rgbw32;
+#endif
     for (int ledIndex = 0; ledIndex < WS2811_LED_STRIP_LENGTH; ledIndex++) {
-        rgbColor24bpp_t rgb24 = hsvToRgb24(&ledColorBuffer[ledIndex]);
-
-        fastUpdateLEDDMABuffer(&dst, rgb24);
+#ifdef LED_RGBW
+        switch (ws2811LedType) {
+        case RGB:
+#endif
+            rgb24 = hsvToRgb24(&ledColorBuffer[ledIndex]);
+            fastUpdateLEDDMABuffer(&dst, rgb24);
+#ifdef LED_RGBW
+            break;
+        case RGBW:
+            rgbw32 = hsvToRgbw32(&ledColorBuffer[ledIndex]);
+            fastUpdateLEDDMABuffer32(&dst, rgbw32);
+            break;
+        }
+#endif
     }
 
     ws2811LedDataTransferInProgress = 1;

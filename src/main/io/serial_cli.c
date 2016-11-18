@@ -50,6 +50,7 @@
 #include "drivers/timer.h"
 #include "drivers/pwm_rx.h"
 #include "drivers/sdcard.h"
+#include "drivers/light_ws2811strip.h"
 
 #include "drivers/buf_writer.h"
 
@@ -437,6 +438,10 @@ static const char * const lookupTablePidDeltaMethod[] = {
     "MEASUREMENT", "ERROR"
 };
 
+
+static const char * const lookupTableLedType[] = {
+    "RGB", "RGBW"
+};
 static const char * const lookupTableLowpassType[] = {
     "NORMAL", "HIGH"
 };
@@ -482,6 +487,11 @@ typedef enum {
     TABLE_PID_DELTA_METHOD,
     TABLE_LOWPASS_TYPE,
     TABLE_HORIZON_TILT_MODE,
+#ifdef LED_STRIP
+#ifdef LED_RGBW
+    TABLE_LED_TYPE,
+#endif
+#endif
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -507,6 +517,12 @@ static const lookupTableEntry_t lookupTables[] = {
     { lookupTablePidDeltaMethod, sizeof(lookupTablePidDeltaMethod) / sizeof(char *) },
     { lookupTableLowpassType, sizeof(lookupTableLowpassType) / sizeof(char *) },
     { lookupTableHorizonTiltMode, sizeof(lookupTableHorizonTiltMode) / sizeof(char *) },
+
+#ifdef LED_STRIP
+#ifdef LED_RGBW
+    { lookupTableLedType, sizeof(lookupTableLedType) / sizeof(char *) },
+#endif
+#endif
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -753,7 +769,7 @@ const clivalue_t valueTable[] = {
 #ifdef MAG
     { "mag_hardware",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0,  MAG_MAX } , PG_SENSOR_SELECTION_CONFIG, offsetof(sensorSelectionConfig_t, mag_hardware)},
 
-    { "mag_declination",            VAR_INT16  | PROFILE_VALUE, .config.minmax = { -18000,  18000 } , PG_COMPASS_CONFIGURATION, offsetof(compassConfig_t, mag_declination)},
+    { "mag_declination",            VAR_INT16  | PROFILE_VALUE, .config.minmax = { -18000,  18000 } , PG_COMPASS_CONFIG, offsetof(compassConfig_t, mag_declination)},
 #endif
 
     { "pid_controller",             VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_PID_CONTROLLER } , PG_PID_PROFILE, offsetof(pidProfile_t, pidController)},
@@ -806,6 +822,11 @@ const clivalue_t valueTable[] = {
     { "blackbox_device",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_BLACKBOX_DEVICE } , PG_BLACKBOX_CONFIG, offsetof(blackboxConfig_t, device)},
 #endif
 
+#ifdef LED_STRIP
+#ifdef LED_RGBW
+    { "led_type",                   VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_LED_TYPE } , PG_LEDSTRIP_CONFIG, offsetof(ledType_t, t)},
+#endif
+#endif
     { "magzero_x",                  VAR_INT16  | MASTER_VALUE, .config.minmax = { -32768,  32767 } , PG_SENSOR_TRIMS, offsetof(sensorTrims_t, magZero.raw[X])},
     { "magzero_y",                  VAR_INT16  | MASTER_VALUE, .config.minmax = { -32768,  32767 } , PG_SENSOR_TRIMS, offsetof(sensorTrims_t, magZero.raw[Y])},
     { "magzero_z",                  VAR_INT16  | MASTER_VALUE, .config.minmax = { -32768,  32767 } , PG_SENSOR_TRIMS, offsetof(sensorTrims_t, magZero.raw[Z])},
@@ -1399,10 +1420,10 @@ static void cliColor(char *cmdline)
     if (isEmpty(cmdline)) {
         for (i = 0; i < LED_CONFIGURABLE_COLOR_COUNT; i++) {
             cliPrintf("color %u %d,%u,%u\r\n",
-                i,
-                colors(i)->h,
-                colors(i)->s,
-                colors(i)->v
+                    i,
+                    colors(i)->h,
+                    colors(i)->s,
+                    colors(i)->v
             );
         }
     } else {

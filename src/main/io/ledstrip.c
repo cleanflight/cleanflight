@@ -58,11 +58,11 @@
 
 #include "io/ledstrip.h"
 
-
-PG_REGISTER_ARR_WITH_RESET_FN(ledConfig_t, LED_MAX_STRIP_LENGTH, ledConfigs, PG_LED_STRIP_CONFIG, 1);
-PG_REGISTER_ARR_WITH_RESET_FN(hsvColor_t, LED_CONFIGURABLE_COLOR_COUNT, colors, PG_COLOR_CONFIG, 0);
-PG_REGISTER_ARR_WITH_RESET_FN(modeColorIndexes_t, LED_MODE_COUNT, modeColors, PG_MODE_COLOR_CONFIG, 0);
-PG_REGISTER_WITH_RESET_FN(specialColorIndexes_t, specialColors, PG_SPECIAL_COLOR_CONFIG, 0);
+PG_REGISTER_ARR_WITH_RESET_FN(ledConfig_t, LED_MAX_STRIP_LENGTH, ledConfigs, PG_LEDSTRIP_LEDS_CONFIG, 1);
+PG_REGISTER_ARR_WITH_RESET_FN(hsvColor_t, LED_CONFIGURABLE_COLOR_COUNT, colors, PG_LEDSTRIP_PALETTE, 1);
+PG_REGISTER_ARR_WITH_RESET_FN(modeColorIndexes_t, LED_MODE_COUNT, modeColors, PG_LEDSTRIP_MODE_COLOR_CONFIG, 0);
+PG_REGISTER_WITH_RESET_FN(specialColorIndexes_t, specialColors, PG_LEDSTRIP_SPECIAL_COLOR_CONFIG, 0);
+PG_REGISTER_WITH_RESET_TEMPLATE(ledType_t, ledType, PG_LEDSTRIP_CONFIG, 0);
 
 static bool ledStripInitialised = false;
 static bool ledStripEnabled = true;
@@ -97,7 +97,7 @@ typedef enum {
 } colorId_e;
 
 const hsvColor_t hsv[] = {
-    //                        H    S    V
+    //                        H    S    V    W
     [COLOR_BLACK] =        {  0,   0,   0},
     [COLOR_WHITE] =        {  0, 255, 255},
     [COLOR_RED] =          {  0,   0, 255},
@@ -113,6 +113,7 @@ const hsvColor_t hsv[] = {
     [COLOR_MAGENTA] =      {300,   0, 255},
     [COLOR_DEEP_PINK] =    {330,   0, 255},
 };
+
 // macro to save typing on default colors
 #define HSV(color) (hsv[COLOR_ ## color])
 
@@ -891,12 +892,12 @@ static void applyLedBlinkLayer(bool updateNow, uint32_t *timer)
     }
 
     bool ledOn = (blinkMask & 1);  // b_b_____...
-    if (!ledOn) {
-        for (int i = 0; i < ledCounts.count; ++i) {
-            const ledConfig_t *ledConfig = ledConfigs(i);
+    for (int i = 0; i < ledCounts.count; ++i) {
+        const ledConfig_t *ledConfig = ledConfigs(i);
 
-            if (ledGetOverlayBit(ledConfig, LED_OVERLAY_BLINK) ||
-                    (ledGetOverlayBit(ledConfig, LED_OVERLAY_LANDING_FLASH) && scaledThrottle < 55 && scaledThrottle > 10)) {
+        if (ledGetOverlayBit(ledConfig, LED_OVERLAY_BLINK) ||
+            (ledGetOverlayBit(ledConfig, LED_OVERLAY_LANDING_FLASH) && scaledThrottle < 55 && scaledThrottle > 10)) {
+            if (!ledOn) {
                 setLedHsv(i, getSC(LED_SCOLOR_BLINKBACKGROUND));
             }
         }
@@ -910,7 +911,7 @@ static void applyLedAnimationLayer(bool updateNow, uint32_t *timer)
 {
     static uint8_t frameCounter = 0;
     const int animationFrames = ledGridHeight;
-    if(updateNow) {
+    if (updateNow) {
         frameCounter = (frameCounter + 1 < animationFrames) ? frameCounter + 1 : 0;
         *timer += LED_STRIP_HZ(20);
     }
@@ -1043,7 +1044,7 @@ bool parseColor(int index, const char *colorConfig)
     };
     for (int componentIndex = 0; result && componentIndex < HSV_COLOR_COMPONENT_COUNT; componentIndex++) {
         int val = atoi(remainingCharacters);
-        if(val > hsv_limit[componentIndex]) {
+        if (val > hsv_limit[componentIndex]) {
             result = false;
             break;
         }
@@ -1084,7 +1085,7 @@ bool setModeColor(ledModeIndex_e modeIndex, int modeColorIndex, int colorIndex)
     if (colorIndex < 0 || colorIndex >= LED_CONFIGURABLE_COLOR_COUNT)
         return false;
     if (modeIndex < LED_MODE_COUNT) {  // modeIndex_e is unsigned, so one-sided test is enough
-        if(modeColorIndex < 0 || modeColorIndex >= LED_DIRECTION_COUNT)
+        if (modeColorIndex < 0 || modeColorIndex >= LED_DIRECTION_COUNT)
             return false;
         modeColors(modeIndex)->color[modeColorIndex] = colorIndex;
     } else if (modeIndex == LED_SPECIAL) {
@@ -1124,6 +1125,10 @@ void pgResetFn_specialColors(specialColorIndexes_t *instance)
     memcpy_fn(instance, &defaultSpecialColors, sizeof(defaultSpecialColors));
 }
 
+PG_RESET_TEMPLATE(ledType_t, ledType,
+             .t = RGB,
+);
+
 
 void ledStripInit(void)
 {
@@ -1135,7 +1140,7 @@ void ledStripEnable(void)
     reevaluateLedConfig();
     ledStripInitialised = true;
 
-    ws2811LedStripInit();
+    ws2811LedStripInit(ledType()->t);
 }
 
 static void ledStripDisable(void)

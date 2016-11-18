@@ -39,6 +39,7 @@
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
 #include "drivers/light_led.h"
+#include "drivers/light_ws2811strip.h"
 
 #include "drivers/gpio.h"
 #include "drivers/system.h"

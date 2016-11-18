@@ -49,6 +49,7 @@
 #include "drivers/bus_i2c.h"
 #include "drivers/sdcard.h"
 #include "drivers/buf_writer.h"
+#include "drivers/light_ws2811strip.h"
 
 #include "rx/rx.h"
 #include "rx/msp.h"

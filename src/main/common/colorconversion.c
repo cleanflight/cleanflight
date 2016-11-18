@@ -88,3 +88,15 @@ rgbColor24bpp_t hsvToRgb24(const hsvColor_t* c)
     return r;
 }
 
+rgbwColor32bpp_t hsvToRgbw32(const hsvColor_t* c)
+{
+    rgbwColor32bpp_t rgbw;
+    rgbColor24bpp_t rgb = hsvToRgb24(c);
+
+    rgbw.rgbw.r = rgb.rgb.r;
+    rgbw.rgbw.g = rgb.rgb.g;
+    rgbw.rgbw.b = rgb.rgb.b;
+    rgbw.rgbw.w = ((HSV_SATURATION_MAX - c->s) * c->v) / HSV_VALUE_MAX;
+
+    return rgbw;
+}

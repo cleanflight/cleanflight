@@ -22,7 +22,10 @@
 
 //#define DEBUG_LEDSTRIP
 
+
 extern "C" {
+    #define LED_RGBW
+
     #include "build/build_config.h"
 
     #include "common/color.h"
@@ -313,6 +316,12 @@ TEST(LedStripTest, smallestGrid)
 
  */
 
+#undef LF
+#undef LO
+#undef LD
+
+
+
 hsvColor_t testColors[LED_CONFIGURABLE_COLOR_COUNT];
 
 #define TEST_COLOR_COUNT 4
@@ -328,14 +337,14 @@ TEST(ColorTest, parseColor)
             {   0,   0,   0 },
             {   1,   1,   1 },
             { 359, 255, 255 },
-            { 333,  22,   1 }
+            { 333,  44,  55 }
     };
 
     const char *testColors[TEST_COLOR_COUNT] = {
             "0,0,0",
             "1,1,1",
             "359,255,255",
-            "333,22,1"
+            "333,44,55"
     };
 
     // when
@@ -348,7 +357,6 @@ TEST(ColorTest, parseColor)
     }
 
     // then
-
     for (int index = 0; index < TEST_COLOR_COUNT; index++) {
 #ifdef DEBUG_LEDSTRIP
         printf("iteration: %d\n", index);
@@ -368,11 +376,15 @@ int16_t rcCommand[4];
 int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 uint32_t rcModeActivationMask;
 
+ledType_e ws2811LedType;
+
 batteryState_e getBatteryState(void) {
     return BATTERY_OK;
 }
 
-void ws2811LedStripInit(void) {}
+void ws2811LedStripInit(ledType_e ledType) {
+    ws2811LedType = ledType;
+}
 void ws2811UpdateStrip(void) {}
 
 void setLedValue(int index, const uint8_t value) {
@@ -441,3 +453,4 @@ uint8_t stateFlags;
 uint16_t rssi;
 
 }
+

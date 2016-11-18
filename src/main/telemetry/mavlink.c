@@ -53,7 +53,6 @@
 #include "io/serial.h"
 #include "io/gimbal.h"
 #include "io/gps.h"
-#include "io/ledstrip.h"
 
 #include "sensors/sensors.h"
 #include "sensors/acceleration.h"

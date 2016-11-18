@@ -17,18 +17,43 @@
 
 #pragma once
 
+typedef enum {
+    RGB,
+    RGBW
+} ledType_e;
+
+typedef struct ledType_s {
+    ledType_e t;
+} ledType_t;
+
 #define WS2811_LED_STRIP_LENGTH 32
-#define WS2811_BITS_PER_LED 24
-#define WS2811_DELAY_BUFFER_LENGTH 42 // for 50us delay
 
-#define WS2811_DATA_BUFFER_SIZE (WS2811_BITS_PER_LED * WS2811_LED_STRIP_LENGTH)
+#define WS2811_BITS_PER_LED_RGBW 32
+#define WS2811_DELAY_BUFFER_LENGTH_RGBW 1 // oscilloscope shows 8500탎 interframe delay when using 1
 
-#define WS2811_DMA_BUFFER_SIZE (WS2811_DATA_BUFFER_SIZE + WS2811_DELAY_BUFFER_LENGTH)   // number of bytes needed is #LEDs * 24 bytes + 42 trailing bytes)
+#define WS2811_BITS_PER_LED_RGB 24
+#define WS2811_DELAY_BUFFER_LENGTH_RGB 42
 
-#define BIT_COMPARE_1 17 // timer compare value for logical 1
-#define BIT_COMPARE_0 9  // timer compare value for logical 0
 
-void ws2811LedStripInit(void);
+#define WS2811_DATA_BUFFER_SIZE_RGB (WS2811_BITS_PER_LED_RGB * WS2811_LED_STRIP_LENGTH)
+#define WS2811_DATA_BUFFER_SIZE_RGBW (WS2811_BITS_PER_LED_RGBW * WS2811_LED_STRIP_LENGTH)
+
+#define WS2811_DMA_BUFFER_SIZE_RGB (WS2811_DATA_BUFFER_SIZE_RGB + WS2811_DELAY_BUFFER_LENGTH_RGB)   // number of bytes needed is #LEDs * 24 bytes + 42 trailing bytes)
+#define WS2811_DMA_BUFFER_SIZE_RGBW (WS2811_DATA_BUFFER_SIZE_RGBW + WS2811_DELAY_BUFFER_LENGTH_RGBW)   // number of bytes needed is #LEDs * 24 bytes + 42 trailing bytes)
+
+#define BIT_COMPARE_1 17     // timer compare value for logical 1 // 0.6/0.6탎
+#define BIT_COMPARE_0_RGB 9  // timer compare value for logical 0 // 0.3/0.9탎
+#define BIT_COMPARE_0_RGBW 8 // timer compare value for logical 0 // 0.3/0.9탎
+
+#ifdef RGBW
+#define WS2811_DMA_BUFFER_SIZE WS2811_DMA_BUFFER_SIZE_RGBW
+#define BIT_COMPARE_0 BIT_COMPARE_0_RGBW
+#else
+#define WS2811_DMA_BUFFER_SIZE WS2811_DMA_BUFFER_SIZE_RGB
+#define BIT_COMPARE_0 BIT_COMPARE_0_RGB
+#endif
+
+void ws2811LedStripInit(ledType_e ledType);
 
 void ws2811LedStripHardwareInit(void);
 void ws2811LedStripDMAEnable(void);
@@ -47,4 +72,6 @@ void setStripColors(const hsvColor_t *colors);
 bool isWS2811LedStripReady(void);
 
 extern uint8_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
+
 extern volatile uint8_t ws2811LedDataTransferInProgress;
+extern ledType_e ws2811LedType;

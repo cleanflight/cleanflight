@@ -44,6 +44,7 @@ extern "C" {
     #include "drivers/serial.h"
     #include "drivers/serial_softserial.h"
     #include "drivers/buf_writer.h"
+    #include "drivers/light_ws2811strip.h"
 
     #include "rx/rx.h"
 
@@ -112,10 +113,10 @@ extern "C" {
     PG_REGISTER_ARR(rxFailsafeChannelConfig_t, MAX_SUPPORTED_RC_CHANNEL_COUNT, failsafeChannelConfigs, PG_FAILSAFE_CHANNEL_CONFIG, 0);
     PG_REGISTER_ARR(rxChannelRangeConfiguration_t, NON_AUX_CHANNEL_COUNT, channelRanges, PG_CHANNEL_RANGE_CONFIG, 0);
     PG_REGISTER(motor3DConfig_t, motor3DConfig, PG_MOTOR_3D_CONFIG, 0);
-    PG_REGISTER_ARR(ledConfig_t, LED_MAX_STRIP_LENGTH, ledConfigs, PG_LED_STRIP_CONFIG, 0);
-    PG_REGISTER_ARR(hsvColor_t, LED_CONFIGURABLE_COLOR_COUNT, colors, PG_COLOR_CONFIG, 0);
-    PG_REGISTER_ARR(modeColorIndexes_t, LED_MODE_COUNT, modeColors, PG_MODE_COLOR_CONFIG, 0);
-    PG_REGISTER(specialColorIndexes_t, specialColors, PG_SPECIAL_COLOR_CONFIG, 0);
+    PG_REGISTER_ARR(ledConfig_t, LED_MAX_STRIP_LENGTH, ledConfigs, PG_LEDSTRIP_LEDS_CONFIG, 0);
+    PG_REGISTER_ARR(hsvColor_t, LED_CONFIGURABLE_COLOR_COUNT, colors, PG_LEDSTRIP_PALETTE, 0);
+    PG_REGISTER_ARR(modeColorIndexes_t, LED_MODE_COUNT, modeColors, PG_LEDSTRIP_MODE_COLOR_CONFIG, 0);
+    PG_REGISTER(specialColorIndexes_t, specialColors, PG_LEDSTRIP_SPECIAL_COLOR_CONFIG, 0);
     PG_REGISTER(gpsConfig_t, gpsConfig, PG_GPS_CONFIG, 0);
     PG_REGISTER(telemetryConfig_t, telemetryConfig, PG_TELEMETRY_CONFIG, 0);
     PG_REGISTER(frskyTelemetryConfig_t, frskyTelemetryConfig, PG_FRSKY_TELEMETRY_CONFIG, 0);
@@ -127,7 +128,7 @@ extern "C" {
     PG_REGISTER_PROFILE(rcControlsConfig_t, rcControlsConfig, PG_RC_CONTROLS_CONFIG, 0);
     PG_REGISTER_PROFILE(accelerometerConfig_t, accelerometerConfig, PG_ACCELEROMETER_CONFIG, 0);
     PG_REGISTER_PROFILE(adjustmentProfile_t, adjustmentProfile, PG_ADJUSTMENT_PROFILE, 0);
-    PG_REGISTER_PROFILE(compassConfig_t, compassConfig, PG_COMPASS_CONFIGURATION, 0);
+    PG_REGISTER_PROFILE(compassConfig_t, compassConfig, PG_COMPASS_CONFIG, 0);
     PG_REGISTER_PROFILE(modeActivationProfile_t, modeActivationProfile, PG_MODE_ACTIVATION_PROFILE, 0);
     PG_REGISTER_PROFILE(servoProfile_t, servoProfile, PG_SERVO_PROFILE, 0);
 }

@@ -65,6 +65,7 @@
 #include "drivers/gyro_sync.h"
 #include "drivers/exti.h"
 #include "drivers/io.h"
+#include "drivers/light_ws2811strip.h"
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
