@@ -96,8 +96,8 @@
 #define SERIAL_PORT_COUNT 2
 
 #define USE_UART1_TX_DMA
-#define UART1_TX_PIN        GPIO_Pin_6 // PB6
-#define UART1_RX_PIN        GPIO_Pin_7 // PB7
+#define UART1_TX_PIN        1 
+#define UART1_RX_PIN        2
 #define UART1_GPIO          GPIOB
 #define UART1_GPIO_AF       GPIO_AF_7
 #define UART1_TX_PINSOURCE  GPIO_PinSource6

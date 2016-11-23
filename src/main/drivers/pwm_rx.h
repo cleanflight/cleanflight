@@ -44,3 +44,5 @@ void resetPPMDataReceivedState(void);
 void pwmRxInit(void);
 
 bool isPWMDataBeingReceived(void);
+float period_to_freq(uint32_t period);
+uint32_t freq_to_period(float freq);

@@ -1,12 +1,11 @@
 #include "timer_setup.h"
 
-
 static void handler(int sig, siginfo_t *si, void *uc)
 {
 	timer_info_t* timer_info;
 	timer_info = si->si_value.sival_ptr;		//Call the function based on the function pointer defined in timer_info_t struct
 	//if(timer_info->timer_enabled)
-	timer_info->timerspecific_handler();	
+	timer_info->timerspecific_handler(timer_info->timerspecific_handler, timer_info->period);	
 }
 
 
@@ -62,13 +61,13 @@ void timer_start(struct itimerspec* its, timer_t* timerid, float freq, int mode)
 	  errExit("timer_settime");
 } 
 
-void timer_info_init(timer_info_t* timer_info, void (* timer_handler)())
+void timer_info_init(timer_info_t* timer_info, void (*timer_handler)(timerCCHandlerRec_t* cbRec, captureCompare_t capture))
 {
 	timer_info->timerspecific_handler = timer_handler;
 	//timer_info->timer_enabled = 1;
 }
 
-void start_timer(void (*timerspecific_handler)(void), float freq, int mode)		//Create structures and call functions to setup the signal handling and signal masks.
+void start_timer(void (*timerspecific_handler)(timerCCHandlerRec_t* cbRec, captureCompare_t capture), float freq, uint16_t period, int mode)		//Create structures and call functions to setup the signal handling and signal masks.
 																				//Create and start timer
 {
 	timer_t timerid;		//timer
@@ -79,7 +78,7 @@ void start_timer(void (*timerspecific_handler)(void), float freq, int mode)		//C
 
 	timer_info_t* timer_info;		//Struct to keep track of timer callback function
 	timer_info = (timer_info_t*)malloc(sizeof(timer_info_t));	
-
+	timer_info->period = period;
 	timer_info_init(timer_info,timerspecific_handler);	   //Initialize the timer_info_t struct with the callback function
 	setup_sigaction(&sa, &mask);                           //Setup sigaction for the timer
 	timercreate(&timerid, &sev, &handler, timer_info);     //Create the timer

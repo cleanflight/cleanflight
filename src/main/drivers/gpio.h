@@ -17,6 +17,7 @@
 
 #pragma once
 #include "mraa/gpio.h"
+#include <stdbool.h>
 
 #if defined(STM32F10X)
 typedef enum
@@ -122,6 +123,7 @@ typedef struct GPIO_TypeDef_s
     uint16_t pin;
     mraa_gpio_context context;
     int mode;
+    int speed;    
 }GPIO_TypeDef;
 
 #ifndef UNIT_TEST
@@ -133,6 +135,6 @@ static inline uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i) { return mraa_gpio
 uint16_t digitalIn(GPIO_TypeDef *p, uint16_t i);
 #endif
 
-void gpioInit(GPIO_TypeDef *gpio, const gpio_config_t *config);
+void gpioInit(GPIO_TypeDef *gpio);
 void gpioExtiLineConfig(uint8_t portsrc, uint8_t pinsrc);
 void gpioPinRemapConfig(uint32_t remap, bool enable);

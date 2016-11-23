@@ -32,11 +32,12 @@
 
 #include "nvic.h"
 #include "gpio.h"
-#include "timer.h"
-
-#include "pwm_mapping.h"
+#include "drivers/timer_setup.h"
+//#include "timer.h"
 
 #include "pwm_rx.h"
+
+#include "pwm_mapping.h"
 
 #define DEBUG_PPM_ISR
 
@@ -81,6 +82,7 @@ static uint16_t captures[PWM_PORTS_OR_PPM_CAPTURE_COUNT];
 
 #define PPM_TIMER_PERIOD 0x10000
 #define PWM_TIMER_PERIOD 0x10000
+#define TIMER_FREQ 1000000      //hz
 
 static uint8_t ppmFrameCount = 0;
 static uint8_t lastPPMFrameCount = 0;
@@ -321,7 +323,8 @@ static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, captureCompare_t capture
     if (pwmInputPort->state == 0) {
         pwmInputPort->rise = capture;
         pwmInputPort->state = 1;
-        pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Falling);
+        //pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Falling);
+        pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, 0);       //0 is a dummy variable for now
     } else {
         pwmInputPort->fall = capture;
 
@@ -331,24 +334,25 @@ static void pwmEdgeCallback(timerCCHandlerRec_t *cbRec, captureCompare_t capture
 
         // switch state
         pwmInputPort->state = 0;
-        pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+        //pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+        pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, 0);   //0 is a dummy variable for now
         pwmInputPort->missedEvents = 0;
     }
 }
 
 static void pwmGPIOConfig(GPIO_TypeDef *gpio, uint32_t pin, GPIO_Mode mode)
 {
-    gpio_config_t cfg;
+    GPIO_TypeDef cfg;
 
     cfg.pin = pin;
     cfg.mode = mode;
     cfg.speed = Speed_2MHz;
-    gpioInit(gpio, &cfg);
+    gpioInit(&cfg);
 }
 
 void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
 {
-    TIM_ICInitTypeDef TIM_ICInitStructure;
+    /*TIM_ICInitTypeDef TIM_ICInitStructure;
 
     TIM_ICStructInit(&TIM_ICInitStructure);
     TIM_ICInitStructure.TIM_Channel = channel;
@@ -362,7 +366,7 @@ void pwmICConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t polarity)
         TIM_ICInitStructure.TIM_ICFilter = 0x00;
     }
 
-    TIM_ICInit(tim, &TIM_ICInitStructure);
+    TIM_ICInit(tim, &TIM_ICInitStructure);*/
 }
 
 void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
@@ -375,14 +379,16 @@ void pwmInConfig(const timerHardware_t *timerHardwarePtr, uint8_t channel)
     self->mode = INPUT_MODE_PWM;
     self->timerHardware = timerHardwarePtr;
 
-    pwmGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, timerHardwarePtr->gpioInputMode);
-    pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+    pwmGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->gpio->pin, timerHardwarePtr->gpio->mode);
+    //pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+    pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, 0);   //dummy. replacing with 0
 
-    timerConfigure(timerHardwarePtr, (uint16_t)PWM_TIMER_PERIOD, PWM_TIMER_MHZ);
+    //timerConfigure(timerHardwarePtr, (uint16_t)PWM_TIMER_PERIOD, PWM_TIMER_MHZ);
+    start_timer(pwmEdgeCallback, period_to_freq(PWM_TIMER_PERIOD), (uint16_t)PWM_TIMER_PERIOD,  PERIODIC);
 
-    timerChCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
-    timerChOvrHandlerInit(&self->overflowCb, pwmOverflowCallback);
-    timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
+    //timerChCCHandlerInit(&self->edgeCb, pwmEdgeCallback);
+    //timerChOvrHandlerInit(&self->overflowCb, pwmOverflowCallback);
+    //timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
 }
 
 #define UNUSED_PPM_TIMER_REFERENCE 0
@@ -404,14 +410,17 @@ void ppmInConfig(const timerHardware_t *timerHardwarePtr)
     self->mode = INPUT_MODE_PPM;
     self->timerHardware = timerHardwarePtr;
 
-    pwmGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->pin, timerHardwarePtr->gpioInputMode);
-    pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+    pwmGPIOConfig(timerHardwarePtr->gpio, timerHardwarePtr->gpio->pin, timerHardwarePtr->gpio->mode);
+    //pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, TIM_ICPolarity_Rising);
+    pwmICConfig(timerHardwarePtr->tim, timerHardwarePtr->channel, 0);   //dummy. replacing with 0
 
-    timerConfigure(timerHardwarePtr, (uint16_t)PPM_TIMER_PERIOD, PWM_TIMER_MHZ);
+    //timerConfigure(timerHardwarePtr, (uint16_t)PPM_TIMER_PERIOD, PWM_TIMER_MHZ);
+    start_timer(ppmEdgeCallback, period_to_freq(PPM_TIMER_PERIOD), (uint16_t)PPM_TIMER_PERIOD,  PERIODIC);
 
-    timerChCCHandlerInit(&self->edgeCb, ppmEdgeCallback);
-    timerChOvrHandlerInit(&self->overflowCb, ppmOverflowCallback);
-    timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
+
+    //timerChCCHandlerInit(&self->edgeCb, ppmEdgeCallback);
+    //timerChOvrHandlerInit(&self->overflowCb, ppmOverflowCallback);
+    //timerChConfigCallbacks(timerHardwarePtr, &self->edgeCb, &self->overflowCb);
 }
 
 uint16_t ppmRead(uint8_t channel)
@@ -422,4 +431,13 @@ uint16_t ppmRead(uint8_t channel)
 uint16_t pwmRead(uint8_t channel)
 {
     return captures[channel];
+}
+float period_to_freq(uint32_t period)
+{
+    return TIMER_FREQ/period;
+}
+
+uint32_t freq_to_period(float freq)
+{
+    return TIMER_FREQ/freq;
 }

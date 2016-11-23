@@ -712,6 +712,12 @@ pwmIOConfiguration_t *pwmInit(drv_pwm_config_t *init)
                                                                 //this will not be used in the edison
                                                                 //so replacing it with a NULL pointer
 
+#ifdef EDISON
+        timerHardwarePtr->gpio->pin = UART1_RX_PIN;
+        timerHardwarePtr->gpio->mode = PWM;
+        timerHardwarePtr->gpio->speed = Speed_2MHz;
+#endif        
+
 #ifdef OLIMEXINO_UNCUT_LED2_E_JUMPER
         // PWM2 is connected to LED2 on the board and cannot be connected unless you cut LED2_E
         if (timerIndex == PWM2)

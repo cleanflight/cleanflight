@@ -268,20 +268,23 @@ DRIVERS = 	\
 			src/main/drivers/serial_uart.c \
 			src/main/drivers/serial_usb_vcp.c \
 			src/main/drivers/pwm_output.c \
-			src/main/drivers/pwm_mapping.c
+			src/main/drivers/pwm_mapping.c \
+			src/main/drivers/pwm_rx.c \
+			src/main/drivers/gpio_edison.c
 
 VCP = 		\
 			src/main/vcp/hw_config.c
 
 FC = 		\
-			src/main/fc/fc_tasks.c
-			#src/main/fc/msp_server_fc.c 
+			src/main/fc/fc_tasks.c \
+			src/main/fc/msp_server_fc.c
 
 IO = 		\
 			src/main/io/io_serial.c
 
 MSP = 		\
-			src/main/msp/msp.c
+			src/main/msp/msp_serial.c
+
 
 CONFIG = 	\
 		    src/main/config/parameter_group.c		   
@@ -293,7 +296,10 @@ BUILD = 	\
 			src/main/build/build_config.c
 
 RX = 		\
-			src/main/rx/rx.c									
+			src/main/rx/rx.c
+
+FLIGHT = 	\
+			src/main/flight/mixer.c
 
 EDISON_SRC = \
 			src/main/fc/boot.c \
@@ -303,10 +309,12 @@ EDISON_SRC = \
 			$(DRIVERS) \
 			$(IO) \
 			$(FC) \
-			$(SCHEDULER)
+			$(SCHEDULER) \
+			$(MSP)
 
 #EDISON_SRC = \
 			src/main/fc/boot.c \
+			$(CONFIG) \
 			$(DRIVERS)
 
 
@@ -1134,7 +1142,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 
 ################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
-compile: objs  	
+compile: objs
 	$(CC) $(shell find $(OBJ_DIR) -name '*.o') -o $(OUTPUT_DIR)$(FILE_NAME) $(LIB_FLAGS)		#Compile .o files into executable
 
 
@@ -1143,7 +1151,7 @@ objs: clean
 	mkdir -p $(OBJ_DIR) 
 	$(CC) $(EDISON_CFLAGS) $(EDISON_SRC) -c $(LIB_FLAGS)    
 	mv *.i *.d *.o *.s $(OBJ_DIR)
-
+	
 #Clean up all temporary / machine-generated files
 clean:
 	rm -rf $(OUTPUT_DIR)
