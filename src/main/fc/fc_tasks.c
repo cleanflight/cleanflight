@@ -40,6 +40,7 @@ void print(void)
     printf("Scheduled!\n");
 }
 
+#if 0
 cfTask_t cfTasks[] = {
     [TASK_SERIAL] = {
         .taskName = "TEST",
@@ -49,7 +50,9 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_REALTIME,
     }
 };
-/*
+#endif
+
+#if 1
 cfTask_t cfTasks[] = {
     [TASK_SYSTEM] = {
         .taskName = "SYSTEM",
@@ -186,4 +189,5 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_IDLE,
     },
 #endif
-};*/
+};
+#endif

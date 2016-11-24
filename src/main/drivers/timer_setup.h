@@ -51,7 +51,7 @@ typedef struct timer_info_s									//struct to hold timer specific data
 {
   timer_t* timerID;						
   int timer_enabled;  					
-  void (*timerspecific_handler)(timerCCHandlerRec_t* cbRec, captureCompare_t capture);							//This is where the callback function is stored
+  timerCCHandlerRec_t* callback;  							//This is where the callback function is stored
   uint16_t period;
 }timer_info_t;
 

@@ -5,7 +5,7 @@ static void handler(int sig, siginfo_t *si, void *uc)
 	timer_info_t* timer_info;
 	timer_info = si->si_value.sival_ptr;		//Call the function based on the function pointer defined in timer_info_t struct
 	//if(timer_info->timer_enabled)
-	timer_info->timerspecific_handler(timer_info->timerspecific_handler, timer_info->period);	
+	timer_info->callback->fn(timer_info->callback, timer_info->period);	
 }
 
 
@@ -63,7 +63,7 @@ void timer_start(struct itimerspec* its, timer_t* timerid, float freq, int mode)
 
 void timer_info_init(timer_info_t* timer_info, void (*timer_handler)(timerCCHandlerRec_t* cbRec, captureCompare_t capture))
 {
-	timer_info->timerspecific_handler = timer_handler;
+	timer_info->callback->fn = timer_handler;
 	//timer_info->timer_enabled = 1;
 }
 

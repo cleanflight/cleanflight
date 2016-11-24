@@ -283,7 +283,8 @@ IO = 		\
 			src/main/io/io_serial.c
 
 MSP = 		\
-			src/main/msp/msp_serial.c
+			src/main/msp/msp_serial.c \
+			src/main/msp/msp.c
 
 
 CONFIG = 	\
