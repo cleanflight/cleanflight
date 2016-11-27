@@ -23,6 +23,7 @@
 #include "build/build_config.h"
 
 #include "common/axis.h"
+#include "common/filter.h"
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
@@ -46,6 +47,21 @@
 
 PG_REGISTER_PROFILE_WITH_RESET_FN(accelerometerConfig_t, accelerometerConfig, PG_ACCELEROMETER_CONFIG, 0);
 
+int32_t accADC[XYZ_AXIS_COUNT];
+int32_t accSmooth[XYZ_AXIS_COUNT];
+
+acc_t acc;                       // acc access functions
+sensor_align_e accAlign = 0;
+uint32_t accTargetLooptime;
+
+uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
+
+static flightDynamicsTrims_t *accelerationTrims;
+
+static float accLpfCutHz = 0;
+static biquadFilter_t accFilter[XYZ_AXIS_COUNT];
+static bool accFilterInitialised = false;
+
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims)
 {
     RESET_CONFIG_2(rollAndPitchTrims_t, rollAndPitchTrims,
@@ -65,21 +81,6 @@ void pgResetFn_accelerometerConfig(accelerometerConfig_t *instance)
     );
     resetRollAndPitchTrims(&instance->accelerometerTrims);
 }
-
-int32_t accADC[XYZ_AXIS_COUNT];
-
-acc_t acc;                       // acc access functions
-sensor_align_e accAlign = 0;
-
-uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
-
-extern uint16_t InflightcalibratingA;
-extern bool AccInflightCalibrationArmed;
-extern bool AccInflightCalibrationMeasurementDone;
-extern bool AccInflightCalibrationSavetoEEProm;
-extern bool AccInflightCalibrationActive;
-
-static flightDynamicsTrims_t *accelerationTrims;
 
 void accSetCalibrationCycles(uint16_t calibrationCyclesRequired)
 {
@@ -215,6 +216,23 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 
     alignSensors(accADC, accADC, accAlign);
 
+    if (accLpfCutHz) {
+        if (!accFilterInitialised) {
+            if (accTargetLooptime) {  /* Initialisation needs to happen once sample rate is known */
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    biquadFilterInitLPF(&accFilter[axis], accLpfCutHz, accTargetLooptime);
+                }
+                accFilterInitialised = true;
+            }
+        }
+
+        if (accFilterInitialised) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                accSmooth[axis] = lrintf(biquadFilterApply(&accFilter[axis], (float)accADCRaw[axis]));
+            }
+        }
+    }
+	
     if (!isAccelerationCalibrationComplete()) {
         performAcclerationCalibration(rollAndPitchTrims);
     }
@@ -229,4 +247,9 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 void setAccelerationTrims(flightDynamicsTrims_t *accelerationTrimsToUse)
 {
     accelerationTrims = accelerationTrimsToUse;
+}
+
+void setAccelerationFilter(float initialAccLpfCutHz)
+{
+    accLpfCutHz = initialAccLpfCutHz;
 }

@@ -739,11 +739,13 @@ void configureScheduler(void)
 
     rescheduleTask(TASK_PID, gyroPeriodUs);
     setTaskEnabled(TASK_PID, true);
-
+	
     if (sensors(SENSOR_ACC)) {
+        accTargetLooptime = 1000;
+        rescheduleTask(TASK_ACCEL, accTargetLooptime);
         setTaskEnabled(TASK_ACCEL, true);
     }
-
+    
     setTaskEnabled(TASK_ATTITUDE, sensors(SENSOR_ACC));
     setTaskEnabled(TASK_SERIAL, true);
 #ifdef BEEPER
