@@ -75,7 +75,7 @@ cleanflight_add_gtest(type_conversion_unittest
 # /config/
 ###################
 cleanflight_add_gtest(config_eeprom_unittest
-    "mock_flash;mock_system;config-config_eeprom;config-parameter_group;common-maths;config-config;config-config_streamer;config-feature;config-profile;")
+    "mock_flash;mock_system;config-config_eeprom;config-parameter_group;common-maths;fc-config;config-config_streamer;config-feature;config-profile;")
 cleanflight_add_parameter_group_link_flags(config_eeprom_unittest)
 
 cleanflight_add_gtest(config_streamer_unittest
@@ -100,6 +100,16 @@ cleanflight_add_gtest(ws2811_unittest
     "drivers-light_ws2811strip;")
 
 ###################
+# /fc/
+###################
+#cleanflight_add_gtest(msp_fc_unittest
+#    "common-maths;common-streambuf;io-serial;fc-msp_server_fc;msp-msp;version;config-parameter_group;")
+#cleanflight_add_parameter_group_link_flags(msp_fc_unittest)
+
+cleanflight_add_gtest(rc_controls_unittest
+    "common-maths;fc-rc_adjustments;fc-rc_controls;")
+
+###################
 # /flight/
 ###################
 cleanflight_add_gtest(flight_altitudehold_unittest
@@ -118,27 +128,22 @@ cleanflight_add_gtest(flight_imu_unittest
     "flight-imu;flight-altitudehold;")
 
 cleanflight_add_gtest(flight_pid_unittest
-    "common-maths;flight-pid;flight-pid_luxfloat;flight-pid_mwrewrite;flight-pid_mw23;")
+    "common-maths;flight-pid;flight-pid_luxfloat;")
 
 ###################
 # /io/
 ###################
-
 cleanflight_add_gtest(ledstrip_unittest
     "io-ledstrip;")
-
-cleanflight_add_gtest(msp_unittest
-    "common-maths;common-streambuf;io-serial;io-msp;io-serial_msp;version;drivers-buf_writer;config-parameter_group;")
-cleanflight_add_parameter_group_link_flags(msp_unittest)
-
-cleanflight_add_gtest(rc_controls_unittest
-    "common-maths;io-rc_adjustments;io-rc_controls;")
 
 cleanflight_add_gtest(io_serial_unittest
     "io-serial;")
 
-cleanflight_add_gtest(serial_msp_unittest
-    "common-maths;common-streambuf;version;io-serial;io-serial_msp;")
+###################
+# /msp/
+###################
+#cleanflight_add_gtest(msp_serial_unittest
+#    "common-maths;common-streambuf;version;io-serial;msp-msp_serial;")
 
 ###################
 # /rx/

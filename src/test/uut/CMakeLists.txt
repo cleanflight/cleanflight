@@ -28,12 +28,10 @@ endmacro()
 #######################################
 
 add_library(version
-    ${USER_DIR}/version.c)
+    ${USER_DIR}/build/version.c)
 add_compile_definitions(version __TARGET__="TEST" __REVISION__="revision")
 
-add_library(scheduler       ${USER_DIR}/scheduler.c)
-add_library(scheduler_tasks ${USER_DIR}/scheduler_tasks.c)
-target_link_libraries(scheduler_tasks common-maths)
+add_library(scheduler       ${USER_DIR}/scheduler/scheduler.c)
 
 ###################
 # /common/
@@ -49,7 +47,6 @@ cleanflight_add_module_libraries(common
 # /config/
 ###################
 set(config_sources
-    config
     config_eeprom
     config_streamer
     feature
@@ -57,8 +54,6 @@ set(config_sources
     parameter_group)
 cleanflight_add_module_libraries(config ${config_sources})
 
-target_link_libraries(config-config         config-config_eeprom)
-target_link_libraries(config-config         config-parameter_group)
 target_link_libraries(config-config_eeprom  config-config_streamer mock_flash mock_system)
 
 foreach (config_source ${config_sources})
@@ -80,6 +75,24 @@ cleanflight_add_module_libraries(drivers
 add_compile_definitions(drivers-sonar_hcsr04 SONAR)
 
 ###################
+# /fc/
+###################
+set(fc_sources
+    config
+    msp_server_fc
+    rc_adjustments
+    rc_controls)
+cleanflight_add_module_libraries(fc ${fc_sources})
+target_link_libraries(fc-config         config-config_eeprom)
+target_link_libraries(fc-config         config-parameter_group)
+foreach (fc_source ${fc_sources})
+    add_compile_definitions(fc-${fc_source} FLASH_SIZE=128 STM32F10X_MD)
+endforeach()
+
+add_library(scheduler_tasks ${USER_DIR}/fc/fc_tasks.c)
+target_link_libraries(scheduler_tasks common-maths)
+
+###################
 # /flight/
 ###################
 cleanflight_add_module_libraries(flight
@@ -89,23 +102,17 @@ cleanflight_add_module_libraries(flight
     imu
     pid
     pid_luxfloat
-    pid_mwrewrite
-    pid_mw23
     mixer
     servos)
 
 # Enable feature toggles
 add_compile_definitions(flight-pid              BLACKBOX)
 add_compile_definitions(flight-pid_luxfloat     BLACKBOX)
-add_compile_definitions(flight-pid_mwrewrite    BLACKBOX)
-add_compile_definitions(flight-pid_mw23         BLACKBOX)
 
 target_link_libraries(flight-altitudehold   common-maths)
 target_link_libraries(flight-altitudehold   common-filter)
 target_link_libraries(flight-pid            common-filter)
 target_link_libraries(flight-pid_luxfloat   common-filter)
-target_link_libraries(flight-pid_mwrewrite  common-filter)
-target_link_libraries(flight-pid_mw23       common-filter)
 target_link_libraries(flight-servos         common-maths)
 
 ###################
@@ -113,14 +120,16 @@ target_link_libraries(flight-servos         common-maths)
 ###################
 cleanflight_add_module_libraries(io
     ledstrip
-    msp
-    rc_adjustments
-    rc_controls
-    serial
-    serial_msp)
+    serial)
 
-target_link_libraries(io-msp io-serial common-maths common-streambuf)
-target_link_libraries(io-serial_msp io-serial)
+###################
+# /msp/
+###################
+cleanflight_add_module_libraries(msp
+    msp
+    msp_serial)
+target_link_libraries(msp-msp io-serial common-maths common-streambuf)
+target_link_libraries(msp-msp_serial io-serial)
 
 ###################
 # /rx/
