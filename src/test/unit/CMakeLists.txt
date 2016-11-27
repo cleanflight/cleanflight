@@ -66,7 +66,7 @@ cleanflight_add_gtest(maths_unittest
     "common-maths;")
 
 cleanflight_add_gtest(scheduler_unittest
-    "scheduler;scheduler_tasks;")
+    "scheduler-scheduler;fc-fc_tasks;")
 
 cleanflight_add_gtest(type_conversion_unittest
     "common-typeconversion;")

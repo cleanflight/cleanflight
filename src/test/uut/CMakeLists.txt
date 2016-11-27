@@ -23,15 +23,12 @@ macro(cleanflight_add_module_libraries module_name)
     endforeach()
 endmacro()
 
-#######################################
-# Libraries for the unit-under-test code in main
-#######################################
-
-add_library(version
-    ${USER_DIR}/build/version.c)
-add_compile_definitions(version __TARGET__="TEST" __REVISION__="revision")
-
-add_library(scheduler       ${USER_DIR}/scheduler/scheduler.c)
+###################
+# /build/
+###################
+cleanflight_add_module_libraries(build
+    version)
+add_compile_definitions(build-version __TARGET__="TEST" __REVISION__="revision")
 
 ###################
 # /common/
@@ -81,19 +78,18 @@ add_compile_definitions(drivers-sonar_hcsr04 SONAR)
 ###################
 set(fc_sources
     config
+    fc_tasks
     msp_server_fc
     rc_adjustments
     rc_controls)
 cleanflight_add_module_libraries(fc ${fc_sources})
-target_link_libraries(fc-msp_server_fc  version)
 target_link_libraries(fc-config         config-config_eeprom)
 target_link_libraries(fc-config         config-parameter_group)
+target_link_libraries(fc-msp_server_fc  build-version)
+target_link_libraries(fc-fc_tasks       common-maths)
 foreach (fc_source ${fc_sources})
     add_compile_definitions(fc-${fc_source} FLASH_SIZE=128 STM32F10X_MD)
 endforeach()
-
-add_library(scheduler_tasks ${USER_DIR}/fc/fc_tasks.c)
-target_link_libraries(scheduler_tasks common-maths)
 
 ###################
 # /flight/
@@ -144,6 +140,12 @@ cleanflight_add_module_libraries(osd
     
 target_link_libraries(osd-osd_element_render    common-printf)
 target_link_libraries(osd-osd_element_render    common-maths)
+
+###################
+# /scheduler/
+###################
+cleanflight_add_module_libraries(scheduler
+    scheduler)
 
 ###################
 # /rx/
