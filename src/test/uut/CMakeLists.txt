@@ -40,8 +40,10 @@ cleanflight_add_module_libraries(common
     encoding
     filter
     maths
+    printf
     streambuf
     typeconversion)
+target_link_libraries(common-printf common-typeconversion)
 
 ###################
 # /config/
@@ -132,6 +134,17 @@ target_link_libraries(msp-msp io-serial common-maths common-streambuf)
 target_link_libraries(msp-msp_serial io-serial)
 
 ###################
+# /osd/
+###################
+cleanflight_add_module_libraries(osd
+    osd_screen
+    osd_element
+    osd_element_render)
+    
+target_link_libraries(osd-osd_element_render    common-printf)
+target_link_libraries(osd-osd_element_render    common-maths)
+
+###################
 # /rx/
 ###################
 cleanflight_add_module_libraries(rx
@@ -144,7 +157,8 @@ target_link_libraries(rx-rx common-maths)
 cleanflight_add_module_libraries(sensors
     battery
     boardalignment
-    sonar)
+    sonar
+    voltage)
 
 # Enable feature toggles
 add_compile_definitions(sensors-sonar SONAR)
@@ -152,9 +166,11 @@ add_compile_definitions(sensors-sonar SONAR)
 target_link_libraries(sensors-sonar             common-maths)
 target_link_libraries(sensors-battery           common-maths)
 target_link_libraries(sensors-boardalignment    common-maths)
+target_link_libraries(sensors-voltage           common-maths)
 
 ###################
 # /telemetry/
 ###################
 cleanflight_add_module_libraries(telemetry
+    ibus
     hott)

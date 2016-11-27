@@ -93,6 +93,9 @@ cleanflight_add_gtest(baro_bmp280_unittest
 cleanflight_add_gtest(baro_ms5611_unittest
     "drivers-barometer_ms5611;")
 
+cleanflight_add_gtest(nvic_unittest
+    "")
+    
 cleanflight_add_gtest(sonar_unittest
     "common-maths;drivers-sonar_hcsr04;sensors-sonar;")
 
@@ -146,6 +149,12 @@ cleanflight_add_gtest(io_serial_unittest
 #    "common-maths;common-streambuf;version;io-serial;msp-msp_serial;")
 
 ###################
+# /osd/
+###################
+cleanflight_add_gtest(osd_screen_unittest
+    "osd-osd_screen;osd-osd_element;osd-osd_element_render;")
+
+###################
 # /rx/
 ###################
 cleanflight_add_gtest(rx_rx_unittest
@@ -163,12 +172,18 @@ cleanflight_add_gtest(alignsensor_unittest
 cleanflight_add_gtest(battery_unittest
     "sensors-battery;")
 
+cleanflight_add_gtest(voltage_unittest
+    "sensors-voltage;")
+
 cleanflight_add_gtest(common_filter_unittest
     "common-filter;")
 
 ###################
 # /telemetry/
 ###################
+cleanflight_add_gtest(telemetry_ibus_unittest
+    "telemetry-ibus;")
+
 cleanflight_add_gtest(telemetry_hott_unittest
     "flight-gps_conversion;telemetry-hott;")
 
