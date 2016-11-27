@@ -105,9 +105,9 @@ cleanflight_add_gtest(ws2811_unittest
 ###################
 # /fc/
 ###################
-#cleanflight_add_gtest(msp_fc_unittest
-#    "common-maths;common-streambuf;io-serial;fc-msp_server_fc;msp-msp;version;config-parameter_group;")
-#cleanflight_add_parameter_group_link_flags(msp_fc_unittest)
+cleanflight_add_gtest(msp_fc_unittest
+    "fc-msp_server_fc;msp-msp;config-parameter_group;")
+cleanflight_add_parameter_group_link_flags(msp_fc_unittest)
 
 cleanflight_add_gtest(rc_controls_unittest
     "common-maths;fc-rc_adjustments;fc-rc_controls;")
@@ -145,8 +145,8 @@ cleanflight_add_gtest(io_serial_unittest
 ###################
 # /msp/
 ###################
-#cleanflight_add_gtest(msp_serial_unittest
-#    "common-maths;common-streambuf;version;io-serial;msp-msp_serial;")
+cleanflight_add_gtest(msp_serial_unittest
+    "common-streambuf;msp-msp_serial;")
 
 ###################
 # /osd/

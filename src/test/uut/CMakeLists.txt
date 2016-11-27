@@ -85,6 +85,7 @@ set(fc_sources
     rc_adjustments
     rc_controls)
 cleanflight_add_module_libraries(fc ${fc_sources})
+target_link_libraries(fc-msp_server_fc  version)
 target_link_libraries(fc-config         config-config_eeprom)
 target_link_libraries(fc-config         config-parameter_group)
 foreach (fc_source ${fc_sources})
@@ -130,8 +131,8 @@ cleanflight_add_module_libraries(io
 cleanflight_add_module_libraries(msp
     msp
     msp_serial)
-target_link_libraries(msp-msp io-serial common-maths common-streambuf)
-target_link_libraries(msp-msp_serial io-serial)
+target_link_libraries(msp-msp               fc-msp_server_fc io-serial common-maths common-streambuf)
+target_link_libraries(msp-msp_serial        msp-msp io-serial)
 
 ###################
 # /osd/
