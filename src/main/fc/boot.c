@@ -21,42 +21,47 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <includes.h>
-#include <drivers/bus_i2c.h>
-#include <target/edison/target.h>
-#include <drivers/system.h>
-#include <drivers/serial_uart.h>
-#include <drivers/serial.h> 
-#include <scheduler/scheduler.h>
-#include <fc/fc_tasks.h>
+
+#include "includes.h"
+#include "target/edison/target.h"
+
+#include "drivers/bus_i2c.h"
+#include "drivers/system.h"
+#include "drivers/serial_uart.h"
+#include "drivers/serial.h"
+#include "drivers/gpio.h"
+#include "drivers/timer_setup.h"
+
+
+#include "fc/fc_tasks.h"
+#include "fc/config.h"
+
+#include "msp/msp.h"
+#include "msp/msp_serial.h"
+
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
+#include "config/feature.h"
+
+#include "scheduler/scheduler.h"
+
+#include "io/io_serial.h"
+
 /*#include <platform.h>
 
 #include "build/build_config.h"
 #include "build/debug.h"
 #include "build/atomic.h"
 
-#include "common/axis.h"
-#include "common/color.h"
-#include "common/maths.h"
-#include "common/printf.h"
-#include "common/streambuf.h"
-#include "common/filter.h"
-
-#include "config/parameter_group.h"
-#include "config/parameter_group_ids.h"
-
 #include "drivers/nvic.h"
 
 #include "drivers/sensor.h"
 #include "drivers/system.h"
 #include "drivers/dma.h"
-#include "drivers/gpio.h"
 #include "drivers/light_led.h"
 #include "drivers/sound_beeper.h"
-#include "drivers/timer.h"
 #include "drivers/serial.h"
 #include "drivers/serial_softserial.h"
-#include "drivers/serial_uart.h"
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
 #include "drivers/pwm_mapping.h"
@@ -79,7 +84,6 @@
 #include "fc/rc_controls.h"
 #include "fc/fc_serial.h"
 
-#include "io/serial.h"
 #include "io/flashfs.h"
 #include "io/gps.h"
 #include "io/motor_and_servo.h"
@@ -88,9 +92,6 @@
 #include "io/display.h"
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/transponder_ir.h"
-#include "fc/msp_server_fc.h"
-#include "msp/msp.h"
-#include "msp/msp_serial.h"
 #include "io/serial_cli.h"
 
 #include "sensors/sensors.h"
@@ -760,8 +761,9 @@ void processLoopback(void) {
 
 void configureScheduler(void)
 {
-    //schedulerInit();
-    //setTaskEnabled(TEST, true);
+    schedulerInit();
+    setTaskEnabled(TASK_SYSTEM, true);
+    setTaskEnabled(TASK_SERIAL, true);
     /*setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_GYROPID, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
@@ -809,11 +811,14 @@ void configureScheduler(void)
 int main(void) 
 {
     printf("Hello World\n");
-/*    configureScheduler();
-
+    configureScheduler();
+    serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
+    mspInit();              //initialize values based on enabled features
+    mspSerialInit();        //allocate serial ports for each of the msp ports
     while (true) {
         scheduler();
-    }*/
+        //printf("Outside\n");
+    }
     return 0;
 
 //*****************************Working functions******************************************//

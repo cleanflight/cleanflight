@@ -54,7 +54,6 @@ LINE_CODING linecoding = { 115200, /* baud rate*/
 //Serial file name
 char *portname = "/dev/ttyMFD2";            //Change to ttyMFD2 on the edison to communicate with PC
 int rdlen;                                  //for measring the number of data bytes read
-fd_set readset;                             //for the select function
 
 
 //UART context for channel 0
@@ -160,6 +159,7 @@ uint32_t usbWrite(uint8_t* str, int len)
 
 uint32_t usbRead(uint8_t* buf, int len)
 {
+    fd_set readset;                             //for the select function
     FD_ZERO(&readset);
     FD_SET(USB.fd, &readset);
     int result;
@@ -223,6 +223,15 @@ void usb_txbuffer_flush(serialPort_t *instance)
     return;
 }
 
+uint32_t serial_waiting(void)
+{
+    fd_set readset;                             //for the select function
+    FD_ZERO(&readset);
+    FD_SET(USB.fd, &readset);
+    uint32_t result;
+    result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
+    return result;
+}
 /*
 static void usartConfigurePinInversion(uartPort_t *uartPort)
 {

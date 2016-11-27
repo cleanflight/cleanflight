@@ -17,13 +17,16 @@
 
 #pragma once
 
+//#include "fc/cleanflight_fc.c"
+
+
 typedef enum {
     /* Actual tasks */
     TASK_SYSTEM = 0,
+    TASK_SERIAL,
     TEST,
     TASK_GYROPID,
     TASK_ACCEL,
-    TASK_SERIAL,
 #ifdef BEEPER
     TASK_BEEPER,
 #endif

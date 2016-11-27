@@ -277,7 +277,8 @@ VCP = 		\
 
 FC = 		\
 			src/main/fc/fc_tasks.c \
-			src/main/fc/msp_server_fc.c
+			src/main/fc/msp_server_fc.c \
+			src/main/fc/cleanflight_fc.c
 
 IO = 		\
 			src/main/io/io_serial.c
@@ -288,7 +289,8 @@ MSP = 		\
 
 
 CONFIG = 	\
-		    src/main/config/parameter_group.c		   
+		    src/main/config/parameter_group.c \
+			src/main/config/feature.c
 
 SCHEDULER = \
 			src/main/scheduler/scheduler.c		    
@@ -302,11 +304,13 @@ RX = 		\
 FLIGHT = 	\
 			src/main/flight/mixer.c
 
+MAIN =		src/main/fc/boot.c
+
 EDISON_SRC = \
-			src/main/fc/boot.c \
-			$(BUILD) \
 			$(CONFIG) \
 			$(COMMON) \
+			$(MAIN) \
+			$(BUILD) \
 			$(DRIVERS) \
 			$(IO) \
 			$(FC) \
@@ -315,8 +319,7 @@ EDISON_SRC = \
 
 #EDISON_SRC = \
 			src/main/fc/boot.c \
-			$(CONFIG) \
-			$(DRIVERS)
+			$(CONFIG)
 
 
 
@@ -944,7 +947,7 @@ ifneq ($(filter $(OPTIONS),FAIL_ON_WARNINGS),)
 WARN_FLAGS      += -Werror
 endif
 
-DEBUG_FLAGS	 = -ggdb3 -DDEBUG
+DEBUG_FLAGS	 = -g
 
 #$(ARCH_FLAGS) \
 $(LTO_FLAGS) \

@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -204,6 +206,7 @@ void msp4WayIfFn(mspPort_t *msp)
 }
 #endif
 
+/*
 void mspRebootFn(mspPort_t *msp)
 {
     waitForSerialPortToFinishTransmitting(msp->port);  // TODO - postpone reboot, allow all modules to react
@@ -214,7 +217,7 @@ void mspRebootFn(mspPort_t *msp)
     // control should never return here.
     while(1) ;
 }
-
+*/
 static const box_t *findBoxByBoxId(uint8_t boxId)
 {
     for (unsigned i = 0; i < ARRAYLEN(boxes); i++) {
@@ -266,6 +269,7 @@ static void initActiveBoxIds(void)
 
     ena |= 1 << BOXARM;
 
+//here
     if (sensors(SENSOR_ACC)) {
         ena |= 1 << BOXANGLE;
         ena |= 1 << BOXHORIZON;
@@ -278,13 +282,14 @@ static void initActiveBoxIds(void)
 #endif
 
     ena |= 1 << BOXAIRMODE;
-
+//here
     if (sensors(SENSOR_ACC) || sensors(SENSOR_MAG)) {
         ena |= 1 << BOXMAG;
         ena |= 1 << BOXHEADFREE;
         ena |= 1 << BOXHEADADJ;
     }
 
+//here
     if (feature(FEATURE_SERVO_TILT))
         ena |= 1 << BOXCAMSTAB;
 
@@ -308,6 +313,7 @@ static void initActiveBoxIds(void)
     }
 #endif
 
+//here
     if (feature(FEATURE_INFLIGHT_ACC_CAL))
         ena |= 1 << BOXCALIB;
 
@@ -318,6 +324,7 @@ static void initActiveBoxIds(void)
         ena |= 1 << BOXTELEMETRY;
 #endif
 
+//here
     if (feature(FEATURE_SONAR)){
         ena |= 1 << BOXSONAR;
     }
@@ -336,6 +343,7 @@ static void initActiveBoxIds(void)
     }
 #endif
 
+//here
     if (feature(FEATURE_FAILSAFE)){
         ena |= 1 << BOXFAILSAFE;
     }
@@ -353,7 +361,7 @@ static void initActiveBoxIds(void)
 }
 
 #define IS_ENABLED(mask) (mask == 0 ? 0 : 1)
-
+/*
 static uint32_t packFlightModeFlags(void)
 {
     // Serialize the flags in the order we delivered them, ignoring BOXNAMES and BOXINDEXES
@@ -403,7 +411,7 @@ static uint32_t packFlightModeFlags(void)
         mspBoxIdx++;                  // next output bit ID
     }
     return mspBoxEnabledMask;
-}
+}*/
 
 static void serializeSDCardSummaryReply(mspPacket_t *reply)
 {
@@ -499,7 +507,10 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU8(dst, API_VERSION_MAJOR);
             sbufWriteU8(dst, API_VERSION_MINOR);
             break;
-
+        default:
+            printf("Unknown\n");
+            break;
+/*
         case MSP_FC_VARIANT:
             sbufWriteData(dst, flightControllerIdentifier, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
             break;
@@ -1517,6 +1528,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
         default:
             // we do not know how to handle the message
             return -1;
+    */
     }
     return 1;     // message was handled successfully
 }

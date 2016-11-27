@@ -16,7 +16,7 @@
  */
 
 #pragma once
-
+#include "drivers/serial.h"
 
 /**
  * MSP Guidelines, emphasis is used to clarify.

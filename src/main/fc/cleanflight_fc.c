@@ -42,6 +42,8 @@
 #include "drivers/system.h"
 #include "drivers/serial.h"
 
+#include <stdio.h>
+
 /*
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
@@ -126,11 +128,29 @@ extern uint8_t PIDweight[3];
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 
 static bool isRXDataNew;
-static pt1Filter_t filteredCycleTimeState;
+//static pt1Filter_t filteredCycleTimeState;
 uint16_t filteredCycleTime;
+int i=0;
+//extern pidControllerFuncPtr pid_controller;
 
-extern pidControllerFuncPtr pid_controller;
 
+void taskHandleSerial(void)
+{
+    i++;
+    //printf("Inside taskhandleserial\t%d\n",i);
+/*#ifdef USE_CLI
+    //No need to worry about this as only the GUI of the configurator is used
+    // in cli mode, all serial stuff goes to here. enter cli mode by sending #
+    if (cliMode) {
+        cliProcess();
+        return;
+    }
+#endif
+*/
+    mspSerialProcess();
+}
+
+/*
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)
 {
     accelerometerConfig()->accelerometerTrims.values.roll += rollAndPitchTrimsDelta->values.roll;
@@ -176,10 +196,10 @@ bool isCalibrating(void)
     return (!isAccelerationCalibrationComplete() && sensors(SENSOR_ACC)) || (!isGyroCalibrationComplete());
 }
 
-/*
-This function processes RX dependent coefficients when new RX commands are available
-Those are: TPA, throttle expo
-*/
+
+//This function processes RX dependent coefficients when new RX commands are available
+//Those are: TPA, throttle expo
+
 static void updateRcCommands(void)
 {
     int32_t prop2;
@@ -451,9 +471,9 @@ void processRx(void)
     throttleStatus_e throttleStatus = calculateThrottleStatus(rxConfig(), rcControlsConfig()->deadband3d_throttle);
     rollPitchStatus_e rollPitchStatus =  calculateRollPitchCenterStatus(rxConfig());
 
-    /* In airmode Iterm should be prevented to grow when Low thottle and Roll + Pitch Centered.
-     This is needed to prevent Iterm winding on the ground, but keep full stabilisation on 0 throttle while in air
-     Low Throttle + roll and Pitch centered is assuming the copter is on the ground. Done to prevent complex air/ground detections */
+    //In airmode Iterm should be prevented to grow when Low thottle and Roll + Pitch Centered.
+    //This is needed to prevent Iterm winding on the ground, but keep full stabilisation on 0 throttle while in air
+    //Low Throttle + roll and Pitch centered is assuming the copter is on the ground. Done to prevent complex air/ground detections
     if (throttleStatus == THROTTLE_LOW) {
         if (rcModeIsActive(BOXAIRMODE) && !failsafeIsActive() && ARMING_FLAG(ARMED)) {
             if (rollPitchStatus == CENTERED) {
@@ -787,20 +807,6 @@ void taskUpdateAccelerometer(void)
     imuUpdateAccelerometer(&accelerometerConfig()->accelerometerTrims);
 }
 
-void taskHandleSerial(void)
-{
-#ifdef USE_CLI
-    //No need to worry about this as only the GUI of the configurator is used
-    // in cli mode, all serial stuff goes to here. enter cli mode by sending #
-    if (cliMode) {
-        cliProcess();
-        return;
-    }
-#endif
-
-    mspSerialProcess();
-}
-
 #ifdef BEEPER
 void taskUpdateBeeper(void)
 {
@@ -970,3 +976,4 @@ void taskTransponder(void)
     }
 }
 #endif
+*/

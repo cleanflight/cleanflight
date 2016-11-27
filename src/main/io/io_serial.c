@@ -144,7 +144,6 @@ serialPortConfig_t *findNextSerialPortConfig(uint16_t mask)
 {
     while (findSerialPortConfigState.lastIndex < SERIAL_PORT_COUNT) {
         serialPortConfig_t *candidate = &serialConfig()->portConfigs[findSerialPortConfigState.lastIndex++];
-
         if (candidate->functionMask & mask) {
             return candidate;
         }
@@ -171,6 +170,7 @@ bool isSerialPortShared(serialPortConfig_t *portConfig, uint16_t functionMask, s
 
 bool isSerialPortOpen(serialPortConfig_t *portConfig)
 {
+    printf("Inside\n");
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(portConfig->identifier);
     return serialPortUsage && serialPortUsage->function != FUNCTION_NONE;
 }

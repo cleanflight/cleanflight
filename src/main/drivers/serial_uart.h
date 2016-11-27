@@ -79,6 +79,7 @@ uint8_t usbIsConfigured(void);
 void EP3_OUT_Callback(void);
 uint32_t Virtual_Com_Port_GetBaudRate(void);
 bool usb_txbuffer_empty(serialPort_t *instance);
+uint32_t serial_waiting(void);
 /*
 // serialPort API
 void uartWrite(serialPort_t *instance, uint8_t ch);

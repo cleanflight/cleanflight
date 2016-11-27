@@ -68,10 +68,12 @@ void mspSerialAllocatePorts(void)
     for(serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT);
         portConfig != NULL;
         portConfig = findNextSerialPortConfig(FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT)) {
+        printf("Inside\n");
         if(isSerialPortOpen(portConfig))
             continue; // port is already open
 
         // find unused mspPort for this serial
+
         mspPort_t *mspPort = mspPortFindFree();
         if(mspPort == NULL) {
             // no mspPort available, give up
@@ -178,7 +180,6 @@ STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
     mspPacket_t *reply = &message;
 
     uint8_t *outBufHead = reply->buf.ptr;
-
     int status = mspProcessCommand(&command, reply);
 
     if (status) {

@@ -123,6 +123,7 @@ STATIC_INLINE_UNIT_TESTED cfTask_t *queueNext(void)
 
 void taskSystem(void)
 {
+    //printf("Inside taskSystem\n");
     /* Calculate system load */
     if (totalWaitingTasksSamples > 0) {
         averageSystemLoadPercent = 100 * totalWaitingTasks / totalWaitingTasksSamples;
@@ -168,13 +169,12 @@ void rescheduleTask(const int taskId, uint32_t newPeriodMicros)
 
 void setTaskEnabled(const int taskId, bool enabled)
 {
+    printf("%s\n",cfTasks[taskId].taskName);
     if (taskId == TASK_SELF || taskId < (int)taskCount) {
         cfTask_t *task = ((taskId == TASK_SELF) ? currentTask : &cfTasks[taskId]);
         if (enabled && task->taskFunc) {
-            printf("1\n");
             queueAdd(task);
         } else {
-            printf("2\n");
             queueRemove(task);
         }
     }
@@ -200,10 +200,7 @@ void scheduler(void)
     // Cache currentTime
     //Replace with milli seconds?
     currentTime = micros();
-    cfTask_t *temp = queueFirst();
-    if(temp != NULL)
-        printf("current take:%s\n",temp->taskName);
-    
+    cfTask_t *temp = queueFirst();    
     // Check for realtime tasks
     uint32_t timeToNextRealtimeTask = UINT32_MAX;
     for (const cfTask_t *task = queueFirst(); task != NULL && task->staticPriority >= TASK_PRIORITY_REALTIME; task = queueNext()) {
@@ -216,7 +213,6 @@ void scheduler(void)
         }
     }
     const bool outsideRealtimeGuardInterval = (timeToNextRealtimeTask > realtimeGuardInterval);
-
     // The task to be invoked
     cfTask_t *selectedTask = NULL;
     uint16_t selectedTaskDynamicPriority = 0;
@@ -260,7 +256,6 @@ void scheduler(void)
             }
         }
     }
-
     totalWaitingTasksSamples++;
     totalWaitingTasks += waitingTasks;
 

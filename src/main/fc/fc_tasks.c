@@ -35,24 +35,27 @@ const uint32_t taskQueueArraySize = TASK_QUEUE_ARRAY_SIZE;
 const uint32_t taskCount = TASK_COUNT;
 cfTask_t* taskQueueArray[TASK_QUEUE_ARRAY_SIZE];
 
-void print(void)
-{
-    printf("Scheduled!\n");
-}
+cfTask_t cfTasks[TASK_COUNT];
 
-#if 0
+#if 1
 cfTask_t cfTasks[] = {
-    [TASK_SERIAL] = {
-        .taskName = "TEST",
-        .taskFunc = print,
-        .desiredPeriod = TASK_PERIOD_HZ(100),           //100 Hz should be enough to flush up to 115 bytes @ 115200 baud
-                                                           //period of 10 ms
+    [TASK_SYSTEM] = {
+        .taskName = "SYSTEM",
+        .taskFunc = taskSystem,
+        .desiredPeriod = TASK_PERIOD_MS(100),               //period of 100 ms
         .staticPriority = TASK_PRIORITY_REALTIME,
+    },
+    [TASK_SERIAL] = {
+        .taskName = "SERIAL",
+        .taskFunc = taskHandleSerial,
+        .desiredPeriod = TASK_PERIOD_HZ(100),           //100 Hz should be enough to flush up to 115 bytes @ 115200 baud
+                                                        //period of 10 ms
+        .staticPriority = TASK_PRIORITY_LOW,
     }
 };
 #endif
 
-#if 1
+#if 0
 cfTask_t cfTasks[] = {
     [TASK_SYSTEM] = {
         .taskName = "SYSTEM",
@@ -75,14 +78,7 @@ cfTask_t cfTasks[] = {
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
 
-    [TASK_SERIAL] = {
-        .taskName = "SERIAL",
-        .taskFunc = taskHandleSerial,
-        .desiredPeriod = TASK_PERIOD_HZ(100),           //100 Hz should be enough to flush up to 115 bytes @ 115200 baud
-                                                           //period of 10 ms
-        .staticPriority = TASK_PRIORITY_LOW,
-    },
-
+    
 #ifdef BEEPER
     [TASK_BEEPER] = {
         .taskName = "BEEPER",

@@ -25,6 +25,8 @@
 
 #include "config/feature.h"
 
+#include <stdio.h>
+
 static uint32_t activeFeaturesLatch = 0;
 
 PG_REGISTER(featureConfig_t, featureConfig, PG_FEATURE_CONFIG, 0);
