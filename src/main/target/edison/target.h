@@ -89,7 +89,7 @@
 
 #define USE_VCP
 //#define SERIAL_PORT_USB_VCP
-//#define USE_UART0 // Pin 0 and 1 on the breakout board
+#define USE_UART0 // Pin 0 and 1 on the breakout board
 //#define USE_UART1 // Not connected - TX (PB6) RX PB7 (AF7)
 //#define USE_UART2 // Receiver - RX (PA3)
 //#define USE_UART3 // Not connected - 10/RX (PB11) 11/TX (PB10)

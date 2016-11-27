@@ -811,6 +811,7 @@ void configureScheduler(void)
 int main(void) 
 {
     printf("Hello World\n");
+    systemInit();   
     configureScheduler();
     serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
     mspInit();              //initialize values based on enabled features
