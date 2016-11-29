@@ -170,7 +170,6 @@ bool isSerialPortShared(serialPortConfig_t *portConfig, uint16_t functionMask, s
 
 bool isSerialPortOpen(serialPortConfig_t *portConfig)
 {
-    printf("Inside\n");
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(portConfig->identifier);
     return serialPortUsage && serialPortUsage->function != FUNCTION_NONE;
 }
@@ -273,21 +272,20 @@ serialPort_t *openSerialPort(
     portMode_t mode,
     portOptions_t options)
 {
+
 #if (!defined(USE_VCP) && !defined(USE_UART1) && !defined(USE_UART2) && !defined(USE_UART3) && !defined(USE_UART4) && !defined(USE_UART5) && !defined(USE_SOFTSERIAL1) && !defined(USE_SOFTSERIAL2))
     UNUSED(callback);
     UNUSED(baudRate);
     UNUSED(mode);
     UNUSED(options);
 #endif
-
     serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(identifier);
-    if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {
+    if (!serialPortUsage || serialPortUsage->function != FUNCTION_NONE) {        
         // not available / already in use
         return NULL;
     }
 
     serialPort_t *serialPort = NULL;
-
     switch(identifier) {
 #ifdef USE_VCP
         case SERIAL_PORT_USB_VCP:
@@ -387,6 +385,12 @@ void serialInit(bool softserialEnabled)
                                                                                 //The remaining ports are initialized later?
                 serialPortCount--;
             }
+        }
+        else
+        {
+            serialConfig()->portConfigs[1].functionMask = FUNCTION_MSP_SERVER;
+            //serialPortUsageList[1].function = FUNCTION_MSP_SERVER;
+            //serialConfig()->portConfigs[1].functionMask = FUNCTION_MSP_SERVER;
         }
     }
 }

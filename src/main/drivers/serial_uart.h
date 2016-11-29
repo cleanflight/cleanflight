@@ -37,11 +37,12 @@
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
 #define NUM_THREADS 2
+#define SELECT_TIMEOUT 5
 
 __IO uint32_t receiveLength;
 
 typedef enum _DEVICE_STATE {
-    UNCONNECTED,
+    UNCONNECTED = 0,
     ATTACHED,
     POWERED,
     SUSPENDED,
@@ -79,7 +80,19 @@ uint8_t usbIsConfigured(void);
 void EP3_OUT_Callback(void);
 uint32_t Virtual_Com_Port_GetBaudRate(void);
 bool usb_txbuffer_empty(serialPort_t *instance);
-uint32_t serial_waiting(void);
+uint8_t serial_waiting(serialPort_t *instance);
+
+
+
+
+//Compatibility
+static void usbVcpWrite(serialPort_t *instance, uint8_t c);
+uint8_t usbTxBytesFree(serialPort_t *instance);
+static uint8_t usbVcpRead(serialPort_t *instance);
+static void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate);
+static void usbVcpSetMode(serialPort_t *instance, portMode_t mode);
+serialPort_t* usbVcpOpen(void);
+
 /*
 // serialPort API
 void uartWrite(serialPort_t *instance, uint8_t ch);

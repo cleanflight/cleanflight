@@ -65,13 +65,12 @@ static mspPort_t* mspPortFindFree(void)
 
 void mspSerialAllocatePorts(void)
 {
-    for(serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT);
+    for(serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT); 
         portConfig != NULL;
         portConfig = findNextSerialPortConfig(FUNCTION_MSP_SERVER | FUNCTION_MSP_CLIENT)) {
-        printf("Inside\n");
         if(isSerialPortOpen(portConfig))
             continue; // port is already open
-
+        
         // find unused mspPort for this serial
 
         mspPort_t *mspPort = mspPortFindFree();
@@ -94,12 +93,13 @@ void mspSerialAllocatePorts(void)
         }
 #endif
 
-        serialPort_t *serialPort = openSerialPort(portConfig->identifier, function, NULL,
+        serialPort_t *serialPort = openSerialPort(SERIAL_PORT_USB_VCP, function, NULL,
         		baudRates[portConfig->baudRates[baudRatesIndex]], MODE_RXTX, SERIAL_NOT_INVERTED);
         if (serialPort) {
             resetMspPort(mspPort, serialPort);
             mspPort->mode = mode;
         } else {
+            printf("Error\n");
             // unexpected error, inform user
         }
     }
@@ -121,7 +121,6 @@ void mspSerialInit(void)
     for(int i = 0; i < MAX_MSP_PORT_COUNT; i++) {
         resetMspPort(&mspPorts[i], NULL);                   //Reset all msp ports to null
     }   
-
     mspSerialAllocatePorts();
 }
 
@@ -277,7 +276,6 @@ void mspSerialProcess(void)
         if (!msp->port) {
             continue;
         }
-
         uint8_t bytesWaiting;
         while ((bytesWaiting = serialRxBytesWaiting(msp->port))) {
             uint8_t c = serialRead(msp->port);
@@ -299,7 +297,7 @@ void mspSerialProcess(void)
                 break; // process one command at a time so as not to block and handle modal command immediately
             }
         }
-        if (mspPostProcessFn) {
+        if (mspPostProcessFn != NULL) {
             mspPostProcessFn(msp);
             mspPostProcessFn = NULL;
         }

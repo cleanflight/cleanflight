@@ -56,40 +56,36 @@ char *portname = "/dev/ttyMFD2";            //Change to ttyMFD2 on the edison to
 int rdlen;                                  //for measring the number of data bytes read
 
 
-//UART context for channel 0
-mraa_uart_context uart_0;               //redefine in header file for all files to access
 serialPort_t usb_port;
 
 static const struct serialPortVTable usbTable[] = {
     {
-        .isSerialTransmitBufferEmpty = usb_txbuffer_empty
+        .serialWrite = usbVcpWrite,                                     //used
+        .serialTotalRxWaiting = serial_waiting,                        //not used
+        .serialTotalTxFree = usbTxBytesFree,                            //not used
+        .serialRead = usbVcpRead,                                       //used
+        .serialSetBaudRate = usbVcpSetBaudRate,                         //used only in gps
+        .isSerialTransmitBufferEmpty = usb_txbuffer_empty,     //used
+        .setMode = usbVcpSetMode,                                       //used, TBD
+        .beginWrite = NULL,                                 //not needed
+        .endWrite = NULL,                                     //not needed
+        .writeBuf = NULL                                      //not needed
     }
 };
 
 void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the original version of cleanflight in this function
 {
 #ifdef EDISON
-    //usbInit();
     USB.deviceState = UNCONNECTED;
     USB.port = usb_port;
     USB.port.vTable = usbTable;
-    
-    #ifdef USE_UART0
-        uart_0 = mraa_uart_init(0);                     //Pin 0 and 1 for UART communication
-        //mraa_uart_set_baudrate(uart_0,9600);          //Baudrate depending on the peripheral on the other end
-        if (uart_0 == NULL)                             //UART not initialized. Error.
-        {
-            printf("UART failed to setup\n");
-            return EXIT_FAILURE;
-        }
-    #endif
+    //usbInit();
 #endif
 }
 
 
 serialPort_t* usbInit(void)
 {
-    
     int fd = usbOpen();
     SetUsbAttributes(fd);    
     return &USB.port;
@@ -143,16 +139,13 @@ void SetUsbAttributes(int fd)       //UART characteristics hardcoded here!!!
 uint32_t usbWrite(uint8_t* str, int len)
 {
     //Don't write if USB is not connected
-    if(!usbIsConnected())
+    if(usbIsConnected() == false)
+    {
+        printf("USB not connected\t%d\n",USB.deviceState);
         return -1;
+    }
     int wlen;
     wlen = write(USB.fd, str, len);
-    if (wlen != len) 
-    {
-        printf("Error from write: %d, %d\n", wlen, errno);
-        exit(EXIT_FAILURE);
-    }
-
     return wlen;
 }
 
@@ -187,14 +180,12 @@ uint32_t usbRead(uint8_t* buf, int len)
     }
 }
 
-void *read_child(void *i)
-{
-
-}
-
 uint8_t usbIsConnected(void)
 {
-    return (USB.deviceState != UNCONNECTED);
+    if(USB.deviceState != UNCONNECTED)
+        return true;
+    else
+        return false;
 }
 
 uint8_t usbIsConfigured(void)
@@ -223,15 +214,72 @@ void usb_txbuffer_flush(serialPort_t *instance)
     return;
 }
 
-uint32_t serial_waiting(void)
+uint8_t serial_waiting(serialPort_t *instance)
 {
+    UNUSED(instance);
     fd_set readset;                             //for the select function
     FD_ZERO(&readset);
     FD_SET(USB.fd, &readset);
     uint32_t result;
-    result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
+    
+    struct timeval tv = {SELECT_TIMEOUT, 0};   // sleep for ten minutes!
+
+    result = select(USB.fd + 1, &readset, NULL, NULL, &tv);
     return result;
 }
+
+
+
+//Wrapper functions
+
+static void usbVcpWrite(serialPort_t *instance, uint8_t c)
+{
+    usbWrite(&c,1);
+}
+
+
+uint8_t usbTxBytesFree(serialPort_t *instance)
+{
+    // Because we block upon transmit and don't buffer bytes, our "buffer" capacity is effectively unlimited.
+    UNUSED(instance);
+    return 255;
+}
+
+static uint8_t usbVcpRead(serialPort_t *instance)
+{
+    UNUSED(instance);
+
+    uint8_t buf[1];
+
+    int len = usbRead(buf, 1);
+
+    return buf[0];
+}
+
+static void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate)
+{
+    UNUSED(instance);
+    UNUSED(baudRate);
+    return;
+    //does nothing for now
+}
+
+static void usbVcpSetMode(serialPort_t *instance, portMode_t mode)
+{
+    UNUSED(instance);
+    UNUSED(mode);
+
+    // TODO implement
+}
+
+serialPort_t* usbVcpOpen(void)
+{
+    serialPort_t *s = usbInit();
+
+    return (serialPort_t *)s;
+}
+
+
 /*
 static void usartConfigurePinInversion(uartPort_t *uartPort)
 {

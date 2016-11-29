@@ -77,7 +77,7 @@ void systemInit(void)                                       //Refer below for or
     usartInitAllIOSignals();                                //Replace with code for initializing uart
     //required for system up time
     clock_gettime(CLOCK, &start);                           //mark start time
-    printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
+    //printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
 }
 
 void delay(uint32_t ms)         //delay by the given number of milli seconds

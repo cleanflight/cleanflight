@@ -266,7 +266,6 @@ DRIVERS = 	\
 			src/main/drivers/timer_setup.c \
 			src/main/drivers/serial.c \
 			src/main/drivers/serial_uart.c \
-			src/main/drivers/serial_usb_vcp.c \
 			src/main/drivers/pwm_output.c \
 			src/main/drivers/pwm_mapping.c \
 			src/main/drivers/pwm_rx.c \

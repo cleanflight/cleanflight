@@ -169,7 +169,6 @@ void rescheduleTask(const int taskId, uint32_t newPeriodMicros)
 
 void setTaskEnabled(const int taskId, bool enabled)
 {
-    printf("%s\n",cfTasks[taskId].taskName);
     if (taskId == TASK_SELF || taskId < (int)taskCount) {
         cfTask_t *task = ((taskId == TASK_SELF) ? currentTask : &cfTasks[taskId]);
         if (enabled && task->taskFunc) {

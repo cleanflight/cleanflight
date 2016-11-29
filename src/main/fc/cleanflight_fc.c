@@ -136,8 +136,6 @@ int i=0;
 
 void taskHandleSerial(void)
 {
-    i++;
-    //printf("Inside taskhandleserial\t%d\n",i);
 /*#ifdef USE_CLI
     //No need to worry about this as only the GUI of the configurator is used
     // in cli mode, all serial stuff goes to here. enter cli mode by sending #

@@ -31,3 +31,27 @@ typedef struct {
 extern __IO uint32_t receiveLength;  
 serialPort_t *usbVcpOpen(void);
 uint32_t usbVcpGetBaudRate(serialPort_t *instance);
+
+/*
+static void usbVcpWrite(serialPort_t *instance, uint8_t c);
+static uint8_t usbVcpAvailable(serialPort_t *instance);
+uint8_t usbTxBytesFree(void);
+static uint8_t usbVcpRead(serialPort_t *instance);
+static void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate);
+static bool isUsbVcpTransmitBufferEmpty(serialPort_t *instance);
+static void usbVcpSetMode(serialPort_t *instance, portMode_t mode);
+
+static const struct serialPortVTable usbVTable[] = {
+    {
+        .serialWrite = usbVcpWrite,                                     //used
+        .serialTotalRxWaiting = usbVcpAvailable,                        //not used
+        .serialTotalTxFree = usbTxBytesFree,                            //not used
+        .serialRead = usbVcpRead,                                       //used
+        .serialSetBaudRate = usbVcpSetBaudRate,                         //used only in gps
+        .isSerialTransmitBufferEmpty = isUsbVcpTransmitBufferEmpty,     //used
+        .setMode = usbVcpSetMode,                                       //used, TBD
+        .beginWrite = NULL,                                 //not needed
+        .endWrite = NULL,                                     //not needed
+        .writeBuf = NULL                                      //not needed
+    }
+};*/

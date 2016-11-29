@@ -811,6 +811,7 @@ void configureScheduler(void)
 int main(void) 
 {
     printf("Hello World\n");
+    
     systemInit();   
     configureScheduler();
     serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
@@ -818,15 +819,15 @@ int main(void)
     mspSerialInit();        //allocate serial ports for each of the msp ports
     while (true) {
         scheduler();
-        //printf("Outside\n");
+        usleep(100);
     }
+    
     return 0;
 
 //*****************************Working functions******************************************//
   
     //systemInit();   
     //i2cInit(I2C_DEVICE);
-    //usartInitAllIOSignals();
     //usbWrite("hello",5);
     //char* str = usbRead(5);
     //start_timer() working. refer system.c
