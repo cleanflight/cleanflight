@@ -29,6 +29,9 @@ fi
 # A hacky way of running the unit tests at the same time as the normal builds.
 if [ $RUNTESTS ] ; then
 	cd ./src/test && make test OPTIONS="$OPTIONS"
+	mkdir -p ./build
+	cd build/
+	cmake ./../src/test/ && make junittest
 
 # A hacky way of building the docs at the same time as the normal builds.
 elif [ $PUBLISHDOCS ] ; then

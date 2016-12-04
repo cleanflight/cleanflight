@@ -33,6 +33,7 @@ addons:
     packages:
       - build-essential
       - git
+      - lcov
       - libc6-i386
       - zlib1g-dev
       - libssl-dev
