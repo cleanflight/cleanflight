@@ -29,6 +29,7 @@ fi
 # A hacky way of running the unit tests at the same time as the normal builds.
 if [ $RUNTESTS ] ; then
 	cd ./src/test && make test OPTIONS="$OPTIONS"
+	cd $TRAVIS_BUILD_DIR
 	mkdir -p ./build && cd ./build
 	cmake ./../src/test/ && make junittest
 
