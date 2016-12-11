@@ -1977,7 +1977,7 @@ static void cliDump(char *cmdline)
 
         uint8_t beeperCount = beeperTableEntryCount();
         mask = getBeeperOffMask();
-        for (i = 0; i < (beeperCount-2); i++) {
+        for (i = 0; i < (unsigned)(beeperCount - 1); i++) {
             if (mask & (1 << i))
                 cliPrintf("beeper -%s\r\n", beeperNameForTableIndex(i));
             else
@@ -2217,7 +2217,7 @@ static void cliBeeper(char *cmdline)
             if (strncasecmp(cmdline, beeperNameForTableIndex(i), len) == 0) {
                 if (remove) { // beeper off
                     if (i == BEEPER_ALL - 1) {
-                        beeperOffSetAll(beeperCount - 2);
+                        beeperOffSetAll(beeperCount - 1);
                     } else {
                         mask = 1 << i;
                         beeperOffSet(mask);

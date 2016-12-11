@@ -39,6 +39,7 @@
 #include "drivers/gpio.h"
 #include "drivers/sound_beeper.h"
 #include "drivers/system.h"
+#include "rx/rx.h"
 #include "sensors/battery.h"
 #include "sensors/sensors.h"
 
@@ -317,8 +318,8 @@ void beeperGpsStatus(void)
  */
 void beeperUpdate(void)
 {
-    // If beeper option from AUX switch has been selected
-    if (rcModeIsActive(BOXBEEPERON)) {
+    // If rx is receiving something and beeper option from AUX switch has been selected
+    if (rxIsReceivingSignal() && rcModeIsActive(BOXBEEPERON)) {
 #ifdef GPS
         if (feature(FEATURE_GPS)) {
             beeperGpsStatus();
