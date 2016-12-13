@@ -50,25 +50,65 @@ addons:
 language: cpp
 compiler: clang
 
-# Only run tests on osx
 matrix:
-  include:
-    - os: linux
+  exclude:
+    # OSX: Only run the tests
     - os: osx
-      env: RUNTESTS=True
+      env: PUBLISHMETA=True
+    - os: osx
+      env: PUBLISHDOCS=True
+    - os: osx
+      env: TARGET=SPRACINGF3MINI
+    - os: osx
+      env: TARGET=SPRACINGF3EVO
+    - os: osx
+      env: TARGET=SPRACINGF3NEO
+    - os: osx
+      env: TARGET=SPRACINGF3
+    - os: osx
+      env: TARGET=SPRACINGF3OSD
+    - os: osx
+      env: TARGET=SPRACINGF1OSD
+    - os: osx
+      env: TARGET=NAZE
+    - os: osx
+      env: TARGET=CC3D
+    - os: osx
+      env: TARGET=CJMCU
+    - os: osx
+      env: TARGET=SPARKY
+    - os: osx
+      env: TARGET=COLIBRI_RACE
+    - os: osx
+      env: TARGET=LUX_RACE
+    - os: osx
+      env: TARGET=MOTOLAB
+    - os: osx
+      env: TARGET=RMDO
+    - os: osx
+      env: TARGET=ALIENFLIGHTF3
+    - os: osx
+      env: TARGET=ALIENFLIGHTF1
+    - os: osx
+      env: TARGET=STM32F3DISCOVERY
+    - os: osx
+      env: TARGET=PORT103R
+    - os: osx
+      env: TARGET=CHEBUZZF3
+    - os: osx
+      env: TARGET=IRCFUSIONF3
+    - os: osx
+      env: TARGET=RCEXPLORERF3
     
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; curl --retry 10 --retry-max-time 120 -L "https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q2-update/+download/gcc-arm-none-eabi-5_4-2016q2-20160622-linux.tar.bz2" | tar xfj -; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then curl --retry 10 --retry-max-time 120 -L "https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q2-update/+download/gcc-arm-none-eabi-5_4-2016q2-20160622-linux.tar.bz2" | tar xfj -; fi
 
 install:
   - export PATH=$PATH:$PWD/gcc-arm-none-eabi-5_4-2016q2/bin
 
 before_script:
-  - echo $TRAVIS_OS_NAME
-  - cmake --version
-
   # LINUX
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; arm-none-eabi-gcc --version; fi
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then arm-none-eabi-gcc --version; fi
 
 script:
   - ./.travis.sh
