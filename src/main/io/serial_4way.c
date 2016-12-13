@@ -314,6 +314,8 @@ static uint8_t readByteCrc(void)
 
 static void writeByte(uint8_t b)
 {
+    while (!serialTxBytesFree(instance)) {
+    };
     serialWrite(port, b);
 }
 
