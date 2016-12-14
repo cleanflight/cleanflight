@@ -28,10 +28,10 @@ fi
 
 # A hacky way of running the unit tests at the same time as the normal builds.
 if [ $RUNTESTS ] ; then
-	cd ./src/test && make test OPTIONS="$OPTIONS"
 	cd $TRAVIS_BUILD_DIR
 	mkdir -p ./build && cd ./build
-	cmake ./../src/test/ && make junittest
+    # use FORCE_COVERAGE to enable the coverage target even for clang (only gcc by default) since the versions used seem to be compatible enough
+	cmake -DFORCE_COVERAGE=YES ./../src/test/ && make coverage
 
 # A hacky way of building the docs at the same time as the normal builds.
 elif [ $PUBLISHDOCS ] ; then

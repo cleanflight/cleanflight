@@ -113,7 +113,7 @@ add_subdirectory(mock)
 # Add unit tests
 add_subdirectory(unit)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+if (("${CMAKE_CXX_COMPILER_ID}") STREQUAL "GNU" OR "${FORCE_COVERAGE}")
     # Add coverage for GCC
     find_program(LCOV_PATH lcov)
     if("${LCOV_PATH}" MATCHES "LCOV_PATH-NOTFOUND")
