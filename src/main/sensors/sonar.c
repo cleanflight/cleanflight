@@ -161,10 +161,9 @@ int32_t sonarRead(void)
 int32_t sonarCalculateAltitude(int32_t sonarDistance, float cosTiltAngle)
 {
     // calculate sonar altitude only if the ground is in the sonar cone
-    if (cosTiltAngle <= sonarMaxTiltCos)
+    if (cosTiltAngle < sonarMaxTiltCos)
         calculatedAltitude = SONAR_OUT_OF_RANGE;
     else
-        // altitude = distance * cos(tiltAngle), use approximation
         calculatedAltitude = sonarDistance * cosTiltAngle;
     return calculatedAltitude;
 }
