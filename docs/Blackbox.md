@@ -218,7 +218,7 @@ will be created by Cleanflight on its next boot.
 
 #### Enable recording to SD card
 On the Configurator's CLI tab, you must enter `set blackbox_device=SDCARD` to switch to logging to an onboard SD card,
-then save.
+then save.  You do not need to configure a port in the the Ports tab if you are using the SD card socket.  You also do NOT need to put a config.txt file on the SD card.
 
 ## Configuring the Blackbox
 
