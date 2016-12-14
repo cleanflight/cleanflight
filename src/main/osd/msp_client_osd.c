@@ -112,6 +112,10 @@ int mspClientReplyHandler(mspPacket_t *reply)
             fcStatus.sensors = sbufReadU16(src);
             fcStatus.fcState = sbufReadU32(src);
             fcStatus.profile = sbufReadU8(src);
+            // only available in CF and BF >= 3.1 (perhaps can be replaced with a version check?)
+            if (sbufBytesRemaining(src) >= 2) {
+                fcStatus.averageSystemLoadPercent = sbufReadU16(src);
+            }
         break;
 
         case MSP_ANALOG:
