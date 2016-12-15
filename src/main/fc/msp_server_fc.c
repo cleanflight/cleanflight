@@ -495,22 +495,21 @@ static void serializeDataflashReadReply(mspPacket_t *reply, uint32_t address, in
 // return positive for ACK, negative on error, zero for no reply
 int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 {
+    //printf("Inside command handler\n");
     sbuf_t *dst = &reply->buf;
     sbuf_t *src = &cmd->buf;
 
     int len = sbufBytesRemaining(src);
 
+    printf("command code: %d\n",cmd->cmd);
     switch (cmd->cmd) {
         case MSP_API_VERSION:
+            //printf("code 1\n");
             sbufWriteU8(dst, MSP_PROTOCOL_VERSION);
-
             sbufWriteU8(dst, API_VERSION_MAJOR);
             sbufWriteU8(dst, API_VERSION_MINOR);
             break;
-        default:
-            printf("Unknown\n");
-            break;
-/*
+
         case MSP_FC_VARIANT:
             sbufWriteData(dst, flightControllerIdentifier, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
             break;
@@ -544,8 +543,12 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU8(dst, MSP_PROTOCOL_VERSION);
             sbufWriteU32(dst, CAP_DYNBALANCE); // "capability"
             break;
+        default:
+            printf("Unknown\n");
+            break;
 
-        case MSP_STATUS:
+
+/*        case MSP_STATUS:
             sbufWriteU16(dst, cycleTime);
 #ifdef USE_I2C
             sbufWriteU16(dst, i2cGetErrorCounter());

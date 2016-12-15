@@ -16,6 +16,7 @@
  */
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include <platform.h>
@@ -50,7 +51,6 @@ void serialWriteBuf(serialPort_t *instance, uint8_t *data, int count)
 
             while (!serialTxBytesFree(instance)) {
             };
-
             serialWrite(instance, *p);
         }
     }

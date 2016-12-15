@@ -20,6 +20,7 @@
  * Dominic Clifton - Serial port abstraction, Separation of common STM32 code for cleanflight, various cleanups.
  * Hamasaki/Timecop - Initial baseflight code
 */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -45,10 +46,12 @@
 
 uartPort_t USB;
 
-LINE_CODING linecoding = { 115200, /* baud rate*/
-0x00, /* stop bits-1*/
-0x00, /* parity - none*/
-0x08 /* no. of bits 8*/
+LINE_CODING linecoding = 
+{ 
+    115200, /* baud rate*/
+    0x00, /* stop bits-1*/
+    0x00, /* parity - none*/
+    0x08 /* no. of bits 8*/
 };
 
 //Serial file name
@@ -87,6 +90,8 @@ void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the ori
 serialPort_t* usbInit(void)
 {
     int fd = usbOpen();
+    sleep(2); //required to make flush work, for some reason
+    tcflush(fd,TCIOFLUSH);
     SetUsbAttributes(fd);    
     return &USB.port;
 }
@@ -150,7 +155,7 @@ uint32_t usbWrite(uint8_t* str, int len)
 }
 
 
-uint32_t usbRead(uint8_t* buf, int len)
+int32_t usbRead(uint8_t* buf, int len)
 {
     fd_set readset;                             //for the select function
     FD_ZERO(&readset);
@@ -169,11 +174,12 @@ uint32_t usbRead(uint8_t* buf, int len)
             rdlen = read(USB.fd, buf, len);
             if (rdlen > 0) 
             {
+                //printf("%c\n",buf);
                 return len;
             }
             else
             {
-                printf("Error from read\n");
+                //printf("Error from read\trdlen = %d",rdlen);
                 return -1;
             }            
         }
@@ -249,11 +255,11 @@ static uint8_t usbVcpRead(serialPort_t *instance)
 {
     UNUSED(instance);
 
-    uint8_t buf[1];
+    uint8_t buf;
 
-    int len = usbRead(buf, 1);
+    int len = usbRead(&buf, 1);
 
-    return buf[0];
+    return buf;
 }
 
 static void usbVcpSetBaudRate(serialPort_t *instance, uint32_t baudRate)

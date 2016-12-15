@@ -810,7 +810,7 @@ void configureScheduler(void)
 
 int main(void) 
 {
-    printf("Hello World\n");
+    printf("Welcome to Cleanflight\n");
     
     systemInit();   
     configureScheduler();
@@ -819,8 +819,15 @@ int main(void)
     mspSerialInit();        //allocate serial ports for each of the msp ports
     while (true) {
         scheduler();
-        usleep(100);
     }
+    
+    /*char buffer[5];
+    systemInit();   
+    while(1)
+    {
+        usbRead(buffer,1);
+        printf("%s\n",buffer);
+    }*/
     
     return 0;
 

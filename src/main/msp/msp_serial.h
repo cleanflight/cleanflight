@@ -88,6 +88,7 @@ typedef struct mspPort_s {
     uint8_t dataSize;
     uint8_t cmdMSP;
     uint8_t inBuf[MSP_PORT_INBUF_SIZE];
+    //uint8_t tempBuf[MSP_PORT_INBUF_SIZE];
 } mspPort_t;
 
 extern mspPort_t mspPorts[MAX_MSP_PORT_COUNT];

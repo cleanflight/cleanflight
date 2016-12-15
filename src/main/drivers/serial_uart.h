@@ -37,7 +37,7 @@
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
 #define NUM_THREADS 2
-#define SELECT_TIMEOUT 5
+#define SELECT_TIMEOUT 2
 
 __IO uint32_t receiveLength;
 
@@ -74,7 +74,7 @@ serialPort_t* usbInit(void);
 int usbOpen(void);
 void SetUsbAttributes(int fd);
 uint32_t usbWrite(uint8_t* str, int len);
-uint32_t usbRead(uint8_t* buf, int len);
+int32_t usbRead(uint8_t* buf, int len);
 uint8_t usbIsConnected(void);
 uint8_t usbIsConfigured(void);
 void EP3_OUT_Callback(void);

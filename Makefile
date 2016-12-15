@@ -287,6 +287,8 @@ MSP = 		\
 			src/main/msp/msp.c
 
 
+VERSION = 	\
+			src/main/build/version.c
 CONFIG = 	\
 		    src/main/config/parameter_group.c \
 			src/main/config/feature.c
@@ -314,7 +316,8 @@ EDISON_SRC = \
 			$(IO) \
 			$(FC) \
 			$(SCHEDULER) \
-			$(MSP)
+			$(MSP) \
+			$(VERSION)
 
 #EDISON_SRC = \
 			src/main/fc/boot.c \
@@ -1145,6 +1148,9 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 
 ################EDISON TARGETS##########################
 #Main target. Link all .o files to create executable
+run: compile
+	out/cleanflight
+
 compile: objs
 	$(CC) $(shell find $(OBJ_DIR) -name '*.o') -o $(OUTPUT_DIR)$(FILE_NAME) $(LIB_FLAGS)		#Compile .o files into executable
 

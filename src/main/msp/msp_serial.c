@@ -41,6 +41,7 @@
 #include "msp/msp_serial.h"             //no problem
 
 #include <io/io_serial.h>
+#include <drivers/serial_uart.h>
 
 mspPostProcessFuncPtr mspPostProcessFn = NULL;
 
@@ -140,6 +141,7 @@ static uint8_t mspSerialChecksumBuf(uint8_t checksum, uint8_t *data, int len)
 
 void mspSerialEncode(mspPort_t *msp, mspPacket_t *packet)
 {
+    //printf("here\n");
     serialBeginWrite(msp->port);
     int len = sbufBytesRemaining(&packet->buf);
     uint8_t hdr[] = {'$', 'M', packet->result < 0 ? '!' : (msp->mode == MSP_MODE_SERVER ? '>' : '<'), len, packet->cmd};
@@ -156,7 +158,7 @@ void mspSerialEncode(mspPort_t *msp, mspPacket_t *packet)
 
 STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
 {
-    uint8_t outBuf[MSP_PORT_OUTBUF_SIZE];
+   uint8_t outBuf[MSP_PORT_OUTBUF_SIZE];
 
     mspPacket_t message = {
         .buf = {
@@ -182,6 +184,7 @@ STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
     int status = mspProcessCommand(&command, reply);
 
     if (status) {
+        printf("Writing to PC\n");
         // reply should be sent back
         sbufSwitchToReader(&reply->buf, outBufHead); // change streambuf direction
         mspSerialEncode(msp, reply);
@@ -211,11 +214,20 @@ static void mspSerialProcessReceivedReply(mspPort_t *msp)
 
 static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
 {
+    //printf("char:%c\tstate:%d\n",c,msp->c_state);
     switch(msp->c_state) {
         default:                 // be conservative with unexpected state
         case IDLE:
             if (c != '$')        // wait for '$' to start MSP message
+            {
+                if(c == 'M')
+                {
+                    msp->c_state = HEADER_M;
+                    mspSerialProcessReceivedByte(msp, 'M');
+                    return true;                   
+                }
                 return false;
+            }
             msp->c_state = HEADER_M;
             break;
         case HEADER_M:
@@ -260,7 +272,10 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
                 checksum = mspSerialChecksum(checksum, msp->cmdMSP);
                 checksum = mspSerialChecksumBuf(checksum, msp->inBuf, msp->dataSize);
                 if(c == checksum)
+                {
                     msp->c_state = MESSAGE_RECEIVED;
+                    printf("processing received command\n");
+                }
                 else
                     msp->c_state = IDLE;
             }
@@ -271,6 +286,8 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
 
 void mspSerialProcess(void)
 {
+    int* fd;
+    int flag = 0;
     for (int i = 0; i < MAX_MSP_PORT_COUNT; i++) {
         mspPort_t *msp = &mspPorts[i];
         if (!msp->port) {
@@ -278,6 +295,7 @@ void mspSerialProcess(void)
         }
         uint8_t bytesWaiting;
         while ((bytesWaiting = serialRxBytesWaiting(msp->port))) {
+            flag = 1;
             uint8_t c = serialRead(msp->port);
             bool consumed = mspSerialProcessReceivedByte(msp, c);
 
@@ -297,14 +315,22 @@ void mspSerialProcess(void)
                 break; // process one command at a time so as not to block and handle modal command immediately
             }
         }
+
+        if(flag == 1)
+        {
+            printf("Inside\n");
+            flag = 0;
+        }
+
+        printf("Outside\n");        
         if (mspPostProcessFn != NULL) {
             mspPostProcessFn(msp);
             mspPostProcessFn = NULL;
         }
 
         // TODO consider extracting this outside the loop and create a new loop in mspClientProcess and rename mspProcess to mspServerProcess
+        //for msp client
         if (msp->c_state == IDLE && msp->commandSenderFn && !bytesWaiting) {
-
             uint8_t outBuf[MSP_PORT_OUTBUF_SIZE];
             mspPacket_t message = {
                 .buf = {
@@ -329,5 +355,8 @@ void mspSerialProcess(void)
 
             msp->commandSenderFn = NULL;
         }
+
+        fd = (int*)((void*)mspPorts[0].port + sizeof(serialPort_t));
+        tcflush(*fd,TCIOFLUSH);
     }
 }
