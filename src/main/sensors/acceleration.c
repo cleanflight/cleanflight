@@ -216,12 +216,12 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     }
 
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-        accSmooth[axis] = accADCRaw[axis];
+      accSmooth[axis] = accADCRaw[axis];
     }
     
-    if (accLpfCutHz) {
+    if (accelerometerConfig()->acc_cut_hz) {
         if (!accFilterInitialised) {
-            if (accTargetLooptime) {  /* Initialisation needs to happen once sample rate is known */
+            if (accSamplingInterval) {  /* Initialisation needs to happen once sample rate is known */
                 accelerationFilterInit(accelerometerConfig()->acc_cut_hz);
                 accFilterInitialised = true;
             }
