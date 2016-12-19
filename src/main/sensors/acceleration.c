@@ -92,6 +92,7 @@ extern bool AccInflightCalibrationActive;
 static flightDynamicsTrims_t *accelerationTrims;
 
 static biquadFilter_t accFilter[XYZ_AXIS_COUNT];
+static bool accFilterInitialised = false;
 
 void accSetCalibrationCycles(uint16_t calibrationCyclesRequired)
 {
@@ -215,7 +216,22 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     }
 
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-        accSmooth[axis] = lrintf(accFilterApplyFn(&accFilter[axis], (float)accADCRaw[axis]));
+        accSmooth[axis] = accADCRaw[axis];
+    }
+    
+    if (accLpfCutHz) {
+        if (!accFilterInitialised) {
+            if (accTargetLooptime) {  /* Initialisation needs to happen once sample rate is known */
+                accelerationFilterInit(accelerometerConfig()->acc_cut_hz);
+                accFilterInitialised = true;
+            }
+        }
+
+        if (accFilterInitialised) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                accSmooth[axis] = lrintf(biquadFilterApply(&accFilter[axis], (float)accSmooth[axis]));
+            }
+        }
     }
 
     alignSensors(accSmooth, accSmooth, accAlign);
