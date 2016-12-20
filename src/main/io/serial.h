@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
+
 typedef enum {
     PORTSHARING_UNUSED = 0,
     PORTSHARING_NOT_SHARED,

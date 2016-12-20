@@ -40,23 +40,29 @@
 
 #include "rx/rx.h"
 #include "rx/ibus.h"
+#include "telemetry/ibus.h"
+#include "telemetry/ibus_shared.h"
 
-#define IBUS_MAX_CHANNEL 10
-#define IBUS_BUFFSIZE 32
-#define IBUS_SYNCBYTE 0x20
-
-#define IBUS_BAUDRATE 115200
+#define IBUS_MAX_CHANNEL (10)
+#define IBUS_TELEMETRY_PACKET_LENGTH (4)
+#define IBUS_SERIAL_RX_PACKET_LENGTH (32)
+#define IBUS_BAUDRATE (115200)
 
 static bool ibusFrameDone = false;
 static uint8_t ibusFramePosition = 0;
 static uint32_t ibusChannelData[IBUS_MAX_CHANNEL];
+static uint8_t rxBytesToIgnore = 0;
+static uint8_t ibus[IBUS_SERIAL_RX_PACKET_LENGTH] = { 0, };
+
 
 static void ibusDataReceive(uint16_t c);
 static uint16_t ibusReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan);
 uint8_t ibusFrameStatus(void);
 
+
 bool ibusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
 {
+    serialPort_t *ibusPort = NULL;
     UNUSED(rxConfig);
 
     rxRuntimeConfig->channelCount = IBUS_MAX_CHANNEL;
@@ -70,61 +76,96 @@ bool ibusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         return false;
     }
 
-    serialPort_t *ibusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, ibusDataReceive, IBUS_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    rxBytesToIgnore = 0;
+
+#if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
+    if (isSerialPortShared(portConfig, FUNCTION_RX_SERIAL, FUNCTION_TELEMETRY_IBUS)) {
+        //combined, open port as bidirectional
+        ibusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, ibusDataReceive,
+                                  IBUS_BAUDRATE, MODE_RXTX, SERIAL_BIDIR | SERIAL_NOT_INVERTED);
+        initSharedIbusTelemetry(ibusPort);
+    } else 
+#endif
+    {
+        ibusPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, ibusDataReceive, IBUS_BAUDRATE, MODE_RX, SERIAL_NOT_INVERTED);
+    }
 
     return ibusPort != NULL;
 }
 
-static uint8_t ibus[IBUS_BUFFSIZE] = { 0, };
+
+static bool isValidIbusPacketLength(uint8_t length)
+{
+    return (length == IBUS_TELEMETRY_PACKET_LENGTH) || (length == IBUS_SERIAL_RX_PACKET_LENGTH);
+}
+
 
 // Receive ISR callback
 static void ibusDataReceive(uint16_t c)
 {
     uint32_t ibusTime;
     static uint32_t ibusTimeLast;
+    static uint8_t ibusLength = 0;
 
     ibusTime = micros();
 
-    if ((ibusTime - ibusTimeLast) > 3000)
+    if ((ibusTime - ibusTimeLast) > 3000) {
         ibusFramePosition = 0;
+        ibusLength = 0;
+        rxBytesToIgnore = 0;
+    }
+
+    if (rxBytesToIgnore) {
+        rxBytesToIgnore--;
+        return;
+    }
 
     ibusTimeLast = ibusTime;
 
-    if (ibusFramePosition == 0 && c != IBUS_SYNCBYTE)
-        return;
+    if (ibusFramePosition == 0) {
+        if (isValidIbusPacketLength(c)) {
+            ibusLength = c;
+        }
+        else {
+            return;
+        }
+    }
 
     ibus[ibusFramePosition] = (uint8_t)c;
-
-    if (ibusFramePosition == IBUS_BUFFSIZE - 1) {
+    if (ibusFramePosition == ibusLength - 1) {
         ibusFrameDone = true;
     } else {
         ibusFramePosition++;
     }
 }
 
+
 uint8_t ibusFrameStatus(void)
 {
     uint8_t i, offset;
     uint8_t frameStatus = RX_FRAME_PENDING;
-    uint16_t chksum, rxsum;
+    uint8_t ibusLength;
 
     if (!ibusFrameDone) {
         return frameStatus;
     }
 
+    ibusLength = ibus[0];
     ibusFrameDone = false;
 
-    chksum = 0xFFFF;
-    for (i = 0; i < 30; i++)
-        chksum -= ibus[i];
-        
-    rxsum = ibus[30] + (ibus[31] << 8);
-
-    if (chksum == rxsum) {
-        for (i = 0, offset = 2; i < IBUS_MAX_CHANNEL; i++, offset += 2) {
-            ibusChannelData[i] = ibus[offset] + (ibus[offset + 1] << 8);
+    if (isChecksumOk(ibus, ibusLength)) {
+        if (ibusLength == IBUS_SERIAL_RX_PACKET_LENGTH){
+            for (i = 0, offset = 2; i < IBUS_MAX_CHANNEL; i++, offset += 2) {
+                ibusChannelData[i] = ibus[offset] + (ibus[offset + 1] << 8);
+            }
+            frameStatus = RX_FRAME_COMPLETE;
         }
-        frameStatus = RX_FRAME_COMPLETE;
+        else
+        {
+#if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
+            rxBytesToIgnore = respondToIbusRequest(ibus);
+#endif
+        }
     }
     ibusFramePosition = 0;
     

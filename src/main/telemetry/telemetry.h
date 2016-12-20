@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include "config/parameter_group.h"
+#include "config/parameter_group_ids.h"
+
 typedef enum {
     FRSKY_FORMAT_DMS = 0,
     FRSKY_FORMAT_NMEA

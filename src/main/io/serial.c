@@ -169,7 +169,7 @@ portSharing_e determinePortSharing(serialPortConfig_t *portConfig, serialPortFun
     return portConfig->functionMask == function ? PORTSHARING_NOT_SHARED : PORTSHARING_SHARED;
 }
 
-bool isSerialPortShared(serialPortConfig_t *portConfig, uint16_t functionMask, serialPortFunction_e sharedWithFunction)
+bool    isSerialPortShared(serialPortConfig_t *portConfig, uint16_t functionMask, serialPortFunction_e sharedWithFunction)
 {
     return (portConfig) && (portConfig->functionMask & sharedWithFunction) && (portConfig->functionMask & functionMask);
 }
@@ -206,8 +206,14 @@ serialPort_t *findNextSharedSerialPort(uint16_t functionMask, serialPortFunction
     return NULL;
 }
 
+#define TELEMETRY_SHAREABLE_PORT_FUNCTIONS_MASK FUNCTION_TELEMETRY_IBUS
 #define ALL_TELEMETRY_FUNCTIONS_MASK (FUNCTION_TELEMETRY_FRSKY | FUNCTION_TELEMETRY_HOTT | FUNCTION_TELEMETRY_SMARTPORT | FUNCTION_TELEMETRY_LTM | FUNCTION_TELEMETRY_MAVLINK | FUNCTION_TELEMETRY_IBUS)
 #define ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER (FUNCTION_BLACKBOX | ALL_TELEMETRY_FUNCTIONS_MASK)
+
+bool telemetryIsPortSharedWithRx(serialPortConfig_t *portConfig)
+{
+    return portConfig->functionMask & FUNCTION_RX_SERIAL && portConfig->functionMask & TELEMETRY_SHAREABLE_PORT_FUNCTIONS_MASK;
+}
 
 bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
 {
@@ -235,12 +241,14 @@ bool isSerialConfigValid(serialConfig_t *serialConfigToCheck)
                 return false;
             }
 
-            if (!(portConfig->functionMask & FUNCTION_MSP_SERVER)) {
-                return false;
-            }
-
-            if (!(portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER)) {
-                // some other bit must have been set.
+            if ((portConfig->functionMask & FUNCTION_MSP_SERVER) && (portConfig->functionMask & ALL_FUNCTIONS_SHARABLE_WITH_MSP_SERVER)) {
+                // MSP & telemetry
+#ifdef TELEMETRY
+            } else if (telemetryIsPortSharedWithRx(portConfig)) {
+                // serial RX & telemetry
+#endif
+            } else {
+                // some other combination
                 return false;
             }
         }
