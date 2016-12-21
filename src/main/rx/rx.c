@@ -592,7 +592,7 @@ void updateRSSIPWM(void)
     pwmRssi = rcData[rxConfig()->rssi_channel - 1];
 	
 	// RSSI_Invert option	
-	if (rxConfig()->rssi_ppm_invert) {
+	if (rxConfig()->rssi_invert) {
 	    pwmRssi = ((2000 - pwmRssi) + 1000);
 	}
 	
@@ -636,7 +636,7 @@ void updateRSSIADC(uint32_t currentTime)
     adcRssiMean=constrain(adcRssiMean, 0, 100);
 
     // RSSI_Invert option	
-    if (rxConfig()->rssi_ppm_invert) {
+    if (rxConfig()->rssi_invert) {
         adcRssiMean = 100 - adcRssiMean;
     }
 

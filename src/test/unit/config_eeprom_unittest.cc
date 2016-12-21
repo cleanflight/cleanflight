@@ -383,7 +383,7 @@ TEST(ConfigUnittest, TestResetConfigZeroValues)
     EXPECT_EQ(0, rxConfig()->spektrum_sat_bind);
 
     EXPECT_EQ(0, rxConfig()->rssi_channel);
-    EXPECT_EQ(0, rxConfig()->rssi_ppm_invert);
+    EXPECT_EQ(0, rxConfig()->rssi_invert);
     EXPECT_EQ(0, rxConfig()->rcSmoothing);
 
     EXPECT_EQ(INPUT_FILTERING_DISABLED, pwmRxConfig()->inputFilteringMode);
