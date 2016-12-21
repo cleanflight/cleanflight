@@ -37,6 +37,7 @@ A simple PPM->RSSI conditioner can easily be made. See the  PPM-RSSI conditionin
 Under CLI :
 - enable using the RSSI_ADC feature  :  `feature RSSI_ADC`
 - set the RSSI_SCALE parameter (between 1 and 255) to adjust RSSI level according to your configuration. The raw ADC value is divided by the value of this parameter.
+
 Note: Some systems invert the RSSI ( 0 = Full signal / 100 = Lost signal). To correct this problem you can invert the input so you will get a correct reading by using command:
 
 ```
