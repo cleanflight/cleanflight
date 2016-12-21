@@ -269,7 +269,13 @@ DRIVERS = 	\
 			src/main/drivers/pwm_output.c \
 			src/main/drivers/pwm_mapping.c \
 			src/main/drivers/pwm_rx.c \
-			src/main/drivers/gpio_edison.c
+			src/main/drivers/gpio_edison.c \
+			src/main/drivers/SFE_LSM9DS0.c \
+			src/main/drivers/compass_sparkfun.c \
+			src/main/drivers/acc_sparkfun.c \
+			src/main/drivers/gyro_sparkfun.c \
+			src/main/drivers/gyro_sync.c
+
 
 VCP = 		\
 			src/main/vcp/hw_config.c
@@ -277,10 +283,13 @@ VCP = 		\
 FC = 		\
 			src/main/fc/fc_tasks.c \
 			src/main/fc/msp_server_fc.c \
-			src/main/fc/cleanflight_fc.c
+			src/main/fc/cleanflight_fc.c \
+			src/main/fc/runtime_config.c
+			#src/main/fc/config.c
 
 IO = 		\
-			src/main/io/io_serial.c
+			src/main/io/io_serial.c \
+			src/main/io/beeper.c
 
 MSP = 		\
 			src/main/msp/msp_serial.c \
@@ -291,7 +300,8 @@ VERSION = 	\
 			src/main/build/version.c
 CONFIG = 	\
 		    src/main/config/parameter_group.c \
-			src/main/config/feature.c
+			src/main/config/feature.c \
+			src/main/config/profile.c			
 
 SCHEDULER = \
 			src/main/scheduler/scheduler.c		    
@@ -303,9 +313,14 @@ RX = 		\
 			src/main/rx/rx.c
 
 FLIGHT = 	\
-			src/main/flight/mixer.c
+			src/main/flight/imu.c
 
 MAIN =		src/main/fc/boot.c
+
+SENSORS = 	src/main/sensors/compass.c \
+			src/main/sensors/boardalignment.c \
+			src/main/sensors/acceleration.c \
+			src/main/sensors/gyro.c			
 
 EDISON_SRC = \
 			$(CONFIG) \
@@ -317,7 +332,9 @@ EDISON_SRC = \
 			$(FC) \
 			$(SCHEDULER) \
 			$(MSP) \
-			$(VERSION)
+			$(VERSION) \
+			$(SENSORS) \
+			$(FLIGHT)
 
 #EDISON_SRC = \
 			src/main/fc/boot.c \
@@ -974,6 +991,7 @@ CFLAGS		 = $(WARN_FLAGS) \
 		   -save-temps=obj \
 		   -MMD -MP
 #-Wall -Wpedantic -Wextra -Wunsafe-loop-optimizations -Wdouble-promotion -Wundef
+#
 EDISON_CFLAGS		 = $(WARN_FLAGS) \
 		   $(addprefix -D,$(OPTIONS)) \
 		   $(addprefix -I,$(EDISON_INC)) \

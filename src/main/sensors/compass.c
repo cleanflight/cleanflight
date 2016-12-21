@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <platform.h>
 
@@ -29,7 +30,7 @@
 #include "config/profile.h"
 
 #include "drivers/sensor.h"
-#include "drivers/compass.h"
+#include "drivers/drivers_compass.h"
 #include "drivers/gpio.h"
 #include "drivers/light_led.h"
 
@@ -51,7 +52,7 @@ PG_RESET_TEMPLATE(compassConfig_t, compassConfig,
     .mag_declination = 0,
 );
 
-mag_t mag;                   // mag access functions
+extern mag_t mag;                   // mag access functions
 
 float magneticDeclination = 0.0f;
 
@@ -63,14 +64,17 @@ sensor_align_e magAlign = 0;
 
 #ifdef MAG
 
-static uint8_t magInit = 0;
+static uint8_t magInit = 1;
 
+//done in system_init() in drivers/system.h
 bool compassInit(void)
 {
     // initialize and calibration. turn on led during mag calibration (calibration routine blinks it)
-    LED1_ON;
+    //LED1_ON;
+    printf("LED1_ON\n");
     const bool ret = mag.init();
-    LED1_OFF;
+    //LED1_OFF;
+    printf("LED1_OFF\n");
     if (ret) {
         magInit = 1;
     }
@@ -109,7 +113,8 @@ void updateCompass(flightDynamicsTrims_t *magZero)
 
     if (tCal != 0) {
         if ((currentTime - tCal) < 30000000) {    // 30s: you have 30s to turn the multi in all directions
-            LED0_TOGGLE;
+            //LED0_TOGGLE;
+            printf("LED0_TOGGLE\n");
             for (int axis = 0; axis < 3; axis++) {
                 if (magADC[axis] < magZeroTempMin.raw[axis])
                     magZeroTempMin.raw[axis] = magADC[axis];
@@ -122,7 +127,7 @@ void updateCompass(flightDynamicsTrims_t *magZero)
                 magZero->raw[axis] = (magZeroTempMin.raw[axis] + magZeroTempMax.raw[axis]) / 2; // Calculate offsets
             }
 
-            saveConfigAndNotify();
+            //saveConfigAndNotify();
         }
     }
 }

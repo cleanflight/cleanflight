@@ -39,7 +39,7 @@
 #include "drivers/system.h"
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
-#include "drivers/compass.h"
+#include "drivers/drivers_compass.h"
 
 #include "sensors/sensors.h"
 #include "sensors/gyro.h"
@@ -141,14 +141,14 @@ void imuConfigure(
     throttleAngleScale = calculateThrottleAngleScale(throttle_correction_angle);
 }
 
-void imuInit(void)
+/*void imuInit(void)
 {
     smallAngleCosZ = cos_approx(degreesToRadians(imuRuntimeConfig->small_angle));
     gyroScale = gyro.scale * (M_PIf / 180.0f);  // gyro output scaled to rad per second
     accVelScale = 9.80665f / acc.acc_1G / 10000.0f;
 
     imuComputeRotationMatrix();
-}
+}*/
 
 float calculateThrottleAngleScale(uint16_t throttle_correction_angle)
 {
@@ -407,6 +407,8 @@ static bool isMagnetometerHealthy(void)
 
 static void imuCalculateEstimatedAttitude(void)
 {
+    return;
+    /*
     static pt1Filter_t accLPFState[3];
     static uint32_t previousIMUUpdateTime;
     float rawYawError = 0;
@@ -453,15 +455,13 @@ static void imuCalculateEstimatedAttitude(void)
 
     imuUpdateEulerAngles();
 
-    imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame
+    imuCalculateAcceleration(deltaT); // rotate acc vector into earth frame*/
 }
 
 void imuUpdateAccelerometer(rollAndPitchTrims_t *accelerometerTrims)
 {
-    if (sensors(SENSOR_ACC)) {
         updateAccelerationReadings(accelerometerTrims);
         isAccelUpdatedAtLeastOnce = true;
-    }
 }
 
 void imuUpdateGyroAndAttitude(void)

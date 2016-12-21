@@ -17,6 +17,16 @@
 
 #pragma once
 
+#define GYRO_LPF_256HZ      0
+#define GYRO_LPF_188HZ      1
+#define GYRO_LPF_98HZ       2
+#define GYRO_LPF_42HZ       3
+#define GYRO_LPF_20HZ       4
+#define GYRO_LPF_10HZ       5
+#define GYRO_LPF_5HZ        6
+#define GYRO_LPF_NONE       7
+
+
 typedef struct gyro_s {
     sensorGyroInitFuncPtr init;                             // initialize function
     sensorReadFuncPtr read;                                 // read 3 axis data function
@@ -32,3 +42,5 @@ typedef struct acc_s {
     char revisionCode;                                      // a revision code for the sensor, if known
 } acc_t;
 
+bool sparkfun_acc_Detect(acc_t *acc);
+bool sparkfun_gyro_detect(gyro_t *gyro);

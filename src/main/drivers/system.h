@@ -49,3 +49,4 @@ typedef enum {
     FAILURE_GYRO_INIT_FAILED
 } failureMode_e;
 
+//void init_sensors(void);

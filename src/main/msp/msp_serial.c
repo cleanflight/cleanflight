@@ -322,7 +322,7 @@ void mspSerialProcess(void)
             flag = 0;
         }
 
-        printf("Outside\n");        
+        //printf("Outside\n");        
         if (mspPostProcessFn != NULL) {
             mspPostProcessFn(msp);
             mspPostProcessFn = NULL;

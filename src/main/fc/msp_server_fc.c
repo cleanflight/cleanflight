@@ -43,7 +43,7 @@
 #include "drivers/system.h"
 #include "drivers/sensor.h"
 #include "drivers/accgyro.h"
-#include "drivers/compass.h"
+#include "drivers/drivers_compass.h"
 //#include "drivers/gpio.h"
 //#include "drivers/pwm_mapping.h"
 #include "drivers/serial.h"
@@ -361,7 +361,7 @@ static void initActiveBoxIds(void)
 }
 
 #define IS_ENABLED(mask) (mask == 0 ? 0 : 1)
-/*
+
 static uint32_t packFlightModeFlags(void)
 {
     // Serialize the flags in the order we delivered them, ignoring BOXNAMES and BOXINDEXES
@@ -411,7 +411,7 @@ static uint32_t packFlightModeFlags(void)
         mspBoxIdx++;                  // next output bit ID
     }
     return mspBoxEnabledMask;
-}*/
+}
 
 static void serializeSDCardSummaryReply(mspPacket_t *reply)
 {
@@ -543,12 +543,9 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             sbufWriteU8(dst, MSP_PROTOCOL_VERSION);
             sbufWriteU32(dst, CAP_DYNBALANCE); // "capability"
             break;
-        default:
-            printf("Unknown\n");
-            break;
 
-
-/*        case MSP_STATUS:
+        case MSP_STATUS:
+            printf("MSP_STATUS\n");
             sbufWriteU16(dst, cycleTime);
 #ifdef USE_I2C
             sbufWriteU16(dst, i2cGetErrorCounter());
@@ -574,7 +571,17 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
         }
 
-#ifdef USE_SERVOS
+        case MSP_DATAFLASH_SUMMARY:
+            printf("MSP_DATAFLASH_SUMMARY\n");
+            serializeDataflashSummaryReply(reply);
+            break;
+
+        default:
+            printf("Unknown\n");
+            break;
+
+
+/*#ifdef USE_SERVOS
         case MSP_SERVO:
             sbufWriteData(dst, &servo, MAX_SUPPORTED_SERVOS * 2);
             break;
@@ -952,10 +959,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             }
             break;
 #endif
-
-        case MSP_DATAFLASH_SUMMARY:
-            serializeDataflashSummaryReply(reply);
-            break;
 
 #ifdef USE_FLASHFS
         case MSP_DATAFLASH_READ: {

@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include "drivers/accgyro.h"
 
 // Type of accelerometer used/detected
 typedef enum {

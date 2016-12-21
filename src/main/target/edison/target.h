@@ -77,7 +77,7 @@
 
 // option to use MPU9150 or MPU9250 integrated AK89xx Mag
 #define MAG
-#define USE_MAG_AK8963
+//#define USE_MAG_AK8963
 
 #define MAG_AK8963_ALIGN CW0_DEG_FLIP
 
@@ -118,7 +118,7 @@
 #define UART3_RX_PINSOURCE  GPIO_PinSource11
 
 
-#define USE_I2C
+//#define USE_I2C
 #define I2C_DEVICE 			 I2CDEV_6 			// SDA (PA10/AF4), SCL (PA9/AF4)
 
 #define I2C2_SCL_GPIO        GPIOA

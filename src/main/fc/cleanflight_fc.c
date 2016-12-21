@@ -21,6 +21,9 @@
 #include <math.h>
 
 #include <platform.h>
+#include <stdio.h>
+
+
 #include "build/debug.h"                
 
 #include "common/maths.h"               //builds
@@ -41,17 +44,24 @@
 
 #include "drivers/system.h"
 #include "drivers/serial.h"
+#include "drivers/sensor.h"
+#include "drivers/drivers_compass.h"
+#include "drivers/gyro_sync.h"
 
-#include <stdio.h>
+#include "fc/runtime_config.h"
+
+#include "sensors/sensors.h"
+#include "sensors/compass.h"
+#include "sensors/acceleration.h"
+
+#include "flight/imu.h"
 
 /*
-#include "drivers/sensor.h"
+
 #include "drivers/accgyro.h"
-#include "drivers/compass.h"
 #include "drivers/light_led.h"
 
 #include "drivers/gpio.h"
-#include "drivers/gyro_sync.h"
 
 #include "fc/rc_controls.h"
 #include "fc/rate_profile.h"
@@ -59,10 +69,7 @@
 #include "fc/rc_curves.h"
 #include "fc/fc_serial.h"
 
-#include "sensors/sensors.h"
 #include "sensors/sonar.h"
-#include "sensors/compass.h"
-#include "sensors/acceleration.h"
 #include "sensors/gyro.h"
 #include "sensors/voltage.h"
 #include "sensors/amperage.h"
@@ -92,8 +99,6 @@
 #include "flight/failsafe.h"
 #include "flight/gtune.h"
 #include "flight/navigation.h"
-
-#include "fc/runtime_config.h"
 #include "fc/config.h"
 #include "config/feature.h"
 */
@@ -128,10 +133,19 @@ extern uint8_t PIDweight[3];
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 
 static bool isRXDataNew;
-//static pt1Filter_t filteredCycleTimeState;
+
+bool gyro_initialized = false;
+static pt1Filter_t filteredCycleTimeState;
 uint16_t filteredCycleTime;
 int i=0;
 //extern pidControllerFuncPtr pid_controller;
+
+bool AccInflightCalibrationArmed = false;
+bool AccInflightCalibrationMeasurementDone = false;
+bool AccInflightCalibrationSavetoEEProm = false;
+bool AccInflightCalibrationActive = false;
+uint16_t InflightcalibratingA = 0;
+
 
 
 void taskHandleSerial(void)
@@ -147,6 +161,108 @@ void taskHandleSerial(void)
 */
     mspSerialProcess();
 }
+
+
+#ifdef MAG
+void taskUpdateCompass(void)
+{
+    updateCompass(&sensorTrims()->magZero);
+}
+#endif
+
+void taskUpdateAccelerometer(void)
+{
+    imuUpdateAccelerometer(&accelerometerConfig()->accelerometerTrims);
+}
+
+void taskMainPidLoopChecker(void) 
+{
+    // getTaskDeltaTime() returns delta time freezed at the moment of entering the scheduler. currentTime is freezed at the very same point.
+    // To make busy-waiting timeout work we need to account for time spent within busy-waiting loop
+    if(!gyro_initialized)
+    {
+        imuConfig()->gyroSync = 1;
+        gyro_initialized = true;
+    }
+    uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
+
+    if (imuConfig()->gyroSync) {
+        while (1) {
+            if (gyroSyncCheckUpdate() || ((currentDeltaTime + (micros() - currentTime)) >= (targetLooptime + GYRO_WATCHDOG_DELAY))) {
+                break;
+            }
+        }
+    }
+
+    //taskMainPidLoop();
+}
+
+
+#if 1
+void taskMainPidLoop(void)
+{
+    cycleTime = getTaskDeltaTime(TASK_SELF);
+    dT = (float)cycleTime * 0.000001f;
+
+    // Calculate average cycle time and average jitter
+    filteredCycleTime = pt1FilterApply4(&filteredCycleTimeState, cycleTime, 1, dT);
+
+    imuUpdateGyroAndAttitude();
+
+    /*updateRcCommands(); // this must be called here since applyAltHold directly manipulates rcCommands[]
+
+    if (rxConfig()->rcSmoothing) {
+        filterRc();
+    }
+
+    // Read out gyro temperature. can use it for something somewhere. maybe get MCU temperature instead? lots of fun possibilities.
+    if (gyro.temperature) {
+        gyro.temperature(&telemTemperature1);
+    }
+
+#ifdef MAG
+        if (sensors(SENSOR_MAG)) {
+            updateMagHold();
+        }
+#endif
+
+    // If we're armed, at minimum throttle, and we do arming via the
+    // sticks, do not process yaw input from the rx.  We do this so the
+    // motors do not spin up while we are trying to arm or disarm.
+    // Allow yaw control for tricopters if the user wants the servo to move even when unarmed.
+    if (isUsingSticksForArming() && rcData[THROTTLE] <= rxConfig()->mincheck
+#ifndef USE_QUAD_MIXER_ONLY
+#ifdef USE_SERVOS
+                && !((mixerConfig()->mixerMode == MIXER_TRI || mixerConfig()->mixerMode == MIXER_CUSTOM_TRI) && mixerConfig()->tri_unarmed_servo)
+#endif
+                && mixerConfig()->mixerMode != MIXER_AIRPLANE
+                && mixerConfig()->mixerMode != MIXER_FLYING_WING
+#endif
+    ) {
+        rcCommand[YAW] = 0;
+    }
+
+    if (throttleCorrectionConfig()->throttle_correction_value && (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE))) {
+        rcCommand[THROTTLE] += calculateThrottleAngleCorrection(throttleCorrectionConfig()->throttle_correction_value);
+    }
+
+    // PID - note this is function pointer set by setPIDController()
+    pid_controller(
+        pidProfile(),
+        currentControlRateProfile,
+        imuConfig()->max_angle_inclination,
+        &accelerometerConfig()->accelerometerTrims,
+        rxConfig()
+    );
+
+    mixTable();
+
+    if (motorControlEnable) {
+        writeMotors();
+    }*/
+}
+#endif
+
 
 /*
 void applyAndSaveAccelerometerTrimsDelta(rollAndPitchTrims_t *rollAndPitchTrimsDelta)
@@ -676,135 +792,6 @@ void filterRc(void){
 static bool haveUpdatedRcCommandsOnce = false;
 #endif
 
-void taskMainPidLoop(void)
-{
-    cycleTime = getTaskDeltaTime(TASK_SELF);
-    dT = (float)cycleTime * 0.000001f;
-
-    // Calculate average cycle time and average jitter
-    filteredCycleTime = pt1FilterApply4(&filteredCycleTimeState, cycleTime, 1, dT);
-
-#ifdef DEBUG_CYCLE_TIME
-    debug[0] = cycleTime;
-    debug[1] = cycleTime - filteredCycleTime;
-#endif
-
-    imuUpdateGyroAndAttitude();
-
-    updateRcCommands(); // this must be called here since applyAltHold directly manipulates rcCommands[]
-
-    if (rxConfig()->rcSmoothing) {
-        filterRc();
-    }
-
-#if defined(BARO) || defined(SONAR)
-    haveUpdatedRcCommandsOnce = true;
-#endif
-
-    // Read out gyro temperature. can use it for something somewhere. maybe get MCU temperature instead? lots of fun possibilities.
-    if (gyro.temperature) {
-        gyro.temperature(&telemTemperature1);
-    }
-
-#ifdef MAG
-        if (sensors(SENSOR_MAG)) {
-            updateMagHold();
-        }
-#endif
-
-#ifdef GTUNE
-        updateGtuneState();
-#endif
-
-#if defined(BARO) || defined(SONAR)
-        if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
-            if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
-                applyAltHold();
-            }
-        }
-#endif
-
-    // If we're armed, at minimum throttle, and we do arming via the
-    // sticks, do not process yaw input from the rx.  We do this so the
-    // motors do not spin up while we are trying to arm or disarm.
-    // Allow yaw control for tricopters if the user wants the servo to move even when unarmed.
-    if (isUsingSticksForArming() && rcData[THROTTLE] <= rxConfig()->mincheck
-#ifndef USE_QUAD_MIXER_ONLY
-#ifdef USE_SERVOS
-                && !((mixerConfig()->mixerMode == MIXER_TRI || mixerConfig()->mixerMode == MIXER_CUSTOM_TRI) && mixerConfig()->tri_unarmed_servo)
-#endif
-                && mixerConfig()->mixerMode != MIXER_AIRPLANE
-                && mixerConfig()->mixerMode != MIXER_FLYING_WING
-#endif
-    ) {
-        rcCommand[YAW] = 0;
-    }
-
-    if (throttleCorrectionConfig()->throttle_correction_value && (FLIGHT_MODE(ANGLE_MODE) || FLIGHT_MODE(HORIZON_MODE))) {
-        rcCommand[THROTTLE] += calculateThrottleAngleCorrection(throttleCorrectionConfig()->throttle_correction_value);
-    }
-
-#ifdef GPS
-    if (sensors(SENSOR_GPS)) {
-        if ((FLIGHT_MODE(GPS_HOME_MODE) || FLIGHT_MODE(GPS_HOLD_MODE)) && STATE(GPS_FIX_HOME)) {
-            updateGpsStateForHomeAndHoldMode();
-        }
-    }
-#endif
-
-    // PID - note this is function pointer set by setPIDController()
-    pid_controller(
-        pidProfile(),
-        currentControlRateProfile,
-        imuConfig()->max_angle_inclination,
-        &accelerometerConfig()->accelerometerTrims,
-        rxConfig()
-    );
-
-    mixTable();
-
-#ifdef USE_SERVOS
-    filterServos();
-    writeServos();
-#endif
-
-    if (motorControlEnable) {
-        writeMotors();
-    }
-
-#ifdef USE_SDCARD
-        afatfs_poll();
-#endif
-
-#ifdef BLACKBOX
-    if (!cliMode && feature(FEATURE_BLACKBOX)) {
-        handleBlackbox();
-    }
-#endif
-}
-
-// Function for loop trigger
-void taskMainPidLoopChecker(void) {
-    // getTaskDeltaTime() returns delta time freezed at the moment of entering the scheduler. currentTime is freezed at the very same point.
-    // To make busy-waiting timeout work we need to account for time spent within busy-waiting loop
-    uint32_t currentDeltaTime = getTaskDeltaTime(TASK_SELF);
-
-    if (imuConfig()->gyroSync) {
-        while (1) {
-            if (gyroSyncCheckUpdate() || ((currentDeltaTime + (micros() - currentTime)) >= (targetLooptime + GYRO_WATCHDOG_DELAY))) {
-                break;
-            }
-        }
-    }
-
-    taskMainPidLoop();
-}
-
-void taskUpdateAccelerometer(void)
-{
-    imuUpdateAccelerometer(&accelerometerConfig()->accelerometerTrims);
-}
-
 #ifdef BEEPER
 void taskUpdateBeeper(void)
 {
@@ -890,15 +877,6 @@ void taskProcessGPS(void)
 
     if (sensors(SENSOR_GPS)) {
         updateGpsIndicator(currentTime);
-    }
-}
-#endif
-
-#ifdef MAG
-void taskUpdateCompass(void)
-{
-    if (sensors(SENSOR_MAG)) {
-        updateCompass(&sensorTrims()->magZero);
     }
 }
 #endif

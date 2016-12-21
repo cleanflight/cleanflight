@@ -35,6 +35,7 @@
 
 #include "fc/fc_tasks.h"
 #include "fc/config.h"
+#include "fc/runtime_config.h"
 
 #include "msp/msp.h"
 #include "msp/msp_serial.h"
@@ -46,6 +47,8 @@
 #include "scheduler/scheduler.h"
 
 #include "io/io_serial.h"
+
+#include "sensors/sensors.h"
 
 /*#include <platform.h>
 
@@ -94,7 +97,6 @@
 #include "io/transponder_ir.h"
 #include "io/serial_cli.h"
 
-#include "sensors/sensors.h"
 #include "sensors/sonar.h"
 #include "sensors/barometer.h"
 #include "sensors/compass.h"
@@ -116,7 +118,6 @@
 #include "flight/failsafe.h"
 #include "flight/navigation.h"
 
-#include "fc/runtime_config.h"
 #include "fc/config.h"
 #include "config/config_system.h"
 #include "config/feature.h"
@@ -764,10 +765,13 @@ void configureScheduler(void)
     schedulerInit();
     setTaskEnabled(TASK_SYSTEM, true);
     setTaskEnabled(TASK_SERIAL, true);
+#ifdef MAG
+    //setTaskEnabled(TASK_COMPASS, true);
+#endif    
+    //setTaskEnabled(TASK_ACCEL, true);
+    //setTaskEnabled(TASK_GYROPID, true);
     /*setTaskEnabled(TASK_SYSTEM, true);
-    setTaskEnabled(TASK_GYROPID, true);
     rescheduleTask(TASK_GYROPID, imuConfig()->gyroSync ? targetLooptime - INTERRUPT_WAIT_TIME : targetLooptime);
-    setTaskEnabled(TASK_ACCEL, sensors(SENSOR_ACC));
     setTaskEnabled(TASK_SERIAL, true);
 #ifdef BEEPER
     setTaskEnabled(TASK_BEEPER, true);
@@ -807,23 +811,33 @@ void configureScheduler(void)
 #endif*/
 }
 
-
-int main(void) 
+void init(void)
 {
-    printf("Welcome to Cleanflight\n");
-    
     systemInit();   
     configureScheduler();
     serialInit(true);            //Initialize soft_serial ports based on USE_SOFTSERIAL1 & USE_SOFTSERIAL2. 
     mspInit();              //initialize values based on enabled features
     mspSerialInit();        //allocate serial ports for each of the msp ports
-    while (true) {
-        scheduler();
-    }
-    
+
     /*char buffer[5];
     systemInit();   
-    while(1)
+    */
+
+}
+int main(void) 
+{
+    printf("Welcome to Cleanflight\n");
+    
+    init();
+    
+    printf("init done\n");
+    
+    while (true) 
+    {
+        scheduler();
+    }
+
+    /*while(1)
     {
         usbRead(buffer,1);
         printf("%s\n",buffer);

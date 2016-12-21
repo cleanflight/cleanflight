@@ -16,6 +16,7 @@
  */
 
 #pragma once
+#include "config/parameter_group.h"
 
 typedef enum {
     SENSOR_INDEX_GYRO = 0,

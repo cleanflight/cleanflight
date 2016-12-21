@@ -18,4 +18,8 @@
 #pragma once
 
 static uint32_t enabledSensors = 0;
-bool sensors(uint32_t mask){ return enabledSensors & mask; }
+
+bool rcModeIsActive(boxId_e modeId)
+{
+    return 0 & (1 << modeId);
+}

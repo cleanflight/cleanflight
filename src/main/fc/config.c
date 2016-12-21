@@ -48,7 +48,7 @@
 #include "fc/config.h"
 
 #include "io/beeper.h"
-#include "io/serial.h"
+#include "io/io_serial.h"
 
 #include "sensors/voltage.h"
 #include "sensors/sensors.h"

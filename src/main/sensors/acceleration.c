@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <platform.h>
 
@@ -73,13 +74,15 @@ sensor_align_e accAlign = 0;
 
 uint16_t calibratingA = 0;      // the calibration is done is the main loop. Calibrating decreases at each cycle down to 0, then we enter in a normal mode.
 
+bool initialized = false;
+
 extern uint16_t InflightcalibratingA;
 extern bool AccInflightCalibrationArmed;
 extern bool AccInflightCalibrationMeasurementDone;
 extern bool AccInflightCalibrationSavetoEEProm;
 extern bool AccInflightCalibrationActive;
 
-static flightDynamicsTrims_t *accelerationTrims;
+static flightDynamicsTrims_t* accelerationTrims;
 
 void accSetCalibrationCycles(uint16_t calibrationCyclesRequired)
 {
@@ -128,7 +131,7 @@ void performAcclerationCalibration(rollAndPitchTrims_t *rollAndPitchTrims)
 
         resetRollAndPitchTrims(rollAndPitchTrims);
 
-        saveConfigAndNotify();
+        //saveConfigAndNotify();
     }
 
     calibratingA--;
@@ -183,7 +186,7 @@ void performInflightAccelerationCalibration(rollAndPitchTrims_t *rollAndPitchTri
 
         resetRollAndPitchTrims(rollAndPitchTrims);
 
-        saveConfigAndNotify();
+        //saveConfigAndNotify();
     }
 }
 
@@ -205,6 +208,12 @@ static void convertRawACCADCReadingsToInternalType(int16_t *accADCRaw)
 
 void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
 {
+    if(!initialized)
+    {
+        accelerationTrims = (flightDynamicsTrims_t *)malloc(sizeof(flightDynamicsTrims_t));
+        initialized = true;
+    }
+    
     int16_t accADCRaw[XYZ_AXIS_COUNT];
 
     if (!acc.read(accADCRaw)) {

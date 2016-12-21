@@ -43,7 +43,7 @@
 
 #include "sensors/gyro.h"
 
-gyro_t gyro;                      // gyro access functions
+extern gyro_t gyro;                      // gyro access functions
 sensor_align_e gyroAlign = 0;
 
 int32_t gyroADC[XYZ_AXIS_COUNT];

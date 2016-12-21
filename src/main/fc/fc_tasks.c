@@ -37,7 +37,7 @@ cfTask_t* taskQueueArray[TASK_QUEUE_ARRAY_SIZE];
 
 cfTask_t cfTasks[TASK_COUNT];
 
-#if 1
+
 cfTask_t cfTasks[] = {
     [TASK_SYSTEM] = {
         .taskName = "SYSTEM",
@@ -51,9 +51,30 @@ cfTask_t cfTasks[] = {
         .desiredPeriod = TASK_PERIOD_HZ(100),           //100 Hz should be enough to flush up to 115 bytes @ 115200 baud
                                                         //period of 10 ms
         .staticPriority = TASK_PRIORITY_LOW,
+    },
+
+#ifdef MAG
+    [TASK_COMPASS] = {
+        .taskName = "COMPASS",
+        .taskFunc = taskUpdateCompass,
+        .desiredPeriod = TASK_PERIOD_MS(100),                  //period of 100 ms
+        .staticPriority = TASK_PRIORITY_MEDIUM,
+    },
+#endif
+    
+    [TASK_ACCEL] = {
+        .taskName = "ACCEL",
+        .taskFunc = taskUpdateAccelerometer,
+        .desiredPeriod = TASK_PERIOD_HZ(1),                 //period of 1 us
+        .staticPriority = TASK_PRIORITY_MEDIUM,
+    },
+    [TASK_GYROPID] = {
+        .taskName = "GYRO/PID",
+        .taskFunc = taskMainPidLoopChecker,
+        .desiredPeriod = TASK_PERIOD_MS(1),                 //period of 1 ms
+        .staticPriority = TASK_PRIORITY_REALTIME,
     }
 };
-#endif
 
 #if 0
 cfTask_t cfTasks[] = {
@@ -69,16 +90,7 @@ cfTask_t cfTasks[] = {
         .taskFunc = taskMainPidLoopChecker,
         .desiredPeriod = TASK_PERIOD_MS(1),                 //period of 1 ms
         .staticPriority = TASK_PRIORITY_REALTIME,
-    },
-
-    [TASK_ACCEL] = {
-        .taskName = "ACCEL",
-        .taskFunc = taskUpdateAccelerometer,
-        .desiredPeriod = TASK_PERIOD_HZ(1),                 //period of 1 us
-        .staticPriority = TASK_PRIORITY_MEDIUM,
-    },
-
-    
+    },    
 #ifdef BEEPER
     [TASK_BEEPER] = {
         .taskName = "BEEPER",
@@ -110,15 +122,6 @@ cfTask_t cfTasks[] = {
         .taskFunc = taskProcessGPS,
         .desiredPeriod = TASK_PERIOD_HZ(100),         // 115 (<256) bytes/call @ 115K
                                                             //period of 10 ms
-        .staticPriority = TASK_PRIORITY_MEDIUM,
-    },
-#endif
-
-#ifdef MAG
-    [TASK_COMPASS] = {
-        .taskName = "COMPASS",
-        .taskFunc = taskUpdateCompass,
-        .desiredPeriod = TASK_PERIOD_MS(100),                  //period of 10 ms
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
 #endif
