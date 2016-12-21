@@ -44,6 +44,12 @@
 
 //#include "serial_uart_impl.h"
 
+
+#define edison_port "/dev/ttyMFD2";
+#define PC_port "/dev/ttyUSB0";
+
+
+
 uartPort_t USB;
 
 LINE_CODING linecoding = 
@@ -55,7 +61,9 @@ LINE_CODING linecoding =
 };
 
 //Serial file name
-char *portname = "/dev/ttyMFD2";            //Change to ttyMFD2 on the edison to communicate with PC
+
+char portname[20] = edison_port;
+
 int rdlen;                                  //for measring the number of data bytes read
 
 
@@ -90,7 +98,7 @@ void usartInitAllIOSignals(void)        //usartIrqHandler() not setup in the ori
 serialPort_t* usbInit(void)
 {
     int fd = usbOpen();
-    sleep(2); //required to make flush work, for some reason
+    //sleep(2); //required to make flush work, for some reason
     tcflush(fd,TCIOFLUSH);
     SetUsbAttributes(fd);    
     return &USB.port;
@@ -160,10 +168,10 @@ int32_t usbRead(uint8_t* buf, int len)
     fd_set readset;                             //for the select function
     FD_ZERO(&readset);
     FD_SET(USB.fd, &readset);
-    int result;
+    int result = 1;
     while(1)
     {
-        result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
+        //result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
         if(result == -1)
         {
             FD_ZERO(&readset);
@@ -179,7 +187,7 @@ int32_t usbRead(uint8_t* buf, int len)
             }
             else
             {
-                //printf("Error from read\trdlen = %d",rdlen);
+                //printf("Error from read\trdlen = %d\n",rdlen);
                 return -1;
             }            
         }
@@ -228,9 +236,12 @@ uint8_t serial_waiting(serialPort_t *instance)
     FD_SET(USB.fd, &readset);
     uint32_t result;
     
-    struct timeval tv = {SELECT_TIMEOUT, 0};   // sleep for ten minutes!
+    struct timeval tv = {SELECT_TIMEOUT, SELECT_TIMEOUT_US};   // sleep for ten minutes!
 
     result = select(USB.fd + 1, &readset, NULL, NULL, &tv);
+
+    //printf("result:%d\n",result);
+    
     return result;
 }
 

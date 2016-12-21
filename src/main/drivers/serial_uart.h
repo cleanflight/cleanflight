@@ -1,3 +1,4 @@
+
 /*
  * This file is part of Cleanflight.
  *
@@ -37,7 +38,10 @@
 #define UART5_RX_BUFFER_SIZE    256
 #define UART5_TX_BUFFER_SIZE    256
 #define NUM_THREADS 2
-#define SELECT_TIMEOUT 2
+
+
+#define SELECT_TIMEOUT 0
+#define SELECT_TIMEOUT_US 500000
 
 __IO uint32_t receiveLength;
 

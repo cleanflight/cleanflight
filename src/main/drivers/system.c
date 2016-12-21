@@ -120,7 +120,7 @@ void systemInit(void)                                       //Refer below for or
     //required for system up time
     clock_gettime(CLOCK, &start);                           //mark start time
     //printf("Original:%lu\n",(start.tv_sec*BILLION + start.tv_nsec)/1000);
-    init_sensors();
+    //init_sensors();
 }
 
 void delay(uint32_t ms)         //delay by the given number of milli seconds

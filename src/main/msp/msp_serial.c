@@ -271,6 +271,7 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
                 checksum = mspSerialChecksum(checksum, msp->dataSize);
                 checksum = mspSerialChecksum(checksum, msp->cmdMSP);
                 checksum = mspSerialChecksumBuf(checksum, msp->inBuf, msp->dataSize);
+                printf("c:%d\tchecksum:%d\n",c,checksum);
                 if(c == checksum)
                 {
                     msp->c_state = MESSAGE_RECEIVED;
