@@ -131,6 +131,7 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 extern uint32_t currentTime;
 extern uint8_t PIDweight[3];
 extern uint8_t dynP8[3], dynI8[3], dynD8[3];
+extern gyro_t gyro;
 
 static bool isRXDataNew;
 
@@ -145,6 +146,7 @@ bool AccInflightCalibrationMeasurementDone = false;
 bool AccInflightCalibrationSavetoEEProm = false;
 bool AccInflightCalibrationActive = false;
 uint16_t InflightcalibratingA = 0;
+
 
 
 
@@ -198,7 +200,7 @@ void taskMainPidLoopChecker(void)
 }
 
 
-#if 1
+#if 0
 void taskMainPidLoop(void)
 {
     cycleTime = getTaskDeltaTime(TASK_SELF);
@@ -209,7 +211,7 @@ void taskMainPidLoop(void)
 
     imuUpdateGyroAndAttitude();
 
-    /*updateRcCommands(); // this must be called here since applyAltHold directly manipulates rcCommands[]
+    updateRcCommands(); // this must be called here since applyAltHold directly manipulates rcCommands[]
 
     if (rxConfig()->rcSmoothing) {
         filterRc();
@@ -259,7 +261,7 @@ void taskMainPidLoop(void)
 
     if (motorControlEnable) {
         writeMotors();
-    }*/
+    }
 }
 #endif
 

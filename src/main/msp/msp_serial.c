@@ -184,7 +184,7 @@ STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
     int status = mspProcessCommand(&command, reply);
 
     if (status) {
-        printf("Writing to PC\n");
+        printf("Command code: %d\nWriting to PC\n",command.cmd);
         // reply should be sent back
         sbufSwitchToReader(&reply->buf, outBufHead); // change streambuf direction
         mspSerialEncode(msp, reply);
@@ -275,7 +275,7 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
                 if(c == checksum)
                 {
                     msp->c_state = MESSAGE_RECEIVED;
-                    printf("processing received command\n");
+                    //printf("processing received command\n");
                 }
                 else
                     msp->c_state = IDLE;
@@ -289,6 +289,7 @@ void mspSerialProcess(void)
 {
     int* fd;
     int flag = 0;
+    //printf("Processing\n");
     for (int i = 0; i < MAX_MSP_PORT_COUNT; i++) {
         mspPort_t *msp = &mspPorts[i];
         if (!msp->port) {
@@ -319,7 +320,7 @@ void mspSerialProcess(void)
 
         if(flag == 1)
         {
-            printf("Inside\n");
+            //printf("Inside\n");
             flag = 0;
         }
 

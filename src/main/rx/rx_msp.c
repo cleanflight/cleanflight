@@ -24,15 +24,15 @@
 
 #include "config/parameter_group.h"
 
-#include "drivers/dma.h"
+//#include "drivers/dma.h"
 #include "drivers/system.h"
 
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
-#include "io/serial.h"
+#include "io/io_serial.h"
 
 #include "rx/rx.h"
-#include "rx/msp.h"
+#include "rx/rx_msp.h"
 
 static uint16_t mspFrame[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 static bool rxMspFrameDone = false;

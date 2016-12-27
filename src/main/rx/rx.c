@@ -54,7 +54,7 @@
 #include "rx/spektrum.h"
 #include "rx/sumd.h"
 #include "rx/sumh.h"
-#include "rx/msp.h"
+#include "rx/rx_msp.h"
 #include "rx/xbus.h"
 #include "rx/ibus.h"
 #include "rx/srxl.h"

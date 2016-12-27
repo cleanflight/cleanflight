@@ -29,8 +29,8 @@
 #include "config/feature.h"
 
 #include "drivers/gpio.h"
-#include "drivers/timer.h"
-#include "drivers/pwm_rx.h"
+//#include "drivers/timer.h"
+//#include "drivers/pwm_rx.h"
 
 #include "config/parameter_group.h"
 

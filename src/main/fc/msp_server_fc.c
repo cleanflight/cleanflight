@@ -52,7 +52,7 @@
 #include "drivers/buf_writer.h"
 
 #include "rx/rx.h"
-#include "rx/msp.h"
+#include "rx/rx_msp.h"
 
 #include "msp/msp.h"
 #include "msp/msp_protocol.h"
@@ -501,7 +501,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
     int len = sbufBytesRemaining(src);
 
-    printf("command code: %d\n",cmd->cmd);
+    //printf("command code: %d\n",cmd->cmd);
     switch (cmd->cmd) {
         case MSP_API_VERSION:
             //printf("code 1\n");

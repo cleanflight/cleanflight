@@ -171,13 +171,7 @@ int32_t usbRead(uint8_t* buf, int len)
     int result = 1;
     while(1)
     {
-        //result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
-        if(result == -1)
-        {
-            FD_ZERO(&readset);
-            FD_SET(USB.fd, &readset);
-        }
-        else if(result>0)
+        if(result>0)
         {
             rdlen = read(USB.fd, buf, len);
             if (rdlen > 0) 
@@ -235,7 +229,7 @@ uint8_t serial_waiting(serialPort_t *instance)
     FD_ZERO(&readset);
     FD_SET(USB.fd, &readset);
     uint32_t result;
-    
+        
     struct timeval tv = {SELECT_TIMEOUT, SELECT_TIMEOUT_US};   // sleep for ten minutes!
 
     result = select(USB.fd + 1, &readset, NULL, NULL, &tv);
