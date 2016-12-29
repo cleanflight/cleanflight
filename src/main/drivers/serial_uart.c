@@ -165,9 +165,6 @@ uint32_t usbWrite(uint8_t* str, int len)
 
 int32_t usbRead(uint8_t* buf, int len)
 {
-    fd_set readset;                             //for the select function
-    FD_ZERO(&readset);
-    FD_SET(USB.fd, &readset);
     int result = 1;
     while(1)
     {

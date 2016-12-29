@@ -47,6 +47,7 @@
 
 PG_REGISTER_PROFILE_WITH_RESET_FN(accelerometerConfig_t, accelerometerConfig, PG_ACCELEROMETER_CONFIG, 0);
 
+
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims)
 {
     RESET_CONFIG_2(rollAndPitchTrims_t, rollAndPitchTrims,
@@ -211,6 +212,7 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     if(!initialized)
     {
         accelerationTrims = (flightDynamicsTrims_t *)malloc(sizeof(flightDynamicsTrims_t));
+        accelerometerConfig_ProfileCurrent = (accelerometerConfig_t*)malloc(sizeof(accelerometerConfig_t));
         initialized = true;
     }
     

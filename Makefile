@@ -310,7 +310,8 @@ BUILD = 	\
 			src/main/build/build_config.c
 
 RX = 		\
-			src/main/rx/rx.c
+			src/main/rx/rx_msp.c \
+			src/main/rx/pwm.c
 
 FLIGHT = 	\
 			src/main/flight/imu.c
@@ -334,7 +335,8 @@ EDISON_SRC = \
 			$(MSP) \
 			$(VERSION) \
 			$(SENSORS) \
-			$(FLIGHT)
+			$(FLIGHT) \
+			$(RX)
 
 #EDISON_SRC = \
 			src/main/fc/boot.c \

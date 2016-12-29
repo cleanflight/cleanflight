@@ -214,7 +214,7 @@ static void mspSerialProcessReceivedReply(mspPort_t *msp)
 
 static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
 {
-    //printf("char:%c\tstate:%d\n",c,msp->c_state);
+    printf("char:%c\tstate:%d\n",c,msp->c_state);
     switch(msp->c_state) {
         default:                 // be conservative with unexpected state
         case IDLE:
@@ -234,7 +234,7 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             msp->c_state = (c == 'M') ? HEADER_ARROW : IDLE;
             break;
         case HEADER_ARROW:
-            msp->c_state = IDLE;
+            msp->c_state = HEADER_ARROW;
             switch(c) {
                 case '<': // COMMAND
                 	if (msp->mode == MSP_MODE_SERVER) {
@@ -251,6 +251,7 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             }
             break;
         case HEADER_SIZE:
+            printf("Size:%d\n",c);        
             if (c > MSP_PORT_INBUF_SIZE) {
                 msp->c_state = IDLE;
             } else {
@@ -260,6 +261,7 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             }
             break;
         case HEADER_CMD:
+            printf("command:%d\n",c);
             msp->cmdMSP = c;
             msp->c_state = HEADER_DATA;
             break;
@@ -271,7 +273,7 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
                 checksum = mspSerialChecksum(checksum, msp->dataSize);
                 checksum = mspSerialChecksum(checksum, msp->cmdMSP);
                 checksum = mspSerialChecksumBuf(checksum, msp->inBuf, msp->dataSize);
-                printf("c:%d\tchecksum:%d\n",c,checksum);
+                //printf("c:%d\tchecksum:%d\n",c,checksum);
                 if(c == checksum)
                 {
                     msp->c_state = MESSAGE_RECEIVED;

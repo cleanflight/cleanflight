@@ -500,6 +500,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
     sbuf_t *src = &cmd->buf;
 
     int len = sbufBytesRemaining(src);
+    //printf("%d\n",MSP_BOXNAMES);        
 
     //printf("command code: %d\n",cmd->cmd);
     switch (cmd->cmd) {
@@ -512,6 +513,9 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_FC_VARIANT:
             sbufWriteData(dst, flightControllerIdentifier, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
+            sbufWriteU8(dst, FC_VERSION_MAJOR);
+            sbufWriteU8(dst, FC_VERSION_MINOR);
+            sbufWriteU8(dst, FC_VERSION_PATCH_LEVEL);
             break;
 
         case MSP_FC_VERSION:
@@ -522,6 +526,7 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
 
         case MSP_BOARD_INFO:
             sbufWriteData(dst, boardIdentifier, BOARD_IDENTIFIER_LENGTH);
+
 #ifdef USE_HARDWARE_REVISION_DETECTION
             sbufWriteU16(dst, hardwareRevision);
 #else
@@ -576,12 +581,48 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             serializeDataflashSummaryReply(reply);
             break;
 
+        case MSP_FEATURE:
+            sbufWriteU32(dst, featureMask());
+            break;
+
+
+        case MSP_UID:
+            sbufWriteU32(dst, U_ID_0);
+            sbufWriteU32(dst, U_ID_1);
+            sbufWriteU32(dst, U_ID_2);
+            break;
+
+
+
+        case MSP_BATTERY_CONFIG:
+            printf("MSP_BATTERY_CONFIG\n");
+            /*sbufWriteU8(dst, batteryConfig()->vbatmincellvoltage);
+            sbufWriteU8(dst, batteryConfig()->vbatmaxcellvoltage);
+            sbufWriteU8(dst, batteryConfig()->vbatwarningcellvoltage);
+            sbufWriteU16(dst, batteryConfig()->batteryCapacity);
+            sbufWriteU8(dst, batteryConfig()->amperageMeterSource);*/
+            break;
+
+        case MSP_ACC_TRIM:
+            printf("MSP_ACC_TRIM\n");
+            /*sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.pitch);
+            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);*/
+            break;
+
+
+        case MSP_BOXNAMES:
+            printf("MSP_BOXNAMES\n");
+            serializeBoxNamesReply(reply);
+            break;
+
+
         default:
             printf("Unknown\n");
             break;
 
 
-/*#ifdef USE_SERVOS
+/*
+#ifdef USE_SERVOS
         case MSP_SERVO:
             sbufWriteData(dst, &servo, MAX_SUPPORTED_SERVOS * 2);
             break;
@@ -723,10 +764,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             }
             break;
 
-        case MSP_BOXNAMES:
-            serializeBoxNamesReply(reply);
-            break;
-
         case MSP_BOXIDS:
             serializeBoxIdsReply(reply);
             break;
@@ -819,20 +856,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             break;
 
             // Additional commands that are not compatible with MultiWii
-        case MSP_ACC_TRIM:
-            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.pitch);
-            sbufWriteU16(dst, accelerometerConfig()->accelerometerTrims.values.roll);
-            break;
-
-        case MSP_UID:
-            sbufWriteU32(dst, U_ID_0);
-            sbufWriteU32(dst, U_ID_1);
-            sbufWriteU32(dst, U_ID_2);
-            break;
-
-        case MSP_FEATURE:
-            sbufWriteU32(dst, featureMask());
-            break;
 
         case MSP_BOARD_ALIGNMENT:
             sbufWriteU16(dst, boardAlignment()->rollDegrees);
@@ -855,13 +878,6 @@ int mspServerCommandHandler(mspPacket_t *cmd, mspPacket_t *reply)
             }
             break;
 
-        case MSP_BATTERY_CONFIG:
-            sbufWriteU8(dst, batteryConfig()->vbatmincellvoltage);
-            sbufWriteU8(dst, batteryConfig()->vbatmaxcellvoltage);
-            sbufWriteU8(dst, batteryConfig()->vbatwarningcellvoltage);
-            sbufWriteU16(dst, batteryConfig()->batteryCapacity);
-            sbufWriteU8(dst, batteryConfig()->amperageMeterSource);
-            break;
 
         case MSP_MIXER:
             sbufWriteU8(dst, mixerConfig()->mixerMode);
