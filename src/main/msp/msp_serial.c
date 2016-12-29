@@ -214,7 +214,7 @@ static void mspSerialProcessReceivedReply(mspPort_t *msp)
 
 static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
 {
-    printf("char:%c\tstate:%d\n",c,msp->c_state);
+    //printf("char:%c\tstate:%d\n",c,msp->c_state);
     switch(msp->c_state) {
         default:                 // be conservative with unexpected state
         case IDLE:
@@ -251,7 +251,6 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             }
             break;
         case HEADER_SIZE:
-            printf("Size:%d\n",c);        
             if (c > MSP_PORT_INBUF_SIZE) {
                 msp->c_state = IDLE;
             } else {
@@ -261,7 +260,6 @@ static bool mspSerialProcessReceivedByte(mspPort_t *msp, uint8_t c)
             }
             break;
         case HEADER_CMD:
-            printf("command:%d\n",c);
             msp->cmdMSP = c;
             msp->c_state = HEADER_DATA;
             break;

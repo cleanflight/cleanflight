@@ -50,6 +50,14 @@
 
 
 
+bool data_available = false;
+bool data_read = true;
+
+char temp_buff[100];
+int temp_data_len;
+int read_pos;
+
+
 uartPort_t USB;
 
 LINE_CODING linecoding = 
@@ -72,15 +80,15 @@ serialPort_t usb_port;
 static const struct serialPortVTable usbTable[] = {
     {
         .serialWrite = usbVcpWrite,                                     //used
-        .serialTotalRxWaiting = serial_waiting,                        //not used
+        .serialTotalRxWaiting = serial_waiting,                         //used
         .serialTotalTxFree = usbTxBytesFree,                            //not used
         .serialRead = usbVcpRead,                                       //used
         .serialSetBaudRate = usbVcpSetBaudRate,                         //used only in gps
-        .isSerialTransmitBufferEmpty = usb_txbuffer_empty,     //used
+        .isSerialTransmitBufferEmpty = usb_txbuffer_empty,              //used
         .setMode = usbVcpSetMode,                                       //used, TBD
-        .beginWrite = NULL,                                 //not needed
-        .endWrite = NULL,                                     //not needed
-        .writeBuf = NULL                                      //not needed
+        .beginWrite = NULL,                                             //not needed
+        .endWrite = NULL,                                               //not needed
+        .writeBuf = NULL                                                //not needed
     }
 };
 
@@ -165,22 +173,24 @@ uint32_t usbWrite(uint8_t* str, int len)
 
 int32_t usbRead(uint8_t* buf, int len)
 {
-    int result = 1;
-    while(1)
+    if(!data_available)
     {
-        if(result>0)
+        //TBD
+    }
+    else
+    {
+        read_pos++;
+        if(read_pos <= temp_data_len)
         {
-            rdlen = read(USB.fd, buf, len);
-            if (rdlen > 0) 
-            {
-                //printf("%c\n",buf);
-                return len;
-            }
-            else
-            {
-                //printf("Error from read\trdlen = %d\n",rdlen);
-                return -1;
-            }            
+            *buf = temp_buff[read_pos-1];
+            return 1;
+        }
+
+        else
+        {
+            data_read = true;
+            data_available = false;
+            return -1;
         }
     }
 }
@@ -221,6 +231,12 @@ void usb_txbuffer_flush(serialPort_t *instance)
 
 uint8_t serial_waiting(serialPort_t *instance)
 {
+    
+    if(!data_read)
+    {
+        return 1;
+    }    
+
     UNUSED(instance);
     fd_set readset;                             //for the select function
     FD_ZERO(&readset);
@@ -229,7 +245,15 @@ uint8_t serial_waiting(serialPort_t *instance)
         
     struct timeval tv = {SELECT_TIMEOUT, SELECT_TIMEOUT_US};   // sleep for ten minutes!
 
-    result = select(USB.fd + 1, &readset, NULL, NULL, &tv);
+    result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
+
+    if(result > 0)
+    {
+        temp_data_len = read(USB.fd, temp_buff, sizeof(temp_buff));
+        data_available = true;
+        data_read = false;
+        read_pos = 0;
+    }
 
     //printf("result:%d\n",result);
     
