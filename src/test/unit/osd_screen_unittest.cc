@@ -550,6 +550,25 @@ TEST_F(OsdScreenTest, TestOsdElement_VTX_RFPOWER)
     compareScreen(0, 0, expectedContent, strlen(expectedAscii));
 }
 
+TEST_F(OsdScreenTest, TestOsdElement_AverageSystemLoad)
+{
+    // given
+    fcStatus.averageSystemLoadPercent = 75;
+
+    element_t element = {
+        0, 0, true, OSD_ELEMENT_AVERAGE_SYSTEM_LOAD
+    };
+
+    // when
+    osdDrawTextElement(&element);
+
+    // then
+    char expectedAscii[] = " 75 %";
+    uint8_t *expectedContent = asciiToFontMap(expectedAscii);
+
+    compareScreen(0, 0, expectedContent, strlen(expectedAscii));
+}
+
 
 // STUBS
 extern "C" {

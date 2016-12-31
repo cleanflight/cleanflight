@@ -189,3 +189,12 @@ void osdElementRender_vtxRfPower(const element_t *element, elementDataProviderFn
     tfp_sprintf(elementAsciiBuffer, "%d", vtxRfPower);
     osdPrintAt(element->x, element->y, elementAsciiBuffer);
 }
+
+void osdElementRender_averageSystemLoad(const element_t *element, elementDataProviderFn dataFn)
+{
+    uint16_t averageSystemLoad = (uint16_t) dataFn();
+
+    tfp_sprintf(elementAsciiBuffer, "%3d %%", averageSystemLoad);
+    osdPrintAt(element->x, element->y, elementAsciiBuffer);
+}
+

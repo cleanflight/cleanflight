@@ -52,14 +52,15 @@ typedef struct fcStatus_s {
     uint16_t cycleTime;
     uint16_t i2cErrors;
     uint16_t sensors;
-    uint32_t fcState;                // bitmask, see fcStateId_e
+    uint32_t fcState;                  // bitmask, see fcStateId_e
     uint8_t profile;
+    uint16_t averageSystemLoadPercent; // CPU load in %, 0-100
 
     // MSP_ANALOG
-    uint8_t vbat;                    // voltage in 0.1V steps, 168 = 16.8v
-    uint16_t rssi;                   // rssi in 0.1% steps, 505 = 50.5%
-    uint16_t amperage;               // amperage in 0.01A steps, 12575 = 125.75A
-    uint16_t mAhDrawn;               // milliampere hours, 1300mAh
+    uint8_t vbat;                      // voltage in 0.1V steps, 168 = 16.8v
+    uint16_t rssi;                     // rssi in 0.1% steps, 505 = 50.5%
+    uint16_t amperage;                 // amperage in 0.01A steps, 12575 = 125.75A
+    uint16_t mAhDrawn;                 // milliampere hours, 1300mAh
 
     // calculated
     uint32_t armedDuration;

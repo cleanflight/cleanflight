@@ -172,6 +172,11 @@ intptr_t osdElementData_vtxRfPower(void)
 }
 #endif
 
+intptr_t osdElementData_averageSystemLoad(void)
+{
+    return (intptr_t) fcStatus.averageSystemLoadPercent;
+}
+
 elementHandlerConfig_t elementHandlers[] = {
     {OSD_ELEMENT_ON_DURATION, osdElementRender_duration, osdElementData_onDuration},
     {OSD_ELEMENT_ARMED_DURATION, osdElementRender_duration, osdElementData_armedDuration},
@@ -192,6 +197,7 @@ elementHandlerConfig_t elementHandlers[] = {
     {OSD_ELEMENT_VTX_BAND, osdElementRender_vtxBand, osdElementData_vtxBand},
     {OSD_ELEMENT_VTX_RFPOWER, osdElementRender_vtxRfPower, osdElementData_vtxRfPower},
 #endif
+    {OSD_ELEMENT_AVERAGE_SYSTEM_LOAD, osdElementRender_averageSystemLoad, osdElementData_averageSystemLoad},
 };
 
 static elementHandlerConfig_t *osdFindElementHandler(uint8_t id)

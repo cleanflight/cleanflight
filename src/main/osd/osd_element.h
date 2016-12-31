@@ -50,6 +50,7 @@ enum osdElementIds_e {
     OSD_ELEMENT_VTX_BAND = 17,
     OSD_ELEMENT_VTX_RFPOWER = 18,
 
+    OSD_ELEMENT_AVERAGE_SYSTEM_LOAD = 19,
 };
 
 // 16 bits.
