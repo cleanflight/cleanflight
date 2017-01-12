@@ -26,6 +26,7 @@ doc_files=(
 	'Gtune.md'
 	'Blackbox.md'
 	'Migrating from baseflight.md'
+	'VTX.md'
 	'Boards.md'
     'Board - SPRacingF3Mini.md'
     'Board - SPRacingF3.md'
