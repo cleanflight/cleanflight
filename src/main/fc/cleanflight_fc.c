@@ -688,7 +688,7 @@ void processRcCommand(void)
     }
 }
 
-void subTaskPidController(void)
+static void subTaskPidController(void)
 {
     const uint32_t startTime = micros();
 
@@ -704,7 +704,7 @@ void subTaskPidController(void)
     if (debugMode == DEBUG_PIDLOOP) {debug[2] = micros() - startTime;}
 }
 
-void subTaskMainSubprocesses(void)
+static void subTaskMainSubprocesses(void)
 {
     const uint32_t startTime = micros();
 
@@ -786,7 +786,7 @@ void subTaskMainSubprocesses(void)
     if (debugMode == DEBUG_PIDLOOP) {debug[1] = micros() - startTime;}
 }
 
-void subTaskMotorUpdate(void)
+static void subTaskMotorUpdate(void)
 {
     const uint32_t startTime = micros();
     if (debugMode == DEBUG_CYCLETIME) {

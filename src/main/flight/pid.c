@@ -135,7 +135,7 @@ STATIC_UNIT_TESTED void pidResetDt(void)
 #endif
 float getdT(void)
 {
-    if (!dT) dT = (float)targetPidLooptime * 0.000001f;
+    //if (!dT) dT = (float)targetPidLooptime * 0.000001f;
 
     return dT;
 }
@@ -143,6 +143,7 @@ float getdT(void)
 void pidSetTargetLooptime(uint32_t pidLooptime)
 {
     targetPidLooptime = pidLooptime;
+    dT = (float)targetPidLooptime * 0.000001f;
 }
 
 void pidInitFilters(const pidProfile_t *pidProfile)
