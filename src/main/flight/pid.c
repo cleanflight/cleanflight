@@ -111,7 +111,7 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
     .P8[PIDMAG] = 40,
     .P8[PIDVEL] = 120,
     .I8[PIDVEL] = 45,
-    .D8[PIDVEL] = 1,
+    .D8[PIDVEL] = 15,
 
     .yaw_p_limit = YAW_P_LIMIT_MAX,
     .yaw_lpf_hz = 0,

@@ -86,19 +86,8 @@ static void applyMultirotorAltHold(void)
 {
     static uint8_t isAltHoldChanged = 0;
     // multirotor alt hold
-    if (rcControlsConfig()->alt_hold_fast_change) {
-        // rapid alt changes
-        /*if (ABS(rcData[THROTTLE] - initialRawThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
-            errorVelocityI = 0;
-            isAltHoldChanged = 1;
-            rcCommand[THROTTLE] += (rcData[THROTTLE] > initialRawThrottleHold) ? -rcControlsConfig()->alt_hold_deadband : rcControlsConfig()->alt_hold_deadband;
-        } else {
-            if (isAltHoldChanged) {
-                AltHold = EstAlt;
-                isAltHoldChanged = 0;
-            }
-            rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, motorConfig()->minthrottle, motorConfig()->maxthrottle);
-        }*/
+    if (FLIGHT_MODE(ALT_HOLD_MODE)) {
+        setVelocity = 0;
         if (!initialStickPos) {
             if (ABS(rcData[THROTTLE] - rxConfig()->midrc) > rcControlsConfig()->alt_hold_deadband) {
                 initialStickPos = 1;
@@ -111,6 +100,22 @@ static void applyMultirotorAltHold(void)
         }
         velocityControl = 1;
         rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, motorConfig()->minthrottle, motorConfig()->maxthrottle);
+        return;
+    }
+
+    if (rcControlsConfig()->alt_hold_fast_change) {
+        // rapid alt changes
+        if (ABS(rcData[THROTTLE] - initialRawThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
+            errorVelocityI = 0;
+            isAltHoldChanged = 1;
+            rcCommand[THROTTLE] += (rcData[THROTTLE] > initialRawThrottleHold) ? -rcControlsConfig()->alt_hold_deadband : rcControlsConfig()->alt_hold_deadband;
+        } else {
+            if (isAltHoldChanged) {
+                AltHold = EstAlt;
+                isAltHoldChanged = 0;
+            }
+            rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, motorConfig()->minthrottle, motorConfig()->maxthrottle);
+        }
     } else {
         // slow alt changes, mostly used for aerial photography
         if (ABS(rcData[THROTTLE] - initialRawThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
@@ -239,8 +244,8 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
     // I
     errorVelocityI += (pidProfile()->I8[PIDVEL] * error);
-    errorVelocityI = constrain(errorVelocityI, -(8192 * 200), (8192 * 200));
-    result += errorVelocityI / 8192;     // I in range +/-200
+    errorVelocityI = constrain(errorVelocityI, -(64 * 400), (64 * 400));
+    result += errorVelocityI / 64;     // I in range +/-400
 
     // D
     result -= constrain(pidProfile()->D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
@@ -368,17 +373,12 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
 void calculateACCEstimatedAltitude(uint32_t currentTime)
 {
-    static uint32_t previousTime;
-    uint32_t dTime;
+    UNUSED(currentTime);
     float dt;
     float vel_acc;
     int32_t vel_tmp;
     float accZ_tmp;
     static float accZ_old = 0.0f;
-
-    dTime = currentTime - previousTime;
-
-    previousTime = currentTime;
 
     dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
 
@@ -393,7 +393,7 @@ void calculateACCEstimatedAltitude(uint32_t currentTime)
     // Integrator - Altitude in cm
     accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                                                 // integrate velocity to get distance (x= a/2 * t^2)
     vel += vel_acc;
-    vel *= 0.90f;   // FIXME simple fix velocity integrate error
+    vel *= 0.92f;   // FIXME simple fix velocity integrate error
 
 #ifdef DEBUG_ALT_HOLD
     debug[1] = accZ_tmp;                        // acceleration

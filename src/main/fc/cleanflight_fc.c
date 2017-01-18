@@ -1000,7 +1000,7 @@ void taskUpdateRxMain(void)
 #endif
 
     // update Alt Hold by ACC only
-    if (sensors(SENSOR_ACC)) {
+    if (feature(FEATURE_ACC_ALT_HOLD) && sensors(SENSOR_ACC)) {
         updateACCAltHoldState();
     }
 }
@@ -1067,7 +1067,6 @@ void taskCalculateAltitude(void)
 
     // TODO merge with other sensor
     if (feature(FEATURE_ACC_ALT_HOLD)) {
-//    if (FLIGHT_MODE(ALT_HOLD_MODE)) {
         calculateACCEstimatedAltitude(currentTime);
     }
 }
