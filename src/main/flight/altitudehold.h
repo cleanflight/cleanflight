@@ -25,9 +25,13 @@ typedef struct airplaneConfig_s {
 PG_DECLARE(airplaneConfig_t, airplaneConfig);
 
 void calculateEstimatedAltitude(uint32_t currentTime);
+void calculateACCEstimatedAltitude(uint32_t currentTime);
 
 void applyAltHold(void);
 void updateAltHoldState(void);
 void updateSonarAltHoldState(void);
+void updateACCAltHoldState(void);
+
+void resetACCVel(void);
 
 int32_t altitudeHoldGetEstimatedAltitude(void);

@@ -67,6 +67,9 @@ int32_t vario = 0;                      // variometer in cm/s
 static int16_t initialRawThrottleHold;
 static int16_t initialThrottleHold;
 static int32_t EstAlt;                // in cm
+static float accAlt = 0.0f;
+static float vel = 0.0f;
+static uint8_t initialStickPos = 0; // flag for Throttle Stick move to center
 
 PG_REGISTER_WITH_RESET_TEMPLATE(airplaneConfig_t, airplaneConfig, PG_AIRPLANE_ALT_HOLD_CONFIG, 0);
 
@@ -85,7 +88,7 @@ static void applyMultirotorAltHold(void)
     // multirotor alt hold
     if (rcControlsConfig()->alt_hold_fast_change) {
         // rapid alt changes
-        if (ABS(rcData[THROTTLE] - initialRawThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
+        /*if (ABS(rcData[THROTTLE] - initialRawThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
             errorVelocityI = 0;
             isAltHoldChanged = 1;
             rcCommand[THROTTLE] += (rcData[THROTTLE] > initialRawThrottleHold) ? -rcControlsConfig()->alt_hold_deadband : rcControlsConfig()->alt_hold_deadband;
@@ -95,7 +98,19 @@ static void applyMultirotorAltHold(void)
                 isAltHoldChanged = 0;
             }
             rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, motorConfig()->minthrottle, motorConfig()->maxthrottle);
+        }*/
+        if (!initialStickPos) {
+            if (ABS(rcData[THROTTLE] - rxConfig()->midrc) > rcControlsConfig()->alt_hold_deadband) {
+                initialStickPos = 1;
+            }
+        } else {
+            if (ABS(rcData[THROTTLE] - rxConfig()->midrc) > rcControlsConfig()->alt_hold_deadband) {
+                // set velocity proportional to stick movement +100 throttle gives ~ +50 cm/s
+                setVelocity = (rcData[THROTTLE] - rxConfig()->midrc) / 2;
+            }
         }
+        velocityControl = 1;
+        rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, motorConfig()->minthrottle, motorConfig()->maxthrottle);
     } else {
         // slow alt changes, mostly used for aerial photography
         if (ABS(rcData[THROTTLE] - initialRawThrottleHold) > rcControlsConfig()->alt_hold_deadband) {
@@ -163,6 +178,32 @@ void updateSonarAltHoldState(void)
         initialThrottleHold = rcCommand[THROTTLE];
         errorVelocityI = 0;
         altHoldThrottleAdjustment = 0;
+        accAlt = EstAlt;
+    }
+}
+
+void resetACCVel(void)
+{
+    vel = 0.0f;
+    accAlt = 0.0f;
+}
+
+void updateACCAltHoldState(void)
+{
+    // ACC alt hold activate
+    if (!rcModeIsActive(BOXALTHOLD)) {
+        DISABLE_FLIGHT_MODE(ALT_HOLD_MODE);
+        return;
+    }
+
+    if (!FLIGHT_MODE(ALT_HOLD_MODE)) {
+        ENABLE_FLIGHT_MODE(ALT_HOLD_MODE);
+        AltHold = EstAlt;
+        initialRawThrottleHold = rcData[THROTTLE];
+        initialThrottleHold = rcCommand[THROTTLE];
+        errorVelocityI = 0;
+        altHoldThrottleAdjustment = 0;
+        initialStickPos = 0;
     }
 }
 
@@ -217,7 +258,6 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     int32_t vel_tmp;
     float accZ_tmp;
     static float accZ_old = 0.0f;
-    static float vel = 0.0f;
     static float accAlt = 0.0f;
     static int32_t lastBaroAlt;
 
@@ -325,6 +365,57 @@ void calculateEstimatedAltitude(uint32_t currentTime)
 
     accZ_old = accZ_tmp;
 }
+
+void calculateACCEstimatedAltitude(uint32_t currentTime)
+{
+    static uint32_t previousTime;
+    uint32_t dTime;
+    float dt;
+    float vel_acc;
+    int32_t vel_tmp;
+    float accZ_tmp;
+    static float accZ_old = 0.0f;
+
+    dTime = currentTime - previousTime;
+
+    previousTime = currentTime;
+
+    dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
+
+    // Integrator - velocity, cm/sec
+    if (accSumCount) {
+        accZ_tmp = (float)accSum[2] / (float)accSumCount;
+    } else {
+        accZ_tmp = 0;
+    }
+    vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
+
+    // Integrator - Altitude in cm
+    accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                                                 // integrate velocity to get distance (x= a/2 * t^2)
+    vel += vel_acc;
+    vel *= 0.90f;   // FIXME simple fix velocity integrate error
+
+#ifdef DEBUG_ALT_HOLD
+    debug[1] = accZ_tmp;                        // acceleration
+    debug[2] = vel * 10.0f;                     // velocity
+    debug[3] = accAlt * 10.0f;                  // height
+#endif
+
+    imuResetAccelerationSum();
+    EstAlt = accAlt;
+
+    // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
+    // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
+    vel_tmp = lrintf(vel);
+
+    // set vario
+    vario = applyDeadband(vel_tmp, 5);
+
+    altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+
+    accZ_old = accZ_tmp;
+}
+
 
 int32_t altitudeHoldGetEstimatedAltitude(void)
 {

@@ -373,6 +373,11 @@ void mwArm(void)
             beeper(BEEPER_ARMING);
 #endif
 
+            // reset ACC integrate
+            if (feature(FEATURE_ACC_ALT_HOLD)) {
+                resetACCVel();
+            }
+
             return;
         }
     }
@@ -720,6 +725,13 @@ void subTaskMainSubprocesses(void)
             if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
                 applyAltHold();
             }
+        } else {
+
+            // TODO acc only hold
+            if(sensors(SENSOR_ACC) && FLIGHT_MODE(ALT_HOLD_MODE)) {
+                applyAltHold();
+            }
+
         }
 #endif
 
@@ -986,6 +998,11 @@ void taskUpdateRxMain(void)
         updateSonarAltHoldState();
     }
 #endif
+
+    // update Alt Hold by ACC only
+    if (sensors(SENSOR_ACC)) {
+        updateACCAltHoldState();
+    }
 }
 
 #ifdef GPS
@@ -1046,7 +1063,14 @@ void taskCalculateAltitude(void)
 #endif
         ) {
         calculateEstimatedAltitude(currentTime);
-    }}
+    }
+
+    // TODO merge with other sensor
+    if (feature(FEATURE_ACC_ALT_HOLD)) {
+//    if (FLIGHT_MODE(ALT_HOLD_MODE)) {
+        calculateACCEstimatedAltitude(currentTime);
+    }
+}
 #endif
 
 #ifdef DISPLAY

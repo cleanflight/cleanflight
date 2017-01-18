@@ -166,6 +166,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
     { "FAILSAFE",  BOXFAILSAFE,  27 },
     { "AIR MODE",  BOXAIRMODE,   28 },
     { "VTX",       BOXVTX,       29 },
+    { "ACC HOLD",  BOXALTHOLD,   30 },
 };
 
 // mask of enabled IDs, calculated on start based on enabled features. boxId_e is used as bit index.
@@ -295,6 +296,7 @@ static void initActiveBoxIds(void)
     if (sensors(SENSOR_ACC)) {
         ena |= 1 << BOXANGLE;
         ena |= 1 << BOXHORIZON;
+        ena |= 1 << BOXALTHOLD;
     }
 
 #ifdef BARO
