@@ -34,6 +34,8 @@ auxillary receiver channels and other events such as failsafe detection.
 | 26      | 25     | BLACKBOX   | Enable BlackBox logging                                              |
 | 27      | 26     | FAILSAFE   | Enter failsafe stage 2 manually                                      |
 | 28      | 27     | AIRMODE    | Alternative mixer and additional PID logic for more stable copter    |
+| 29      | 28     | VTX        |                                                                      |
+| 30      | 29     | ACC HOLD   | Altitude hold mode (by accelerometer only)                           |
 
 ## Auto-leveled flight
 
@@ -98,6 +100,12 @@ quick Iterm windups during finishes of rolls and flips, which will provide much 
 of flips and rolls what again opens the ability to have higher I gains for some.
 Note that AIRMODE will also overrule motor stop function! It will basically also act as an idle up switch.
 
+## ACC HOLD
+
+WORK-IN-PROGRESS. Currently conflict with "BARO" mode. Needs some tune.
+Adjust throttle by integrate accelerometer. Integrate value will be reset when arming.
+Throttle stick position on center means 0 velocity.
+Should combined with "ANGLE", "HORIZON", "HEADFREE", "HEADADJ", "MAG" mode("MAG" not tested).
 
 ## Auxillary Configuration
 

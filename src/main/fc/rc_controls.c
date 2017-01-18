@@ -83,7 +83,7 @@ PG_RESET_TEMPLATE(rcControlsConfig_t, rcControlsConfig,
     .alt_hold_deadband = 40,
     .alt_hold_fast_change = 1,
     .yaw_control_direction = 1,
-    .deadband3d_throttle = 50,
+    .deadband3d_throttle = 5,
 );
 
 PG_RESET_TEMPLATE(armingConfig_t, armingConfig,
