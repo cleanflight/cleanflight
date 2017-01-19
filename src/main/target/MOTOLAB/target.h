@@ -46,6 +46,7 @@
 
 #define GYRO
 #define ACC
+#define ACC_ALT_HOLD
 
 #define USE_GYRO_MPU6050
 #define GYRO_MPU6050_ALIGN CW180_DEG
