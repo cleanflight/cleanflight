@@ -373,10 +373,12 @@ void mwArm(void)
             beeper(BEEPER_ARMING);
 #endif
 
+#if defined(ACC_ALT_HOLD) && defined(ACC)
             // reset ACC integrate
             if (feature(FEATURE_ACC_ALT_HOLD)) {
                 resetACCVel();
             }
+#endif
 
             return;
         }
@@ -980,7 +982,7 @@ void taskUpdateRxMain(void)
     processRx();
     isRXDataNew = true;
 
-#if !defined(BARO) && !defined(SONAR)
+#if !defined(BARO) && !defined(SONAR) && !defined(ACC_ALT_HOLD)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();
 #endif
@@ -999,10 +1001,12 @@ void taskUpdateRxMain(void)
     }
 #endif
 
+#if defined(ACC_ALT_HOLD) && defined(ACC)
     // update Alt Hold by ACC only
     if (feature(FEATURE_ACC_ALT_HOLD) && sensors(SENSOR_ACC)) {
         updateACCAltHoldState();
     }
+#endif
 }
 
 #ifdef GPS
@@ -1064,11 +1068,13 @@ void taskCalculateAltitude(void)
         ) {
         calculateEstimatedAltitude(currentTime);
     }
+}
+#endif
 
-    // TODO merge with other sensor
-    if (feature(FEATURE_ACC_ALT_HOLD)) {
-        calculateACCEstimatedAltitude(currentTime);
-    }
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+void taskCalculateAltitudeACC(void)
+{
+    calculateEstimatedAltitudeACC(currentTime);
 }
 #endif
 

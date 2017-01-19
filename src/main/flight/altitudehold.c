@@ -88,17 +88,14 @@ static void applyMultirotorAltHold(void)
     // multirotor alt hold
     if (FLIGHT_MODE(ALT_HOLD_MODE)) {
         setVelocity = 0;
-        if (!initialStickPos) {
-            if (ABS(rcData[THROTTLE] - rxConfig()->midrc) > rcControlsConfig()->alt_hold_deadband) {
+        if (ABS(rcData[THROTTLE] - rxConfig()->midrc) > rcControlsConfig()->alt_hold_deadband) {
+            if (!initialStickPos) {
                 initialStickPos = 1;
-            }
-        } else {
-            if (ABS(rcData[THROTTLE] - rxConfig()->midrc) > rcControlsConfig()->alt_hold_deadband) {
-                // set velocity proportional to stick movement +100 throttle gives ~ +50 cm/s
+            } else {
+                // set velocity proportional to stick movement +100 throttle gives ~ +50 mm/s
                 setVelocity = (rcData[THROTTLE] - rxConfig()->midrc) / 2;
             }
         }
-        velocityControl = 1;
         rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, motorConfig()->minthrottle, motorConfig()->maxthrottle);
         return;
     }
@@ -203,7 +200,7 @@ void updateACCAltHoldState(void)
 
     if (!FLIGHT_MODE(ALT_HOLD_MODE)) {
         ENABLE_FLIGHT_MODE(ALT_HOLD_MODE);
-        AltHold = EstAlt;
+        AltHold = EstAlt * 10; // cm -> mm
         initialRawThrottleHold = rcData[THROTTLE];
         initialThrottleHold = rcCommand[THROTTLE];
         errorVelocityI = 0;
@@ -236,19 +233,64 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     } else {
         setVel = setVelocity;
     }
+
     // Velocity PID-Controller
 
     // P
     error = setVel - vel_tmp;
-    result = constrain((pidProfile()->P8[PIDVEL] * error / 16), -300, +300);
+    result = constrain((pidProfile()->P8[PIDVEL] * error / 32), -300, +300);
 
     // I
     errorVelocityI += (pidProfile()->I8[PIDVEL] * error);
-    errorVelocityI = constrain(errorVelocityI, -(32 * 800), (32 * 800));
-    result += errorVelocityI / 32;     // I in range +/-800
+    errorVelocityI = constrain(errorVelocityI, -(8192 * 200), (8192 * 200));
+    result += errorVelocityI / 8192;     // I in range +/-200
 
     // D
     result -= constrain(pidProfile()->D8[PIDVEL] * (accZ_tmp + accZ_old) / 512, -150, 150);
+
+    return result;
+}
+
+int32_t calculateAltHoldThrottleAdjustmentACC(int32_t vel_tmp, float accZ_tmp, float accZ_old)
+{
+    int32_t result = 0;
+    int32_t error;
+    int32_t setVel = setVelocity;
+
+    uint8_t P, I, D;
+
+    if (!isThrustFacingDownwards(&attitude)) {
+        return result;
+    }
+
+    // Altitude P-Controller
+    // not yet :(
+
+
+    // Velocity PID-Controller
+
+    // P
+    error = setVel - vel_tmp;
+    if (error > 0) {
+        // go up
+        P = pidProfile()->P8[PIDALT];
+        I = pidProfile()->I8[PIDALT];
+        D = pidProfile()->D8[PIDALT];
+    } else {
+        // go down
+        P = pidProfile()->P8[PIDVEL];
+        I = pidProfile()->I8[PIDVEL];
+        D = pidProfile()->D8[PIDVEL];
+    }
+    result = constrain((P * error / 64), -600, +600);
+
+    // I
+    errorVelocityI += (I * error);
+    errorVelocityI = constrain(errorVelocityI, -(256 * 800), (256 * 800));
+    result += errorVelocityI / 256;     // I in range +/-800
+
+    // D
+    result -= constrain(D * (accZ_tmp + accZ_old) / 256, -300, 300);
 
     return result;
 }
@@ -371,7 +413,7 @@ void calculateEstimatedAltitude(uint32_t currentTime)
     accZ_old = accZ_tmp;
 }
 
-void calculateACCEstimatedAltitude(uint32_t currentTime)
+void calculateEstimatedAltitudeACC(uint32_t currentTime)
 {
     UNUSED(currentTime);
     float dt;
@@ -388,9 +430,9 @@ void calculateACCEstimatedAltitude(uint32_t currentTime)
     } else {
         accZ_tmp = 0;
     }
-    vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
+    vel_acc = accZ_tmp * accVelScale * (float)accTimeSum * 10.0f;
 
-    // Integrator - Altitude in cm
+    // Integrator - Altitude in mm
     accAlt += (vel_acc * 0.5f) * dt + vel * dt;                                                                 // integrate velocity to get distance (x= a/2 * t^2)
     vel += vel_acc;
     vel *= 0.92f;   // FIXME simple fix velocity integrate error
@@ -402,7 +444,7 @@ void calculateACCEstimatedAltitude(uint32_t currentTime)
 #endif
 
     imuResetAccelerationSum();
-    EstAlt = accAlt;
+    EstAlt = accAlt / 10;
 
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
@@ -411,7 +453,7 @@ void calculateACCEstimatedAltitude(uint32_t currentTime)
     // set vario
     vario = applyDeadband(vel_tmp, 5);
 
-    altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+    altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustmentACC(vel_tmp, accZ_tmp, accZ_old);
 
     accZ_old = accZ_tmp;
 }

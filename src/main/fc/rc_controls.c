@@ -80,10 +80,10 @@ STATIC_UNIT_TESTED uint32_t rcModeActivationMask; // one bit per mode defined in
 PG_RESET_TEMPLATE(rcControlsConfig_t, rcControlsConfig,
     .deadband = 0,
     .yaw_deadband = 0,
-    .alt_hold_deadband = 40,
+    .alt_hold_deadband = 10,
     .alt_hold_fast_change = 1,
     .yaw_control_direction = 1,
-    .deadband3d_throttle = 5,
+    .deadband3d_throttle = 50,
 );
 
 PG_RESET_TEMPLATE(armingConfig_t, armingConfig,
