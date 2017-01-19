@@ -223,7 +223,8 @@ static const char * const featureNames[] = {
     "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
     "SONAR", "TELEMETRY", "AMPERAGE_METER", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "ONESHOT125",
-    "BLACKBOX", "CHANNEL_FORWARDING", "TRANSPONDER", "OSD", NULL
+    "BLACKBOX", "CHANNEL_FORWARDING", "TRANSPONDER", "OSD", "ACC_ALT_HOLD",
+    NULL
 };
 
 // sync this with rxFailsafeChannelMode_e

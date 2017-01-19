@@ -93,6 +93,7 @@
 #define GYRO_MPU6500_ALIGN CW0_DEG
 
 #define ACC
+//#define ACC_ALT_HOLD
 #define USE_ACC_ADXL345
 #define USE_ACC_BMA280
 #define USE_ACC_MMA8452

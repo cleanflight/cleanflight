@@ -46,6 +46,9 @@ typedef enum {
 #if defined(BARO) || defined(SONAR)
     TASK_ALTITUDE,
 #endif
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+    TASK_ALTITUDE_ACC,
+#endif
 #ifdef DISPLAY
     TASK_DISPLAY,
 #endif
@@ -85,6 +88,7 @@ void taskUpdateCompass(void);
 void taskUpdateBaro(void);
 void taskUpdateSonar(void);
 void taskCalculateAltitude(void);
+void taskCalculateAltitudeACC(void);
 void taskUpdateDisplay(void);
 void taskTelemetry(void);
 void taskLedStrip(void);

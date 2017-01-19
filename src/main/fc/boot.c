@@ -820,6 +820,9 @@ void configureScheduler(void)
 #if defined(BARO) || defined(SONAR)
     setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_SONAR));
 #endif
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+    setTaskEnabled(TASK_ALTITUDE_ACC, feature(FEATURE_ACC_ALT_HOLD) && sensors(SENSOR_ACC));
+#endif
 #ifdef DISPLAY
     setTaskEnabled(TASK_DISPLAY, feature(FEATURE_DISPLAY));
 #endif

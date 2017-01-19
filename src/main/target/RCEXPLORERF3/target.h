@@ -46,6 +46,7 @@
 #define MPU6000_SPI_INSTANCE  SPI2
 
 #define ACC
+#define ACC_ALT_HOLD
 #define USE_ACC_MPU6000
 
 #define ACC_MPU6000_ALIGN CW180_DEG

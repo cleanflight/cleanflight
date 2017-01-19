@@ -93,9 +93,9 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
     .P8[PIDYAW] = 85,
     .I8[PIDYAW] = 45,
     .D8[PIDYAW] = 0,
-    .P8[PIDALT] = 50,
-    .I8[PIDALT] = 0,
-    .D8[PIDALT] = 0,
+    .P8[PIDALT] = 60,
+    .I8[PIDALT] = 50,
+    .D8[PIDALT] = 30,
     .P8[PIDPOS] = 15,   // POSHOLD_P * 100
     .I8[PIDPOS] = 0,    // POSHOLD_I * 100
     .D8[PIDPOS] = 0,
@@ -109,9 +109,9 @@ PG_RESET_TEMPLATE(pidProfile_t, pidProfile,
     .I8[PIDLEVEL] = 10,
     .D8[PIDLEVEL] = 75,
     .P8[PIDMAG] = 40,
-    .P8[PIDVEL] = 120,
-    .I8[PIDVEL] = 45,
-    .D8[PIDVEL] = 1,
+    .P8[PIDVEL] = 40,
+    .I8[PIDVEL] = 40,
+    .D8[PIDVEL] = 15,
 
     .yaw_p_limit = YAW_P_LIMIT_MAX,
     .yaw_lpf_hz = 0,
@@ -135,7 +135,7 @@ STATIC_UNIT_TESTED void pidResetDt(void)
 #endif
 float getdT(void)
 {
-    if (!dT) dT = (float)targetPidLooptime * 0.000001f;
+    //if (!dT) dT = (float)targetPidLooptime * 0.000001f;
 
     return dT;
 }
@@ -143,6 +143,7 @@ float getdT(void)
 void pidSetTargetLooptime(uint32_t pidLooptime)
 {
     targetPidLooptime = pidLooptime;
+    dT = (float)targetPidLooptime * 0.000001f;
 }
 
 void pidInitFilters(const pidProfile_t *pidProfile)

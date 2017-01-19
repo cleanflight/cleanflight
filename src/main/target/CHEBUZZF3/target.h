@@ -95,6 +95,7 @@
 #define GYRO_MPU6050_ALIGN CW0_DEG
 
 #define ACC
+#define ACC_ALT_HOLD
 #define USE_ACC_MPU6050
 #define USE_ACC_LSM303DLHC
 

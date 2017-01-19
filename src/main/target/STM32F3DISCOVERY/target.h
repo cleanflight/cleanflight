@@ -103,6 +103,7 @@
 // #define AFATFS_USE_INTROSPECTIVE_LOGGING
 
 #define ACC
+#define ACC_ALT_HOLD
 #define USE_ACC_LSM303DLHC
 
 #define MAG

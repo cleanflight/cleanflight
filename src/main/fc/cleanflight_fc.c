@@ -373,6 +373,13 @@ void mwArm(void)
             beeper(BEEPER_ARMING);
 #endif
 
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+            // reset ACC integrate
+            if (feature(FEATURE_ACC_ALT_HOLD)) {
+                resetACCVel();
+            }
+#endif
+
             return;
         }
     }
@@ -681,7 +688,7 @@ void processRcCommand(void)
     }
 }
 
-void subTaskPidController(void)
+static void subTaskPidController(void)
 {
     const uint32_t startTime = micros();
 
@@ -697,7 +704,7 @@ void subTaskPidController(void)
     if (debugMode == DEBUG_PIDLOOP) {debug[2] = micros() - startTime;}
 }
 
-void subTaskMainSubprocesses(void)
+static void subTaskMainSubprocesses(void)
 {
     const uint32_t startTime = micros();
 
@@ -710,15 +717,24 @@ void subTaskMainSubprocesses(void)
         updateGtuneState();
 #endif
 
-#if defined(BARO) || defined(SONAR)
+#if defined(BARO) || defined(SONAR) || defined(ACC_ALT_HOLD)
         // FIXME outdated comments?
         // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
         // this must be called here since applyAltHold directly manipulates rcCommands[]
         updateRcCommands();
-
-        if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
-            if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
-                applyAltHold();
+#endif
+#if defined(ACC_ALT_HOLD) && !(defined(BARO) || defined(SONAR))
+        if(sensors(SENSOR_ACC) && FLIGHT_MODE(ALT_HOLD_MODE)) {
+            applyAltHold();
+        }
+#else
+        if(sensors(SENSOR_ACC) && FLIGHT_MODE(ALT_HOLD_MODE)) {
+            applyAltHold();
+        } else {
+            if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
+                if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
+                    applyAltHold();
+                }
             }
         }
 #endif
@@ -772,7 +788,7 @@ void subTaskMainSubprocesses(void)
     if (debugMode == DEBUG_PIDLOOP) {debug[1] = micros() - startTime;}
 }
 
-void subTaskMotorUpdate(void)
+static void subTaskMotorUpdate(void)
 {
     const uint32_t startTime = micros();
     if (debugMode == DEBUG_CYCLETIME) {
@@ -968,7 +984,7 @@ void taskUpdateRxMain(void)
     processRx();
     isRXDataNew = true;
 
-#if !defined(BARO) && !defined(SONAR)
+#if !defined(BARO) && !defined(SONAR) && !defined(ACC_ALT_HOLD)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();
 #endif
@@ -984,6 +1000,13 @@ void taskUpdateRxMain(void)
     // updateRcCommands() sets rcCommand[], updateAltHoldState depends on valid rcCommand[] data.
     if (sensors(SENSOR_SONAR)) {
         updateSonarAltHoldState();
+    }
+#endif
+
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+    // update Alt Hold by ACC only
+    if (feature(FEATURE_ACC_ALT_HOLD) && sensors(SENSOR_ACC)) {
+        updateACCAltHoldState();
     }
 #endif
 }
@@ -1046,7 +1069,15 @@ void taskCalculateAltitude(void)
 #endif
         ) {
         calculateEstimatedAltitude(currentTime);
-    }}
+    }
+}
+#endif
+
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+void taskCalculateAltitudeACC(void)
+{
+    calculateEstimatedAltitudeACC(currentTime);
+}
 #endif
 
 #ifdef DISPLAY

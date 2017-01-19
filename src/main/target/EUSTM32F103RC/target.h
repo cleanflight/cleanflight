@@ -52,6 +52,7 @@
 #define GYRO_MPU6050_ALIGN CW0_DEG
 
 #define ACC
+#define ACC_ALT_HOLD
 #define USE_FAKE_ACC
 #define USE_ACC_ADXL345
 #define USE_ACC_BMA280

@@ -35,6 +35,7 @@
 
 
 #define ACC
+#define ACC_ALT_HOLD
 #define USE_ACC_MPU6050
 
 #define GYRO

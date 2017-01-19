@@ -156,6 +156,15 @@ cfTask_t cfTasks[] = {
     },
 #endif
 
+#if defined(ACC_ALT_HOLD) && defined(ACC)
+    [TASK_ALTITUDE_ACC] = {
+        .taskName = "ALTITUDE_ACC",
+        .taskFunc = taskCalculateAltitudeACC,
+        .desiredPeriod = TASK_PERIOD_MS(20),
+        .staticPriority = TASK_PRIORITY_MEDIUM,
+    },
+#endif
+
 #ifdef TRANSPONDER
     [TASK_TRANSPONDER] = {
         .taskName = "TRANSPONDER",

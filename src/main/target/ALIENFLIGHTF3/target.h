@@ -62,6 +62,7 @@
 #define GYRO_MPU6500_ALIGN CW270_DEG
 
 #define ACC
+#define ACC_ALT_HOLD
 #define USE_ACC_MPU6050
 #define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
