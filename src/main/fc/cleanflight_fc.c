@@ -717,23 +717,25 @@ static void subTaskMainSubprocesses(void)
         updateGtuneState();
 #endif
 
-#if defined(BARO) || defined(SONAR)
+#if defined(BARO) || defined(SONAR) || defined(ACC_ALT_HOLD)
         // FIXME outdated comments?
         // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
         // this must be called here since applyAltHold directly manipulates rcCommands[]
         updateRcCommands();
-
-        if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
-            if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
-                applyAltHold();
-            }
+#endif
+#if defined(ACC_ALT_HOLD) && !(defined(BARO) || defined(SONAR))
+        if(sensors(SENSOR_ACC) && FLIGHT_MODE(ALT_HOLD_MODE)) {
+            applyAltHold();
+        }
+#else
+        if(sensors(SENSOR_ACC) && FLIGHT_MODE(ALT_HOLD_MODE)) {
+            applyAltHold();
         } else {
-
-            // TODO acc only hold
-            if(sensors(SENSOR_ACC) && FLIGHT_MODE(ALT_HOLD_MODE)) {
-                applyAltHold();
+            if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR)) {
+                if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE)) {
+                    applyAltHold();
+                }
             }
-
         }
 #endif
 
