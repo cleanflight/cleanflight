@@ -310,8 +310,8 @@ BUILD = 	\
 			src/main/build/build_config.c
 
 RX = 		\
-			src/main/rx/rx_msp.c \
-			src/main/rx/pwm.c
+			src/main/rx/rx_msp.c
+			#src/main/rx/pwm.c
 
 FLIGHT = 	\
 			src/main/flight/imu.c
