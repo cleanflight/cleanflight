@@ -245,7 +245,7 @@ uint8_t serial_waiting(serialPort_t *instance)
         
     struct timeval tv = {SELECT_TIMEOUT, SELECT_TIMEOUT_US};   // sleep for ten minutes!
 
-    result = select(USB.fd + 1, &readset, NULL, NULL, NULL);
+    result = select(USB.fd + 1, &readset, NULL, NULL, &tv);
 
     if(result > 0)
     {
