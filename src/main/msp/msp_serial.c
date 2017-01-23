@@ -184,7 +184,8 @@ STATIC_UNIT_TESTED void mspSerialProcessReceivedCommand(mspPort_t *msp)
     int status = mspProcessCommand(&command, reply);
 
     if (status) {
-        printf("Command code: %d\nWriting to PC\n",command.cmd);
+        //printf("Command code: %d\nWriting to PC\n",command.cmd);
+        //printf("Command code: %d\n",command.cmd);
         // reply should be sent back
         sbufSwitchToReader(&reply->buf, outBufHead); // change streambuf direction
         mspSerialEncode(msp, reply);
