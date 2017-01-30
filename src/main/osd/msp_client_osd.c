@@ -66,7 +66,8 @@ bool mspRequestFCSimpleCommandSender(mspPacket_t *request)
 static uint8_t commandsToSend[] = {
     MSP_STATUS,
     MSP_ANALOG,
-    MSP_MOTOR
+    MSP_MOTOR,
+    MSP_ALTITUDE,
 };
 
 mspClientStatus_t mspClientStatus;
@@ -129,7 +130,12 @@ int mspClientReplyHandler(mspPacket_t *reply)
             for (unsigned i = 0; i < 8 && i < OSD_MAX_MOTORS; i++) {
                 fcMotors[i] = sbufReadU16(src);
             }
-        break;
+            break;
+
+        case MSP_ALTITUDE:
+            fcStatus.altitudeBaroM = (uint16_t) (sbufReadU32(src) / 100); // value is in cm, convert to meters
+            // sbufReadU16(src); // vario - probably no interest in this for now
+            break;
 
         default:
             // we do not know how to handle the message

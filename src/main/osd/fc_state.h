@@ -62,6 +62,9 @@ typedef struct fcStatus_s {
     uint16_t amperage;                 // amperage in 0.01A steps, 12575 = 125.75A
     uint16_t mAhDrawn;                 // milliampere hours, 1300mAh
 
+    // MSP_ALTITUDE
+    uint16_t altitudeBaroM;            // altitude as reported by the baro (or sonar), in meters
+
     // calculated
     uint32_t armedDuration;
 } fcStatus_t;

@@ -198,3 +198,11 @@ void osdElementRender_averageSystemLoad(const element_t *element, elementDataPro
     osdPrintAt(element->x, element->y, elementAsciiBuffer);
 }
 
+void osdElementRender_altitudeBaro(const element_t *element, elementDataProviderFn dataFn)
+{
+    uint16_t altitudeBaro = (uint32_t) dataFn();
+
+    tfp_sprintf(elementAsciiBuffer, "%4d m", altitudeBaro);
+    osdPrintAt(element->x, element->y, elementAsciiBuffer);
+}
+

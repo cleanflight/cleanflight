@@ -40,3 +40,4 @@ void osdElementRender_vtxChannel(const element_t *element, elementDataProviderFn
 void osdElementRender_vtxBand(const element_t *element, elementDataProviderFn dataFn);
 void osdElementRender_vtxRfPower(const element_t *element, elementDataProviderFn dataFn);
 void osdElementRender_averageSystemLoad(const element_t *element, elementDataProviderFn dataFn);
+void osdElementRender_altitudeBaro(const element_t *element, elementDataProviderFn dataFn);
