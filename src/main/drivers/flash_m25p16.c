@@ -46,6 +46,7 @@
 
 // Format is manufacturer, memory type, then capacity
 #define JEDEC_ID_MICRON_M25P16         0x202015
+#define JEDEC_ID_WINBOND_W25Q16        0xEF4015
 #define JEDEC_ID_MICRON_N25Q064        0x20BA17
 #define JEDEC_ID_WINBOND_W25Q64        0xEF4017
 #define JEDEC_ID_MICRON_N25Q128        0x20ba18
@@ -160,6 +161,7 @@ static bool m25p16_readIdentification()
 
     switch (chipID) {
         case JEDEC_ID_MICRON_M25P16:
+        case JEDEC_ID_WINBOND_W25Q16:
             geometry.sectors = 32;
             geometry.pagesPerSector = 256;
         break;
