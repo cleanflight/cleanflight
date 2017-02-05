@@ -177,6 +177,11 @@ intptr_t osdElementData_averageSystemLoad(void)
     return (intptr_t) fcStatus.averageSystemLoadPercent;
 }
 
+intptr_t osdElementData_altitudeBaro(void)
+{
+    return (intptr_t) fcStatus.altitudeBaroM;
+}
+
 elementHandlerConfig_t elementHandlers[] = {
     {OSD_ELEMENT_ON_DURATION, osdElementRender_duration, osdElementData_onDuration},
     {OSD_ELEMENT_ARMED_DURATION, osdElementRender_duration, osdElementData_armedDuration},
@@ -198,6 +203,7 @@ elementHandlerConfig_t elementHandlers[] = {
     {OSD_ELEMENT_VTX_RFPOWER, osdElementRender_vtxRfPower, osdElementData_vtxRfPower},
 #endif
     {OSD_ELEMENT_AVERAGE_SYSTEM_LOAD, osdElementRender_averageSystemLoad, osdElementData_averageSystemLoad},
+    {OSD_ELEMENT_ALTITUDE_BARO, osdElementRender_altitudeBaro, osdElementData_altitudeBaro},
 };
 
 static elementHandlerConfig_t *osdFindElementHandler(uint8_t id)

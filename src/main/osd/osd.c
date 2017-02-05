@@ -97,6 +97,7 @@ const uint16_t osdSupportedElementIds[] = {
     OSD_ELEMENT_VTX_RFPOWER,
 #endif
     OSD_ELEMENT_AVERAGE_SYSTEM_LOAD,
+    OSD_ELEMENT_ALTITUDE_BARO,
 };
 
 const uint8_t osdSupportedElementIdsCount = ARRAYLEN(osdSupportedElementIds);
@@ -123,6 +124,7 @@ static const element_t osdDefaultElements[] = {
     {  5, -5, EF_ENABLED, OSD_ELEMENT_VTX_RFPOWER },
 #endif
     { 22, 1, EF_ENABLED | EF_FLASH_ON_DISCONNECT, OSD_ELEMENT_AVERAGE_SYSTEM_LOAD },
+    { 22, -5, EF_ENABLED | EF_FLASH_ON_DISCONNECT, OSD_ELEMENT_ALTITUDE_BARO },
 };
 
 void pgResetFn_osdElementConfig(osdElementConfig_t *osdElementConfig) {

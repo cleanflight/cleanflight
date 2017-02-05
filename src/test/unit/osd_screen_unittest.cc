@@ -569,6 +569,25 @@ TEST_F(OsdScreenTest, TestOsdElement_AverageSystemLoad)
     compareScreen(0, 0, expectedContent, strlen(expectedAscii));
 }
 
+TEST_F(OsdScreenTest, TestOsdElement_AltitudeBaro)
+{
+    // given
+    fcStatus.altitudeBaroM = 75;
+
+    element_t element = {
+        0, 0, true, OSD_ELEMENT_ALTITUDE_BARO
+    };
+
+    // when
+    osdDrawTextElement(&element);
+
+    // then
+    char expectedAscii[] = "  75 m";
+    uint8_t *expectedContent = asciiToFontMap(expectedAscii);
+
+    compareScreen(0, 0, expectedContent, strlen(expectedAscii));
+}
+
 
 // STUBS
 extern "C" {
