@@ -111,5 +111,9 @@ TravisCI is used to run automatic builds: https://travis-ci.org/cleanflight/clea
 
 [![Build Status](https://travis-ci.org/cleanflight/cleanflight.svg?branch=master)](https://travis-ci.org/cleanflight/cleanflight)
 
+Coveralls is used to monitor code coverage: https://coveralls.io/github/cleanflight/cleanflight
+
+[![Coverage Status](https://coveralls.io/repos/github/unitware/cleanflight/badge.svg?branch=master)](https://coveralls.io/github/unitware/cleanflight?branch=master)
+
 ## Cleanflight Releases
 https://github.com/cleanflight/cleanflight/releases
