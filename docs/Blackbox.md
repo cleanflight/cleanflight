@@ -182,11 +182,12 @@ The SPRacingF3 has a larger 8 megabyte dataflash chip onboard which allows for l
 
 These chips are also supported:
 
-* Micron/ST M25P16 - 16 Mbit / 2 MByte
-* Micron N25Q064 - 64 Mbit / 8 MByte
-* Winbond W25Q64 - 64 Mbit / 8 MByte
-* Micron N25Q0128 - 128 Mbit / 16 MByte
-* Winbond W25Q128 - 128 Mbit / 16 MByte
+* Micron/ST M25P16 - 16 Mbit / 2 MByte ([datasheet](http://www.micron.com/~/media/Documents/Products/Data%20Sheet/NOR%20Flash/Serial%20NOR/M25P/M25P16.pdf))
+* Micron/ST N25Q064 - 64 Mbit / 8 MByte ([datasheet](http://www.micron.com/~/media/documents/products/data-sheet/nor-flash/serial-nor/n25q/n25q_64a_3v_65nm.pdf))
+* Winbond W25Q64 - 64 Mbit / 8 MByte ([datasheet](http://www.winbond.com/resource-files/w25q64fv_revl1_100713.pdf))
+* Macronix MX25L64 - 64 Mbit / 8 MByte ([datasheet](http://media.digikey.com/pdf/Data%20Sheets/Macronix/MX25L6406E.pdf))
+* Micron/ST N25Q128 - 128 Mbit / 16 MByte ([datasheet](http://www.micron.com/~/media/Documents/Products/Data%20Sheet/NOR%20Flash/Serial%20NOR/N25Q/n25q_128mb_3v_65nm.pdf))
+* Winbond W25Q128 - 128 Mbit / 16 MByte ([datasheet](http://www.winbond.com/resource-files/w25q128fv_revhh1_100913_website1.pdf))
 
 #### Enable recording to dataflash
 On the Configurator's CLI tab, you must enter `set blackbox_device=SPIFLASH` to switch to logging to an onboard dataflash chip,
