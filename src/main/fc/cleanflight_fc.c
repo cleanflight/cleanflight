@@ -132,7 +132,6 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 
 extern uint32_t currentTime;
 extern uint8_t PIDweight[3];
-extern uint8_t dynP8[3], dynI8[3], dynD8[3];
 
 static bool isRXDataNew;
 
@@ -234,12 +233,6 @@ static void updateRcCommands(void)
             // YAW TPA disabled.
             PIDweight[axis] = 100;
         }
-#ifdef USE_PID_MW23
-        // FIXME axis indexes into pids.  use something like lookupPidIndex(rc_alias_e alias) to reduce coupling.
-        dynP8[axis] = (uint16_t)pidProfile()->P8[axis] * prop1 / 100;
-        dynI8[axis] = (uint16_t)pidProfile()->I8[axis] * prop1 / 100;
-        dynD8[axis] = (uint16_t)pidProfile()->D8[axis] * prop1 / 100;
-#endif
 
         if (rcData[axis] < rxConfig()->midrc) {
             rcCommand[axis] = -rcCommand[axis];

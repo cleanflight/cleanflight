@@ -15,6 +15,15 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * This module implements MSP functionality, i.e. the CleanFlight configurator
+ * communication. It is also used to enable CLI communication.
+ *
+ * MSP =  MultiWii Serial Protocol. The MSP consist of:
+ * - msp.c          (this module)
+ * - msp_serial.c
+ * - msp.server.c
+ */
 
 #include <stdbool.h>
 #include <stdint.h>
