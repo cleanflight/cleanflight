@@ -474,6 +474,14 @@ $(OBJECT_DIR)/ledstrip_unittest : \
 
 
 
+$(OBJECT_DIR)/drivers/adc.o : \
+	$(USER_DIR)/drivers/adc.c \
+	$(USER_DIR)/drivers/adc.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/drivers/adc.c -o $@
+
 $(OBJECT_DIR)/drivers/light_ws2811strip.o : \
 	$(USER_DIR)/drivers/light_ws2811strip.c \
 	$(USER_DIR)/drivers/light_ws2811strip.h \
@@ -554,6 +562,7 @@ $(OBJECT_DIR)/rx_rx_unittest : \
 	$(OBJECT_DIR)/rx/rx.o \
 	$(OBJECT_DIR)/rx_rx_unittest.o \
 	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/drivers/adc.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
@@ -570,6 +579,7 @@ $(OBJECT_DIR)/rx_ranges_unittest : \
 	$(OBJECT_DIR)/rx/rx.o \
 	$(OBJECT_DIR)/rx_ranges_unittest.o \
 	$(OBJECT_DIR)/common/maths.o \
+	$(OBJECT_DIR)/drivers/adc.o \
 	$(OBJECT_DIR)/gtest_main.a
 
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
