@@ -243,6 +243,9 @@ bool i2cWrite(uint8_t addr_, uint8_t reg, uint8_t data)
         }
     }
 
+    /* Pre-clear STOPF flag */
+    I2C_ClearFlag(I2Cx, I2C_ICR_STOPCF);
+
     /* Configure slave address, nbytes, reload, end mode and start or stop generation */
     I2C_TransferHandling(I2Cx, addr_, 1, I2C_AutoEnd_Mode, I2C_No_StartStop);
 
@@ -304,6 +307,9 @@ bool i2cRead(uint8_t addr_, uint8_t reg, uint8_t len, uint8_t* buf)
             return i2cTimeoutUserCallback(I2Cx);
         }
     }
+
+    /* Pre-clear STOPF flag */
+    I2C_ClearFlag(I2Cx, I2C_ICR_STOPCF);
 
     /* Configure slave address, nbytes, reload, end mode and start or stop generation */
     I2C_TransferHandling(I2Cx, addr_, len, I2C_AutoEnd_Mode, I2C_Generate_Start_Read);
