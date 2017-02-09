@@ -316,7 +316,7 @@ typedef struct blackboxGpsState_s {
 
 // This data is updated really infrequently:
 typedef struct blackboxSlowState_s {
-    uint16_t flightModeFlags;
+    uint32_t flightModeFlags; // extend this data size (from uint16_t)
     uint8_t stateFlags;
     uint8_t failsafePhase;
     bool rxSignalReceived;
@@ -332,9 +332,17 @@ extern uint32_t currentTime;
 //From rx.c:
 extern uint16_t rssi;
 
+//From gyro.c
+extern uint32_t targetLooptime;
+
+//From rc_controls.c
+extern uint32_t rcModeActivationMask;
+
 static BlackboxState blackboxState = BLACKBOX_STATE_DISABLED;
 
 static uint32_t blackboxLastArmingBeep = 0;
+static uint32_t blackboxLastFlightModeFlags = 0; // New event tracking of flight modes
+
 
 static struct {
     uint32_t headerIndex;
@@ -741,7 +749,7 @@ static void writeSlowFrame(void)
  */
 static void loadSlowState(blackboxSlowState_t *slow)
 {
-    slow->flightModeFlags = flightModeFlags;
+    slow->flightModeFlags = rcModeActivationMask; //was flightModeFlags;
     slow->stateFlags = stateFlags;
     slow->failsafePhase = failsafePhase();
     slow->rxSignalReceived = rxIsReceivingSignal();
@@ -865,6 +873,8 @@ void startBlackbox(void)
          * it finally plays the beep for this arming event.
          */
         blackboxLastArmingBeep = getArmingBeepTimeMicros();
+        blackboxLastFlightModeFlags = rcModeActivationMask; // record startup status
+
 
         blackboxSetState(BLACKBOX_STATE_PREPARE_LOG_FILE);
     }
@@ -1129,7 +1139,7 @@ static bool blackboxWriteSysinfo()
             blackboxPrintfHeaderLine("Firmware type:Cleanflight");
         break;
         case 1:
-            blackboxPrintfHeaderLine("Firmware revision:%s", shortGitRevision);
+            blackboxPrintfHeaderLine("Firmware revision:Cleanflight %s (%s)", FC_VERSION_STRING, shortGitRevision);
         break;
         case 2:
             blackboxPrintfHeaderLine("Firmware date:%s %s", buildDate, buildTime);
@@ -1185,6 +1195,158 @@ static bool blackboxWriteSysinfo()
                 );
             }
         break;
+        case 14:
+            blackboxPrintfHeaderLine("rcExpo:%d", controlRateProfiles(getCurrentProfile())->rcExpo8);
+            break;
+        case 15:
+            blackboxPrintfHeaderLine("rcYawExpo:%d", controlRateProfiles(getCurrentProfile())->rcYawExpo8);
+            break;
+        case 16:
+            blackboxPrintfHeaderLine("thrMid:%d", controlRateProfiles(getCurrentProfile())->thrMid8);
+            break;
+        case 17:
+            blackboxPrintfHeaderLine("thrExpo:%d", controlRateProfiles(getCurrentProfile())->thrExpo8);
+            break;
+        case 18:
+            blackboxPrintfHeaderLine("dynThrPID:%d", controlRateProfiles(getCurrentProfile())->dynThrPID);
+            break;
+        case 19:
+            blackboxPrintfHeaderLine("tpa_breakpoint:%d", controlRateProfiles(getCurrentProfile())->tpa_breakpoint);
+            break;
+        case 20: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("superExpoFactor:%d", masterConfig.rxConfig.superExpoFactor);
+            break;
+        case 21:
+            blackboxPrintfHeaderLine("rates:%d,%d,%d",
+                                     controlRateProfiles(getCurrentProfile())->rates[ROLL],
+                                     controlRateProfiles(getCurrentProfile())->rates[PITCH],
+                                     controlRateProfiles(getCurrentProfile())->rates[YAW]);
+            break;
+        case 22:
+            blackboxPrintfHeaderLine("looptime:%d", targetLooptime);
+            break;
+        case 23:
+            blackboxPrintfHeaderLine("pidController:%d", pidProfile()->pidController);
+            break;
+        case 24:
+            blackboxPrintfHeaderLine("rollPID:%d,%d,%d",
+                                     pidProfile()->P8[ROLL],
+                                     pidProfile()->I8[ROLL],
+                                     pidProfile()->D8[ROLL]);
+            break;
+        case 25:
+            blackboxPrintfHeaderLine("pitchPID:%d,%d,%d",
+                                     pidProfile()->P8[PITCH],
+                                     pidProfile()->I8[PITCH],
+                                     pidProfile()->D8[PITCH]);
+            break;
+        case 26:
+            blackboxPrintfHeaderLine("yawPID:%d,%d,%d",
+                                     pidProfile()->P8[YAW],
+                                     pidProfile()->I8[YAW],
+                                     pidProfile()->D8[YAW]);
+            break;
+        case 27:
+            blackboxPrintfHeaderLine("altPID:%d,%d,%d",
+                                     pidProfile()->P8[PIDALT],
+                                     pidProfile()->I8[PIDALT],
+                                     pidProfile()->D8[PIDALT]);
+            break;
+        case 28:
+            blackboxPrintfHeaderLine("posPID:%d,%d,%d",
+                                     pidProfile()->P8[PIDPOS],
+                                     pidProfile()->I8[PIDPOS],
+                                     pidProfile()->D8[PIDPOS]);
+            break;
+        case 29:
+            blackboxPrintfHeaderLine("posrPID:%d,%d,%d",
+                                     pidProfile()->P8[PIDPOSR],
+                                     pidProfile()->I8[PIDPOSR],
+                                     pidProfile()->D8[PIDPOSR]);
+            break;
+        case 30:
+            blackboxPrintfHeaderLine("navrPID:%d,%d,%d",
+                                     pidProfile()->P8[PIDNAVR],
+                                     pidProfile()->I8[PIDNAVR],
+                                     pidProfile()->D8[PIDNAVR]);
+            break;
+        case 31:
+            blackboxPrintfHeaderLine("levelPID:%d,%d,%d",
+                                     pidProfile()->P8[PIDLEVEL],
+                                     pidProfile()->I8[PIDLEVEL],
+                                     pidProfile()->D8[PIDLEVEL]);
+            break;
+        case 32:
+            blackboxPrintfHeaderLine("magPID:%d",
+                                     pidProfile()->P8[PIDMAG]);
+            break;
+        case 33:
+            blackboxPrintfHeaderLine("velPID:%d,%d,%d",
+                                     pidProfile()->P8[PIDVEL],
+                                     pidProfile()->I8[PIDVEL],
+                                     pidProfile()->D8[PIDVEL]);
+            break;
+        case 34:
+            blackboxPrintfHeaderLine("yaw_p_limit:%d",
+                                     pidProfile()->yaw_p_limit);
+            break;
+        case 35: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("yaw_lpf_hz:%d", (int)(pidProfile()->yaw_lpf_hz * 100.0));
+            break;
+        case 36: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("dterm_average_count:%d",pidProfile()->dterm_average_count);
+            break;
+        case 37: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("dterm_differentiator:%d",pidProfile()->dterm_differentiator);
+            break;
+        case 38: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("rollPitchItermResetRate:%d", pidProfile()->rollPitchItermResetRate);
+            break;
+        case 39: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("yawItermResetRate:%d",pidProfile()->yawItermResetRate);
+            break;
+        case 40:
+            blackboxPrintfHeaderLine("dterm_cut_hz:%d",(int)(pidProfile()->dterm_cut_hz * 100.0));
+            break;
+        case 41: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("H_sensitivity:%d", pidProfile()->H_sensitivity);
+            break;
+        case 42:
+            blackboxPrintfHeaderLine("deadband:%d", rcControlsConfig()->deadband);
+            break;
+        case 43:
+            blackboxPrintfHeaderLine("yaw_deadband:%d", rcControlsConfig()->yaw_deadband);
+            break;
+        case 44:
+            blackboxPrintfHeaderLine("gyro_lpf:%d", gyroConfig()->gyro_lpf);
+            break;
+        case 45: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("gyro_lowpass_hz:%d", (int)(masterConfig.gyro_soft_lpf_hz * 100.0));
+            break;
+        case 46:
+            blackboxPrintfHeaderLine("acc_cut_hz:%d", (int)(accelerometerConfig()->acc_cut_hz * 100.0));
+            break;
+        case 47:
+            blackboxPrintfHeaderLine("acc_hardware:%d", sensorSelectionConfig()->acc_hardware);
+            break;
+        case 48:
+            blackboxPrintfHeaderLine("baro_hardware:%d", sensorSelectionConfig()->baro_hardware);
+            break;
+        case 49:
+            blackboxPrintfHeaderLine("mag_hardware:%d", sensorSelectionConfig()->mag_hardware);
+            break;
+        case 50: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("gyro_cal_on_first_arm:%d", masterConfig.gyro_cal_on_first_arm);
+            break;
+        case 51: // Betaflight ONLY
+            //blackboxPrintfHeaderLine("vbat_pid_compensation:%d", masterConfig.batteryConfig.vbatPidCompensation);
+            break;
+        case 52:
+            blackboxPrintfHeaderLine("rc_smoothing:%d", rxConfig()->rcSmoothing);
+            break;
+        case 53:
+            blackboxPrintfHeaderLine("features:%d", featureConfig()->enabledFeatures);
+            break;
         default:
             return true;
     }
@@ -1212,6 +1374,10 @@ void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
         case FLIGHT_LOG_EVENT_SYNC_BEEP:
             blackboxWriteUnsignedVB(data->syncBeep.time);
         break;
+        case FLIGHT_LOG_EVENT_FLIGHTMODE: // New flightmode flags write
+            blackboxWriteUnsignedVB(data->flightMode.flags);
+            blackboxWriteUnsignedVB(data->flightMode.lastFlags);
+        break;
         case FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT:
             if (data->inflightAdjustment.floatFlag) {
                 blackboxWrite(data->inflightAdjustment.adjustmentFunction + FLIGHT_LOG_EVENT_INFLIGHT_ADJUSTMENT_FUNCTION_FLOAT_VALUE_FLAG);
@@ -1220,6 +1386,7 @@ void blackboxLogEvent(FlightLogEvent event, flightLogEventData_t *data)
                 blackboxWrite(data->inflightAdjustment.adjustmentFunction);
                 blackboxWriteSignedVB(data->inflightAdjustment.newValue);
             }
+        break;
         case FLIGHT_LOG_EVENT_GTUNE_RESULT:
             blackboxWrite(data->gtuneCycleResult.gtuneAxis);
             blackboxWriteSignedVB(data->gtuneCycleResult.gtuneGyroAVG);
@@ -1248,6 +1415,21 @@ static void blackboxCheckAndLogArmingBeep()
         eventData.time = blackboxLastArmingBeep;
 
         blackboxLogEvent(FLIGHT_LOG_EVENT_SYNC_BEEP, (flightLogEventData_t *) &eventData);
+    }
+}
+
+/* monitor the flight mode event status and trigger an event record if the state changes */
+static void blackboxCheckAndLogFlightMode()
+{
+    flightLogEvent_flightMode_t eventData; // Add new data for current flight mode flags
+
+    // Use != so that we can still detect a change if the counter wraps
+    if (rcModeActivationMask != blackboxLastFlightModeFlags) {
+        eventData.lastFlags = blackboxLastFlightModeFlags;
+        blackboxLastFlightModeFlags = rcModeActivationMask;
+        eventData.flags = rcModeActivationMask;
+
+        blackboxLogEvent(FLIGHT_LOG_EVENT_FLIGHTMODE, (flightLogEventData_t *) &eventData);
     }
 }
 
@@ -1296,6 +1478,7 @@ static void blackboxLogIteration()
         writeIntraframe();
     } else {
         blackboxCheckAndLogArmingBeep();
+        blackboxCheckAndLogFlightMode(); // Check for FlightMode status change event
         
         if (blackboxShouldLogPFrame(blackboxPFrameIndex)) {
             /*
