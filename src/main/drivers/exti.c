@@ -6,6 +6,7 @@
 
 #include "drivers/nvic.h"
 #include "drivers/io_impl.h"
+#include "drivers/irq.h"
 
 #include "exti.h"
 
@@ -150,25 +151,25 @@ void EXTI_IRQHandler(void)
 }
 
 #define _EXTI_IRQ_HANDLER(name)                 \
-    void name(void) {                           \
+    IRQHANDLER(name) {                          \
         EXTI_IRQHandler();                      \
     }                                           \
     struct dummy                                \
     /**/
 
 
-_EXTI_IRQ_HANDLER(EXTI0_IRQHandler);
-_EXTI_IRQ_HANDLER(EXTI1_IRQHandler);
+_EXTI_IRQ_HANDLER(EXTI0_IRQ);
+_EXTI_IRQ_HANDLER(EXTI1_IRQ);
 #if defined(STM32F10X)
-_EXTI_IRQ_HANDLER(EXTI2_IRQHandler);
+_EXTI_IRQ_HANDLER(EXTI2_IRQ);
 #elif defined(STM32F303xC)
-_EXTI_IRQ_HANDLER(EXTI2_TS_IRQHandler);
+_EXTI_IRQ_HANDLER(EXTI2_TS_IRQ);
 #else
 # warning "Unsupported CPU"
 #endif
-_EXTI_IRQ_HANDLER(EXTI3_IRQHandler);
-_EXTI_IRQ_HANDLER(EXTI4_IRQHandler);
-_EXTI_IRQ_HANDLER(EXTI9_5_IRQHandler);
-_EXTI_IRQ_HANDLER(EXTI15_10_IRQHandler);
+_EXTI_IRQ_HANDLER(EXTI3_IRQ);
+_EXTI_IRQ_HANDLER(EXTI4_IRQ);
+_EXTI_IRQ_HANDLER(EXTI9_5_IRQ);
+_EXTI_IRQ_HANDLER(EXTI15_10_IRQ);
 
 #endif

@@ -26,6 +26,7 @@
 
 #include "gpio.h"
 #include "system.h"
+#include "drivers/irq.h"
 
 #include "bus_i2c.h"
 #include "nvic.h"
@@ -69,22 +70,22 @@ void i2cSetOverclock(uint8_t OverClock)
     i2cOverClock = (OverClock) ? true : false;
 }
 
-void I2C1_ER_IRQHandler(void)
+IRQHANDLER(I2C1_ER_IRQ)
 {
     i2c_er_handler();
 }
 
-void I2C1_EV_IRQHandler(void)
+IRQHANDLER(I2C1_EV_IRQ)
 {
     i2c_ev_handler();
 }
 
-void I2C2_ER_IRQHandler(void)
+IRQHANDLER(I2C2_ER_IRQ)
 {
     i2c_er_handler();
 }
 
-void I2C2_EV_IRQHandler(void)
+IRQHANDLER(I2C2_EV_IRQ)
 {
     i2c_ev_handler();
 }

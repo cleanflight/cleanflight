@@ -29,6 +29,8 @@
 #include "gpio.h"
 #include "system.h"
 
+#include "drivers/irq.h"
+
 #include "timer.h"
 #include "timer_impl.h"
 
@@ -935,56 +937,56 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 
 // handler for shared interrupts when both timers need to check status bits
 #define _TIM_IRQ_HANDLER2(name, i, j)                                   \
-    void name(void)                                                     \
+    IRQHANDLER(name)                                                    \
     {                                                                   \
         timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);          \
         timCCxHandler(TIM ## j, &timerConfig[TIMER_INDEX(j)]);          \
     } struct dummy
 
 #define _TIM_IRQ_HANDLER(name, i)                                       \
-    void name(void)                                                     \
+    IRQHANDLER(name)                                                    \
     {                                                                   \
         timCCxHandler(TIM ## i, &timerConfig[TIMER_INDEX(i)]);          \
     } struct dummy
 
 #if USED_TIMERS & TIM_N(1)
-_TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
+_TIM_IRQ_HANDLER(TIM1_CC_IRQ, 1);
 # if defined(STM32F10X)
-_TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);       // timer can't be shared
+_TIM_IRQ_HANDLER(TIM1_UP_IRQ, 1);       // timer can't be shared
 # endif
 # ifdef STM32F303xC
 #  if USED_TIMERS & TIM_N(16)
-_TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
+_TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQ, 1, 16);  // both timers are in use
 #  else
-_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 1);       // timer16 is not used
+_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQ, 1);       // timer16 is not used
 #  endif
 # endif
 #endif
 #if USED_TIMERS & TIM_N(2)
-_TIM_IRQ_HANDLER(TIM2_IRQHandler, 2);
+_TIM_IRQ_HANDLER(TIM2_IRQ, 2);
 #endif
 #if USED_TIMERS & TIM_N(3)
-_TIM_IRQ_HANDLER(TIM3_IRQHandler, 3);
+_TIM_IRQ_HANDLER(TIM3_IRQ, 3);
 #endif
 #if USED_TIMERS & TIM_N(4)
-_TIM_IRQ_HANDLER(TIM4_IRQHandler, 4);
+_TIM_IRQ_HANDLER(TIM4_IRQ, 4);
 #endif
 #if USED_TIMERS & TIM_N(8)
-_TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
+_TIM_IRQ_HANDLER(TIM8_CC_IRQ, 8);
 # if defined(STM32F10X_XL)
-_TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQHandler, 8);
+_TIM_IRQ_HANDLER(TIM8_UP_TIM13_IRQ, 8);
 # else  // f10x_hd, f30x
-_TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, 8);
+_TIM_IRQ_HANDLER(TIM8_UP_IRQ, 8);
 # endif
 #endif
 #if USED_TIMERS & TIM_N(15)
-_TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
+_TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQ, 15);
 #endif
 #if defined(STM32F303xC) && ((USED_TIMERS & (TIM_N(1)|TIM_N(16))) == (TIM_N(16)))
-_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16);    // only timer16 is used, not timer1
+_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQ, 16);    // only timer16 is used, not timer1
 #endif
 #if USED_TIMERS & TIM_N(17)
-_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17);
+_TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQ, 17);
 #endif
 
 void timerInit(void)
