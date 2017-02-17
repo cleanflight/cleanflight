@@ -15,6 +15,21 @@ As of 2016 the recommendation for new purchases is a Serial or PPM based receive
 8 channel support, 1 channel per input pin.  On some platforms using parallel input will disable the use of serial ports
 and SoftSerial making it hard to use telemetry or GPS features.
 
+### Seriously Pro Racing F3 wiring
+
+SP Racing F3 and Parallel PWM requires special wiring. Both IO_1 and IO_2 ports must be used to make it work. IO_1 is located on the right side of the USB connector if the USB connector faces towards you.
+
+| Pin | IO_1 | IO_2 |
+| --- | ------ | ------ |
+| 1 | GND  | GND  |
+| 2 | +5V  | +5V  |
+| 3 | AILE | THRO |
+| 4 | ELEV | RUDD |
+| 5 | AUX1 | AUX3 |
+| 6 | AUX2 | AUX4 |
+| 7 |  -   |  -   |
+| 8 |  -   |  -   |
+
 ## PPM Receivers
 
 PPM is sometimes known as PPM SUM or CPPM.
