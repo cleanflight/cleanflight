@@ -48,7 +48,7 @@ int32_t BaroAlt = 0;
 PG_REGISTER_PROFILE_WITH_RESET_TEMPLATE(barometerConfig_t, barometerConfig, PG_BAROMETER_CONFIG, 0);
 
 static int32_t baroGroundAltitude = 0;
-static int32_t baroGroundPressure = 0;
+static int32_t baroGroundPressure = 8*101325;
 static uint32_t baroPressureSum = 0;
 
 PG_RESET_TEMPLATE(barometerConfig_t, barometerConfig,
@@ -79,7 +79,7 @@ static int32_t applyBarometerMedianFilter(int32_t newPressureReading)
     static int currentFilterSampleIndex = 0;
     static bool medianFilterReady = false;
     int nextSampleIndex;
-    
+
     nextSampleIndex = (currentFilterSampleIndex + 1);
     if (nextSampleIndex == PRESSURE_SAMPLES_MEDIAN) {
         nextSampleIndex = 0;
@@ -88,7 +88,7 @@ static int32_t applyBarometerMedianFilter(int32_t newPressureReading)
 
     barometerFilterSamples[currentFilterSampleIndex] = newPressureReading;
     currentFilterSampleIndex = nextSampleIndex;
-    
+
     if (medianFilterReady)
         return quickMedianFilter3(barometerFilterSamples);
     else
@@ -174,11 +174,18 @@ int32_t baroCalculateAltitude(void)
 
 void performBaroCalibrationCycle(void)
 {
+    static int32_t savedGroundPressure=0;
+
     baroGroundPressure -= baroGroundPressure / 8;
     baroGroundPressure += baroPressureSum / PRESSURE_SAMPLE_COUNT;
     baroGroundAltitude = (1.0f - powf((baroGroundPressure / 8) / 101325.0f, 0.190295f)) * 4433000.0f;
 
-    calibratingB--;
+    if (baroGroundPressure==savedGroundPressure)
+      calibratingB=0;
+    else {
+      calibratingB--;
+      savedGroundPressure=baroGroundPressure;
+    }
 }
 
 #endif /* BARO */
