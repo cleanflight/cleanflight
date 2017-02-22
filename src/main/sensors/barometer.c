@@ -174,17 +174,17 @@ int32_t baroCalculateAltitude(void)
 
 void performBaroCalibrationCycle(void)
 {
-    static int32_t savedGroundPressure=0;
+    static int32_t savedGroundPressure = 0;
 
     baroGroundPressure -= baroGroundPressure / 8;
     baroGroundPressure += baroPressureSum / PRESSURE_SAMPLE_COUNT;
     baroGroundAltitude = (1.0f - powf((baroGroundPressure / 8) / 101325.0f, 0.190295f)) * 4433000.0f;
 
-    if (baroGroundPressure==savedGroundPressure)
-      calibratingB=0;
+    if (baroGroundPressure == savedGroundPressure)
+      calibratingB = 0;
     else {
       calibratingB--;
-      savedGroundPressure=baroGroundPressure;
+      savedGroundPressure = baroGroundPressure;
     }
 }
 
