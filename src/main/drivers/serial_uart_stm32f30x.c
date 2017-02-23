@@ -36,6 +36,7 @@
 #include "gpio.h"
 #include "nvic.h"
 #include "dma.h"
+#include "drivers/irq.h"
 
 #include "serial.h"
 #include "serial_uart.h"
@@ -343,7 +344,7 @@ void usartIrqHandler(uartPort_t *s)
 }
 
 #ifdef USE_UART1
-void USART1_IRQHandler(void)
+IRQHANDLER(USART1_IRQ)
 {
     uartPort_t *s = &uartPort1;
 
@@ -352,7 +353,7 @@ void USART1_IRQHandler(void)
 #endif
 
 #ifdef USE_UART2
-void USART2_IRQHandler(void)
+IRQHANDLER(USART2_IRQ)
 {
     uartPort_t *s = &uartPort2;
 
@@ -361,7 +362,7 @@ void USART2_IRQHandler(void)
 #endif
 
 #ifdef USE_UART3
-void USART3_IRQHandler(void)
+IRQHANDLER(USART3_IRQ)
 {
     uartPort_t *s = &uartPort3;
 
@@ -436,7 +437,7 @@ uartPort_t *serialUART4(uint32_t baudRate, portMode_t mode, portOptions_t option
 }
 
 // UART4 Rx/Tx IRQ Handler
-void UART4_IRQHandler(void)
+IRQHANDLER(UART4_IRQ)
 {
     uartPort_t *s = &uartPort4;
     usartIrqHandler(s);
@@ -513,7 +514,7 @@ uartPort_t *serialUART5(uint32_t baudRate, portMode_t mode, portOptions_t option
 }
 
 // UART5 Rx/Tx IRQ Handler
-void UART5_IRQHandler(void)
+IRQHANDLER(UART5_IRQ)
 {
     uartPort_t *s = &uartPort5;
     usartIrqHandler(s);

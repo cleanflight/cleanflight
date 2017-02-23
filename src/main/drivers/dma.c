@@ -25,12 +25,13 @@
 
 #include "drivers/dma.h"
 #include "drivers/nvic.h"
+#include "drivers/irq.h"
 
 #define DEFINE_DMA_CHANNEL(d, c, f, i, r) \
     {.dma = d, .channel = c, .handler = NULL, .flagsShift = f, .irqn = i, .rcc = r}
 
 #define DEFINE_DMA_IRQ_HANDLER(d, c, h) \
-    void DMA ## d ## _Channel ## c ## _IRQHandler(void) {\
+    IRQHANDLER(DMA ## d ## _Channel ## c ## _IRQ) {\
         DMA_IRQHandler(h);\
     } \
     struct dummy
