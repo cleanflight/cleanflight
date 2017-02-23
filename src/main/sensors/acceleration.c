@@ -215,7 +215,13 @@ void updateAccelerationReadings(rollAndPitchTrims_t *rollAndPitchTrims)
     }
 
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-        accSmooth[axis] = lrintf(accFilterApplyFn(&accFilter[axis], (float)accADCRaw[axis]));
+      accSmooth[axis] = accADCRaw[axis];
+    }
+    
+    if (accelerometerConfig()->acc_cut_hz) {
+        for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+            accSmooth[axis] = lrintf(biquadFilterApply(&accFilter[axis], (float)accSmooth[axis]));
+        }
     }
 
     alignSensors(accSmooth, accSmooth, accAlign);
