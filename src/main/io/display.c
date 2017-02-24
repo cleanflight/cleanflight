@@ -87,6 +87,79 @@ static char lineBuffer[SCREEN_CHARACTER_COLUMN_COUNT + 1];
 #define HALF_SCREEN_CHARACTER_COLUMN_COUNT (SCREEN_CHARACTER_COLUMN_COUNT / 2)
 #define IS_SCREEN_CHARACTER_COLUMN_COUNT_ODD (SCREEN_CHARACTER_COLUMN_COUNT & 1)
 
+static uint8_t armedBitmapRLE [] = { 128, 56,
+    '\x00','\x00','\x0f','\x80','\xc0','\xe0','\xf0','\xf0', // 0x0008
+    '\x03','\x78','\x30','\x00','\x00','\x6d','\x80','\xc0', // 0x0010
+    '\xe0','\xe0','\x02','\xf0','\xe0','\xc0','\xc0','\x04', // 0x0018
+    '\xe0','\xf1','\xf9','\xff','\xff','\x02','\xe7','\xe0', // 0x0020
+    '\xe0','\x03','\xf0','\xf8','\xfc','\xfe','\xfe','\x02', // 0x0028
+    '\xff','\xff','\x05','\x7e','\x3e','\x00','\x00','\x60', // 0x0030
+    '\x07','\x07','\x03','\x03','\x83','\xc3','\xc3','\x03', // 0x0038
+    '\xe1','\xf9','\xff','\x7f','\x1f','\x03','\x01','\x01', // 0x0040
+    '\x03','\x81','\xe0','\xe0','\x02','\x70','\x31','\x31', // 0x0048
+    '\x06','\x91','\xe0','\xf0','\x30','\x00','\x00','\x06', // 0x0050
+    '\x80','\xe0','\xf0','\x30','\x30','\x07','\x90','\xf0', // 0x0058
+    '\xe0','\x70','\x30','\x30','\x03','\xf0','\xf0','\x02', // 0x0060
+    '\x70','\x80','\xe0','\xf0','\x30','\x30','\x04','\xf0', // 0x0068
+    '\xf0','\x02','\x70','\x80','\xe0','\xf0','\x30','\x30', // 0x0070
+    '\x07','\x90','\xf0','\xf0','\x02','\x30','\x00','\x00', // 0x0078
+    '\x06','\x80','\xe0','\xf0','\x30','\x80','\xe0','\xe0', // 0x0080
+    '\x02','\x70','\x30','\x30','\x06','\x90','\xe0','\xf0', // 0x0088
+    '\x30','\x00','\x00','\x03','\xc0','\xf0','\x70','\x10', // 0x0090
+    '\x20','\xb0','\xf0','\xf0','\x02','\x70','\x30','\x30', // 0x0098
+    '\x03','\x10','\x10','\x02','\x00','\x00','\x07','\xf8', // 0x00a0
+    '\xfc','\xff','\xff','\x05','\x7f','\x3f','\x1f','\x00', // 0x00a8
+    '\x00','\x04','\x1c','\x1f','\x1f','\x02','\x19','\x18', // 0x00b0
+    '\x18','\x04','\x08','\x10','\x1c','\x1e','\x1f','\x1b', // 0x00b8
+    '\x18','\x18','\x04','\x08','\x10','\x1c','\x1e','\x1f', // 0x00c0
+    '\x1b','\x19','\x19','\x03','\x18','\x18','\x03','\x1c', // 0x00c8
+    '\x1e','\x07','\x07','\x02','\x06','\x06','\x02','\x1e', // 0x00d0
+    '\x1e','\x02','\x0f','\x17','\x1d','\x1e','\x07','\x03', // 0x00d8
+    '\x00','\x00','\x02','\x18','\x1e','\x0f','\x13','\x1d', // 0x00e0
+    '\x1e','\x07','\x03','\x01','\x01','\x03','\x00','\x00', // 0x00e8
+    '\x02','\x10','\x1c','\x1e','\x1f','\x1b','\x18','\x18', // 0x00f0
+    '\x04','\x08','\x10','\x1c','\x1e','\x07','\x03','\x1c', // 0x00f8
+    '\x1f','\x1f','\x02','\x19','\x18','\x19','\x19','\x02', // 0x0100
+    '\x1f','\x0f','\x13','\x1c','\x1e','\x07','\x03','\x01', // 0x0108
+    '\x01','\x02','\x19','\x1f','\x0f','\x03','\x01','\x00', // 0x0110
+    '\x18','\x1e','\x0f','\x03','\x00','\x00','\x0f','\x01', // 0x0118
+    '\x01','\x05','\xc0','\xe0','\xf0','\xf0','\x02','\xf8', // 0x0120
+    '\xf8','\x02','\x7c','\x7c','\x07','\xfc','\xfc','\x04', // 0x0128
+    '\xf8','\xf8','\x02','\x00','\x00','\x02','\xc0','\xf0', // 0x0130
+    '\xfc','\xfc','\x03','\x7c','\x7c','\x07','\xfc','\xfc', // 0x0138
+    '\x06','\x78','\x00','\x00','\x02','\xc0','\xf0','\xfc', // 0x0140
+    '\xfc','\x03','\x7c','\x7c','\x07','\xfc','\xfc','\x06', // 0x0148
+    '\x7c','\x7c','\x06','\xfc','\xfc','\x04','\xf8','\xf8', // 0x0150
+    '\x02','\x30','\x00','\xc0','\xf0','\xfc','\xfc','\x03', // 0x0158
+    '\x7c','\x7c','\x0c','\x3c','\x3c','\x02','\x1c','\x0c', // 0x0160
+    '\xcc','\xf4','\xfc','\xfc','\x03','\x7c','\x7c','\x08', // 0x0168
+    '\xfc','\xfc','\x05','\xf8','\x10','\x00','\x00','\x08', // 0x0170
+    '\x80','\xe0','\xf8','\xfc','\xff','\xff','\x04','\xf3', // 0x0178
+    '\xf1','\xf0','\xf0','\x06','\xfc','\xfe','\xff','\x7f', // 0x0180
+    '\x1f','\x87','\xe1','\xf8','\xfe','\xff','\xff','\x04', // 0x0188
+    '\xf3','\xf0','\xf0','\x06','\xf8','\xfc','\xff','\x3f', // 0x0190
+    '\x1f','\x0f','\x87','\xe1','\xf8','\xfe','\xff','\x7f', // 0x0198
+    '\x3f','\x0f','\x03','\x00','\x00','\x04','\xc0','\xf0', // 0x01a0
+    '\xfc','\xfe','\xff','\x7f','\x1f','\x07','\x01','\x00', // 0x01a8
+    '\x00','\x03','\x80','\xe0','\xf8','\xfe','\xff','\x7f', // 0x01b0
+    '\x3f','\x8f','\xe3','\xf8','\xfe','\xff','\x7f','\x3f', // 0x01b8
+    '\x3f','\x03','\x3c','\x1c','\x1c','\x02','\x0c','\x0c', // 0x01c0
+    '\x02','\x04','\x00','\x00','\x06','\x80','\xe0','\xf8', // 0x01c8
+    '\xfc','\xff','\x7f','\x3f','\x0f','\x03','\x01','\x00', // 0x01d0
+    '\x00','\x03','\x80','\xc0','\xf0','\xfc','\xff','\xff', // 0x01d8
+    '\x02','\x7f','\x1f','\x07','\x01','\x00','\x00','\x07', // 0x01e0
+    '\x10','\x1c','\x1e','\x1f','\x1f','\x03','\x07','\x01', // 0x01e8
+    '\x00','\x00','\x06','\x18','\x1e','\x1f','\x1f','\x03', // 0x01f0
+    '\x0f','\x03','\x10','\x1c','\x1f','\x1f','\x04','\x07', // 0x01f8
+    '\x01','\x00','\x00','\x06','\x18','\x1e','\x1f','\x1f', // 0x0200
+    '\x03','\x0f','\x03','\x10','\x1c','\x1f','\x1f','\x04', // 0x0208
+    '\x07','\x01','\x00','\x00','\x05','\x18','\x1e','\x1f', // 0x0210
+    '\x1f','\x03','\x0f','\x03','\x00','\x00','\x05','\x10', // 0x0218
+    '\x1c','\x1e','\x1f','\x1f','\x03','\x07','\x11','\x1c', // 0x0220
+    '\x1e','\x1f','\x1f','\x22','\x0f','\x0f','\x03','\x07', // 0x0228
+    '\x03','\x00','\x00','\x0a',
+};
+
 static const char* const pageTitles[] = {
     "CLEANFLIGHT",
     "ARMED",
@@ -261,8 +334,10 @@ static void updateFailsafeStatus(void)
 
 static void showTitle()
 {
-    i2c_OLED_set_line(0);
-    i2c_OLED_send_string(pageTitles[pageState.pageId]);
+    if (pageState.pageId != PAGE_ARMED){
+        i2c_OLED_set_line(0);
+        i2c_OLED_send_string(pageTitles[pageState.pageId]);
+    }
 }
 
 static void handlePageChange(void)
@@ -314,8 +389,38 @@ void showWelcomePage(void)
     i2c_OLED_send_string(targetName);
 }
 
+// RLE compressed bitmaps must be 128 width with vertical data orientation, and size included in file.
+void bitmapDecompress(uint8_t *bitmap)
+{
+    uint8_t data = 0, count = 0;
+    uint16_t i;
+    uint8_t width = *bitmap;
+    bitmap++;
+    uint8_t height = *bitmap;
+    bitmap++;
+    uint16_t bitmapSize = (width * height) / 8;
+    for (i = 0; i < bitmapSize; i++) {
+        if(count == 0) {
+            data = *bitmap;
+            bitmap++;
+            if(data == *bitmap) {
+                bitmap++;
+                count = *bitmap;
+                bitmap++;
+            }
+            else {
+                count = 1;
+            }
+        }
+        count--;
+        i2c_OLED_send_byte(data);
+    }
+}
+
 void showArmedPage(void)
 {
+    i2c_OLED_set_line(0);
+    bitmapDecompress(armedBitmapRLE);
 }
 
 void showProfilePage(void)
