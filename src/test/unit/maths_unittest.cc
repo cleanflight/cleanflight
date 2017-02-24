@@ -196,3 +196,47 @@ TEST(MathsUnittest, TestFastTrigonometryACos)
     EXPECT_LE(error, 1e-4);
 }
 #endif
+
+TEST(MathsUnittest, TestNormalizeVectorBasic)
+{
+    fp_vector vector = {1.0f, 0.0f, 0.0f};
+    fp_vector result;
+
+    normalizeV(&vector, &result);
+    fp_vector expected_result = {1.0f, 0.0f, 0.0f};
+
+    expectVectorsAreEqual(&result, &expected_result);
+}
+
+TEST(MathsUnittest, TestNormalizeVectorComplex)
+{
+    fp_vector vector = {31.4f, 15.9f, 26.5f};
+    fp_vector result;
+
+    normalizeV(&vector, &result);
+    fp_vector expected_result = {0.71271294, 0.36089605f, 0.60149342f};
+
+    expectVectorsAreEqual(&result, &expected_result);
+}
+
+TEST(MathsUnittest, TestNormalizeVectorNearNull)
+{
+    fp_vector vector = {0.1f, 0.1f, 0.1f};
+    fp_vector result;
+
+    normalizeV(&vector, &result);
+    fp_vector expected_result = {1/sqrtf(3.0f), 1/sqrtf(3.0f), 1/sqrtf(3.0f)};
+
+    expectVectorsAreEqual(&result, &expected_result);
+}
+
+TEST(MathsUnittest, TestNormalizeVectorNull)
+{
+    fp_vector vector = {0.0f, 0.0f, 0.0f};
+    fp_vector result = {3.3f, 2.2f, 1.1f};
+
+    normalizeV(&vector, &result);
+    fp_vector expected_result = {3.3f, 2.2f, 1.1f};
+
+    expectVectorsAreEqual(&result, &expected_result);
+}
