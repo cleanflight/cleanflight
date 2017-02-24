@@ -29,7 +29,7 @@ sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0utopic12
 
 For Ubuntu 14.04 (an LTS as of Q1'2015, called Trusty Tahr), you should pin:
 ```
-sudo apt-get install gcc-arm-none-eabi=4.9.3.2014q4-0trusty12
+sudo apt-get install gcc-arm-none-eabi=4.9.3.2015q3-1trusty1
 ```
 
 For Ubuntu 12.04 (previous LTS, called Precise Penguin), you should pin:
