@@ -26,6 +26,7 @@ extern "C" {
 #include "fc/rc_controls.h"
 #include "telemetry/telemetry.h"
 #include "telemetry/ibus.h"
+#include "telemetry/ibus_shared.h"
 #include "sensors/barometer.h"
 #include "scheduler/scheduler.h"
 #include "fc/fc_tasks.h"
@@ -42,8 +43,8 @@ extern "C" {
 
     int16_t telemTemperature1 = 0;
     int32_t baroTemperature = 50;
-}
 
+}
 
 #define SERIAL_BUFFER_SIZE 256
 
@@ -67,6 +68,7 @@ serialPortConfig_t serialTestInstanceConfig = {
 
 static serialPortConfig_t *findSerialPortConfig_stub_retval;
 static portSharing_e determinePortSharing_stub_retval;
+static bool portIsShared = false;
 static bool openSerial_called = false;
 static bool telemetryDetermineEnabledState_stub_retval;
 
@@ -90,6 +92,18 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing)
 {
     (void) portSharing;
     return telemetryDetermineEnabledState_stub_retval;
+}
+
+
+bool isSerialPortShared(
+    serialPortConfig_t *portConfig,
+    uint16_t functionMask,
+    serialPortFunction_e sharedWithFunction)
+{
+    EXPECT_EQ(portConfig, findSerialPortConfig_stub_retval);
+    EXPECT_EQ(functionMask, FUNCTION_RX_SERIAL);
+    EXPECT_EQ(sharedWithFunction, FUNCTION_TELEMETRY_IBUS);
+    return portIsShared;
 }
 
 
@@ -167,6 +181,7 @@ void serialTestResetBuffers()
 
 void serialTestResetPort()
 {
+    portIsShared = false;
     openSerial_called = false;
     determinePortSharing_stub_retval = PORTSHARING_UNUSED;
     telemetryDetermineEnabledState_stub_retval = true;
@@ -223,12 +238,31 @@ TEST_F(IbusTelemteryInitUnitTest, Test_IbusInitEnabled)
 }
 
 
+TEST_F(IbusTelemteryInitUnitTest, Test_IbusInitSerialRxAndTelemetryEnabled)
+{
+    findSerialPortConfig_stub_retval = &serialTestInstanceConfig;
+
+    //given stuff in serial read
+    serialReadStub.end++;
+    //and serial rx enabled too
+    portIsShared = true;
+
+    //when initializing and polling ibus
+    initIbusTelemetry();
+    checkIbusTelemetryState();
+    handleIbusTelemetry();
+
+    //then all is read from serial port
+    EXPECT_NE(serialReadStub.pos, serialReadStub.end);
+    EXPECT_FALSE(openSerial_called);
+}
 
 class IbusTelemetryProtocolUnitTestBase : public ::testing::Test
 {
 protected:
     virtual void SetUp()
     {
+        serialTestResetPort();
         ibusTelemetryConfig()->report_cell_voltage = false;
         serialTestResetBuffers();
         initIbusTelemetry();

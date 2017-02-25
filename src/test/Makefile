@@ -1025,6 +1025,14 @@ $(OBJECT_DIR)/osd_screen_unittest : \
 	$(CXX) $(CXX_FLAGS) $^ -o $(OBJECT_DIR)/$@
 
 
+$(OBJECT_DIR)/telemetry/ibus_shared.o : \
+	$(USER_DIR)/telemetry/ibus_shared.c \
+	$(USER_DIR)/telemetry/ibus_shared.h \
+	$(GTEST_HEADERS)
+
+	@mkdir -p $(dir $@)
+	$(CC) $(C_FLAGS) $(TEST_CFLAGS) -c $(USER_DIR)/telemetry/ibus_shared.c -o $@
+
 $(OBJECT_DIR)/telemetry/ibus.o : \
 	$(USER_DIR)/telemetry/ibus.c \
 	$(USER_DIR)/telemetry/ibus.h \
@@ -1042,6 +1050,7 @@ $(OBJECT_DIR)/telemetry_ibus_unittest.o : \
 
 $(OBJECT_DIR)/telemetry_ibus_unittest : \
 	$(OBJECT_DIR)/telemetry/ibus.o \
+	$(OBJECT_DIR)/telemetry/ibus_shared.o \
 	$(OBJECT_DIR)/telemetry_ibus_unittest.o \
 	$(OBJECT_DIR)/gtest_main.a
 
@@ -1051,6 +1060,7 @@ $(OBJECT_DIR)/telemetry_ibus_unittest : \
 $(OBJECT_DIR)/rx/ibus.o : \
 	$(USER_DIR)/rx/ibus.c \
 	$(USER_DIR)/rx/ibus.h \
+	$(USER_DIR)/telemetry/ibus_shared.h \
 	$(GTEST_HEADERS)
 
 	@mkdir -p $(dir $@)

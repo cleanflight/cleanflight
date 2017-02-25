@@ -100,7 +100,7 @@
 #include "telemetry/telemetry.h"
 #include "telemetry/frsky.h"
 #include "telemetry/hott.h"
-#include "telemetry/ibus.h"
+#include "telemetry/ibus_shared.h"
 
 #include "msp/msp_server.h"
 

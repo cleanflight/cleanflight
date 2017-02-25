@@ -319,6 +319,7 @@ FC_COMMON_SRC = \
 		   rx/spektrum.c \
 		   rx/xbus.c \
 		   rx/ibus.c \
+		   telemetry/ibus_shared.c \
 		   rx/srxl.c \
 		   sensors/sensors.c \
 		   sensors/acceleration.c \
