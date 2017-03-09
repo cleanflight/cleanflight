@@ -35,7 +35,6 @@
 #include "common/maths.h"
 
 #include "config/config_eeprom.h"
-#include "config/config_master.h"
 #include "config/config_profile.h"
 #include "config/feature.h"
 #include "config/parameter_group.h"
@@ -44,6 +43,7 @@
 #include "drivers/accgyro.h"
 #include "drivers/compass.h"
 #include "drivers/io.h"
+#include "drivers/light_led.h"
 #include "drivers/light_ws2811strip.h"
 #include "drivers/max7456.h"
 #include "drivers/pwm_esc_detect.h"
@@ -53,14 +53,18 @@
 #include "drivers/sdcard.h"
 #include "drivers/sensor.h"
 #include "drivers/serial.h"
+#include "drivers/sonar_hcsr04.h"
 #include "drivers/sound_beeper.h"
 #include "drivers/system.h"
 #include "drivers/timer.h"
 #include "drivers/vcd.h"
 
 #include "fc/config.h"
-#include "fc/rc_controls.h"
+#include "fc/controlrate_profile.h"
+#include "fc/fc_core.h"
 #include "fc/fc_rc.h"
+#include "fc/rc_adjustments.h"
+#include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
 
 #include "flight/altitudehold.h"
@@ -94,9 +98,6 @@
 
 #include "telemetry/telemetry.h"
 
-#ifndef USE_PARAMETER_GROUPS
-master_t masterConfig;                 // master config struct with data independent from profiles
-#endif
 pidProfile_t *currentPidProfile;
 
 #ifndef DEFAULT_FEATURES
@@ -125,11 +126,18 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .name = { 0 }
 );
 
+#ifdef BEEPER
 PG_REGISTER(beeperConfig_t, beeperConfig, PG_BEEPER_CONFIG, 0);
-
+#endif
+#ifdef USE_ADC
 PG_REGISTER_WITH_RESET_FN(adcConfig_t, adcConfig, PG_ADC_CONFIG, 0);
+#endif
+#ifdef USE_PWM
 PG_REGISTER_WITH_RESET_FN(pwmConfig_t, pwmConfig, PG_PWM_CONFIG, 0);
+#endif
+#ifdef USE_PPM
 PG_REGISTER_WITH_RESET_FN(ppmConfig_t, ppmConfig, PG_PPM_CONFIG, 0);
+#endif
 PG_REGISTER_WITH_RESET_FN(statusLedConfig_t, statusLedConfig, PG_STATUS_LED_CONFIG, 0);
 PG_REGISTER_WITH_RESET_FN(serialPinConfig_t, serialPinConfig, PG_SERIAL_PIN_CONFIG, 0);
 
@@ -819,7 +827,7 @@ static void setPidProfile(uint8_t pidProfileIndex)
     if (pidProfileIndex < MAX_PROFILE_COUNT) {
         systemConfigMutable()->pidProfileIndex = pidProfileIndex;
         currentPidProfile = pidProfilesMutable(pidProfileIndex);
-        pidInit(); // re-initialise pid controller to re-initialise filters and config
+        pidInit(currentPidProfile); // re-initialise pid controller to re-initialise filters and config
     }
 }
 
@@ -1263,6 +1271,10 @@ void validateAndFixConfig(void)
     if (!isSerialConfigValid(serialConfig)) {
         resetSerialConfig(serialConfig);
     }
+#else
+    if (!isSerialConfigValid(serialConfig())) {
+        pgResetFn_serialConfig(serialConfigMutable());
+    }
 #endif
 
     // Prevent invalid notch cutoff
@@ -1366,13 +1378,14 @@ void readEEPROM(void)
         failureMode(FAILURE_INVALID_EEPROM_CONTENTS);
     }
 
-//    pgActivateProfile(getCurrentPidProfileIndex());
-//    setControlRateProfile(rateProfileSelection()->defaultRateProfileIndex);
+    if (systemConfig()->activeRateProfile >= CONTROL_RATE_PROFILE_COUNT) {// sanity check
+        systemConfigMutable()->activeRateProfile = 0;
+    }
+    setControlRateProfile(systemConfig()->activeRateProfile);
 
-    if (systemConfig()->pidProfileIndex > MAX_PROFILE_COUNT - 1) {// sanity check
+    if (systemConfig()->pidProfileIndex >= MAX_PROFILE_COUNT) {// sanity check
         systemConfigMutable()->pidProfileIndex = 0;
     }
-
     setPidProfile(systemConfig()->pidProfileIndex);
 
     validateAndFixConfig();
