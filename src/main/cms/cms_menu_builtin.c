@@ -71,7 +71,7 @@ static long cmsx_InfoInit(void)
 
 static OSD_Entry menuInfoEntries[] = {
     { "--- INFO ---", OME_Label, NULL, NULL, 0 },
-    { "FWID", OME_String, NULL, BETAFLIGHT_IDENTIFIER, 0 },
+    { "FWID", OME_String, NULL, CLEANFLIGHT_IDENTIFIER, 0 },
     { "FWVER", OME_String, NULL, FC_VERSION_STRING, 0 },
     { "GITREV", OME_String, NULL, infoGitRev, 0 },
     { "TARGET", OME_String, NULL, infoTargetName, 0 },
@@ -93,7 +93,10 @@ static CMS_Menu menuInfo = {
 static OSD_Entry menuFeaturesEntries[] =
 {
     {"--- FEATURES ---", OME_Label, NULL, NULL, 0},
+
+#if defined(BLACKBOX)
     {"BLACKBOX", OME_Submenu, cmsMenuChange, &cmsx_menuBlackbox, 0},
+#endif
 #if defined(VTX) || defined(USE_RTC6705)
     {"VTX", OME_Submenu, cmsMenuChange, &cmsx_menuVtx, 0},
 #endif // VTX || USE_RTC6705
