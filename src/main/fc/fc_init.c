@@ -435,10 +435,11 @@ void init(void)
 
     rxInit();
 
-    displayPort_t *osdDisplayPort = NULL;
 
 #ifdef OSD
     //The OSD need to be initialised after GYRO to avoid GYRO initialisation failure on some targets
+
+    displayPort_t *osdDisplayPort = NULL;
 
     if (feature(FEATURE_OSD)) {
 #if defined(USE_MAX7456)
@@ -453,9 +454,11 @@ void init(void)
 
 #if defined(USE_MSP_DISPLAYPORT) && defined(CMS)
     // If BFOSD is active, then register it as CMS device, else register MSP.
+#ifdef OSD
     if (osdDisplayPort)
         cmsDisplayPortRegister(osdDisplayPort);
     else
+#endif
         cmsDisplayPortRegister(displayPortMspInit());
 #endif
 
