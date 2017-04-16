@@ -119,6 +119,8 @@ this reason ensure that you define enough ranges to cover the range channel's us
 | 19    | ROLL_I |
 | 20    | ROLL_D |
 
+Note: Adjustment functions which change PIDs are not available if you are using PID controller 2.
+
 ## Examples
 
 ### Example 1 - 3 Position switch used to adjust pitch/roll rate
