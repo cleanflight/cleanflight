@@ -1,0 +1,56 @@
+/******************** (C) COPYRIGHT 2009 STMicroelectronics ********************
+* File Name          : version.txt
+* Author             : MCD Application Team
+* Version            : V3.0.1
+* Date               : 11/24/2009
+* Description        : Version file for STTub driver
+********************************************************************************
+* THE PRESENT SOFTWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE TIME.
+* AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY DIRECT,
+* INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING FROM THE
+* CONTENT OF SUCH SOFTWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
+* INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+*******************************************************************************/
+
+
+
+* V3.0.1 - 11/24/2009
+=====================
+
+New Features
+************
+    + WHQL Certified with and published at WindowsUpdate web site :
+      - Microsoft Windows 2000 family, 
+      - Microsoft Windows XP family, x86
+      - Microsoft Windows XP family, x64 
+      - Microsoft Windows Vista family, x86
+      - Microsoft Windows Vista family, x64 
+      - Microsoft Windows 7
+      - Microsoft Windows 7 x64
+
+
+* V3.0.0 - 07/03/2008
+=====================
+
+New Features
+************
+
+    + Support devices with several interfaces
+    + Support for composite / multifunction devices
+    + Support for WIndows VISTA and Windows Seven
+    + Support for 64 bits platforms
+
+Enhancements
+************
+
+    + make ioctl cancelable
+    + cancel pending request when application closes
+    + suspend and hibernate modes
+    + suspend while requests are pending
+    + surprise removal during transfer
+    + robustness issues for malformed iotcl ( microsoft certification tests )
+    + memory leak in specific stop cases ( microsoft certification tests )
+    + return status codes ( microsoft certification tests )
+
+******************* (C) COPYRIGHT 2009 STMicroelectronics *****END OF FILE******

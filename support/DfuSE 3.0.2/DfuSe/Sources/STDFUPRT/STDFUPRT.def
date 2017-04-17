@@ -1,0 +1,11 @@
+; STDFUPRT.def : Declares the module parameters for the DLL.
+
+LIBRARY      "STDFUPRT"
+DESCRIPTION  'STDFUPRT Windows Dynamic Link Library'
+
+EXPORTS
+ STDFUPRT_LaunchOperation
+ STDFUPRT_GetOperationStatus
+ STDFUPRT_StopOperation
+ STDFUPRT_CreateMappingFromDevice
+ STDFUPRT_DestroyMapping
