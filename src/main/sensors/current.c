@@ -56,12 +56,15 @@ const uint8_t currentMeterIds[] = {
     CURRENT_METER_ID_ESC_MOTOR_11,
     CURRENT_METER_ID_ESC_MOTOR_12,
 #endif
+#ifdef USE_MSP_CURRENT_METER
+    CURRENT_METER_ID_MSP_1,
+#endif
 };
 
 const uint8_t supportedCurrentMeterCount = ARRAYLEN(currentMeterIds);
 
 //
-// ADC/Virtual/ESC shared
+// ADC/Virtual/ESC/MSP shared
 //
 
 void currentMeterReset(currentMeter_t *meter)
@@ -225,6 +228,78 @@ void currentMeterESCReadMotor(uint8_t motorNumber, currentMeter_t *meter)
 }
 #endif
 
+
+#ifdef USE_MSP_CURRENT_METER
+#include "common/streambuf.h"
+#include "msp/msp_protocol.h"
+#include "msp/msp_serial.h"
+#include "msp/msp_stream.h"
+
+currentMeterMSPState_t currentMeterMSPState;
+
+void currentMeterMSPSendStreamRequest()
+{
+#if 0
+    static const mspStreamEntry_t streamEntries[] = {
+        {
+            .flags = MSP_STREAM_ENTRY_VALUE,
+            .id = MSP_STREAM_VALUE_ID_AMPERAGE_BATTERY,
+            .hz = 10
+        }
+    };
+#else
+    static const mspStreamEntry_t streamEntries[] = {
+        {
+            .flags = MSP_STREAM_ENTRY_COMMAND,
+            .id = MSP_ANALOG,
+            .hz = 10
+        }
+    };
+#endif
+
+    uint8_t payload[32]; // needs to be large enough to hold the stream entries, flags, etc.
+    sbuf_t buf = { .ptr = payload, .end = ARRAYEND(payload), };
+    sbufWriteU8(&buf, MSP_STREAM_FLAG_BEGIN);
+    sbufWriteU8(&buf, ARRAYLEN(streamEntries));
+    sbufWriteData(&buf, &streamEntries, sizeof(streamEntries));
+
+    mspSerialPush(MSP_SET_STREAM, payload, ARRAYLEN(payload) - sbufBytesRemaining(&buf), MSP_DIRECTION_REQUEST);
+}
+
+void currentMeterMSPSet(uint16_t amperage, uint16_t mAhDrawn)
+{
+    currentMeterMSPState.amperage = amperage;
+    currentMeterMSPState.mAhDrawn = mAhDrawn;
+}
+
+void currentMeterMSPInit(void)
+{
+    memset(&currentMeterMSPState, 0, sizeof(currentMeterMSPState_t));
+
+    currentMeterMSPSendStreamRequest();
+}
+
+void currentMeterMSPRefresh(timeUs_t currentTimeUs)
+{
+    static timeUs_t streamRequestAt = 0;
+
+    // periodically re-request the stream
+    // alternatively we could check to see if we haven't received the stream for a while and then request it.
+    if (cmp32(currentTimeUs, streamRequestAt) > 0) {
+        streamRequestAt = currentTimeUs + (5 * 1000 * 1000);
+
+        currentMeterMSPSendStreamRequest();
+    }
+}
+
+void currentMeterMSPRead(currentMeter_t *meter)
+{
+    meter->amperageLatest = currentMeterMSPState.amperage;
+    meter->amperage = currentMeterMSPState.amperage;
+    meter->mAhDrawn = currentMeterMSPState.mAhDrawn;
+}
+#endif
+
 //
 // API for current meters using IDs
 //
@@ -239,6 +314,11 @@ void currentMeterRead(currentMeterId_e id, currentMeter_t *meter)
 #ifdef USE_VIRTUAL_CURRENT_METER
     else if (id == CURRENT_METER_ID_VIRTUAL_1) {
         currentMeterVirtualRead(meter);
+    }
+#endif
+#ifdef USE_MSP_CURRENT_METER
+    else if (id == CURRENT_METER_ID_MSP_1) {
+        currentMeterMSPRead(meter);
     }
 #endif
 #ifdef USE_ESC_SENSOR

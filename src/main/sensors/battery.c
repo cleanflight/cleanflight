@@ -76,7 +76,11 @@ static batteryState_e consumptionState;
 #ifdef USE_VIRTUAL_CURRENT_METER
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_VIRTUAL
 #else
+#ifdef USE_MSP_CURRENT_METER
+#define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_MSP
+#else
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_NONE
+#endif
 #endif
 #endif
 
@@ -304,6 +308,11 @@ void batteryInit(void)
             currentMeterESCInit();
 #endif
             break;
+        case CURRENT_METER_MSP:
+#ifdef USE_MSP_CURRENT_METER
+            currentMeterMSPInit();
+#endif
+            break;
 
         default:
             break;
@@ -329,10 +338,10 @@ static void batteryUpdateConsumptionState(void)
 void batteryUpdateCurrentMeter(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
-    if (batteryCellCount == 0) {
-        currentMeterReset(&currentMeter);
-        return;
-    }
+//    if (batteryCellCount == 0) {
+//        currentMeterReset(&currentMeter);
+//        return;
+//    }
 
     static uint32_t ibatLastServiced = 0;
     const int32_t lastUpdateAt = cmp32(currentTimeUs, ibatLastServiced);
@@ -362,6 +371,12 @@ void batteryUpdateCurrentMeter(timeUs_t currentTimeUs)
                 currentMeterESCRefresh(lastUpdateAt);
                 currentMeterESCReadCombined(&currentMeter);
             }
+#endif
+            break;
+        case CURRENT_METER_MSP:
+#ifdef USE_MSP_CURRENT_METER
+            currentMeterMSPRefresh(currentTimeUs);
+            currentMeterMSPRead(&currentMeter);
 #endif
             break;
 

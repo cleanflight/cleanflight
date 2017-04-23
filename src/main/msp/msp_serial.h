@@ -67,11 +67,21 @@ typedef struct mspPort_s {
     uint8_t inBuf[MSP_PORT_INBUF_SIZE];
 } mspPort_t;
 
+typedef struct mspStreamScheduleEntry_s {
+    uint8_t flags;      // See MSP_STREAM_ENTRY_*
+    uint8_t hz;
+    uint16_t id;        // MSP Command ID or value ID, See MSP_STREAM_VALUE_ID_* and MSP_*
+    uint32_t sendAt;
+    mspPort_t *mspPort;
+} mspStreamScheduleEntry_t;
+
+#define MAX_STREAM_ENTRIES 10
+extern mspStreamScheduleEntry_t mspStreamSchedule[MAX_STREAM_ENTRIES];
 
 void mspSerialInit(void);
 bool mspSerialWaiting(void);
 void mspSerialProcess(mspEvaluateNonMspData_e evaluateNonMspData, mspProcessCommandFnPtr mspProcessCommandFn, mspProcessReplyFnPtr mspProcessReplyFn);
 void mspSerialAllocatePorts(void);
 void mspSerialReleasePortIfAllocated(struct serialPort_s *serialPort);
-int mspSerialPush(uint8_t cmd, uint8_t *data, int datalen);
+int mspSerialPush(uint8_t cmd, uint8_t *data, int datalen, mspDirection_e direction);
 uint32_t mspSerialTxBytesFree(void);
