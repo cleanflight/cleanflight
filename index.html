@@ -1,175 +1,194 @@
-<!doctype html>
-<html class="no-js">
-	<head>
-		<meta charset="utf-8">
-		<title>Cleanflight Flight Controller - 32bit MultiWii</title>
-		<meta name="description" content="">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+	<link href="http://gmpg.org/xfn/11" rel="profile">
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
 
-		<link rel="stylesheet" href="styles/vendor.css">
+	<!-- Enable responsiveness on mobile devices-->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 
-		<link rel="stylesheet" href="styles/main.css">
+	<title>
+		Cleanflight &middot;
+	</title>
 
-		<script src="scripts/vendor/modernizr.js"></script>
-	</head>
-	<body>
-		<!--[if lt IE 10]>
-		<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-		<![endif]-->
+	<!-- CSS -->
+	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.4/css/bootstrap.min.css">
+	<!-- build:css /assets/stylesheets/style.min.css -->
+	<link rel="stylesheet" href="assets/stylesheets/style.css">
+	<!-- endbuild -->
+	<link href='//fonts.googleapis.com/css?family=Marvel:400,700' rel='stylesheet' type='text/css'>
+	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
 
-		<div class="container">
-
-			<div class="header">
-				<nav class="navbar navbar-default navbar-top" role="navigation">
-					<div class="container-fluid">
-						<ul class="nav navbar-nav">
-							<li><a href="https://github.com/cleanflight/cleanflight/tree/master/docs"><span class="glyphicon glyphicon-book"></span> Documentation</a></li>
-							<li><a href="http://github.com/cleanflight/cleanflight"><span class="glyphicon glyphicon-folder-open"></span> Firmware Source</a></li>
-							<li><a href="http://github.com/cleanflight/cleanflight-configurator"><span class="glyphicon glyphicon-folder-open"></span> GUI Source</a></li>
-							<li><a href="http://github.com/cleanflight/cleanflight/releases"><span class="glyphicon glyphicon-download"></span> Firmware Download</a></li>
-							<li><a href="https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb"><span class="glyphicon glyphicon-download"></span> GUI Download</a></li>
-							<li><a href="irc://freenode.net/#cleanflight"><span class="glyphicon glyphicon-comment"></span> IRC channel</a></li>
-							<li><a href="https://twitter.com/Cleanflight"><span class="glyphicon glyphicon-retweet"></span> Twitter</a></li>
-							<li><a href="https://www.facebook.com/pages/Cleanflight/582474325195689"><span class="glyphicon glyphicon-retweet"></span> Facebook</a></li>
-							<li><a href="https://www.youtube.com/playlist?list=PL6H1fAj_XUNVBEcp8vbMH2DrllZAGWkt8"><span class="glyphicon glyphicon-film"></span> Videos</a></li>
-						</ul>
-					</div>
-				</nav>
-			</div>
-
-			<div class="well">
-
-				<div class="row">
-					<div class="col-sm-2"></div>
-					<div class="col-sm-10"><h2 class="text-center">Cleanflight</h2></div>
+	<!-- JS -->
+	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.4/js/bootstrap.min.js"></script>
+	<script type="text/template" id="my-custom-menu-template">
+		<div class="my-custom-menu">
+			<div class="row">
+				<div class="col-sm-6">
+					<div class="aa-dataset-d1"></div>
 				</div>
-				<div class="row">
-					<div class="col-sm-2"><img src="images/multirotor.jpg" class="img-rounded" width="150"></div>
-					<div class="col-sm-10 text-center">
-						<p>Cleanflight can be used on multirotor aircraft and fixed-wing aircraft, it supports a variety for shapes and motor counts, not limited to</p>
-						<p>quadcopters, hexacopters, octocopters, tricopters and planes. Cleanflight is Open-Source flight controller software which is 32-bit version of the original 8-bit MultiWii code.</p>
-					</div>
+				<div class="col-sm-6">
+					<div class="aa-dataset-d2"></div>
+					<div class="aa-dataset-d3"></div>
 				</div>
-
-			</div>
-
-			<div class="features">
-				<h2>Features</h2>
-
-				<div class="row">
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Awesome flight performance</h3>
-							</div>
-							<div class="panel-body">
-								Most people that have tried other flight controller software are impressed how stable and responsive aircraft running cleanflight fly.
-							</div>
-						</div>
-					</div>
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Open-Source</h3>
-							</div>
-							<div class="panel-body">
-								Source code is on github, you're free to modify it and submit improvements. GPL Licensed. Issue tracker. Pull requests
-							</div>
-						</div>
-					</div>
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Modern 32-bit hardware support</h3>
-							</div>
-							<div class="panel-body">
-								When 32-bit equipped flight controllers are so cheap, why hold yourself back with old 8-bit hardware and software? Cleanflight leverages the capabilities of modern embedded processors to give you the best control.
-							</div>
-						</div>
-					</div>
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Community driven</h3>
-							</div>
-							<div class="panel-body">
-								Cleanflight maintainers actively seek and listen to user feedback from users. Friendly community. Active developers. IRC Channel.
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="row">
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Toys!</h3>
-							</div>
-							<div class="panel-body">
-								We know you like toys such as controllable LED strips, OLED displays and SONAR sensors, they're fun!
-							</div>
-						</div>
-					</div>
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Modern development principles</h3>
-							</div>
-							<div class="panel-body">
-								As software grows over time it often becomes harder to maintain and fragile; Cleanflight attempts to bring modern software development practices to the table. We like and encourage understandable, decoupled, well-tested and
-								self-explanatory code.
-							</div>
-						</div>
-					</div>
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Broad hardware support</h3>
-							</div>
-							<div class="panel-body">
-								Cleanflight currently runs on 8 different boards and supports enough sensors and CPUs for you to adapt it to you own custom flight controller board, even more off-the-shelf hardware support is planned.
-							</div>
-						</div>
-					</div>
-					<div class="col-sm-3">
-						<div class="panel panel-info">
-							<div class="panel-heading">
-								<h3 class="panel-title text-center">Up-to-date documentation</h3>
-							</div>
-							<div class="panel-body">
-								The documentation is maintained along with the code and attempts to stay as up-to-date as possible. Code contributors are asked to provide documentation updates to go with the code.
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="footer text-center">
-				(c)2014 Cleanflight Team<br>Images by: <a href="https://www.flickr.com/photos/fredflickr/">John Biehler</a> licensed under <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>
 			</div>
 		</div>
+	</script>
+	<script src="assets/javascript/javascript.js"></script>
 
-		<!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
-		<script>
-			(function (b, o, i, l, e, r) {
-				b.GoogleAnalyticsObject = l;
-				b[l] || (b[l] =
-				         function () {(b[l].q = b[l].q || []).push(arguments)});
-				b[l].l = +new Date;
-				e = o.createElement(i);
-				r = o.getElementsByTagName(i)[0];
-				e.src = '//www.google-analytics.com/analytics.js';
-				r.parentNode.insertBefore(e, r)
-			}(window, document, 'script', 'ga'));
-			ga('create', 'UA-52820920-3', 'auto');
-			ga('send', 'pageview');
-		</script>
+	<!-- Icons -->
+	<link rel="shortcut icon" href="assets/favicon.ico">
 
-		<script src="scripts/vendor.js"></script>
+	<!-- RSS -->
+	<link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
 
-		<script src="scripts/plugins.js"></script>
+<body>
+<nav class="navbar navbar-inverse">
+	<div class="container">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a class="navbar-brand" href="http://cleanflight.com/"><img src="assets/images/cleanflight-logo.png" height="50"></a>
+		</div>
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav navbar-right">
+				<!-- <li><a href="/docs/getting-started.html">Documentation</a></li> -->
+				<!-- <li><a href="#">Ressources</a></li> -->
+				<li><a href="https://github.com/cleanflight/cleanflight">Contributing</a></li>
+			</ul>
+		</div>
+	</div>
+</nav>
+<div class="jumbotron">
+	<div class="container">
+		<div class="row">
+			<div class="col-sm-5">
+				<h1>Open-Source flight controller software for modern flight boards</h1>
+				<a href="https://chrome.google.com/webstore/detail/cleanflight-configurator/enacoimjcgeinfnnnpajinjgmkahmfgb" target="_blank" class="btn btn-primary btn-lg" type="button">
+					<img class="btn-image" src="assets/images/google-chrome-logo.png" height="35" alt="Chrome Extenstion"/>
+					Install Chrome App
+				</a>
+			</div>
+			<div class="col-sm-7">
+				<div class="anim-container">
+					<img class="anim" src="assets/images/cleanflight-anim.gif" alt=""/>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="container">
+	<div class="spacer30"></div>
+	<div class="row">
+		<div class="col-sm-9">
+			<h2>What's Cleanflight?</h2>
+			<p class="lead">Cleanflight can be used on multirotor aircraft and fixed-wing aircraft, it supports a variety for shapes and motor counts, not limited to quadcopters, hexacopters, octocopters, tricopters and planes. Cleanflight is Open-Source flight controller software which is 32-bit version of the original 8-bit MultiWii code.</p>
+			<div class="spacer30"></div>
+			<div class="features">
+				<h2>Features</h2>
+				<div class="row">
+					<div class="col-sm-4">
+						<i class="fa fa-paper-plane-o fa-3x"></i>
+						<h3>Awesome flight performance</h3>
+						<p>Most people that have tried other flight controller software are impressed how stable and responsive aircraft running cleanflight fly.</p>
+					</div>
+					<div class="col-sm-4">
+						<i class="fa fa-code-fork fa-3x"></i>
+						<h3>Open-Source</h3>
+						<p>Source code is on github, you're free to modify it and submit improvements. GPL Licensed. Issue tracker. Pull requests.</p>
+					</div>
+					<div class="col-sm-4">
+						<i class="fa fa-diamond fa-3x"></i>
+						<h3>Modern 32-bit hardware support</h3>
+						<p>When 32-bit equipped flight controllers are so cheap, why hold yourself back with old 8-bit hardware and software? Cleanflight leverages the capabilities of modern embedded processors to give you the best control.</p>
+					</div>
+				</div>
+				<div class="spacer30"></div>
+				<div class="row">
+					<div class="col-sm-4">
+						<i class="fa fa-users fa-3x"></i>
+						<h3>Community driven</h3>
+						<p>Cleanflight maintainers actively seek and listen to user feedback from users. Friendly community. Active developers. IRC Channel.</p>
+					</div>
+					<div class="col-sm-4">
+						<i class="fa fa-gamepad fa-3x"></i>
+						<h3>Toys!</h3>
+						We know you like toys such as controllable LED strips, OLED displays and SONAR sensors, they're fun!
+					</div>
+					<div class="col-sm-4">
+						<i class="fa fa-code fa-3x"></i>
+						<h3>Modern development principles</h3>
+						<p>As software grows over time it often becomes harder to maintain and fragile; Cleanflight attempts to bring modern software development practices to the table. We like and encourage understandable, decoupled, well-tested and self-explanatory code.</p>
+					</div>
+				</div>
+				<div class="spacer30"></div>
+				<div class="row">
+					<div class="col-sm-4">
+						<i class="fa fa-asterisk fa-3x"></i>
+						<h3>Broad hardware support</h3>
+						<p>Cleanflight currently runs on 8 different boards and supports enough sensors and CPUs for you to adapt it to you own custom flight controller board, even more off-the-shelf hardware support is planned.</p>
+					</div>
+					<div class="col-sm-4">
+						<i class="fa fa-life-ring fa-3x"></i>
+						<h3>Up-to-date documentation</h3>
+						<p>The documentation is maintained along with the code and attempts to stay as up-to-date as possible. Code contributors are asked to provide documentation updates to go with the code.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-3">
+			<div class="spacer30"></div>
+			<div class="panel panel-default">
+				<div class="list-group">
+					<a class="list-group-item" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TSQKVT6UYKGL6"
+					   target="_blank" title="Donate">
+						<i class="fa fa-paypal fa-lg fa-fw"></i>
+						<img src="assets/images/btn-donate.png" alt="Donate via Paypal"
+							 height="30" />
 
-		<script src="scripts/main.js"></script>
-	</body>
+					</a>
+					<a href="https://cleanflightinvite.herokuapp.com/" class="list-group-item">
+						<i class="fa fa-slack fa-lg fa-fw"></i>
+						Slack Support and chat.
+					</a>
+					<a href="http://webchat.freenode.net/?channels=cleanflight" class="list-group-item">
+						<i class="fa fa-comments-o fa-lg fa-fw"></i>
+						IRC #cleanflight
+					</a>
+					<a href="https://github.com/cleanflight" class="list-group-item">
+						<i class="fa fa-github fa-lg fa-fw"></i>
+						Github
+					</a>
+					<a href="https://www.facebook.com/pages/Cleanflight/582474325195689" class="list-group-item">
+						<i class="fa fa-facebook fa-lg fa-fw"></i>
+						Facebook
+					</a>
+					<a href="https://twitter.com/cleanflight" class="list-group-item">
+						<i class="fa fa-twitter fa-lg fa-fw"></i>
+						Twitter - @Cleanflight
+					</a>
+					<a href="https://www.youtube.com/playlist?list=PL6H1fAj_XUNVBEcp8vbMH2DrllZAGWkt8" class="list-group-item">
+						<i class="fa fa-youtube fa-lg fa-fw"></i>
+						Youtube
+					</a>
+				</div>
+			</div>
+			<a class="twitter-timeline" href="https://twitter.com/Cleanflight" data-widget-id="606952272896118784">Tweets by @Cleanflight</a>
+			<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+		</div>
+	</div>
+</div>
+
+<footer class="footer text-center">
+	<i class="fa fa-copyright"></i> 2014-2017 Cleanflight Team
+</footer>
+</body>
 </html>

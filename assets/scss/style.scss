@@ -1,0 +1,197 @@
+/*
+The main SCSS file for everything, yep
+*/
+
+$cl-green : #59AA2B;
+
+nav.navbar {
+  margin-bottom: 0;
+  border-radius: 0;
+  height: 140px;
+  .navbar-nav>li>a {
+    margin: 15px 0;
+  }
+  .navbar-form{
+    padding-top: 15px;
+  }
+}
+
+.jumbotron {
+  background-color: #59AA2B;
+  min-height: 410px;
+  h1{
+    padding-top: 20px;
+    font-size: 3.3em;
+    letter-spacing: 1px;
+    color: white;
+    line-height: 1.2em;
+    margin-bottom: 30px;
+  }
+  .btn{
+    background-color: transparent;
+    border: solid 2px white;
+  }
+  .btn img{
+    margin-right: 10px;
+  }
+  .anim-container{
+    position: absolute;
+    width: 655px;
+    padding: 50px;
+    background-image: url('../images/MB-screen.png');
+    background-size: 100%;
+    background-repeat: no-repeat;
+  }
+  img.anim{
+    position: relative;
+    top: -10px;
+    left: 32px;
+  }
+}
+
+i.fa-3x{
+  border: solid 2px rgba($cl-green,.2);
+  width: 70px;
+  height: 70px;
+  line-height: 64px;
+  border-radius: 50%;
+  text-align: center;
+}
+
+.spacer30{
+  height: 30px;
+  width: 100%;
+  clear: both;
+}
+
+.post{
+  h1{
+    border-bottom: 2px solid rgba($cl-green,.3);
+  }
+  img{
+    max-width: 100%;
+  }
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Marvel', sans-serif;
+  padding: 1em 0 .5em;
+  margin-bottom: 1em;
+}
+
+h2{
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 1.8em;
+  border-bottom: solid 1px #eee;
+}
+
+h3{
+  font-size: 1.5em;
+}
+
+.footer{
+  border-top: 1px solid #ccc;
+  background-color: #eee;
+  margin-top: 40px;
+  padding: 30px 0;
+}
+
+#search {
+  border: none;
+  width: 100%;
+  &:focus {
+    outline: 0;
+    box-shadow: none;
+  }
+}
+
+table {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 16px;
+  // Cells
+  > tbody,
+  > tfoot {
+    > tr {
+      > th,
+      > td {
+        padding: 8px 6px;
+        line-height: 20px;
+        vertical-align: top;
+        border-top: 1px solid #ccc;
+      }
+    }
+  }
+  > tbody > tr:nth-of-type(odd) {
+    background-color: #f8f8f8;
+  }
+}
+
+
+.search-wrapper{
+  width: 70%;
+  display: block;
+  margin: 0 auto;
+}
+.algolia-autocomplete {
+  width: 100%;
+  .branding{
+    padding:8px;
+    text-align: right;
+    img {
+      height: 20px;
+    }
+  }
+}
+.algolia-autocomplete .aa-input, .algolia-autocomplete .aa-hint {
+  width: 100%;
+}
+.algolia-autocomplete .aa-hint {
+  color: #999;
+}
+.algolia-autocomplete .aa-dropdown-menu {
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid #999;
+  border-top: none;
+}
+.algolia-autocomplete .aa-dropdown-menu .aa-suggestion {
+  cursor: pointer;
+  padding: 5px 4px;
+}
+.algolia-autocomplete .aa-dropdown-menu .aa-suggestion.aa-cursor {
+  background-color: #efefef;
+}
+.algolia-autocomplete .aa-dropdown-menu .aa-suggestion em {
+  font-weight: bold;
+  font-style: normal;
+}
+
+.algolia__result-highlight {
+  color: black;
+  background-color: lighten(#CCE7BE,7%);
+}
+
+.aa-suggestion {
+  border-bottom: solid 1px #eee;
+  .hit{
+    display: block;
+    width: 100%;
+    padding: 4px 12px 12px;
+  }
+  .title {
+    font-size: 1.6em;
+    letter-spacing: .03em;
+    float: right;
+    text-align: right;
+    font-family: 'Marvel', sans-serif;
+  }
+  .path{
+    font-weight: bold;
+  }
+  .snippet {
+    color: #777;
+    font-size: .9em;
+  }
+}
