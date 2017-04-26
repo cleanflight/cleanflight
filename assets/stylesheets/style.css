@@ -154,3 +154,7 @@ table {
   .aa-suggestion .snippet {
     color: #777;
     font-size: .9em; }
+
+  .slack .store_lineup {
+    zoom: 75%;
+  }
