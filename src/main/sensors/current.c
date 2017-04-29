@@ -237,6 +237,7 @@ void currentMeterESCReadMotor(uint8_t motorNumber, currentMeter_t *meter)
 
 currentMeterMSPState_t currentMeterMSPState;
 
+#ifdef USE_MSP_STREAM
 void currentMeterMSPSendStreamRequest()
 {
 #if 0
@@ -265,6 +266,7 @@ void currentMeterMSPSendStreamRequest()
 
     mspSerialPush(MSP_SET_STREAM, payload, ARRAYLEN(payload) - sbufBytesRemaining(&buf), MSP_DIRECTION_REQUEST);
 }
+#endif
 
 void currentMeterMSPSet(uint16_t amperage, uint16_t mAhDrawn)
 {
@@ -276,20 +278,32 @@ void currentMeterMSPInit(void)
 {
     memset(&currentMeterMSPState, 0, sizeof(currentMeterMSPState_t));
 
+#ifdef USE_MSP_STREAM
     currentMeterMSPSendStreamRequest();
+#endif
 }
 
 void currentMeterMSPRefresh(timeUs_t currentTimeUs)
 {
-    static timeUs_t streamRequestAt = 0;
-
+#ifdef USE_MSP_STREAM
     // periodically re-request the stream
     // alternatively we could check to see if we haven't received the stream for a while and then request it.
+    static timeUs_t streamRequestAt = 0;
     if (cmp32(currentTimeUs, streamRequestAt) > 0) {
-        streamRequestAt = currentTimeUs + (5 * 1000 * 1000);
+        streamRequestAt = currentTimeUs + (5 * 1000 * 1000); // 5 seconds
 
         currentMeterMSPSendStreamRequest();
     }
+#else
+    // periodically request MSP_ANALOG
+    // alternatively we could check to see if we haven't received the stream for a while and then request it.
+    static timeUs_t streamRequestAt = 0;
+    if (cmp32(currentTimeUs, streamRequestAt) > 0) {
+        streamRequestAt = currentTimeUs + ((1000 * 1000) / 10); // 10hz
+
+        mspSerialPush(MSP_ANALOG, NULL, 0, MSP_DIRECTION_REQUEST);
+    }
+#endif
 }
 
 void currentMeterMSPRead(currentMeter_t *meter)

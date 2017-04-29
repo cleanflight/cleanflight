@@ -1955,6 +1955,7 @@ static mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
     UNUSED(dataSize); // maybe unused due to compiler options
 
     switch (cmdMSP) {
+#ifdef USE_MSP_STREAM
     case MSP_SET_STREAM:
         {
             uint8_t flags = sbufReadU8(src);
@@ -1968,8 +1969,6 @@ static mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
                     uint16_t id = sbufReadU16(src);
                     uint8_t hz = sbufReadU8(src);
 
-                    extern mspPort_t *mspPortBeingProcessed;
-
                     if (!mspStreamScheduleEntry(mspPortBeingProcessed, flags, hz, id)) {
                         return MSP_RESULT_ERROR;
                     }
@@ -1978,6 +1977,7 @@ static mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
             // TODO process other flags.
             break;
         }
+#endif
 
 #ifdef TRANSPONDER
     case MSP_SET_TRANSPONDER_CONFIG: {

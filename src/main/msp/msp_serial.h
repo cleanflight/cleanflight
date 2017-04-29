@@ -67,6 +67,7 @@ typedef struct mspPort_s {
     uint8_t inBuf[MSP_PORT_INBUF_SIZE];
 } mspPort_t;
 
+#ifdef USE_MSP_STREAM
 typedef struct mspStreamScheduleEntry_s {
     uint8_t flags;      // See MSP_STREAM_ENTRY_*
     uint8_t hz;
@@ -77,6 +78,8 @@ typedef struct mspStreamScheduleEntry_s {
 
 #define MAX_STREAM_ENTRIES 10
 extern mspStreamScheduleEntry_t mspStreamSchedule[MAX_STREAM_ENTRIES];
+extern mspPort_t *mspPortBeingProcessed;
+#endif
 
 void mspSerialInit(void);
 bool mspSerialWaiting(void);

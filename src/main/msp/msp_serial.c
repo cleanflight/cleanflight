@@ -35,6 +35,7 @@
 
 static mspPort_t mspPorts[MAX_MSP_PORT_COUNT];
 
+#ifdef USE_MSP_STREAM
 mspStreamScheduleEntry_t mspStreamSchedule[MAX_STREAM_ENTRIES];
 
 mspStreamScheduleEntry_t *findEmptyStreamScheduleEntry(void)
@@ -66,8 +67,8 @@ bool mspStreamScheduleEntry(mspPort_t *mspPort, uint8_t flags, uint8_t hz, uint1
     entry->sendAt = 0;
 
     return true;
-
 }
+#endif
 
 static void resetMspPort(mspPort_t *mspPortToReset, serialPort_t *serialPort)
 {
@@ -246,7 +247,7 @@ static void mspSerialProcessReceivedReply(mspPort_t *msp, mspProcessReplyFnPtr m
     msp->c_state = MSP_IDLE;
 }
 
-
+#ifdef USE_MSP_STREAM
 void mspSerialProcessStreamSchedule(mspPort_t* mspPort, mspProcessCommandFnPtr mspProcessCommandFn)
 {
     uint32_t currentTimeUs = micros();
@@ -283,6 +284,7 @@ void mspSerialProcessStreamSchedule(mspPort_t* mspPort, mspProcessCommandFnPtr m
         }
     };
 }
+#endif
 
 /*
  * Process MSP commands from serial ports configured as MSP ports.
@@ -297,7 +299,9 @@ void mspSerialProcess(mspEvaluateNonMspData_e evaluateNonMspData, mspProcessComm
             continue;
         }
 
+#ifdef USE_MSP_STREAM
         mspPortBeingProcessed = mspPort;
+#endif
 
         mspPostProcessFnPtr mspPostProcessFn = NULL;
 
@@ -327,9 +331,11 @@ void mspSerialProcess(mspEvaluateNonMspData_e evaluateNonMspData, mspProcessComm
             mspPostProcessFn(mspPort->port);
         }
 
+#ifdef USE_MSP_STREAM
         if (mspPort->c_state == MSP_IDLE) {
             mspSerialProcessStreamSchedule(mspPort, mspProcessCommandFn);
         }
+#endif
     }
 
 }
