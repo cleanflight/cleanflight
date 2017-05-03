@@ -33,6 +33,8 @@ void transponderIrInitIlap(transponder_t *transponder){
     transponder->vTable             = &ilapTansponderVTable;
     transponder->timer_hz           = TRANSPONDER_TIMER_MHZ_ILAP;
     transponder->timer_carrier_hz   = TRANSPONDER_CARRIER_HZ_ILAP;
+    transponder->transmitInterval	= 4500;
+    transponder->transmitJitter		= 1000; // dt = 4500 + 1000 * 0-9 = 4500us - 145000us
     memset(&(transponder->transponderIrDMABuffer.ilap), 0, TRANSPONDER_DMA_BUFFER_SIZE_ILAP);
 
 }
