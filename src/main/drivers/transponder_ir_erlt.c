@@ -70,15 +70,8 @@ void updateTransponderDMABufferERLT(transponder_t *transponder, const uint8_t* t
 	transponder->transponderIrDMABuffer.erlt[dmaBufferOffset] = ERLTBitQuiet;
 	dmaBufferOffset++;
 
-	//fill unused of buffer
-	while (dmaBufferOffset < transponder->dma_buffer_size)
-	{
-		transponder->dma_buffer_size = dmaBufferOffset;
-		dmaBufferOffset++;
-	}
-
-	//reset buffer size for amount required by this ERLT id
-	//transponder->dma_buffer_size = dmaBufferOffset;
+	//reset buffer size to that required by this ERLT id
+	transponder->dma_buffer_size = dmaBufferOffset;
 }
 
 const struct transponderVTable erltTansponderVTable = {
