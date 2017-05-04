@@ -48,11 +48,7 @@
 
 
 /*** ERLT ***/
-//#define TRANSPONDER_BITS_PER_BYTE_ERLT    0
 #define TRANSPONDER_DATA_LENGTH_ERLT        1
-//#define TRANSPONDER_TOGGLES_PER_BIT_ERLT  0
-#define TRANSPONDER_GAP_TOGGLES_ERLT        0 //only here because transponder_s requires it
-//#define TRANSPONDER_TOGGLES_ERLT          0
 
 #define ERLTBitQuiet						0
 #define ERLTCyclesForOneBit					25

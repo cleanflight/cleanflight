@@ -27,8 +27,6 @@ static uint16_t dmaBufferOffset;
 extern const struct transponderVTable erltTansponderVTable;
 
 void transponderIrInitERLT(transponder_t *transponder){
-    // from drivers/transponder_ir.h
-    transponder->gap_toggles        = TRANSPONDER_GAP_TOGGLES_ERLT;
     transponder->dma_buffer_size    = TRANSPONDER_DMA_BUFFER_SIZE_ERLT;
     transponder->vTable             = &erltTansponderVTable;
     transponder->timer_hz           = TRANSPONDER_TIMER_MHZ_ERLT;
@@ -39,23 +37,24 @@ void transponderIrInitERLT(transponder_t *transponder){
 void addBitToBuffer(transponder_t *transponder, uint8_t cycles, uint8_t pulsewidth)
 {
 	for (int i = 0; i < cycles; i++) {
-		transponder->transponderIrDMABuffer.erlt[dmaBufferOffset] = pulsewidth;
-        dmaBufferOffset++;
+		transponder->transponderIrDMABuffer.erlt[dmaBufferOffset++] = pulsewidth;
     }
 }
 
 void updateTransponderDMABufferERLT(transponder_t *transponder, const uint8_t* transponderData)
 {
-	uint8_t byteToSend = ~(*transponderData);
-	uint8_t paritysum = 0;
+	uint8_t byteToSend = ~(*transponderData); //transponderData is stored inverted, so invert before using
+	uint8_t paritysum = 0; //sum of one bits
 
-	//start bit 1, pulsed, bitvalue = 0
+	dmaBufferOffset = 0; //reset buffer count
+
+	//start bit 1, always pulsed, bitvalue = 0
 	addBitToBuffer(transponder, ERLTCyclesForZeroBit, transponder->bitToggleOne);
 
-	//start bit 2, not pulsed, bitvalue = 0
+	//start bit 2, always not pulsed, bitvalue = 0
 	addBitToBuffer(transponder, ERLTCyclesForZeroBit, ERLTBitQuiet);
 
-	//add data bits
+	//add data bits, only the 6 LSB
 	for(int i = 5; i >= 0; i--)
 	{
 		uint8_t bv = (byteToSend >> i) & 0x01;
@@ -63,12 +62,11 @@ void updateTransponderDMABufferERLT(transponder_t *transponder, const uint8_t* t
 		addBitToBuffer(transponder, (bv ? ERLTCyclesForOneBit : ERLTCyclesForZeroBit), ((i % 2) ? transponder->bitToggleOne : ERLTBitQuiet));
 	}
 
-	//parity bit, pulsed, bitvalue is zero if sum is even, one if odd
+	//parity bit, always pulsed, bitvalue is zero if sum is even, one if odd
 	addBitToBuffer(transponder, ((paritysum % 2) ?  ERLTCyclesForOneBit : ERLTCyclesForZeroBit), transponder->bitToggleOne);
 
-	//add extra zero to stop pwm until next transmit
-	transponder->transponderIrDMABuffer.erlt[dmaBufferOffset] = ERLTBitQuiet;
-	dmaBufferOffset++;
+	//add final zero after the pulsed parity bit to stop pulses until the next update
+	transponder->transponderIrDMABuffer.erlt[dmaBufferOffset++] = ERLTBitQuiet;
 
 	//reset buffer size to that required by this ERLT id
 	transponder->dma_buffer_size = dmaBufferOffset;
