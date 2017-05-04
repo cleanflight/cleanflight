@@ -48,10 +48,10 @@ void updateTransponderDMABufferERLT(transponder_t *transponder, const uint8_t* t
 
 	dmaBufferOffset = 0; //reset buffer count
 
-	//start bit 1, always pulsed, bitvalue = 0
+	//start bit 1, always pulsed, bit value = 0
 	addBitToBuffer(transponder, ERLTCyclesForZeroBit, transponder->bitToggleOne);
 
-	//start bit 2, always not pulsed, bitvalue = 0
+	//start bit 2, always not pulsed, bit value = 0
 	addBitToBuffer(transponder, ERLTCyclesForZeroBit, ERLTBitQuiet);
 
 	//add data bits, only the 6 LSB
@@ -62,7 +62,7 @@ void updateTransponderDMABufferERLT(transponder_t *transponder, const uint8_t* t
 		addBitToBuffer(transponder, (bv ? ERLTCyclesForOneBit : ERLTCyclesForZeroBit), ((i % 2) ? transponder->bitToggleOne : ERLTBitQuiet));
 	}
 
-	//parity bit, always pulsed, bitvalue is zero if sum is even, one if odd
+	//parity bit, always pulsed, bit value is zero if sum is even, one if odd
 	addBitToBuffer(transponder, ((paritysum % 2) ?  ERLTCyclesForOneBit : ERLTCyclesForZeroBit), transponder->bitToggleOne);
 
 	//add final zero after the pulsed parity bit to stop pulses until the next update

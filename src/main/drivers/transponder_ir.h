@@ -93,9 +93,6 @@ typedef struct transponder_s {
     uint16_t bitToggleOne;
     uint32_t dma_buffer_size;
 
-    uint16_t transmitInterval;
-    uint16_t transmitJitter;
-
     #if defined(STM32F3) || defined(STM32F4)|| defined(UNIT_TEST)
         transponderIrDMABuffer_t transponderIrDMABuffer;
     #endif
