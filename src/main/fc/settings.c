@@ -134,6 +134,12 @@ static const char * const lookupTableAlignment[] = {
     "CW270FLIP"
 };
 
+#ifdef USE_DUAL_GYRO
+static const char * const lookupTableGyro[] = {
+    "FIRST", "SECOND", "BOTH"
+};
+#endif
+
 #ifdef GPS
 static const char * const lookupTableGPSProvider[] = {
     "NMEA", "UBLOX"
@@ -319,6 +325,9 @@ const lookupTableEntry_t lookupTables[] = {
 #ifdef USE_GYRO_OVERFLOW_CHECK
     { lookupTableGyroOverflowCheck, sizeof(lookupTableGyroOverflowCheck) / sizeof(char *) },
 #endif
+#ifdef USE_DUAL_GYRO
+    { lookupTableGyro, sizeof(lookupTableGyro) / sizeof(char *) },
+#endif
 };
 
 const clivalue_t valueTable[] = {
@@ -345,7 +354,7 @@ const clivalue_t valueTable[] = {
 #endif
 #endif
 #ifdef USE_DUAL_GYRO
-    { "gyro_to_use",                VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 1 }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, gyro_to_use) },
+    { "gyro_to_use",                VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GYRO }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, gyro_to_use) },
 #endif
 
 // PG_ACCELEROMETER_CONFIG

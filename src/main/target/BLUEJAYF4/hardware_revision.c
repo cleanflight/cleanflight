@@ -89,3 +89,8 @@ void updateHardwareRevision(void)
         IOInit(IOGetByTag(IO_TAG(PB3)), OWNER_FREE, 0);
     }
 }
+
+ioTag_t selectMPUIntExtiConfigByHardwareRevision(void)
+{
+    return IO_TAG(MPU_INT_EXTI);
+}

@@ -29,3 +29,5 @@ extern uint8_t hardwareRevision;
 
 void detectHardwareRevision(void);
 void updateHardwareRevision(void);
+
+ioTag_t selectMPUIntExtiConfigByHardwareRevision(void);
