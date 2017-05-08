@@ -39,12 +39,24 @@
 #endif
 
 #ifndef ADC1_DMA_STREAM
+// available on DMA2 Stream 0 and 4
 #define ADC1_DMA_STREAM DMA2_Stream4
+#endif
+
+#ifndef ADC2_DMA_STREAM
+// available on DMA2 Stream 2 and 3
+#define ADC2_DMA_STREAM DMA2_Stream2
+#endif
+
+#ifndef ADC3_DMA_STREAM
+// available on DMA2 Stream 0 and 1
+#define ADC3_DMA_STREAM DMA2_Stream0
 #endif
 
 const adcDevice_t adcHardware[] = {
     { .ADCx = ADC1, .rccADC = RCC_APB2(ADC1), .DMAy_Streamx = ADC1_DMA_STREAM, .channel = DMA_Channel_0 },
-    //{ .ADCx = ADC2, .rccADC = RCC_APB2(ADC2), .DMAy_Streamx = DMA2_Stream1, .channel = DMA_Channel_0 }
+    { .ADCx = ADC2, .rccADC = RCC_APB2(ADC2), .DMAy_Streamx = ADC2_DMA_STREAM, .channel = DMA_Channel_1 },
+    { .ADCx = ADC3, .rccADC = RCC_APB2(ADC3), .DMAy_Streamx = ADC3_DMA_STREAM, .channel = DMA_Channel_2 }
 };
 
 /* note these could be packed up for saving space */
@@ -81,10 +93,12 @@ ADCDevice adcDeviceByInstance(ADC_TypeDef *instance)
 {
     if (instance == ADC1)
         return ADCDEV_1;
-/*
-    if (instance == ADC2) // TODO add ADC2 and 3
+
+    if (instance == ADC2)
         return ADCDEV_2;
-*/
+
+    if (instance == ADC3)
+        return ADCDEV_3;
     return ADCINVALID;
 }
 
