@@ -44,6 +44,14 @@
 // Beeper configuration is handled in 'config.c', since it is dependent on hardware revision
 #endif
 
+#if defined(NAZE_REV5) || defined(NAZE_REV6)
+#define USE_RX_MSP
+#endif
+
+#if !defined(NAZE_REV5) && !defined(NAZE_REV6)
+#define NAZE_GENERIC
+#endif
+
 //#define BARO_XCLR_PIN           PC13
 //#define BARO_EOC_PIN            PC14
 
@@ -74,22 +82,34 @@
 #define USE_FLASH_M25P16
 
 #define GYRO
+#ifdef NAZE_GENERIC
 #define USE_GYRO_MPU3050
+#endif
+#if defined(NAZE_GENERIC) || defined(NAZE_REV5)
 #define USE_GYRO_MPU6050
+#endif
+#if defined(NAZE_GENERIC) || defined(NAZE_REV6)
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
+#endif
 
 #define GYRO_MPU3050_ALIGN      CW0_DEG
 #define GYRO_MPU6050_ALIGN      CW0_DEG
 #define GYRO_MPU6500_ALIGN      CW0_DEG
 
 #define ACC
+#if defined(NAZE_GENERIC)
 #define USE_ACC_ADXL345
 #define USE_ACC_BMA280
 #define USE_ACC_MMA8452
+#endif
+#if defined(NAZE_GENERIC) || defined(NAZE_REV5)
 #define USE_ACC_MPU6050
+#endif
+#if defined(NAZE_GENERIC) || defined(NAZE_REV6)
 #define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
+#endif
 
 #define ACC_ADXL345_ALIGN       CW270_DEG
 #define ACC_MPU6050_ALIGN       CW0_DEG
@@ -101,9 +121,11 @@
 #define USE_BARO_MS5611 // needed for Flip32 board
 #define USE_BARO_BMP280
 
+#if defined(NAZE_REV5) || defined(NAZE_REV6)
 #define MAG
 #define USE_MAG_HMC5883
 #define MAG_HMC5883_ALIGN       CW180_DEG
+#endif
 
 //#define SONAR
 //#define SONAR_TRIGGER_PIN       PB0
