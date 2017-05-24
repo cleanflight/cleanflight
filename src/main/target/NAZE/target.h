@@ -93,16 +93,9 @@
 #define USE_GYRO_SPI_MPU6500
 #endif
 
-
-#ifdef NAZE_GENERIC
 #define GYRO_MPU3050_ALIGN      CW0_DEG
-#endif
-#if defined(NAZE_GENERIC) || defined(NAZE_REV5)
 #define GYRO_MPU6050_ALIGN      CW0_DEG
-#endif
-#if defined(NAZE_GENERIC) || defined(NAZE_REV6)
 #define GYRO_MPU6500_ALIGN      CW0_DEG
-#endif
 
 #define ACC
 #if defined(NAZE_GENERIC)
@@ -118,20 +111,11 @@
 #define USE_ACC_SPI_MPU6500
 #endif
 
-#ifdef NAZE_GENERIC
 #define ACC_ADXL345_ALIGN       CW270_DEG
-#endif
-#if defined(NAZE_GENERIC) || defined(NAZE_REV5)
 #define ACC_MPU6050_ALIGN       CW0_DEG
-#endif
-#ifdef NAZE_GENERIC
 #define ACC_MMA8452_ALIGN       CW90_DEG
 #define ACC_BMA280_ALIGN        CW0_DEG
-#endif
-
-#if defined(NAZE_GENERIC) || defined(NAZE_REV6)
 #define ACC_MPU6500_ALIGN       CW0_DEG
-#endif
 
 #define BARO
 #define USE_BARO_MS5611 // needed for Flip32 board
