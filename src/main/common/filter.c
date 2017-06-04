@@ -95,7 +95,9 @@ float slewFilterApply(slewFilter_t *filter, float input)
 
 float filterGetNotchQ(uint16_t centerFreq, uint16_t cutoff) {
     float octaves = log2f((float) centerFreq  / (float) cutoff) * 2;
-    return sqrtf(powf(2, octaves)) / (powf(2, octaves) - 1);
+    float x = powf(2, octaves);
+    float y = sqrtf(x);
+    return y / (x - 1);
 }
 
 /* sets up a biquad Filter */
