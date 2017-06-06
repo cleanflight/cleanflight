@@ -40,7 +40,7 @@
 void targetConfiguration(void)
 {
     // use the same uart for frsky telemetry and SBUS, both non inverted
-    const int index = findSerialPortIndexByIdentifier(SBUS_TELEMETRY_UART);
+    const int index = findSerialPortIndexByIdentifier(SBUS_AND_TELEMETRY_UART);
     serialConfigMutable()->portConfigs[index].functionMask = FUNCTION_TELEMETRY_FRSKY | FUNCTION_RX_SERIAL;
 
     rxConfigMutable()->serialrx_provider = SERIALRX_SBUS;
