@@ -152,7 +152,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
 };
 
 // mask of enabled IDs, calculated on startup based on enabled features. boxId_e is used as bit index
-static uint32_t activeBoxIds;
+static uint64_t activeBoxIds;
 // check that all boxId_e values fit
 STATIC_ASSERT(sizeof(activeBoxIds) * 8 >= CHECKBOX_ITEM_COUNT, CHECKBOX_ITEMS_wont_fit_in_activeBoxIds);
 
@@ -408,11 +408,11 @@ void initActiveBoxIds(void)
     activeBoxIds = ena;                        // set global variable
 }
 
-static uint32_t packFlightModeFlags(void)
+static uint64_t packFlightModeFlags(void)
 {
     // Serialize the flags in the order we delivered them, ignoring BOXNAMES and BOXINDEXES
 
-    uint32_t boxEnabledMask = 0;      // enabled BOXes, bits indexed by boxId_e
+    uint64_t boxEnabledMask = 0;      // enabled BOXes, bits indexed by boxId_e
 
     // enable BOXes dependent on FLIGHT_MODE, use mapping table (from runtime_config.h)
     // flightMode_boxId_map[HORIZON_MODE] == BOXHORIZON
@@ -429,7 +429,7 @@ static uint32_t packFlightModeFlags(void)
     // enable BOXes dependent on rcMode bits, indexes are the same.
     // only subset of BOXes depend on rcMode, use mask to select them
 #define BM(x) (1 << (x))
-    const uint32_t rcModeCopyMask = BM(BOXHEADADJ) | BM(BOXCAMSTAB) | BM(BOXCAMTRIG) | BM(BOXBEEPERON)
+    const uint64_t rcModeCopyMask = BM(BOXHEADADJ) | BM(BOXCAMSTAB) | BM(BOXCAMTRIG) | BM(BOXBEEPERON)
         | BM(BOXLEDMAX) | BM(BOXLEDLOW) | BM(BOXLLIGHTS) | BM(BOXCALIB) | BM(BOXGOV) | BM(BOXOSD)
         | BM(BOXTELEMETRY) | BM(BOXGTUNE) | BM(BOXBLACKBOX) | BM(BOXBLACKBOXERASE) | BM(BOXAIRMODE)
         | BM(BOXANTIGRAVITY) | BM(BOXFPVANGLEMIX);
@@ -446,7 +446,7 @@ static uint32_t packFlightModeFlags(void)
 
     // map boxId_e enabled bits to MSP status indexes
     // only active boxIds are sent in status over MSP, other bits are not counted
-    uint32_t mspBoxEnabledMask = 0;
+    uint64_t mspBoxEnabledMask = 0;
     unsigned mspBoxIdx = 0;           // index of active boxId (matches sent permanentId and boxNames)
     for (boxId_e boxId = 0; boxId < CHECKBOX_ITEM_COUNT; boxId++) {
         if(activeBoxIds & (1 << boxId)) {
@@ -837,11 +837,12 @@ static bool mspOsdSlaveProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostPro
         sbufWriteU16(dst, 0);
 #endif
         sbufWriteU16(dst, 0); // sensors
-        sbufWriteU32(dst, 0); // flight modes
+        sbufWriteU32(dst, 0); // flight modes LOWORD
         sbufWriteU8(dst, 0); // profile
         sbufWriteU16(dst, constrain(averageSystemLoadPercent, 0, 100));
         sbufWriteU8(dst, 1); // max profiles
         sbufWriteU8(dst, 0); // control rate profile
+        sbufWriteU32(dst, 0); // fligt modes HIWORD
         break;
 
     case MSP_STATUS:
@@ -852,10 +853,11 @@ static bool mspOsdSlaveProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostPro
         sbufWriteU16(dst, 0);
 #endif
         sbufWriteU16(dst, 0); // sensors
-        sbufWriteU32(dst, 0); // flight modes
+        sbufWriteU32(dst, 0); // flight modes LOWORD
         sbufWriteU8(dst, 0); // profile
         sbufWriteU16(dst, constrain(averageSystemLoadPercent, 0, 100));
         sbufWriteU16(dst, 0); // gyro cycle time
+        sbufWriteU32(dst, 0); // flight modes HIWORD
         break;
 
     default:
@@ -872,32 +874,40 @@ static bool mspFcProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostProcessFn
 
     switch (cmdMSP) {
     case MSP_STATUS_EX:
-        sbufWriteU16(dst, getTaskDeltaTime(TASK_GYROPID));
+        {
+            sbufWriteU16(dst, getTaskDeltaTime(TASK_GYROPID));
 #ifdef USE_I2C
-        sbufWriteU16(dst, i2cGetErrorCounter());
+            sbufWriteU16(dst, i2cGetErrorCounter());
 #else
-        sbufWriteU16(dst, 0);
+            sbufWriteU16(dst, 0);
 #endif
-        sbufWriteU16(dst, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
-        sbufWriteU32(dst, packFlightModeFlags());
-        sbufWriteU8(dst, getCurrentPidProfileIndex());
-        sbufWriteU16(dst, constrain(averageSystemLoadPercent, 0, 100));
-        sbufWriteU8(dst, MAX_PROFILE_COUNT);
-        sbufWriteU8(dst, getCurrentControlRateProfileIndex());
+            sbufWriteU16(dst, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
+            const auto fmFlags = packFlightModeFlags();
+            sbufWriteU32(dst, fmFlags & 0xffffffff); // flight modes LOWORD
+            sbufWriteU8(dst, getCurrentPidProfileIndex());
+            sbufWriteU16(dst, constrain(averageSystemLoadPercent, 0, 100));
+            sbufWriteU8(dst, MAX_PROFILE_COUNT);
+            sbufWriteU8(dst, getCurrentControlRateProfileIndex());
+            sbufWriteU32(dst, fmFlags >> 32); // flight modes HIWORD
+        }
         break;
 
     case MSP_STATUS:
-        sbufWriteU16(dst, getTaskDeltaTime(TASK_GYROPID));
+        {
+            sbufWriteU16(dst, getTaskDeltaTime(TASK_GYROPID));
 #ifdef USE_I2C
-        sbufWriteU16(dst, i2cGetErrorCounter());
+            sbufWriteU16(dst, i2cGetErrorCounter());
 #else
-        sbufWriteU16(dst, 0);
+            sbufWriteU16(dst, 0);
 #endif
-        sbufWriteU16(dst, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
-        sbufWriteU32(dst, packFlightModeFlags());
-        sbufWriteU8(dst, getCurrentPidProfileIndex());
-        sbufWriteU16(dst, constrain(averageSystemLoadPercent, 0, 100));
-        sbufWriteU16(dst, 0); // gyro cycle time
+            sbufWriteU16(dst, sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
+            const auto fmFlags = packFlightModeFlags();
+            sbufWriteU32(dst, fmFlags & 0xffffffff); // flight modes LOWORD
+            sbufWriteU8(dst, getCurrentPidProfileIndex());
+            sbufWriteU16(dst, constrain(averageSystemLoadPercent, 0, 100));
+            sbufWriteU16(dst, 0); // gyro cycle time
+            sbufWriteU32(dst, fmFlags >> 32); // flight modes HIWORD
+        }
         break;
 
     case MSP_RAW_IMU:
