@@ -68,3 +68,7 @@
 #undef VTX_TRAMP
 #undef VTX_SMARTAUDIO
 #endif
+
+#ifndef DEBUG_MODE
+#define DEBUG_MODE DEBUG_NONE // change this to change initial debug mode
+#endif
