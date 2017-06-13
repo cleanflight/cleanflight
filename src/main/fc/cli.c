@@ -2772,14 +2772,9 @@ static void printResource(uint8_t dumpMask)
         const char* owner = ownerNames[resourceTable[i].owner];
         const void *currentConfig;
         const void *defaultConfig;
-        if (dumpMask & DO_DIFF || dumpMask & SHOW_DEFAULTS) {
-            const pgRegistry_t* pg = pgFind(resourceTable[i].pgn);
-            currentConfig = pg->copy;
-            defaultConfig = pg->address;
-        } else { // Not guaranteed to have initialised default configs in this case
-            currentConfig = pgFind(resourceTable[i].pgn)->address;
-            defaultConfig = currentConfig;
-        }
+        const pgRegistry_t* pg = pgFind(resourceTable[i].pgn);
+        currentConfig = pg->copy;
+        defaultConfig = pg->address;
 
         for (int index = 0; index < MAX_RESOURCE_INDEX(resourceTable[i].maxIndex); index++) {
             const ioTag_t ioTag = *((const ioTag_t *)currentConfig + resourceTable[i].offset + index);
@@ -2849,11 +2844,24 @@ static void resourceCheck(uint8_t resourceIndex, uint8_t index, ioTag_t newTag)
     }
 }
 
+static void backupConfigs(void)
+{
+    // make copies of configs to do differencing
+    PG_FOREACH(pg) {
+        if (pgIsProfile(pg)) {
+            //memcpy(pg->copy, pg->address, pg->size * MAX_PROFILE_COUNT);
+        } else {
+            memcpy(pg->copy, pg->address, pg->size);
+        }
+    }
+}
+
 static void cliResource(char *cmdline)
 {
     int len = strlen(cmdline);
 
     if (len == 0) {
+        backupConfigs();
         printResource(DUMP_MASTER | HIDE_UNUSED);
 
         return;
@@ -2976,18 +2984,6 @@ static void cliResource(char *cmdline)
     cliShowParseError();
 }
 #endif /* USE_RESOURCE_MGMT */
-
-static void backupConfigs(void)
-{
-    // make copies of configs to do differencing
-    PG_FOREACH(pg) {
-        if (pgIsProfile(pg)) {
-            //memcpy(pg->copy, pg->address, pg->size * MAX_PROFILE_COUNT);
-        } else {
-            memcpy(pg->copy, pg->address, pg->size);
-        }
-    }
-}
 
 static void restoreConfigs(void)
 {
