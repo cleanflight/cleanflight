@@ -37,10 +37,11 @@
 #include "drivers/adc.h"
 #include "drivers/rx_pwm.h"
 #include "drivers/rx_spi.h"
-#include "drivers/system.h"
+#include "drivers/time.h"
 
 #include "fc/config.h"
 #include "fc/rc_controls.h"
+#include "fc/rc_modes.h"
 
 #include "flight/failsafe.h"
 
@@ -99,6 +100,11 @@ static uint8_t rcSampleIndex = 0;
 #ifndef RX_SPI_DEFAULT_PROTOCOL
 #define RX_SPI_DEFAULT_PROTOCOL 0
 #endif
+
+#ifndef SBUS_INVERSION_DEFAULT
+#define SBUS_INVERSION_DEFAULT 1
+#endif
+
 #ifndef SERIALRX_PROVIDER
 #define SERIALRX_PROVIDER 0
 #endif
@@ -107,6 +113,14 @@ static uint8_t rcSampleIndex = 0;
 #define RX_MAX_USEC 2115
 #define RX_MID_USEC 1500
 
+#ifndef SPEKTRUM_BIND_PIN
+#define SPEKTRUM_BIND_PIN NONE
+#endif
+
+#ifndef BINDPLUG_PIN
+#define BINDPLUG_PIN NONE
+#endif
+
 PG_REGISTER_WITH_RESET_FN(rxConfig_t, rxConfig, PG_RX_CONFIG, 0);
 void pgResetFn_rxConfig(rxConfig_t *rxConfig)
 {
@@ -114,7 +128,7 @@ void pgResetFn_rxConfig(rxConfig_t *rxConfig)
         .halfDuplex = 0,
         .serialrx_provider = SERIALRX_PROVIDER,
         .rx_spi_protocol = RX_SPI_DEFAULT_PROTOCOL,
-        .sbus_inversion = 1,
+        .sbus_inversion = SBUS_INVERSION_DEFAULT,
         .spektrum_sat_bind = 0,
         .spektrum_sat_bind_autoreset = 1,
         .midrc = RX_MID_USEC,
@@ -130,7 +144,9 @@ void pgResetFn_rxConfig(rxConfig_t *rxConfig)
         .rcInterpolationInterval = 19,
         .fpvCamAngleDegrees = 0,
         .max_aux_channel = DEFAULT_AUX_CHANNEL_COUNT,
-        .airModeActivateThreshold = 1350
+        .airModeActivateThreshold = 1350,
+        .spektrum_bind_pin_override_ioTag = IO_TAG(SPEKTRUM_BIND_PIN),
+        .spektrum_bind_plug_ioTag = IO_TAG(BINDPLUG_PIN),
     );
 
 #ifdef RX_CHANNELS_TAER
@@ -287,6 +303,7 @@ void rxInit(void)
     rcData[THROTTLE] = (feature(FEATURE_3D)) ? rxConfig()->midrc : rxConfig()->rx_min_usec;
 
     // Initialize ARM switch to OFF position when arming via switch is defined
+    // TODO - move to rc_mode.c
     for (int i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
         const modeActivationCondition_t *modeActivationCondition = modeActivationConditions(i);
         if (modeActivationCondition->modeId == BOXARM && IS_RANGE_USABLE(&modeActivationCondition->range)) {
@@ -445,7 +462,7 @@ static uint16_t getRxfailValue(uint8_t channel)
 {
     const rxFailsafeChannelConfig_t *channelFailsafeConfig = rxFailsafeChannelConfigs(channel);
 
-    switch(channelFailsafeConfig->mode) {
+    switch (channelFailsafeConfig->mode) {
     case RX_FAILSAFE_MODE_AUTO:
         switch (channel) {
         case ROLL:

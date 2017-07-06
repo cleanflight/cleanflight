@@ -31,7 +31,6 @@
 #include "config/parameter_group_ids.h"
 
 #include "drivers/adc.h"
-#include "drivers/system.h"
 
 #include "fc/runtime_config.h"
 #include "fc/config.h"
@@ -70,9 +69,7 @@ static batteryState_e batteryState;
 static batteryState_e voltageState;
 static batteryState_e consumptionState;
 
-#ifdef BOARD_HAS_CURRENT_SENSOR
-#define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_ADC
-#else
+#ifndef DEFAULT_CURRENT_METER_SOURCE
 #ifdef USE_VIRTUAL_CURRENT_METER
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_VIRTUAL
 #else
@@ -84,9 +81,7 @@ static batteryState_e consumptionState;
 #endif
 #endif
 
-#ifdef BOARD_HAS_VOLTAGE_DIVIDER
-#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
-#else
+#ifndef DEFAULT_VOLTAGE_METER_SOURCE
 #define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_NONE
 #endif
 
@@ -97,12 +92,12 @@ PG_RESET_TEMPLATE(batteryConfig_t, batteryConfig,
     .vbatmaxcellvoltage = 43,
     .vbatmincellvoltage = 33,
     .vbatwarningcellvoltage = 35,
-    .batteryNotPresentLevel = 55, // VBAT below 5.5 V will be ignored
+    .vbatnotpresentcellvoltage = 30, //A cell below 3 will be ignored
     .voltageMeterSource = DEFAULT_VOLTAGE_METER_SOURCE,
 
     // current
     .batteryCapacity = 0,
-    .currentMeterSource = DEFAULT_VOLTAGE_METER_SOURCE,
+    .currentMeterSource = DEFAULT_CURRENT_METER_SOURCE,
 
     // warnings / alerts
     .useVBatAlerts = true,
@@ -115,7 +110,7 @@ void batteryUpdateVoltage(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
 
-    switch(batteryConfig()->voltageMeterSource) {
+    switch (batteryConfig()->voltageMeterSource) {
 #ifdef USE_ESC_SENSOR
         case VOLTAGE_METER_ESC:
             if (feature(FEATURE_ESC_SENSOR)) {
@@ -143,7 +138,7 @@ void batteryUpdateVoltage(timeUs_t currentTimeUs)
 
 static void updateBatteryBeeperAlert(void)
 {
-    switch(getBatteryState()) {
+    switch (getBatteryState()) {
         case BATTERY_WARNING:
             beeper(BEEPER_BAT_LOW);
 
@@ -162,16 +157,19 @@ void batteryUpdatePresence(void)
 {
     static uint16_t previousVoltage = 0;
 
-    bool isVoltageStable = (
-        previousVoltage > 0
-        && ABS(voltageMeter.filtered - previousVoltage) <= VBAT_STABLE_MAX_DELTA
-    );
+    bool isVoltageStable = ABS(voltageMeter.filtered - previousVoltage) <= VBAT_STABLE_MAX_DELTA;
+
+    bool isVoltageFromBat = (voltageMeter.filtered >= batteryConfig()->vbatnotpresentcellvoltage  //above ~0V
+                            && voltageMeter.filtered <= batteryConfig()->vbatmaxcellvoltage)  //1s max cell voltage check
+                            || voltageMeter.filtered > batteryConfig()->vbatnotpresentcellvoltage*2; //USB voltage - 2s or more check
+
 
     if (
         voltageState == BATTERY_NOT_PRESENT
-        && voltageMeter.filtered > batteryConfig()->batteryNotPresentLevel
+        && isVoltageFromBat
         && isVoltageStable
     ) {
+        /* Want to disable battery getting detected around USB voltage or 0V*/
         /* battery has just been connected - calculate cells, warning voltages and reset state */
 
 
@@ -187,10 +185,10 @@ void batteryUpdatePresence(void)
         batteryCriticalVoltage = batteryCellCount * batteryConfig()->vbatmincellvoltage;
     } else if (
         voltageState != BATTERY_NOT_PRESENT
-        && voltageMeter.filtered <= batteryConfig()->batteryNotPresentLevel
         && isVoltageStable
+        && !isVoltageFromBat
     ) {
-        /* battery has been disconnected - can take a while for filter cap to disharge so we use a threshold of batteryConfig()->batterynotpresentlevel */
+        /* battery has been disconnected - can take a while for filter cap to disharge so we use a threshold of batteryConfig()->vbatnotpresentcellvoltage */
 
         consumptionState = voltageState = BATTERY_NOT_PRESENT;
 
@@ -210,7 +208,7 @@ void batteryUpdatePresence(void)
 static void batteryUpdateVoltageState(void)
 {
     // alerts are currently used by beeper, osd and other subsystems
-    switch(voltageState) {
+    switch (voltageState) {
         case BATTERY_OK:
             if (voltageMeter.filtered <= (batteryWarningVoltage - batteryConfig()->vbathysteresis)) {
                 voltageState = BATTERY_WARNING;
@@ -272,7 +270,7 @@ void batteryInit(void)
     batteryCriticalVoltage = 0;
 
     voltageMeterReset(&voltageMeter);
-    switch(batteryConfig()->voltageMeterSource) {
+    switch (batteryConfig()->voltageMeterSource) {
         case VOLTAGE_METER_ESC:
 #ifdef USE_ESC_SENSOR
             voltageMeterESCInit();
@@ -292,7 +290,7 @@ void batteryInit(void)
     //
     consumptionState = BATTERY_OK;
     currentMeterReset(&currentMeter);
-    switch(batteryConfig()->currentMeterSource) {
+    switch (batteryConfig()->currentMeterSource) {
         case CURRENT_METER_ADC:
             currentMeterADCInit();
             break;
@@ -347,7 +345,7 @@ void batteryUpdateCurrentMeter(timeUs_t currentTimeUs)
     const int32_t lastUpdateAt = cmp32(currentTimeUs, ibatLastServiced);
     ibatLastServiced = currentTimeUs;
 
-    switch(batteryConfig()->currentMeterSource) {
+    switch (batteryConfig()->currentMeterSource) {
         case CURRENT_METER_ADC:
             currentMeterADCRefresh(lastUpdateAt);
             currentMeterADCRead(&currentMeter);
@@ -434,7 +432,6 @@ uint8_t getBatteryCellCount(void)
 {
     return batteryCellCount;
 }
-
 
 int32_t getAmperage(void) {
     return currentMeter.amperage;

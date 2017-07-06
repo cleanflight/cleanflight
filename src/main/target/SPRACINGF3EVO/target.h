@@ -46,14 +46,13 @@
 
 #define BRUSHED_ESC_AUTODETECT
 
-#define LED0                    PB8
+#define LED0_PIN                PB8
 
 #define BEEPER                  PC15
 #define BEEPER_INVERTED
 
 #define USE_EXTI
 #define MPU_INT_EXTI            PC13
-#define EXTI15_10_CALLBACK_HANDLER_COUNT 2 // MPU_INT, SDCardDetect
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 
@@ -148,7 +147,7 @@
 #define MPU6500_CS_PIN                   PB9
 #define MPU6500_SPI_INSTANCE             SPI1
 
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 
 #define USE_ADC
 #define ADC_INSTANCE            ADC2
@@ -156,16 +155,16 @@
 #ifdef AIORACERF3
 #define VBAT_ADC_PIN            PA5
 #define CURRENT_METER_ADC_PIN   PA4
+#define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_ADC
 #else
 #define VBAT_ADC_PIN            PA4
 #define CURRENT_METER_ADC_PIN   PA5
 #endif
 
 #define OSD
+#define DISABLE_EXTENDED_CMS_OSD_MENU
 #define USE_OSD_OVER_MSP_DISPLAYPORT
 #define USE_MSP_CURRENT_METER
-
-#undef USE_DASHBOARD
 
 #define TRANSPONDER
 
@@ -173,8 +172,6 @@
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
 #define DEFAULT_FEATURES        (FEATURE_TRANSPONDER  | FEATURE_RSSI_ADC | FEATURE_TELEMETRY)
-
-#define SPEKTRUM_BIND_PIN       UART3_RX_PIN
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

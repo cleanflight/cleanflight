@@ -20,15 +20,17 @@
 
 #include <platform.h>
 
-#include "drivers/system.h"
-#include "drivers/bus_i2c.h"
+#include "accgyro.h"
+#include "accgyro_l3g4200d.h"
 
 #include "common/maths.h"
 #include "common/axis.h"
 
+#include "drivers/bus_i2c.h"
+#include "drivers/time.h"
 #include "drivers/sensor.h"
-#include "accgyro.h"
-#include "accgyro_l3g4200d.h"
+#include "drivers/system.h"
+
 
 // L3G4200D, Standard address 0x68
 #define L3G4200D_ADDRESS         0x68
@@ -112,8 +114,8 @@ bool l3g4200dDetect(gyroDev_t *gyro)
     if (deviceid != L3G4200D_ID)
         return false;
 
-    gyro->init = l3g4200dInit;
-    gyro->read = l3g4200dRead;
+    gyro->initFn = l3g4200dInit;
+    gyro->readFn = l3g4200dRead;
 
     // 14.2857dps/lsb scalefactor
     gyro->scale = 1.0f / 14.2857f;

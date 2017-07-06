@@ -30,14 +30,16 @@
 
 #include "fc/config.h"
 
+#include "drivers/time.h"
 #include "drivers/system.h"
 #include "drivers/serial.h"
+#include "drivers/serial_uart.h"
 #if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)
 #include "drivers/serial_softserial.h"
 #endif
 
-#if defined(USE_UART1) || defined(USE_UART2) || defined(USE_UART3) || defined(USE_UART4) || defined(USE_UART5) || defined(USE_UART6)
-#include "drivers/serial_uart.h"
+#ifdef SITL
+#include "drivers/serial_tcp.h"
 #endif
 
 #include "drivers/light_led.h"
@@ -130,6 +132,20 @@ void pgResetFn_serialConfig(serialConfig_t *serialConfig)
     serialPortConfig_t *serialRxUartConfig = serialFindPortConfiguration(SERIALRX_UART);
     if (serialRxUartConfig) {
         serialRxUartConfig->functionMask = FUNCTION_RX_SERIAL;
+    }
+#endif
+
+#if defined(TELEMETRY_UART) && defined(TELEMETRY_PROVIDER_DEFAULT)
+    serialPortConfig_t *serialTelemetryConfig = serialFindPortConfiguration(TELEMETRY_UART);
+    if (serialTelemetryConfig) {
+        serialTelemetryConfig->functionMask = TELEMETRY_PROVIDER_DEFAULT;
+    }
+#endif
+
+#if defined(GPS_UART)
+    serialPortConfig_t *serialGPSConfig = serialFindPortConfiguration(GPS_UART);
+    if (serialGPSConfig) {
+        serialGPSConfig->functionMask = FUNCTION_GPS;
     }
 #endif
 
@@ -328,7 +344,7 @@ serialPort_t *openSerialPort(
     portMode_t mode,
     portOptions_t options)
 {
-#if (!defined(USE_UART1) && !defined(USE_UART2) && !defined(USE_UART3) && !defined(USE_UART4) && !defined(USE_UART5) && !defined(USE_UART6) && !defined(USE_SOFTSERIAL1) && !defined(USE_SOFTSERIAL2))
+#if !(defined(USE_UART) || defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2))
     UNUSED(rxCallback);
     UNUSED(baudRate);
     UNUSED(mode);
@@ -343,52 +359,47 @@ serialPort_t *openSerialPort(
 
     serialPort_t *serialPort = NULL;
 
-    switch(identifier) {
+    switch (identifier) {
 #ifdef USE_VCP
         case SERIAL_PORT_USB_VCP:
             serialPort = usbVcpOpen();
             break;
 #endif
+
+#if defined(USE_UART)
 #ifdef USE_UART1
         case SERIAL_PORT_USART1:
-            serialPort = uartOpen(USART1, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART2
         case SERIAL_PORT_USART2:
-            serialPort = uartOpen(USART2, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART3
         case SERIAL_PORT_USART3:
-            serialPort = uartOpen(USART3, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART4
         case SERIAL_PORT_UART4:
-            serialPort = uartOpen(UART4, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART5
         case SERIAL_PORT_UART5:
-            serialPort = uartOpen(UART5, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART6
         case SERIAL_PORT_USART6:
-            serialPort = uartOpen(USART6, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART7
         case SERIAL_PORT_USART7:
-            serialPort = uartOpen(UART7, rxCallback, baudRate, mode, options);
-            break;
 #endif
 #ifdef USE_UART8
         case SERIAL_PORT_USART8:
-            serialPort = uartOpen(UART8, rxCallback, baudRate, mode, options);
+#endif
+#ifdef SITL
+            // SITL emulates serial ports over TCP
+            serialPort = serTcpOpen(SERIAL_PORT_IDENTIFIER_TO_UARTDEV(identifier), rxCallback, baudRate, mode, options);
+#else
+            serialPort = uartOpen(SERIAL_PORT_IDENTIFIER_TO_UARTDEV(identifier), rxCallback, baudRate, mode, options);
+#endif
             break;
 #endif
+
 #ifdef USE_SOFTSERIAL1
         case SERIAL_PORT_SOFTSERIAL1:
             serialPort = openSoftSerial(SOFTSERIAL1, rxCallback, baudRate, mode, options);
@@ -539,7 +550,7 @@ void serialPassthrough(serialPort_t *left, serialPort_t *right, serialConsumer *
     // Either port might be open in a mode other than MODE_RXTX. We rely on
     // serialRxBytesWaiting() to do the right thing for a TX only port. No
     // special handling is necessary OR performed.
-    while(1) {
+    while (1) {
         // TODO: maintain a timestamp of last data received. Use this to
         // implement a guard interval and check for `+++` as an escape sequence
         // to return to CLI command mode.

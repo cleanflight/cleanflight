@@ -20,7 +20,7 @@
 
 #define USBD_PRODUCT_STRING "BeeRotorF4"
 
-#define LED0                    PB4
+#define LED0_PIN                PB4
 
 #define BEEPER                  PB3
 #define BEEPER_INVERTED
@@ -28,7 +28,6 @@
 // ICM20689 interrupt
 #define USE_EXTI
 #define MPU_INT_EXTI            PA8
-#define EXTI_CALLBACK_HANDLER_COUNT 1 // MPU data ready
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
@@ -127,11 +126,11 @@
 //#define SPI_RX_CS_PIN           PD2
 
 #define USE_I2C
+#define USE_I2C_DEVICE_1
 #define I2C_DEVICE              (I2CDEV_1)
 #define I2C1_SCL                PB6
 #define I2C1_SDA                PB7
 
-#define BOARD_HAS_VOLTAGE_DIVIDER
 #define USE_ADC
 #define ADC1_DMA_STREAM         DMA2_Stream0
 
@@ -147,6 +146,8 @@
 
 #define DEFAULT_FEATURES        ( FEATURE_TELEMETRY | FEATURE_OSD | FEATURE_AIRMODE )
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
+#define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_ADC
 
 #define SERIALRX_PROVIDER       SERIALRX_SBUS
 #define SERIALRX_UART           SERIAL_PORT_USART2

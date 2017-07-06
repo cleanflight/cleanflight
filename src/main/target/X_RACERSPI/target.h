@@ -22,7 +22,7 @@
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
 
 
-#define LED0                    PC14
+#define LED0_PIN                PC14
 #define BEEPER                  PC15
 #define BEEPER_INVERTED
 
@@ -96,7 +96,7 @@
 #define M25P16_CS_PIN           PB12
 #define M25P16_SPI_INSTANCE     SPI2
 
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define USE_ADC
 #define ADC_INSTANCE            ADC2
 #define VBAT_ADC_PIN            PA4
@@ -114,8 +114,6 @@
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
-
-#define SPEKTRUM_BIND_PIN       UART3_RX_PIN
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

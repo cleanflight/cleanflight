@@ -26,11 +26,11 @@
 #define USE_HARDWARE_REVISION_DETECTION
 #define HW_PIN                  PB2
 
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 
-#define LED0                    PB6
-#define LED1                    PB5
-#define LED2                    PB4
+#define LED0_PIN                PB6
+#define LED1_PIN                PB5
+#define LED2_PIN                PB4
 
 #define BEEPER                  PC1
 #define BEEPER_OPT              PB7
@@ -144,8 +144,6 @@
 #define VBAT_ADC_PIN            PC3
 #define CURRENT_METER_ADC_PIN   PC2
 
-#define USE_ESC_SENSOR
-
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
@@ -153,8 +151,6 @@
 #define SERIALRX_UART           SERIAL_PORT_USART6
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
-
-#define SPEKTRUM_BIND_PIN       UART3_RX_PIN
 
 #define TARGET_IO_PORTA             0xffff
 #define TARGET_IO_PORTB             0xffff

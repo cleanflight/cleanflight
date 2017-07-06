@@ -27,7 +27,7 @@
 #include "common/maths.h"
 #include "common/axis.h"
 
-#include "drivers/system.h"
+#include "drivers/time.h"
 #include "drivers/io.h"
 #include "drivers/bus_i2c.h"
 
@@ -166,8 +166,8 @@ bool lsm303dlhcAccDetect(accDev_t *acc)
     if (!ack)
         return false;
 
-    acc->init = lsm303dlhcAccInit;
-    acc->read = lsm303dlhcAccRead;
+    acc->initFn = lsm303dlhcAccInit;
+    acc->readFn = lsm303dlhcAccRead;
     return true;
 }
 #endif

@@ -76,7 +76,6 @@
 #include "sensors/battery.h"
 #include "sensors/compass.h"
 #include "sensors/gyro.h"
-#include "sensors/gyroanalyse.h"
 #include "sensors/sonar.h"
 #include "sensors/esc_sensor.h"
 
@@ -85,6 +84,7 @@
 #include "telemetry/telemetry.h"
 
 #include "io/osd_slave.h"
+#include "io/rcsplit.h"
 
 #ifdef USE_BST
 void taskBstMasterProcess(timeUs_t currentTimeUs);
@@ -151,7 +151,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();
 #endif
-    updateLEDs();
+    updateArmingStatus();
 
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
@@ -259,8 +259,11 @@ void osdSlaveTasksInit(void)
 void fcTasksInit(void)
 {
     schedulerInit();
-    rescheduleTask(TASK_GYROPID, gyro.targetLooptime);
-    setTaskEnabled(TASK_GYROPID, true);
+
+    if (sensors(SENSOR_GYRO)) {
+        rescheduleTask(TASK_GYROPID, gyro.targetLooptime);
+        setTaskEnabled(TASK_GYROPID, true);
+    }
 
     if (sensors(SENSOR_ACC)) {
         setTaskEnabled(TASK_ACCEL, true);
@@ -352,9 +355,6 @@ void fcTasksInit(void)
 #if defined(VTX_RTC6705) || defined(VTX_SMARTAUDIO) || defined(VTX_TRAMP)
     setTaskEnabled(TASK_VTXCTRL, true);
 #endif
-#endif
-#ifdef USE_GYRO_DATA_ANALYSE
-    setTaskEnabled(TASK_GYRO_DATA_ANALYSE, true);
 #endif
 }
 #endif
@@ -599,11 +599,11 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 #endif
 
-#ifdef USE_GYRO_DATA_ANALYSE
-    [TASK_GYRO_DATA_ANALYSE] = {
-        .taskName = "GYROFFT",
-        .taskFunc = gyroDataAnalyseUpdate,
-        .desiredPeriod = TASK_PERIOD_HZ(100),        // 100 Hz, 10ms
+#ifdef USE_RCSPLIT
+    [TASK_RCSPLIT] = {
+        .taskName = "RCSPLIT",
+        .taskFunc = rcSplitProcess,
+        .desiredPeriod = TASK_PERIOD_HZ(10),        // 10 Hz, 100ms
         .staticPriority = TASK_PRIORITY_MEDIUM,
     },
 #endif

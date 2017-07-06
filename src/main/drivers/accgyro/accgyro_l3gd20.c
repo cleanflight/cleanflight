@@ -24,7 +24,7 @@
 
 #include "common/maths.h"
 
-#include "drivers/system.h"
+#include "drivers/time.h"
 #include "drivers/io.h"
 #include "drivers/bus_spi.h"
 
@@ -152,8 +152,8 @@ static bool l3gd20GyroRead(gyroDev_t *gyro)
 
 bool l3gd20Detect(gyroDev_t *gyro)
 {
-    gyro->init = l3gd20GyroInit;
-    gyro->read = l3gd20GyroRead;
+    gyro->initFn = l3gd20GyroInit;
+    gyro->readFn = l3gd20GyroRead;
 
     gyro->scale = L3GD20_GYRO_SCALE_FACTOR;
 

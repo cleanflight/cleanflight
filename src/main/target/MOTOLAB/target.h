@@ -22,8 +22,8 @@
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_DEFAULT
 #define TARGET_CONFIG
 
-#define LED0                    PB5 // Blue LEDs - PB5
-//#define LED1                    PB9 // Green LEDs - PB9
+#define LED0_PIN                PB5 // Blue LEDs - PB5
+//#define LED1_PIN                PB9 // Green LEDs - PB9
 
 #define BEEPER                  PA0
 #define BEEPER_INVERTED
@@ -31,7 +31,6 @@
 // MPU6050 interrupts
 #define USE_EXTI
 #define MPU_INT_EXTI            PA15
-#define EXTI15_10_CALLBACK_HANDLER_COUNT 1 // MPU data ready
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 
@@ -90,7 +89,7 @@
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
 
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define USE_ADC
 #define ADC_INSTANCE            ADC2
 #define VBAT_ADC_PIN            PA5
@@ -98,8 +97,6 @@
 #define RSSI_ADC_PIN            PB2
 
 #define USE_ESC_SENSOR
-
-#define SPEKTRUM_BIND_PIN       UART2_RX_PIN
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

@@ -21,13 +21,11 @@
 
 #define USBD_PRODUCT_STRING "AnyFCF7"
 
-#define USE_ESC_SENSOR
+#define LED0_PIN   PB7
+#define LED1_PIN   PB6
 
-#define LED0   PB7
-#define LED1   PB6
-
-//#define BEEPER   PB2
-//#define BEEPER_INVERTED
+#define BEEPER   PB2 // Unused pin, can be mapped to elsewhere
+#define BEEPER_INVERTED
 
 #define MPU6000_CS_PIN        PA4
 #define MPU6000_SPI_INSTANCE  SPI1
@@ -96,6 +94,10 @@
 
 #define SERIAL_PORT_COUNT 11 //VCP, USART1, USART2, USART3, UART4, UART5, USART6, USART7, USART8, SOFTSERIAL x 2
 
+#define USE_ESCSERIAL
+#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+#define ESCSERIAL_TIMER_TX_PIN  PB14 // XXX Provisional (Hardware=0, PPM)
+
 #define USE_SPI
 #define USE_SPI_DEVICE_1
 #define USE_SPI_DEVICE_4
@@ -111,6 +113,7 @@
 #define SPI4_MOSI_PIN           PE14
 
 #define USE_SDCARD
+#define SDCARD_DETECT_INVERTED
 #define SDCARD_DETECT_PIN                   PD3
 #define SDCARD_DETECT_EXTI_LINE             EXTI_Line3
 #define SDCARD_DETECT_EXTI_PIN_SOURCE       EXTI_PinSource3

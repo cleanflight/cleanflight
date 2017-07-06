@@ -21,12 +21,11 @@
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
 
-#define LED0        PB3
+#define LED0_PIN    PB3
 
 #define BEEPER      PC15
 #define BEEPER_INVERTED
 
-#define EXTI15_10_CALLBACK_HANDLER_COUNT 1
 
 #define USE_EXTI
 #define MPU_INT_EXTI            PC13
@@ -89,7 +88,7 @@
 #define M25P16_CS_PIN           PB12
 #define M25P16_SPI_INSTANCE     SPI2
 
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define USE_ADC
 #define ADC_INSTANCE                ADC2
 #define VBAT_ADC_PIN                PA4
@@ -105,8 +104,6 @@
 #define WS2811_TIMER_GPIO_AF            GPIO_AF_6
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
-
-#define SPEKTRUM_BIND_PIN   UART3_RX_PIN
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

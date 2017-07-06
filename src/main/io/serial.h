@@ -44,6 +44,7 @@ typedef enum {
     FUNCTION_VTX_SMARTAUDIO      = (1 << 11), // 2048
     FUNCTION_TELEMETRY_IBUS      = (1 << 12), // 4096
     FUNCTION_VTX_TRAMP           = (1 << 13), // 8192
+    FUNCTION_RCSPLIT             = (1 << 14), // 16384
 } serialPortFunction_e;
 
 typedef enum {
@@ -85,7 +86,9 @@ typedef enum {
 
 extern const serialPortIdentifier_e serialPortIdentifiers[SERIAL_PORT_COUNT];
 
-#define SERIAL_PORT_IDENTIFIER_TO_RESOURCE_INDEX(x) (((x) <= SERIAL_PORT_USART8) ? (x) : (RESOURCE_SOFT_OFFSET + ((x) - SERIAL_PORT_SOFTSERIAL1)))
+#define SERIAL_PORT_IDENTIFIER_TO_INDEX(x) (((x) <= SERIAL_PORT_USART8) ? (x) : (RESOURCE_SOFT_OFFSET + ((x) - SERIAL_PORT_SOFTSERIAL1)))
+
+#define SERIAL_PORT_IDENTIFIER_TO_UARTDEV(x) ((x) - SERIAL_PORT_USART1 + UARTDEV_1)
 
 //
 // runtime

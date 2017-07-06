@@ -26,15 +26,14 @@
 #include "common/maths.h"
 #include "common/utils.h"
 
-#include "drivers/nvic.h"
-
-#include "drivers/system.h"
-#include "drivers/gpio.h"
-#include "drivers/exti.h"
 #include "drivers/bus_i2c.h"
+#include "drivers/exti.h"
+#include "drivers/gpio.h"
 #include "drivers/gyro_sync.h"
-
+#include "drivers/nvic.h"
 #include "drivers/sensor.h"
+#include "drivers/time.h"
+
 #include "accgyro.h"
 #include "accgyro_mpu.h"
 #include "accgyro_mpu6050.h"
@@ -68,8 +67,8 @@ bool mpu6050AccDetect(accDev_t *acc)
         return false;
     }
 
-    acc->init = mpu6050AccInit;
-    acc->read = mpuAccRead;
+    acc->initFn = mpu6050AccInit;
+    acc->readFn = mpuAccRead;
     acc->revisionCode = (acc->mpuDetectionResult.resolution == MPU_HALF_RESOLUTION ? 'o' : 'n'); // es/non-es variance between MPU6050 sensors, half of the naze boards are mpu6000ES.
 
     return true;
@@ -88,7 +87,7 @@ static void mpu6050GyroInit(gyroDev_t *gyro)
     gyro->mpuConfiguration.writeFn(&gyro->bus, MPU_RA_GYRO_CONFIG, INV_FSR_2000DPS << 3);   //GYRO_CONFIG   -- FS_SEL = 3: Full scale set to 2000 deg/sec
 
     // ACC Init stuff.
-    // Accel scale 8g (4096 LSB/g)
+    // Accel scale 16g (2048 LSB/g)
     gyro->mpuConfiguration.writeFn(&gyro->bus, MPU_RA_ACCEL_CONFIG, INV_FSR_16G << 3);
 
     gyro->mpuConfiguration.writeFn(&gyro->bus, MPU_RA_INT_PIN_CFG,
@@ -104,9 +103,9 @@ bool mpu6050GyroDetect(gyroDev_t *gyro)
     if (gyro->mpuDetectionResult.sensor != MPU_60x0) {
         return false;
     }
-    gyro->init = mpu6050GyroInit;
-    gyro->read = mpuGyroRead;
-    gyro->intStatus = mpuCheckDataReady;
+    gyro->initFn = mpu6050GyroInit;
+    gyro->readFn = mpuGyroRead;
+    gyro->intStatusFn = mpuCheckDataReady;
 
     // 16.4 dps/lsb scalefactor
     gyro->scale = 1.0f / 16.4f;

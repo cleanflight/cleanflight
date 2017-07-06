@@ -20,40 +20,24 @@
 
 #include <platform.h>
 
-#include "common/axis.h"
-
-#include "drivers/sensor.h"
-#include "drivers/compass/compass.h"
-#include "drivers/serial.h"
-
-#include "fc/rc_controls.h"
-
-#include "flight/failsafe.h"
-#include "flight/mixer.h"
-#include "flight/pid.h"
-
-#include "rx/rx.h"
+#ifdef TARGET_CONFIG
 
 #include "io/serial.h"
 
-#include "telemetry/telemetry.h"
+#include "rx/rx.h"
 
-#include "sensors/sensors.h"
-#include "sensors/compass.h"
 #include "sensors/barometer.h"
 
-#include "config/feature.h"
+#include "telemetry/telemetry.h"
 
-#include "fc/config.h"
 
-#ifdef TARGET_CONFIG
 void targetConfiguration(void)
 {
     barometerConfigMutable()->baro_hardware = BARO_DEFAULT;
     rxConfigMutable()->sbus_inversion = 1;
     serialConfigMutable()->portConfigs[1].functionMask = FUNCTION_MSP; // So SPRacingF3OSD users don't have to change anything.
     serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(TELEMETRY_UART)].functionMask = FUNCTION_TELEMETRY_SMARTPORT;
-    telemetryConfigMutable()->telemetry_inversion = 0;
     telemetryConfigMutable()->halfDuplex = 0;
+    telemetryConfigMutable()->telemetry_inverted = true;
 }
 #endif

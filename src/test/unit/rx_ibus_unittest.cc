@@ -20,14 +20,15 @@
 extern "C" {
 #include <platform.h>
 #include "config/parameter_group.h"
-#include "drivers/system.h"
 #include "drivers/serial.h"
+#include "drivers/time.h"
 #include "io/serial.h"
 #include "rx/rx.h"
 #include "rx/ibus.h"
 #include "telemetry/ibus_shared.h"
 #include "telemetry/telemetry.h"
 #include "fc/rc_controls.h"
+#include "fc/rc_modes.h"
 #include "sensors/barometer.h"
 #include "sensors/battery.h"
 }
@@ -38,7 +39,7 @@ extern "C" {
 
 extern "C" {
     uint8_t batteryCellCount = 3;
-    int16_t rcCommand[4] = {0, 0, 0, 0};
+    float rcCommand[4] = {0, 0, 0, 0};
     int16_t telemTemperature1 = 0;
     baro_t baro = { .baroTemperature = 50 };
     telemetryConfig_t telemetryConfig_System;

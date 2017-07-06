@@ -18,6 +18,7 @@
 #pragma once
 
 #include "drivers/io.h"
+#include "config/parameter_group.h"
 
 typedef enum portMode_t {
     MODE_RX = 1 << 0,
@@ -83,7 +84,10 @@ typedef struct serialPort_s {
 typedef struct serialPinConfig_s {
     ioTag_t ioTagTx[SERIAL_PORT_MAX_INDEX];
     ioTag_t ioTagRx[SERIAL_PORT_MAX_INDEX];
+    ioTag_t ioTagInverter[SERIAL_PORT_MAX_INDEX];
 } serialPinConfig_t;
+
+PG_DECLARE(serialPinConfig_t, serialPinConfig);
 
 struct serialPortVTable {
     void (*serialWrite)(serialPort_t *instance, uint8_t ch);

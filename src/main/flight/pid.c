@@ -74,34 +74,18 @@ PG_REGISTER_ARRAY_WITH_RESET_FN(pidProfile_t, MAX_PROFILE_COUNT, pidProfiles, PG
 void resetPidProfile(pidProfile_t *pidProfile)
 {
     RESET_CONFIG(const pidProfile_t, pidProfile,
-        .P8[ROLL] = 44,
-        .I8[ROLL] = 40,
-        .D8[ROLL] = 30,
-        .P8[PITCH] = 58,
-        .I8[PITCH] = 50,
-        .D8[PITCH] = 35,
-        .P8[YAW] = 70,
-        .I8[YAW] = 45,
-        .D8[YAW] = 20,
-        .P8[PIDALT] = 50,
-        .I8[PIDALT] = 0,
-        .D8[PIDALT] = 0,
-        .P8[PIDPOS] = 15,   // POSHOLD_P * 100,
-        .I8[PIDPOS] = 0,    // POSHOLD_I * 100,
-        .D8[PIDPOS] = 0,
-        .P8[PIDPOSR] = 34,  // POSHOLD_RATE_P * 10,
-        .I8[PIDPOSR] = 14,  // POSHOLD_RATE_I * 100,
-        .D8[PIDPOSR] = 53,  // POSHOLD_RATE_D * 1000,
-        .P8[PIDNAVR] = 25,  // NAV_P * 10,
-        .I8[PIDNAVR] = 33,  // NAV_I * 100,
-        .D8[PIDNAVR] = 83,  // NAV_D * 1000,
-        .P8[PIDLEVEL] = 50,
-        .I8[PIDLEVEL] = 50,
-        .D8[PIDLEVEL] = 75,
-        .P8[PIDMAG] = 40,
-        .P8[PIDVEL] = 55,
-        .I8[PIDVEL] = 55,
-        .D8[PIDVEL] = 75,
+        .pid = {
+            [PID_ROLL] =  { 40, 40, 30 },
+            [PID_PITCH] = { 58, 50, 35 },
+            [PID_YAW] =   { 70, 45, 20 },
+            [PID_ALT] =   { 50, 0, 0 },
+            [PID_POS] =   { 15, 0, 0 },     // POSHOLD_P * 100, POSHOLD_I * 100,
+            [PID_POSR] =  { 34, 14, 53 },   // POSHOLD_RATE_P * 10, POSHOLD_RATE_I * 100, POSHOLD_RATE_D * 1000,
+            [PID_NAVR] =  { 25, 33, 83 },   // NAV_P * 10, NAV_I * 100, NAV_D * 1000
+            [PID_LEVEL] = { 50, 50, 75 },
+            [PID_MAG] =   { 40, 0, 0 },
+            [PID_VEL] =   { 55, 55, 75 }
+        },
 
         .pidSumLimit = PIDSUM_LIMIT,
         .pidSumLimitYaw = PIDSUM_LIMIT_YAW,
@@ -174,6 +158,8 @@ static void *ptermYawFilter;
 
 void pidInitFilters(const pidProfile_t *pidProfile)
 {
+    BUILD_BUG_ON(FD_YAW != 2); // only setting up Dterm filters on roll and pitch axes, so ensure yaw axis is 2
+
     static biquadFilter_t biquadFilterNotch[2];
     static pt1Filter_t pt1Filter[2];
     static biquadFilter_t biquadFilter[2];
@@ -182,16 +168,25 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 
     uint32_t pidFrequencyNyquist = (1.0f / dT) / 2; // No rounding needed
 
-    BUILD_BUG_ON(FD_YAW != 2); // only setting up Dterm filters on roll and pitch axes, so ensure yaw axis is 2
+    float dTermNotchHz;
+    if (pidProfile->dterm_notch_hz <= pidFrequencyNyquist) {
+        dTermNotchHz = pidProfile->dterm_notch_hz;
+    } else {
+        if (pidProfile->dterm_notch_cutoff < pidFrequencyNyquist) {
+            dTermNotchHz = pidFrequencyNyquist;
+        } else {
+            dTermNotchHz = 0;
+        }
+    }
 
-    if (pidProfile->dterm_notch_hz == 0 || pidProfile->dterm_notch_hz > pidFrequencyNyquist) {
+    if (!dTermNotchHz) {
         dtermNotchFilterApplyFn = nullFilterApply;
     } else {
         dtermNotchFilterApplyFn = (filterApplyFnPtr)biquadFilterApply;
-        const float notchQ = filterGetNotchQ(pidProfile->dterm_notch_hz, pidProfile->dterm_notch_cutoff);
+        const float notchQ = filterGetNotchQ(dTermNotchHz, pidProfile->dterm_notch_cutoff);
         for (int axis = FD_ROLL; axis <= FD_PITCH; axis++) {
             dtermFilterNotch[axis] = &biquadFilterNotch[axis];
-            biquadFilterInit(dtermFilterNotch[axis], pidProfile->dterm_notch_hz, targetPidLooptime, notchQ, FILTER_NOTCH);
+            biquadFilterInit(dtermFilterNotch[axis], dTermNotchHz, targetPidLooptime, notchQ, FILTER_NOTCH);
         }
     }
 
@@ -248,16 +243,16 @@ static float crashDtermThreshold;
 static float crashGyroThreshold;
 
 void pidInitConfig(const pidProfile_t *pidProfile) {
-    for(int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        Kp[axis] = PTERM_SCALE * pidProfile->P8[axis];
-        Ki[axis] = ITERM_SCALE * pidProfile->I8[axis];
-        Kd[axis] = DTERM_SCALE * pidProfile->D8[axis];
+    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
+        Kp[axis] = PTERM_SCALE * pidProfile->pid[axis].P;
+        Ki[axis] = ITERM_SCALE * pidProfile->pid[axis].I;
+        Kd[axis] = DTERM_SCALE * pidProfile->pid[axis].D;
     }
     dtermSetpointWeight = pidProfile->dtermSetpointWeight / 127.0f;
     relaxFactor = 1.0f / (pidProfile->setpointRelaxRatio / 100.0f);
-    levelGain = pidProfile->P8[PIDLEVEL] / 10.0f;
-    horizonGain = pidProfile->I8[PIDLEVEL] / 10.0f;
-    horizonTransition = (float)pidProfile->D8[PIDLEVEL];
+    levelGain = pidProfile->pid[PID_LEVEL].P / 10.0f;
+    horizonGain = pidProfile->pid[PID_LEVEL].I / 10.0f;
+    horizonTransition = (float)pidProfile->pid[PID_LEVEL].D;
     horizonTiltExpertMode = pidProfile->horizon_tilt_expert_mode;
     horizonCutoffDegrees = (175 - pidProfile->horizon_tilt_effect) * 1.8f;
     horizonFactorRatio = (100 - pidProfile->horizon_tilt_effect) * 0.01f;
@@ -364,7 +359,7 @@ static float accelerationLimit(int axis, float currentPidSetpoint) {
     static float previousSetpoint[3];
     const float currentVelocity = currentPidSetpoint- previousSetpoint[axis];
 
-    if(ABS(currentVelocity) > maxVelocity[axis])
+    if (ABS(currentVelocity) > maxVelocity[axis])
         currentPidSetpoint = (currentVelocity > 0) ? previousSetpoint[axis] + maxVelocity[axis] : previousSetpoint[axis] - maxVelocity[axis];
 
     previousSetpoint[axis] = currentPidSetpoint;
@@ -388,7 +383,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
         float currentPidSetpoint = getSetpointRate(axis);
 
-        if(maxVelocity[axis])
+        if (maxVelocity[axis])
             currentPidSetpoint = accelerationLimit(axis, currentPidSetpoint);
 
         // Yaw control is GYRO based, direct sticks control is applied to rate PID
@@ -437,13 +432,18 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
 
         // -----calculate D component
         if (axis != FD_YAW) {
-            float dynC = dtermSetpointWeight;
-            if (pidProfile->setpointRelaxRatio < 100) {
-                dynC *= MIN(getRcDeflectionAbs(axis) * relaxFactor, 1.0f);
+            // apply filters
+            float gyroRateFiltered = dtermNotchFilterApplyFn(dtermFilterNotch[axis], gyroRate);
+            gyroRateFiltered = dtermLpfApplyFn(dtermFilterLpf[axis], gyroRateFiltered);
+
+            float dynC = 0;
+            if ( (pidProfile->setpointRelaxRatio < 100) && (!flightModeFlags) ) {
+                dynC = dtermSetpointWeight * MIN(getRcDeflectionAbs(axis) * relaxFactor, 1.0f);
             }
-            const float rD = dynC * currentPidSetpoint - gyroRate;    // cr - y
+            const float rD = dynC * currentPidSetpoint - gyroRateFiltered;    // cr - y
             // Divide rate change by dT to get differential (ie dr/dt)
             float delta = (rD - previousRateError[axis]) / dT;
+
             previousRateError[axis] = rD;
 
             // if crash recovery is on check for a crash
@@ -456,10 +456,6 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
                     }
                 }
             }
-
-            // apply filters
-            delta = dtermNotchFilterApplyFn(dtermFilterNotch[axis], delta);
-            delta = dtermLpfApplyFn(dtermFilterLpf[axis], delta);
 
             axisPID_D[axis] = Kd[axis] * delta * tpaFactor;
         }

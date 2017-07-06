@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    stm32f7xx_hal_def.h
   * @author  MCD Application Team
-  * @version V1.2.1
-  * @date    24-March-2017
+  * @version V1.2.2
+  * @date    14-April-2017
   * @brief   This file contains HAL common defines, enumeration, macros and 
   *          structures definitions. 
   ******************************************************************************
@@ -47,7 +47,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx.h"
 #include "Legacy/stm32_hal_legacy.h"
-#include <stdio.h>
+#include <stddef.h>
 /* Exported types ------------------------------------------------------------*/
 
 /** 

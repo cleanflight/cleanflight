@@ -17,12 +17,13 @@
 
 #pragma once
 #define TARGET_BOARD_IDENTIFIER "YPF4"
+#define TARGET_CONFIG
 
 #define USBD_PRODUCT_STRING     "YupiF4"
 
-#define LED0                    PB6
-#define LED1                    PB4
-#define LED2                    PB5
+#define LED0_PIN                PB6
+#define LED1_PIN                PB4
+#define LED2_PIN                PB5
 
 #define BEEPER                  PC9
 #define BEEPER_PWM_HZ           2200 // Beeper PWM frequency in Hz
@@ -128,7 +129,7 @@
 
 
 // ADC inputs
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define USE_ADC
 #define VBAT_ADC_PIN            PC1
 #define RSSI_ADC_GPIO_PIN       PC0
@@ -148,4 +149,4 @@
 #define TARGET_IO_PORTD         (BIT(2))
 
 #define USABLE_TIMER_CHANNEL_COUNT 8
-#define USED_TIMERS             (TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(8))
+#define USED_TIMERS             (TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8))
