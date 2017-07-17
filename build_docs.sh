@@ -24,37 +24,40 @@ doc_files=(
 	'Modes.md'
 	'Inflight Adjustments.md'
 	'Controls.md'
-	'Autotune.md'
 	'Blackbox.md'
 	'Migrating from baseflight.md'
 	'Boards.md'
 	'Board - AlienFlight.md'
 	'Board - CC3D.md'
-	'Board - CJMCU.md'
-	'Board - Naze32.md'
-	'Board - Sparky.md'
-	'Board - Olimexino.md'
 	'Board - ChebuzzF3.md'
+	'Board - CJMCU.md'
+	'Board - ColibriRace.md'
+	'Board - F3FC Racing.md'
+	'Board - MotoLab.md'
+    'Board - Naze32.md'
+    'Board - Paris Air Hero 32.md'
+    'Board - RMDO.md'
+    'Board - Sparky.md'
+    'Board - SPRacingF3.md'
+    'Board - SPRacingF3EVO.md'
+    'Board - SPRacingF3MINI.md'
+    'Board - SPRacingF3NEO.md'
 )
 
-if which gimli >/dev/null; then
+if which markdown-pdf >/dev/null; then
 	echo "Building ${filename}.pdf"
-	pushd . >/dev/null
-	cd docs
 
-	rm -f ${filename}.md
+	rm -f "obj/${filename}.md"
 	for i in "${doc_files[@]}"
 	do
-		cat "$i" >> ${filename}.md
+		cat "docs/$i" >> "obj/${filename}.md"
 	done
-	rm -f ${filename}.pdf
-	gimli -f ${filename}.md -stylesheet override.css \
-	  -w '--toc --title "Cleanflight Manual" --footer-right "[page]" --toc-depth 1'
-	rm ${filename}.md
-	popd >/dev/null
+	rm -f "obj/${filename}.pdf"
+
+	markdown-pdf -c docs "obj/${filename}.md"
+
 else
 	echo -e "\nFAILED"
-	echo "Install Gimli to build the PDF documentation"
-	echo -e "https://github.com/walle/gimli\n"
+	echo "Install markdown-pdf to build the PDF documentation"
 	exit 1
 fi
