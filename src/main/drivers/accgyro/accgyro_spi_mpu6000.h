@@ -12,12 +12,10 @@
 
 #define GYRO_SCALE_FACTOR  0.00053292f  // (4/131) * pi/180   (32.75 LSB = 1 DPS)
 
-#define MPU6000_WHO_AM_I_CONST              (0x68)
-
 // RF = Register Flag
 #define MPU_RF_DATA_RDY_EN (1 << 0)
 
-bool mpu6000SpiDetect(const busDevice_t *bus);
+uint8_t mpu6000SpiDetect(const busDevice_t *bus);
 
 bool mpu6000SpiAccDetect(accDev_t *acc);
 bool mpu6000SpiGyroDetect(gyroDev_t *gyro);

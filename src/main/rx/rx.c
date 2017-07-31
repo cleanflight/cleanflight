@@ -74,6 +74,7 @@ static bool rxSignalReceivedNotDataDriven = false;
 static bool rxFlightChannelsValid = false;
 static bool rxIsInFailsafeMode = true;
 static bool rxIsInFailsafeModeNotDataDriven = true;
+static uint8_t rxChannelCount;
 
 static uint32_t rxUpdateAt = 0;
 static uint32_t needRxSignalBefore = 0;
@@ -121,7 +122,7 @@ static uint8_t rcSampleIndex = 0;
 #define BINDPLUG_PIN NONE
 #endif
 
-PG_REGISTER_WITH_RESET_FN(rxConfig_t, rxConfig, PG_RX_CONFIG, 0);
+PG_REGISTER_WITH_RESET_FN(rxConfig_t, rxConfig, PG_RX_CONFIG, 1);
 void pgResetFn_rxConfig(rxConfig_t *rxConfig)
 {
     RESET_CONFIG_2(rxConfig_t, rxConfig,
@@ -353,14 +354,8 @@ void rxInit(void)
         rxPwmInit(rxConfig(), &rxRuntimeConfig);
     }
 #endif
-}
 
-static uint8_t calculateChannelRemapping(const uint8_t *channelMap, uint8_t channelMapEntryCount, uint8_t channelToRemap)
-{
-    if (channelToRemap < channelMapEntryCount) {
-        return channelMap[channelToRemap];
-    }
-    return channelToRemap;
+    rxChannelCount = MIN(rxConfig()->max_aux_channel + NON_AUX_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
 bool rxIsReceivingSignal(void)
@@ -432,7 +427,7 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
     return rxDataReceived || (currentTimeUs >= rxUpdateAt); // data driven or 50Hz
 }
 
-static uint16_t calculateNonDataDrivenChannel(uint8_t chan, uint16_t sample)
+static uint16_t calculateChannelMovingAverage(uint8_t chan, uint16_t sample)
 {
     static int16_t rcSamples[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT][PPM_AND_PWM_SAMPLE_COUNT];
     static int16_t rcDataMean[MAX_SUPPORTED_RX_PARALLEL_PWM_OR_PPM_CHANNEL_COUNT];
@@ -495,33 +490,16 @@ STATIC_UNIT_TESTED uint16_t applyRxChannelRangeConfiguraton(int sample, const rx
     }
 
     sample = scaleRange(sample, range->min, range->max, PWM_RANGE_MIN, PWM_RANGE_MAX);
-    sample = MIN(MAX(PWM_PULSE_MIN, sample), PWM_PULSE_MAX);
+    sample = constrain(sample, PWM_PULSE_MIN, PWM_PULSE_MAX);
 
     return sample;
 }
 
-static uint8_t getRxChannelCount(void)
-{
-    static uint8_t maxChannelsAllowed;
-
-    if (!maxChannelsAllowed) {
-        uint8_t maxChannels = rxConfig()->max_aux_channel + NON_AUX_CHANNEL_COUNT;
-        if (maxChannels > rxRuntimeConfig.channelCount) {
-            maxChannelsAllowed = rxRuntimeConfig.channelCount;
-        } else {
-            maxChannelsAllowed = maxChannels;
-        }
-    }
-
-    return maxChannelsAllowed;
-}
-
 static void readRxChannelsApplyRanges(void)
 {
-    const int channelCount = getRxChannelCount();
-    for (int channel = 0; channel < channelCount; channel++) {
+    for (int channel = 0; channel < rxChannelCount; channel++) {
 
-        const uint8_t rawChannel = calculateChannelRemapping(rxConfig()->rcmap, RX_MAPPABLE_CHANNEL_COUNT, channel);
+        const uint8_t rawChannel = channel < RX_MAPPABLE_CHANNEL_COUNT ? rxConfig()->rcmap[channel] : channel;
 
         // sample the channel
         uint16_t sample = rxRuntimeConfig.rcReadRawFn(&rxRuntimeConfig, rawChannel);
@@ -539,7 +517,7 @@ static void detectAndApplySignalLossBehaviour(timeUs_t currentTimeUs)
 {
     bool useValueFromRx = true;
     const bool rxIsDataDriven = isRxDataDriven();
-    const uint32_t currentMilliTime = currentTimeUs / 1000;
+    const uint32_t currentTimeMs = currentTimeUs / 1000;
 
     if (!rxIsDataDriven) {
         rxSignalReceived = rxSignalReceivedNotDataDriven;
@@ -558,27 +536,28 @@ static void detectAndApplySignalLossBehaviour(timeUs_t currentTimeUs)
 
     rxResetFlightChannelStatus();
 
-    for (int channel = 0; channel < getRxChannelCount(); channel++) {
+    for (int channel = 0; channel < rxChannelCount; channel++) {
 
         uint16_t sample = (useValueFromRx) ? rcRaw[channel] : PPM_RCVR_TIMEOUT;
 
         bool validPulse = isPulseValid(sample);
 
         if (!validPulse) {
-            if (currentMilliTime < rcInvalidPulsPeriod[channel]) {
+            if (currentTimeMs < rcInvalidPulsPeriod[channel]) {
                 sample = rcData[channel];           // hold channel for MAX_INVALID_PULS_TIME
             } else {
                 sample = getRxfailValue(channel);   // after that apply rxfail value
                 rxUpdateFlightChannelStatus(channel, validPulse);
             }
         } else {
-            rcInvalidPulsPeriod[channel] = currentMilliTime + MAX_INVALID_PULS_TIME;
+            rcInvalidPulsPeriod[channel] = currentTimeMs + MAX_INVALID_PULS_TIME;
         }
 
         if (rxIsDataDriven) {
             rcData[channel] = sample;
         } else {
-            rcData[channel] = calculateNonDataDrivenChannel(channel, sample);
+            // smooth output for PWM and PPM
+            rcData[channel] = calculateChannelMovingAverage(channel, sample);
         }
     }
 
@@ -590,7 +569,7 @@ static void detectAndApplySignalLossBehaviour(timeUs_t currentTimeUs)
         rxIsInFailsafeMode = rxIsInFailsafeModeNotDataDriven = true;
         failsafeOnValidDataFailed();
 
-        for (int channel = 0; channel < getRxChannelCount(); channel++) {
+        for (int channel = 0; channel < rxChannelCount; channel++) {
             rcData[channel] = getRxfailValue(channel);
         }
     }
@@ -630,9 +609,8 @@ void parseRcChannels(const char *input, rxConfig_t *rxConfig)
 
 static void updateRSSIPWM(void)
 {
-    int16_t pwmRssi = 0;
     // Read value of AUX channel as rssi
-    pwmRssi = rcData[rxConfig()->rssi_channel - 1];
+    int16_t pwmRssi = rcData[rxConfig()->rssi_channel - 1];
 
     // RSSI_Invert option
     if (rxConfig()->rssi_invert) {

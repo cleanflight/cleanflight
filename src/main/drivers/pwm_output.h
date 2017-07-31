@@ -48,15 +48,15 @@ typedef enum {
     DSHOT_CMD_BEEP3,
     DSHOT_CMD_BEEP4,
     DSHOT_CMD_BEEP5,
-    DSHOT_CMD_ESC_INFO,
+    DSHOT_CMD_ESC_INFO, // V2 includes settings
     DSHOT_CMD_SPIN_DIRECTION_1,
     DSHOT_CMD_SPIN_DIRECTION_2,
     DSHOT_CMD_3D_MODE_OFF,
     DSHOT_CMD_3D_MODE_ON, 
-    DSHOT_CMD_SETTINGS_REQUEST,
+    DSHOT_CMD_SETTINGS_REQUEST, // Currently not implemented
     DSHOT_CMD_SAVE_SETTINGS, 
-    DSHOT_CMD_SPIN_DIRECTION_NORMAL = 20, //Blheli_S only command
-    DSHOT_CMD_SPIN_DIRECTION_REVERSED = 21,  //Blheli_S only command
+    DSHOT_CMD_SPIN_DIRECTION_NORMAL = 20,
+    DSHOT_CMD_SPIN_DIRECTION_REVERSED = 21,
     DSHOT_CMD_MAX = 47
 } dshotCommands_e;
 
@@ -131,7 +131,11 @@ typedef void pwmCompleteWriteFunc(uint8_t motorCount);   // function pointer use
 
 typedef struct {
     volatile timCCR_t *ccr;
-    TIM_TypeDef *tim;
+    TIM_TypeDef       *tim;
+} timerChannel_t;
+
+typedef struct {
+    timerChannel_t channel;
     float pulseScale;
     float pulseOffset;
     bool forceOverflow;
@@ -179,8 +183,9 @@ void pwmCompleteDshotMotorUpdate(uint8_t motorCount);
 #ifdef BEEPER
 void pwmWriteBeeper(bool onoffBeep);
 void pwmToggleBeeper(void);
-void beeperPwmInit(IO_t io, uint16_t frequency);
+void beeperPwmInit(const ioTag_t tag, uint16_t frequency);
 #endif
+void pwmOutConfig(timerChannel_t *channel, const timerHardware_t *timerHardware, uint32_t hz, uint16_t period, uint16_t value, uint8_t inversion);
 
 void pwmWriteMotor(uint8_t index, float value);
 void pwmShutdownPulsesForAllMotors(uint8_t motorCount);

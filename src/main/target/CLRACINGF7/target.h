@@ -59,11 +59,6 @@
 #define MPU6500_CS_PIN          SPI1_NSS_PIN
 #define MPU6500_SPI_INSTANCE    SPI1
 
-// MPU interrupts
-#define USE_EXTI
-#define MPU_INT_EXTI            PC4
-#define USE_MPU_DATA_READY_SIGNAL
-
 #define OSD
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI3
@@ -105,8 +100,7 @@
 #define SERIAL_PORT_COUNT       5
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
-#define ESCSERIAL_TIMER_TX_PIN  PB8 // XXX Provisional (Hardware=0, PPM)
+#define ESCSERIAL_TIMER_TX_PIN  PB8 // (Hardware=0, PPM)
 
 // XXX To target maintainer: Bus device to configure must be specified.
 //#define USE_I2C

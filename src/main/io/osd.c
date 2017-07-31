@@ -154,7 +154,7 @@ static const char compassBar[] = {
   SYM_HEADING_LINE, SYM_HEADING_DIVIDED_LINE, SYM_HEADING_LINE
 };
 
-PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 0);
+PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 1);
 
 #ifdef USE_ESC_SENSOR
 static escSensorData_t *escData;
@@ -442,12 +442,12 @@ static void osdDrawSingleElement(uint8_t item)
         }
 
     case OSD_CRAFT_NAME:
-        if (strlen(systemConfig()->name) == 0)
+        if (strlen(pilotConfig()->name) == 0)
             strcpy(buff, "CRAFT_NAME");
         else {
             for (int i = 0; i < MAX_NAME_LENGTH; i++) {
-                buff[i] = toupper((unsigned char)systemConfig()->name[i]);
-                if (systemConfig()->name[i] == 0)
+                buff[i] = toupper((unsigned char)pilotConfig()->name[i]);
+                if (pilotConfig()->name[i] == 0)
                     break;
             }
         }

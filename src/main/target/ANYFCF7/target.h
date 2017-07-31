@@ -44,13 +44,16 @@
 #define USE_EXTI
 
 #define MAG
-//#define USE_MAG_HMC5883
-//#define HMC5883_BUS I2C_DEVICE_EXT
+#define USE_MAG_HMC5883
+#define MAG_I2C_INSTANCE           (I2CDEV_2)
+
 //#define MAG_HMC5883_ALIGN CW270_DEG_FLIP
 //#define MAG_HMC5883_ALIGN CW90_DEG
 
 #define BARO
 #define USE_BARO_MS5611
+#define USE_BARO_BMP280
+#define BARO_I2C_INSTANCE           (I2CDEV_2)
 
 #define USABLE_TIMER_CHANNEL_COUNT 16
 
@@ -95,8 +98,7 @@
 #define SERIAL_PORT_COUNT 11 //VCP, USART1, USART2, USART3, UART4, UART5, USART6, USART7, USART8, SOFTSERIAL x 2
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
-#define ESCSERIAL_TIMER_TX_PIN  PB14 // XXX Provisional (Hardware=0, PPM)
+#define ESCSERIAL_TIMER_TX_PIN  PB14 // (Hardware=0, PPM)
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1
@@ -129,8 +131,9 @@
 #define SDCARD_DMA_CHANNEL                  DMA_CHANNEL_4
 
 #define USE_I2C
-#define USE_I2C_DEVICE_4
-#define I2C_DEVICE                  (I2CDEV_4)
+#define USE_I2C_DEVICE_2  // External I2C
+#define USE_I2C_DEVICE_4  // Onboard I2C
+#define I2C_DEVICE                  (I2CDEV_2)
 
 #define USE_ADC
 #define VBAT_ADC_PIN                PC0

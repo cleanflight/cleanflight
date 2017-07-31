@@ -28,8 +28,10 @@
 // FIXME remove this for targets that don't need a CLI.  Perhaps use a no-op macro when USE_CLI is not enabled
 // signal that we're in cli mode
 uint8_t cliMode = 0;
+#ifndef EEPROM_IN_RAM
 extern uint8_t __config_start;   // configured via linker script when building binaries.
 extern uint8_t __config_end;
+#endif
 
 #ifdef USE_CLI
 
@@ -77,16 +79,18 @@ extern uint8_t __config_end;
 #include "drivers/timer.h"
 #include "drivers/vcd.h"
 #include "drivers/light_led.h"
+#include "drivers/camera_control.h"
 
 #include "fc/settings.h"
 #include "fc/cli.h"
 #include "fc/config.h"
 #include "fc/controlrate_profile.h"
 #include "fc/fc_core.h"
+#include "fc/fc_msp.h"
+#include "fc/fc_msp_box.h"
 #include "fc/rc_adjustments.h"
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
-#include "fc/fc_msp.h"
 
 #include "flight/altitude.h"
 #include "flight/failsafe.h"
@@ -120,6 +124,7 @@ extern uint8_t __config_end;
 #include "sensors/battery.h"
 #include "sensors/boardalignment.h"
 #include "sensors/compass.h"
+#include "sensors/esc_sensor.h"
 #include "sensors/gyro.h"
 #include "sensors/sensors.h"
 
@@ -163,7 +168,7 @@ static const char * const mixerNames[] = {
 // sync this with features_e
 static const char * const featureNames[] = {
     "RX_PPM", "", "INFLIGHT_ACC_CAL", "RX_SERIAL", "MOTOR_STOP",
-    "SERVO_TILT", "SOFTSERIAL", "GPS", "FAILSAFE",
+    "SERVO_TILT", "SOFTSERIAL", "GPS", "",
     "SONAR", "TELEMETRY", "", "3D", "RX_PARALLEL_PWM",
     "RX_MSP", "RSSI_ADC", "LED_STRIP", "DISPLAY", "OSD",
     "", "CHANNEL_FORWARDING", "TRANSPONDER", "AIRMODE",
@@ -298,13 +303,34 @@ static void cliPrintLinef(const char *format, ...)
     va_end(va);
 }
 
+
 static void printValuePointer(const clivalue_t *var, const void *valuePointer, bool full)
 {
     if ((var->type & VALUE_MODE_MASK) == MODE_ARRAY) {
         for (int i = 0; i < var->config.array.length; i++) {
-            uint8_t value = ((uint8_t *)valuePointer)[i];
+            switch (var->type & VALUE_TYPE_MASK) {
+            default:
+            case VAR_UINT8:
+                // uint8_t array
+                cliPrintf("%d", ((uint8_t *)valuePointer)[i]);
+                break;
 
-            cliPrintf("%d", value);
+            case VAR_INT8:
+                // int8_t array
+                cliPrintf("%d", ((int8_t *)valuePointer)[i]);
+                break;
+
+            case VAR_UINT16:
+                // uin16_t array
+                cliPrintf("%d", ((uint16_t *)valuePointer)[i]);
+                break;
+
+            case VAR_INT16:
+                // int16_t array
+                cliPrintf("%d", ((int16_t *)valuePointer)[i]);
+                break;
+            }
+
             if (i < var->config.array.length - 1) {
                 cliPrint(",");
             }
@@ -375,7 +401,7 @@ static uint16_t getValueOffset(const clivalue_t *value)
     return 0;
 }
 
-static void *getValuePointer(const clivalue_t *value)
+STATIC_UNIT_TESTED void *getValuePointer(const clivalue_t *value)
 {
     const pgRegistry_t* rec = pgFind(value->pgn);
     return CONST_CAST(void *, rec->address + getValueOffset(value));
@@ -878,12 +904,12 @@ static void cliSerialPassthrough(char *cmdline)
         tok = strtok_r(NULL, " ", &saveptr);
     }
 
-    tfp_printf("Port %d ", id);
+    cliPrintf("Port %d ", id);
     serialPort_t *passThroughPort;
     serialPortUsage_t *passThroughPortUsage = findSerialPortUsageByIdentifier(id);
     if (!passThroughPortUsage || passThroughPortUsage->serialPort == NULL) {
         if (!baud) {
-            tfp_printf("closed, specify baud.\r\n");
+            cliPrintLine("closed, specify baud.");
             return;
         }
         if (!mode)
@@ -893,17 +919,17 @@ static void cliSerialPassthrough(char *cmdline)
                                          baud, mode,
                                          SERIAL_NOT_INVERTED);
         if (!passThroughPort) {
-            tfp_printf("could not be opened.\r\n");
+            cliPrintLine("could not be opened.");
             return;
         }
-        tfp_printf("opened, baud = %d.\r\n", baud);
+        cliPrintf("opened, baud = %d.\r\n", baud);
     } else {
         passThroughPort = passThroughPortUsage->serialPort;
         // If the user supplied a mode, override the port's mode, otherwise
         // leave the mode unchanged. serialPassthrough() handles one-way ports.
-        tfp_printf("already open.\r\n");
+        cliPrintLine("already open.");
         if (mode && passThroughPort->mode != mode) {
-            tfp_printf("mode changed from %d to %d.\r\n",
+            cliPrintf("mode changed from %d to %d.\r\n",
                    passThroughPort->mode, mode);
             serialSetMode(passThroughPort, mode);
         }
@@ -914,7 +940,7 @@ static void cliSerialPassthrough(char *cmdline)
         }
     }
 
-    tfp_printf("forwarding, power cycle to exit.\r\n");
+    cliPrintLine("Forwarding, power cycle to exit.");
 
     serialPassthrough(cliPort, passThroughPort, NULL, NULL);
 }
@@ -1889,22 +1915,22 @@ static void cliVtx(char *cmdline)
 
 #endif // VTX_CONTROL
 
-static void printName(uint8_t dumpMask, const systemConfig_t *systemConfig)
+static void printName(uint8_t dumpMask, const pilotConfig_t *pilotConfig)
 {
-    const bool equalsDefault = strlen(systemConfig->name) == 0;
-    cliDumpPrintLinef(dumpMask, equalsDefault, "name %s", equalsDefault ? emptyName : systemConfig->name);
+    const bool equalsDefault = strlen(pilotConfig->name) == 0;
+    cliDumpPrintLinef(dumpMask, equalsDefault, "name %s", equalsDefault ? emptyName : pilotConfig->name);
 }
 
 static void cliName(char *cmdline)
 {
     const uint32_t len = strlen(cmdline);
     if (len > 0) {
-        memset(systemConfigMutable()->name, 0, ARRAYLEN(systemConfig()->name));
+        memset(pilotConfigMutable()->name, 0, ARRAYLEN(pilotConfig()->name));
         if (strncmp(cmdline, emptyName, len)) {
-            strncpy(systemConfigMutable()->name, cmdline, MIN(len, MAX_NAME_LENGTH));
+            strncpy(pilotConfigMutable()->name, cmdline, MIN(len, MAX_NAME_LENGTH));
         }
     }
-    printName(DUMP_MASTER, systemConfig());
+    printName(DUMP_MASTER, pilotConfig());
 }
 
 static void printFeature(uint8_t dumpMask, const featureConfig_t *featureConfig, const featureConfig_t *featureConfigDefault)
@@ -2103,6 +2129,7 @@ static void printMap(uint8_t dumpMask, const rxConfig_t *rxConfig, const rxConfi
     cliDumpPrintLinef(dumpMask, equalsDefault, formatMap, buf);
 }
 
+
 static void cliMap(char *cmdline)
 {
     uint32_t i;
@@ -2217,6 +2244,113 @@ static int parseOutputIndex(char *pch, bool allowAllEscs) {
 }
 
 #ifdef USE_DSHOT
+
+#define ESC_INFO_V1_EXPECTED_FRAME_SIZE 15
+#define ESC_INFO_V2_EXPECTED_FRAME_SIZE 21
+
+#define ESC_INFO_VERSION_POSITION 12
+
+void printEscInfo(const uint8_t *escInfoBytes, uint8_t bytesRead)
+{
+    bool escInfoReceived = false;
+    if (bytesRead > ESC_INFO_VERSION_POSITION) {
+        uint8_t escInfoVersion = 0;
+        uint8_t frameLength = 0;
+        if (escInfoBytes[ESC_INFO_VERSION_POSITION] == 255) {
+            escInfoVersion = 2;
+            frameLength = ESC_INFO_V2_EXPECTED_FRAME_SIZE;
+        } else {
+            escInfoVersion = 1;
+            frameLength = ESC_INFO_V1_EXPECTED_FRAME_SIZE;
+        }
+
+        if (((escInfoVersion == 1) && (bytesRead == ESC_INFO_V1_EXPECTED_FRAME_SIZE))
+            || ((escInfoVersion == 2) && (bytesRead == ESC_INFO_V2_EXPECTED_FRAME_SIZE))) {
+            escInfoReceived = true;
+
+            if (calculateCrc8(escInfoBytes, frameLength - 1) == escInfoBytes[frameLength - 1]) {
+                uint8_t firmwareVersion = 0;
+                char firmwareSubVersion = 0;
+                uint8_t escType = 0;
+                switch (escInfoVersion) {
+                case 1:
+                    firmwareVersion = escInfoBytes[12];
+                    firmwareSubVersion = (char)((escInfoBytes[13] & 0x1f) + 97);
+                    escType = (escInfoBytes[13] & 0xe0) >> 5;
+
+                    break;
+                case 2:
+                    firmwareVersion = escInfoBytes[13];
+                    firmwareSubVersion = (char)escInfoBytes[14];
+                    escType = escInfoBytes[15];
+
+                    break;
+                }
+
+                cliPrint("ESC: ");
+                switch (escType) {
+                case 1:
+                    cliPrintLine("KISS8A");
+                    break;
+                case 2:
+                    cliPrintLine("KISS16A");
+                    break;
+                case 3:
+                    cliPrintLine("KISS24A");
+                    break;
+                case 5:
+                    cliPrintLine("KISS Ultralite");
+                    break;
+                default:
+                    cliPrintLine("unknown");
+                    break;
+                }
+
+                cliPrint("MCU: 0x");
+                for (int i = 0; i < 12; i++) {
+                    if (i && (i % 3 == 0)) {
+                        cliPrint("-");
+                    }
+                    cliPrintf("%02x", escInfoBytes[i]);
+                }
+                cliPrintLinefeed();
+
+                cliPrintLinef("Firmware: %d.%02d%c", firmwareVersion / 100, firmwareVersion % 100, firmwareSubVersion);
+                if (escInfoVersion == 2) {
+                    cliPrintLinef("Rotation: %s", escInfoBytes[16] ? "reversed" : "normal");
+                    cliPrintLinef("3D: %s", escInfoBytes[17] ? "on" : "off");
+                }
+            } else {
+                cliPrintLine("Checksum error.");
+            }
+        }
+    }
+
+    if (!escInfoReceived) {
+        cliPrintLine("No info.");
+    }
+}
+
+static void writeDshotCommand(uint8_t escIndex, uint8_t command)
+{
+    uint8_t escInfoBuffer[ESC_INFO_V2_EXPECTED_FRAME_SIZE];
+    if (command == DSHOT_CMD_ESC_INFO) {
+        cliPrintLinef("Info for ESC %d:", escIndex);
+
+        delay(10); // Wait for potential ESC telemetry transmission to finish
+
+        startEscDataRead(escInfoBuffer, ESC_INFO_V2_EXPECTED_FRAME_SIZE);
+    }
+
+    pwmWriteDshotCommand(escIndex, command);
+
+    if (command == DSHOT_CMD_ESC_INFO) {
+        delay(10);
+
+        printEscInfo(escInfoBuffer, getNumberEscBytesRead());
+    }
+}
+
 static void cliDshotProg(char *cmdline)
 {
     if (isEmpty(cmdline) || motorConfig()->dev.motorPwmProtocol < PWM_TYPE_DSHOT150) {
@@ -2245,19 +2379,19 @@ static void cliDshotProg(char *cmdline)
                 if (command >= 0 && command < DSHOT_MIN_THROTTLE) {
                     if (escIndex == ALL_MOTORS) {
                         for (unsigned i = 0; i < getMotorCount(); i++) {
-                            pwmWriteDshotCommand(i, command);
+                            writeDshotCommand(i, command);
                         }
                     } else {
-                        pwmWriteDshotCommand(escIndex, command);
-                    }
+                        writeDshotCommand(escIndex, command);
+		    }
+
+                    cliPrintLinef("Command %d written.", command);
 
                     if (command <= 5) {
                         delay(10); // wait for sound output to finish
                     }
-
-                    tfp_printf("Command %d written.\r\n", command);
                 } else {
-                    tfp_printf("Invalid command, range 1 to %d.\r\n", DSHOT_MIN_THROTTLE - 1);
+                    cliPrintLinef("Invalid command, range 1 to %d.", DSHOT_MIN_THROTTLE - 1);
                 }
 
                 break;
@@ -2369,8 +2503,8 @@ static void cliMotor(char *cmdline)
         return;
     }
 
-    int motorIndex;
-    int motorValue;
+    int motorIndex = 0;
+    int motorValue = 0;
 
     char *saveptr;
     char *pch = strtok_r(cmdline, " ", &saveptr);
@@ -2523,7 +2657,7 @@ static void cliDefaults(char *cmdline)
     cliReboot();
 }
 
-static void cliGet(char *cmdline)
+STATIC_UNIT_TESTED void cliGet(char *cmdline)
 {
     const clivalue_t *val;
     int matchedCommands = 0;
@@ -2567,7 +2701,7 @@ static uint8_t getWordLength(char *bufBegin, char *bufEnd)
     return bufEnd - bufBegin;
 }
 
-static void cliSet(char *cmdline)
+STATIC_UNIT_TESTED void cliSet(char *cmdline)
 {
     const uint32_t len = strlen(cmdline);
     char *eqptr;
@@ -2592,16 +2726,17 @@ static void cliSet(char *cmdline)
 
         for (uint32_t i = 0; i < valueTableEntryCount; i++) {
             const clivalue_t *val = &valueTable[i];
+
             // ensure exact match when setting to prevent setting variables with shorter names
-            if (strncasecmp(cmdline, valueTable[i].name, strlen(valueTable[i].name)) == 0 && variableNameLength == strlen(valueTable[i].name)) {
+            if (strncasecmp(cmdline, val->name, strlen(val->name)) == 0 && variableNameLength == strlen(val->name)) {
 
                 bool valueChanged = false;
                 int16_t value  = 0;
-                switch (valueTable[i].type & VALUE_MODE_MASK) {
+                switch (val->type & VALUE_MODE_MASK) {
                     case MODE_DIRECT: {
                         int16_t value = atoi(eqptr);
 
-                        if (value >= valueTable[i].config.minmax.min && value <= valueTable[i].config.minmax.max) {
+                        if (value >= val->config.minmax.min && value <= val->config.minmax.max) {
                             cliSetVar(val, value);
                             valueChanged = true;
                         }
@@ -2609,7 +2744,7 @@ static void cliSet(char *cmdline)
 
                     break;
                     case MODE_LOOKUP: {
-                        const lookupTableEntry_t *tableEntry = &lookupTables[valueTable[i].config.lookup.tableIndex];
+                        const lookupTableEntry_t *tableEntry = &lookupTables[val->config.lookup.tableIndex];
                         bool matched = false;
                         for (uint32_t tableValueIndex = 0; tableValueIndex < tableEntry->valueCount && !matched; tableValueIndex++) {
                             matched = strcasecmp(tableEntry->values[tableValueIndex], eqptr) == 0;
@@ -2625,41 +2760,67 @@ static void cliSet(char *cmdline)
 
                     break;
                     case MODE_ARRAY: {
-                        const uint8_t arrayLength = valueTable[i].config.array.length;
+                        const uint8_t arrayLength = val->config.array.length;
                         char *valPtr = eqptr;
-                        uint8_t array[256];
-                        char curVal[4];
+
                         for (int i = 0; i < arrayLength; i++) {
+                            // skip spaces
                             valPtr = skipSpace(valPtr);
-                            char *valEnd = strstr(valPtr, ",");
-                            if ((valEnd != NULL) && (i < arrayLength - 1)) {
-                                uint8_t varLength = getWordLength(valPtr, valEnd);
-                                if (varLength <= 3) {
-                                    strncpy(curVal, valPtr, getWordLength(valPtr, valEnd));
-                                    curVal[varLength] = '\0';
-                                    array[i] = (uint8_t)atoi((const char *)curVal);
-                                    valPtr = valEnd + 1;
-                                } else {
+                            // find next comma (or end of string)
+                            char *valEndPtr = strchr(valPtr, ',');
+
+                            // comma found or last item?
+                            if ((valEndPtr != NULL) || (i == arrayLength - 1)){
+                                // process substring [valPtr, valEndPtr[
+                                // note: no need to copy substrings for atoi()
+                                //       it stops at the first character that cannot be converted...
+                                switch (val->type & VALUE_TYPE_MASK) {
+                                default:
+                                case VAR_UINT8: {
+                                    // fetch data pointer
+                                    uint8_t *data = (uint8_t *)getValuePointer(val) + i;
+                                    // store value
+                                    *data = (uint8_t)atoi((const char*) valPtr);
+                                    }
+                                    break;
+
+                                case VAR_INT8: {
+                                    // fetch data pointer
+                                    int8_t *data = (int8_t *)getValuePointer(val) + i;
+                                    // store value
+                                    *data = (int8_t)atoi((const char*) valPtr);
+                                    }
+                                    break;
+
+                                case VAR_UINT16: {
+                                    // fetch data pointer
+                                    uint16_t *data = (uint16_t *)getValuePointer(val) + i;
+                                    // store value
+                                    *data = (uint16_t)atoi((const char*) valPtr);
+                                    }
+                                    break;
+
+                                case VAR_INT16: {
+                                    // fetch data pointer
+                                    int16_t *data = (int16_t *)getValuePointer(val) + i;
+                                    // store value
+                                    *data = (int16_t)atoi((const char*) valPtr);
+                                    }
                                     break;
                                 }
-                            } else if ((valEnd == NULL) && (i == arrayLength - 1)) {
-                                array[i] = atoi(valPtr);
-
-                                uint8_t *ptr = getValuePointer(val);
-                                memcpy(ptr, array, arrayLength);
+                                // mark as changed
                                 valueChanged = true;
-                            } else {
-                                break;
+
+                                // prepare to parse next item
+                                valPtr = valEndPtr + 1;
                             }
                         }
                     }
-
                     break;
-
                 }
 
                 if (valueChanged) {
-                    cliPrintf("%s set to ", valueTable[i].name);
+                    cliPrintf("%s set to ", val->name);
                     cliPrintVar(val, 0);
                 } else {
                     cliPrintLine("Invalid value");
@@ -2718,8 +2879,12 @@ static void cliStatus(char *cmdline)
     cliPrintf("Stack used: %d, ", stackUsedSize());
 #endif
     cliPrintLinef("Stack size: %d, Stack address: 0x%x", stackTotalSize(), stackHighMem());
-
-    cliPrintLinef("I2C Errors: %d, config size: %d, max available config: %d", i2cErrorCounter, getEEPROMConfigSize(), &__config_end - &__config_start);
+#ifdef EEPROM_IN_RAM
+#define CONFIG_SIZE EEPROM_SIZE
+#else
+#define CONFIG_SIZE (&__config_end - &__config_start)
+#endif
+    cliPrintLinef("I2C Errors: %d, config size: %d, max available config: %d", i2cErrorCounter, getEEPROMConfigSize(), CONFIG_SIZE);
 
     const int gyroRate = getTaskDeltaTime(TASK_GYROPID) == 0 ? 0 : (int)(1000000.0f / ((float)getTaskDeltaTime(TASK_GYROPID)));
     const int rxRate = getTaskDeltaTime(TASK_RX) == 0 ? 0 : (int)(1000000.0f / ((float)getTaskDeltaTime(TASK_RX)));
@@ -2804,9 +2969,10 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    cliPrintLinef("# %s / %s %s %s / %s (%s)",
+    cliPrintLinef("# %s / %s (%s) %s %s / %s (%s)",
         FC_FIRMWARE_NAME,
         targetName,
+        systemConfig()->boardIdentifier,
         FC_VERSION_STRING,
         buildDate,
         buildTime,
@@ -2865,6 +3031,21 @@ const cliResourceValue_t resourceTable[] = {
     { OWNER_SPI_SCK,       PG_SPI_PIN_CONFIG, offsetof(spiPinConfig_t, ioTagSck[0]), SPIDEV_COUNT },
     { OWNER_SPI_MISO,      PG_SPI_PIN_CONFIG, offsetof(spiPinConfig_t, ioTagMiso[0]), SPIDEV_COUNT },
     { OWNER_SPI_MOSI,      PG_SPI_PIN_CONFIG, offsetof(spiPinConfig_t, ioTagMosi[0]), SPIDEV_COUNT },
+#endif
+#ifdef USE_ESCSERIAL
+    { OWNER_ESCSERIAL,     PG_ESCSERIAL_CONFIG, offsetof(escSerialConfig_t, ioTag), 0 },
+#endif
+#ifdef USE_CAMERA_CONTROL
+    { OWNER_CAMERA_CONTROL, PG_CAMERA_CONTROL_CONFIG, offsetof(cameraControlConfig_t, ioTag), 0 },
+#endif
+#ifdef USE_ADC
+    { OWNER_ADC_BATT,      PG_ADC_CONFIG, offsetof(adcConfig_t, vbat.ioTag), 0 },
+    { OWNER_ADC_RSSI,      PG_ADC_CONFIG, offsetof(adcConfig_t, rssi.ioTag), 0 },
+    { OWNER_ADC_CURR,      PG_ADC_CONFIG, offsetof(adcConfig_t, current.ioTag), 0 },
+    { OWNER_ADC_EXT,       PG_ADC_CONFIG, offsetof(adcConfig_t, external1.ioTag), 0 },
+#endif
+#ifdef BARO
+    { OWNER_BARO_CS,       PG_BAROMETER_CONFIG, offsetof(barometerConfig_t, baro_spi_csn), 0 },
 #endif
 };
 
@@ -3146,7 +3327,7 @@ static void printConfig(char *cmdline, bool doDiff)
         }
 
         cliPrintHashLine("name");
-        printName(dumpMask, &systemConfig_Copy);
+        printName(dumpMask, &pilotConfig_Copy);
 
 #ifdef USE_RESOURCE_MGMT
         cliPrintHashLine("resources");

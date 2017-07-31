@@ -149,6 +149,13 @@ void pgResetFn_serialConfig(serialConfig_t *serialConfig)
     }
 #endif
 
+#ifdef SBUS_TELEMETRY_UART
+    serialPortConfig_t *serialTlemetryUartConfig = serialFindPortConfiguration(SBUS_TELEMETRY_UART);
+    if (serialTlemetryUartConfig) {
+        serialTlemetryUartConfig->functionMask = FUNCTION_TELEMETRY_SMARTPORT;
+    }
+#endif
+
     serialConfig->reboot_character = 'R';
     serialConfig->serial_update_rate_hz = 100;
 }
@@ -341,8 +348,8 @@ serialPort_t *openSerialPort(
     serialPortFunction_e function,
     serialReceiveCallbackPtr rxCallback,
     uint32_t baudRate,
-    portMode_t mode,
-    portOptions_t options)
+    portMode_e mode,
+    portOptions_e options)
 {
 #if !(defined(USE_UART) || defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2))
     UNUSED(rxCallback);

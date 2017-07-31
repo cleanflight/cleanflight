@@ -34,6 +34,8 @@
 
 // file name to save config
 #define EEPROM_FILENAME "eeprom.bin"
+#define EEPROM_IN_RAM
+#define EEPROM_SIZE     8192
 
 #define U_ID_0 0
 #define U_ID_1 1
@@ -111,6 +113,7 @@
 #undef VTX_CONTROL
 #undef VTX_SMARTAUDIO
 #undef VTX_TRAMP
+#undef USE_CAMERA_CONTROL
 
 #undef USE_I2C
 #undef USE_SPI
