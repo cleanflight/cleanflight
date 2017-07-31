@@ -31,6 +31,8 @@
 
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
 
+#define CURRENT_TARGET_CPU_VOLTAGE 3.0
+
 #define LED0_PIN                PE8  // Blue LEDs - PE8/PE12
 #define LED0_INVERTED
 #define LED1_PIN                PE10 // Orange LEDs - PE10/PE14
@@ -54,12 +56,11 @@
 //#define SD_CS_PIN               PB12
 //#define SD_SPI_INSTANCE         SPI2
 
-//#define USE_FLASHFS
-//#define USE_FLASH_M25P16
+#define USE_FLASHFS
+#define USE_FLASH_M25P16
 
-//#define M25P16_CS_GPIO          GPIOB
-//#define M25P16_CS_PIN           GPIO_Pin_12
-//#define M25P16_SPI_INSTANCE     SPI2
+#define M25P16_CS_PIN           PB12
+#define M25P16_SPI_INSTANCE     SPI2
 // SPI1
 // PB5  SPI1_MOSI
 // PB4  SPI1_MISO
@@ -123,7 +124,6 @@
 #define CMS
 
 //#define USE_SDCARD
-//#define USE_SDCARD_SPI2
 //
 //#define SDCARD_SPI_INSTANCE     SPI2
 //#define SDCARD_SPI_CS_PIN       PB12
@@ -157,7 +157,7 @@
 #define SERIAL_PORT_COUNT       6
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+#define ESCSERIAL_TIMER_TX_PIN  PB8  // (HARDARE=0,PPM)
 
 #define UART3_TX_PIN            PB10 // PB10 (AF7)
 #define UART3_RX_PIN            PB11 // PB11 (AF7)

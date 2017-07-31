@@ -211,6 +211,8 @@
 #define MSP_SENSOR_CONFIG               96
 #define MSP_SET_SENSOR_CONFIG           97
 
+#define MSP_CAMERA_CONTROL              98
+
 //
 // OSD specific
 //
@@ -219,6 +221,9 @@
 
 // External OSD displayport mode messages
 #define MSP_DISPLAYPORT                 182
+
+#define MSP_BEEPER_CONFIG               184
+#define MSP_SET_BEEPER_CONFIG           185
 
 //
 // Multwii original MSP commands

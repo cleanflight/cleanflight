@@ -51,14 +51,13 @@ typedef struct gyroDev_s {
     sensorGyroInitFuncPtr initFn;                             // initialize function
     sensorGyroReadFuncPtr readFn;                             // read 3 axis data function
     sensorGyroReadDataFuncPtr temperatureFn;                  // read temperature if available
-    sensorGyroInterruptStatusFuncPtr intStatusFn;
     sensorGyroUpdateFuncPtr updateFn;
     extiCallbackRec_t exti;
     busDevice_t bus;
     float scale;                                            // scalefactor
-    int16_t gyroADCRaw[XYZ_AXIS_COUNT];
     int32_t gyroZero[XYZ_AXIS_COUNT];
     int32_t gyroADC[XYZ_AXIS_COUNT];                        // gyro data after calibration and alignment
+    int16_t gyroADCRaw[XYZ_AXIS_COUNT];
     int16_t temperature;
     uint8_t lpf;
     gyroRateKHz_e gyroRateKHz;

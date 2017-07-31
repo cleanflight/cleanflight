@@ -68,6 +68,7 @@
 #include "drivers/max7456.h"
 #include "drivers/vtx_rtc6705.h"
 #include "drivers/vtx_common.h"
+#include "drivers/camera_control.h"
 
 #include "fc/config.h"
 #include "fc/fc_init.h"
@@ -229,7 +230,7 @@ void spiPreInit(void)
 #ifdef RTC6705_CS_PIN // XXX VTX_RTC6705? Should use USE_ format.
     spiPreInitCs(IO_TAG(RTC6705_CS_PIN));
 #endif
-#ifdef M25P16_CS_PIN // XXX Should use USE_ format.
+#ifdef USE_FLASH_M25P16
     spiPreInitCs(IO_TAG(M25P16_CS_PIN));
 #endif
 #if defined(USE_RX_SPI) && !defined(USE_RX_SOFTSPI)
@@ -263,6 +264,11 @@ void init(void)
 
     ensureEEPROMContainsValidData();
     readEEPROM();
+
+    /* TODO: Check to be removed when moving to generic targets */
+    if (strncasecmp(systemConfig()->boardIdentifier, TARGET_BOARD_IDENTIFIER, sizeof(TARGET_BOARD_IDENTIFIER))) {
+       resetEEPROM();
+    }
 
 #if defined(STM32F4) && !defined(DISABLE_OVERCLOCK)
     // If F4 Overclocking is set and System core clock is not correct a reset is forced
@@ -467,6 +473,10 @@ void init(void)
 
 #ifdef VTX_RTC6705
     rtc6705IOInit();
+#endif
+
+#ifdef USE_CAMERA_CONTROL
+    cameraControlInit();
 #endif
 
 #if defined(SONAR_SOFTSERIAL2_EXCLUSIVE) && defined(SONAR) && defined(USE_SOFTSERIAL2)

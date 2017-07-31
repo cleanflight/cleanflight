@@ -45,6 +45,10 @@ extern "C" {
 
     #include "rx/rx.h"
 
+    extern rcsplitState_e cameraState;
+    extern serialPort_t *rcSplitSerialPort;
+    extern rcsplitSwitchState_t switchStates[BOXCAMERA3 - BOXCAMERA1 + 1];
+
     int16_t rcData[MAX_SUPPORTED_RC_CHANNEL_COUNT];     // interval [1000;2000]
 
     rcsplitState_e unitTestRCsplitState()
@@ -307,7 +311,7 @@ TEST(RCSplitTest, TestWifiModeChangeCombine)
 }
 
 extern "C" {
-    serialPort_t *openSerialPort(serialPortIdentifier_e identifier, serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_t mode, portOptions_t options)
+    serialPort_t *openSerialPort(serialPortIdentifier_e identifier, serialPortFunction_e functionMask, serialReceiveCallbackPtr callback, uint32_t baudRate, portMode_e mode, portOptions_e options)
     {
         UNUSED(identifier);
         UNUSED(functionMask);

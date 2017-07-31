@@ -18,6 +18,7 @@
 #pragma once
 #define TARGET_BOARD_IDENTIFIER "PIK4"
 #define USBD_PRODUCT_STRING     "PikoF4"
+#define TARGET_CONFIG
 /*--------------LED----------------*/
 #define LED0_PIN                PA15
 #define LED1_PIN                PB6
@@ -129,7 +130,7 @@
 #define USE_ESC_SENSOR
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+#define ESCSERIAL_TIMER_TX_PIN  PA3  // (HARDARE=0)
 /*---------------------------------*/
 
 /*--------DEFAULT VALUES-----------*/

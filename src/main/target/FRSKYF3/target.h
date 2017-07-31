@@ -17,6 +17,8 @@
 
 #pragma once
 
+#undef TELEMETRY_JETIEXBUS // no space left
+
 #define TARGET_BOARD_IDENTIFIER "FRF3"
 #define TARGET_CONFIG
 #define CONFIG_FASTLOOP_PREFERRED_ACC ACC_NONE
@@ -76,7 +78,7 @@
 
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 
+#define ESCSERIAL_TIMER_TX_PIN  PB9  // (HARDARE=0)
 #define USE_SPI
 #define OSD
 
@@ -102,10 +104,8 @@
 #define SPI1_MOSI_PIN           PA7
 
 #define USE_SDCARD
-#define USE_SDCARD_SPI1
 
 #define SDCARD_DETECT_INVERTED
-
 #define SDCARD_DETECT_PIN                   PB5
 #define SDCARD_SPI_INSTANCE                 SPI1
 #define SDCARD_SPI_CS_PIN                   SPI1_NSS_PIN

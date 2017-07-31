@@ -62,7 +62,7 @@
 #define SERIAL_PORT_COUNT       6
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+#define ESCSERIAL_TIMER_TX_PIN  PB11  // (HARDARE=0,PPM)
 
 #define UART1_TX_PIN            PA9
 #define UART1_RX_PIN            PA10
@@ -116,7 +116,6 @@
 #define RTC6705_SPICLK_PIN      PC13
 
 #define USE_SDCARD
-#define USE_SDCARD_SPI2
 
 #define SDCARD_SPI_INSTANCE                 SPI2
 #define SDCARD_SPI_CS_GPIO                  SPI2_GPIO

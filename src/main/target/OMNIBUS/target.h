@@ -20,7 +20,6 @@
 #undef TELEMETRY_IBUS   //no space left
 #undef TELEMETRY_HOTT   //no space left
 #undef TELEMETRY_JETIEXBUS
-#undef USE_GYRO_DATA_ANALYSE
 
 #define TARGET_BOARD_IDENTIFIER "OMNI" // https://en.wikipedia.org/wiki/Omnibus
 
@@ -87,7 +86,7 @@
 #define I2C_DEVICE              (I2CDEV_1)
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+#define ESCSERIAL_TIMER_TX_PIN  PB4  // (HARDARE=0,PPM)
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1
@@ -121,11 +120,10 @@
 #define SPI2_MOSI_PIN           PB15
 
 #define USE_SDCARD
-#define USE_SDCARD_SPI2
 
 #define SDCARD_DETECT_INVERTED
-
 #define SDCARD_DETECT_PIN                   PC14
+
 #define SDCARD_SPI_INSTANCE                 SPI2
 #define SDCARD_SPI_CS_PIN                   SPI2_NSS_PIN
 

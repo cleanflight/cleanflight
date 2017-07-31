@@ -40,6 +40,7 @@
 #include "config/parameter_group_ids.h"
 
 #include "drivers/accgyro/accgyro.h"
+#include "drivers/bus_spi.h"
 #include "drivers/compass/compass.h"
 #include "drivers/inverter.h"
 #include "drivers/io.h"
@@ -115,7 +116,13 @@ pidProfile_t *currentPidProfile;
 PG_REGISTER_WITH_RESET_TEMPLATE(featureConfig_t, featureConfig, PG_FEATURE_CONFIG, 0);
 
 PG_RESET_TEMPLATE(featureConfig_t, featureConfig,
-    .enabledFeatures = DEFAULT_FEATURES | DEFAULT_RX_FEATURE | FEATURE_FAILSAFE
+    .enabledFeatures = DEFAULT_FEATURES | DEFAULT_RX_FEATURE
+);
+
+PG_REGISTER_WITH_RESET_TEMPLATE(pilotConfig_t, pilotConfig, PG_PILOT_CONFIG, 0);
+
+PG_RESET_TEMPLATE(pilotConfig_t, pilotConfig,
+    .name = { 0 }
 );
 
 PG_REGISTER_WITH_RESET_TEMPLATE(systemConfig_t, systemConfig, PG_SYSTEM_CONFIG, 0);
@@ -128,7 +135,7 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .debug_mode = DEBUG_MODE,
     .task_statistics = true,
     .cpu_overclock = false,
-    .name = { 0 } // FIXME misplaced, see PG_PILOT_CONFIG in CF v1.x
+    .boardIdentifier = TARGET_BOARD_IDENTIFIER
 );
 #else
 PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
@@ -136,7 +143,7 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .activeRateProfile = 0,
     .debug_mode = DEBUG_MODE,
     .task_statistics = true,
-    .name = { 0 } // FIXME misplaced, see PG_PILOT_CONFIG in CF v1.x
+    .boardIdentifier = TARGET_BOARD_IDENTIFIER
 );
 #endif
 #endif
@@ -144,7 +151,8 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
 #ifdef USE_OSD_SLAVE
 PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .debug_mode = DEBUG_MODE,
-    .task_statistics = true
+    .task_statistics = true,
+    .boardIdentifier = TARGET_BOARD_IDENTIFIER
 );
 #endif
 
@@ -162,16 +170,17 @@ PG_REGISTER_WITH_RESET_FN(ppmConfig_t, ppmConfig, PG_PPM_CONFIG, 0);
 #endif
 
 #ifdef USE_FLASHFS
-PG_REGISTER_WITH_RESET_TEMPLATE(flashConfig_t, flashConfig, PG_FLASH_CONFIG, 0);
-#ifdef M25P16_CS_PIN
-#define FLASH_CONFIG_CSTAG   IO_TAG(M25P16_CS_PIN)
-#else
-#define FLASH_CONFIG_CSTAG   IO_TAG_NONE
-#endif
+PG_REGISTER_WITH_RESET_FN(flashConfig_t, flashConfig, PG_FLASH_CONFIG, 0);
 
-PG_RESET_TEMPLATE(flashConfig_t, flashConfig,
-    .csTag = FLASH_CONFIG_CSTAG
-);
+void pgResetFn_flashConfig(flashConfig_t *flashConfig)
+{
+#ifdef M25P16_CS_PIN
+    flashConfig->csTag = IO_TAG(M25P16_CS_PIN);
+#else
+    flashConfig->csTag = IO_TAG_NONE;
+#endif
+    flashConfig->spiDevice = SPI_DEV_TO_CFG(spiDeviceByInstance(M25P16_SPI_INSTANCE));
+}
 #endif // USE_FLASH_FS
 
 #ifdef USE_SDCARD

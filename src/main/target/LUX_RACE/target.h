@@ -68,11 +68,10 @@
 #define SPI2_MOSI_PIN           PB15
 
 #define USE_SDCARD
-#define USE_SDCARD_SPI2
 
 #define SDCARD_DETECT_INVERTED
-
 #define SDCARD_DETECT_PIN                   PC13
+
 #define SDCARD_SPI_INSTANCE                 SPI2
 #define SDCARD_SPI_CS_PIN                   SPI2_NSS_PIN
 
@@ -160,7 +159,7 @@
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 #define USE_ESCSERIAL
-#define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
+#define ESCSERIAL_TIMER_TX_PIN  PA8  // (HARDARE=0,PPM)
 
 // IO - assuming 303 in 64pin package, TODO
 #define TARGET_IO_PORTA         0xffff
