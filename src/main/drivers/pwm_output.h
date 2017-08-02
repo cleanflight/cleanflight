@@ -17,18 +17,12 @@
 
 #pragma once
 
+#include "platform.h"
+
 #include "drivers/io_types.h"
-#include "timer.h"
+#include "drivers/pwm_output_counts.h"
+#include "drivers/timer.h"
 
-#ifndef MAX_SUPPORTED_MOTORS 
-#define MAX_SUPPORTED_MOTORS 12
-#endif
-
-#if defined(USE_QUAD_MIXER_ONLY)
-#define MAX_SUPPORTED_SERVOS 1
-#else
-#define MAX_SUPPORTED_SERVOS 8
-#endif
 
 #define DSHOT_MAX_COMMAND 47
 
@@ -126,8 +120,8 @@ typedef struct {
 motorDmaOutput_t *getMotorDmaOutput(uint8_t index);
 
 struct timerHardware_s;
-typedef void pwmWriteFunc(uint8_t index, float value);  // function pointer used to write motors
-typedef void pwmCompleteWriteFunc(uint8_t motorCount);   // function pointer used after motors are written
+typedef void pwmWriteFn(uint8_t index, float value);  // function pointer used to write motors
+typedef void pwmCompleteWriteFn(uint8_t motorCount);   // function pointer used after motors are written
 
 typedef struct {
     volatile timCCR_t *ccr;
@@ -167,11 +161,11 @@ void pwmServoConfig(const struct timerHardware_s *timerHardware, uint8_t servoIn
 bool isMotorProtocolDshot(void);
 
 #ifdef USE_DSHOT
-typedef uint8_t loadDmaBufferFunc(motorDmaOutput_t *const motor, uint16_t packet);  // function pointer used to encode a digital motor value into the DMA buffer representation
+typedef uint8_t loadDmaBufferFn(motorDmaOutput_t *const motor, uint16_t packet);  // function pointer used to encode a digital motor value into the DMA buffer representation
 
 uint16_t prepareDshotPacket(motorDmaOutput_t *const motor, uint16_t value);
 
-extern loadDmaBufferFunc *loadDmaBuffer;
+extern loadDmaBufferFn *loadDmaBuffer;
 
 uint32_t getDshotHz(motorPwmProtocolTypes_e pwmProtocolType);
 void pwmWriteDshotCommand(uint8_t index, uint8_t command);
