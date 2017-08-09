@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <platform.h>
 
@@ -37,75 +38,31 @@
 #include "rx/rx.h"
 
 #include "io/serial.h"
+#include "io/osd.h"
 
 #include "sensors/battery.h"
 #include "sensors/gyro.h"
 
 #include "telemetry/telemetry.h"
 
-#include "hardware_revision.h"
-
 #ifdef BRUSHED_MOTORS_PWM_RATE
 #undef BRUSHED_MOTORS_PWM_RATE
 #endif
 
 #define BRUSHED_MOTORS_PWM_RATE 32000           // 32kHz
-#define VBAT_SCALE              20
 
-// alternative defaults settings for AlienFlight targets
 void targetConfiguration(void)
 {
-    /* depending on revision ... depends on the LEDs to be utilised. */
-    if (hardwareRevision == AFF3_REV_2) {
-        statusLedConfigMutable()->inversion = 0
-#ifdef LED0_A_INVERTED
-            | BIT(0)
-#endif
-#ifdef LED1_A_INVERTED
-            | BIT(1)
-#endif
-#ifdef LED2_A_INVERTED
-            | BIT(2)
-#endif
-            ;
-
-        for (int i = 0; i < STATUS_LED_NUMBER; i++) {
-            statusLedConfigMutable()->ioTags[i] = IO_TAG_NONE;
-        }
-#ifdef LED0_A
-        statusLedConfigMutable()->ioTags[0] = IO_TAG(LED0_A);
-#endif
-#ifdef LED1_A
-        statusLedConfigMutable()->ioTags[1] = IO_TAG(LED1_A);
-#endif
-#ifdef LED2_A
-        statusLedConfigMutable()->ioTags[2] = IO_TAG(LED2_A);
-#endif
-    } else {
-        gyroConfigMutable()->gyro_sync_denom = 2;
-        pidConfigMutable()->pid_process_denom = 2;
-    }
-
-    if (!haveFrSkyRX) {
-        rxConfigMutable()->serialrx_provider = SERIALRX_SPEKTRUM2048;
-        rxConfigMutable()->spektrum_sat_bind = 5;
-        rxConfigMutable()->spektrum_sat_bind_autoreset = 1;
-        voltageSensorADCConfigMutable(VOLTAGE_SENSOR_ADC_VBAT)->vbatscale = VBAT_SCALE;
-    } else {
-        rxConfigMutable()->serialrx_provider = SERIALRX_SBUS;
-        rxConfigMutable()->sbus_inversion = 0;
-        serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIALRX_UART)].functionMask = FUNCTION_TELEMETRY_FRSKY | FUNCTION_RX_SERIAL;
-        telemetryConfigMutable()->telemetry_inverted = false;
-        featureSet(FEATURE_TELEMETRY);
-        beeperDevConfigMutable()->isOpenDrain = false;
-        beeperDevConfigMutable()->isInverted = true;
-    }
-
     if (hardwareMotorType == MOTOR_BRUSHED) {
         motorConfigMutable()->dev.motorPwmRate = BRUSHED_MOTORS_PWM_RATE;
         pidConfigMutable()->pid_process_denom = 1;
     }
 
+#ifndef BEEBRAIN_V2_DSM
+    // Frsky version
+    serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIALRX_UART)].functionMask = FUNCTION_TELEMETRY_FRSKY | FUNCTION_RX_SERIAL;
+#endif
+    
     pidProfilesMutable(0)->pid[PID_ROLL].P = 90;
     pidProfilesMutable(0)->pid[PID_ROLL].I = 44;
     pidProfilesMutable(0)->pid[PID_ROLL].D = 60;
@@ -121,5 +78,9 @@ void targetConfiguration(void)
     *customMotorMixerMutable(5) = (motorMixer_t){ 1.0f,  1.0f, -0.414178f,  1.0f };    // MIDFRONT_L
     *customMotorMixerMutable(6) = (motorMixer_t){ 1.0f, -1.0f,  0.414178f,  1.0f };    // MIDREAR_R
     *customMotorMixerMutable(7) = (motorMixer_t){ 1.0f,  1.0f,  0.414178f, -1.0f };    // MIDREAR_L
+
+    strcpy(pilotConfigMutable()->name, "BeeBrain V2");
+    osdConfigMutable()->item_pos[OSD_CRAFT_NAME] = OSD_POS(9, 11) | VISIBLE_FLAG;
+    osdConfigMutable()->item_pos[OSD_MAIN_BATT_VOLTAGE] = OSD_POS(23, 10) | VISIBLE_FLAG;
 }
 #endif
