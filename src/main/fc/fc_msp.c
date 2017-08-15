@@ -337,8 +337,8 @@ static void serializeDataflashReadReply(sbuf_t *dst, uint32_t address, const uin
 
         huffmanState_t state = {
             .bytesWritten = 0,
-            .outByte = sbufPtr(dst) + MSP_PORT_DATAFLASH_INFO_SIZE + HUFFMAN_INFO_SIZE,
-            .outBufLen = readLen - HUFFMAN_INFO_SIZE,
+            .outByte = sbufPtr(dst) + sizeof(uint16_t) + sizeof(uint8_t) + HUFFMAN_INFO_SIZE,
+            .outBufLen = readLen,
             .outBit = 0x80,
         };
         *state.outByte = 0;
@@ -363,7 +363,7 @@ static void serializeDataflashReadReply(sbuf_t *dst, uint32_t address, const uin
         }
 
         // header
-        sbufWriteU16(dst, sizeof(uint16_t) + state.bytesWritten);
+        sbufWriteU16(dst, HUFFMAN_INFO_SIZE + state.bytesWritten);
         sbufWriteU8(dst, compressionMethod);
         // payload
         sbufWriteU16(dst, bytesReadTotal);
@@ -731,6 +731,13 @@ static bool mspFcProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
             byteCount = constrain(byteCount, 0, 15);        // limit to 16 bytes (128 bits)
             sbufWriteU8(dst, byteCount);
             sbufWriteData(dst, ((uint8_t*)&flightModeFlags) + 4, byteCount);
+
+            // Write arming disable flags
+            // 1 byte, flag count
+            sbufWriteU8(dst, NUM_ARMING_DISABLE_FLAGS);
+            // 4 bytes, flags
+            uint32_t armingDisableFlags = getArmingDisableFlags();
+            sbufWriteU32(dst, armingDisableFlags);
         }
         break;
 
@@ -1109,8 +1116,6 @@ static bool mspFcProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
         sbufWriteU16(dst, motorConfig()->dev.motorPwmRate);
         sbufWriteU16(dst, motorConfig()->digitalIdleOffsetValue);
         sbufWriteU8(dst, gyroConfig()->gyro_use_32khz);
-        //!!TODO gyro_isr_update to be added pending decision
-        //sbufWriteU8(dst, gyroConfig()->gyro_isr_update);
         sbufWriteU8(dst, motorConfig()->dev.motorPwmInversion);
         break;
 
@@ -1431,7 +1436,7 @@ static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
 
     case MSP_SET_SERVO_CONFIGURATION:
 #ifdef USE_SERVOS
-        if (dataSize != 1 + 14) {
+        if (dataSize != 1 + 12) {
             return MSP_RESULT_ERROR;
         }
         i = sbufReadU8(src);
@@ -1504,10 +1509,6 @@ static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         if (sbufBytesRemaining(src)) {
             gyroConfigMutable()->gyro_use_32khz = sbufReadU8(src);
         }
-        //!!TODO gyro_isr_update to be added pending decision
-        /*if (sbufBytesRemaining(src)) {
-            gyroConfigMutable()->gyro_isr_update = sbufReadU8(src);
-        }*/
         validateAndFixGyroConfig();
 
         if (sbufBytesRemaining(src)) {
@@ -2041,7 +2042,7 @@ static mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         return mspFcProcessInCommand(cmdMSP, src);
 #endif
     }
-    return MSP_RESULT_ERROR;
+    return MSP_RESULT_ACK;
 }
 
 /*

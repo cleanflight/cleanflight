@@ -116,6 +116,7 @@ extern uint8_t __config_end;
 
 #include "rx/rx.h"
 #include "rx/spektrum.h"
+#include "rx/frsky_d.h"
 
 #include "scheduler/scheduler.h"
 
@@ -2034,8 +2035,9 @@ static void printBeeper(uint8_t dumpMask, const beeperConfig_t *beeperConfig, co
     for (int32_t i = 0; i < beeperCount - 2; i++) {
         const char *formatOff = "beeper -%s";
         const char *formatOn = "beeper %s";
-        cliDefaultPrintLinef(dumpMask, ~(mask ^ defaultMask) & (1 << i), mask & (1 << i) ? formatOn : formatOff, beeperNameForTableIndex(i));
-        cliDumpPrintLinef(dumpMask, ~(mask ^ defaultMask) & (1 << i), mask & (1 << i) ? formatOff : formatOn, beeperNameForTableIndex(i));
+        const uint32_t beeperModeMask = beeperModeMaskForTableIndex(i);
+        cliDefaultPrintLinef(dumpMask, ~(mask ^ defaultMask) & beeperModeMask, mask & beeperModeMask ? formatOn : formatOff, beeperNameForTableIndex(i));
+        cliDumpPrintLinef(dumpMask, ~(mask ^ defaultMask) & beeperModeMask, mask & beeperModeMask ? formatOff : formatOn, beeperNameForTableIndex(i));
     }
 }
 
@@ -2053,7 +2055,8 @@ static void cliBeeper(char *cmdline)
                     cliPrint("  none");
                 break;
             }
-            if (mask & (1 << i))
+
+            if (mask & beeperModeMaskForTableIndex(i))
                 cliPrintf("  %s", beeperNameForTableIndex(i));
         }
         cliPrintLinefeed();
@@ -2084,8 +2087,7 @@ static void cliBeeper(char *cmdline)
                         if (i == BEEPER_PREFERENCE-1)
                             setBeeperOffMask(getPreferredBeeperOffMask());
                         else {
-                            mask = 1 << i;
-                            beeperOffSet(mask);
+                            beeperOffSet(beeperModeMaskForTableIndex(i));
                         }
                     cliPrint("Disabled");
                 }
@@ -2096,8 +2098,7 @@ static void cliBeeper(char *cmdline)
                         if (i == BEEPER_PREFERENCE-1)
                             setPreferredBeeperOffMask(getBeeperOffMask());
                         else {
-                            mask = 1 << i;
-                            beeperOffClear(mask);
+                            beeperOffClear(beeperModeMaskForTableIndex(i));
                         }
                     cliPrint("Enabled");
                 }
@@ -2106,6 +2107,13 @@ static void cliBeeper(char *cmdline)
             }
         }
     }
+}
+#endif
+
+#ifdef FRSKY_BIND
+void cliFrSkyBind(char *cmdline){
+	UNUSED(cmdline);
+	frSkyDBind();
 }
 #endif
 
@@ -3483,18 +3491,21 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("beeper", "turn on/off beeper", "list\r\n"
         "\t<+|->[name]", cliBeeper),
 #endif
+#ifdef FRSKY_BIND
+    CLI_COMMAND_DEF("frsky_bind", NULL, NULL, cliFrSkyBind),
+#endif
 #ifdef LED_STRIP
     CLI_COMMAND_DEF("color", "configure colors", NULL, cliColor),
 #endif
     CLI_COMMAND_DEF("defaults", "reset to defaults and reboot", NULL, cliDefaults),
     CLI_COMMAND_DEF("bl", "reboot into bootloader", NULL, cliBootloader),
     CLI_COMMAND_DEF("diff", "list configuration changes from default",
-        "[master|profile|rates|all] {showdefaults}", cliDiff),
+        "[master|profile|rates|all] {defaults}", cliDiff),
 #ifdef USE_DSHOT
     CLI_COMMAND_DEF("dshotprog", "program DShot ESC(s)", "<index> <command>+", cliDshotProg),
 #endif
     CLI_COMMAND_DEF("dump", "dump configuration",
-        "[master|profile|rates|all] {showdefaults}", cliDump),
+        "[master|profile|rates|all] {defaults}", cliDump),
 #ifdef USE_ESCSERIAL
     CLI_COMMAND_DEF("escprog", "passthrough esc to serial", "<mode [sk/bl/ki/cc]> <index>", cliEscPassthrough),
 #endif
