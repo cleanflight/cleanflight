@@ -135,6 +135,7 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .debug_mode = DEBUG_MODE,
     .task_statistics = true,
     .cpu_overclock = false,
+    .powerOnArmingGraceTime = 5,
     .boardIdentifier = TARGET_BOARD_IDENTIFIER
 );
 #else
@@ -157,7 +158,10 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
 #endif
 
 #ifdef BEEPER
-PG_REGISTER(beeperConfig_t, beeperConfig, PG_BEEPER_CONFIG, 0);
+PG_REGISTER_WITH_RESET_TEMPLATE(beeperConfig_t, beeperConfig, PG_BEEPER_CONFIG, 0);
+PG_RESET_TEMPLATE(beeperConfig_t, beeperConfig,
+    .dshotForward = true
+);
 #endif
 #ifdef USE_ADC
 PG_REGISTER_WITH_RESET_FN(adcConfig_t, adcConfig, PG_ADC_CONFIG, 0);
@@ -185,30 +189,14 @@ void pgResetFn_flashConfig(flashConfig_t *flashConfig)
 
 #ifdef USE_SDCARD
 PG_REGISTER_WITH_RESET_TEMPLATE(sdcardConfig_t, sdcardConfig, PG_SDCARD_CONFIG, 0);
-#if defined(SDCARD_DMA_CHANNEL_TX)
-#define SDCARD_CONFIG_USE_DMA   true
-#else
-#define SDCARD_CONFIG_USE_DMA   false
-#endif
+
 PG_RESET_TEMPLATE(sdcardConfig_t, sdcardConfig,
-    .useDma = SDCARD_CONFIG_USE_DMA
+    .useDma = false
 );
-#endif
+#endif // USE_SDCARD
 
 // no template required since defaults are zero
 PG_REGISTER(vcdProfile_t, vcdProfile, PG_VCD_CONFIG, 0);
-
-#ifdef SONAR
-void resetSonarConfig(sonarConfig_t *sonarConfig)
-{
-#if defined(SONAR_TRIGGER_PIN) && defined(SONAR_ECHO_PIN)
-    sonarConfig->triggerTag = IO_TAG(SONAR_TRIGGER_PIN);
-    sonarConfig->echoTag = IO_TAG(SONAR_ECHO_PIN);
-#else
-#error Sonar not defined for target
-#endif
-}
-#endif
 
 #ifdef USE_ADC
 void pgResetFn_adcConfig(adcConfig_t *adcConfig)
@@ -469,10 +457,6 @@ void validateAndFixGyroConfig(void)
         gyroConfigMutable()->gyro_sync_denom = MAX(gyroConfig()->gyro_sync_denom, 3);
 #endif
     }
-
-#if !defined(GYRO_USES_SPI) || !defined(USE_MPU_DATA_READY_SIGNAL)
-    gyroConfigMutable()->gyro_isr_update = false;
-#endif
 
     // check for looptime restrictions based on motor protocol. Motor times have safety margin
     const float pidLooptime = samplingTime * gyroConfig()->gyro_sync_denom * pidConfig()->pid_process_denom;
