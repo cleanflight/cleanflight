@@ -34,6 +34,7 @@ typedef enum {
 typedef struct voltageMeter_s {
     uint16_t filtered;                      // voltage in 0.1V steps
     uint16_t unfiltered;                    // voltage in 0.1V steps
+    bool lowVoltageCutoff;
 } voltageMeter_t;
 
 
@@ -54,8 +55,8 @@ typedef enum {
 #define VBAT_SCALE_MIN 0
 #define VBAT_SCALE_MAX 255
 
-#ifndef VBATT_LPF_FREQ
-#define VBATT_LPF_FREQ  1.0f
+#ifndef VBAT_LPF_FREQ
+#define VBAT_LPF_FREQ  0.1f
 #endif
 
 #ifndef MAX_VOLTAGE_SENSOR_ADC
