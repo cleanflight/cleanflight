@@ -177,7 +177,7 @@
 #define MPU6500_CS_PIN                      SPI1_NSS_PIN
 #define MPU6500_SPI_INSTANCE                SPI1
 
-#define VBATT_LPF_FREQ 0.25f                // The ADC in the F4NEO appears to be noisy, this stabilises it but at the cost of latency.
+#define VBAT_LPF_FREQ 0.25f                // The ADC in the F4NEO appears to be noisy, this stabilises it but at the cost of latency.
 
 #define USE_ADC
 #define ADC_INSTANCE                        ADC1

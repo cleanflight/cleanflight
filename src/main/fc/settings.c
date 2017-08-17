@@ -183,7 +183,8 @@ static const char * const lookupTableRxSpi[] = {
     "CX10",
     "CX10A",
     "H8_3D",
-    "INAV"
+    "INAV",
+    "FRSKY_D"
 };
 #endif
 
@@ -371,6 +372,9 @@ const clivalue_t valueTable[] = {
 #ifdef STM32F4
     { "serialrx_halfduplex",        VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_RX_CONFIG, offsetof(rxConfig_t, halfDuplex) },
 #endif
+#ifdef USE_RX_SPI
+    { "rx_spi_protocol",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_RX_SPI }, PG_RX_CONFIG, offsetof(rxConfig_t, rx_spi_protocol) },
+#endif
 
 // PG_PWM_CONFIG
 #if defined(USE_PWM)
@@ -431,6 +435,7 @@ const clivalue_t valueTable[] = {
     { "use_vbat_alerts",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_BATTERY_CONFIG, offsetof(batteryConfig_t, useVBatAlerts) },
     { "use_cbat_alerts",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_BATTERY_CONFIG, offsetof(batteryConfig_t, useConsumptionAlerts) },
     { "cbat_alert_percent",         VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 100 }, PG_BATTERY_CONFIG, offsetof(batteryConfig_t, consumptionWarningPercentage) },
+    { "vbat_cutoff_percent",           VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 100 }, PG_BATTERY_CONFIG, offsetof(batteryConfig_t, lvcPercentage) },
 
 //  PG_VOLTAGE_SENSOR_ADC_CONFIG
     { "vbat_scale",                 VAR_UINT8  | MASTER_VALUE, .config.minmax = { VBAT_SCALE_MIN, VBAT_SCALE_MAX }, PG_VOLTAGE_SENSOR_ADC_CONFIG, offsetof(voltageSensorADCConfig_t, vbatscale) },
@@ -739,7 +744,7 @@ const clivalue_t valueTable[] = {
     { "esc_sensor_halfduplex",          VAR_UINT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_ESC_SENSOR_CONFIG, offsetof(escSensorConfig_t, halfDuplex) },
 #endif
 
-#ifdef USE_RX_FRSKYD
+#ifdef USE_RX_FRSKY_D
     { "frsky_d_autobind",               VAR_UINT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_FRSKY_D_CONFIG, offsetof(frSkyDConfig_t, autoBind) },
     { "frsky_d_tx_id",                  VAR_UINT8   | MASTER_VALUE | MODE_ARRAY, .config.array.length = 2, PG_FRSKY_D_CONFIG, offsetof(frSkyDConfig_t, bindTxId) },
     { "frsky_d_offset",                 VAR_INT8    | MASTER_VALUE, .config.minmax = { -127, 127 }, PG_FRSKY_D_CONFIG, offsetof(frSkyDConfig_t, bindOffset) },
