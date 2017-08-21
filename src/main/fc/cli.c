@@ -2110,10 +2110,10 @@ static void cliBeeper(char *cmdline)
 }
 #endif
 
-#ifdef FRSKY_BIND
+#ifdef USE_RX_FRSKY_D
 void cliFrSkyBind(char *cmdline){
-	UNUSED(cmdline);
-	frSkyDBind();
+    UNUSED(cmdline);
+    frSkyDBind();
 }
 #endif
 
@@ -2391,7 +2391,7 @@ static void cliDshotProg(char *cmdline)
                         }
                     } else {
                         writeDshotCommand(escIndex, command);
-		    }
+                    }
 
                     cliPrintLinef("Command %d written.", command);
 
@@ -3491,7 +3491,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("beeper", "turn on/off beeper", "list\r\n"
         "\t<+|->[name]", cliBeeper),
 #endif
-#ifdef FRSKY_BIND
+#ifdef USE_RX_FRSKY_D
     CLI_COMMAND_DEF("frsky_bind", NULL, NULL, cliFrSkyBind),
 #endif
 #ifdef LED_STRIP
