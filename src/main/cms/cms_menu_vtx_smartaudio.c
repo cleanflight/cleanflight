@@ -32,6 +32,7 @@
 
 #include "io/vtx_string.h"
 #include "io/vtx_smartaudio.h"
+#include "io/vtx_settings_config.h"
 
 // Interface to CMS
 
@@ -340,9 +341,9 @@ static CMS_Menu saCmsMenuStats = {
     .entries = saCmsMenuStatsEntries
 };
 
-static OSD_TAB_t saCmsEntBand = { &saCmsBand, 5, vtx58BandNames };
+static OSD_TAB_t saCmsEntBand = { &saCmsBand, VTX_SMARTAUDIO_BAND_COUNT, vtx58BandNames };
 
-static OSD_TAB_t saCmsEntChan = { &saCmsChan, 8, vtx58ChannelNames };
+static OSD_TAB_t saCmsEntChan = { &saCmsChan, VTX_SMARTAUDIO_CHAN_COUNT, vtx58ChannelNames };
 
 static const char * const saCmsPowerNames[] = {
     "---",
@@ -352,7 +353,7 @@ static const char * const saCmsPowerNames[] = {
     "800",
 };
 
-static OSD_TAB_t saCmsEntPower = { &saCmsPower, 4, saCmsPowerNames};
+static OSD_TAB_t saCmsEntPower = { &saCmsPower, VTX_SMARTAUDIO_POWER_COUNT, saCmsPowerNames};
 
 static OSD_UINT16_t saCmsEntFreqRef = { &saCmsFreqRef, 5600, 5900, 0 };
 

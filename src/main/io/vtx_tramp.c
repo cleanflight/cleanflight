@@ -28,6 +28,7 @@
 
 #include "build/debug.h"
 
+#include "common/maths.h"
 #include "common/utils.h"
 
 #include "cms/cms_menu_vtx_tramp.h"
@@ -35,9 +36,10 @@
 #include "drivers/vtx_common.h"
 
 #include "io/serial.h"
+#include "io/vtx_tramp.h"
+#include "io/vtx_settings_config.h"
 #include "io/vtx_control.h"
 #include "io/vtx_string.h"
-#include "io/vtx_tramp.h"
 
 #if defined(CMS) || defined(VTX_COMMON)
 const uint16_t trampPowerTable[VTX_TRAMP_POWER_COUNT] = {
@@ -53,8 +55,8 @@ const char * const trampPowerNames[VTX_TRAMP_POWER_COUNT+1] = {
 static const vtxVTable_t trampVTable; // forward
 static vtxDevice_t vtxTramp = {
     .vTable = &trampVTable,
-    .capability.bandCount = 5,
-    .capability.channelCount = 8,
+    .capability.bandCount = VTX_TRAMP_BAND_COUNT,
+    .capability.channelCount = VTX_TRAMP_CHAN_COUNT,
     .capability.powerCount = sizeof(trampPowerTable),
     .bandNames = (char **)vtx58BandNames,
     .channelNames = (char **)vtx58ChannelNames,
@@ -139,9 +141,21 @@ void trampSendFreq(uint16_t freq)
     trampCmdU16('F', freq);
 }
 
-void trampSetBandAndChannel(uint8_t band, uint8_t channel)
+bool trampValidateBandAndChannel(uint8_t band, uint8_t channel)
+{
+    return (band >= VTX_TRAMP_MIN_BAND && band <= VTX_TRAMP_MAX_BAND &&
+            channel >= VTX_TRAMP_MIN_CHAN && channel <= VTX_TRAMP_MAX_CHAN);
+}
+
+static void trampDevSetBandAndChannel(uint8_t band, uint8_t channel)
 {
     trampSetFreq(vtx58frequencyTable[band - 1][channel - 1]);
+}
+
+void trampSetBandAndChannel(uint8_t band, uint8_t channel)
+{
+    trampDevSetBandAndChannel(band, channel);
+    vtxSettingsSaveBandAndChannel(band, channel);
 }
 
 void trampSetRFPower(uint16_t level)
@@ -164,6 +178,17 @@ bool trampCommitChanges()
 
     trampStatus = TRAMP_STATUS_SET_FREQ_PW;
     return true;
+}
+
+// return false if index out of range
+static bool trampDevSetPowerByIndex(uint8_t index)
+{
+    if (index > 0 && index <= sizeof(trampPowerTable)) {
+        trampSetRFPower(trampPowerTable[index - 1]);
+        trampCommitChanges();
+        return true;
+    }
+    return false;
 }
 
 void trampSetPitMode(uint8_t onoff)
@@ -317,9 +342,26 @@ void trampQueryS(void)
     trampQuery('s');
 }
 
+static bool trampEnterInitBandChanAndPower(uint8_t band, uint8_t channel, uint8_t power)
+{
+    if (!trampValidateBandAndChannel(band, channel))
+        return false;
+    trampDevSetBandAndChannel(band, channel);
+
+    uint8_t pwrIdx = constrain(power, 1, sizeof(trampPowerTable));
+    trampDevSetPowerByIndex(pwrIdx);
+
+    // if 'vtx_power' value out of range then update it
+    if (pwrIdx != power)
+        vtxSettingsSavePowerByIndex(pwrIdx);
+
+    return true;
+}
+
 void vtxTrampProcess(uint32_t currentTimeUs)
 {
     static uint32_t lastQueryTimeUs = 0;
+    static bool initSettingsDoneFlag = false;
 
 #ifdef TRAMP_DEBUG
     static uint16_t debugFreqReqCounter = 0;
@@ -337,8 +379,17 @@ void vtxTrampProcess(uint32_t currentTimeUs)
 
     switch (replyCode) {
     case 'r':
-        if (trampStatus <= TRAMP_STATUS_OFFLINE)
+        if (trampStatus <= TRAMP_STATUS_OFFLINE) {
             trampStatus = TRAMP_STATUS_ONLINE;
+
+            // once device is ready enter vtx settings
+            if (!initSettingsDoneFlag) {
+                initSettingsDoneFlag = true;
+                // if vtx_band!=0 then enter 'vtx_band/chan' values (and power)
+                trampEnterInitBandChanAndPower(vtxSettingsConfig()->band,
+                             vtxSettingsConfig()->channel, vtxSettingsConfig()->power);
+            }
+        }
         break;
 
     case 'v':
@@ -443,7 +494,7 @@ bool vtxTrampIsReady(void)
 
 void vtxTrampSetBandAndChannel(uint8_t band, uint8_t channel)
 {
-    if (band && channel) {
+    if (trampValidateBandAndChannel(band, channel)) {
         trampSetBandAndChannel(band, channel);
         trampCommitChanges();
     }
@@ -451,10 +502,8 @@ void vtxTrampSetBandAndChannel(uint8_t band, uint8_t channel)
 
 void vtxTrampSetPowerByIndex(uint8_t index)
 {
-    if (index) {
-        trampSetRFPower(trampPowerTable[index - 1]);
-        trampCommitChanges();
-    }
+    if (trampDevSetPowerByIndex(index))
+        vtxSettingsSavePowerByIndex(index);
 }
 
 void vtxTrampSetPitMode(uint8_t onoff)
