@@ -106,7 +106,9 @@ PG_RESET_TEMPLATE(batteryConfig_t, batteryConfig,
     .useVBatAlerts = true,
     .useConsumptionAlerts = false,
     .consumptionWarningPercentage = 10,
-    .vbathysteresis = 1
+    .vbathysteresis = 1,
+
+    .vbatfullcellvoltage = 41
 );
 
 void batteryUpdateVoltage(timeUs_t currentTimeUs)
@@ -235,8 +237,8 @@ static void batteryUpdateVoltageState(void)
 
 }
 
-static void batteryUpdateLVC(timeUs_t currentTimeUs) 
-{   
+static void batteryUpdateLVC(timeUs_t currentTimeUs)
+{
     if (batteryConfig()->lvcPercentage < 100) {
         if (voltageState == BATTERY_CRITICAL && !lowVoltageCutoff.enabled) {
             lowVoltageCutoff.enabled = true;
@@ -245,7 +247,7 @@ static void batteryUpdateLVC(timeUs_t currentTimeUs)
         }
         if (lowVoltageCutoff.enabled) {
             if (cmp32(currentTimeUs,lowVoltageCutoff.startTime) < LVC_AFFECT_TIME) {
-                lowVoltageCutoff.percentage = 100 - (cmp32(currentTimeUs,lowVoltageCutoff.startTime) * (100 - batteryConfig()->lvcPercentage) / LVC_AFFECT_TIME); 
+                lowVoltageCutoff.percentage = 100 - (cmp32(currentTimeUs,lowVoltageCutoff.startTime) * (100 - batteryConfig()->lvcPercentage) / LVC_AFFECT_TIME);
             }
             else {
                 lowVoltageCutoff.percentage = batteryConfig()->lvcPercentage;
@@ -460,6 +462,11 @@ uint16_t getBatteryVoltageLatest(void)
 uint8_t getBatteryCellCount(void)
 {
     return batteryCellCount;
+}
+
+uint16_t getBatteryAverageCellVoltage(void)
+{
+    return voltageMeter.filtered / batteryCellCount;
 }
 
 int32_t getAmperage(void) {

@@ -125,7 +125,7 @@ Big thanks to current and past contributors:
 * **Sambas** (for the original STM32F4 port).
 * Bardwell, Joshua (joshuabardwell)
 * ctzsnooze
-* Höglund, Anders (andershoglund) 
+* Höglund, Anders (andershoglund)
 * Ledvin, Peter (ledvinap) - **IO code awesomeness!**
 * kc10kevin
 * Keeble, Gary (MadmanK)

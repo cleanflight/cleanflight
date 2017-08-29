@@ -217,7 +217,7 @@ void updateArmingStatus(void)
 
         if (!isUsingSticksForArming()) {
           // If arming is disabled and the ARM switch is on
-          if (isArmingDisabled() && IS_RC_MODE_ACTIVE(BOXARM)) {
+          if (isArmingDisabled() && !(armingConfig()->gyro_cal_on_first_arm && !(getArmingDisableFlags() & ~(ARMING_DISABLED_ARM_SWITCH | ARMING_DISABLED_CALIBRATING))) && IS_RC_MODE_ACTIVE(BOXARM)) {
               setArmingDisabled(ARMING_DISABLED_ARM_SWITCH);
           } else if (!IS_RC_MODE_ACTIVE(BOXARM)) {
               unsetArmingDisabled(ARMING_DISABLED_ARM_SWITCH);
@@ -265,14 +265,10 @@ void tryArm(void)
         if (isMotorProtocolDshot() && isModeActivationConditionPresent(BOXDSHOTREVERSE)) {
             if (!IS_RC_MODE_ACTIVE(BOXDSHOTREVERSE)) {
                 reverseMotors = false;
-                for (unsigned index = 0; index < getMotorCount(); index++) {
-                    pwmWriteDshotCommand(index, DSHOT_CMD_SPIN_DIRECTION_NORMAL);
-                }
+                pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_NORMAL);
             } else {
                 reverseMotors = true;
-                for (unsigned index = 0; index < getMotorCount(); index++) {
-                    pwmWriteDshotCommand(index, DSHOT_CMD_SPIN_DIRECTION_REVERSED);
-                }
+                pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_REVERSED);
             }
         }
 #endif

@@ -2110,10 +2110,10 @@ static void cliBeeper(char *cmdline)
 }
 #endif
 
-#ifdef FRSKY_BIND
+#ifdef USE_RX_FRSKY_D
 void cliFrSkyBind(char *cmdline){
-	UNUSED(cmdline);
-	frSkyDBind();
+    UNUSED(cmdline);
+    frSkyDBind();
 }
 #endif
 
@@ -2339,24 +2339,18 @@ void printEscInfo(const uint8_t *escInfoBytes, uint8_t bytesRead)
     }
 }
 
-static void writeDshotCommand(uint8_t escIndex, uint8_t command)
+static void executeEscInfoCommand(uint8_t escIndex)
 {
     uint8_t escInfoBuffer[ESC_INFO_V2_EXPECTED_FRAME_SIZE];
-    if (command == DSHOT_CMD_ESC_INFO) {
-        cliPrintLinef("Info for ESC %d:", escIndex);
+    cliPrintLinef("Info for ESC %d:", escIndex);
 
-        delay(10); // Wait for potential ESC telemetry transmission to finish
+    startEscDataRead(escInfoBuffer, ESC_INFO_V2_EXPECTED_FRAME_SIZE);
 
-        startEscDataRead(escInfoBuffer, ESC_INFO_V2_EXPECTED_FRAME_SIZE);
-    }
+    pwmWriteDshotCommand(escIndex, getMotorCount(), DSHOT_CMD_ESC_INFO);
 
-    pwmWriteDshotCommand(escIndex, command);
+    delay(5);
 
-    if (command == DSHOT_CMD_ESC_INFO) {
-        delay(10);
-
-        printEscInfo(escInfoBuffer, getNumberEscBytesRead());
-    }
+    printEscInfo(escInfoBuffer, getNumberEscBytesRead());
 }
 
 static void cliDshotProg(char *cmdline)
@@ -2385,18 +2379,26 @@ static void cliDshotProg(char *cmdline)
 
                 int command = atoi(pch);
                 if (command >= 0 && command < DSHOT_MIN_THROTTLE) {
-                    if (escIndex == ALL_MOTORS) {
-                        for (unsigned i = 0; i < getMotorCount(); i++) {
-                            writeDshotCommand(i, command);
-                        }
+                    if (command == DSHOT_CMD_ESC_INFO) {
+                        delay(5); // Wait for potential ESC telemetry transmission to finish
+                    }
+
+                    if (command != DSHOT_CMD_ESC_INFO) {
+                        pwmWriteDshotCommand(escIndex, getMotorCount(), command);
                     } else {
-                        writeDshotCommand(escIndex, command);
-		    }
+                        if (escIndex != ALL_MOTORS) {
+                            executeEscInfoCommand(escIndex);
+                        } else {
+                            for (uint8_t i = 0; i < getMotorCount(); i++) {
+                                executeEscInfoCommand(i);
+                            }
+                        }
+                    }
 
                     cliPrintLinef("Command %d written.", command);
 
                     if (command <= 5) {
-                        delay(10); // wait for sound output to finish
+                        delay(20); // wait for sound output to finish
                     }
                 } else {
                     cliPrintLinef("Invalid command, range 1 to %d.", DSHOT_MIN_THROTTLE - 1);
@@ -3491,14 +3493,11 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("beeper", "turn on/off beeper", "list\r\n"
         "\t<+|->[name]", cliBeeper),
 #endif
-#ifdef FRSKY_BIND
-    CLI_COMMAND_DEF("frsky_bind", NULL, NULL, cliFrSkyBind),
-#endif
+    CLI_COMMAND_DEF("bl", "reboot into bootloader", NULL, cliBootloader),
 #ifdef LED_STRIP
     CLI_COMMAND_DEF("color", "configure colors", NULL, cliColor),
 #endif
     CLI_COMMAND_DEF("defaults", "reset to defaults and reboot", NULL, cliDefaults),
-    CLI_COMMAND_DEF("bl", "reboot into bootloader", NULL, cliBootloader),
     CLI_COMMAND_DEF("diff", "list configuration changes from default",
         "[master|profile|rates|all] {defaults}", cliDiff),
 #ifdef USE_DSHOT
@@ -3519,6 +3518,9 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_FLASH_TOOLS
     CLI_COMMAND_DEF("flash_read", NULL, "<length> <address>", cliFlashRead),
     CLI_COMMAND_DEF("flash_write", NULL, "<address> <message>", cliFlashWrite),
+#endif
+#ifdef USE_RX_FRSKY_D
+    CLI_COMMAND_DEF("frsky_bind", NULL, NULL, cliFrSkyBind),
 #endif
 #endif
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),

@@ -87,10 +87,13 @@
 #define ADC_INSTANCE            ADC1
 #define VBAT_ADC_PIN            PA0
 #define CURRENT_METER_ADC_PIN   PA1
+
+// Can be used on motor 1 / 2 pads (A02 / A03):
+#define EXTERNAL1_ADC_PIN       NONE
+#define RSSI_ADC_PIN            NONE
+
 #define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_ADC
-
-#define USE_RX_CC2500
 
 #define USE_RX_SPI
 #define RX_SPI_INSTANCE         SPI1
@@ -100,23 +103,22 @@
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SPI
 #define RX_SPI_DEFAULT_PROTOCOL RX_SPI_FRSKY_D
 
-#define FRSKY_BIND
+#define USE_FRSKY_D_TELEMETRY
 
-#define FRSKY_TELEMETRY
-#define HUB
-
-#define PA_LNA
-#define DIVERSITY
+#define USE_FRSKY_RX_PA_LNA
+#define USE_FRSKY_RX_DIVERSITY
 
 #define RX_NSS_PIN              SPI1_NSS_PIN
 #define RX_SCK_PIN              SPI1_SCK_PIN
 #define RX_MISO_PIN             SPI1_MISO_PIN
 #define RX_MOSI_PIN             SPI1_MOSI_PIN
-#define GDO_0_PIN               PB0
-#define ANT_SEL_PIN             PB2
-#define TX_EN_PIN               PB1
-#define RX_EN_PIN               PB11
-#define FRSKY_LED_PIN           PB6
+
+#define FRSKY_RX_GDO_0_PIN      PB0
+#define FRSKY_RX_ANT_SEL_PIN    PB2
+#define FRSKY_RX_TX_EN_PIN      PB1
+#define FRSKY_RX_RX_EN_PIN      PB11
+#define FRSKY_RX_LED_PIN        PB6
+
 #define BINDPLUG_PIN            PC13
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
