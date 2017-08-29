@@ -106,7 +106,7 @@ FATFS_SRC       = $(notdir $(wildcard $(FATFS_DIR)/*.c))
 
 CSOURCES        := $(shell find $(SRC_DIR) -name '*.c')
 
-LD_FLAGS         := 
+LD_FLAGS         :=
 
 #
 # Default Tool options - can be overridden in {mcu}.mk files.
@@ -338,7 +338,7 @@ targets-group-rest: $(GROUP_OTHER_TARGETS)
 
 $(VALID_TARGETS):
 	$(V0) @echo "Building $@" && \
-	time $(MAKE) binary hex TARGET=$@ && \
+	$(MAKE) binary hex TARGET=$@ && \
 	echo "Building $@ succeeded."
 
 $(SKIP_TARGETS):

@@ -20,6 +20,8 @@
 
 #define USBD_PRODUCT_STRING "KakuteF4-V1"
 
+#define TARGET_CONFIG
+
 #define LED0_PIN                PB5
 #define LED1_PIN                PB4
 #define LED2_PIN                PB6
@@ -141,4 +143,3 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 8
 #define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(5)  |  TIM_N(8))
-

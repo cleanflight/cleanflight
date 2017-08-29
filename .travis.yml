@@ -61,11 +61,11 @@ after_success:
   - lcov --list coverage.info # debug before upload
   - coveralls-lcov coverage.info # uploads to coveralls
 
-cache: 
+cache:
   directories:
   - downloads
   - tools
-    
+
 
 #notifications:
 #  irc: "chat.freenode.net#cleanflight"

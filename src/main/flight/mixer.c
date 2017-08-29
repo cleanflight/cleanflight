@@ -316,14 +316,32 @@ static float disarmMotorOutput, deadbandMotor3dHigh, deadbandMotor3dLow;
 float motorOutputHigh, motorOutputLow;
 static float rcCommandThrottleRange, rcCommandThrottleRange3dLow, rcCommandThrottleRange3dHigh;
 
-uint8_t getMotorCount()
+uint8_t getMotorCount(void)
 {
     return motorCount;
 }
 
-float getMotorMixRange()
+float getMotorMixRange(void)
 {
     return motorMixRange;
+}
+
+bool areMotorsRunning(void)
+{
+    bool motorsRunning = false;
+    if (ARMING_FLAG(ARMED)) {
+        motorsRunning = true;
+    } else {
+        for (int i = 0; i < motorCount; i++) {
+            if (motor_disarmed[i] != disarmMotorOutput) {
+                motorsRunning = true;
+
+                break;
+            }
+        }
+    }
+
+    return motorsRunning;
 }
 
 bool mixerIsOutputSaturated(int axis, float errorRate)
@@ -512,7 +530,7 @@ void calculateThrottleAndCurrentMotorEndpoints(void)
         if((rcCommand[THROTTLE] <= (rxConfig()->midrc - flight3DConfig()->deadband3d_throttle))) {
             motorOutputMax = deadbandMotor3dLow;
             motorOutputMin = motorOutputLow;
-            throttlePrevious = rcCommand[THROTTLE];					//3D Mode Throttle Fix #3696
+            throttlePrevious = rcCommand[THROTTLE];                //3D Mode Throttle Fix #3696
             throttle = rcCommand[THROTTLE] - rxConfig()->mincheck; //3D Mode Throttle Fix #3696
             currentThrottleInputRange = rcCommandThrottleRange3dLow;
             if(isMotorProtocolDshot()) mixerInversion = true;
@@ -595,7 +613,7 @@ void mixTable(uint8_t vbatPidCompensation)
     float scaledAxisPidPitch =
         constrainf((axisPID_P[FD_PITCH] + axisPID_I[FD_PITCH] + axisPID_D[FD_PITCH]) / PID_MIXER_SCALING, -pidSumLimit, pidSumLimit);
     float scaledAxisPidYaw =
-        constrainf((axisPID_P[FD_YAW] + axisPID_I[FD_YAW]) / PID_MIXER_SCALING, -pidSumLimitYaw, pidSumLimitYaw);
+        -constrainf((axisPID_P[FD_YAW] + axisPID_I[FD_YAW]) / PID_MIXER_SCALING, -pidSumLimitYaw, pidSumLimitYaw);
     if (isMotorsReversed()) {
         scaledAxisPidRoll = -scaledAxisPidRoll;
         scaledAxisPidPitch = -scaledAxisPidPitch;

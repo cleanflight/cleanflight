@@ -15,6 +15,8 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #define TARGET_BOARD_IDENTIFIER "MCF3" // LumbaF3 Flight Controller by mC
 
 #define LED0_PIN                PB3
@@ -75,7 +77,7 @@
 
 #define LED_STRIP
 
-#define CAMERA_CONTROL_PIN		PA15
+#define CAMERA_CONTROL_PIN      PA15
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
 #define SERIALRX_PROVIDER       SERIALRX_SBUS

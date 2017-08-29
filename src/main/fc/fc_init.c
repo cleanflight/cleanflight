@@ -81,6 +81,7 @@
 #include "msp/msp_serial.h"
 
 #include "rx/rx.h"
+#include "rx/rx_spi.h"
 #include "rx/spektrum.h"
 
 #include "io/beeper.h"
@@ -156,7 +157,6 @@ void processLoopback(void)
     }
 #endif
 }
-
 
 #ifdef VTX_RTC6705
 bool canUpdateVTX(void)
@@ -495,7 +495,8 @@ void init(void)
     adcConfigMutable()->vbat.enabled = (batteryConfig()->voltageMeterSource == VOLTAGE_METER_ADC);
     adcConfigMutable()->current.enabled = (batteryConfig()->currentMeterSource == CURRENT_METER_ADC);
 
-    adcConfigMutable()->rssi.enabled = feature(FEATURE_RSSI_ADC);
+    // The FrSky D SPI RX sends RSSI_ADC_PIN (if configured) as A2
+    adcConfigMutable()->rssi.enabled = feature(FEATURE_RSSI_ADC) || (feature(FEATURE_RX_SPI) && rxConfig()->rx_spi_protocol == RX_SPI_FRSKY_D);
     adcInit(adcConfig());
 #endif
 
