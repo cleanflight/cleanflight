@@ -296,6 +296,8 @@ int mspSerialPush(uint8_t cmd, uint8_t *data, int datalen, mspDirection_e direct
         };
 
         ret = mspSerialEncode(mspPort, &push);
+        
+        break;
     }
     return ret; // return the number of bytes written
 }
