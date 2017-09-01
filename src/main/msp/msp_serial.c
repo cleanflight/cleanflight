@@ -296,6 +296,9 @@ int mspSerialPush(uint8_t cmd, uint8_t *data, int datalen, mspDirection_e direct
         };
 
         ret = mspSerialEncode(mspPort, &push);
+        
+        // We only want to send the data on the first non-VCP MSP port, to allow users to connect bluetooth devices to other MSP ports
+        break;
     }
     return ret; // return the number of bytes written
 }
