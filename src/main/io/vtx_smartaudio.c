@@ -541,7 +541,12 @@ static void saGetSettings(void)
     saQueueCmd(bufGetSettings, 5);
 }
 
-static void saDevSetFreq(uint16_t freq)
+static bool saValidateFreq(uint16_t freq)
+{
+    return (freq >= VTX_SMARTAUDIO_MIN_FREQ && freq <= VTX_SMARTAUDIO_MAX_FREQ);
+}
+
+static void _saDevSetFreq(uint16_t freq)
 {
     static uint8_t buf[7] = { 0xAA, 0x55, SACMD(SA_CMD_SET_FREQ), 2 };
 
@@ -560,6 +565,21 @@ static void saDevSetFreq(uint16_t freq)
     saQueueCmd(buf, 7);
 }
 
+static void saDevSetFreq(uint16_t freq)
+{
+    // Need to work around apparent SmartAudio bug when going from 'channel'
+    // to 'user-freq' mode, where the set-freq command will fail if the freq
+    // value is unchanged from the previous 'user-freq' mode
+    if ((saDevice.mode & SA_MODE_GET_FREQ_BY_FREQ) == 0 &&
+                                                    freq == saDevice.freq) {
+        _saDevSetFreq(freq + 1);
+        saSendQueue();
+        saGetSettings();
+        saSendQueue();
+    }
+    _saDevSetFreq(freq);          //enter desired frequency
+}
+
 void saSetFreq(uint16_t freq)
 {
     saDevSetFreq(freq);
@@ -569,16 +589,16 @@ void saSetFreq(uint16_t freq)
 #if 0
 static void saSetPitFreq(uint16_t freq)
 {
-    saSetFreq(freq | SA_FREQ_SETPIT);
+    _saDevSetFreq(freq | SA_FREQ_SETPIT);
 }
 
 static void saGetPitFreq(void)
 {
-    saSetFreq(SA_FREQ_GETPIT);
+    _saDevSetFreq(SA_FREQ_GETPIT);
 }
 #endif
 
-bool saValidateBandAndChannel(uint8_t band, uint8_t channel)
+static bool saValidateBandAndChannel(uint8_t band, uint8_t channel)
 {
     return (band >= VTX_SMARTAUDIO_MIN_BAND && band <= VTX_SMARTAUDIO_MAX_BAND &&
              channel >= VTX_SMARTAUDIO_MIN_CHAN && channel <= VTX_SMARTAUDIO_MAX_CHAN);
@@ -644,11 +664,25 @@ static bool saEnterInitBandChanAndPower(uint8_t band, uint8_t channel, uint8_t p
     uint8_t pwrIdx = constrain(power-1, 0, VTX_SMARTAUDIO_POWER_COUNT-1);
     saDevSetPowerByIndex(pwrIdx);
 
-    // if 'vtx_power' value out of range then update it
-    if (pwrIdx+1 != power)
-        vtxSettingsSavePowerByIndex(pwrIdx+1);
+    // update 'vtx_freq' via band/channel table and enter
+    //  power-index value (in case current value is out of range)
+    vtxSettingsSaveFreqAndPower(vtx58_Bandchan2Freq(band,channel), pwrIdx+1);
 
     return true;
+}
+
+static void saEnterInitFreqAndPower(uint16_t freq, uint8_t power)
+{
+    if (saValidateFreq(freq)) {
+        saSetMode(0);        //need to be in FREE mode to set freq
+        saDevSetFreq(freq);
+    }
+
+    uint8_t pwrIdx = constrain(power-1, 0, VTX_SMARTAUDIO_POWER_COUNT-1);
+    saDevSetPowerByIndex(pwrIdx);
+
+    // enter power-index value (in case current value is out of range)
+    vtxSettingsSavePowerByIndex(pwrIdx+1);
 }
 
 bool vtxSmartAudioInit()
@@ -711,7 +745,7 @@ void vtxSAProcess(uint32_t now)
         // Don't send SA_FREQ_GETPIT to V1 device; it act as plain SA_CMD_SET_FREQ,
         // and put the device into user frequency mode with uninitialized freq.
         if (saDevice.version == 2)
-            saSetFreq(SA_FREQ_GETPIT);
+            _saDevSetFreq(SA_FREQ_GETPIT);
         ++initPhase;
         break;
     }
@@ -738,11 +772,16 @@ void vtxSAProcess(uint32_t now)
         if (saDevice.version != 0) {
             initSettingsDoneFlag = true;
             // if vtx_band!=0 then enter 'vtx_band/chan' values (and power)
-            saEnterInitBandChanAndPower(vtxSettingsConfig()->band,
-                             vtxSettingsConfig()->channel, vtxSettingsConfig()->power);
+            if (!saEnterInitBandChanAndPower(vtxSettingsConfig()->band,
+                           vtxSettingsConfig()->channel, vtxSettingsConfig()->power)) {
+                // if vtx_band==0 then enter 'vtx_freq' value (and power)
+                if (vtxSettingsConfig()->band == 0) {
+                    saEnterInitFreqAndPower(vtxSettingsConfig()->freq, vtxSettingsConfig()->power);
+                }
+            }
         }
-        else if (now - sa_lastTransmission >= 100)
-        {  //device is not ready; repeat query
+        else if (now - sa_lastTransmission >= 100) {
+            // device is not ready; repeat query
             saGetSettings();
             saSendQueue();
         }
