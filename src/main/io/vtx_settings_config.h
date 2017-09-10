@@ -28,11 +28,14 @@
 #define VTX_SETTINGS_DEFAULT_BAND 4         //Fatshark/Airwaves
 #define VTX_SETTINGS_DEFAULT_CHANNEL 1      //CH1
 
+#define VTX_SETTINGS_MAX_FREQ 5999          //max freq (in MHz) for 'vtx_freq' setting
+
 #if defined(VTX_SMARTAUDIO) || defined(VTX_TRAMP)
 
 #define VTX_SETTINGS_POWER_COUNT 5
 #define VTX_SETTINGS_DEFAULT_POWER 1
 #define VTX_SETTINGS_CONFIG
+#define VTX_SETTINGS_FREQCMD
 
 #elif defined(VTX_RTC6705)
 
@@ -54,6 +57,7 @@ typedef struct vtxSettingsConfig_s {
     uint8_t band;       // 1=A, 2=B, 3=E, 4=F(Airwaves/Fatshark), 5=Raceband
     uint8_t channel;    // 1-8
     uint8_t power;      // 0 = lowest
+    uint16_t freq;      // sets freq in MHz if band=0
 } vtxSettingsConfig_t;
 
 PG_DECLARE(vtxSettingsConfig_t, vtxSettingsConfig);
@@ -62,5 +66,6 @@ void vtxSettingsSaveBandAndChannel(uint8_t band, uint8_t channel);
 void vtxSettingsSavePowerByIndex(uint8_t index);
 void vtxSettingsSaveBandChanAndPower(uint8_t band, uint8_t channel, uint8_t index);
 void vtxSettingsSaveFrequency(uint16_t freq);
+void vtxSettingsSaveFreqAndPower(uint16_t freq, uint8_t index);
 
 #endif  //VTX_SETTINGS_CONFIG

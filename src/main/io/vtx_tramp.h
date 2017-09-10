@@ -28,6 +28,9 @@
 #define VTX_TRAMP_POWER_COUNT 5
 #define VTX_TRAMP_DEFAULT_POWER 1
 
+#define VTX_TRAMP_MIN_FREQ 5000             //min freq in MHz
+#define VTX_TRAMP_MAX_FREQ 5999             //max freq in MHz
+
 extern const uint16_t trampPowerTable[VTX_TRAMP_POWER_COUNT];
 extern const char * const trampPowerNames[VTX_TRAMP_POWER_COUNT+1];
 
