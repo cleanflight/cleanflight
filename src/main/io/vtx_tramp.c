@@ -130,11 +130,21 @@ void trampCmdU16(uint8_t cmd, uint16_t param)
     trampWriteBuf(trampReqBuffer);
 }
 
-void trampSetFreq(uint16_t freq)
+static bool trampValidateFreq(uint16_t freq)
+{
+    return (freq >= VTX_TRAMP_MIN_FREQ && freq <= VTX_TRAMP_MAX_FREQ);
+}
+
+static void trampDevSetFreq(uint16_t freq)
 {
     trampConfFreq = freq;
     if (trampConfFreq != trampCurFreq)
         trampFreqRetries = TRAMP_MAX_RETRIES;
+}
+void trampSetFreq(uint16_t freq)
+{
+    trampDevSetFreq(freq);
+    vtxSettingsSaveFrequency(freq);
 }
 
 void trampSendFreq(uint16_t freq)
@@ -142,7 +152,7 @@ void trampSendFreq(uint16_t freq)
     trampCmdU16('F', freq);
 }
 
-bool trampValidateBandAndChannel(uint8_t band, uint8_t channel)
+static bool trampValidateBandAndChannel(uint8_t band, uint8_t channel)
 {
     return (band >= VTX_TRAMP_MIN_BAND && band <= VTX_TRAMP_MAX_BAND &&
             channel >= VTX_TRAMP_MIN_CHAN && channel <= VTX_TRAMP_MAX_CHAN);
@@ -150,7 +160,7 @@ bool trampValidateBandAndChannel(uint8_t band, uint8_t channel)
 
 static void trampDevSetBandAndChannel(uint8_t band, uint8_t channel)
 {
-    trampSetFreq(vtx58frequencyTable[band - 1][channel - 1]);
+    trampDevSetFreq(vtx58_Bandchan2Freq(band, channel));
 }
 
 void trampSetBandAndChannel(uint8_t band, uint8_t channel)
@@ -352,11 +362,23 @@ static bool trampEnterInitBandChanAndPower(uint8_t band, uint8_t channel, uint8_
     uint8_t pwrIdx = constrain(power, 1, sizeof(trampPowerTable));
     trampDevSetPowerByIndex(pwrIdx);
 
-    // if 'vtx_power' value out of range then update it
-    if (pwrIdx != power)
-        vtxSettingsSavePowerByIndex(pwrIdx);
+    // update 'vtx_freq' via band/channel table and enter
+    //  power-index value (in case current value is out of range)
+    vtxSettingsSaveFreqAndPower(vtx58_Bandchan2Freq(band,channel), pwrIdx);
 
     return true;
+}
+
+static void trampEnterInitFreqAndPower(uint16_t freq, uint8_t power)
+{
+    if (trampValidateFreq(freq))
+        trampDevSetFreq(freq);
+
+    uint8_t pwrIdx = constrain(power, 1, sizeof(trampPowerTable));
+    trampDevSetPowerByIndex(pwrIdx);
+
+    // enter power-index value (in case current value is out of range)
+    vtxSettingsSavePowerByIndex(pwrIdx);
 }
 
 void vtxTrampProcess(uint32_t currentTimeUs)
@@ -387,8 +409,12 @@ void vtxTrampProcess(uint32_t currentTimeUs)
             if (!initSettingsDoneFlag) {
                 initSettingsDoneFlag = true;
                 // if vtx_band!=0 then enter 'vtx_band/chan' values (and power)
-                trampEnterInitBandChanAndPower(vtxSettingsConfig()->band,
-                             vtxSettingsConfig()->channel, vtxSettingsConfig()->power);
+                if (!trampEnterInitBandChanAndPower(vtxSettingsConfig()->band, vtxSettingsConfig()->channel, vtxSettingsConfig()->power)) {
+                    // if vtx_band=0 then enter 'vtx_freq' value (and power)
+                    if (vtxSettingsConfig()->band == 0) {
+                        trampEnterInitFreqAndPower(vtxSettingsConfig()->freq, vtxSettingsConfig()->power);
+                    }
+                }
             }
         }
         break;
