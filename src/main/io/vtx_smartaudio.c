@@ -33,6 +33,7 @@
 #include "cms/cms_types.h"
 #include "cms/cms_menu_vtx_smartaudio.h"
 
+#include "common/maths.h"
 #include "common/printf.h"
 #include "common/utils.h"
 
@@ -50,6 +51,7 @@
 
 #include "io/serial.h"
 #include "io/vtx_smartaudio.h"
+#include "io/vtx_settings_config.h"
 #include "io/vtx_string.h"
 
 //#define SMARTAUDIO_DPRINTF
@@ -62,7 +64,7 @@ serialPort_t *debugSerialPort = NULL;
 static serialPort_t *smartAudioSerialPort = NULL;
 
 #if defined(CMS) || defined(VTX_COMMON)
-static const char * const saPowerNames[] = {
+static const char * const saPowerNames[VTX_SMARTAUDIO_POWER_COUNT+1] = {
     "---", "25 ", "200", "500", "800",
 };
 #endif
@@ -71,9 +73,9 @@ static const char * const saPowerNames[] = {
 static const vtxVTable_t saVTable;    // Forward
 static vtxDevice_t vtxSmartAudio = {
     .vTable = &saVTable,
-    .capability.bandCount = 5,
-    .capability.channelCount = 8,
-    .capability.powerCount = 4,
+    .capability.bandCount = VTX_SMARTAUDIO_BAND_COUNT,
+    .capability.channelCount = VTX_SMARTAUDIO_CHAN_COUNT,
+    .capability.powerCount = VTX_SMARTAUDIO_POWER_COUNT,
     .bandNames = (char **)vtx58BandNames,
     .channelNames = (char **)vtx58ChannelNames,
     .powerNames = (char **)saPowerNames,
@@ -112,7 +114,7 @@ smartAudioStat_t saStat = {
     .badcode = 0,
 };
 
-saPowerTable_t saPowerTable[] = {
+saPowerTable_t saPowerTable[VTX_SMARTAUDIO_POWER_COUNT] = {
     {  25,   7,   0 },
     { 200,  16,   1 },
     { 500,  25,   2 },
@@ -538,7 +540,12 @@ static void saGetSettings(void)
     saQueueCmd(bufGetSettings, 5);
 }
 
-void saSetFreq(uint16_t freq)
+static bool saValidateFreq(uint16_t freq)
+{
+    return (freq >= VTX_SMARTAUDIO_MIN_FREQ && freq <= VTX_SMARTAUDIO_MAX_FREQ);
+}
+
+static void _saDevSetFreq(uint16_t freq)
 {
     static uint8_t buf[7] = { 0xAA, 0x55, SACMD(SA_CMD_SET_FREQ), 2 };
 
@@ -557,19 +564,46 @@ void saSetFreq(uint16_t freq)
     saQueueCmd(buf, 7);
 }
 
+static void saDevSetFreq(uint16_t freq)
+{
+    // Need to work around apparent SmartAudio bug when going from 'channel'
+    // to 'user-freq' mode, where the set-freq command will fail if the freq
+    // value is unchanged from the previous 'user-freq' mode
+    if ((saDevice.mode & SA_MODE_GET_FREQ_BY_FREQ) == 0 &&
+                                                    freq == saDevice.freq) {
+        _saDevSetFreq(freq + 1);
+        saSendQueue();
+        saGetSettings();
+        saSendQueue();
+    }
+    _saDevSetFreq(freq);          //enter desired frequency
+}
+
+void saSetFreq(uint16_t freq)
+{
+    saDevSetFreq(freq);
+    vtxSettingsSaveFrequency(freq);
+}
+
 #if 0
 static void saSetPitFreq(uint16_t freq)
 {
-    saSetFreq(freq | SA_FREQ_SETPIT);
+    _saDevSetFreq(freq | SA_FREQ_SETPIT);
 }
 
 static void saGetPitFreq(void)
 {
-    saSetFreq(SA_FREQ_GETPIT);
+    _saDevSetFreq(SA_FREQ_GETPIT);
 }
 #endif
 
-void saSetBandAndChannel(uint8_t band, uint8_t channel)
+static bool saValidateBandAndChannel(uint8_t band, uint8_t channel)
+{
+    return (band >= VTX_SMARTAUDIO_MIN_BAND && band <= VTX_SMARTAUDIO_MAX_BAND &&
+             channel >= VTX_SMARTAUDIO_MIN_CHAN && channel <= VTX_SMARTAUDIO_MAX_CHAN);
+}
+
+static void saDevSetBandAndChannel(uint8_t band, uint8_t channel)
 {
     static uint8_t buf[6] = { 0xAA, 0x55, SACMD(SA_CMD_SET_CHAN), 1 };
 
@@ -577,6 +611,12 @@ void saSetBandAndChannel(uint8_t band, uint8_t channel)
     buf[5] = CRC8(buf, 5);
 
     saQueueCmd(buf, 6);
+}
+
+void saSetBandAndChannel(uint8_t band, uint8_t channel)
+{
+    saDevSetBandAndChannel(band, channel);
+    vtxSettingsSaveBandAndChannel(band+1, channel+1);
 }
 
 void saSetMode(int mode)
@@ -589,7 +629,7 @@ void saSetMode(int mode)
     saQueueCmd(buf, 6);
 }
 
-void saSetPowerByIndex(uint8_t index)
+static void saDevSetPowerByIndex(uint8_t index)
 {
     static uint8_t buf[6] = { 0xAA, 0x55, SACMD(SA_CMD_SET_POWER), 1 };
 
@@ -600,12 +640,48 @@ void saSetPowerByIndex(uint8_t index)
         return;
     }
 
-    if (index > 3)
+    if (index >= VTX_SMARTAUDIO_POWER_COUNT)
         return;
 
     buf[4] = (saDevice.version == 1) ? saPowerTable[index].valueV1 : saPowerTable[index].valueV2;
     buf[5] = CRC8(buf, 5);
     saQueueCmd(buf, 6);
+}
+
+void saSetPowerByIndex(uint8_t index)
+{
+    saDevSetPowerByIndex(index);
+    vtxSettingsSavePowerByIndex(index + 1);
+}
+
+static bool saEnterInitBandChanAndPower(uint8_t band, uint8_t channel, uint8_t power)
+{
+    if (!saValidateBandAndChannel(band, channel))
+        return false;
+    saDevSetBandAndChannel(band-1, channel-1);
+
+    uint8_t pwrIdx = constrain(power-1, 0, VTX_SMARTAUDIO_POWER_COUNT-1);
+    saDevSetPowerByIndex(pwrIdx);
+
+    // update 'vtx_freq' via band/channel table and enter
+    //  power-index value (in case current value is out of range)
+    vtxSettingsSaveFreqAndPower(vtx58_Bandchan2Freq(band,channel), pwrIdx+1);
+
+    return true;
+}
+
+static void saEnterInitFreqAndPower(uint16_t freq, uint8_t power)
+{
+    if (saValidateFreq(freq)) {
+        saSetMode(0);        //need to be in FREE mode to set freq
+        saDevSetFreq(freq);
+    }
+
+    uint8_t pwrIdx = constrain(power-1, 0, VTX_SMARTAUDIO_POWER_COUNT-1);
+    saDevSetPowerByIndex(pwrIdx);
+
+    // enter power-index value (in case current value is out of range)
+    vtxSettingsSavePowerByIndex(pwrIdx+1);
 }
 
 bool vtxSmartAudioInit()
@@ -637,6 +713,7 @@ bool vtxSmartAudioInit()
 void vtxSAProcess(uint32_t now)
 {
     static char initPhase = 0;
+    static bool initSettingsDoneFlag = false;
 
     if (smartAudioSerialPort == NULL)
         return;
@@ -660,7 +737,7 @@ void vtxSAProcess(uint32_t now)
         // Don't send SA_FREQ_GETPIT to V1 device; it act as plain SA_CMD_SET_FREQ,
         // and put the device into user frequency mode with uninitialized freq.
         if (saDevice.version == 2)
-            saSetFreq(SA_FREQ_GETPIT);
+            _saDevSetFreq(SA_FREQ_GETPIT);
         ++initPhase;
         break;
     }
@@ -675,11 +752,31 @@ void vtxSAProcess(uint32_t now)
         // Command pending. Send it.
         // dprintf(("process: sending queue\r\n"));
         saSendQueue();
-    } else if (now - sa_lastTransmission >= 1000) {
+    } else if (saDevice.version != 0 && now - sa_lastTransmission >= 1000) {
         // Heart beat for autobauding
         //dprintf(("process: sending heartbeat\r\n"));
         saGetSettings();
         saSendQueue();
+    }
+
+    // once device is ready enter vtx settings
+    if (!initSettingsDoneFlag) {
+        if (saDevice.version != 0) {
+            initSettingsDoneFlag = true;
+            // if vtx_band!=0 then enter 'vtx_band/chan' values (and power)
+            if (!saEnterInitBandChanAndPower(vtxSettingsConfig()->band,
+                           vtxSettingsConfig()->channel, vtxSettingsConfig()->power)) {
+                // if vtx_band==0 then enter 'vtx_freq' value (and power)
+                if (vtxSettingsConfig()->band == 0) {
+                    saEnterInitFreqAndPower(vtxSettingsConfig()->freq, vtxSettingsConfig()->power);
+                }
+            }
+        }
+        else if (now - sa_lastTransmission >= 100) {
+            // device is not ready; repeat query
+            saGetSettings();
+            saSendQueue();
+        }
     }
 
 #ifdef SMARTAUDIO_TEST_VTX_COMMON
@@ -717,7 +814,7 @@ bool vtxSAIsReady(void)
 
 void vtxSASetBandAndChannel(uint8_t band, uint8_t channel)
 {
-    if (band && channel)
+    if (saValidateBandAndChannel(band, channel))
         saSetBandAndChannel(band - 1, channel - 1);
 }
 
