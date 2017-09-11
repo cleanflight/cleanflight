@@ -175,9 +175,9 @@ static uint8_t CRC8(const uint8_t *data, const int8_t len)
 }
 
 
+#ifdef SMARTAUDIO_DPRINTF
 static void saPrintSettings(void)
 {
-#ifdef SMARTAUDIO_DPRINTF
     dprintf(("Current status: version: %d\r\n", saDevice.version));
     dprintf(("  mode(0x%x): fmode=%s", saDevice.mode,  (saDevice.mode & 1) ? "freq" : "chan"));
     dprintf((" pit=%s ", (saDevice.mode & 2) ? "on " : "off"));
@@ -190,8 +190,8 @@ static void saPrintSettings(void)
     dprintf(("power: %d ", saDevice.power));
     dprintf(("pitfreq: %d ", saDevice.orfreq));
     dprintf(("\r\n"));
-#endif
 }
+#endif
 
 int saDacToPowerIndex(int dac)
 {
@@ -259,10 +259,6 @@ static uint8_t sa_outstanding = SA_CMD_NONE; // Outstanding command
 static uint8_t sa_osbuf[32]; // Outstanding comamnd frame for retransmission
 static int sa_oslen;         // And associate length
 
-#ifdef CMS
-void saCmsUpdate(void);
-#endif
-
 static void saProcessResponse(uint8_t *buf, int len)
 {
     uint8_t resp = buf[0];
@@ -329,9 +325,14 @@ static void saProcessResponse(uint8_t *buf, int len)
         return;
     }
 
-    // Debug
-    if (memcmp(&saDevice, &saDevicePrev, sizeof(smartAudioDevice_t)))
+    if (memcmp(&saDevice, &saDevicePrev, sizeof(smartAudioDevice_t))) {
+#ifdef CMS    //if changes then trigger saCms update
+        saCmsResetOpmodel();
+#endif
+#ifdef SMARTAUDIO_DPRINTF    // Debug
         saPrintSettings();
+#endif
+    }
     saDevicePrev = saDevice;
 
 #ifdef VTX_COMMON
@@ -586,12 +587,12 @@ void saSetFreq(uint16_t freq)
     vtxSettingsSaveFrequency(freq);
 }
 
-#if 0
-static void saSetPitFreq(uint16_t freq)
+void saSetPitFreq(uint16_t freq)
 {
     _saDevSetFreq(freq | SA_FREQ_SETPIT);
 }
 
+#if 0
 static void saGetPitFreq(void)
 {
     _saDevSetFreq(SA_FREQ_GETPIT);
