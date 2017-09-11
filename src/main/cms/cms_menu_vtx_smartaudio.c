@@ -63,7 +63,9 @@ uint16_t saCmsDeviceFreq = 0;
 uint8_t  saCmsDeviceStatus = 0;
 uint8_t  saCmsPower;
 uint8_t  saCmsPitFMode;          // Undef(0), In-Range(1) or Out-Range(2)
+
 uint8_t  saCmsFselMode;          // Channel(0) or User defined(1)
+uint8_t  saCmsFselModeNew;       // Channel(0) or User defined(1)
 
 uint16_t saCmsORFreq = 0;       // POR frequency
 uint16_t saCmsORFreqNew;        // POR frequency
@@ -100,6 +102,12 @@ void saCmsUpdate(void)
         } else {
             saCmsPower = saDacToPowerIndex(saDevice.power) + 1;
         }
+
+        // if user-freq mode then track possible change
+        if (saCmsFselMode != 0 && saDevice.freq != 0)
+            saCmsUserFreq = saDevice.freq;
+
+        saCmsFselModeNew = saCmsFselMode;   //init mode for menu
     }
 
     saUpdateStatusString();
@@ -168,6 +176,12 @@ if (saDevice.version == 2) {
     } else {
         tfp_sprintf(&saCmsStatusString[10], "%3d", (saDevice.version == 2) ?  saPowerTable[saDevice.power].rfpower : saPowerTable[saDacToPowerIndex(saDevice.power)].rfpower);
     }
+}
+
+void saCmsResetOpmodel()
+{
+    // trigger data refresh in 'saCmsUpdate()'
+    saCmsOpmodel = SACMS_OPMODEL_UNDEF;
 }
 
 static long saCmsConfigBandByGvar(displayPort_t *pDisp, const void *self)
@@ -300,7 +314,7 @@ static long saCmsConfigOpmodelByGvar(displayPort_t *pDisp, const void *self)
         saCmsConfigPitFModeByGvar(pDisp, self);
 
         // Direct frequency mode is not available in RACE opmodel
-        saCmsFselMode = 0;
+        saCmsFselModeNew = 0;
         saCmsConfigFreqModeByGvar(pDisp, self);
     } else {
         // Trying to go back to unknown state; bounce back
@@ -383,18 +397,13 @@ static long saCmsConfigFreqModeByGvar(displayPort_t *pDisp, const void *self)
     UNUSED(pDisp);
     UNUSED(self);
 
-    if (saCmsFselMode == 0) {
-        // CHAN
-        saSetBandAndChannel(saCmsBand - 1, saCmsChan - 1);
-    } else {
-        // USER: User frequency mode is only available in FREE opmodel.
-        if (saCmsOpmodel == SACMS_OPMODEL_FREE) {
-            saSetFreq(saCmsUserFreq);
-        } else {
-            // Bounce back
-            saCmsFselMode = 0;
-        }
-    }
+    // if trying to do user frequency mode in RACE opmodel then
+    // revert because user-freq only available in FREE opmodel
+    if (saCmsFselModeNew != 0 && saCmsOpmodel != SACMS_OPMODEL_FREE)
+        saCmsFselModeNew = 0;
+
+    // don't call 'saSetBandAndChannel()' / 'saSetFreq()' here,
+    // wait until SET / 'saCmsCommence()' is activated
 
     sacms_SetupTopMenu();
 
@@ -421,10 +430,12 @@ static long saCmsCommence(displayPort_t *pDisp, const void *self)
     } else {
         // Freestyle model
         // Setup band and freq / user freq
-        if (saCmsFselMode == 0)
+        if (saCmsFselModeNew == 0)
             saSetBandAndChannel(saCmsBand - 1, saCmsChan - 1);
-        else
+        else {
+            saSetMode(0);    //make sure FREE mode is setup
             saSetFreq(saCmsUserFreq);
+        }
     }
 
     saSetPowerByIndex(saCmsPower - 1);
@@ -447,7 +458,7 @@ static long saCmsSetPORFreq(displayPort_t *pDisp, const void *self)
     UNUSED(pDisp);
     UNUSED(self);
 
-    saSetFreq(saCmsORFreqNew|SA_FREQ_SETPIT);
+    saSetPitFreq(saCmsORFreqNew);
 
     return 0;
 }
@@ -530,7 +541,7 @@ static CMS_Menu saCmsMenuUserFreq =
     .entries = saCmsMenuUserFreqEntries,
 };
 
-static OSD_TAB_t saCmsEntFselMode = { &saCmsFselMode, 1, saCmsFselModeNames };
+static OSD_TAB_t saCmsEntFselMode = { &saCmsFselModeNew, 1, saCmsFselModeNames };
 
 static OSD_Entry saCmsMenuConfigEntries[] = {
     { "- SA CONFIG -", OME_Label, NULL, NULL, 0 },
@@ -617,7 +628,7 @@ CMS_Menu cmsx_menuVtxSmartAudio; // Forward
 static long sacms_SetupTopMenu(void)
 {
     if (saCmsDeviceStatus) {
-        if (saCmsFselMode == 0)
+        if (saCmsFselModeNew == 0)
             cmsx_menuVtxSmartAudio.entries = saCmsMenuChanModeEntries;
         else
             cmsx_menuVtxSmartAudio.entries = saCmsMenuFreqModeEntries;
