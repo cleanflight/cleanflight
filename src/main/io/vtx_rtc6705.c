@@ -200,6 +200,12 @@ void vtxRTC6705SetPitMode(uint8_t onoff)
     return;
 }
 
+void vtxRTC6705SetFreq(uint16_t freq)
+{
+    UNUSED(freq);
+    return;
+}
+
 bool vtxRTC6705GetBandAndChannel(uint8_t *pBand, uint8_t *pChannel)
 {
     *pBand = vtxRTC6705.band;
@@ -219,6 +225,12 @@ bool vtxRTC6705GetPitMode(uint8_t *pOnOff)
     return false;
 }
 
+bool vtxRTC6705GetFreq(uint16_t *pFreq)
+{
+    UNUSED(pFreq);
+    return false;
+}
+
 static vtxVTable_t rtc6705VTable = {
     .process = vtxRTC6705Process,
     .getDeviceType = vtxRTC6705GetDeviceType,
@@ -226,9 +238,11 @@ static vtxVTable_t rtc6705VTable = {
     .setBandAndChannel = vtxRTC6705SetBandAndChannel,
     .setPowerByIndex = vtxRTC6705SetPowerByIndex,
     .setPitMode = vtxRTC6705SetPitMode,
+    .setFrequency = vtxRTC6705SetFreq,
     .getBandAndChannel = vtxRTC6705GetBandAndChannel,
     .getPowerIndex = vtxRTC6705GetPowerIndex,
     .getPitMode = vtxRTC6705GetPitMode,
+    .getFrequency = vtxRTC6705GetFreq,
 };
 #endif // VTX_COMMON
 

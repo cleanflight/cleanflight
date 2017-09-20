@@ -860,12 +860,22 @@ void vtxSASetPitMode(uint8_t onoff)
     return;
 }
 
+void vtxSASetFreq(uint16_t freq)
+{
+    if (saValidateFreq(freq)) {
+        saSetMode(0);        //need to be in FREE mode to set freq
+        saSetFreq(freq);
+    }
+}
+
 bool vtxSAGetBandAndChannel(uint8_t *pBand, uint8_t *pChannel)
 {
     if (!vtxSAIsReady())
         return false;
 
-    *pBand = (saDevice.channel / 8) + 1;
+    // if in user-freq mode then report band as zero
+    *pBand = (saDevice.mode & SA_MODE_GET_FREQ_BY_FREQ) ? 0 :
+                                               ((saDevice.channel / 8) + 1);
     *pChannel = (saDevice.channel % 8) + 1;
     return true;
 }
@@ -888,6 +898,17 @@ bool vtxSAGetPitMode(uint8_t *pOnOff)
     return true;
 }
 
+bool vtxSAGetFreq(uint16_t *pFreq)
+{
+    if (!vtxSAIsReady())
+        return false;
+
+    // if not in user-freq mode then convert band/chan to frequency
+    *pFreq = (saDevice.mode & SA_MODE_GET_FREQ_BY_FREQ) ? saDevice.freq :
+             vtx58_Bandchan2Freq((saDevice.channel/8)+1, (saDevice.channel%8)+1);
+    return true;
+}
+
 static const vtxVTable_t saVTable = {
     .process = vtxSAProcess,
     .getDeviceType = vtxSAGetDeviceType,
@@ -895,9 +916,11 @@ static const vtxVTable_t saVTable = {
     .setBandAndChannel = vtxSASetBandAndChannel,
     .setPowerByIndex = vtxSASetPowerByIndex,
     .setPitMode = vtxSASetPitMode,
+    .setFrequency = vtxSASetFreq,
     .getBandAndChannel = vtxSAGetBandAndChannel,
     .getPowerIndex = vtxSAGetPowerIndex,
     .getPitMode = vtxSAGetPitMode,
+    .getFrequency = vtxSAGetFreq,
 };
 #endif // VTX_COMMON
 

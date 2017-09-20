@@ -83,6 +83,7 @@ uint32_t trampRFFreqMin;
 uint32_t trampRFFreqMax;
 uint32_t trampRFPowerMax;
 
+bool trampSetByFreqFlag = false;  //false = set via band/channel
 uint32_t trampCurFreq = 0;
 uint8_t trampBand = 0;
 uint8_t trampChannel = 0;
@@ -140,8 +141,10 @@ static void trampDevSetFreq(uint16_t freq)
     if (trampConfFreq != trampCurFreq)
         trampFreqRetries = TRAMP_MAX_RETRIES;
 }
+
 void trampSetFreq(uint16_t freq)
 {
+    trampSetByFreqFlag = true;         //set freq via MHz value
     trampDevSetFreq(freq);
     vtxSettingsSaveFrequency(freq);
 }
@@ -164,6 +167,7 @@ static void trampDevSetBandAndChannel(uint8_t band, uint8_t channel)
 
 void trampSetBandAndChannel(uint8_t band, uint8_t channel)
 {
+    trampSetByFreqFlag = false;        //set freq via band/channel
     trampDevSetBandAndChannel(band, channel);
     vtxSettingsSaveBandAndChannel(band, channel);
 }
@@ -234,7 +238,10 @@ char trampHandleResponse(void)
                 trampConfiguredPower = trampRespBuffer[4]|(trampRespBuffer[5] << 8);
                 trampPitMode = trampRespBuffer[7];
                 trampPower = trampRespBuffer[8]|(trampRespBuffer[9] << 8);
-                vtx58_Freq2Bandchan(trampCurFreq, &trampBand, &trampChannel);
+
+                // if no band/chan match then make sure set-by-freq mode is flagged
+                if (!vtx58_Freq2Bandchan(trampCurFreq, &trampBand, &trampChannel))
+                    trampSetByFreqFlag = true;
 
                 if (trampConfFreq == 0)  trampConfFreq  = trampCurFreq;
                 if (trampConfPower == 0) trampConfPower = trampPower;
@@ -356,6 +363,7 @@ static bool trampEnterInitBandChanAndPower(uint8_t band, uint8_t channel, uint8_
 {
     if (!trampValidateBandAndChannel(band, channel))
         return false;
+    trampSetByFreqFlag = false;        //set freq via band/channel
     trampDevSetBandAndChannel(band, channel);
 
     uint8_t pwrIdx = constrain(power, 1, sizeof(trampPowerTable));
@@ -370,8 +378,10 @@ static bool trampEnterInitBandChanAndPower(uint8_t band, uint8_t channel, uint8_
 
 static void trampEnterInitFreqAndPower(uint16_t freq, uint8_t power)
 {
-    if (trampValidateFreq(freq))
+    if (trampValidateFreq(freq)) {
+        trampSetByFreqFlag = true;          //set freq via MHz value
         trampDevSetFreq(freq);
+    }
 
     uint8_t pwrIdx = constrain(power, 1, sizeof(trampPowerTable));
     trampDevSetPowerByIndex(pwrIdx);
@@ -537,12 +547,21 @@ void vtxTrampSetPitMode(uint8_t onoff)
     trampSetPitMode(onoff);
 }
 
+void vtxTrampSetFreq(uint16_t freq)
+{
+    if (trampValidateFreq(freq)) {
+        trampSetFreq(freq);
+        trampCommitChanges();
+    }
+}
+
 bool vtxTrampGetBandAndChannel(uint8_t *pBand, uint8_t *pChannel)
 {
     if (!vtxTrampIsReady())
         return false;
 
-    *pBand = trampBand;
+    // if in user-freq mode then report band as zero
+    *pBand = trampSetByFreqFlag ? 0 : trampBand;
     *pChannel = trampChannel;
     return true;
 }
@@ -573,6 +592,15 @@ bool vtxTrampGetPitMode(uint8_t *pOnOff)
     return true;
 }
 
+bool vtxTrampGetFreq(uint16_t *pFreq)
+{
+    if (!vtxTrampIsReady())
+        return false;
+
+    *pFreq = trampCurFreq;
+    return true;
+}
+
 static const vtxVTable_t trampVTable = {
     .process = vtxTrampProcess,
     .getDeviceType = vtxTrampGetDeviceType,
@@ -580,9 +608,11 @@ static const vtxVTable_t trampVTable = {
     .setBandAndChannel = vtxTrampSetBandAndChannel,
     .setPowerByIndex = vtxTrampSetPowerByIndex,
     .setPitMode = vtxTrampSetPitMode,
+    .setFrequency = vtxTrampSetFreq,
     .getBandAndChannel = vtxTrampGetBandAndChannel,
     .getPowerIndex = vtxTrampGetPowerIndex,
     .getPitMode = vtxTrampGetPitMode,
+    .getFrequency = vtxTrampGetFreq,
 };
 
 #endif
