@@ -15,14 +15,21 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-#define EEPROM_CONF_VERSION 163
+#include <platform.h>
 
-bool isEEPROMContentValid(void);
-bool loadEEPROM(void);
-void writeConfigToEEPROM(void);
-uint16_t getEEPROMConfigSize(void);
+#ifdef TARGET_CONFIG
+
+#include "config/parameter_group.h"
+#include "drivers/max7456.h"
+
+void targetConfiguration(void)
+{
+#ifdef OMNIBUSF4BASE
+    // OMNIBUS F4 AIO (1st gen) has a AB7456 chip that is detected as MAX7456
+    max7456ConfigMutable()->clockConfig = MAX7456_CLOCK_CONFIG_FULL;
+#endif
+}
+#endif
