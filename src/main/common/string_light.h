@@ -17,12 +17,12 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
+int sl_isalnum(int c);
+int sl_isdigit(int c);
+int sl_isupper(int c);
+int sl_islower(int c);
+int sl_tolower(int c);
+int sl_toupper(int c);
 
-#define EEPROM_CONF_VERSION 163
-
-bool isEEPROMContentValid(void);
-bool loadEEPROM(void);
-void writeConfigToEEPROM(void);
-uint16_t getEEPROMConfigSize(void);
+int sl_strcasecmp(const char * s1, const char * s2);
+int sl_strncasecmp(const char * s1, const char * s2, int n);
