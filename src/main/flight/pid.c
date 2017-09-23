@@ -296,6 +296,9 @@ void pidInitConfig(const pidProfile_t *pidProfile)
 
 void pidInit(const pidProfile_t *pidProfile)
 {
+    if (gyro.targetLooptime == 0) {
+        return; // HACK to fix divide by zero error on first boot - pidInit() is called by resetConfigs() before the gyro is detected.
+    }
     pidSetTargetLooptime(gyro.targetLooptime * pidConfig()->pid_process_denom); // Initialize pid looptime
     pidInitFilters(pidProfile);
     pidInitConfig(pidProfile);
