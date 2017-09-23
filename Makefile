@@ -121,6 +121,7 @@ OPTIMISATION_BASE     := -flto -fuse-linker-plugin -ffast-math
 OPTIMISE_DEFAULT      := -O2
 OPTIMISE_SPEED        := -Ofast
 OPTIMISE_SIZE         := -Os
+OPTIMISE_NONE         :=
 
 LTO_FLAGS             := $(OPTIMISATION_BASE) $(OPTIMISE_SPEED)
 endif
@@ -298,14 +299,21 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 else
 $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 	$(V1) mkdir -p $(dir $@)
-	$(V1) $(if $(findstring $(subst ./src/main/,,$<),$(SPEED_OPTIMISED_SRC)), \
-	echo "%% (speed optimised) $(notdir $<)" "$(STDOUT)" && \
-	$(CROSS_CC) -c -o $@ $(CFLAGS) $(CC_SPEED_OPTIMISATION) $<, \
-	$(if $(findstring $(subst ./src/main/,,$<),$(SIZE_OPTIMISED_SRC)), \
-	echo "%% (size optimised) $(notdir $<)" "$(STDOUT)" && \
-	$(CROSS_CC) -c -o $@ $(CFLAGS) $(CC_SIZE_OPTIMISATION) $<, \
-	echo "%% $(notdir $<)" "$(STDOUT)" && \
-	$(CROSS_CC) -c -o $@ $(CFLAGS) $(CC_DEFAULT_OPTIMISATION) $<))
+	$(V1) $(if \
+		$(findstring $(subst ./src/main/,,$<),$(SPEED_OPTIMISED_SRC)), \
+		echo "%% (speed optimised) $(notdir $<)" "$(STDOUT)" && \
+		$(CROSS_CC) -c -o $@ $(CFLAGS) $(CC_SPEED_OPTIMISATION) $<, \
+		$(if $(findstring $(subst ./src/main/,,$<),$(SIZE_OPTIMISED_SRC)), \
+			echo "%% (size optimised) $(notdir $<)" "$(STDOUT)" && \
+			$(CROSS_CC) -c -o $@ $(CFLAGS) $(CC_SIZE_OPTIMISATION) $<, \
+			$(if $(findstring $(subst ./src/main/,,$<),$(NOT_OPTIMISED_SRC)), \
+				echo "%% (no-opt) $(notdir $<)" "$(STDOUT)" && \
+				$(CROSS_CC) -c -o $@ $(CFLAGS) $(OPTIMISE_NONE) $<, \
+				echo "%% $(notdir $<)" "$(STDOUT)" && \
+				$(CROSS_CC) -c -o $@ $(CFLAGS) $(CC_DEFAULT_OPTIMISATION) $< \
+			) \
+		) \
+	)
 endif
 
 # Assemble

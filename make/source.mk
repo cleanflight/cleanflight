@@ -235,6 +235,8 @@ SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
             io/osd.c \
             io/osd_slave.c
 
+NOT_OPTIMISED_SRC := $(NOT_OPTIMISED_SRC) \
+
 SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             drivers/bus_i2c_config.c \
             drivers/bus_spi_config.c \
@@ -266,6 +268,7 @@ SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             cms/cms_menu_misc.c \
             cms/cms_menu_osd.c \
             io/vtx_string.c \
+            io/vtx_settings_config.c \
             io/vtx_rtc6705.c \
             io/vtx_smartaudio.c \
             io/vtx_tramp.c \
