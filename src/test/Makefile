@@ -11,9 +11,7 @@
 
 # Where to find user code.
 USER_DIR = ../main
-ROOT = ../..
-
-include $(ROOT)/make/system-id.mk
+TEST_DIR = unit
 
 
 # specify which files that are included in the test in addition to the unittest file.
@@ -38,6 +36,9 @@ arming_prevention_unittest_SRC := \
 		$(USER_DIR)/fc/runtime_config.c \
 		$(USER_DIR)/common/bitarray.c
 
+atomic_unittest_SRC := \
+		$(USER_DIR)/build/atomic.c \
+		$(TEST_DIR)/atomic_unittest_c.c
 
 baro_bmp085_unittest_SRC := \
 		$(USER_DIR)/drivers/barometer/barometer_bmp085.c \
@@ -291,14 +292,18 @@ ringbuffer_unittest_SRC := \
 GTEST_DIR = ../../lib/test/gtest
 
 
-TEST_DIR = unit
 USER_INCLUDE_DIR = $(USER_DIR)
 
 OBJECT_DIR = ../../obj/test
 
+# Determine the OS
+UNAME := $(shell uname -s)
+
 # Use clang/clang++ by default
 CC  := clang
 CXX := clang++
+#CC  := gcc
+#CXX := g++
 
 COMMON_FLAGS = \
 	-g \
@@ -311,7 +316,12 @@ COMMON_FLAGS = \
 	-isystem $(GTEST_DIR)/inc \
 	-MMD -MP
 
-ifndef MACOSX
+ifeq ($(shell $(CC) -v 2>&1 | grep -q "clang version" && echo "clang"),clang)
+COMMON_FLAGS += -fblocks
+LDFLAGS	     += -lBlocksRuntime
+endif
+
+ifneq ($(UNAME), Darwin)
 COMMON_FLAGS += -pthread
 endif
 
@@ -323,28 +333,17 @@ C_FLAGS = $(COMMON_FLAGS) \
 CXX_FLAGS = $(COMMON_FLAGS) \
 	-std=gnu++11
 
-ifdef CYGWIN
-# Avoid "__float128 is not supported on this target" error
-CXX_FLAGS += -D__STRICT_ANSI__
-endif
-
-
 # Compiler flags for coverage instrumentation
-ifndef CYGWIN
 COVERAGE_FLAGS := --coverage
-else
-# Avoid "undefined reference to `llvm_gcov_init'" error (disable coverage)
-COVERAGE_FLAGS :=
-endif
 
 C_FLAGS   += $(COVERAGE_FLAGS)
 CXX_FLAGS += $(COVERAGE_FLAGS)
 
-# Determine the OS and set up the parameter group linker flags accordingly
-ifdef MACOSX
-PG_FLAGS = -Wl,-map,$(OBJECT_DIR)/$@.map
+# Set up the parameter group linker flags according to OS
+ifeq ($(UNAME), Darwin)
+LDFLAGS  += -Wl,-map,$(OBJECT_DIR)/$@.map
 else
-PG_FLAGS = -Wl,-T,$(TEST_DIR)/parameter_group.ld -Wl,-Map,$(OBJECT_DIR)/$@.map
+LDFLAGS  += -Wl,-T,$(TEST_DIR)/parameter_group.ld -Wl,-Map,$(OBJECT_DIR)/$@.map
 endif
 
 # Gather up all of the tests.
@@ -443,7 +442,7 @@ TEST_CFLAGS	 = $(addprefix -I,$(TEST_INCLUDE_DIRS))
 # param $1 = testname
 define test-specific-stuff
 
-$$1_OBJS = $$(patsubst $$(USER_DIR)%,$$(OBJECT_DIR)/$1%,$$($1_SRC:=.o))
+$$1_OBJS = $$(patsubst $$(TEST_DIR)%,$$(OBJECT_DIR)/$1%, $$(patsubst $$(USER_DIR)%,$$(OBJECT_DIR)/$1%,$$($1_SRC:=.o)))
 
 # $$(info $1 -v-v-------)
 # $$(info $1_SRC:  $($1_SRC))
@@ -463,6 +462,12 @@ $(OBJECT_DIR)/$1/%.c.o: $(USER_DIR)/%.c
                 $(foreach def,$($1_DEFINES),-D $(def)) \
                 -c $$< -o $$@
 
+$(OBJECT_DIR)/$1/%.c.o: $(TEST_DIR)/%.c
+	@echo "compiling test c file: $$<" "$(STDOUT)"
+	$(V1) mkdir -p $$(dir $$@)
+	$(V1) $(CC) $(C_FLAGS) $(TEST_CFLAGS) \
+                $(foreach def,$($1_DEFINES),-D $(def)) \
+                -c $$< -o $$@
 
 $(OBJECT_DIR)/$1/$1.o: $(TEST_DIR)/$1.cc
 	@echo "compiling $$<" "$(STDOUT)"
@@ -478,7 +483,7 @@ $(OBJECT_DIR)/$1/$1 : $$($$1_OBJS) \
 
 	@echo "linking $$@" "$(STDOUT)"
 	$(V1) mkdir -p $(dir $$@)
-	$(V1) $(CXX) $(CXX_FLAGS) $(PG_FLAGS) $$^ -o $$@
+	$(V1) $(CXX) $(CXX_FLAGS) $(LDFLAGS) $$^ -o $$@
 
 test_$1: $(OBJECT_DIR)/$1/$1
 	$(V1) $$< $$(EXEC_OPTS) "$(STDOUT)" && echo "running $$@: PASS"
