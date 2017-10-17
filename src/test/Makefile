@@ -102,7 +102,8 @@ cms_unittest_SRC := \
 
 
 common_filter_unittest_SRC := \
-		$(USER_DIR)/common/filter.c
+		$(USER_DIR)/common/filter.c \
+		$(USER_DIR)/common/maths.c
 
 
 encoding_unittest_SRC := \
@@ -229,6 +230,7 @@ telemetry_crsf_unittest_DEFINES := \
 
 telemetry_crsf_msp_unittest_SRC := \
 		$(USER_DIR)/rx/crsf.c \
+		$(USER_DIR)/build/atomic.c \
 		$(USER_DIR)/common/crc.c \
 		$(USER_DIR)/common/streambuf.c \
 		$(USER_DIR)/common/printf.c \
@@ -281,9 +283,6 @@ huffman_unittest_SRC := \
 
 huffman_unittest_DEFINES := \
 		USE_HUFFMAN
-
-ringbuffer_unittest_SRC := \
-		$(USER_DIR)/common/ringbuffer.c
 
 # Please tweak the following variable definitions as needed by your
 # project, except GTEST_HEADERS, which you can use in your own targets

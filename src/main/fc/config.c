@@ -280,7 +280,7 @@ uint16_t getCurrentMinthrottle(void)
 {
     return motorConfig()->minthrottle;
 }
-#endif
+#endif // USE_OSD_SLAVE
 
 void resetConfigs(void)
 {
@@ -320,7 +320,7 @@ void activateConfig(void)
     setAccelerationFilter(accelerometerConfig()->acc_lpf_hz);
 
     imuConfigure(throttleCorrectionConfig()->throttle_correction_angle);
-#endif
+#endif // USE_OSD_SLAVE
 }
 
 void validateAndFixConfig(void)
@@ -593,7 +593,7 @@ void validateAndFixGyroConfig(void)
         }
     }
 }
-#endif
+#endif // USE_OSD_SLAVE
 
 void readEEPROM(void)
 {

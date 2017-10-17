@@ -584,7 +584,13 @@ static void osdDrawSingleElement(uint8_t item)
         }
 
     case OSD_WARNINGS:
-        /* Show common reason for arming being disabled */
+        /* Warn when in flip over after crash mode */
+        if ((isModeActivationConditionPresent(BOXFLIPOVERAFTERCRASH)) && IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH)) {
+            tfp_sprintf(buff, "CRASH FLIP");
+            break;
+        }
+
+        /* Show most severe reason for arming being disabled */
         if (IS_RC_MODE_ACTIVE(BOXARM) && isArmingDisabled()) {
             const armingDisableFlags_e flags = getArmingDisableFlags();
             for (int i = 0; i < NUM_ARMING_DISABLE_FLAGS; i++) {
@@ -775,6 +781,7 @@ static void osdDrawElements(void)
 
 void pgResetFn_osdConfig(osdConfig_t *osdConfig)
 {
+#ifdef USE_OSD_ITEM_POSITIONS
     osdConfig->item_pos[OSD_RSSI_VALUE]         = OSD_POS(8, 1)   | VISIBLE_FLAG;
     osdConfig->item_pos[OSD_MAIN_BATT_VOLTAGE]  = OSD_POS(12, 1)  | VISIBLE_FLAG;
     osdConfig->item_pos[OSD_CROSSHAIRS]         = OSD_POS(8, 6)   | VISIBLE_FLAG;
@@ -796,7 +803,6 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     osdConfig->item_pos[OSD_YAW_PIDS]           = OSD_POS(7, 15)  | VISIBLE_FLAG;
     osdConfig->item_pos[OSD_POWER]              = OSD_POS(1, 10)  | VISIBLE_FLAG;
     osdConfig->item_pos[OSD_PIDRATE_PROFILE]    = OSD_POS(25, 10) | VISIBLE_FLAG;
-    osdConfig->item_pos[OSD_WARNINGS]           = OSD_POS(9, 10)  | VISIBLE_FLAG;
     osdConfig->item_pos[OSD_AVG_CELL_VOLTAGE]   = OSD_POS(12, 0)  | VISIBLE_FLAG; // 12,2 in BF
     osdConfig->item_pos[OSD_DEBUG]              = OSD_POS(1, 0);
     osdConfig->item_pos[OSD_PITCH_ANGLE]        = OSD_POS(1, 8)   | VISIBLE_FLAG;
@@ -812,6 +818,15 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
     osdConfig->item_pos[OSD_NUMERICAL_VARIO]    = OSD_POS(24, 8)  | VISIBLE_FLAG; // 23,8 in BF
     osdConfig->item_pos[OSD_ESC_TMP]            = OSD_POS(1,  5)  | VISIBLE_FLAG; // 18,2 in BF
     osdConfig->item_pos[OSD_ESC_RPM]            = OSD_POS(1, 6)   | VISIBLE_FLAG; // 19,2 in BF
+#else
+    /* Position elements near centre of screen and disabled by default */
+    for (int i = 0; i < OSD_ITEM_COUNT; i++) {
+        osdConfig->item_pos[i] = OSD_POS(10, 6);
+    }
+#endif
+
+    /* Always enable warnings elements by default */
+    osdConfig->item_pos[OSD_WARNINGS] = OSD_POS(9, 10) | VISIBLE_FLAG;
 
     osdConfig->enabled_stats[OSD_STAT_MAX_SPEED]       = true;
     osdConfig->enabled_stats[OSD_STAT_MIN_BATTERY]     = true;

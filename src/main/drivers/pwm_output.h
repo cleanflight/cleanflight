@@ -115,6 +115,7 @@ typedef struct {
     const timerHardware_t *timerHardware;
     uint16_t value;
     uint16_t timerDmaSource;
+    motorDmaTimer_t *timer;
     volatile bool requestTelemetry;
 #if defined(STM32F3) || defined(STM32F4) || defined(STM32F7)
     uint32_t dmaBuffer[DSHOT_DMA_BUFFER_SIZE];
@@ -124,6 +125,7 @@ typedef struct {
 #if defined(STM32F7)
     TIM_HandleTypeDef TimHandle;
     DMA_HandleTypeDef hdma_tim;
+    uint16_t timerDmaIndex;
 #endif
 } motorDmaOutput_t;
 

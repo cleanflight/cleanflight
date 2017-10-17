@@ -597,8 +597,8 @@ static void applyLedVtxLayer(bool updateNow, timeUs_t *timer)
         vtxCommonGetPowerIndex(&power);
         vtxCommonGetPitMode(&pit);
 
-        frequency = vtx58frequencyTable[band][channel];
-
+        frequency = vtx58frequencyTable[band - 1][channel - 1]; //subtracting 1 from band and channel so that correct frequency is returned.
+                                                                //might not be correct for tramp but should fix smart audio.
         // check if last vtx values have changed.
         check = pit + (power << 1) + (band << 4) + (channel << 8);
         if (!showSettings && check != lastCheck) {
@@ -646,12 +646,26 @@ static void applyLedVtxLayer(bool updateNow, timeUs_t *timer)
     }
     else { // show frequency
         // calculate the VTX color based on frequency
-        int hue = constrain((frequency - 5645.0 ) * 1.2, 0, 360);
-        // if we ever want to wrap the hue around the wheel for L band frequencies...
-        //hue = (hue+(hue<0)*((0-hue)/360+1)*361)%361;
-        color.h = hue;
-        color.s = 0;
-        color.v = pit ? (blink ? 15 : 0) : 255; // blink when in pit mode`
+        int colorIndex = 0;
+        if (frequency <= 5672) {
+            colorIndex = COLOR_WHITE;
+        } else if (frequency <= 5711) {
+            colorIndex = COLOR_RED;
+        } else if (frequency <= 5750) {
+            colorIndex = COLOR_ORANGE;
+        } else if (frequency <= 5789) {
+            colorIndex = COLOR_YELLOW;
+        } else if (frequency <= 5829) {
+            colorIndex = COLOR_GREEN;
+        } else if (frequency <= 5867) {
+            colorIndex = COLOR_BLUE;
+        } else if (frequency <= 5906) {
+            colorIndex = COLOR_DARK_VIOLET;
+        } else {
+            colorIndex = COLOR_DEEP_PINK;
+        }
+        hsvColor_t color = ledStripConfig()->colors[colorIndex];
+        color.v = pit ? (blink ? 15 : 0) : 255; // blink when in pit mode
         applyLedHsv(LED_MOV_OVERLAY(LED_FLAG_OVERLAY(LED_OVERLAY_VTX)), &color);
     }
 }

@@ -674,7 +674,7 @@ static bool mspCommonProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostProce
 }
 
 #ifdef USE_OSD_SLAVE
-static bool mspOsdSlaveProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
+static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
 {
     switch (cmdMSP) {
     case MSP_STATUS_EX:
@@ -702,10 +702,10 @@ static bool mspOsdSlaveProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
     }
     return true;
 }
-#endif
 
-#ifndef USE_OSD_SLAVE
-static bool mspFcProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
+#else
+
+static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
 {
     switch (cmdMSP) {
     case MSP_STATUS_EX:
@@ -742,7 +742,7 @@ static bool mspFcProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
             // 1 byte, flag count
             sbufWriteU8(dst, NUM_ARMING_DISABLE_FLAGS);
             // 4 bytes, flags
-            uint32_t armingDisableFlags = getArmingDisableFlags();
+            const uint32_t armingDisableFlags = getArmingDisableFlags();
             sbufWriteU32(dst, armingDisableFlags);
         }
         break;
@@ -861,6 +861,7 @@ static bool mspFcProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
     case MSP_ARMING_CONFIG:
         sbufWriteU8(dst, armingConfig()->auto_disarm_delay);
         sbufWriteU8(dst, armingConfig()->disarm_kill_switch);
+        sbufWriteU8(dst, imuConfig()->small_angle);
         break;
 
     case MSP_RC_TUNING:
@@ -1230,7 +1231,7 @@ static mspResult_e mspFcProcessOutCommandWithArg(uint8_t cmdMSP, sbuf_t *arg, sb
     }
     return MSP_RESULT_ACK;
 }
-#endif
+#endif // USE_OSD_SLAVE
 
 #ifdef GPS
 static void mspFcWpCommand(sbuf_t *dst, sbuf_t *src)
@@ -1279,15 +1280,16 @@ static void mspFcDataFlashReadCommand(sbuf_t *dst, sbuf_t *src)
 #endif
 
 #ifdef USE_OSD_SLAVE
-static mspResult_e mspOsdSlaveProcessInCommand(uint8_t cmdMSP, sbuf_t *src) {
+static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
+{
     UNUSED(cmdMSP);
     UNUSED(src);
     return MSP_RESULT_ERROR;
 }
-#endif
 
-#ifndef USE_OSD_SLAVE
-static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
+#else
+
+static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
 {
     uint32_t i;
     uint8_t value;
@@ -1357,6 +1359,9 @@ static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
     case MSP_SET_ARMING_CONFIG:
         armingConfigMutable()->auto_disarm_delay = sbufReadU8(src);
         armingConfigMutable()->disarm_kill_switch = sbufReadU8(src);
+        if (sbufBytesRemaining(src)) {
+          imuConfigMutable()->small_angle = sbufReadU8(src);
+        }
         break;
 
     case MSP_SET_PID_CONTROLLER:
@@ -1688,6 +1693,17 @@ static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         break;
 #endif
 
+    case MSP_ARMING_DISABLE:
+        {
+            const uint8_t command = sbufReadU8(src);
+            if (command) {
+                setArmingDisabled(ARMING_DISABLED_MSP);
+            } else {
+                unsetArmingDisabled(ARMING_DISABLED_MSP);
+            }
+        }
+        break;
+
 #ifdef USE_FLASHFS
     case MSP_DATAFLASH_ERASE:
         flashfsEraseCompletely();
@@ -1893,7 +1909,7 @@ static mspResult_e mspFcProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
     }
     return MSP_RESULT_ACK;
 }
-#endif
+#endif // USE_OSD_SLAVE
 
 static mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
 {
@@ -2066,11 +2082,7 @@ static mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
 #endif // OSD || USE_OSD_SLAVE
 
     default:
-#ifdef USE_OSD_SLAVE
-        return mspOsdSlaveProcessInCommand(cmdMSP, src);
-#else
-        return mspFcProcessInCommand(cmdMSP, src);
-#endif
+        return mspProcessInCommand(cmdMSP, src);
     }
     return MSP_RESULT_ACK;
 }
@@ -2089,15 +2101,11 @@ mspResult_e mspFcProcessCommand(mspPacket_t *cmd, mspPacket_t *reply, mspPostPro
 
     if (mspCommonProcessOutCommand(cmdMSP, dst, mspPostProcessFn)) {
         ret = MSP_RESULT_ACK;
-#ifndef USE_OSD_SLAVE
-    } else if (mspFcProcessOutCommand(cmdMSP, dst)) {
+    } else if (mspProcessOutCommand(cmdMSP, dst)) {
         ret = MSP_RESULT_ACK;
+#ifndef USE_OSD_SLAVE
     } else if ((ret = mspFcProcessOutCommandWithArg(cmdMSP, src, dst)) != MSP_RESULT_CMD_UNKNOWN) {
         /* ret */;
-#endif
-#ifdef USE_OSD_SLAVE
-    } else if (mspOsdSlaveProcessOutCommand(cmdMSP, dst)) {
-        ret = MSP_RESULT_ACK;
 #endif
 #ifdef USE_SERIAL_4WAY_BLHELI_INTERFACE
     } else if (cmdMSP == MSP_SET_4WAY_IF) {
@@ -2143,8 +2151,8 @@ void mspFcProcessReply(mspPacket_t *reply)
 #ifdef USE_MSP_CURRENT_METER
             currentMeterMSPSet(amperage, mAhDrawn);
 #endif
-            break;
         }
+        break;
 #endif
 
 #ifdef USE_OSD_SLAVE
@@ -2152,56 +2160,47 @@ void mspFcProcessReply(mspPacket_t *reply)
         {
             osdSlaveIsLocked = true; // lock it as soon as a MSP_DISPLAYPORT message is received to prevent accidental CLI/DFU mode.
 
-            int subCmd = sbufReadU8(src);
+            const int subCmd = sbufReadU8(src);
 
             switch (subCmd) {
-                case 0: // HEARTBEAT
-                    //debug[0]++;
-                    osdSlaveHeartbeat();
-                    break;
-                case 1: // RELEASE
-                    //debug[1]++;
-                    break;
-                case 2: // CLEAR
-                    //debug[2]++;
-                    osdSlaveClearScreen();
-                    break;
-                case 3: {
+            case 0: // HEARTBEAT
+                //debug[0]++;
+                osdSlaveHeartbeat();
+                break;
+            case 1: // RELEASE
+                //debug[1]++;
+                break;
+            case 2: // CLEAR
+                //debug[2]++;
+                osdSlaveClearScreen();
+                break;
+            case 3:
+                {
                     //debug[3]++;
-
 #define MSP_OSD_MAX_STRING_LENGTH 30 // FIXME move this
                     const uint8_t y = sbufReadU8(src); // row
                     const uint8_t x = sbufReadU8(src); // column
-                    const uint8_t reserved = sbufReadU8(src);
-                    UNUSED(reserved);
-
+                    sbufReadU8(src); // reserved
                     char buf[MSP_OSD_MAX_STRING_LENGTH + 1];
                     const int len = MIN(sbufBytesRemaining(src), MSP_OSD_MAX_STRING_LENGTH);
                     sbufReadData(src, &buf, len);
-
                     buf[len] = 0;
-
                     osdSlaveWrite(x, y, buf);
-
-                    break;
                 }
-                case 4: {
-                    osdSlaveDrawScreen();
-                }
+                break;
+            case 4:
+                osdSlaveDrawScreen();
+                break;
             }
-            break;
         }
+        break;
 #endif
     }
 }
 
-#ifdef USE_OSD_SLAVE
-void mspOsdSlaveInit(void)
+void mspInit(void)
 {
-}
-#else
-void mspFcInit(void)
-{
+#ifndef USE_OSD_SLAVE
     initActiveBoxIds();
+#endif
 }
-#endif // USE_OSD_SLAVE
