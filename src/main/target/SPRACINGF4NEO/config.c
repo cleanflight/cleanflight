@@ -31,7 +31,6 @@
 #ifdef TARGET_CONFIG
 void targetConfiguration(void)
 {
-    rxConfigMutable()->sbus_inversion = 1;
     serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(GPS_UART)].functionMask = FUNCTION_GPS;
     serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(TELEMETRY_UART)].functionMask = TELEMETRY_PROVIDER_DEFAULT;
     telemetryConfigMutable()->halfDuplex = false;
