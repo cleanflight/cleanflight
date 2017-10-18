@@ -268,9 +268,9 @@ void init(void)
     ensureEEPROMContainsValidData();
     readEEPROM();
 
-    /* TODO: Check to be removed when moving to generic targets */
+    // !!TODO: Check to be removed when moving to generic targets
     if (strncasecmp(systemConfig()->boardIdentifier, TARGET_BOARD_IDENTIFIER, sizeof(TARGET_BOARD_IDENTIFIER))) {
-       resetEEPROM();
+        resetEEPROM();
     }
 
     systemState |= SYSTEM_STATE_CONFIG_LOADED;
@@ -376,6 +376,23 @@ void init(void)
     serialInit(feature(FEATURE_SOFTSERIAL), SERIAL_PORT_NONE);
 #endif
 
+    mixerInit(mixerConfig()->mixerMode);
+    mixerConfigureOutput();
+
+    uint16_t idlePulse = motorConfig()->mincommand;
+    if (feature(FEATURE_3D)) {
+        idlePulse = flight3DConfig()->neutral3d;
+    }
+    if (motorConfig()->dev.motorPwmProtocol == PWM_TYPE_BRUSHED) {
+        featureClear(FEATURE_3D);
+        idlePulse = 0; // brushed motors
+    }
+    /* Motors needs to be initialized soon as posible because hardware initialization 
+     * may send spurious pulses to esc's causing their early initialization. Also ppm
+     * receiver may share timer with motors so motors MUST be initialized here. */
+    motorDevInit(&motorConfig()->dev, idlePulse, getMotorCount()); 
+    systemState |= SYSTEM_STATE_MOTORS_READY;
+
     if (0) {}
 #if defined(USE_PPM)
     else if (feature(FEATURE_RX_PPM)) {
@@ -418,7 +435,7 @@ void init(void)
 #ifdef USE_SPI_DEVICE_4
     spiInit(SPIDEV_4);
 #endif
-#endif /* USE_SPI */
+#endif // USE_SPI
 
 #ifdef USE_I2C
     i2cHardwareConfigure();
@@ -438,9 +455,9 @@ void init(void)
 #ifdef USE_I2C_DEVICE_4
     i2cInit(I2CDEV_4);
 #endif
-#endif /* USE_I2C */
+#endif // USE_I2C
 
-#endif /* TARGET_BUS_INIT */
+#endif // TARGET_BUS_INIT
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
     updateHardwareRevision();
@@ -485,6 +502,22 @@ void init(void)
 
     systemState |= SYSTEM_STATE_SENSORS_READY;
 
+    // gyro.targetLooptime set in sensorsAutodetect(),
+    // so we are ready to call validateAndFixGyroConfig(), pidInit(), and setAccelerationFilter()
+    validateAndFixGyroConfig();
+    pidInit(currentPidProfile);
+    setAccelerationFilter(accelerometerConfig()->acc_lpf_hz);
+
+#ifdef USE_SERVOS
+    servosInit();
+    servoConfigureOutput();
+    if (isMixerUsingServos()) {
+        //pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
+        servoDevInit(&servoConfig()->dev);
+    }
+    servosFilterInit();
+#endif
+
     LED1_ON;
     LED0_OFF;
     LED2_OFF;
@@ -500,39 +533,9 @@ void init(void)
     LED0_OFF;
     LED1_OFF;
 
-    // gyro.targetLooptime set in sensorsAutodetect(),
-    // so we are ready to call validateAndFixGyroConfig(), pidInit(), and setAccelerationFilter()
-    validateAndFixGyroConfig();
-    pidInit(currentPidProfile);
-    setAccelerationFilter(accelerometerConfig()->acc_lpf_hz);
-
-    mixerInit(mixerConfig()->mixerMode);
-
-    uint16_t idlePulse = motorConfig()->mincommand;
-    if (feature(FEATURE_3D)) {
-        idlePulse = flight3DConfig()->neutral3d;
-    }
-    if (motorConfig()->dev.motorPwmProtocol == PWM_TYPE_BRUSHED) {
-        featureClear(FEATURE_3D);
-        idlePulse = 0; // brushed motors
-    }
-    mixerConfigureOutput();
-    motorDevInit(&motorConfig()->dev, idlePulse, getMotorCount());
-    systemState |= SYSTEM_STATE_MOTORS_READY;
-
-#ifdef USE_SERVOS
-    servosInit();
-    servoConfigureOutput();
-    if (isMixerUsingServos()) {
-        //pwm_params.useChannelForwarding = feature(FEATURE_CHANNEL_FORWARDING);
-        servoDevInit(&servoConfig()->dev);
-    }
-    servosFilterInit();
-#endif
-
     imuInit();
 
-    mspFcInit();
+    mspInit();
     mspSerialInit();
 
 #ifdef USE_CLI
@@ -714,21 +717,17 @@ void init(void)
     LED2_ON;
 #endif
 
+#ifdef USE_RCSPLIT
+    rcSplitInit();
+#endif // USE_RCSPLIT
+
     // Latch active features AGAIN since some may be modified by init().
     latchActiveFeatures();
     pwmEnableMotors();
 
     setArmingDisabled(ARMING_DISABLED_BOOT_GRACE_TIME);
 
-#ifdef USE_OSD_SLAVE
-    osdSlaveTasksInit();
-#else
     fcTasksInit();
-#endif
-
-#ifdef USE_RCSPLIT
-    rcSplitInit();
-#endif // USE_RCSPLIT
 
     systemState |= SYSTEM_STATE_READY;
 }
