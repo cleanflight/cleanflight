@@ -68,7 +68,7 @@
 #define UART3_TX_PIN            PB10
 #define UART3_RX_PIN            PB11
 
-#define SBUS_TELEMETRY_UART     SERIAL_PORT_USART2
+#define SBUS_AND_TELEMETRY_UART SERIAL_PORT_USART2
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1
