@@ -68,7 +68,8 @@ PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
     .frsky_vfas_cell_voltage = 0,
     .hottAlarmSoundInterval = 5,
     .pidValuesAsTelemetry = 0,
-    .report_cell_voltage = false
+    .report_cell_voltage = false,
+    .ibusTelemetryType = 0
 );
 
 void telemetryInit(void)
