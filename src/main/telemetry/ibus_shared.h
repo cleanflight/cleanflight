@@ -165,12 +165,11 @@ typedef enum {
     IBUS_MEAS_VALUE_GPS              = 0xfd //14 1byte fix 1byte satellites 4byte LAT 4byte LON 4byte alt
 } ibusSensorValue_e;
 
-//uint8_t respondToIbusRequest(uint8_t const * const ibusPacket);
-uint8_t respondToIbusRequest(uint8_t ibusPacket[static IBUS_RX_BUF_LEN]);
+uint8_t respondToIbusRequest(uint8_t const * const ibusPacket);
 void initSharedIbusTelemetry(serialPort_t * port);
 void changeTypeIbusTelemetry(uint8_t id, uint8_t type, uint8_t value);
 
 #endif //defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
 bool isChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length);
-uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength);
+uint16_t calculateChecksum(const uint8_t *ibusPacket, size_t packetLength);
