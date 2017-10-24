@@ -195,7 +195,7 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
         else return sendIbusMeasurement4(address, 0);
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_STATUS) { //STATUS sat num AS #0, FIX AS 0, HDOP AS 0, Mode AS 0
         uint16_t status = 0;
-		if (ARMING_FLAG(ARMED)) status = 1; //Rate
+	if (ARMING_FLAG(ARMED)) status = 1; //Rate
         if (FLIGHT_MODE(HORIZON_MODE)) status = 2;
         if (FLIGHT_MODE(ANGLE_MODE)) status = 3;
         if (FLIGHT_MODE(PASSTHRU_MODE)) status = 4;
