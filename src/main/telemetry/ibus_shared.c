@@ -82,7 +82,7 @@ static ibusAddress_t ibusBaseAddress = INVALID_IBUS_ADDRESS;
 
 static uint8_t transmitIbusPacket(uint8_t *ibusPacket, size_t payloadLength)
 {
-    uint16_t checksum = calculateChecksum(ibusPacket, payloadLength + IBUS_CHECKSUM_SIZE);
+    uint16_t checksum = ibusCalculateChecksum(ibusPacket, payloadLength + IBUS_CHECKSUM_SIZE);
     for (size_t i = 0; i < payloadLength; i++) {
         serialWrite(ibusSerialPort, ibusPacket[i]);
     }
