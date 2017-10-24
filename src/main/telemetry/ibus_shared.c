@@ -37,9 +37,14 @@
 
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
-#include "sensors/battery.h"
 #include "fc/rc_controls.h"
+#include "fc/runtime_config.h"
+#include "sensors/sensors.h"
 #include "sensors/gyro.h"
+#include "sensors/barometer.h"
+#include "sensors/battery.h"
+#include "flight/imu.h"
+#include "flight/altitude.h"
 
 #define IBUS_TEMPERATURE_OFFSET  (400)
 
@@ -129,9 +134,6 @@ static ibusAddress_t getAddress(const uint8_t *ibusPacket)
     return (ibusPacket[1] & 0x0F);
 }
 
-// MANUAL, ACRO, ANGLE, HRZN, ALTHOLD, POSHOLD, RTH, WP, LAUNCH, FAILSAFE
-static uint8_t flightModeToIBusTelemetryMode1[FLM_COUNT] = { 0, 1, 3, 2, 5, 6, 7, 4, 8, 9 };
-static uint8_t flightModeToIBusTelemetryMode2[FLM_COUNT] = { 5, 1, 0, 7, 2, 8, 6, 3, 4, 9 };
 static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
 #if defined(GPS)
     uint8_t fix = 0;
@@ -144,21 +146,17 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
     address -= ibusBaseAddress;
     if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_TEMPERATURE) { //BARO_TEMP\GYRO_TEMP
         if (sensors(SENSOR_BARO)) return sendIbusMeasurement2(address, (uint16_t) ((baro.baroTemperature + 50) / 10  + IBUS_TEMPERATURE_OFFSET)); //int32_t
-        else {
-          return sendIbusMeasurement2(address, (uint16_t) (gyroGetTemperature() * 10 + IBUS_TEMPERATURE_OFFSET)); //int16_t
-        }
+        else return sendIbusMeasurement2(address, (uint16_t) (gyroGetTemperature() * 10 + IBUS_TEMPERATURE_OFFSET)); //int16_t
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_RPM) {
         return sendIbusMeasurement2(address, (uint16_t) (rcCommand[THROTTLE]));
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_EXTERNAL_VOLTAGE) { //VBAT
         return sendIbusMeasurement2(address, getBatteryVoltage() * 10);
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_CURRENT) { //CURR in 10*mA, 1 = 10 mA
-        if (feature(FEATURE_CURRENT_METER)) return sendIbusMeasurement2(address, (uint16_t) amperage); //int32_t
-        else return sendIbusMeasurement2(address, 0);
+        return sendIbusMeasurement2(address, (uint16_t) getAmperage()); //int32_t
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_FUEL) { //capacity in mAh
-        if (feature(FEATURE_CURRENT_METER)) return sendIbusMeasurement2(address, (uint16_t) mAhDrawn); //int32_t
-        else return sendIbusMeasurement2(address, 0);
+        return sendIbusMeasurement2(address, (uint16_t) getMAhDrawn()); //int32_t
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_CLIMB) {
-        return sendIbusMeasurement2(address, (int16_t) (getEstimatedActualVelocity(Z))); //
+        return sendIbusMeasurement2(address, (int16_t) (getEstimatedVario())); //
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_ACC_Z) { //MAG_COURSE 0-360*, 0=north
         return sendIbusMeasurement2(address, (uint16_t) (attitude.values.yaw * 10)); //in ddeg -> cdeg, 1ddeg = 10cdeg
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_ACC_Y) { //PITCH in 
@@ -175,7 +173,16 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
         if (ARMING_FLAG(ARMED)) return sendIbusMeasurement2(address, 0);
         else return sendIbusMeasurement2(address, 1);
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_MODE) {
-        uint16_t flightMode = flightModeToIBusTelemetryMode2[getFlightModeForTelemetry()];
+        uint16_t flightMode = 1; //Acro 
+        if (FLIGHT_MODE(ANGLE_MODE)) flightMode = 0; //Stab		
+        if (FLIGHT_MODE(BARO_MODE)) flightMode = 2; //AltHold
+        if (FLIGHT_MODE(PASSTHRU_MODE)) flightMode = 3; //Auto
+        if (FLIGHT_MODE(HEADFREE_MODE) || FLIGHT_MODE(MAG_MODE)) flightMode = 4; //Guided! (there in no HEAD, MAG so use Guided)
+        if (FLIGHT_MODE(GPS_HOLD_MODE) && FLIGHT_MODE(BARO_MODE)) flightMode = 5; //Loiter
+        if (FLIGHT_MODE(GPS_HOME_MODE)) flightMode = 6; //RTL
+        if (FLIGHT_MODE(HORIZON_MODE)) flightMode = 7; //Circle! (there in no horizon so use Circle)
+        if (FLIGHT_MODE(GPS_HOLD_MODE)) flightMode = 8; //PosHold
+        if (FLIGHT_MODE(FAILSAFE_MODE)) flightMode = 9; //Land
         return sendIbusMeasurement2(address, flightMode);
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_PRES) { //PRESSURE in dPa -> 9876 is 987.6 hPa
         if (sensors(SENSOR_BARO)) return sendIbusMeasurement2(address, (int16_t) (baro.baroPressure / 10)); //int32_t 
@@ -187,7 +194,16 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
         if (sensors(SENSOR_BARO)) return sendIbusMeasurement4(address, (int32_t) baro.BaroAlt); //int32_t 
         else return sendIbusMeasurement4(address, 0);
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_STATUS) { //STATUS sat num AS #0, FIX AS 0, HDOP AS 0, Mode AS 0
-        uint16_t status = flightModeToIBusTelemetryMode1[getFlightModeForTelemetry()];
+        uint16_t status = 0;
+		if (ARMING_FLAG(ARMED)) status = 1; //Rate
+        if (FLIGHT_MODE(HORIZON_MODE)) status = 2;
+        if (FLIGHT_MODE(ANGLE_MODE)) status = 3;
+        if (FLIGHT_MODE(PASSTHRU_MODE)) status = 4;
+        if (FLIGHT_MODE(BARO_MODE)) status = 5; 
+        if (FLIGHT_MODE(GPS_HOLD_MODE)) status = 6;
+        if (FLIGHT_MODE(GPS_HOME_MODE)) status = 7;
+        if (FLIGHT_MODE(HEADFREE_MODE) || FLIGHT_MODE(MAG_MODE)) status = 8;
+        if (FLIGHT_MODE(FAILSAFE_MODE)) status = 9; 
 #if defined(GPS)
         if (sensors(SENSOR_GPS)) {
             status += gpsSol.numSat * 1000;
