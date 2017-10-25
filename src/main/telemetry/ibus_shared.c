@@ -45,6 +45,7 @@
 #include "sensors/battery.h"
 #include "flight/imu.h"
 #include "flight/altitude.h"
+#include "flight/navigation.h"
 
 #define IBUS_TEMPERATURE_OFFSET  (400)
 
@@ -138,9 +139,11 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
 #if defined(GPS)
     uint8_t fix = 0;
     if (sensors(SENSOR_GPS)) {
-        if (gpsSol.fixType == GPS_NO_FIX) fix = 1;
-        else if (gpsSol.fixType == GPS_FIX_2D) fix = 2;
-        else if (gpsSol.fixType == GPS_FIX_3D) fix = 3;
+        if (!STATE(GPS_FIX)) gpsFixType = 1;    
+        else {
+            if (gpsSol.numSat < 5) gpsFixType = 2;
+            else gpsFixType = 3;
+        }
     }
 #endif
     address -= ibusBaseAddress;
