@@ -267,7 +267,7 @@ It runs at a fixed baud rate of 115200, so it need hardware uart (softserial is 
     \_______/                                              \-------------/
 ```
 
-It is possible to daisy chain multiple sensors with ibus, but telemetry sensor will be will be inserted and the last sensor will be off. In this case sensor should be connected to RX and FC to sensor. FC shall always be the last sensor in the chain.
+It is possible to daisy chain multiple sensors with ibus, but telemetry sensor will be inserted and the last sensor will be off. In this case sensor should be connected to RX and FC to sensor. FC shall always be the last sensor in the chain.
 
 ```
      _______
