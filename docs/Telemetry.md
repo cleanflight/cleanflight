@@ -257,17 +257,25 @@ Notes:
 Ibus telemetry requires a single connection from the TX pin of a bidirectional serial port to the Ibus sens pin on an FlySky telemetry receiver. (tested with fs-iA6B receiver, iA10 should work)
 
 It shares 1 line for both TX and RX, the rx pin cannot be used for other serial port stuff.
-It runs at a fixed baud rate of 115200.
+It runs at a fixed baud rate of 115200, so it need hardware uart (softserial is limit to 19200).
 
 ```
      _______
-    /       \                                             /---------\
-    | STM32 |--UART TX-->[Bi-directional @ 115200 baud]<--| IBUS RX |
-    |  uC   |--UART RX--x[not connected]                  \---------/
-    \_______/
+    /       \                                              /-------------\
+    | STM32 |-->UART TX-->[Bi-directional @ 115200 baud]-->| Flysky RX   |
+    |  uC   |-  UART RX--x[not connected]                  | IBUS-Sensor |
+    \_______/                                              \-------------/
 ```
 
-It should be possible to daisy chain multiple sensors with ibus. This is implemented but not tested because i don't have one of the sensors to test with, the FC shall always be the last sensor in the chain.
+It is possible to daisy chain multiple sensors with ibus, but telemetry sensor will be will be inserted and the last sensor will be off. In this case sensor should be connected to RX and FC to sensor. FC shall always be the last sensor in the chain.
+
+```
+     _______
+    /       \                                              /---------\   /-------------\   /-------------\
+    | STM32 |-->UART TX-->[Bi-directional @ 115200 baud]-->| CVT-01  |-->|others sensor|-->| Flysky RX   |
+    |  uC   |-  UART RX--x[not connected]                  \---------/   \-------------/   | IBUS-Sensor |
+    \_______/                                                                              \-------------/
+```
 
 It is possible to combine serial rx and ibus telemetry on the same uart pin on the flight controller, see [Rx](Rx.md).
 
@@ -293,11 +301,84 @@ set ibus_report_cell_voltage=[ON/OFF]
 
 The following sensors are transmitted :
 
-Tmp1 : baro temp if available, gyro otherwise.
+Sensors number:
 
-RPM : throttle value
+1.Internal voltage in volts (not usable).
 
-Vbatt : configurable battery voltage or the average cell value, vbat divided by number of cells.
+2.Valtage sensor in volts (Voltage type), configurable battery voltage or the average cell value, vbat divided by number of cells.
+
+3.If baro sensor is avaliable then return temperature from baro sensor in °C else return temperature from gyro sensor in °C (Temperatyre type).
+
+4.Status (Rpm type).
+
+5.Course in degree (Rpm type).
+
+6.Current in ampers (Voltage type).
+
+7.Altitude in meters (Voltage type).
+
+8.Direction to home in degree (Rpm type).
+
+9.Distance to home in meters(Rpm type).
+
+10.GPS course in degree (Rpm type).
+
+11.GPS altitude in meters (Rpm type).
+
+12.Second part of Lattitude (Rpm type), for example 5678 (-12.3456789 N).
+
+13.Second part of Longitude (Rpm type), for example 6789 (-123.4567891 E).
+
+14.First part of Lattitude (Voltage type), for example -12.45 (-12.3456789 N).
+
+15.First part of Longitude (Voltage type), for example -123.45 (-123.4567890 E).
+
+16.GPS speed in km/h (Rpm type).
+
+1.Transmitter voltage in volts (not usable).
+
+1.Error percent in % (not usable).
+
+Sensors from 8 to 16 are avaliable only if GPS is at built time.
+
+STATUS (number of satelites AS #0, FIX AS 0, HDOP AS 0, Mode AS 0)
+
+FIX: 1 is No, 2 is 2D, 3 is 3D, 6 is No+FixHome, 7 is 2D+FixHome, 8 is 3D+FixHome
+
+HDOP: 0 is 0-9m, 8 is 80-90m, 9 is >90m
+
+Mode: 0 - Passthrough, 1-Armed(rate), 2-Horizon, 3-Angle, 4-Waypoint, 5-AltHold, 6-PosHold, 7-Rth, 8-Launch, 9-Failsafe
+
+Example: 12803 is 12 satelites, Fix3D, FixHome, 0-9m HDOP, Angle Mode
+CLI command
+
+ibus_telemetry_type
+
+0.Standard sensor type are used (Temp,Rpm,ExtV). Each transmitter should support this. (FS-i6, FS-i6S).
+
+1.This same as 0, but GPS ground speed (sensor 16) is of type Speed in km/h. (FS-i6 10ch_MOD_i6_Programmer_V1_5.exe from https://github.com/benb0jangles/FlySky-i6-Mod-).
+
+2.This same as 1, but GPS altitude (sensor 11) is of type ALT in m. (FS-i6 10ch_Timer_MOD_i6_Programmer_V1_4.exe from https://github.com/benb0jangles/FlySky-i6-Mod-).
+
+3.This same as 2, but each sensor have its own sensor id. (FS-i6 10ch_Mavlink_MOD_i6_Programmer_V1_.exe from https://github.com/benb0jangles/FlySky-i6-Mod-): sensor 4 is of type S85, sensor 5 is of type ACC_Z, sensor 6 is of type CURRENT, sensor 7 is of type ALT, sensor 8 is of type HEADING, sensor 9 is of type DIST, sensor 10 is of type COG, sensor 10 is of type GALT, sensor 12 is of type GPS_LON, sensor 13 is of type GPS_LAT, sensor 14 is of type ACC_X, sensor 15 is of type ACC_Y, sensor 16 is of type SPEED.
+
+4.This same as 3, but support 4 byte sensors. (fix_updater_03_16_21_33_1 from https://github.com/qba667/FlySkyI6/tree/master/release): sensor 7 is 4byte ALT, 12 is PRESURE or PITOT_SPEED if avaliable, 13 is GPS_STATUS, 14 is 4byte GPS_LON, 15 is 4byte GPS_LAT. This required a receiver with new firmware that support SNR, RSSI and long frames (For FS-IA6B since August 2016 or need upgrade to wersion 1.6 https://github.com/povlhp/FlySkyRxFirmware).
+
+5.This same as 4, but sensor 3 is ARMED, 4 is MODE, 12 is CLIMB.
+
+6.For hali9_updater_04_21_23_13.bin from https://www.rcgroups.com/forums/showthread.php?2486545-FlySky-FS-i6-8-channels-firmware-patch%21/page118 or https://github.com/benb0jangles/FlySky-i6-Mod-/tree/master/10ch%20qba667_hali9%20Updater sensor 4 is of type CURRENT, sensor 5 is of type HEADING, sensor 6 is of type COG, sensor 7 is of type CLIMB, sensor 8 is of type YAW, sensor 9 is of type DIST, sensor 10 is of type PRESURE or PITOT_SPEED if avaliable, sensor 11 is of type SPEED, sensor 12 is of type GPS_LAT, sensor 13 is of type GPS_LON, sensor 14 is of type GALT, sensor 15 is of type ALT, sensor 16 is of type S85.
+
+7.This same as 6, but sensor 3 is GPS_STATUS, 10 is ARMED, 16 is MODE.
+
+131.This same as 3, but sensor 16 (type SPEED) is in m/s.
+
+132.This same as 4, but sensor 16 (type SPEED) is in m/s.
+
+133.This same as 5, but sensor 16 (type SPEED) is in m/s.
+
+134.This same as 6, but sensor 11 (type SPEED) is in m/s.
+
+135.This same as 7, but sensor 11 (type SPEED) is in m/s.
 
 ### RX hardware ###
 
@@ -308,3 +389,27 @@ These receivers are reported to work with i-bus telemetry:
 
 
 Note that the FlySky/Turnigy FS-iA4B 4-Channel Receiver (http://www.flysky-cn.com/products_detail/productId=46.html) seems to work but has a bug that might lose the binding, DO NOT FLY the FS-iA4B!
+
+Use ibus RX and ibus telemetry on only one port.
+
+Case:
+
+A. For use only IBUS RX connect directly Flysky IBUS-SERVO to FC-UART-RX. In configurator set RX on selected port, set receiver mode to RX_SERIAL and Receiver provider to IBUS.
+
+B. For use only IBUS telemetry connect directly Flysky IBUS-SENS to FC-UART-TX. In configurator set IBUS telemetry on selected port and enable telemetry feature.
+
+C. For use RX IBUS and telemetry IBUS together connect Flysky IBUS-SERVO and IBUS-SENS to FC-UART-TX using schematic:
+
++---------+
+| FS-iA6B |
+|         |
+| Servo   |---|<---\       +------------+
+|         |        |       | FC         |
+| Sensor  |---[R]--*-------| Serial TX  |
++---------+                +------------+
+
+R = 10Kohm, Diode 1N4148 (connect cathode to IBUS-Servo of Flysky receiver).
+
+In configurator set IBUS telemetry and RX on this same port, enable telemetry feature, set receiver mode to RX_SERIAL and Receiver provider to IBUS.
+
+Warning: Schematic above work also for connect telemetry only, but not work for connect rx only - will stop FC.
