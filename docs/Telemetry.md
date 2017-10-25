@@ -350,10 +350,11 @@ HDOP: 0 is 0-9m, 8 is 80-90m, 9 is >90m
 Mode: 0 - Passthrough, 1-Armed(rate), 2-Horizon, 3-Angle, 4-Waypoint, 5-AltHold, 6-PosHold, 7-Rth, 8-Launch, 9-Failsafe
 
 Example: 12803 is 12 satelites, Fix3D, FixHome, 0-9m HDOP, Angle Mode
+
 CLI command
-
+```
 ibus_telemetry_type
-
+```
 0.Standard sensor type are used (Temp,Rpm,ExtV). Each transmitter should support this. (FS-i6, FS-i6S).
 
 1.This same as 0, but GPS ground speed (sensor 16) is of type Speed in km/h. (FS-i6 10ch_MOD_i6_Programmer_V1_5.exe from https://github.com/benb0jangles/FlySky-i6-Mod-).
@@ -399,7 +400,7 @@ A. For use only IBUS RX connect directly Flysky IBUS-SERVO to FC-UART-RX. In con
 B. For use only IBUS telemetry connect directly Flysky IBUS-SENS to FC-UART-TX. In configurator set IBUS telemetry on selected port and enable telemetry feature.
 
 C. For use RX IBUS and telemetry IBUS together connect Flysky IBUS-SERVO and IBUS-SENS to FC-UART-TX using schematic:
-
+```
 +---------+
 | FS-iA6B |
 |         |
@@ -407,7 +408,7 @@ C. For use RX IBUS and telemetry IBUS together connect Flysky IBUS-SERVO and IBU
 |         |        |       | FC         |
 | Sensor  |---[R]--*-------| Serial TX  |
 +---------+                +------------+
-
+```
 R = 10Kohm, Diode 1N4148 (connect cathode to IBUS-Servo of Flysky receiver).
 
 In configurator set IBUS telemetry and RX on this same port, enable telemetry feature, set receiver mode to RX_SERIAL and Receiver provider to IBUS.
