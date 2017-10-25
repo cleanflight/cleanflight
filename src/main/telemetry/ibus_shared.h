@@ -28,14 +28,14 @@
 #include "platform.h"
 #include "drivers/serial.h"
 
-#define IBUS_TASK_PERIOD_US (500)
-#define IBUS_BAUDRATE      (115200)
-#define IBUS_CYCLE_TIME_MS (8)
-#define IBUS_CHECKSUM_SIZE (2)
+#define IBUS_TASK_PERIOD_US 500
+#define IBUS_BAUDRATE      115200
+#define IBUS_CYCLE_TIME_MS 8
+#define IBUS_CHECKSUM_SIZE 2
 #define IBUS_MIN_LEN       (2 + IBUS_CHECKSUM_SIZE)
-#define IBUS_MAX_TX_LEN    (6)
-#define IBUS_MAX_RX_LEN    (4)
-#define IBUS_RX_BUF_LEN    (IBUS_MAX_RX_LEN)
+#define IBUS_MAX_TX_LEN    6
+#define IBUS_MAX_RX_LEN    4
+#define IBUS_RX_BUF_LEN    IBUS_MAX_RX_LEN
 
 #if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
