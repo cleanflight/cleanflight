@@ -46,6 +46,7 @@
 #include "flight/imu.h"
 #include "flight/altitude.h"
 #include "flight/navigation.h"
+#include "io/gps.h"
 
 #define IBUS_TEMPERATURE_OFFSET  (400)
 
