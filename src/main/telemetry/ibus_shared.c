@@ -139,10 +139,10 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
 #if defined(GPS)
     uint8_t fix = 0;
     if (sensors(SENSOR_GPS)) {
-        if (!STATE(GPS_FIX)) gpsFixType = 1;    
+        if (!STATE(GPS_FIX)) fix = 1;    
         else {
-            if (gpsSol.numSat < 5) gpsFixType = 2;
-            else gpsFixType = 3;
+            if (gpsSol.numSat < 5) fix = 2;
+            else fix = 3;
         }
     }
 #endif
