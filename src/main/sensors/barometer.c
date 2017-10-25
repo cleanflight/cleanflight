@@ -316,7 +316,7 @@ int32_t baroCalculateAltitude(void)
         BaroAlt_tmp -= baroGroundAltitude;
         baro.BaroAlt = lrintf((float)baro.BaroAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_noise_lpf) + (float)BaroAlt_tmp * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_noise_lpf))); // additional LPF to reduce baro noise
         baro.baroTemperature = baroTemperature;
-		baro.baroPressure = baroPressure;
+        baro.baroPressure = baroPressure;
     }
     else {
         baro.BaroAlt = 0;
