@@ -52,9 +52,8 @@
 #define IBUS_MODEL_IA6 1
 #define IBUS_FRAME_GAP 500
 
-//#define IBUS_BAUDRATE 115200
-#define IBUS_TELEMETRY_PACKET_LENGTH (4)
-#define IBUS_SERIAL_RX_PACKET_LENGTH (32)
+#define IBUS_TELEMETRY_PACKET_LENGTH 4
+#define IBUS_SERIAL_RX_PACKET_LENGTH 32
 
 static uint8_t ibusModel;
 static uint8_t ibusSyncByte;
