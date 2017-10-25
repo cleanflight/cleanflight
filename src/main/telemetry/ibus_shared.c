@@ -150,7 +150,8 @@ static uint8_t dispatchMeasurementReply(ibusAddress_t address) {
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_RPM) {
         return sendIbusMeasurement2(address, (uint16_t) (rcCommand[THROTTLE]));
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_EXTERNAL_VOLTAGE) { //VBAT
-        return sendIbusMeasurement2(address, getBatteryVoltage() * 10);
+	if (telemetryConfig()->report_cell_voltage) sendIbusMeasurement2(address, getBatteryVoltage() * 10 / getBatteryCellCount());
+        else return sendIbusMeasurement2(address, getBatteryVoltage() * 10);
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_CURRENT) { //CURR in 10*mA, 1 = 10 mA
         return sendIbusMeasurement2(address, (uint16_t) getAmperage()); //int32_t
     } else if (SENSOR_ADDRESS_TYPE_LOOKUP[address].value == IBUS_MEAS_VALUE_FUEL) { //capacity in mAh
