@@ -30,6 +30,7 @@
 #include "cms/cms.h"
 #include "cms/cms_types.h"
 
+#include "common/maths.h"
 #include "common/utils.h"
 
 #include "config/parameter_group.h"
@@ -44,39 +45,26 @@
 #include "fc/runtime_config.h"
 
 #include "io/vtx_rtc6705.h"
+#include "io/vtx_settings_config.h"
 #include "io/vtx_string.h"
 
 bool canUpdateVTX(void);
 
-PG_REGISTER_WITH_RESET_TEMPLATE(vtxRTC6705Config_t, vtxRTC6705Config, PG_VTX_RTC6705_CONFIG, 0);
-
-PG_RESET_TEMPLATE(vtxRTC6705Config_t, vtxRTC6705Config,
-    .band = 4,    //Fatshark/Airwaves
-    .channel = 1, //CH1
-    .power = VTX_RTC6705_DEFAULT_POWER
-);
-
 #define WAIT_FOR_VTX while (!canUpdateVTX()) {}
 
 #if defined(CMS) || defined(VTX_COMMON)
-#ifdef RTC6705_POWER_PIN
-const char * const rtc6705PowerNames[RTC6705_POWER_COUNT] = {
+const char * const rtc6705PowerNames[VTX_RTC6705_POWER_COUNT] = {
     "---", "25 ", "200",
 };
-#else
-const char * const rtc6705PowerNames[RTC6705_POWER_COUNT] = {
-    "25 ", "200",
-};
-#endif
 #endif
 
 #ifdef VTX_COMMON
 static vtxVTable_t rtc6705VTable;    // Forward
 static vtxDevice_t vtxRTC6705 = {
     .vTable = &rtc6705VTable,
-    .capability.bandCount = 5,
-    .capability.channelCount = 8,
-    .capability.powerCount = RTC6705_POWER_COUNT,
+    .capability.bandCount = VTX_RTC6705_BAND_COUNT,
+    .capability.channelCount = VTX_RTC6705_CHANNEL_COUNT,
+    .capability.powerCount = VTX_RTC6705_POWER_COUNT,
     .bandNames = (char **)vtx58BandNames,
     .channelNames = (char **)vtx58ChannelNames,
     .powerNames = (char **)rtc6705PowerNames,
@@ -115,9 +103,9 @@ void vtxRTC6705Process(uint32_t now)
 
     static bool configured = false;
     if (!configured) {
-        vtxRTC6705.band = vtxRTC6705Config()->band;
-        vtxRTC6705.channel = vtxRTC6705Config()->channel;
-        vtxRTC6705.powerIndex = vtxRTC6705Config()->power;
+        vtxRTC6705.band = vtxSettingsConfig()->band;
+        vtxRTC6705.channel = vtxSettingsConfig()->channel;
+        vtxRTC6705.powerIndex = MAX(vtxSettingsConfig()->power, VTX_RTC6705_MIN_POWER);
 
 #ifdef RTC6705_POWER_PIN
         if (vtxRTC6705.powerIndex > 0) {
@@ -158,8 +146,7 @@ void vtxRTC6705SetBandAndChannel(uint8_t band, uint8_t channel)
         vtxRTC6705.band = band;
         vtxRTC6705.channel = channel;
 
-        vtxRTC6705ConfigMutable()->band = band;
-        vtxRTC6705ConfigMutable()->channel = channel;
+        vtxSettingsSaveBandAndChannel(band, channel);
     }
 }
 
@@ -167,7 +154,7 @@ void vtxRTC6705SetPowerByIndex(uint8_t index)
 {
     WAIT_FOR_VTX;
 
-    vtxRTC6705ConfigMutable()->power = index;
+    vtxSettingsSavePowerByIndex(index);
 
 #ifdef RTC6705_POWER_PIN
     if (index == 0) {
@@ -194,7 +181,7 @@ void vtxRTC6705SetPowerByIndex(uint8_t index)
         }
     }
 #else
-    vtxRTC6705.powerIndex = index;
+    vtxRTC6705.powerIndex = MAX(index, VTX_RTC6705_MIN_POWER);
     rtc6705SetRFPower(index);
 #endif
 }
@@ -202,6 +189,12 @@ void vtxRTC6705SetPowerByIndex(uint8_t index)
 void vtxRTC6705SetPitMode(uint8_t onoff)
 {
     UNUSED(onoff);
+    return;
+}
+
+void vtxRTC6705SetFreq(uint16_t freq)
+{
+    UNUSED(freq);
     return;
 }
 
@@ -224,6 +217,12 @@ bool vtxRTC6705GetPitMode(uint8_t *pOnOff)
     return false;
 }
 
+bool vtxRTC6705GetFreq(uint16_t *pFreq)
+{
+    UNUSED(pFreq);
+    return false;
+}
+
 static vtxVTable_t rtc6705VTable = {
     .process = vtxRTC6705Process,
     .getDeviceType = vtxRTC6705GetDeviceType,
@@ -231,9 +230,11 @@ static vtxVTable_t rtc6705VTable = {
     .setBandAndChannel = vtxRTC6705SetBandAndChannel,
     .setPowerByIndex = vtxRTC6705SetPowerByIndex,
     .setPitMode = vtxRTC6705SetPitMode,
+    .setFrequency = vtxRTC6705SetFreq,
     .getBandAndChannel = vtxRTC6705GetBandAndChannel,
     .getPowerIndex = vtxRTC6705GetPowerIndex,
     .getPitMode = vtxRTC6705GetPitMode,
+    .getFrequency = vtxRTC6705GetFreq,
 };
 #endif // VTX_COMMON
 
