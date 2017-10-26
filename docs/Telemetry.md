@@ -371,15 +371,10 @@ ibus_telemetry_type
 
 7.This same as 6, but sensor 3 is GPS_STATUS, 10 is ARMED, 16 is MODE.
 
-131.This same as 3, but sensor 16 (type SPEED) is in m/s.
-
-132.This same as 4, but sensor 16 (type SPEED) is in m/s.
-
-133.This same as 5, but sensor 16 (type SPEED) is in m/s.
-
-134.This same as 6, but sensor 11 (type SPEED) is in m/s.
-
-135.This same as 7, but sensor 11 (type SPEED) is in m/s.
+```
+ibus_telemetry_use_m_s
+```
+If sensor of type SPEED is avaliable it is in m/s, othervise km/s.
 
 ### RX hardware ###
 
