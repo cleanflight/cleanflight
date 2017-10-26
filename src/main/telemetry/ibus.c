@@ -78,7 +78,7 @@ static void pushOntoTail(uint8_t buffer[IBUS_MIN_LEN], size_t bufferLength, uint
 void initIbusTelemetry(void)
 {
     ibusSerialPortConfig = findSerialPortConfig(FUNCTION_TELEMETRY_IBUS);
-    uint8_t type = telemetryConfig()->ibusTelemetryType;
+    uint8_t type = telemetryConfig()->ibus_telemetry_type;
     uint8_t speed = telemetryConfig()->ibus_telemetry_use_m_s;
     if (type == 3) {
         changeTypeIbusTelemetry(3, IBUS_MEAS_TYPE_S85, IBUS_MEAS_VALUE_STATUS);
