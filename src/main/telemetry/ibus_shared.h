@@ -171,5 +171,5 @@ void changeTypeIbusTelemetry(uint8_t id, uint8_t type, uint8_t value);
 
 #endif //defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
-bool isChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length);
+bool ibusIsChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length);
 uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength);
