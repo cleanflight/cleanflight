@@ -57,8 +57,6 @@
 #include "telemetry/ibus_shared.h"
 #include "telemetry/telemetry.h"
 
-#define IBUS_TYPE_SPEED_FLAG 0x80
-
 static serialPort_t *ibusSerialPort = NULL;
 static serialPortConfig_t *ibusSerialPortConfig;
 
@@ -81,8 +79,7 @@ void initIbusTelemetry(void)
 {
     ibusSerialPortConfig = findSerialPortConfig(FUNCTION_TELEMETRY_IBUS);
     uint8_t type = telemetryConfig()->ibusTelemetryType;
-    uint8_t speed = type & IBUS_TYPE_SPEED_FLAG;
-    type = type & (~IBUS_TYPE_SPEED_FLAG);
+    uint8_t speed = telemetryConfig()->ibus_telemetry_use_m_s;
     if (type == 3) {
         changeTypeIbusTelemetry(3, IBUS_MEAS_TYPE_S85, IBUS_MEAS_VALUE_STATUS);
         changeTypeIbusTelemetry(4, IBUS_MEAS_TYPE_ACC_Z, IBUS_MEAS_VALUE_ACC_Z);
@@ -189,7 +186,7 @@ void handleIbusTelemetry(void)
 
         pushOntoTail(ibusReceiveBuffer, IBUS_RX_BUF_LEN, c);
 
-        if (isChecksumOkIa6b(ibusReceiveBuffer, IBUS_RX_BUF_LEN)) {
+        if (ibusIsChecksumOkIa6b(ibusReceiveBuffer, IBUS_RX_BUF_LEN)) {
             outboundBytesToIgnoreOnRxCount += respondToIbusRequest(ibusReceiveBuffer);
         }
     }
