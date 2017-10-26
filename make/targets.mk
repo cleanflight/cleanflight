@@ -15,7 +15,7 @@ ALTERNATES    := $(sort $(filter-out target, $(basename $(notdir $(wildcard $(RO
 $(error The target specified, $(TARGET), cannot be built. Use one of the ALT targets: $(ALTERNATES))
 endif
 
-LEGACY_TARGETS := \
+UNSUPPORTED_TARGETS := \
 	AFROMINI \
 	ALIENFLIGHTF1 \
 	BEEBRAIN \
