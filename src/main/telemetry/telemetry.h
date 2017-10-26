@@ -51,6 +51,7 @@ typedef struct telemetryConfig_s {
     uint8_t pidValuesAsTelemetry;
     uint8_t report_cell_voltage;
     uint8_t ibusTelemetryType;
+    uint8_t ibus_telemetry_use_m_s;
 } telemetryConfig_t;
 
 PG_DECLARE(telemetryConfig_t, telemetryConfig);
