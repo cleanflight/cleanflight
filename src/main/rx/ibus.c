@@ -52,9 +52,8 @@
 #define IBUS_MODEL_IA6 1
 #define IBUS_FRAME_GAP 500
 
-#define IBUS_BAUDRATE 115200
-#define IBUS_TELEMETRY_PACKET_LENGTH (4)
-#define IBUS_SERIAL_RX_PACKET_LENGTH (32)
+#define IBUS_TELEMETRY_PACKET_LENGTH 4
+#define IBUS_SERIAL_RX_PACKET_LENGTH 32
 
 static uint8_t ibusModel;
 static uint8_t ibusSyncByte;
@@ -121,8 +120,17 @@ static void ibusDataReceive(uint16_t c)
     }
 }
 
+uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength)
+{
+    uint16_t checksum = 0xFFFF;
+    for (size_t i = 0; i < packetLength - IBUS_CHECKSUM_SIZE; i++) {
+        checksum -= ibusPacket[i];
+    }
 
-static bool isChecksumOkIa6(void)
+    return checksum;
+}
+
+static bool ibusIsChecksumOkIa6(void)
 {
     uint8_t offset;
     uint8_t i;
@@ -135,12 +143,20 @@ static bool isChecksumOkIa6(void)
     return chksum == rxsum;
 }
 
+bool ibusIsChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length)
+{
+    uint16_t calculatedChecksum = ibusCalculateChecksum(ibusPacket, length);
+
+    // Note that there's a byte order swap to little endian here
+    return (calculatedChecksum >> 8) == ibusPacket[length - 1]
+           && (calculatedChecksum & 0xFF) == ibusPacket[length - 2];
+}
 
 static bool checksumIsOk(void) {
     if (ibusModel == IBUS_MODEL_IA6 ) {
-        return isChecksumOkIa6();
+        return ibusIsChecksumOkIa6();
     } else {
-        return isChecksumOkIa6b(ibus, ibusFrameSize);
+        return ibusIsChecksumOkIa6b(ibus, ibusFrameSize);
     }
 }
 
