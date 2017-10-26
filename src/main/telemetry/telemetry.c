@@ -70,7 +70,7 @@ PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
     .pidValuesAsTelemetry = 0,
     .report_cell_voltage = false,
     .ibus_telemetry_type = 0,
-    .ibus_telemetry_type_m_s = false
+    .ibus_telemetry_use_m_s = false
 );
 
 void telemetryInit(void)
