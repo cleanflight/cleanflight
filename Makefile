@@ -281,6 +281,11 @@ $(TARGET_BIN): $(TARGET_ELF)
 
 $(TARGET_ELF):  $(TARGET_OBJS)
 	$(V1) echo Linking $(TARGET)
+ifeq ($(TARGET_MCU),STM32F1)
+	@echo "Notice: STM32F1 based targets will be unsupported soon."
+endif
+
+	
 	$(V1) $(CROSS_CC) -o $@ $^ $(LD_FLAGS)
 	$(V0) $(SIZE) $(TARGET_ELF)
 
