@@ -69,8 +69,8 @@ PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
     .hottAlarmSoundInterval = 5,
     .pidValuesAsTelemetry = 0,
     .report_cell_voltage = false,
-    .ibusTelemetryType = 0,
-    .ibusTelemetryUseMs = false
+    .ibus_telemetry_type = 0,
+    .ibus_telemetry_type_m_s = false
 );
 
 void telemetryInit(void)
