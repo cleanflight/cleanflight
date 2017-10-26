@@ -315,8 +315,14 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.S
 	$(V1) $(CROSS_CC) -c -o $@ $(ASFLAGS) $<
 
 
-## all               : Build all valid targets
-all: $(VALID_TARGETS)
+## all               : Build all targets (excluding unsupported)
+all: $(SUPPORTED_TARGETS)
+
+## all_with_unsupported : Build all targets (excluding unsupported)
+all_with_unsupported: $(VALID_TARGETS)
+
+## unsupported : Build unsupported targets
+unsupported: $(UNSUPPORTED_TARGETS)
 
 ## official          : Build all official (travis) targets
 official: $(OFFICIAL_TARGETS)
@@ -442,16 +448,17 @@ help: Makefile make/tools.mk
 
 ## targets           : print a list of all valid target platforms (for consumption by scripts)
 targets:
-	$(V0) @echo "Valid targets:      $(VALID_TARGETS)"
-	$(V0) @echo "Variant targets:    $(VARIANT_TARGETS)"
-	$(V0) @echo "Target:             $(TARGET)"
-	$(V0) @echo "Base target:        $(BASE_TARGET)"
-	$(V0) @echo "Official targets:   $(OFFICIAL_TARGETS)"
-	$(V0) @echo "targets-group-1:    $(GROUP_1_TARGETS)"
-	$(V0) @echo "targets-group-2:    $(GROUP_2_TARGETS)"
-	$(V0) @echo "targets-group-3:    $(GROUP_3_TARGETS)"
-	$(V0) @echo "targets-group-4:    $(GROUP_4_TARGETS)"
-	$(V0) @echo "targets-group-rest: $(GROUP_OTHER_TARGETS)"
+	$(V0) @echo "Valid targets:       $(VALID_TARGETS)"
+	$(V0) @echo "Variant targets:     $(VARIANT_TARGETS)"
+	$(V0) @echo "Supported targets:   $(SUPPORTED_TARGETS)"
+	$(V0) @echo "Unsupported targets: $(UNSUPPORTED_TARGETS)"
+	$(V0) @echo "Target:              $(TARGET)"
+	$(V0) @echo "Base target:         $(BASE_TARGET)"
+	$(V0) @echo "targets-group-1:     $(GROUP_1_TARGETS)"
+	$(V0) @echo "targets-group-2:     $(GROUP_2_TARGETS)"
+	$(V0) @echo "targets-group-3:     $(GROUP_3_TARGETS)"
+	$(V0) @echo "targets-group-4:     $(GROUP_4_TARGETS)"
+	$(V0) @echo "targets-group-rest:  $(GROUP_OTHER_TARGETS)"
 
 ## test              : run the cleanflight test suite
 ## junittest         : run the cleanflight test suite, producing Junit XML result files.
