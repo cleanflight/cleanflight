@@ -130,7 +130,7 @@ uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength)
     return checksum;
 }
 
-static bool isChecksumOkIa6(void)
+static bool ibusIsChecksumOkIa6(void)
 {
     uint8_t offset;
     uint8_t i;
@@ -143,7 +143,7 @@ static bool isChecksumOkIa6(void)
     return chksum == rxsum;
 }
 
-bool isChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length)
+bool ibusIsChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length)
 {
     uint16_t calculatedChecksum = ibusCalculateChecksum(ibusPacket, length);
 
@@ -154,9 +154,9 @@ bool isChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length)
 
 static bool checksumIsOk(void) {
     if (ibusModel == IBUS_MODEL_IA6 ) {
-        return isChecksumOkIa6();
+        return ibusIsChecksumOkIa6();
     } else {
-        return isChecksumOkIa6b(ibus, ibusFrameSize);
+        return ibusIsChecksumOkIa6b(ibus, ibusFrameSize);
     }
 }
 
