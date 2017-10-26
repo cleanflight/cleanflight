@@ -653,7 +653,7 @@ const clivalue_t valueTable[] = {
 #if defined(TELEMETRY_IBUS)
     { "report_cell_voltage",        VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, report_cell_voltage) },
     { "ibus_telemetry_type",        VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, ibus_telemetry_type) },
-    { "ibus_telemetry_use_m_s",     VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, ibus_telemetry_type_m_s) },
+    { "ibus_telemetry_use_m_s",     VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, ibus_telemetry_use_m_s) },
 #endif
 #endif
 
