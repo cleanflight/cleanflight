@@ -147,7 +147,7 @@ void serialTestResetPort()
 }
 
 
-static bool isChecksumOkReturnValue = true;
+static bool ibusIsChecksumOkReturnValue = true;
 bool isChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length)
 {
     (void) ibusPacket;
