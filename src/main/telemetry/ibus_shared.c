@@ -466,3 +466,21 @@ void changeTypeIbusTelemetry(uint8_t id, uint8_t type, uint8_t value) {
 }
 
 #endif //defined(TELEMETRY) && defined(TELEMETRY_IBUS)
+
+uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength)
+{
+    uint16_t checksum = 0xFFFF;
+    for (size_t i = 0; i < packetLength - IBUS_CHECKSUM_SIZE; i++) {
+        checksum -= ibusPacket[i];
+    }
+
+    return checksum;
+}
+bool ibusIsChecksumOkIa6b(const uint8_t *ibusPacket, const uint8_t length)
+{
+    uint16_t calculatedChecksum = ibusCalculateChecksum(ibusPacket, length);
+
+    // Note that there's a byte order swap to little endian here
+    return (calculatedChecksum >> 8) == ibusPacket[length - 1]
+           && (calculatedChecksum & 0xFF) == ibusPacket[length - 2];
+}
