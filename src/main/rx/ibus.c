@@ -43,8 +43,8 @@
 
 #include "rx/rx.h"
 #include "rx/ibus.h"
-#include "telemetry/ibus.h"
 #include "telemetry/ibus_shared.h"
+#include "telemetry/ibus.h"
 
 #define IBUS_MAX_CHANNEL 14
 #define IBUS_BUFFSIZE 32

@@ -33,6 +33,8 @@
 #include "telemetry/telemetry.h"
 #include "telemetry/ibus_shared.h"
 
+static uint16_t calculateChecksum(const uint8_t *ibusPacket, size_t packetLength);
+
 #if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
 #include "config/parameter_group.h"
@@ -467,7 +469,7 @@ void changeTypeIbusTelemetry(uint8_t id, uint8_t type, uint8_t value) {
 
 #endif //defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
-uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength)
+static uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength)
 {
     uint16_t checksum = 0xFFFF;
     for (size_t i = 0; i < packetLength - IBUS_CHECKSUM_SIZE; i++) {
