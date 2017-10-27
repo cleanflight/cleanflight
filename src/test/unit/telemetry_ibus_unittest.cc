@@ -24,13 +24,22 @@ extern "C" {
 #include "drivers/serial.h"
 #include "io/serial.h"
 #include "fc/rc_controls.h"
-#include "telemetry/telemetry.h"
+#include "fc/runtime_config.h"
+#include "telemetry/telemetry.h"	
+#include "telemetry/ibus_shared.h"
 #include "telemetry/ibus.h"
+#include "sensors/sensors.h"
 #include "sensors/gyro.h"
+#include "sensors/barometer.h"
 #include "sensors/battery.h"
+#include "flight/imu.h"
+#include "flight/altitude.h"
+#include "flight/navigation.h"
 #include "scheduler/scheduler.h"
+#include "io/gps.h"
 #include "fc/fc_tasks.h"
 }
+
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"

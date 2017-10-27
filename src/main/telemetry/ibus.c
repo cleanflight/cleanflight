@@ -53,9 +53,9 @@
 
 #include "scheduler/scheduler.h"
 
-#include "telemetry/ibus.h"
-#include "telemetry/ibus_shared.h"
 #include "telemetry/telemetry.h"
+#include "telemetry/ibus_shared.h"
+#include "telemetry/ibus.h"
 
 static serialPort_t *ibusSerialPort = NULL;
 static serialPortConfig_t *ibusSerialPortConfig;
