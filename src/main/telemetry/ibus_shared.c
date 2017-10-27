@@ -33,7 +33,7 @@
 #include "telemetry/telemetry.h"
 #include "telemetry/ibus_shared.h"
 
-static uint16_t calculateChecksum(const uint8_t *ibusPacket, size_t packetLength);
+static uint16_t ibusCalculateChecksum(const uint8_t *ibusPacket, size_t packetLength);
 
 #if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
