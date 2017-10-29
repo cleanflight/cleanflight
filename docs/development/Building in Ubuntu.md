@@ -31,7 +31,7 @@ The resulting .hex file can be found in the ./obj/ folder:
 leco@Hutia:~/repositories/git/cleanflight$ ls -l obj/
 -rw-rw-r--  1 leco leco 387709 Okt 28 00:00 cleanflight_SPRACINGF3EVO.hex
 ```
-This is the one you need to supply to the flashing tool (for instructions how to use the Cleanflight Configurator to flash under Ubuntu, see [here](../USB Flashing.md).)
+This is the one you need to supply to the flashing tool (for instructions how to use the Cleanflight Configurator to flash under Ubuntu, see the manual section 'USB Flashing'.
 
 If you later want to build the same target again, it is good practice to clean up the old object files that are still lying around before building again:
 
