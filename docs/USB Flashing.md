@@ -35,6 +35,16 @@ With the board connected and in bootloader mode (reset it by sending the charact
 * Restart Chrome (make sure it is completely closed, logout and login if unsure)
 * Now the DFU device should be seen by Configurator
 
+### Bricking your device
+
+If you ever manage to brick your FC, that means, to put a firmware on it that does not work, the Cleanflight Configurator is not able to talk to it, and might not be able to reset it into DFU (Device Firmware Update, means: flashing) mode in order to overwrite the broken firmware with a good one.
+
+This is where the "boot" pins on your FC come into play. If the two boot pins (might be named differently on your FC board) are connected with each other when the FC is powered up (in our case: connected to USB), the FC board will automatically start up in DFU (flashing) mode and identify itself not as a ACM or USB device (offering a serial interface) but as a DFU mode device. 
+
+There is a special switch in the Cleanflight Configurator program 'No reboot sequence'. You should activate this if you power up your FC with boot pins connected to each other. What the switch does, is to avoid sending commands to the FC that should put the FC into DFU mode, and rather assume that the FC is already in DFU mode. 
+
+Why do we care about not sending useless commands that try to achieve something that has already been achieved? 
+The reason is that if you send this commands while already in DFU mode, there is a slight chance that the commands contain something that makes sense to the DFU mode command interpreter; if that happens, it might enter a state where flashing is no longer possible and hence, your system remains bricked.
 
 
 # Troubleshooting, and some background (Linux)
@@ -195,12 +205,9 @@ Every STM32 microcontroller has a special bootloader mode (the famous 'unbrickab
 
 So, Cleanflight Configurator has made the FC to unplug itself (virtually) from your PC and to reconnect again as a different device!
 
-Since your FC can magically disguise as two different devices - a DFU bootloader device, which has commands to flash a firmware, and a serial interface, which can be used to speak the MultiWii protocol and talk to the Cleanflight Configurator (configuration section) - there might be two different Linux devices /dev/ttyXXX and /dev/ttyYYY corresponding to the two modes of your FC.
+Since your FC can function - and present itself to a USB host - as two different devices - a DFU bootloader device, which has commands to flash a firmware, and a serial interface, which can be used to speak the MultiWii protocol and talk to the Cleanflight Configurator (configuration section) - there might be two different Linux devices /dev/ttyXXX and /dev/ttyYYY corresponding to the two modes of your FC.
 
 Therefore, it is entirely possible to have read-write permissions of one of the two devices set up properly, but not for the other. This will lead to the situation that you can either flash your device, but not configure it in the Configurator, or configure it, but not flash it. Therefore, you should have two udev rules in place - one for the serial device for configuring, one for the DFU mode device for flashing.
 
-If you ever manage to brick your FC, that means, to put a firmware on it that does not work, the Cleanflight Configurator is not able to talk to it, and might not be able to reset it into DFU mode in order to overwrite the broken firmware with a good one.
-This is where the "boot" pins on your FC come into play. If the two boot pins (might be named differently on your FC board) are connected when the FC is powered up (in our case: connected to USB), the FC board will automatically start up in DFU mode and identify itself not as a ACM or USB device (offering a serial interface) but as a DFU mode device. 
-There is a special switch in the Cleanflight Configurator program 'No reboot sequence'. You should activate this if you power your FC with boot pins connected to each other. What the switch does, is to avoid sending commands to the FC that should put the FC into DFU mode, and rather assume that the FC is already in DFU mode - if you send this commands while already in DFU mode, there is a slight chance that this commands contain something that makes sense to the DFU mode command interpreter; if that happens, it might enter a state where flashing is no longer possible and the system appears frozen.
 
 
