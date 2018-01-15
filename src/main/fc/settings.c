@@ -653,6 +653,21 @@ const clivalue_t valueTable[] = {
     { "pid_in_tlm",                 VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = {TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, pidValuesAsTelemetry) },
 #if defined(TELEMETRY_IBUS)
     { "report_cell_voltage",        VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, report_cell_voltage) },
+    { "ibus_sensor1",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[0])},
+    { "ibus_sensor2",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[1])},
+    { "ibus_sensor3",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[2])},
+    { "ibus_sensor4",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[3])},
+    { "ibus_sensor5",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[4])},
+    { "ibus_sensor6",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[5])},
+    { "ibus_sensor7",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[6])},
+    { "ibus_sensor8",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[7])},
+    { "ibus_sensor9",               VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[8])},
+    { "ibus_sensor10",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[9])},
+    { "ibus_sensor11",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[10])},
+    { "ibus_sensor12",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[11])},
+    { "ibus_sensor13",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[12])},
+    { "ibus_sensor14",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[13])},
+    { "ibus_sensor15",              VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 255 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors[14])},
 #endif
 #endif
 
