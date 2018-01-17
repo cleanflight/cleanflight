@@ -106,7 +106,7 @@ throttleStatus_e calculateThrottleStatus(void)
 {
     return throttleStatus;
 }
- 
+
 bool feature(uint32_t mask)
 {
     return (definedFeatures & mask) != 0;
@@ -276,10 +276,10 @@ void serialTestResetPort()
 }
 void setTestSensors()
 {
-    telemetryConfig_System.flysky_sensors[0] = 0x03; 
+    telemetryConfig_System.flysky_sensors[0] = 0x03;
     telemetryConfig_System.flysky_sensors[1] = 0x01;
     telemetryConfig_System.flysky_sensors[2] = 0x02;
-    telemetryConfig_System.flysky_sensors[3] = 0xff;
+    telemetryConfig_System.flysky_sensors[3] = 0x00;
 }
 
 
