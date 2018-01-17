@@ -112,13 +112,13 @@ typedef enum {
     IBUS_SENSOR_TYPE_UNKNOWN          = 0xff
 } ibusSensorType_e;
 
-typedef union ibus_telemetry{
+typedef union ibusTelemetry {
     uint16_t uint16;
     uint32_t uint32;
     int16_t int16;
     int32_t int32;
     uint8_t byte[4];
-} ibus_telemetry_t;
+} ibusTelemetry_s;
 
 #if defined(GPS)
 
@@ -171,13 +171,15 @@ static uint8_t sendBuffer[IBUS_BUFFSIZE];
 
 static void setValue(uint8_t* bufferPtr, uint8_t sensorType, uint8_t length);
 
-static uint8_t getSensorID(ibusAddress_t address) {
+static uint8_t getSensorID(ibusAddress_t address)
+{
     //all checks are done in theAddressIsWithinOurRange
     uint32_t index = address - ibusBaseAddress;
     return telemetryConfig()->flysky_sensors[index];
 }
 
-static uint8_t getSensorLength(uint8_t sensorID) {
+static uint8_t getSensorLength(uint8_t sensorID)
+{
     if (sensorID == IBUS_SENSOR_TYPE_PRES || (sensorID >= IBUS_SENSOR_TYPE_GPS_LAT && sensorID <= IBUS_SENSOR_TYPE_ALT_MAX)) {
         return IBUS_4BYTE_SESNSOR;
     }
@@ -227,7 +229,8 @@ static void setIbusSensorType(ibusAddress_t address)
     sendBuffer[3] = sensorLength;
 }
 
-static uint16_t getVoltage(){
+static uint16_t getVoltage()
+{
     uint16_t voltage = getBatteryVoltage() *10;
     if (telemetryConfig()->report_cell_voltage) {
         voltage /= getBatteryCellCount();
@@ -235,7 +238,8 @@ static uint16_t getVoltage(){
     return voltage;
 }
 
-static uint16_t getTemperature() {
+static uint16_t getTemperature()
+{
     uint16_t temperature = gyroGetTemperature() * 10;
 #if defined(BARO)
     if (sensors(SENSOR_BARO)) {
@@ -246,7 +250,8 @@ static uint16_t getTemperature() {
 }
 
 
-static uint16_t getFuel(){
+static uint16_t getFuel()
+{
     uint16_t fuel = 0;
     if (batteryConfig()->batteryCapacity > 0) {
         //float value = constrain(batteryConfig()->batteryCapacity - getMAhDrawn(), 0, batteryConfig()->batteryCapacity);
@@ -257,7 +262,8 @@ static uint16_t getFuel(){
     return fuel;
 }
 
-static uint16_t getRPM(){
+static uint16_t getRPM()
+{
     uint16_t rpm = 0;
     if (ARMING_FLAG(ARMED)) {
         const throttleStatus_e throttleStatus = calculateThrottleStatus();
@@ -269,7 +275,8 @@ static uint16_t getRPM(){
     return rpm;
 }
 
-static uint16_t getMode(){
+static uint16_t getMode()
+{
     uint16_t flightMode = 1; //Acro
     if (FLIGHT_MODE(ANGLE_MODE)) {
          flightMode = 0; //Stab
@@ -301,12 +308,14 @@ static uint16_t getMode(){
     return flightMode;
 }
 
-static int16_t getACC(uint8_t index) {
+static int16_t getACC(uint8_t index)
+{
     return (int16_t)(((float)acc.accSmooth[index] / acc.dev.acc_1G) * 1000);
 }
 
 #if defined(TELEMETRY_IBUS_EXTENDED)
-static void setCombinedFrame(uint8_t* bufferPtr, const uint8_t* structure, uint8_t itemCount) {
+static void setCombinedFrame(uint8_t* bufferPtr, const uint8_t* structure, uint8_t itemCount)
+{
     uint8_t offset = 0;
     uint8_t size = 0;
     for (uint8_t i = 0; i < itemCount; i++) {
@@ -320,7 +329,8 @@ static void setCombinedFrame(uint8_t* bufferPtr, const uint8_t* structure, uint8
 
 
 #if defined(GPS)
-static bool setGPS(uint8_t sensorType, ibus_telemetry_t* value) {
+static bool setGPS(uint8_t sensorType, ibus_telemetry_t* value)
+{
     bool result = false;
     for (uint8_t i = 0; i < sizeof(GPS_IDS); i++) {
         if (sensorType == GPS_IDS[i]) {
@@ -372,9 +382,9 @@ static bool setGPS(uint8_t sensorType, ibus_telemetry_t* value) {
 }
 #endif //defined(GPS)
 
-static void setValue(uint8_t* bufferPtr, uint8_t sensorType, uint8_t length){
-
-    ibus_telemetry_t value;
+static void setValue(uint8_t* bufferPtr, uint8_t sensorType, uint8_t length)
+{
+    ibusTelemetry_s value;
 
 #if defined(TELEMETRY_IBUS_EXTENDED)
     const uint8_t* structure = 0;
