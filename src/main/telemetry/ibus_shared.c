@@ -254,7 +254,6 @@ static uint16_t getFuel()
 {
     uint16_t fuel = 0;
     if (batteryConfig()->batteryCapacity > 0) {
-        //float value = constrain(batteryConfig()->batteryCapacity - getMAhDrawn(), 0, batteryConfig()->batteryCapacity);
         fuel = (uint16_t)calculateBatteryPercentageRemaining();
     } else {
         fuel = (uint16_t)constrain(getMAhDrawn(), 0, 0xFFFF);
