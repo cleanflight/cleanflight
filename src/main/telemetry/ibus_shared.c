@@ -36,9 +36,6 @@
 static uint16_t calculateChecksum(const uint8_t *ibusPacket);
 
 #if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
-#if defined(GPS) && FLASH_SIZE > 256
-#define TELEMETRY_IBUS_EXTENDED
-#endif
 #include "config/feature.h"
 #include "config/parameter_group.h"
 #include "config/parameter_group_ids.h"
