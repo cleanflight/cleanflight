@@ -141,6 +141,7 @@
 #if (FLASH_SIZE > 256)
 // Temporarily moved GPS here because of overflowing flash size on F3
 #define GPS
+#define TELEMETRY_IBUS_EXTENDED 
 #define USE_NAV
 #define USE_UNCOMMON_MIXERS
 #endif

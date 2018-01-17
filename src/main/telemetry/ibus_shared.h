@@ -29,7 +29,7 @@
 #include "drivers/serial.h"
 
 #define IBUS_CHECKSUM_SIZE (2)
-
+#define IBUS_SENSOR_COUNT 15
 #if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
 
 uint8_t respondToIbusRequest(uint8_t const * const ibusPacket);
