@@ -53,9 +53,7 @@
 #define USE_MAG_AK8975
 #define USE_MAG_HMC5883
 
-#ifdef TELEMETRY_IBUS
-#undef TELEMETRY_IBUS
-#endif
+#undef TELEMETRY_IBUS           // Disabled due to flash size
 
 #define USE_VCP
 #define USE_UART1
