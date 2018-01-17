@@ -54,15 +54,10 @@ static uint16_t calculateChecksum(const uint8_t *ibusPacket);
 #include "io/gps.h"
 
 
-#define IBUS_TEMPERATURE_OFFSET  (400)
+#define IBUS_TEMPERATURE_OFFSET 400
 #define INVALID_IBUS_ADDRESS 0
 #define IBUS_BUFFSIZE 33				// biggest iBus message seen so far + 1
 #define IBUS_HEADER_FOOTER_SIZE 4
-#define TEM_1(x) ((400+(x))&0xFF)
-#define TEM_2(x) ((400+(x))>>8)
-#define LBYTE(x) ((x)&0xFF)
-#define HBYTE(x) ((x)>>8&0xFF)
-
 #define IBUS_2BYTE_SESNSOR 2
 #define IBUS_4BYTE_SESNSOR 4
 
