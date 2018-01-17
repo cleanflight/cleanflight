@@ -26,6 +26,7 @@
 
 #include "config/parameter_group.h"
 #include "io/serial.h"
+#include "telemetry/ibus_shared.h"
 
 typedef enum {
     FRSKY_FORMAT_DMS = 0,
@@ -50,7 +51,7 @@ typedef struct telemetryConfig_s {
     uint8_t hottAlarmSoundInterval;
     uint8_t pidValuesAsTelemetry;
     uint8_t report_cell_voltage;
-    uint8_t flysky_sensors[15];
+    uint8_t flysky_sensors[IBUS_SENSOR_COUNT];
 } telemetryConfig_t;
 
 PG_DECLARE(telemetryConfig_t, telemetryConfig);
