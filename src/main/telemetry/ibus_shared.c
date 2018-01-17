@@ -70,6 +70,7 @@ typedef enum {
 } ibusCommand_e;
 
 typedef enum {
+    IBUS_SENSOR_TYPE_NONE             = 0x00,
     IBUS_SENSOR_TYPE_TEMPERATURE      = 0x01,
     IBUS_SENSOR_TYPE_RPM_FLYSKY       = 0x02,
     IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE = 0x03,
@@ -328,7 +329,7 @@ static void setCombinedFrame(uint8_t* bufferPtr, const uint8_t* structure, uint8
 
 
 #if defined(GPS)
-static bool setGPS(uint8_t sensorType, ibus_telemetry_t* value)
+static bool setGPS(uint8_t sensorType, ibusTelemetry_s* value)
 {
     bool result = false;
     for (uint8_t i = 0; i < sizeof(GPS_IDS); i++) {
@@ -513,7 +514,7 @@ static bool theAddressIsWithinOurRange(ibusAddress_t returnAddress)
 {
     return (returnAddress >= ibusBaseAddress) &&
     (ibusAddress_t)(returnAddress - ibusBaseAddress) < ARRAYLEN(telemetryConfig()->flysky_sensors) &&
-    telemetryConfig()->flysky_sensors[(returnAddress - ibusBaseAddress)] != IBUS_SENSOR_TYPE_UNKNOWN;
+    telemetryConfig()->flysky_sensors[(returnAddress - ibusBaseAddress)] != IBUS_SENSOR_TYPE_NONE;
 }
 
 uint8_t respondToIbusRequest(uint8_t const * const ibusPacket)
