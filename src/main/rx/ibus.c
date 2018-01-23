@@ -43,8 +43,8 @@
 
 #include "rx/rx.h"
 #include "rx/ibus.h"
-#include "telemetry/ibus.h"
 #include "telemetry/ibus_shared.h"
+#include "telemetry/ibus.h"
 
 #define IBUS_MAX_CHANNEL 14
 #define IBUS_BUFFSIZE 32
@@ -52,9 +52,8 @@
 #define IBUS_MODEL_IA6 1
 #define IBUS_FRAME_GAP 500
 
-#define IBUS_BAUDRATE 115200
-#define IBUS_TELEMETRY_PACKET_LENGTH (4)
-#define IBUS_SERIAL_RX_PACKET_LENGTH (32)
+#define IBUS_TELEMETRY_PACKET_LENGTH 4
+#define IBUS_SERIAL_RX_PACKET_LENGTH 32
 
 static uint8_t ibusModel;
 static uint8_t ibusSyncByte;
@@ -122,7 +121,7 @@ static void ibusDataReceive(uint16_t c)
 }
 
 
-static bool isChecksumOkIa6(void)
+static bool ibusIsChecksumOkIa6(void)
 {
     uint8_t offset;
     uint8_t i;
@@ -138,9 +137,9 @@ static bool isChecksumOkIa6(void)
 
 static bool checksumIsOk(void) {
     if (ibusModel == IBUS_MODEL_IA6 ) {
-        return isChecksumOkIa6();
+        return ibusIsChecksumOkIa6();
     } else {
-        return isChecksumOkIa6b(ibus, ibusFrameSize);
+        return ibusIsChecksumOkIa6b(ibus, ibusFrameSize);
     }
 }
 
