@@ -27,9 +27,6 @@
 
 typedef struct timerChannelConfig_s {
     ioTag_t ioTag;
-#if defined(STM32F3) || defined(STM32F4) || defined(STM32F7)
-    uint8_t pinAF;
-#endif
     uint8_t dmaIdentifier;
 #if defined(STM32F4) || defined(STM32F7)
     uint8_t dmaChannel;

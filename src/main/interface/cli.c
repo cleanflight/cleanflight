@@ -3616,7 +3616,6 @@ static void cliTimer(char *cmdline)
     
 success:
     timerChannelConfigMutable(timerChannelIndex)->ioTag = ioTag;
-    timerChannelConfigMutable(timerChannelIndex)->pinAF = timerAlternateFunction(timerTags[timerChannelIndex], ioTag);
     timerChannelConfigMutable(timerChannelIndex)->inverted = inverted;
 
     timerChannelConfigMutable(timerChannelIndex)->dmaIdentifier = dmaIdentifier;
@@ -3906,7 +3905,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("resource", "show/set resources", NULL, cliResource),
     CLI_COMMAND_DEF("dma", "list dma utilisation", NULL, cliDma),
 #ifdef USE_TIMER_MGMT
-    CLI_COMMAND_DEF("timer", "show timer confirguration", NULL, cliTimer),
+    CLI_COMMAND_DEF("timer", "show timer configuration", NULL, cliTimer),
 #endif
 #endif
     CLI_COMMAND_DEF("rxfail", "show/set rx failsafe settings", NULL, cliRxFailsafe),
