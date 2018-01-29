@@ -48,6 +48,8 @@ static uint16_t freqBeep = 0;
 static bool pwmMotorsEnabled = false;
 static bool isDshot = false;
 
+#define CHAN_TO_HALCHAN(n) (((n) - 1) * 4)
+
 static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value, uint8_t output)
 {
 #if defined(USE_HAL_DRIVER)
@@ -64,7 +66,7 @@ static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value, uint8
     TIM_OCInitStructure.Pulse = value;
     TIM_OCInitStructure.OCFastMode = TIM_OCFAST_DISABLE;
 
-    HAL_TIM_PWM_ConfigChannel(Handle, &TIM_OCInitStructure, channel);
+    HAL_TIM_PWM_ConfigChannel(Handle, &TIM_OCInitStructure, CHAN_TO_HALCHAN(channel));
 #else
     TIM_OCInitTypeDef TIM_OCInitStructure;
 
@@ -103,9 +105,9 @@ void pwmOutConfig(timerChannel_t *channel, const timerHardware_t *timerHardware,
 
 #if defined(USE_HAL_DRIVER)
     if (timerHardware->output & TIMER_OUTPUT_N_CHANNEL)
-        HAL_TIMEx_PWMN_Start(Handle, timerHardware->channel);
+        HAL_TIMEx_PWMN_Start(Handle, CHAN_TO_HALCHAN(timerHardware->channel));
     else
-        HAL_TIM_PWM_Start(Handle, timerHardware->channel);
+        HAL_TIM_PWM_Start(Handle, CHAN_TO_HALCHAN(timerHardware->channel));
     HAL_TIM_Base_Start(Handle);
 #else
     TIM_CtrlPWMOutputs(timerHardware->tim, ENABLE);
