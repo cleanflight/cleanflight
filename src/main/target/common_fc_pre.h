@@ -124,13 +124,14 @@
 #define VTX_SMARTAUDIO
 #define VTX_TRAMP
 #define USE_CAMERA_CONTROL
+#define USE_GYRO_OVERFLOW_CHECK
 #define USE_HUFFMAN
 #define USE_COPY_PROFILE_CMS_MENU
 #define USE_MSP_OVER_TELEMETRY
 #define USE_OSD_ITEM_POSITIONS
 
 #ifdef USE_SERIALRX_SPEKTRUM
-#define USE_SPEKTRUM_BIND
+#define SPEKTRUM_BIND
 #define USE_SPEKTRUM_BIND_PLUG
 #define USE_SPEKTRUM_REAL_RSSI
 #define USE_SPEKTRUM_FAKE_RSSI
@@ -141,8 +142,6 @@
 #if (FLASH_SIZE > 256)
 // Temporarily moved GPS here because of overflowing flash size on F3
 #define GPS
-#define USE_NAV
+#define NAV
 #define USE_UNCOMMON_MIXERS
 #endif
-
-#define USE_RCSPLIT

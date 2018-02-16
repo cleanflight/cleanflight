@@ -12,9 +12,7 @@
 # Where to find user code.
 USER_DIR = ../main
 TEST_DIR = unit
-ROOT = ../..
 
-include $(ROOT)/make/system-id.mk
 
 # specify which files that are included in the test in addition to the unittest file.
 # variables available:
@@ -268,13 +266,6 @@ type_conversion_unittest_SRC := \
 ws2811_unittest_SRC := \
 		$(USER_DIR)/drivers/light_ws2811strip.c
 
-huffman_unittest_SRC := \
-		$(USER_DIR)/common/huffman.c \
-		$(USER_DIR)/common/huffman_table.c
-
-huffman_unittest_DEFINES := \
-		USE_HUFFMAN
-
 rcdevice_unittest_SRC := \
 		$(USER_DIR)/common/crc.c \
 		$(USER_DIR)/common/bitarray.c \
@@ -285,6 +276,13 @@ rcdevice_unittest_SRC := \
 
 rcdevice_unittest_DEFINES := \
 		USE_RCDEVICE
+
+huffman_unittest_SRC := \
+		$(USER_DIR)/common/huffman.c \
+		$(USER_DIR)/common/huffman_table.c
+
+huffman_unittest_DEFINES := \
+		USE_HUFFMAN
 
 # Please tweak the following variable definitions as needed by your
 # project, except GTEST_HEADERS, which you can use in your own targets
@@ -298,6 +296,9 @@ GTEST_DIR = ../../lib/test/gtest
 USER_INCLUDE_DIR = $(USER_DIR)
 
 OBJECT_DIR = ../../obj/test
+
+# Determine the OS
+UNAME := $(shell uname -s)
 
 # Use clang/clang++ by default
 CC  := clang
@@ -321,7 +322,7 @@ COMMON_FLAGS += -fblocks
 LDFLAGS	     += -lBlocksRuntime
 endif
 
-ifndef MACOSX
+ifneq ($(UNAME), Darwin)
 COMMON_FLAGS += -pthread
 endif
 
@@ -340,7 +341,7 @@ C_FLAGS   += $(COVERAGE_FLAGS)
 CXX_FLAGS += $(COVERAGE_FLAGS)
 
 # Set up the parameter group linker flags according to OS
-ifdef MACOSX
+ifeq ($(UNAME), Darwin)
 LDFLAGS  += -Wl,-map,$(OBJECT_DIR)/$@.map
 else
 LDFLAGS  += -Wl,-T,$(TEST_DIR)/parameter_group.ld -Wl,-Map,$(OBJECT_DIR)/$@.map

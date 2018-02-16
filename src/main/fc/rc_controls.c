@@ -109,16 +109,15 @@ bool areSticksInApModePosition(uint16_t ap_mode)
 throttleStatus_e calculateThrottleStatus(void)
 {
     if (feature(FEATURE_3D)) {
-        if (IS_RC_MODE_ACTIVE(BOX3DDISABLE) || isModeActivationConditionPresent(BOX3DONASWITCH)) {
-            if (rcData[THROTTLE] < rxConfig()->mincheck)
+        if (IS_RC_MODE_ACTIVE(BOX3DDISABLE)) {
+            if (rcData[THROTTLE] < rxConfig()->mincheck) {
                 return THROTTLE_LOW;
+            }
         } else if ((rcData[THROTTLE] > (rxConfig()->midrc - flight3DConfig()->deadband3d_throttle) && rcData[THROTTLE] < (rxConfig()->midrc + flight3DConfig()->deadband3d_throttle))) {
             return THROTTLE_LOW;
         }
-    } else {
-        if (rcData[THROTTLE] < rxConfig()->mincheck) {
-            return THROTTLE_LOW;
-            }
+    } else if (rcData[THROTTLE] < rxConfig()->mincheck) {
+        return THROTTLE_LOW;
     }
 
     return THROTTLE_HIGH;
@@ -140,6 +139,8 @@ void processRcStickPositions(throttleStatus_e throttleStatus)
     // an extra guard for disarming through switch to prevent that one frame can disarm it
     static uint8_t rcDisarmTicks;
     static bool doNotRepeat;
+    uint8_t stTmp = 0;
+    int i;
 
 #ifdef CMS
     if (cmsInMenu) {
@@ -148,20 +149,16 @@ void processRcStickPositions(throttleStatus_e throttleStatus)
 #endif
 
     // checking sticks positions
-    uint8_t stTmp = 0;
-    for (int i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         stTmp >>= 2;
-        if (rcData[i] > rxConfig()->mincheck) {
+        if (rcData[i] > rxConfig()->mincheck)
             stTmp |= 0x80;  // check for MIN
-        }
-        if (rcData[i] < rxConfig()->maxcheck) {
+        if (rcData[i] < rxConfig()->maxcheck)
             stTmp |= 0x40;  // check for MAX
-        }
     }
     if (stTmp == rcSticks) {
-        if (rcDelayMs <= INT16_MAX - (getTaskDeltaTime(TASK_SELF) / 1000)) {
+        if (rcDelayMs <= INT16_MAX - (getTaskDeltaTime(TASK_SELF) / 1000))
             rcDelayMs += getTaskDeltaTime(TASK_SELF) / 1000;
-        }
     } else {
         rcDelayMs = 0;
         doNotRepeat = false;
@@ -245,16 +242,15 @@ void processRcStickPositions(throttleStatus_e throttleStatus)
     }
 
     // Multiple configuration profiles
-    int newPidProfile = 0;
-    if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_LO) {        // ROLL left  -> Profile 1
-        newPidProfile = 1;
-    } else if (rcSticks == THR_LO + YAW_LO + PIT_HI + ROL_CE) { // PITCH up   -> Profile 2
-        newPidProfile = 2;
-    } else if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_HI) { // ROLL right -> Profile 3
-        newPidProfile = 3;
-    }
-    if (newPidProfile) {
-        changePidProfile(newPidProfile - 1);
+    i = 0;
+    if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_LO)          // ROLL left  -> Profile 1
+        i = 1;
+    else if (rcSticks == THR_LO + YAW_LO + PIT_HI + ROL_CE)     // PITCH up   -> Profile 2
+        i = 2;
+    else if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_HI)     // ROLL right -> Profile 3
+        i = 3;
+    if (i) {
+        changePidProfile(i - 1);
         return;
     }
 
@@ -277,6 +273,7 @@ void processRcStickPositions(throttleStatus_e throttleStatus)
 
 
     // Accelerometer Trim
+
     rollAndPitchTrims_t accelerometerTrimsDelta;
     memset(&accelerometerTrimsDelta, 0, sizeof(accelerometerTrimsDelta));
 
