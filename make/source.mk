@@ -159,7 +159,6 @@ FC_SRC = \
             telemetry/srxl.c \
             telemetry/frsky.c \
             telemetry/hott.c \
-            telemetry/jetiexbus.c \
             telemetry/smartport.c \
             telemetry/ltm.c \
             telemetry/mavlink.c \
@@ -267,7 +266,6 @@ SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             cms/cms_menu_misc.c \
             cms/cms_menu_osd.c \
             io/vtx_string.c \
-            io/vtx_settings_config.c \
             io/vtx_rtc6705.c \
             io/vtx_smartaudio.c \
             io/vtx_tramp.c \

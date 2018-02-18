@@ -37,7 +37,7 @@ Your first place for support are the [Cleanflight forums on RCGroups](https://ww
 
 The Github issue tracker is NOT for end-user support.
 
-## IRC Support and Developers Channel
+## Slack/IRC - Support and Developers Channel
 
 There's a dedicated Cleanflight IRC channel on the Freenode IRC network. Many users and some of the developers frequent there, and it is a helpful and friendly community - but there are two important things to keep in mind: First and most importantly, please go ahead and ask if you have questions, but **make sure you wait around long enough for a reply**. Next, sometimes people are out flying, asleep or at work and can't answer immediately, even though they are present in the channel. This is how IRC works: Many people stay logged in, even though they are not actively participating in the discussion all the time. Have a seat, grab a drink and hang around if it's a quiet time of day.
 
@@ -45,9 +45,11 @@ irc://irc.freenode.net/#cleanflight
 
 If you are using Windows and don't have an IRC client installed, take a look at [HydraIRC](http://hydrairc.com/).
 
-There's a dedicated Slack chat channel for betaflight here:
+There's a dedicated Slack chat channel for Cleanflight, get an invite here:
 
-http://www.betaflight.tk/
+http://cleanflight.com/slack
+
+As of 2018 most live discussion/chat takes place on the Slack channels, so try there first - especially if you don't have an IRC client already installed.
 
 Etiquette: Don't ask to ask and please wait around long enough for a reply - sometimes people are out flying, asleep or at work and can't answer immediately.
 

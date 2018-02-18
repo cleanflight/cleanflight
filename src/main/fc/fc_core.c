@@ -35,7 +35,6 @@
 #include "config/parameter_group_ids.h"
 
 #include "drivers/gyro_sync.h"
-#include "drivers/transponder_ir.h"
 #include "drivers/light_led.h"
 #include "drivers/system.h"
 #include "drivers/time.h"
@@ -107,6 +106,9 @@ enum {
 int16_t magHold;
 #endif
 
+int16_t headFreeModeHold;
+
+static bool reverseMotors = false;
 static bool flipOverAfterCrashMode = false;
 
 static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the motors when armed" is enabled and auto_disarm_delay is nonzero
@@ -215,8 +217,20 @@ void updateArmingStatus(void)
         }
 
         if (!isUsingSticksForArming()) {
+          /* Ignore ARMING_DISABLED_CALIBRATING if we are going to calibrate gyro on first arm */
+          bool ignoreGyro = armingConfig()->gyro_cal_on_first_arm
+                         && !(getArmingDisableFlags() & ~(ARMING_DISABLED_ARM_SWITCH | ARMING_DISABLED_CALIBRATING));
+
+          /* Ignore ARMING_DISABLED_THROTTLE (once arm switch is on) if we are in 3D mode */
+          bool ignoreThrottle = feature(FEATURE_3D)
+                             && !IS_RC_MODE_ACTIVE(BOX3DDISABLE)
+                             && !(getArmingDisableFlags() & ~(ARMING_DISABLED_ARM_SWITCH | ARMING_DISABLED_THROTTLE));
+
           // If arming is disabled and the ARM switch is on
-          if (isArmingDisabled() && !(armingConfig()->gyro_cal_on_first_arm && !(getArmingDisableFlags() & ~(ARMING_DISABLED_ARM_SWITCH | ARMING_DISABLED_CALIBRATING))) && IS_RC_MODE_ACTIVE(BOXARM)) {
+          if (isArmingDisabled()
+              && !ignoreGyro
+              && !ignoreThrottle
+              && IS_RC_MODE_ACTIVE(BOXARM)) {
               setArmingDisabled(ARMING_DISABLED_ARM_SWITCH);
           } else if (!IS_RC_MODE_ACTIVE(BOXARM)) {
               unsetArmingDisabled(ARMING_DISABLED_ARM_SWITCH);
@@ -267,10 +281,14 @@ void tryArm(void)
 
             if (!IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH)) {
                 flipOverAfterCrashMode = false;
-                pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_NORMAL);
+                if (!feature(FEATURE_3D)) {
+                    pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_NORMAL);
+                }
             } else {
                 flipOverAfterCrashMode = true;
-                pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_REVERSED);
+                if (!feature(FEATURE_3D)) {
+                    pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_REVERSED);
+                }
             }
 
             pwmEnableMotors();
@@ -279,11 +297,10 @@ void tryArm(void)
 
         ENABLE_ARMING_FLAG(ARMED);
         ENABLE_ARMING_FLAG(WAS_EVER_ARMED);
-
         if (isModeActivationConditionPresent(BOXPREARM)) {
             ENABLE_ARMING_FLAG(WAS_ARMED_WITH_PREARM);
         }
-        imuQuaternionHeadfreeOffsetSet();
+        headFreeModeHold = DECIDEGREES_TO_DEGREES(attitude.values.yaw);
 
         disarmAt = millis() + armingConfig()->auto_disarm_delay * 1000;   // start disarm timeout, will be extended when throttle is nonzero
 
@@ -393,7 +410,7 @@ void processRx(timeUs_t currentTimeUs)
     const throttleStatus_e throttleStatus = calculateThrottleStatus();
 
     if (isAirmodeActive() && ARMING_FLAG(ARMED)) {
-        if (rcData[THROTTLE] >= rxConfig()->airModeActivateThreshold) airmodeIsActivated = true; // Prevent Iterm from being reset
+        if (rcCommand[THROTTLE] >= rxConfig()->airModeActivateThreshold) airmodeIsActivated = true; // Prevent Iterm from being reset
     } else {
         airmodeIsActivated = false;
     }
@@ -464,13 +481,6 @@ void processRx(timeUs_t currentTimeUs)
 
     updateActivatedModes();
 
-#ifdef USE_DSHOT
-    /* Enable beep warning when the crash flip mode is active */
-    if (isMotorProtocolDshot() && isModeActivationConditionPresent(BOXFLIPOVERAFTERCRASH) && IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH)) {
-        beeper(BEEPER_CRASH_FLIP_MODE);
-    }
-#endif
-
     if (!cliMode) {
         updateAdjustmentStates();
         processRcAdjustments(currentControlRateProfile);
@@ -530,9 +540,7 @@ void processRx(timeUs_t currentTimeUs)
             DISABLE_FLIGHT_MODE(HEADFREE_MODE);
         }
         if (IS_RC_MODE_ACTIVE(BOXHEADADJ)) {
-            if (imuQuaternionHeadfreeOffsetSet()){
-               beeper(BEEPER_RX_SET);
-            }
+            headFreeModeHold = DECIDEGREES_TO_DEGREES(attitude.values.yaw); // acquire new heading
         }
     }
 #endif
@@ -590,7 +598,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     uint32_t startTime = 0;
     if (debugMode == DEBUG_PIDLOOP) {startTime = micros();}
 
-    // Read out gyro temperature if used for telemetry
+    // Read out gyro temperature if used for telemmetry
     if (feature(FEATURE_TELEMETRY)) {
         gyroReadTemperature();
     }
@@ -656,7 +664,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 #ifdef TRANSPONDER
     transponderUpdate(currentTimeUs);
 #endif
-    DEBUG_SET(DEBUG_PIDLOOP, 3, micros() - startTime);
+    DEBUG_SET(DEBUG_PIDLOOP, 2, micros() - startTime);
 }
 
 static void subTaskMotorUpdate(void)
@@ -684,7 +692,7 @@ static void subTaskMotorUpdate(void)
 
     writeMotors();
 
-    DEBUG_SET(DEBUG_PIDLOOP, 2, micros() - startTime);
+    DEBUG_SET(DEBUG_PIDLOOP, 3, micros() - startTime);
 }
 
 uint8_t setPidUpdateCountDown(void)
@@ -699,19 +707,32 @@ uint8_t setPidUpdateCountDown(void)
 // Function for loop trigger
 void taskMainPidLoop(timeUs_t currentTimeUs)
 {
-    static uint8_t pidUpdateCountdown = 0;
+    static bool runTaskMainSubprocesses;
+    static uint8_t pidUpdateCountdown;
 
 #if defined(SIMULATOR_BUILD) && defined(SIMULATOR_GYROPID_SYNC)
     if (lockMainPID() != 0) return;
 #endif
 
+    if (debugMode == DEBUG_CYCLETIME) {
+        debug[0] = getTaskDeltaTime(TASK_SELF);
+        debug[1] = averageSystemLoadPercent;
+    }
+
+    if (runTaskMainSubprocesses) {
+        subTaskMainSubprocesses(currentTimeUs);
+        runTaskMainSubprocesses = false;
+    }
+
     // DEBUG_PIDLOOP, timings for:
     // 0 - gyroUpdate()
     // 1 - pidController()
-    // 2 - subTaskMotorUpdate()
-    // 3 - subTaskMainSubprocesses()
-    gyroUpdate();
-    DEBUG_SET(DEBUG_PIDLOOP, 0, micros() - currentTimeUs);
+    // 2 - subTaskMainSubprocesses()
+    // 3 - subTaskMotorUpdate()
+    uint32_t startTime = 0;
+    if (debugMode == DEBUG_PIDLOOP) {startTime = micros();}
+    gyroUpdate(currentTimeUs);
+    DEBUG_SET(DEBUG_PIDLOOP, 0, micros() - startTime);
 
     if (pidUpdateCountdown) {
         pidUpdateCountdown--;
@@ -719,16 +740,14 @@ void taskMainPidLoop(timeUs_t currentTimeUs)
         pidUpdateCountdown = setPidUpdateCountDown();
         subTaskPidController(currentTimeUs);
         subTaskMotorUpdate();
-        subTaskMainSubprocesses(currentTimeUs);
-    }
-
-    if (debugMode == DEBUG_CYCLETIME) {
-        debug[0] = getTaskDeltaTime(TASK_SELF);
-        debug[1] = averageSystemLoadPercent;
+        runTaskMainSubprocesses = true;
     }
 }
 
-
+bool isMotorsReversed(void)
+{
+    return reverseMotors;
+}
 bool isFlipOverAfterCrashMode(void)
 {
     return flipOverAfterCrashMode;

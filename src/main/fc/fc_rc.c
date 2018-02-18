@@ -196,8 +196,7 @@ void processRcCommand(void)
 
     const uint8_t interpolationChannels = rxConfig()->rcInterpolationChannels + 2; //"RP", "RPY", "RPYT"
     uint16_t rxRefreshRate;
-    bool readyToCalculateRate = false;
-    uint8_t readyToCalculateRateAxisCnt = 0;
+    uint8_t updatedChannel = 0;
 
     if (rxConfig()->rcInterpolation) {
          // Set RC refresh rate for sampling and channels to filter
@@ -217,7 +216,7 @@ void processRcCommand(void)
         if (isRXDataNew && rxRefreshRate > 0) {
             rcInterpolationStepCount = rxRefreshRate / targetPidLooptime;
 
-            for (int channel=ROLL; channel < interpolationChannels; channel++) {
+            for (int channel = ROLL; channel < interpolationChannels; channel++) {
                 rcStepSize[channel] = (rcCommand[channel] - rcCommandInterp[channel]) / (float)rcInterpolationStepCount;
             }
 
@@ -233,23 +232,18 @@ void processRcCommand(void)
 
         // Interpolate steps of rcCommand
         if (rcInterpolationStepCount > 0) {
-            for (int channel=ROLL; channel < interpolationChannels; channel++) {
-                rcCommandInterp[channel] += rcStepSize[channel];
-                rcCommand[channel] = rcCommandInterp[channel];
-                readyToCalculateRateAxisCnt = MAX(channel, FD_YAW); // throttle channel doesn't require rate calculation
+            for (updatedChannel = ROLL; updatedChannel < interpolationChannels; updatedChannel++) {
+                rcCommandInterp[updatedChannel] += rcStepSize[updatedChannel];
+                rcCommand[updatedChannel] = rcCommandInterp[updatedChannel];
             }
-            readyToCalculateRate = true;
         }
     } else {
         rcInterpolationStepCount = 0; // reset factor in case of level modes flip flopping
     }
 
-    if (readyToCalculateRate || isRXDataNew) {
-        if (isRXDataNew) {
-            readyToCalculateRateAxisCnt = FD_YAW;
-        }
-
-        for (int axis = 0; axis <= readyToCalculateRateAxisCnt; axis++) {
+    if (isRXDataNew || updatedChannel) {
+        const uint8_t maxUpdatedAxis = isRXDataNew ? FD_YAW : MIN(updatedChannel, FD_YAW); // throttle channel doesn't require rate calculation
+        for (int axis = FD_ROLL; axis <= maxUpdatedAxis; axis++) {
             calculateSetpointRate(axis);
         }
 
@@ -257,11 +251,14 @@ void processRcCommand(void)
             debug[2] = rcInterpolationStepCount;
             debug[3] = setpointRate[0];
         }
+
         // Scaling of AngleRate to camera angle (Mixing Roll and Yaw)
         if (rxConfig()->fpvCamAngleDegrees && IS_RC_MODE_ACTIVE(BOXFPVANGLEMIX) && !FLIGHT_MODE(HEADFREE_MODE)) {
             scaleRcCommandToFpvCamAngle();
         }
+    }
 
+    if (isRXDataNew) {
         isRXDataNew = false;
     }
 }
@@ -363,9 +360,4 @@ void resetYawAxis(void)
 {
     rcCommand[YAW] = 0;
     setpointRate[YAW] = 0;
-}
-
-bool isMotorsReversed(void)
-{
-    return reverseMotors;
 }
