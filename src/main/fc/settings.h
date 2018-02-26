@@ -71,6 +71,12 @@ typedef enum {
 #ifdef USE_MAX7456
     TABLE_MAX7456_CLOCK,
 #endif
+#ifdef USE_GYRO_OVERFLOW_CHECK
+    TABLE_GYRO_OVERFLOW_CHECK,
+#endif
+#ifdef USE_DUAL_GYRO
+    TABLE_GYRO,
+#endif
     LOOKUP_TABLE_COUNT
 } lookupTableIndex_e;
 

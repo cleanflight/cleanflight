@@ -92,8 +92,11 @@
 #define ICM20601_CS_PIN         PA4 // served through MPU6500 code
 #define ICM20601_SPI_INSTANCE   SPI1
 #define USE_DUAL_GYRO
-#define GYRO_0_CS_PIN           MPU6000_CS_PIN
-#define GYRO_1_CS_PIN           ICM20601_CS_PIN
+#define GYRO_1_CS_PIN           MPU6000_CS_PIN
+#define GYRO_2_CS_PIN           ICM20601_CS_PIN
+#define GYRO_1_SPI_INSTANCE     MPU6000_SPI_INSTANCE
+#define GYRO_2_SPI_INSTANCE     ICM20601_SPI_INSTANCE
+
 #endif
 
 #if defined(SOULF4)
@@ -145,6 +148,12 @@
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085
 #define USE_BARO_BMP280
+
+#if defined(AIRBOTF4) || defined(AIRBOTF4SD)
+#define USE_BARO_SPI_BMP280
+#define BMP280_SPI_INSTANCE     SPI1
+#define BMP280_CS_PIN           PC13
+#endif
 
 #if defined(AIRBOTF4SD)
 // SDCARD support for AIRBOTF4SD

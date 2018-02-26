@@ -1709,17 +1709,6 @@ static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         break;
 #endif
 
-    case MSP_ARMING_DISABLE:
-        {
-            const uint8_t command = sbufReadU8(src);
-            if (command) {
-                setArmingDisabled(ARMING_DISABLED_MSP);
-            } else {
-                unsetArmingDisabled(ARMING_DISABLED_MSP);
-            }
-        }
-        break;
-
 #ifdef USE_FLASHFS
     case MSP_DATAFLASH_ERASE:
         flashfsEraseCompletely();

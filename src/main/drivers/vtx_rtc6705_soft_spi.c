@@ -55,25 +55,42 @@ const uint16_t vtx_freq[] =
     5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917, // RaceBand
 };
 
+#ifdef RTC6705_POWER_PIN
+static IO_t vtxPowerPin     = IO_NONE;
+#endif
+
+#define ENABLE_VTX_POWER()          IOLo(vtxPowerPin)
+#define DISABLE_VTX_POWER()         IOHi(vtxPowerPin)
+
 static IO_t rtc6705DataPin = IO_NONE;
 static IO_t rtc6705CsnPin = IO_NONE;
 static IO_t rtc6705ClkPin = IO_NONE;
 
 void rtc6705IOInit(void)
 {
+#ifdef RTC6705_POWER_PIN
+    vtxPowerPin = IOGetByTag(IO_TAG(RTC6705_POWER_PIN));
+    IOInit(vtxPowerPin, OWNER_VTX, 0);
+
+    DISABLE_VTX_POWER();
+    IOConfigGPIO(vtxPowerPin, IOCFG_OUT_PP);
+#endif
+
     rtc6705DataPin = IOGetByTag(IO_TAG(RTC6705_SPIDATA_PIN));
     rtc6705CsnPin   = IOGetByTag(IO_TAG(RTC6705_SPILE_PIN));
     rtc6705ClkPin  = IOGetByTag(IO_TAG(RTC6705_SPICLK_PIN));
-
-    IOInit(rtc6705CsnPin, OWNER_SPI_CS, RESOURCE_SOFT_OFFSET);
-    IOConfigGPIO(rtc6705CsnPin, IOCFG_OUT_PP);
-    DISABLE_RTC6705;
 
     IOInit(rtc6705DataPin, OWNER_SPI_MOSI, RESOURCE_SOFT_OFFSET);
     IOConfigGPIO(rtc6705DataPin, IOCFG_OUT_PP);
 
     IOInit(rtc6705ClkPin, OWNER_SPI_SCK, RESOURCE_SOFT_OFFSET);
     IOConfigGPIO(rtc6705ClkPin, IOCFG_OUT_PP);
+
+    DISABLE_RTC6705;
+    // GPIO bit is enabled so here so the output is not pulled low when the GPIO is set in output mode.
+    // Note: It's critical to ensure that incorrect signals are not sent to the VTX.
+    IOInit(rtc6705CsnPin, OWNER_SPI_CS, RESOURCE_SOFT_OFFSET);
+    IOConfigGPIO(rtc6705CsnPin, IOCFG_OUT_PP);
 }
 
 static void rtc6705_write_register(uint8_t addr, uint32_t data)
@@ -138,10 +155,17 @@ void rtc6705SetRFPower(uint8_t rf_power)
 
 void rtc6705Disable(void)
 {
+#ifdef RTC6705_POWER_PIN
+    DISABLE_VTX_POWER();
+#endif
 }
 
 void rtc6705Enable(void)
 {
+#ifdef RTC6705_POWER_PIN
+    ENABLE_VTX_POWER();
+#endif
 }
+
 
 #endif

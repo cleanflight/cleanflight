@@ -71,3 +71,9 @@ void detectHardwareRevision(void)
 
 void updateHardwareRevision(void) {
 }
+
+ioTag_t selectMPUIntExtiConfigByHardwareRevision(void)
+{
+    return IO_TAG(MPU_INT_EXTI);
+}
+

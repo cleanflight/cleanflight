@@ -18,8 +18,6 @@ EXCLUDES        = stm32f7xx_hal_can.c \
                   stm32f7xx_hal_crc_ex.c \
                   stm32f7xx_hal_cryp.c \
                   stm32f7xx_hal_cryp_ex.c \
-                  stm32f7xx_hal_dac.c \
-                  stm32f7xx_hal_dac_ex.c \
                   stm32f7xx_hal_dcmi.c \
                   stm32f7xx_hal_dcmi_ex.c \
                   stm32f7xx_hal_dfsdm.c \
@@ -114,7 +112,9 @@ ARCH_FLAGS      = -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -fs
 DEVICE_FLAGS    = -DUSE_HAL_DRIVER -DUSE_FULL_LL_DRIVER
 ifeq ($(TARGET),$(filter $(TARGET),$(F7X5XG_TARGETS)))
 DEVICE_FLAGS   += -DSTM32F745xx
+ifndef LD_SCRIPT
 LD_SCRIPT       = $(LINKER_DIR)/stm32_flash_f745.ld
+endif
 STARTUP_SRC     = startup_stm32f745xx.s
 TARGET_FLASH   := 2048
 else ifeq ($(TARGET),$(filter $(TARGET),$(F7X6XG_TARGETS)))

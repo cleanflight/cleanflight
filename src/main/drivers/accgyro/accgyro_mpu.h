@@ -32,7 +32,6 @@
 #define MPU_RA_WHO_AM_I         0x75
 #define MPU_RA_WHO_AM_I_LEGACY  0x00
 
-
 #define MPUx0x0_WHO_AM_I_CONST              (0x68) // MPU3050, 6000 and 6050
 #define MPU6000_WHO_AM_I_CONST              (0x68)
 #define MPU6500_WHO_AM_I_CONST              (0x70)
@@ -43,8 +42,6 @@
 #define ICM20608G_WHO_AM_I_CONST            (0xAF)
 #define ICM20649_WHO_AM_I_CONST             (0xE1)
 #define ICM20689_WHO_AM_I_CONST             (0x98)
-
-
 
 // RA = Register Address
 
@@ -181,6 +178,13 @@ enum accel_fsr_e {
 };
 
 typedef enum {
+    GYRO_OVERFLOW_NONE = 0x00,
+    GYRO_OVERFLOW_X = 0x01,
+    GYRO_OVERFLOW_Y = 0x02,
+    GYRO_OVERFLOW_Z = 0x04
+} gyroOverflow_e;
+
+typedef enum {
     MPU_NONE,
     MPU_3050,
     MPU_60x0,
@@ -208,9 +212,11 @@ typedef struct mpuDetectionResult_s {
 
 struct gyroDev_s;
 void mpuGyroInit(struct gyroDev_s *gyro);
-struct accDev_s;
-bool mpuAccRead(struct accDev_s *acc);
+gyroOverflow_e mpuGyroCheckOverflow(const struct gyroDev_s *gyro);
 bool mpuGyroRead(struct gyroDev_s *gyro);
 bool mpuGyroReadSPI(struct gyroDev_s *gyro);
 void mpuDetect(struct gyroDev_s *gyro);
 void mpuGyroSetIsrUpdate(struct gyroDev_s *gyro, sensorGyroUpdateFuncPtr updateFn);
+
+struct accDev_s;
+bool mpuAccRead(struct accDev_s *acc);

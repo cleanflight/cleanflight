@@ -159,7 +159,6 @@ FC_SRC = \
             telemetry/srxl.c \
             telemetry/frsky.c \
             telemetry/hott.c \
-            telemetry/jetiexbus.c \
             telemetry/smartport.c \
             telemetry/ltm.c \
             telemetry/mavlink.c \
@@ -235,6 +234,8 @@ SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
             io/displayport_max7456.c \
             io/osd.c \
             io/osd_slave.c
+
+NOT_OPTIMISED_SRC := $(NOT_OPTIMISED_SRC) \
 
 SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             drivers/bus_i2c_config.c \

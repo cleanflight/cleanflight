@@ -54,14 +54,17 @@ SECTIONS
   } >FLASH
 
 
-   .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
-    .ARM : {
+  .ARM.extab : {
+    *(.ARM.extab* .gnu.linkonce.armextab.*)
+  } >FLASH
+  
+  .ARM : {
     __exidx_start = .;
-      *(.ARM.exidx*)
-      __exidx_end = .;
-    } >FLASH
+    *(.ARM.exidx*)
+    __exidx_end = .;
+  } >FLASH
 
-  .preinit_array     :
+  .preinit_array :
   {
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array*))

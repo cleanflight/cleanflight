@@ -3010,7 +3010,7 @@ static void cliStatus(char *cmdline)
 #if defined(OSD) || !defined(MINIMAL_CLI)
     /* Flag strings are present if OSD is compiled so may as well use them even with MINIMAL_CLI */
     cliPrint("Arming disable flags:");
-    uint16_t flags = getArmingDisableFlags();
+    armingDisableFlags_e flags = getArmingDisableFlags();
     while (flags) {
         int bitpos = ffs(flags) - 1;
         flags &= ~(1 << bitpos);
@@ -3138,7 +3138,7 @@ const cliResourceValue_t resourceTable[] = {
     { OWNER_I2C_SDA,       PG_I2C_CONFIG, offsetof(i2cConfig_t, ioTagSda[0]), I2CDEV_COUNT },
 #endif
     { OWNER_LED,           PG_STATUS_LED_CONFIG, offsetof(statusLedConfig_t, ioTags[0]), STATUS_LED_NUMBER },
-#ifdef USE_SPEKTRUM_BIND
+#ifdef SPEKTRUM_BIND
     { OWNER_RX_BIND,       PG_RX_CONFIG, offsetof(rxConfig_t, spektrum_bind_pin_override_ioTag), 0 },
     { OWNER_RX_BIND_PLUG,  PG_RX_CONFIG, offsetof(rxConfig_t, spektrum_bind_plug_ioTag), 0 },
 #endif
@@ -3630,9 +3630,9 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("flash_read", NULL, "<length> <address>", cliFlashRead),
     CLI_COMMAND_DEF("flash_write", NULL, "<address> <message>", cliFlashWrite),
 #endif
-#ifdef USE_RX_FRSKY_D
-    CLI_COMMAND_DEF("frsky_bind", NULL, NULL, cliFrSkyBind),
 #endif
+#ifdef USE_RX_FRSKY_D
+    CLI_COMMAND_DEF("frsky_bind", "initiate binding for FrSky RX", NULL, cliFrSkyBind),
 #endif
     CLI_COMMAND_DEF("get", "get variable value", "[name]", cliGet),
 #ifdef GPS
