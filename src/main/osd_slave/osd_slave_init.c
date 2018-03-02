@@ -77,6 +77,7 @@
 
 #include "pg/adc.h"
 #include "pg/bus_i2c.h"
+#include "pg/bus_spi.h"
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
 #include "pg/vcd.h"
@@ -200,7 +201,7 @@ void init(void)
 #else
 
 #ifdef USE_SPI
-    spiPinConfigure();
+    spiPinConfigure(spiPinConfig());
 
     // Initialize CS lines and keep them high
     spiPreInit();
