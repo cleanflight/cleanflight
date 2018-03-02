@@ -41,11 +41,11 @@
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
 #define GYRO_MPU6000_ALIGN      CW90_DEG
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_SPI_MPU6000
 #define ACC_MPU6000_ALIGN       CW90_DEG
 
@@ -74,8 +74,6 @@
 #define VBAT_ADC_PIN            PA0
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
-
-#define LED_STRIP
 
 #define CAMERA_CONTROL_PIN      PA15
 

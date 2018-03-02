@@ -140,15 +140,11 @@
 // RF = Register Flag
 #define MPU_RF_DATA_RDY_EN (1 << 0)
 
-typedef bool (*mpuReadRegisterFnPtr)(const busDevice_t *bus, uint8_t reg, uint8_t* data, uint8_t length);
-typedef bool (*mpuWriteRegisterFnPtr)(const busDevice_t *bus, uint8_t reg, uint8_t data);
 typedef void (*mpuResetFnPtr)(void);
 
 extern mpuResetFnPtr mpuResetFn;
 
 typedef struct mpuConfiguration_s {
-    mpuReadRegisterFnPtr readFn;
-    mpuWriteRegisterFnPtr writeFn;
     mpuResetFnPtr resetFn;
 } mpuConfiguration_t;
 
@@ -161,9 +157,9 @@ enum gyro_fsr_e {
 };
 
 enum fchoice_b {
-    FCB_DISABLED = 0,
-    FCB_8800_32,
-    FCB_3600_32
+    FCB_DISABLED = 0x00,
+    FCB_8800_32 = 0x01,
+    FCB_3600_32 = 0x02
 };
 
 enum clock_sel_e {
@@ -179,6 +175,13 @@ enum accel_fsr_e {
     INV_FSR_16G,
     NUM_ACCEL_FSR
 };
+
+typedef enum {
+    GYRO_OVERFLOW_NONE = 0x00,
+    GYRO_OVERFLOW_X = 0x01,
+    GYRO_OVERFLOW_Y = 0x02,
+    GYRO_OVERFLOW_Z = 0x04
+} gyroOverflow_e;
 
 typedef enum {
     MPU_NONE,
@@ -208,9 +211,10 @@ typedef struct mpuDetectionResult_s {
 
 struct gyroDev_s;
 void mpuGyroInit(struct gyroDev_s *gyro);
-struct accDev_s;
-bool mpuAccRead(struct accDev_s *acc);
+gyroOverflow_e mpuGyroCheckOverflow(const struct gyroDev_s *gyro);
 bool mpuGyroRead(struct gyroDev_s *gyro);
 bool mpuGyroReadSPI(struct gyroDev_s *gyro);
 void mpuDetect(struct gyroDev_s *gyro);
-void mpuGyroSetIsrUpdate(struct gyroDev_s *gyro, sensorGyroUpdateFuncPtr updateFn);
+
+struct accDev_s;
+bool mpuAccRead(struct accDev_s *acc);

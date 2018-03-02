@@ -19,7 +19,8 @@
 
 #include "platform.h"
 
-#include "config/parameter_group.h"
+#include "common/time.h"
+#include "pg/pg.h"
 #include "drivers/pwm_output_counts.h"
 #include "drivers/io_types.h"
 #include "drivers/pwm_output.h"
@@ -119,7 +120,7 @@ void mixerInit(mixerMode_e mixerMode);
 void mixerConfigureOutput(void);
 
 void mixerResetDisarmedMotors(void);
-void mixTable(uint8_t vbatPidCompensation);
+void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensation);
 void syncMotors(bool enabled);
 void writeMotors(void);
 void stopMotors(void);
@@ -127,3 +128,4 @@ void stopPwmAllMotors(void);
 
 float convertExternalToMotor(uint16_t externalValue);
 uint16_t convertMotorToExternal(float motorValue);
+bool mixerIsTricopter(void);

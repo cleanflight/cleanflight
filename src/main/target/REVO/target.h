@@ -69,6 +69,10 @@
 #define BEEPER                  NONE
 #endif
 
+#if defined(REVOLT)
+#define ENABLE_DSHOT_DMAR       true
+#endif
+
 // PC0 used as inverter select GPIO
 #ifdef AIRBOTF4SD
 #define INVERTER_PIN_UART6      PD2
@@ -82,8 +86,8 @@
 #define MPU6500_CS_PIN          PA4
 #define MPU6500_SPI_INSTANCE    SPI1
 
-#define GYRO
-#define ACC
+#define USE_GYRO
+#define USE_ACC
 
 #ifdef AIRBOTF4SD
 #undef MPU6000_CS_PIN
@@ -137,14 +141,20 @@
 #define USE_MPU_DATA_READY_SIGNAL
 
 // Configure MAG and BARO unconditionally.
-#define MAG
+#define USE_MAG
 #define USE_MAG_HMC5883
 #define MAG_HMC5883_ALIGN       CW90_DEG
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085
 #define USE_BARO_BMP280
+
+#if defined(AIRBOTF4) || defined(AIRBOTF4SD)
+#define USE_BARO_SPI_BMP280
+#define BMP280_SPI_INSTANCE     SPI1
+#define BMP280_CS_PIN           PC13
+#endif
 
 #if defined(AIRBOTF4SD)
 // SDCARD support for AIRBOTF4SD
@@ -161,9 +171,7 @@
 #define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER 4 // 21MHz
 
 #define SDCARD_DMA_CHANNEL_TX               DMA1_Stream5
-#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG DMA_FLAG_TCIF5
-#define SDCARD_DMA_CLK                      RCC_AHB1Periph_DMA1
-#define SDCARD_DMA_CHANNEL                  DMA_Channel_0
+#define SDCARD_DMA_CHANNEL                  0
 
 #else
 
@@ -253,7 +261,7 @@
 #define RSSI_ADC_PIN            PA0
 #endif
 
-#define TRANSPONDER
+#define USE_TRANSPONDER
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
 #if defined(PODIUMF4)

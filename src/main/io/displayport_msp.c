@@ -26,16 +26,16 @@
 
 #include "common/utils.h"
 
-#include "config/parameter_group.h"
-#include "config/parameter_group_ids.h"
+#include "pg/pg.h"
+#include "pg/pg_ids.h"
 
 #include "drivers/display.h"
 
-#include "fc/fc_msp.h"
+#include "interface/msp.h"
+#include "interface/msp_protocol.h"
 
 #include "io/displayport_msp.h"
 
-#include "msp/msp_protocol.h"
 #include "msp/msp_serial.h"
 
 // no template required since defaults are zero

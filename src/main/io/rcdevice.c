@@ -118,7 +118,7 @@ static uint8_t runcamDeviceReceivePacket(runcamDevice_t *device, uint8_t command
                 if (!runcamDeviceIsResponseReceiveDone(command, data, dataPos, &isDone)) {
                     return 0;
                 }
-    
+
                 if (isDone) {
                     responseDataLen = dataPos;
                     break;
@@ -180,18 +180,18 @@ static void runcamDeviceSendPacket(runcamDevice_t *device, uint8_t command, uint
 static bool runcamDeviceSendRequestAndWaitingResp(runcamDevice_t *device, uint8_t commandID, uint8_t *paramData, uint8_t paramDataLen, uint8_t *outputBuffer, uint8_t *outputBufferLen)
 {
     int max_retries = 1;
-    // here using 1000ms as timeout, because the response from 5 key simulation command need a long time about >= 600ms, 
+    // here using 1000ms as timeout, because the response from 5 key simulation command need a long time about >= 600ms,
     // so set a max value to ensure we can receive the response
-    int timeoutMs = 1000; 
+    int timeoutMs = 1000;
 
-    // only the command sending on initializing step need retry logic, 
+    // only the command sending on initializing step need retry logic,
     // otherwise, the timeout of 1000 ms is enough for the response from device
     if (commandID == RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO) {
-        max_retries = 3;
-        timeoutMs = 100; // we have test some device, 100ms as timeout, and retry times be 3, it's stable for most case
+        max_retries = 5;
+        timeoutMs = 60; // we have test some device, 60ms as timeout, and retry times be 5, it's stable for most case
     }
 
-    while (max_retries--) {
+    for (int i = 0; i < max_retries; i++) {
         // flush rx buffer
         runcamDeviceFlushRxBuffer(device);
 
@@ -212,11 +212,96 @@ static bool runcamDeviceSendRequestAndWaitingResp(runcamDevice_t *device, uint8_
     return false;
 }
 
+static uint8_t calcCRCFromData(uint8_t *ptr, uint8_t len)
+{
+    uint8_t i;
+    uint8_t crc = 0x00;
+    while (len--) {
+        crc ^= *ptr++;
+        for (i = 8; i > 0; --i) {
+            if (crc & 0x80) {
+                crc = (crc << 1) ^ 0x31;
+            } else {
+                crc = (crc << 1);
+            }
+        }
+    }
+    return crc;
+}
+
+static void sendCtrlCommand(runcamDevice_t *device, rcsplit_ctrl_argument_e argument)
+{
+    if (!device->serialPort) {
+        return ;
+    }
+
+    uint8_t uart_buffer[5] = {0};
+    uint8_t crc = 0;
+
+    uart_buffer[0] = RCSPLIT_PACKET_HEADER;
+    uart_buffer[1] = RCSPLIT_PACKET_CMD_CTRL;
+    uart_buffer[2] = argument;
+    uart_buffer[3] = RCSPLIT_PACKET_TAIL;
+    crc = calcCRCFromData(uart_buffer, 4);
+
+    // build up a full request [header]+[command]+[argument]+[crc]+[tail]
+    uart_buffer[3] = crc;
+    uart_buffer[4] = RCSPLIT_PACKET_TAIL;
+
+    // write to device
+    serialWriteBuf(device->serialPort, uart_buffer, 5);
+}
+
 // get the device info(firmware version, protocol version and features, see the
 // definition of runcamDeviceInfo_t to know more)
-static bool runcamDeviceGetDeviceInfo(runcamDevice_t *device, uint8_t *outputBuffer) 
+static bool runcamDeviceGetDeviceInfo(runcamDevice_t *device, uint8_t *outputBuffer)
 {
-    return runcamDeviceSendRequestAndWaitingResp(device, RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, NULL, 0, outputBuffer, NULL); 
+    // Send "who are you" command to device to detect the device whether is running RCSplit FW1.0 or RCSplit FW1.1
+    int max_retries = 2;
+    for (int i = 0; i < max_retries; i++) {
+        runcamDeviceFlushRxBuffer(device);
+        sendCtrlCommand(device, RCSPLIT_CTRL_ARGU_WHO_ARE_YOU);
+
+        timeMs_t timeout = millis() + 500;
+        uint8_t response[5] = { 0 };
+        while (millis() < timeout) {
+            if (serialRxBytesWaiting(device->serialPort) >= 5) {
+                response[0] = serialRead(device->serialPort);
+                response[1] = serialRead(device->serialPort);
+                response[2] = serialRead(device->serialPort);
+                response[3] = serialRead(device->serialPort);
+                response[4] = serialRead(device->serialPort);
+                if (response[0] != RCSPLIT_PACKET_HEADER || response[1] != RCSPLIT_PACKET_CMD_CTRL || response[2] != RCSPLIT_CTRL_ARGU_WHO_ARE_YOU || response[4] != RCSPLIT_PACKET_TAIL) {
+                    break;
+                }
+
+                uint8_t crcFromPacket = response[3];
+                response[3] = response[4]; // move packet tail field to crc field, and calc crc with first 4 bytes
+                uint8_t crc = calcCRCFromData(response, 4);
+                if (crc != crcFromPacket) {
+                    break;
+                }
+
+                // generate response for RCSplit FW 1.0 and FW 1.1
+                outputBuffer[0] = RCDEVICE_PROTOCOL_HEADER;
+                // protocol version
+                outputBuffer[1] = RCDEVICE_PROTOCOL_RCSPLIT_VERSION;
+                // features
+                outputBuffer[2] = RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON | RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON | RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE;
+                outputBuffer[3] = 0;
+
+                crc = 0;
+                const uint8_t * const end = outputBuffer + 4;
+                for (const uint8_t *ptr = outputBuffer; ptr < end; ++ptr) {
+                    crc = crc8_dvb_s2(crc, *ptr);
+                }
+                outputBuffer[4] = crc;
+                return true;
+            }
+        }
+    }
+
+    return runcamDeviceSendRequestAndWaitingResp(device, RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, NULL, 0, outputBuffer, NULL);
 }
 
 static bool runcamDeviceSend5KeyOSDCableConnectionEvent(runcamDevice_t *device, uint8_t operation, uint8_t *outActionID, uint8_t *outErrorCode)
@@ -251,7 +336,7 @@ bool runcamDeviceInit(runcamDevice_t *device)
     serialPortFunction_e portID = FUNCTION_RCDEVICE;
     serialPortConfig_t *portConfig = findSerialPortConfig(portID);
     if (portConfig != NULL) {
-        device->serialPort = openSerialPort(portConfig->identifier, portID, NULL, 115200, MODE_RXTX, SERIAL_NOT_INVERTED);
+        device->serialPort = openSerialPort(portConfig->identifier, portID, NULL, NULL, 115200, MODE_RXTX, SERIAL_NOT_INVERTED);
 
         if (device->serialPort != NULL) {
             // send RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO to device to retrive
@@ -277,7 +362,14 @@ bool runcamDeviceInit(runcamDevice_t *device)
 
 bool runcamDeviceSimulateCameraButton(runcamDevice_t *device, uint8_t operation)
 {
-    runcamDeviceSendPacket(device, RCDEVICE_PROTOCOL_COMMAND_CAMERA_CONTROL, &operation, sizeof(operation));
+    if (device->info.protocolVersion == RCDEVICE_PROTOCOL_RCSPLIT_VERSION) {
+        sendCtrlCommand(device, operation + 1);
+    } else if (device->info.protocolVersion == RCDEVICE_PROTOCOL_VERSION_1_0) {
+        runcamDeviceSendPacket(device, RCDEVICE_PROTOCOL_COMMAND_CAMERA_CONTROL, &operation, sizeof(operation));
+    } else {
+        return false;
+    }
+
     return true;
 }
 
@@ -422,7 +514,7 @@ static bool runcamDeviceDecodeSettings(sbuf_t *buf, runcamDeviceSetting_t *outSe
         case RCDP_SETTING_PARSE_WAITING_ID: {
             settingIterator->id = sbufReadU8(buf);
             parseStep = RCDP_SETTING_PARSE_WAITING_NAME;
-        } 
+        }
             break;
         case RCDP_SETTING_PARSE_WAITING_NAME: {
             const char *str = (const char *)sbufConstPtr(buf);
@@ -430,9 +522,9 @@ static bool runcamDeviceDecodeSettings(sbuf_t *buf, runcamDeviceSetting_t *outSe
             memset(settingIterator->name, 0, RCDEVICE_PROTOCOL_MAX_SETTING_NAME_LENGTH);
             strncpy(settingIterator->name, str, RCDEVICE_PROTOCOL_MAX_SETTING_NAME_LENGTH);
             sbufAdvance(buf, nameLen);
-            
+
             parseStep = RCDP_SETTING_PARSE_WAITING_VALUE;
-        } 
+        }
             break;
         case RCDP_SETTING_PARSE_WAITING_VALUE: {
             const char *str = (const char *)sbufConstPtr(buf);
@@ -443,7 +535,7 @@ static bool runcamDeviceDecodeSettings(sbuf_t *buf, runcamDeviceSetting_t *outSe
             parseStep = RCDP_SETTING_PARSE_WAITING_ID;
 
             settingIterator++;
-        } 
+        }
             break;
         }
     }
@@ -535,7 +627,7 @@ bool runcamDeviceGetSettings(runcamDevice_t *device, uint8_t parentSettingID, ru
     if (!runcamDeviceDecodeSettings(&dataBuf, outSettingList, maxSettingItemCount)) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -556,13 +648,13 @@ static bool runcamDeviceDecodeSettingDetail(sbuf_t *buf, runcamDeviceSettingDeta
         outSettingDetail->stepSize = sbufReadU8(buf);
         break;
     case RCDEVICE_PROTOCOL_SETTINGTYPE_UINT16:
-    case RCDEVICE_PROTOCOL_SETTINGTYPE_INT16: 
+    case RCDEVICE_PROTOCOL_SETTINGTYPE_INT16:
         outSettingDetail->value = sbufReadU16(buf);
         outSettingDetail->minValue = sbufReadU16(buf);
         outSettingDetail->maxValue = sbufReadU16(buf);
         outSettingDetail->stepSize = sbufReadU8(buf);
         break;
-    case RCDEVICE_PROTOCOL_SETTINGTYPE_FLOAT: 
+    case RCDEVICE_PROTOCOL_SETTINGTYPE_FLOAT:
         outSettingDetail->value = sbufReadU32(buf);
         outSettingDetail->minValue = sbufReadU32(buf);
         outSettingDetail->maxValue = sbufReadU32(buf);
@@ -592,7 +684,7 @@ static bool runcamDeviceDecodeSettingDetail(sbuf_t *buf, runcamDeviceSettingDeta
             result = strtok(NULL, delims);
             i++;
         }
-    } 
+    }
         break;
     case RCDEVICE_PROTOCOL_SETTINGTYPE_STRING: {
         const char *tmp = (const char *)sbufConstPtr(buf);
@@ -600,7 +692,7 @@ static bool runcamDeviceDecodeSettingDetail(sbuf_t *buf, runcamDeviceSettingDeta
         sbufAdvance(buf, strlen(tmp) + 1);
 
         outSettingDetail->maxStringSize = sbufReadU8(buf);
-    } 
+    }
         break;
     case RCDEVICE_PROTOCOL_SETTINGTYPE_FOLDER:
         break;
@@ -651,7 +743,7 @@ bool runcamDeviceWriteSetting(runcamDevice_t *device, uint8_t settingID, uint8_t
     }
 
     memset(response, 0, sizeof(runcamDeviceWriteSettingResponse_t));
-    response->resultCode = 1; // initialize the result code to failed 
+    response->resultCode = 1; // initialize the result code to failed
 
     uint8_t paramsBufLen = sizeof(uint8_t) + paramDataLen;
     uint8_t paramsBuf[RCDEVICE_PROTOCOL_MAX_DATA_SIZE];

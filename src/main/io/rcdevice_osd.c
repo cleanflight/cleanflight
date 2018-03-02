@@ -18,12 +18,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "drivers/vcd.h"
-
-#include "rcdevice.h"
-#include "rcdevice_osd.h"
+#include "platform.h"
 
 #ifdef USE_RCDEVICE
+
+#include "io/rcdevice.h"
+
+#include "pg/vcd.h"
+
+#include "rcdevice_osd.h"
 
 #define VIDEO_BUFFER_CHARS_PAL 480
 
@@ -227,9 +230,9 @@ uint32_t rcdeviceOSDTxBytesFree(const displayPort_t *displayPort)
     return INT32_MAX;
 }
 
-int rcdeviceScreenSize(const displayPort_t *displayPort) 
-{ 
-    return displayPort->rows * displayPort->cols; 
+int rcdeviceScreenSize(const displayPort_t *displayPort)
+{
+    return displayPort->rows * displayPort->cols;
 }
 
 #endif

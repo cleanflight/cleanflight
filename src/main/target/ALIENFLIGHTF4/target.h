@@ -17,11 +17,11 @@
 
 #pragma once
 #define TARGET_BOARD_IDENTIFIER "AFF4"
-#define TARGET_CONFIG
+#define USE_TARGET_CONFIG
 
 #define USE_HARDWARE_REVISION_DETECTION
 #define HW_PIN                  PC13
-#define BRUSHED_ESC_AUTODETECT
+#define USE_BRUSHED_ESC_AUTODETECT
 
 #define USBD_PRODUCT_STRING "AlienFlight F4"
 
@@ -43,22 +43,21 @@
 #define MPU6500_CS_PIN          SPI1_NSS_PIN
 #define MPU6500_SPI_INSTANCE    SPI1
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_SPI_MPU6500
 #define ACC_MPU6500_ALIGN       CW270_DEG
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_SPI_MPU6500
 #define GYRO_MPU6500_ALIGN      CW270_DEG
 
-#define MAG
+#define USE_MAG
 #define USE_MAG_HMC5883
 #define USE_MAG_AK8963
 
-#define MAG_HMC5883_ALIGN       CW180_DEG
-#define MAG_AK8963_ALIGN        CW270_DEG
+#define MAG_AK8963_ALIGN        CW180_DEG_FLIP
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_MS5611
 #define USE_BARO_BMP280
 
@@ -76,9 +75,7 @@
 #define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER 4 // 21MHz
 
 #define SDCARD_DMA_CHANNEL_TX               DMA1_Stream4
-#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG DMA_FLAG_TCIF4
-#define SDCARD_DMA_CLK                      RCC_AHB1Periph_DMA1
-#define SDCARD_DMA_CHANNEL                  DMA_Channel_0
+#define SDCARD_DMA_CHANNEL                  0
 
 // Performance logging for SD card operations:
 // #define AFATFS_USE_INTROSPECTIVE_LOGGING
@@ -153,9 +150,6 @@
 
 #define CURRENT_METER_OFFSET_DEFAULT 2500                      // ACS712/714-30A - 0A = 2.5V
 #define CURRENT_METER_SCALE_DEFAULT -667                       // ACS712/714-30A - 66.666 mV/A inverted mode
-
-// LED strip configuration.
-#define LED_STRIP
 
 #define BINDPLUG_PIN            PB2
 

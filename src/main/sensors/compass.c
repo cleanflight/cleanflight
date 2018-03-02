@@ -22,8 +22,8 @@
 
 #include "common/axis.h"
 
-#include "config/parameter_group.h"
-#include "config/parameter_group_ids.h"
+#include "pg/pg.h"
+#include "pg/pg_ids.h"
 
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
@@ -106,7 +106,7 @@ void pgResetFn_compassConfig(compassConfig_t *compassConfig)
     compassConfig->interruptTag = COMPASS_INTERRUPT_TAG;
 }
 
-#if defined(MAG)
+#if defined(USE_MAG)
 
 static int16_t magADCRaw[XYZ_AXIS_COUNT];
 static uint8_t magInit = 0;
@@ -162,7 +162,7 @@ bool compassDetect(magDev_t *dev)
 
     switch (compassConfig()->mag_hardware) {
     case MAG_DEFAULT:
-        ; // fallthrough
+        FALLTHROUGH;
 
     case MAG_HMC5883:
 #if defined(USE_MAG_HMC5883) || defined(USE_MAG_SPI_HMC5883)
@@ -178,7 +178,7 @@ bool compassDetect(magDev_t *dev)
             break;
         }
 #endif
-        ; // fallthrough
+        FALLTHROUGH;
 
     case MAG_AK8975:
 #ifdef USE_MAG_AK8975
@@ -194,7 +194,7 @@ bool compassDetect(magDev_t *dev)
             break;
         }
 #endif
-        ; // fallthrough
+        FALLTHROUGH;
 
     case MAG_AK8963:
 #if defined(USE_MAG_AK8963) || defined(USE_MAG_SPI_AK8963)
@@ -215,7 +215,7 @@ bool compassDetect(magDev_t *dev)
             break;
         }
 #endif
-        ; // fallthrough
+        FALLTHROUGH;
 
     case MAG_NONE:
         magHardware = MAG_NONE;
@@ -262,9 +262,14 @@ bool compassInit(void)
     return true;
 }
 
-void compassUpdate(uint32_t currentTime, flightDynamicsTrims_t *magZero)
+bool compassIsHealthy(void)
 {
-    static uint32_t tCal = 0;
+    return (mag.magADC[X] != 0) && (mag.magADC[Y] != 0) && (mag.magADC[Z] != 0);
+}
+
+void compassUpdate(timeUs_t currentTimeUs)
+{
+    static timeUs_t tCal = 0;
     static flightDynamicsTrims_t magZeroTempMin;
     static flightDynamicsTrims_t magZeroTempMax;
 
@@ -274,8 +279,9 @@ void compassUpdate(uint32_t currentTime, flightDynamicsTrims_t *magZero)
     }
     alignSensors(mag.magADC, magDev.magAlign);
 
+    flightDynamicsTrims_t *magZero = &compassConfigMutable()->magZero;
     if (STATE(CALIBRATE_MAG)) {
-        tCal = currentTime;
+        tCal = currentTimeUs;
         for (int axis = 0; axis < 3; axis++) {
             magZero->raw[axis] = 0;
             magZeroTempMin.raw[axis] = mag.magADC[axis];
@@ -291,7 +297,7 @@ void compassUpdate(uint32_t currentTime, flightDynamicsTrims_t *magZero)
     }
 
     if (tCal != 0) {
-        if ((currentTime - tCal) < 30000000) {    // 30s: you have 30s to turn the multi in all directions
+        if ((currentTimeUs - tCal) < 30000000) {    // 30s: you have 30s to turn the multi in all directions
             LED0_TOGGLE;
             for (int axis = 0; axis < 3; axis++) {
                 if (mag.magADC[axis] < magZeroTempMin.raw[axis])
@@ -309,4 +315,4 @@ void compassUpdate(uint32_t currentTime, flightDynamicsTrims_t *magZero)
         }
     }
 }
-#endif
+#endif // USE_MAG

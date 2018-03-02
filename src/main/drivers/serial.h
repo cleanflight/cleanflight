@@ -18,7 +18,7 @@
 #pragma once
 
 #include "drivers/io.h"
-#include "config/parameter_group.h"
+#include "pg/pg.h"
 
 typedef enum {
     MODE_RX = 1 << 0,
@@ -43,11 +43,12 @@ typedef enum {
      * To ensure the first start bit to be sent, prepend a zero byte (0x00)
      * to actual data bytes.
      */
-    SERIAL_BIDIR_OD      = 0 << 4,
-    SERIAL_BIDIR_PP      = 1 << 4
+    SERIAL_BIDIR_OD        = 0 << 4,
+    SERIAL_BIDIR_PP        = 1 << 4,
+    SERIAL_BIDIR_NOPULL    = 1 << 5, // disable pulls in BIDIR RX mode
 } portOptions_e;
 
-typedef void (*serialReceiveCallbackPtr)(uint16_t data);   // used by serial drivers to return frames to app
+typedef void (*serialReceiveCallbackPtr)(uint16_t data, void *rxCallbackData);   // used by serial drivers to return frames to app
 
 typedef struct serialPort_s {
 
@@ -69,6 +70,7 @@ typedef struct serialPort_s {
     uint32_t txBufferTail;
 
     serialReceiveCallbackPtr rxCallback;
+    void *rxCallbackData;
 } serialPort_t;
 
 #if defined(USE_SOFTSERIAL1) || defined(USE_SOFTSERIAL2)

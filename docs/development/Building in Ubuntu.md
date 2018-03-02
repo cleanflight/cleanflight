@@ -93,6 +93,7 @@ __The following is outdated and kept only for historical reasons and in the vagu
 
 
 We suggest that you take an alternative PPA from Terry Guo, found here:
+
 https://launchpad.net/~terry.guo/+archive/ubuntu/gcc-arm-embedded
 
 This PPA has several compiler versions and platforms available. For many hardware platforms (notably Naze)

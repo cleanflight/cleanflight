@@ -25,7 +25,7 @@
 #include "nvic.h"
 #include "pwm_output.h"
 #include "time.h"
-#include "config/parameter_group_ids.h"
+#include "pg/pg_ids.h"
 
 #if defined(STM32F40_41xxx)
 #define CAMERA_CONTROL_TIMER_HZ   MHZ_TO_HZ(84)
@@ -56,7 +56,7 @@
 #define CAMERA_CONTROL_PIN NONE
 #endif
 
-#ifdef OSD
+#ifdef USE_OSD
 #include "io/osd.h"
 #endif
 
@@ -193,7 +193,7 @@ void cameraControlKeyPress(cameraControlKey_e key, uint32_t holdDurationMs)
     (void) holdDurationMs;
 #endif
 
-#ifdef OSD
+#ifdef USE_OSD
     // Force OSD timeout so we are alone on the display.
     resumeRefreshAt = 0;
 #endif

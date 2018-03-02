@@ -47,6 +47,9 @@ static uint16_t freqBeep = 0;
 
 static bool pwmMotorsEnabled = false;
 static bool isDshot = false;
+#ifdef USE_DSHOT_DMAR
+bool useBurstDshot = false;
+#endif
 
 static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value, uint8_t output)
 {
@@ -74,7 +77,7 @@ static void pwmOCConfig(TIM_TypeDef *tim, uint8_t channel, uint16_t value, uint8
     if (output & TIMER_OUTPUT_N_CHANNEL) {
         TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
         TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCNIdleState_Reset;
-        TIM_OCInitStructure.TIM_OCNPolarity = (output & TIMER_OUTPUT_INVERTED) ? TIM_OCNPolarity_High : TIM_OCNPolarity_Low;
+        TIM_OCInitStructure.TIM_OCNPolarity = (output & TIMER_OUTPUT_INVERTED) ? TIM_OCNPolarity_Low : TIM_OCNPolarity_High;
     } else {
         TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
         TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
@@ -137,20 +140,20 @@ static void pwmWriteDshot(uint8_t index, float value)
     pwmWriteDshotInt(index, lrintf(value));
 }
 
-static uint8_t loadDmaBufferDshot(motorDmaOutput_t *const motor, uint16_t packet)
+static uint8_t loadDmaBufferDshot(uint32_t *dmaBuffer, int stride, uint16_t packet)
 {
     for (int i = 0; i < 16; i++) {
-        motor->dmaBuffer[i] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
+        dmaBuffer[i * stride] = (packet & 0x8000) ? MOTOR_BIT_1 : MOTOR_BIT_0;  // MSB first
         packet <<= 1;
     }
 
     return DSHOT_DMA_BUFFER_SIZE;
 }
 
-static uint8_t loadDmaBufferProshot(motorDmaOutput_t *const motor, uint16_t packet)
+static uint8_t loadDmaBufferProshot(uint32_t *dmaBuffer, int stride, uint16_t packet)
 {
     for (int i = 0; i < 4; i++) {
-        motor->dmaBuffer[i] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
+        dmaBuffer[i * stride] = PROSHOT_BASE_SYMBOL + ((packet & 0xF000) >> 12) * PROSHOT_BIT_WIDTH;  // Most significant nibble first
         packet <<= 4;   // Shift 4 bits
     }
 
@@ -260,6 +263,11 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
         loadDmaBuffer = &loadDmaBufferDshot;
         pwmCompleteWrite = &pwmCompleteDshotMotorUpdate;
         isDshot = true;
+#ifdef USE_DSHOT_DMAR
+        if (motorConfig->useBurstDshot) {
+            useBurstDshot = true;
+        }
+#endif
         break;
 #endif
     }
@@ -282,6 +290,7 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
         }
 
         motors[motorIndex].io = IOGetByTag(tag);
+        IOInit(motors[motorIndex].io, OWNER_MOTOR, RESOURCE_INDEX(motorIndex));
 
 #ifdef USE_DSHOT
         if (isDshot) {
@@ -294,12 +303,7 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
         }
 #endif
 
-        IOInit(motors[motorIndex].io, OWNER_MOTOR, RESOURCE_INDEX(motorIndex));
-#if defined(USE_HAL_DRIVER)
         IOConfigGPIOAF(motors[motorIndex].io, IOCFG_AF_PP, timerHardware->alternateFunction);
-#else
-        IOConfigGPIO(motors[motorIndex].io, IOCFG_AF_PP);
-#endif
 
         /* standard PWM outputs */
         // margin of safety is 4 periods when unsynced

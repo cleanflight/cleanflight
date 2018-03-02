@@ -15,7 +15,7 @@
 
 #pragma once
 
-#define TARGET_CONFIG
+#define USE_TARGET_CONFIG
 
 #ifdef OMNIBUSF7V2
 #define TARGET_BOARD_IDENTIFIER "OB72"
@@ -30,8 +30,8 @@
 #define BEEPER                  PD15
 #define BEEPER_INVERTED
 
-#define ACC
-#define GYRO
+#define USE_ACC
+#define USE_GYRO
 #define USE_DUAL_GYRO
 
 // ICM-20608-G
@@ -136,7 +136,6 @@
 #define SPI4_MOSI_PIN           PE6
 
 
-#define OSD
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI2
 #define MAX7456_SPI_CS_PIN      SPI2_NSS_PIN
@@ -155,12 +154,7 @@
 #define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER 8 // 27MHz
 
 #define SDCARD_DMA_STREAM_TX_FULL           DMA2_Stream1
-#define SDCARD_DMA_TX                       DMA2
-#define SDCARD_DMA_STREAM_TX                1
-#define SDCARD_DMA_CLK                      LL_AHB1_GRP1_PERIPH_DMA2
-
-#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG DMA_FLAG_TCIF1_5
-#define SDCARD_DMA_CHANNEL                  DMA_CHANNEL_4
+#define SDCARD_DMA_CHANNEL                  4
 
 #define USE_I2C
 #define USE_I2C_DEVICE_2
@@ -168,13 +162,13 @@
 #define I2C2_SCL                NONE        // PB10 (UART3_TX)
 #define I2C2_SDA                NONE        // PB11 (UART3_RX)
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_BMP280
 #define USE_BARO_SPI_BMP280
 #define BMP280_SPI_INSTANCE     SPI1
 #define BMP280_CS_PIN           PA1
 
-#define MAG
+#define USE_MAG
 #define USE_MAG_HMC5883
 
 #define SENSORS_SET (SENSOR_ACC | SENSOR_BARO)
@@ -183,11 +177,10 @@
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_ADC
 
 #define USE_ADC
+#define ADC_INSTANCE            ADC1
 #define CURRENT_METER_ADC_PIN   PC2
 #define VBAT_ADC_PIN            PC3
 #define RSSI_ADC_PIN            PC5
-
-#define LED_STRIP
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 
