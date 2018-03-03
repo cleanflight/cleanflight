@@ -502,7 +502,7 @@ void changePidProfile(uint8_t pidProfileIndex)
 
 void beeperOffSet(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags |= mask;
 #else
     UNUSED(mask);
@@ -511,7 +511,7 @@ void beeperOffSet(uint32_t mask)
 
 void beeperOffSetAll(uint8_t beeperCount)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags = (1 << beeperCount) -1;
 #else
     UNUSED(beeperCount);
@@ -520,7 +520,7 @@ void beeperOffSetAll(uint8_t beeperCount)
 
 void beeperOffClear(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags &= ~(mask);
 #else
     UNUSED(mask);
@@ -529,14 +529,14 @@ void beeperOffClear(uint32_t mask)
 
 void beeperOffClearAll(void)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags = 0;
 #endif
 }
 
 uint32_t getBeeperOffMask(void)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     return beeperConfig()->beeper_off_flags;
 #else
     return 0;
@@ -545,7 +545,7 @@ uint32_t getBeeperOffMask(void)
 
 void setBeeperOffMask(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->beeper_off_flags = mask;
 #else
     UNUSED(mask);
@@ -554,7 +554,7 @@ void setBeeperOffMask(uint32_t mask)
 
 uint32_t getPreferredBeeperOffMask(void)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     return beeperConfig()->preferred_beeper_off_flags;
 #else
     return 0;
@@ -563,7 +563,7 @@ uint32_t getPreferredBeeperOffMask(void)
 
 void setPreferredBeeperOffMask(uint32_t mask)
 {
-#ifdef BEEPER
+#ifdef USE_BEEPER
     beeperConfigMutable()->preferred_beeper_off_flags = mask;
 #else
     UNUSED(mask);
