@@ -21,11 +21,11 @@
 
 #include "platform.h"
 
+#if defined(USE_BUTTONS)
+
 #include "drivers/io.h"
 
 #include "drivers/buttons.h"
-
-#if defined(BUTTONS)
 
 #ifdef BUTTON_A_PIN
 static IO_t buttonAPin = IO_NONE;

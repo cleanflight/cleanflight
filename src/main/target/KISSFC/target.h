@@ -39,22 +39,25 @@
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 #ifdef KISSCC
-#define TARGET_CONFIG
+#define USE_TARGET_CONFIG
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_MPU6050
 #define GYRO_MPU6050_ALIGN      CW90_DEG
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_MPU6050
 #define ACC_MPU6050_ALIGN       CW90_DEG
-#undef LED_STRIP
+
+#define TARGET_DEFAULT_MIXER    MIXER_QUADX_1234
+
+#undef USE_LED_STRIP
 #else
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_MPU6050
 #define GYRO_MPU6050_ALIGN      CW180_DEG
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_MPU6050
 #define ACC_MPU6050_ALIGN       CW180_DEG
 #endif

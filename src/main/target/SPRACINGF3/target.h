@@ -45,11 +45,11 @@
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 
-#define GYRO
+#define USE_GYRO
 
-#define ACC
+#define USE_ACC
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_BMP280
 
 #if defined(FLIP32F3OSD)
@@ -60,12 +60,12 @@
 #define ACC_MPU6500_ALIGN CW270_DEG
 
 #elif defined(ZCOREF3)
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
 #define GYRO_MPU6500_ALIGN      CW180_DEG
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
 #define ACC_MPU6500_ALIGN       CW180_DEG
@@ -89,12 +89,10 @@
 #endif
 
 #if defined(FLIP32F3OSD)
-#define SONAR
-#define SONAR_TRIGGER_PIN       PB0
-#define SONAR_ECHO_PIN          PB1
-
-#elif defined(RMDO)
-#undef USE_GPS
+#define USE_RANGEFINDER
+#define USE_RANGEFINDER_HCSR04
+#define RANGEFINDER_HCSR04_TRIGGER_PIN       PB0
+#define RANGEFINDER_HCSR04_ECHO_PIN          PB1
 
 #elif defined(ZCOREF3)
 #define USE_MAG_DATA_READY_SIGNAL
@@ -102,14 +100,15 @@
 
 #else //SPRACINGF3
 
-#define SONAR
-#define SONAR_TRIGGER_PIN       PB0
-#define SONAR_ECHO_PIN          PB1
+#define USE_RANGEFINDER
+#define USE_RANGEFINDER_HCSR04
+#define RANGEFINDER_HCSR04_TRIGGER_PIN       PB0
+#define RANGEFINDER_HCSR04_ECHO_PIN          PB1
 
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085
 
-#define MAG
+#define USE_MAG
 #define USE_MAG_AK8975
 #define USE_MAG_HMC5883
 #define MAG_HMC5883_ALIGN       CW270_DEG
@@ -137,7 +136,7 @@
 #define SOFTSERIAL2_RX_PIN      PB0 // PWM 7
 #define SOFTSERIAL2_TX_PIN      PB1 // PWM 8
 
-#define SONAR_SOFTSERIAL2_EXCLUSIVE
+#define RANGEFINDER_HCSR04_SOFTSERIAL2_EXCLUSIVE
 #endif
 
 #define USE_ESCSERIAL
@@ -170,7 +169,6 @@
 #define CURRENT_METER_ADC_PIN   PA5
 #define RSSI_ADC_PIN            PB2
 
-#define OSD
 #define USE_OSD_OVER_MSP_DISPLAYPORT
 #define USE_SLOW_MSP_DISPLAYPORT_RATE_WHEN_UNARMED
 

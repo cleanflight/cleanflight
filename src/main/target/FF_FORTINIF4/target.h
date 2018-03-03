@@ -18,13 +18,12 @@
 #pragma once
 #define TARGET_BOARD_IDENTIFIER "FORT"
 #define USBD_PRODUCT_STRING     "FortiniF4"
-#define TARGET_CONFIG
+#define USE_TARGET_CONFIG
 #define USE_HARDWARE_REVISION_DETECTION
 #define HW_PIN                  PC14
 /*--------------LED----------------*/
 #define LED0_PIN                PB5
 #define LED1_PIN                PB6
-#define LED_STRIP
 /*---------------------------------*/
 
 /*------------BEEPER---------------*/
@@ -53,7 +52,7 @@
 #define ICM20689_CS_PIN         PA8
 #define ICM20689_SPI_INSTANCE   SPI1
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_SPI_ICM20689
 #define GYRO_ICM20689_ALIGN     CW180_DEG
 
@@ -66,7 +65,7 @@
 #define USE_GYRO_SPI_MPU6500
 #define GYRO_MPU6500_ALIGN      CW180_DEG
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_SPI_ICM20689
 #define ACC_ICM20689_ALIGN      CW180_DEG
 
@@ -87,7 +86,6 @@
 /*---------------------------------*/
 
 /*-------------OSD-----------------*/
-#define OSD
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI3
 #define MAX7456_SPI_CS_PIN      PB3
@@ -113,14 +111,15 @@
 #define UART4_TX_PIN            PA0
 #define UART4_RX_PIN            PA1
 
+#define USE_UART5
+#define UART5_RX_PIN            PD2
+#define UART5_TX_PIN            NONE
+
 #define USE_UART6
 #define UART6_RX_PIN            PC7
 #define UART6_TX_PIN            PC6
 
-#define SERIAL_PORT_COUNT       5
-//SPECKTRUM BIND
-#define CMS
-#define USE_MSP_DISPLAYPORT
+#define SERIAL_PORT_COUNT       6
 /*---------------------------------*/
 
 /*-------------SPIs----------------*/

@@ -27,13 +27,13 @@
 
 #undef BEEPER
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_MPU6050
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_MPU6050
 
-//#define MAG
+//#define USE_MAG
 //#define USE_MAG_HMC5883
 
 #define BRUSHED_MOTORS
@@ -87,9 +87,9 @@
 //#define RX_SPI_DEFAULT_PROTOCOL RX_SPI_NRF24_V202_1M
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SPI
-//#define TELEMETRY
-//#define TELEMETRY_LTM
-//#define TELEMETRY_NRF24_LTM
+//#define USE_TELEMETRY
+//#define USE_TELEMETRY_LTM
+//#define USE_TELEMETRY_NRF24_LTM
 #ifdef USE_PWM
 #undef USE_PWM
 #endif
@@ -98,8 +98,8 @@
 #undef USE_PPM
 #endif
 
-#ifdef SERIAL_RX
-#undef SERIAL_RX
+#ifdef USE_SERIAL_RX
+#undef USE_SERIAL_RX
 #endif
 //#undef SKIP_TASK_STATISTICS
 
@@ -107,7 +107,6 @@
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
 #define USE_RX_MSP
-#define USE_SPEKTRUM_BIND
 
 #endif //USE_RX_NRF24
 
@@ -120,10 +119,6 @@
 #define USE_QUAD_MIXER_ONLY
 #undef USE_SERVOS
 
-#if (FLASH_SIZE <= 64)
-#undef BLACKBOX
-#endif
-
 // Number of available PWM outputs
 //#define MAX_PWM_OUTPUT_PORTS    4
 
@@ -132,5 +127,5 @@
 #define TARGET_IO_PORTB         0xffff
 #define TARGET_IO_PORTC         (BIT(13)|BIT(14)|BIT(15))
 
-#define USABLE_TIMER_CHANNEL_COUNT 10
+#define USABLE_TIMER_CHANNEL_COUNT 14
 #define USED_TIMERS             (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4))

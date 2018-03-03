@@ -38,19 +38,19 @@
 #define MPU6000_CS_PIN          PA4
 #define MPU6000_SPI_INSTANCE    SPI1
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_SPI_MPU6000
 #define ACC_MPU6000_ALIGN       CW90_DEG
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
 #define GYRO_MPU6000_ALIGN      CW90_DEG
 
-#define MAG
+#define USE_MAG
 #define USE_MAG_HMC5883
 #define MAG_HMC5883_ALIGN       CW90_DEG
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_MS5611
 
 #define USE_SDCARD
@@ -65,9 +65,7 @@
 
 
 #define SDCARD_DMA_CHANNEL_TX               DMA1_Stream3
-#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG DMA_FLAG_TCIF3
-#define SDCARD_DMA_CLK                      RCC_AHB1Periph_DMA1
-#define SDCARD_DMA_CHANNEL                  DMA_Channel_0
+#define SDCARD_DMA_CHANNEL                  0
 
 
 #define USE_VCP
@@ -139,7 +137,7 @@
 #define CURRENT_METER_ADC_PIN   PC2
 #define RSSI_ADC_PIN            PC1
 
-#undef LED_STRIP
+#undef USE_LED_STRIP
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
 #define SERIALRX_PROVIDER       SERIALRX_SBUS

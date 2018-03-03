@@ -23,31 +23,31 @@
 #include "common/utils.h"
 
 #include "config/feature.h"
-#include "config/parameter_group.h"
-#include "config/parameter_group_ids.h"
 
-#include "drivers/sound_beeper.h"
-#include "drivers/time.h"
+#include "drivers/io.h"
 #include "drivers/pwm_output.h"
+#include "drivers/sound_beeper.h"
+#include "drivers/system.h"
+#include "drivers/time.h"
 
 #include "flight/mixer.h"
 
 #include "fc/config.h"
 #include "fc/runtime_config.h"
 
-#include "io/beeper.h"
 #include "io/statusindicator.h"
 #include "io/vtx_control.h"
 
-#ifdef GPS
+#ifdef USE_GPS
 #include "io/gps.h"
 #endif
+
+#include "pg/beeper.h"
 
 #include "sensors/battery.h"
 #include "sensors/sensors.h"
 
-
-PG_REGISTER_WITH_RESET_TEMPLATE(beeperDevConfig_t, beeperDevConfig, PG_BEEPER_DEV_CONFIG, 0);
+#include "beeper.h"
 
 #ifdef BEEPER_INVERTED
 #define IS_OPEN_DRAIN   false
@@ -67,13 +67,6 @@ PG_REGISTER_WITH_RESET_TEMPLATE(beeperDevConfig_t, beeperDevConfig, PG_BEEPER_DE
 #define BEEPER_PWM_HZ   0
 #endif
 
-PG_RESET_TEMPLATE(beeperDevConfig_t, beeperDevConfig,
-    .isOpenDrain = IS_OPEN_DRAIN,
-    .isInverted = IS_INVERTED,
-    .ioTag = IO_TAG(BEEPER_PIN),
-    .frequency = BEEPER_PWM_HZ
-);
-
 #if FLASH_SIZE > 64
 #define BEEPER_NAMES
 #endif
@@ -84,11 +77,6 @@ PG_RESET_TEMPLATE(beeperDevConfig_t, beeperDevConfig,
 #define BEEPER_COMMAND_STOP   0xFF
 
 #ifdef BEEPER
-PG_REGISTER_WITH_RESET_TEMPLATE(beeperConfig_t, beeperConfig, PG_BEEPER_CONFIG, 1);
-PG_RESET_TEMPLATE(beeperConfig_t, beeperConfig,
-    .dshotBeaconTone = 0
-);
-
 /* Beeper Sound Sequences: (Square wave generation)
  * Sequence must end with 0xFF or 0xFE. 0xFE repeats the sequence from
  * start when 0xFF stops the sound when it's completed.
@@ -170,6 +158,8 @@ static uint8_t beep_multiBeeps[MAX_MULTI_BEEPS + 1];
 
 #define BEEPER_CONFIRMATION_BEEP_DURATION 2
 #define BEEPER_CONFIRMATION_BEEP_GAP_DURATION 20
+
+#define BEEPER_WARNING_LONG_BEEP_MULTIPLIER 5
 
 #define BEEPER_WARNING_BEEP_1_DURATION 20
 #define BEEPER_WARNING_BEEP_2_DURATION 5
@@ -315,23 +305,43 @@ void beeperConfirmationBeeps(uint8_t beepCount)
 
 void beeperWarningBeeps(uint8_t beepCount)
 {
-    uint32_t i = 0;
-    uint32_t cLimit = beepCount * 4;
-    if (cLimit >= MAX_MULTI_BEEPS) {
-        cLimit = MAX_MULTI_BEEPS;
+    uint8_t longBeepCount = beepCount / BEEPER_WARNING_LONG_BEEP_MULTIPLIER;
+    uint8_t shortBeepCount = beepCount % BEEPER_WARNING_LONG_BEEP_MULTIPLIER;
+
+    unsigned i = 0;
+
+    unsigned count = 0;
+    while (i < MAX_MULTI_BEEPS - 1 && count < WARNING_FLASH_COUNT) {
+        beep_multiBeeps[i++] = WARNING_FLASH_DURATION_MS / 10;
+        if (++count < WARNING_FLASH_COUNT) {
+            beep_multiBeeps[i++] = WARNING_FLASH_DURATION_MS / 10;
+        } else {
+            beep_multiBeeps[i++] = WARNING_PAUSE_DURATION_MS / 10;
+        }
     }
-    do {
-        beep_multiBeeps[i++] = BEEPER_WARNING_BEEP_1_DURATION;
-        beep_multiBeeps[i++] = BEEPER_WARNING_BEEP_GAP_DURATION;
-        beep_multiBeeps[i++] = BEEPER_WARNING_BEEP_2_DURATION;
-        beep_multiBeeps[i++] = BEEPER_WARNING_BEEP_GAP_DURATION;
-    } while (i < cLimit);
+
+    while (i < MAX_MULTI_BEEPS - 1 && longBeepCount > 0) {
+        beep_multiBeeps[i++] = WARNING_CODE_DURATION_LONG_MS / 10;
+        if (--longBeepCount > 0) {
+            beep_multiBeeps[i++] = WARNING_CODE_DURATION_LONG_MS / 10;
+        } else {
+            beep_multiBeeps[i++] = WARNING_PAUSE_DURATION_MS / 10;
+        }
+    }
+
+    while (i < MAX_MULTI_BEEPS - 1 && shortBeepCount > 0) {
+        beep_multiBeeps[i++] = WARNING_CODE_DURATION_SHORT_MS / 10;
+        if (--shortBeepCount > 0) {
+            beep_multiBeeps[i++] = WARNING_CODE_DURATION_LONG_MS / 10;
+        }
+    }
+
     beep_multiBeeps[i] = BEEPER_COMMAND_STOP;
 
     beeper(BEEPER_MULTI_BEEPS);
 }
 
-#ifdef GPS
+#ifdef USE_GPS
 static void beeperGpsStatus(void)
 {
     if (!(getBeeperOffMask() & (1 << (BEEPER_GPS_STATUS - 1)))) {
@@ -361,7 +371,7 @@ void beeperUpdate(timeUs_t currentTimeUs)
     // If beeper option from AUX switch has been selected
     if (IS_RC_MODE_ACTIVE(BOXBEEPERON)) {
         beeper(BEEPER_RX_SET);
-#ifdef GPS
+#ifdef USE_GPS
     } else if (feature(FEATURE_GPS) && IS_RC_MODE_ACTIVE(BOXBEEPGPSCOUNT)) {
         beeperGpsStatus();
 #endif

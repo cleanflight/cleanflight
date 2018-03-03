@@ -21,7 +21,7 @@
 
 #include <platform.h>
 
-#ifdef TARGET_CONFIG
+#ifdef USE_TARGET_CONFIG
 
 #include "common/axis.h"
 #include "common/maths.h"
@@ -33,9 +33,13 @@
 
 #include "fc/config.h"
 #include "fc/controlrate_profile.h"
+#include "fc/rc_modes.h"
+#include "fc/rc_controls.h"
 
 #include "flight/mixer.h"
 #include "flight/pid.h"
+
+#include "pg/vcd.h"
 
 #include "rx/rx.h"
 
@@ -81,9 +85,10 @@ void targetConfiguration(void)
     for (uint8_t rateProfileIndex = 0; rateProfileIndex < CONTROL_RATE_PROFILE_COUNT; rateProfileIndex++) {
         controlRateConfig_t *controlRateConfig = controlRateProfilesMutable(rateProfileIndex);
 
-        controlRateConfig->rcYawRate8      = 120;
-        controlRateConfig->rcExpo8         = 15;
-        controlRateConfig->rcYawExpo8      = 15;
+        controlRateConfig->rcRates[FD_YAW] = 120;
+        controlRateConfig->rcExpo[FD_ROLL] = 15;
+        controlRateConfig->rcExpo[FD_PITCH] = 15;
+        controlRateConfig->rcExpo[FD_YAW]  = 15;
         controlRateConfig->rates[FD_ROLL]  = 85;
         controlRateConfig->rates[FD_PITCH] = 85;
     }
@@ -138,6 +143,11 @@ void targetConfiguration(void)
     osdConfigMutable()->item_pos[OSD_ESC_TMP]            &= ~VISIBLE_FLAG;
     osdConfigMutable()->item_pos[OSD_ESC_RPM]            &= ~VISIBLE_FLAG;
 
+    modeActivationConditionsMutable(0)->modeId           = BOXANGLE;
+    modeActivationConditionsMutable(0)->auxChannelIndex  = AUX2 - NON_AUX_CHANNEL_COUNT;
+    modeActivationConditionsMutable(0)->range.startStep  = CHANNEL_VALUE_TO_STEP(900);
+    modeActivationConditionsMutable(0)->range.endStep    = CHANNEL_VALUE_TO_STEP(2100);
+
 #if defined(BEEBRAIN_V2D)
     // DSM version
     for (uint8_t rxRangeIndex = 0; rxRangeIndex < NON_AUX_CHANNEL_COUNT; rxRangeIndex++) {
@@ -148,7 +158,7 @@ void targetConfiguration(void)
     }
 #else
     // Frsky version
-    serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIALRX_UART)].functionMask = FUNCTION_TELEMETRY_FRSKY | FUNCTION_RX_SERIAL;
+    serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIALRX_UART)].functionMask = FUNCTION_TELEMETRY_FRSKY_HUB | FUNCTION_RX_SERIAL;
     rxConfigMutable()->rssi_channel = BBV2_FRSKY_RSSI_CH_IDX;
     rxFailsafeChannelConfig_t *channelFailsafeConfig = rxFailsafeChannelConfigsMutable(BBV2_FRSKY_RSSI_CH_IDX - 1);
     channelFailsafeConfig->mode = RX_FAILSAFE_MODE_SET;

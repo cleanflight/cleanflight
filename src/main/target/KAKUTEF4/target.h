@@ -24,7 +24,7 @@
 #define USBD_PRODUCT_STRING "KakuteF4-V1"
 #endif
 
-#define TARGET_CONFIG
+#define USE_TARGET_CONFIG
 
 #define LED0_PIN                PB5
 #define LED1_PIN                PB4
@@ -44,11 +44,11 @@
 #define  ICM20689_CS_PIN          PC4
 #define ICM20689_SPI_INSTANCE    SPI1
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_SPI_ICM20689
 #define ACC_ICM20689_ALIGN       CW270_DEG
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_SPI_ICM20689
 #define GYRO_ICM20689_ALIGN      CW270_DEG
 
@@ -61,19 +61,20 @@
 #define BARO_I2C_INSTANCE       I2C_DEVICE
 #define MAG_I2C_INSTANCE        I2C_DEVICE
 
-#define MAG           
+#define USE_MAG
 #define USE_MAG_HMC5883                   //External, connect to I2C1
 #define MAG_HMC5883_ALIGN       CW180_DEG
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_MS5611                  //External, connect to I2C1
 #define USE_BARO_BMP280                  //onboard
 #endif
 
-#define OSD
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI3
 #define MAX7456_SPI_CS_PIN      PB14
+#define MAX7456_SPI_CLK         (SPI_CLOCK_STANDARD)
+#define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
 #define M25P16_CS_PIN           PB3
 #define M25P16_SPI_INSTANCE     SPI3

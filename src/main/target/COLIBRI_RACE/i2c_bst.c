@@ -16,17 +16,14 @@
 #include "common/color.h"
 #include "common/maths.h"
 
-
-#include "drivers/sensor.h"
 #include "drivers/accgyro/accgyro.h"
 #include "drivers/compass/compass.h"
-
-#include "drivers/serial.h"
 #include "drivers/bus_i2c.h"
+#include "drivers/sensor.h"
+#include "drivers/serial.h"
 #include "drivers/system.h"
 #include "drivers/time.h"
 #include "drivers/timer.h"
-#include "drivers/rx_pwm.h"
 
 #include "fc/config.h"
 #include "fc/controlrate_profile.h"
@@ -52,11 +49,11 @@
 #include "sensors/boardalignment.h"
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
-#include "sensors/sonar.h"
 #include "sensors/acceleration.h"
 #include "sensors/barometer.h"
 #include "sensors/compass.h"
 #include "sensors/gyro.h"
+#include "sensors/rangefinder.h"
 
 #include "telemetry/telemetry.h"
 
@@ -173,7 +170,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXOSD, "OSD DISABLE SW;", 19 },
     { BOXTELEMETRY, "TELEMETRY;", 20 },
     { BOXGTUNE, "GTUNE;", 21 },
-    { BOXSONAR, "SONAR;", 22 },
+    { BOXRANGEFINDER, "RANGEFINDER;", 22 },
     { BOXSERVO1, "SERVO1;", 23 },
     { BOXSERVO2, "SERVO2;", 24 },
     { BOXSERVO3, "SERVO3;", 25 },
@@ -294,7 +291,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
 #else
             bstWrite16(0);
 #endif
-            bstWrite16(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
+            bstWrite16(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_RANGEFINDER) << 4);
             // BST the flags in the order we delivered them, ignoring BOXNAMES and BOXINDEXES
             // Requires new Multiwii protocol version to fix
             // It would be preferable to setting the enabled bits based on BOXINDEX.
@@ -319,7 +316,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXOSD)) << BOXOSD |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXTELEMETRY)) << BOXTELEMETRY |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXGTUNE)) << BOXGTUNE |
-                    IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << BOXSONAR |
+                    IS_ENABLED(FLIGHT_MODE(RANGEFINDER_MODE)) << BOXRANGEFINDER |
                     IS_ENABLED(ARMING_FLAG(ARMED)) << BOXARM |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBLACKBOX)) << BOXBLACKBOX |
                     IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << BOXFAILSAFE;
@@ -335,8 +332,8 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             bstWrite16(getTaskDeltaTime(TASK_GYROPID));
             break;
         case BST_RC_TUNING:
-            bstWrite8(currentControlRateProfile->rcRate8);
-            bstWrite8(currentControlRateProfile->rcExpo8);
+            bstWrite8(currentControlRateProfile->rcRates[FD_ROLL]);
+            bstWrite8(currentControlRateProfile->rcExpo[FD_ROLL]);
             for (i = 0 ; i < 3; i++) {
                 bstWrite8(currentControlRateProfile->rates[i]); // R,P,Y see flight_dynamics_index_t
             }
@@ -344,8 +341,8 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             bstWrite8(currentControlRateProfile->thrMid8);
             bstWrite8(currentControlRateProfile->thrExpo8);
             bstWrite16(currentControlRateProfile->tpa_breakpoint);
-            bstWrite8(currentControlRateProfile->rcYawExpo8);
-            bstWrite8(currentControlRateProfile->rcYawRate8);
+            bstWrite8(currentControlRateProfile->rcExpo[FD_YAW]);
+            bstWrite8(currentControlRateProfile->rcRates[FD_YAW]);
             break;
         case BST_PID:
             for (i = 0; i < PID_ITEM_COUNT; i++) {
@@ -374,7 +371,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
 
             bstWrite16(failsafeConfig()->failsafe_throttle);
 
-#ifdef GPS
+#ifdef USE_GPS
             bstWrite8(gpsConfig()->provider); // gps_type
             bstWrite8(0); // TODO gps_baudrate (an index, cleanflight uses a uint32_t
             bstWrite8(gpsConfig()->sbasMode); // gps_ubx_sbas
@@ -415,7 +412,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             break;
 
 
-#ifdef LED_STRIP
+#ifdef USE_LED_STRIP
         case BST_LED_COLORS:
             for (i = 0; i < LED_CONFIGURABLE_COLOR_COUNT; i++) {
                 hsvColor_t *color = &ledStripConfigMutable()->colors[i];
@@ -501,7 +498,7 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
 
             failsafeConfigMutable()->failsafe_throttle = bstRead16();
 
-#ifdef GPS
+#ifdef USE_GPS
             gpsConfigMutable()->provider = bstRead8(); // gps_type
             bstRead8(); // gps_baudrate
             gpsConfigMutable()->sbasMode = bstRead8(); // gps_ubx_sbas
@@ -567,7 +564,7 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
             }
             break;
 
-#ifdef LED_STRIP
+#ifdef USE_LED_STRIP
         case BST_SET_LED_COLORS:
            //for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
            {
@@ -628,7 +625,7 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
 static bool bstSlaveUSBCommandFeedback(/*uint8_t bstFeedback*/)
 {
     bstWrite8(BST_USB_DEVICE_INFO_FRAME);                        //Sub CPU Device Info FRAME
-    bstWrite8(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
+    bstWrite8(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_RANGEFINDER) << 4);
     bstWrite8(0x00);
     bstWrite8(0x00);
     bstWrite8(0x00);
@@ -723,7 +720,7 @@ void taskBstMasterProcess(timeUs_t currentTimeUs)
                 sendCounter = 0;
             next20hzUpdateAt_1 = currentTimeUs + UPDATE_AT_20HZ;
         }
-#ifdef GPS
+#ifdef USE_GPS
         if (sensors(SENSOR_GPS) && !bstWriteBusy())
             writeGpsPositionPrameToBST();
 #endif
@@ -762,7 +759,7 @@ static void bstMasterWrite16(uint16_t data)
 /*************************************************************************************************/
 #define PUBLIC_ADDRESS            0x00
 
-#ifdef GPS
+#ifdef USE_GPS
 static void bstMasterWrite32(uint32_t data)
 {
     bstMasterWrite16((uint8_t)(data >> 16));
@@ -775,7 +772,7 @@ static uint16_t alt = 0;
 static uint8_t numOfSat = 0;
 #endif
 
-#ifdef GPS
+#ifdef USE_GPS
 bool writeGpsPositionPrameToBST(void)
 {
     if ((lat != gpsSol.llh.lat) || (lon != gpsSol.llh.lon) || (alt != gpsSol.llh.alt) || (numOfSat != gpsSol.numSat)) {
@@ -841,13 +838,13 @@ bool writeFCModeToBST(void)
            IS_ENABLED(FLIGHT_MODE(BARO_MODE)) << 3 |
            IS_ENABLED(FLIGHT_MODE(MAG_MODE)) << 4 |
            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAIRMODE)) << 5 |
-           IS_ENABLED(FLIGHT_MODE(SONAR_MODE)) << 6 |
+           IS_ENABLED(FLIGHT_MODE(RANGEFINDER_MODE)) << 6 |
            IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << 7;
 
     bstMasterStartBuffer(PUBLIC_ADDRESS);
     bstMasterWrite8(CLEANFLIGHT_MODE_FRAME_ID);
     bstMasterWrite8(tmp);
-    bstMasterWrite8(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_SONAR) << 4);
+    bstMasterWrite8(sensors(SENSOR_ACC) | sensors(SENSOR_BARO) << 1 | sensors(SENSOR_MAG) << 2 | sensors(SENSOR_GPS) << 3 | sensors(SENSOR_RANGEFINDER) << 4);
 
     return bstMasterWrite(masterWriteData);
 }

@@ -17,11 +17,19 @@
 
 #pragma once
 
-#undef TELEMETRY_IBUS   //no space left
-#undef TELEMETRY_HOTT   //no space left
-#undef TELEMETRY_JETIEXBUS // no space left
-#undef TELEMETRY_MAVLINK   // no space left
-#undef USE_RCDEVICE // no space left
+// Removed to make the firmware fit into flash (in descending order of priority):
+#undef USE_DSHOT_DMAR           // OMNIBUS (F3) does not benefit from burst Dshot
+#undef USE_GYRO_OVERFLOW_CHECK
+#undef USE_GYRO_BIQUAD_RC_FIR2
+
+#undef USE_SERIALRX_XBUS
+#undef USE_TELEMETRY_LTM
+#undef USE_TELEMETRY_MAVLINK
+
+#undef USE_RTC_TIME
+#undef USE_COPY_PROFILE_CMS_MENU
+#undef USE_RX_MSP
+
 
 #define TARGET_BOARD_IDENTIFIER "OMNI" // https://en.wikipedia.org/wiki/Omnibus
 
@@ -39,27 +47,25 @@
 #define MPU6000_SPI_INSTANCE    SPI1
 #define MPU6000_CS_PIN          PA4
 
-#define GYRO
+#define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
 #define GYRO_MPU6000_ALIGN      CW90_DEG
 
-#define ACC
+#define USE_ACC
 #define USE_ACC_SPI_MPU6000
 #define ACC_MPU6000_ALIGN       CW90_DEG
 
 #define BMP280_SPI_INSTANCE     SPI1
 #define BMP280_CS_PIN           PA13
 
-#define BARO
+#define USE_BARO
 #define USE_BARO_BMP280
 #define USE_BARO_SPI_BMP280
 
-#define MAG // External
-#define USE_MAG_HMC5883
-
-//#define SONAR
-//#define SONAR_ECHO_PIN          PB1
-//#define SONAR_TRIGGER_PIN       PB0
+//#define USE_RANGEFINDER
+//#define USE_RANGEFINDER_HCSR04
+//#define RANGEFINDER_HCSR04_ECHO_PIN          PB1
+//#define RANGEFINDER_HCSR04_TRIGGER_PIN       PB0
 
 #define USB_DETECT_PIN          PB5
 
@@ -100,8 +106,6 @@
 
 // OSD define info:
 //   feature name (includes source) -> MAX_OSD, used in target.mk
-// include the osd code
-#define OSD
 
 // include the max7456 driver
 #define USE_MAX7456
@@ -139,7 +143,6 @@
 // DSHOT output 4 uses DMA1_Channel5, so don't use it for the SDCARD until we find an alternative
 #ifndef USE_DSHOT
 #define SDCARD_DMA_CHANNEL_TX               DMA1_Channel5
-#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG DMA1_FLAG_TC5
 #endif
 
 // Performance logging for SD card operations:
@@ -155,7 +158,7 @@
 //#define RSSI_ADC_PIN                PB1
 //#define ADC_INSTANCE                ADC3
 
-#define TRANSPONDER
+#define USE_TRANSPONDER
 #define REDUCE_TRANSPONDER_CURRENT_DRAW_WHEN_USB_CABLE_PRESENT
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
@@ -163,9 +166,10 @@
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
 #define DEFAULT_FEATURES        (FEATURE_OSD)
 
-#define BUTTONS
-#define BUTTON_A_PIN            PB1
-#define BUTTON_B_PIN            PB0
+// Disable rarely used buttons in favor of flash space
+//#define USE_BUTTONS
+//#define BUTTON_A_PIN            PB1
+//#define BUTTON_B_PIN            PB0
 
 //#define AVOID_UART3_FOR_PWM_PPM // Disable this for using UART3
 

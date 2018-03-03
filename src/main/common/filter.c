@@ -20,6 +20,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "platform.h"
+
 #include "common/filter.h"
 #include "common/maths.h"
 #include "common/utils.h"
@@ -31,7 +33,7 @@
 
 // NULL filter
 
-float nullFilterApply(void *filter, float input)
+FAST_CODE float nullFilterApply(filter_t *filter, float input)
 {
     UNUSED(filter);
     return input;
@@ -42,28 +44,13 @@ float nullFilterApply(void *filter, float input)
 
 void pt1FilterInit(pt1Filter_t *filter, uint8_t f_cut, float dT)
 {
-    filter->RC = 1.0f / ( 2.0f * M_PI_FLOAT * f_cut );
-    filter->dT = dT;
-    filter->k = filter->dT / (filter->RC + filter->dT);
+    float RC = 1.0f / ( 2.0f * M_PI_FLOAT * f_cut );
+    filter->k = dT / (RC + dT);
 }
 
-float pt1FilterApply(pt1Filter_t *filter, float input)
+FAST_CODE float pt1FilterApply(pt1Filter_t *filter, float input)
 {
     filter->state = filter->state + filter->k * (input - filter->state);
-    return filter->state;
-}
-
-float pt1FilterApply4(pt1Filter_t *filter, float input, uint8_t f_cut, float dT)
-{
-    // Pre calculate and store RC
-    if (!filter->RC) {
-        filter->RC = 1.0f / ( 2.0f * M_PI_FLOAT * f_cut );
-        filter->dT = dT;
-        filter->k = filter->dT / (filter->RC + filter->dT);
-    }
-
-    filter->state = filter->state + filter->k * (input - filter->state);
-
     return filter->state;
 }
 
@@ -76,7 +63,7 @@ void slewFilterInit(slewFilter_t *filter, float slewLimit, float threshold)
     filter->threshold = threshold;
 }
 
-float slewFilterApply(slewFilter_t *filter, float input)
+FAST_CODE float slewFilterApply(slewFilter_t *filter, float input)
 {
     if (filter->state >= filter->threshold) {
         if (input >= filter->state - filter->slewLimit) {
@@ -153,7 +140,7 @@ void biquadFilterInit(biquadFilter_t *filter, float filterFreq, uint32_t refresh
     filter->y1 = filter->y2 = 0;
 }
 
-void biquadFilterUpdate(biquadFilter_t *filter, float filterFreq, uint32_t refreshRate, float Q, biquadFilterType_e filterType)
+FAST_CODE void biquadFilterUpdate(biquadFilter_t *filter, float filterFreq, uint32_t refreshRate, float Q, biquadFilterType_e filterType)
 {
     // backup state
     float x1 = filter->x1;
@@ -171,7 +158,7 @@ void biquadFilterUpdate(biquadFilter_t *filter, float filterFreq, uint32_t refre
 }
 
 /* Computes a biquadFilter_t filter on a sample (slightly less precise than df2 but works in dynamic mode) */
-float biquadFilterApplyDF1(biquadFilter_t *filter, float input)
+FAST_CODE float biquadFilterApplyDF1(biquadFilter_t *filter, float input)
 {
     /* compute result */
     const float result = filter->b0 * input + filter->b1 * filter->x1 + filter->b2 * filter->x2 - filter->a1 * filter->y1 - filter->a2 * filter->y2;
@@ -188,7 +175,7 @@ float biquadFilterApplyDF1(biquadFilter_t *filter, float input)
 }
 
 /* Computes a biquadFilter_t filter in direct form 2 on a sample (higher precision but can't handle changes in coefficients */
-float biquadFilterApply(biquadFilter_t *filter, float input)
+FAST_CODE float biquadFilterApply(biquadFilter_t *filter, float input)
 {
     const float result = filter->b0 * input + filter->x1;
     filter->x1 = filter->b1 * input - filter->a1 * result + filter->x2;
@@ -244,7 +231,7 @@ void firFilterUpdateAverage(firFilter_t *filter, float input)
     }
 }
 
-float firFilterApply(const firFilter_t *filter)
+FAST_CODE float firFilterApply(const firFilter_t *filter)
 {
     float ret = 0.0f;
     int ii = 0;
@@ -258,7 +245,7 @@ float firFilterApply(const firFilter_t *filter)
     return ret;
 }
 
-float firFilterUpdateAndApply(firFilter_t *filter, float input)
+FAST_CODE float firFilterUpdateAndApply(firFilter_t *filter, float input)
 {
     firFilterUpdate(filter, input);
     return firFilterApply(filter);
@@ -314,4 +301,46 @@ float firFilterDenoiseUpdate(firFilterDenoise_t *filter, float input)
     } else {
         return filter->movingSum / ++filter->filledCount + 1;
     }
+}
+
+// ledvinap's proposed RC+FIR2 Biquad-- 1st order IIR, RC filter k
+void biquadRCFIR2FilterInit(biquadFilter_t *filter, uint16_t f_cut, float dT)
+{
+    float RC = 1.0f / ( 2.0f * M_PI_FLOAT * f_cut );
+    float k = dT / (RC + dT);
+    filter->b0 = k / 2;
+    filter->b1 = k / 2;
+    filter->b2 = 0;
+    filter->a1 = -(1 - k);
+    filter->a2 = 0;
+}
+
+// Fast two-state Kalman
+void fastKalmanInit(fastKalman_t *filter, float q, float r, float p)
+{
+    filter->q     = q * 0.000001f; // add multiplier to make tuning easier
+    filter->r     = r * 0.001f;    // add multiplier to make tuning easier
+    filter->p     = p * 0.001f;    // add multiplier to make tuning easier
+    filter->x     = 0.0f;          // set initial value, can be zero if unknown
+    filter->lastX = 0.0f;          // set initial value, can be zero if unknown
+    filter->k     = 0.0f;          // kalman gain
+}
+
+FAST_CODE float fastKalmanUpdate(fastKalman_t *filter, float input)
+{
+    // project the state ahead using acceleration
+    filter->x += (filter->x - filter->lastX);
+
+    // update last state
+    filter->lastX = filter->x;
+
+    // prediction update
+    filter->p = filter->p + filter->q;
+
+    // measurement update
+    filter->k = filter->p / (filter->p + filter->r);
+    filter->x += filter->k * (input - filter->x);
+    filter->p = (1.0f - filter->k) * filter->p;
+
+    return filter->x;
 }

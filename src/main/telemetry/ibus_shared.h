@@ -29,8 +29,8 @@
 #include "drivers/serial.h"
 
 #define IBUS_CHECKSUM_SIZE (2)
-
-#if defined(TELEMETRY) && defined(TELEMETRY_IBUS)
+#define IBUS_SENSOR_COUNT 15
+#if defined(USE_TELEMETRY) && defined(USE_TELEMETRY_IBUS)
 
 uint8_t respondToIbusRequest(uint8_t const * const ibusPacket);
 void initSharedIbusTelemetry(serialPort_t * port);
