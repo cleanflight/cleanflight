@@ -17,12 +17,7 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "drivers/io_types.h"
 
-#define EEPROM_CONF_VERSION 169
+bool qmc5883lDetect(magDev_t *magDev);
 
-bool isEEPROMContentValid(void);
-bool loadEEPROM(void);
-void writeConfigToEEPROM(void);
-uint16_t getEEPROMConfigSize(void);
