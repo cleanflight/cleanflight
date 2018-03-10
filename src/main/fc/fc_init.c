@@ -617,6 +617,11 @@ void init(void)
     }
 #endif
 
+#ifdef USE_PID_AUDIO
+    void testSound(void);
+    testSound();
+#endif
+
 #if defined(USE_CMS) && defined(USE_SPEKTRUM_CMS_TELEMETRY)
     // Register the srxl Textgen telemetry sensor as a displayport device
     cmsDisplayPortRegister(displayPortSrxlInit());
