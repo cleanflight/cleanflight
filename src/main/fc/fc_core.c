@@ -822,6 +822,11 @@ static void subTaskPidController(timeUs_t currentTimeUs)
         DEBUG_SET(DEBUG_RUNAWAY_TAKEOFF, DEBUG_RUNAWAY_TAKEOFF_ACTIVATING_DELAY, DEBUG_RUNAWAY_TAKEOFF_FALSE);
     }
 #endif
+
+
+#ifdef USE_PID_AUDIO
+    pidAudioUpdate();
+#endif
 }
 
 static void subTaskMainSubprocesses(timeUs_t currentTimeUs)

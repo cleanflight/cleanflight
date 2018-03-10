@@ -115,6 +115,7 @@
 #include "io/transponder_ir.h"
 #include "io/osd.h"
 #include "io/osd_slave.h"
+#include "io/pidaudio.h"
 #include "io/piniobox.h"
 #include "io/displayport_msp.h"
 #include "io/vtx.h"
@@ -523,6 +524,10 @@ void init(void)
     pidInit(currentPidProfile);
     accInitFilters();
 
+#ifdef USE_PID_AUDIO
+    pidAudioInit();
+#endif
+
 #ifdef USE_SERVOS
     servosInit();
     servoConfigureOutput();
@@ -615,11 +620,6 @@ void init(void)
     if (feature(FEATURE_DASHBOARD)) {
         dashboardInit();
     }
-#endif
-
-#ifdef USE_PID_AUDIO
-    void testSound(void);
-    testSound();
 #endif
 
 #if defined(USE_CMS) && defined(USE_SPEKTRUM_CMS_TELEMETRY)
