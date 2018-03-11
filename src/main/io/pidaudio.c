@@ -30,7 +30,11 @@
 
 #include "flight/pid.h"
 
+#include "io/pidaudio.h"
+
 static bool pidAudioEnabled = false;
+
+static pidAudioModes_e pidAudioMode = PID_AUDIO_PIDSUM_XY;
 
 void pidAudioInit(void)
 {
@@ -45,6 +49,16 @@ void pidAudioStart(void)
 void pidAudioStop(void)
 {
     audioSilence();
+}
+
+pidAudioModes_e pidAudioGetMode(void)
+{
+    return pidAudioMode;
+}
+
+void pidAudioSetMode(pidAudioModes_e mode)
+{
+    pidAudioMode = mode;
 }
 
 void pidAudioUpdate(void)
@@ -64,8 +78,30 @@ void pidAudioUpdate(void)
         return;
     }
 
-    const uint32_t pidSumXY = MIN((ABS(axisPIDSum[FD_ROLL]) + ABS(axisPIDSum[FD_PITCH])) / 2, PIDSUM_LIMIT);
+    uint8_t tone = TONE_MID;
 
-    uint32_t tone = scaleRange(pidSumXY, 0, PIDSUM_LIMIT, TONE_MAX, TONE_MIN);
+    switch (pidAudioMode) {
+    case PID_AUDIO_PIDSUM_X:
+        {
+            const uint32_t pidSumX = MIN(ABS(axisPIDSum[FD_ROLL]), PIDSUM_LIMIT);
+            tone = scaleRange(pidSumX, 0, PIDSUM_LIMIT, TONE_MAX, TONE_MIN);
+            break;
+        }
+    case PID_AUDIO_PIDSUM_Y:
+        {
+            const uint32_t pidSumY = MIN(ABS(axisPIDSum[FD_PITCH]), PIDSUM_LIMIT);
+            tone = scaleRange(pidSumY, 0, PIDSUM_LIMIT, TONE_MAX, TONE_MIN);
+            break;
+        }
+    case PID_AUDIO_PIDSUM_XY:
+        {
+            const uint32_t pidSumXY = MIN((ABS(axisPIDSum[FD_ROLL]) + ABS(axisPIDSum[FD_PITCH])) / 2, PIDSUM_LIMIT);
+            tone = scaleRange(pidSumXY, 0, PIDSUM_LIMIT, TONE_MAX, TONE_MIN);
+            break;
+        }
+    default:
+        break;
+    }
+
     audioPlayTone(tone);
 }
