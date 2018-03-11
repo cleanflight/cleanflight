@@ -64,8 +64,8 @@ void pidAudioUpdate(void)
         return;
     }
 
-    const uint32_t pidSumXY = MIN((ABS(axisPIDSum[FD_ROLL]) + ABS(axisPIDSum[FD_YAW])) / 2, PIDSUM_LIMIT);
+    const uint32_t pidSumXY = MIN((ABS(axisPIDSum[FD_ROLL]) + ABS(axisPIDSum[FD_PITCH])) / 2, PIDSUM_LIMIT);
 
-    uint32_t tone = scaleRange(pidSumXY, 0, PIDSUM_LIMIT, TONE_MIN, TONE_MAX);
+    uint32_t tone = scaleRange(pidSumXY, 0, PIDSUM_LIMIT, TONE_MAX, TONE_MIN);
     audioPlayTone(tone);
 }
