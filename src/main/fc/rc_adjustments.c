@@ -54,7 +54,6 @@
 
 PG_REGISTER_ARRAY(adjustmentRange_t, MAX_ADJUSTMENT_RANGE_COUNT, adjustmentRanges, PG_ADJUSTMENT_RANGE_CONFIG, 0);
 
-#ifdef USE_PID_AUDIO
 uint8_t pidAudioPositionToModeMap[7] = {
     // on a pot with a center detent, it's easy to have center area for off/default, then three positions to the left and three to the right.
     // current implementation yields RC values as below.
@@ -69,8 +68,6 @@ uint8_t pidAudioPositionToModeMap[7] = {
 
     // Note: Last 3 positions are currently pending implementations and use PID_AUDIO_OFF for now.
 };
-
-#endif
 
 static pidProfile_t *pidProfile;
 
