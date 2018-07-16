@@ -363,9 +363,14 @@ bool mixerIsTricopter(void)
 
 bool mixerIsOutputSaturated(int axis, float errorRate)
 {
+#ifdef USE_SERVOS
     if (axis == FD_YAW && mixerIsTricopter()) {
         return mixerTricopterIsServoSaturated(errorRate);
     }
+#else
+    UNUSED(axis);
+    UNUSED(errorRate);
+#endif
 
     return motorMixRange >= 1.0f;
 }
@@ -423,9 +428,11 @@ void mixerInit(mixerMode_e mixerMode)
     currentMixerMode = mixerMode;
 
     initEscEndpoints();
+#ifdef USE_SERVOS
     if (mixerIsTricopter()) {
         mixerTricopterInit();
     }
+#endif
 }
 
 #ifndef USE_QUAD_MIXER_ONLY
@@ -696,9 +703,11 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS])
     // roll/pitch/yaw. This could move throttle down, but also up for those low throttle flips.
     for (int i = 0; i < motorCount; i++) {
         float motorOutput = motorOutputMin + (motorOutputRange * (motorOutputMixSign * motorMix[i] + throttle * currentMixer[i].throttle));
+#ifdef USE_SERVOS
         if (mixerIsTricopter()) {
             motorOutput += mixerTricopterMotorCorrection(i);
         }
+#endif
         if (failsafeIsActive()) {
             if (isMotorProtocolDshot()) {
                 motorOutput = (motorOutput < motorRangeMin) ? disarmMotorOutput : motorOutput; // Prevent getting into special reserved range
