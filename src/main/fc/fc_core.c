@@ -558,7 +558,6 @@ bool isAirmodeActivated()
 bool processRx(timeUs_t currentTimeUs)
 {
     static bool armedBeeperOn = false;
-    static bool sharedPortTelemetryEnabled = false;
 
     if (!calculateRxChannelsAndUpdateFailsafe(currentTimeUs)) {
         return false;
@@ -819,6 +818,8 @@ bool processRx(timeUs_t currentTimeUs)
     }
 
 #ifdef USE_TELEMETRY
+    static bool sharedPortTelemetryEnabled = false;
+
     if (feature(FEATURE_TELEMETRY)) {
         bool enableSharedPortTelemetry = (!isModeActivationConditionPresent(BOXTELEMETRY) && ARMING_FLAG(ARMED)) || (isModeActivationConditionPresent(BOXTELEMETRY) && IS_RC_MODE_ACTIVE(BOXTELEMETRY));
         if (enableSharedPortTelemetry && !sharedPortTelemetryEnabled) {
