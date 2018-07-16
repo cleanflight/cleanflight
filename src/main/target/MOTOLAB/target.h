@@ -1,18 +1,21 @@
 /*
- * This file is part of Cleanflight.
+ * This file is part of Cleanflight and Betaflight.
  *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Cleanflight and Betaflight are free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Cleanflight and Betaflight are distributed in the hope that they
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -25,7 +28,8 @@
 #define LED0_PIN                PB5 // Blue LEDs - PB5
 //#define LED1_PIN                PB9 // Green LEDs - PB9
 
-#define BEEPER                  PA0
+#define USE_BEEPER
+#define BEEPER_PIN              PA0
 #define BEEPER_INVERTED
 
 // MPU6050 interrupts
@@ -83,8 +87,8 @@
 #define USE_SPI
 #define USE_SPI_DEVICE_2
 
-#define M25P16_CS_PIN           PB12
-#define M25P16_SPI_INSTANCE     SPI2
+#define FLASH_CS_PIN            PB12
+#define FLASH_SPI_INSTANCE      SPI2
 
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
@@ -95,8 +99,6 @@
 #define VBAT_ADC_PIN            PA5
 //#define CURRENT_METER_ADC_PIN   PA5
 #define RSSI_ADC_PIN            PB2
-
-#define USE_ESC_SENSOR
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 

@@ -1,20 +1,22 @@
 /*
- * This file is part of Cleanflight.
+ * This file is part of Cleanflight and Betaflight.
  *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Cleanflight and Betaflight are free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Cleanflight and Betaflight are distributed in the hope that they
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 /*
  * "Note that the timing on the WS2812/WS2812B LEDs has changed as of batches from WorldSemi
@@ -28,7 +30,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <platform.h>
+#include "platform.h"
 
 #ifdef USE_LED_STRIP
 
@@ -42,9 +44,12 @@
 
 #if defined(STM32F1) || defined(STM32F3)
 uint8_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
+#elif defined(STM32F7)
+FAST_RAM_ZERO_INIT uint32_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
 #else
 uint32_t ledStripDMABuffer[WS2811_DMA_BUFFER_SIZE];
 #endif
+
 volatile uint8_t ws2811LedDataTransferInProgress = 0;
 
 uint16_t BIT_COMPARE_1 = 0;
@@ -95,7 +100,8 @@ void ws2811LedStripInit(ioTag_t ioTag)
 
     const hsvColor_t hsv_white = { 0, 255, 255 };
     setStripColor(&hsv_white);
-    ws2811UpdateStrip();
+    // RGB or GRB ordering doesn't matter for white
+    ws2811UpdateStrip(LED_RGB);
 }
 
 bool isWS2811LedStripReady(void)
@@ -109,12 +115,23 @@ static int16_t ledIndex;
 #define USE_FAST_DMA_BUFFER_IMPL
 #ifdef USE_FAST_DMA_BUFFER_IMPL
 
-STATIC_UNIT_TESTED void fastUpdateLEDDMABuffer(rgbColor24bpp_t *color)
+STATIC_UNIT_TESTED void fastUpdateLEDDMABuffer(ledStripFormatRGB_e ledFormat, rgbColor24bpp_t *color)
 {
-    uint32_t grb = (color->rgb.g << 16) | (color->rgb.r << 8) | (color->rgb.b);
+    uint32_t packed_colour;
+
+    switch (ledFormat) {
+        case LED_RGB: // WS2811 drivers use RGB format
+            packed_colour = (color->rgb.r << 16) | (color->rgb.g << 8) | (color->rgb.b);
+            break;
+
+        case LED_GRB: // WS2812 drivers use GRB format
+        default:
+            packed_colour = (color->rgb.g << 16) | (color->rgb.r << 8) | (color->rgb.b);
+        break;
+    }
 
     for (int8_t index = 23; index >= 0; index--) {
-        ledStripDMABuffer[dmaBufferOffset++] = (grb & (1 << index)) ? BIT_COMPARE_1 : BIT_COMPARE_0;
+        ledStripDMABuffer[dmaBufferOffset++] = (packed_colour & (1 << index)) ? BIT_COMPARE_1 : BIT_COMPARE_0;
     }
 }
 #else
@@ -141,7 +158,7 @@ STATIC_UNIT_TESTED void updateLEDDMABuffer(uint8_t componentValue)
  * This method is non-blocking unless an existing LED update is in progress.
  * it does not wait until all the LEDs have been updated, that happens in the background.
  */
-void ws2811UpdateStrip(void)
+void ws2811UpdateStrip(ledStripFormatRGB_e ledFormat)
 {
     static rgbColor24bpp_t *rgb24;
 
@@ -160,10 +177,21 @@ void ws2811UpdateStrip(void)
         rgb24 = hsvToRgb24(&ledColorBuffer[ledIndex]);
 
 #ifdef USE_FAST_DMA_BUFFER_IMPL
-        fastUpdateLEDDMABuffer(rgb24);
+        fastUpdateLEDDMABuffer(ledFormat, rgb24);
 #else
-        updateLEDDMABuffer(rgb24->rgb.g);
-        updateLEDDMABuffer(rgb24->rgb.r);
+        switch (ledFormat) {
+            case LED_RGB: // WS2811 drivers use RGB format
+            updateLEDDMABuffer(rgb24->rgb.r);
+            updateLEDDMABuffer(rgb24->rgb.g);
+            break;
+
+        case LED_GRB: // WS2812 drivers use GRB format
+        default:
+            updateLEDDMABuffer(rgb24->rgb.g);
+            updateLEDDMABuffer(rgb24->rgb.r);
+            break;
+        }
+
         updateLEDDMABuffer(rgb24->rgb.b);
 #endif
 

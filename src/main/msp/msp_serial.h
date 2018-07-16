@@ -1,18 +1,21 @@
 /*
- * This file is part of Cleanflight.
+ * This file is part of Cleanflight and Betaflight.
  *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Cleanflight and Betaflight are free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Cleanflight and Betaflight are distributed in the hope that they
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -27,9 +30,20 @@ typedef enum {
     MSP_IDLE,
     MSP_HEADER_START,
     MSP_HEADER_M,
-    MSP_HEADER_ARROW,
-    MSP_HEADER_SIZE,
-    MSP_HEADER_CMD,
+    MSP_HEADER_X,
+
+    MSP_HEADER_V1,
+    MSP_PAYLOAD_V1,
+    MSP_CHECKSUM_V1,
+
+    MSP_HEADER_V2_OVER_V1,
+    MSP_PAYLOAD_V2_OVER_V1,
+    MSP_CHECKSUM_V2_OVER_V1,
+
+    MSP_HEADER_V2_NATIVE,
+    MSP_PAYLOAD_V2_NATIVE,
+    MSP_CHECKSUM_V2_NATIVE,
+
     MSP_COMMAND_RECEIVED
 } mspState_e;
 
@@ -62,18 +76,39 @@ typedef enum {
 #define MSP_PORT_OUTBUF_SIZE 256
 #endif
 
+typedef struct __attribute__((packed)) {
+    uint8_t size;
+    uint8_t cmd;
+} mspHeaderV1_t;
+
+typedef struct __attribute__((packed)) {
+    uint16_t size;
+} mspHeaderJUMBO_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t  flags;
+    uint16_t cmd;
+    uint16_t size;
+} mspHeaderV2_t;
+
+#define MSP_MAX_HEADER_SIZE     9
+
 struct serialPort_s;
 typedef struct mspPort_s {
     struct serialPort_s *port; // null when port unused.
     timeMs_t lastActivityMs;
     mspPendingSystemRequest_e pendingRequest;
-    uint8_t offset;
-    uint8_t dataSize;
-    uint8_t checksum;
-    uint8_t cmdMSP;
     mspState_e c_state;
     mspPacketType_e packetType;
     uint8_t inBuf[MSP_PORT_INBUF_SIZE];
+    uint16_t cmdMSP;
+    uint8_t cmdFlags;
+    mspVersion_e mspVersion;
+    uint_fast16_t offset;
+    uint_fast16_t dataSize;
+    uint8_t checksum1;
+    uint8_t checksum2;
+    bool sharedWithTelemetry;
 } mspPort_t;
 
 void mspSerialInit(void);
@@ -81,5 +116,6 @@ bool mspSerialWaiting(void);
 void mspSerialProcess(mspEvaluateNonMspData_e evaluateNonMspData, mspProcessCommandFnPtr mspProcessCommandFn, mspProcessReplyFnPtr mspProcessReplyFn);
 void mspSerialAllocatePorts(void);
 void mspSerialReleasePortIfAllocated(struct serialPort_s *serialPort);
+void mspSerialReleaseSharedTelemetryPorts(void);
 int mspSerialPush(uint8_t cmd, uint8_t *data, int datalen, mspDirection_e direction);
 uint32_t mspSerialTxBytesFree(void);
