@@ -463,6 +463,10 @@ static void smartPortSendMspResponse(uint8_t *data) {
 
 void processSmartPortTelemetry(smartPortPayload_t *payload, volatile bool *clearToSend, const uint32_t *requestTimeout)
 {
+#if !defined(USE_MSP_OVER_TELEMETRY)
+    UNUSED(payload);
+#endif
+
     static uint8_t smartPortIdCycleCnt = 0;
     static uint8_t t1Cnt = 0;
     static uint8_t t2Cnt = 0;
