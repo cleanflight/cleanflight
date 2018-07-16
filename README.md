@@ -49,7 +49,7 @@ If you are using Windows and don't have an IRC client installed, take a look at 
 
 There's a dedicated Slack chat channel for betaflight here:
 
-http://www.betaflight.ch/
+https://slack.betaflight.com/
 
 Etiquette: Don't ask to ask and please wait around long enough for a reply - sometimes people are out flying, asleep or at work and can't answer immediately.
 

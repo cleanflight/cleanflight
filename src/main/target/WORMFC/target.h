@@ -1,18 +1,21 @@
 /*
- * This file is part of Cleanflight.
+ * This file is part of Cleanflight and Betaflight.
  *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Cleanflight and Betaflight are free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Cleanflight and Betaflight are distributed in the hope that they
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -24,8 +27,11 @@
 #define LED0_PIN                PA15
 #define LED1_PIN                PC14
 
+#define ENABLE_DSHOT_DMAR       true
+
 //BEEPER
-#define BEEPER                  PB14
+#define USE_BEEPER
+#define BEEPER_PIN              PB14
 #define BEEPER_INVERTED
 
 // MPU6500 interrupt
@@ -62,8 +68,8 @@
 #define INVERTER_PIN_UART3      PB12
 
 #define USE_VCP
-#define VBUS_SENSING_PIN        PA9
-#define VBUS_SENSING_ENABLED
+#define USB_DETECT_PIN          PA9
+#define USE_USB_DETECT
 
 #define USE_UART1
 #define UART1_RX_PIN            PB7
@@ -73,11 +79,15 @@
 #define UART3_RX_PIN            PB11
 #define UART3_TX_PIN            PB10
 
+#define USE_UART4
+#define UART4_RX_PIN            PA1
+#define UART4_TX_PIN            PA0
+
 #define USE_UART6
 #define UART6_RX_PIN            PC7
 #define UART6_TX_PIN            PC6
 
-#define SERIAL_PORT_COUNT       4 //VCP, USART1, USART3, USART6
+#define SERIAL_PORT_COUNT       5 //VCP, USART1, USART3, USART4, USART6
 
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_HARDWARE 0 // PWM 1
@@ -116,7 +126,7 @@
 //SD CARD
 #define USE_SDCARD
 #define USE_SDCARD_SDIO
-#define SDIO_DMA
+#define SDIO_DMA          DMA2_Stream3
 #define SDCARD_SPI_CS_PIN NONE //This is not used on SDIO, has to be kept for now to keep compiler happy
 #define SDCARD_DETECT_PIN PB15
 
@@ -125,5 +135,5 @@
 #define TARGET_IO_PORTC         0xffff
 #define TARGET_IO_PORTD         (BIT(2))
 
-#define USABLE_TIMER_CHANNEL_COUNT 6
+#define USABLE_TIMER_CHANNEL_COUNT 7
 #define USED_TIMERS             ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8))

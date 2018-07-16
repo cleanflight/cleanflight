@@ -44,6 +44,9 @@ extern "C" {
     struct gyroSensor_s;
     STATIC_UNIT_TESTED void performGyroCalibration(struct gyroSensor_s *gyroSensor, uint8_t gyroMovementCalibrationThreshold);
     STATIC_UNIT_TESTED bool fakeGyroRead(gyroDev_t *gyro);
+
+    uint8_t debugMode;
+    int16_t debug[DEBUG16_VALUE_COUNT];
 }
 
 #include "unittest_macros.h"
@@ -112,7 +115,8 @@ TEST(SensorGyro, Update)
 {
     pgResetAll();
     // turn off filters
-    gyroConfigMutable()->gyro_soft_lpf_hz = 0;
+    gyroConfigMutable()->gyro_lowpass_hz = 0;
+    gyroConfigMutable()->gyro_lowpass2_hz = 0;
     gyroConfigMutable()->gyro_soft_notch_hz_1 = 0;
     gyroConfigMutable()->gyro_soft_notch_hz_2 = 0;
     gyroInit();
