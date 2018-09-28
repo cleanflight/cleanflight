@@ -36,7 +36,6 @@
 #undef USE_RC_SMOOTHING_FILTER
 #undef ITERM_RELAX
 
-#undef USE_MSP_DISPLAYPORT
 #undef USE_MSP_OVER_TELEMETRY
 
 #undef USE_HUFFMAN
@@ -51,6 +50,7 @@
 #undef USE_TELEMETRY_LTM
 #undef USE_SERIALRX_XBUS
 #undef USE_SERIALRX_SUMH
+#undef USE_CRSF_CMS_TELEMETRY // Note - when the SP Racing F3 EVO was released cross-fire didn't exist
 #undef USE_PWM
 
 #undef USE_BOARD_INFO
