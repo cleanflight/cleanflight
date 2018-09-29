@@ -55,7 +55,6 @@
 #include "fc/config.h"
 #include "fc/controlrate_profile.h"
 #include "fc/fc_core.h"
-#include "fc/fc_dispatch.h"
 #include "fc/fc_rc.h"
 #include "fc/rc_adjustments.h"
 #include "fc/rc_controls.h"
@@ -99,6 +98,11 @@ enum {
     ALIGN_MAG = 2
 };
 
+enum {
+    ARMING_DELAYED_DISARMED = 0,
+    ARMING_DELAYED_NORMAL = 1,
+    ARMING_DELAYED_CRASHFLIP = 2
+};
 
 #define GYRO_WATCHDOG_DELAY 80 //  delay for gyro sync
 
@@ -120,8 +124,6 @@ enum {
 #define DEBUG_RUNAWAY_TAKEOFF_FALSE 0
 #endif
 
-#define PARALYZE_PREVENT_MODE_CHANGES_DELAY_US   100000 // Delay after paralyze mode activates to let other mode changes propagate
-
 #if defined(USE_GPS) || defined(USE_MAG)
 int16_t magHold;
 #endif
@@ -133,7 +135,7 @@ static uint32_t disarmAt;     // Time of automatic disarm when "Don't spin the m
 bool isRXDataNew;
 static int lastArmingDisabledReason = 0;
 static timeUs_t lastDisarmTimeUs;
-static bool tryingToArm;
+static int tryingToArm = ARMING_DELAYED_DISARMED;
 
 #ifdef USE_RUNAWAY_TAKEOFF
 static timeUs_t runawayTakeoffDeactivateUs = 0;
@@ -142,15 +144,6 @@ static bool runawayTakeoffCheckDisabled = false;
 static timeUs_t runawayTakeoffTriggerUs = 0;
 static bool runawayTakeoffTemporarilyDisabled = false;
 #endif
-
-static bool paralyzeModeAllowed = false;
-
-void preventModeChangesDispatch(dispatchEntry_t *self) {
-    UNUSED(self);
-    preventModeChanges();
-}
-
-static dispatchEntry_t preventModeChangesDispatchEntry = { .dispatch = preventModeChangesDispatch};
 
 PG_REGISTER_WITH_RESET_TEMPLATE(throttleCorrectionConfig_t, throttleCorrectionConfig, PG_THROTTLE_CORRECTION_CONFIG, 0);
 
@@ -265,9 +258,8 @@ void updateArmingStatus(void)
         }
 #endif
 
-        if (IS_RC_MODE_ACTIVE(BOXPARALYZE) && paralyzeModeAllowed) {
+        if (IS_RC_MODE_ACTIVE(BOXPARALYZE)) {
             setArmingDisabled(ARMING_DISABLED_PARALYZE);
-            dispatchAdd(&preventModeChangesDispatchEntry, PARALYZE_PREVENT_MODE_CHANGES_DELAY_US);
         }
 
         if (!isUsingSticksForArming()) {
@@ -305,11 +297,6 @@ void updateArmingStatus(void)
         }
 
         warningLedUpdate();
-    }
-
-    // Check if entering into paralyze mode can be allowed regardless of arming status
-    if (!IS_RC_MODE_ACTIVE(BOXPARALYZE) && !paralyzeModeAllowed) {
-        paralyzeModeAllowed = true;
     }
 }
 
@@ -353,11 +340,17 @@ void tryArm(void)
         }
 #ifdef USE_DSHOT
         if (micros() - getLastDshotBeaconCommandTimeUs() < DSHOT_BEACON_GUARD_DELAY_US) {
-            tryingToArm = true;
+            if (tryingToArm == ARMING_DELAYED_DISARMED) {
+                if (isModeActivationConditionPresent(BOXFLIPOVERAFTERCRASH) && IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH)) {
+                    tryingToArm = ARMING_DELAYED_CRASHFLIP;
+                } else {
+                    tryingToArm = ARMING_DELAYED_NORMAL;
+                }
+            }
             return;
         }
         if (isMotorProtocolDshot() && isModeActivationConditionPresent(BOXFLIPOVERAFTERCRASH)) {
-            if (!IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH)) {
+            if (!(IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH) || (tryingToArm == ARMING_DELAYED_CRASHFLIP))) {
                 flipOverAfterCrashMode = false;
                 if (!feature(FEATURE_3D)) {
                     pwmWriteDshotCommand(ALL_MOTORS, getMotorCount(), DSHOT_CMD_SPIN_DIRECTION_NORMAL, false);
@@ -854,6 +847,9 @@ bool processRx(timeUs_t currentTimeUs)
         beeper(BEEPER_RC_SMOOTHING_INIT_FAIL);
     }
 #endif
+
+    pidSetAntiGravityState(IS_RC_MODE_ACTIVE(BOXANTIGRAVITY) || feature(FEATURE_ANTI_GRAVITY));
+    
     return true;
 }
 
@@ -1039,10 +1035,10 @@ timeUs_t getLastDisarmTimeUs(void)
 
 bool isTryingToArm()
 {
-    return tryingToArm;
+    return (tryingToArm != ARMING_DELAYED_DISARMED);
 }
 
 void resetTryingToArm()
 {
-    tryingToArm = false;
+    tryingToArm = ARMING_DELAYED_DISARMED;
 }

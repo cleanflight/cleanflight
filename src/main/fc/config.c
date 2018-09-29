@@ -71,6 +71,8 @@ pidProfile_t *currentPidProfile;
 #define RX_SPI_DEFAULT_PROTOCOL 0
 #endif
 
+#define DYNAMIC_FILTER_MAX_SUPPORTED_LOOP_TIME HZ_TO_INTERVAL_US(2000)
+
 PG_REGISTER_WITH_RESET_TEMPLATE(pilotConfig_t, pilotConfig, PG_PILOT_CONFIG, 0);
 
 PG_RESET_TEMPLATE(pilotConfig_t, pilotConfig,
@@ -265,10 +267,20 @@ static void validateAndFixConfig(void)
 
     if (!rcSmoothingIsEnabled() || rxConfig()->rcInterpolationChannels == INTERPOLATION_CHANNELS_T) {
         for (unsigned i = 0; i < MAX_PROFILE_COUNT; i++) {
-            pidProfilesMutable(i)->dtermSetpointWeight = 0;
+            pidProfilesMutable(i)->pid[PID_ROLL].F = 0;
+            pidProfilesMutable(i)->pid[PID_PITCH].F = 0;
         }
     }
 
+    if (!rcSmoothingIsEnabled() ||
+        (rxConfig()->rcInterpolationChannels != INTERPOLATION_CHANNELS_RPY &&
+         rxConfig()->rcInterpolationChannels != INTERPOLATION_CHANNELS_RPYT)) {
+
+        for (unsigned i = 0; i < MAX_PROFILE_COUNT; i++) {
+            pidProfilesMutable(i)->pid[PID_YAW].F = 0;
+        }
+    }
+    
 #if defined(USE_THROTTLE_BOOST)
     if (!rcSmoothingIsEnabled() ||
         !(rxConfig()->rcInterpolationChannels == INTERPOLATION_CHANNELS_RPYT
@@ -402,6 +414,13 @@ static void validateAndFixConfig(void)
 #ifndef USE_OSD_SLAVE
 void validateAndFixGyroConfig(void)
 {
+#ifdef USE_GYRO_DATA_ANALYSE
+    // Disable dynamic filter if gyro loop is less than 2KHz
+    if (gyro.targetLooptime > DYNAMIC_FILTER_MAX_SUPPORTED_LOOP_TIME) {
+        featureClear(FEATURE_DYNAMIC_FILTER);
+    }
+#endif
+    
     // Prevent invalid notch cutoff
     if (gyroConfig()->gyro_soft_notch_cutoff_1 >= gyroConfig()->gyro_soft_notch_hz_1) {
         gyroConfigMutable()->gyro_soft_notch_hz_1 = 0;
