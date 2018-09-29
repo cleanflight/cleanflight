@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for for a new feature for Betaflight
+about: Suggest an idea for for a new feature
 
 ---
 
