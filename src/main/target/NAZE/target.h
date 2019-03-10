@@ -59,6 +59,12 @@
 #define MPU_INT_EXTI            PC13
 #define MMA8451_INT_PIN         PA5
 
+#define USE_MAG 
+#define USE_MAG_HMC5883 
+#define MAG_HMC5883_ALIGN CW180_DEG
+#define USE_GPS 
+#define USE_GPS_UBLOX
+
 #define USE_MPU_DATA_READY_SIGNAL
 #define USE_MAG_DATA_READY_SIGNAL
 
@@ -123,7 +129,7 @@
 //#define USE_UART3
 #define USE_SOFTSERIAL1
 #define USE_SOFTSERIAL2
-#define SERIAL_PORT_COUNT       4
+#define SERIAL_PORT_COUNT       2
 
 #define SOFTSERIAL1_RX_PIN      PA6 // PWM 5
 #define SOFTSERIAL1_TX_PIN      PA7 // PWM 6
