@@ -28,7 +28,8 @@ Next, Makefile compiles all of the .c files included in SRC into .s files. It do
 
 [Screenshot of compile declaration]
 
-This rule states: 
+This rule states:
+
 	- For every .o directory address listed in TARGET_OBJS, compile a .s file using its .c counterpart (listed in SRC).
 	- If a .c file is included in the SPEED_OPTIMISED_SRC list (found in source.mk), compile the .s file using the optimization option CC_SPEED_OPTIMISATION (defined on line 202 of Makefile). This option is pretty self-explanatory, it compiles a .s file optimized for speed.
 	- If a .c file is included in the SIZE_OPTIMISED_SRC list (found in source.mk), compile the .s file using the optimization option CC_SIZE_OPTIMISATION (defined on line 203 of Makefile). This option compiles a .s file optimized for size.
@@ -43,6 +44,7 @@ Next, Makefile will assemble all of the .s files into .o files. It does this by 
 [Screenshot of assemble declaration]
 
 This rule follows the same general structure as the compilation rule. It states:
+
 	- For every .s file found within the directory adress ./obj/main/[target-name], assemble a .o file.
 	- For every .S file found within the directory adress ./obj/main/[target-name], assemble a .o file. (This instruction is essentially only for the processor's .S startup file)
 
@@ -53,6 +55,7 @@ Finally, Makefile links the individual .o files using a .elf file. It creates th
 [Screenshot of linking declaration]
 
 This rule states:
+
 	- Create the target TARGET_ELF (variable declared on line 263) from the prerequisites included in TARGET_OBJS. (Ignore the ifeq statement, this is only for FC running an STM32F1 microprocessor - which are no longer supported by Cleanflight).
 	- The recipe for this rule includes a number of compiler options listed in the LD_FLAGS variable. (See screenshot below).
 	
@@ -65,6 +68,7 @@ The final step in the process is to create the final .hex executable. It creates
 [Screenshot of TARGET_HEX declaration]
 
 This rule states:
+
 	- Create the target TARGET_HEX (variable declared on line 262) from the prerequisites included in TARGET_ELF.
 
 (More specifically, this rule is actually ultimately invoked by the 'hex' rule by using the $(make) command (see screenshot below. But the result is the same: It creates the final executable file that will be flashed onto the microprocessor in the FC).
