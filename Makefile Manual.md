@@ -17,16 +17,25 @@ Makefile first selects a group of .c files depending on the kind of microprocess
 
 ![SRC.png](https://i.postimg.cc/0Qt3dwhJ/SRC.png "SRC variable for SPRACINGF3 target")
 
+*Print of SRC variable using SPRACINGF3 as the target*
+
 Once SRC is populated, Makefile creates a directory address for a .o file for each .c file listed in $(SRC). These directory addresses are stored as a concatenated string in the variable TARGET_OBJS, and will be used in the next step to compile the .c source files into .s files.
 
-[Screenshot of TARGET_OBJS declaration]
-[Screenshot of TARGET_OBJS for SPRacingF3]
+![TARGET-OBJS-declaration.png](https://i.postimg.cc/sxCrZSW9/TARGET-OBJS-declaration.png)
+
+*Assignment of TARGET_OBJS variable*
+
+![TARGET-OBJS.png](https://i.postimg.cc/dt0Wj398/TARGET-OBJS.png)
+
+*Print of TARGET_OBJS variable using SPRACINGF3 as the target*
 
 ## 2. Compilation
 
 Next, Makefile compiles all of the .c files included in SRC into .s files. It does this by following the rule in the screenshot below:
 
-[Screenshot of compile declaration]
+![Compile-declaration.png](https://i.postimg.cc/T13c0NnR/Compile-declaration.png)
+
+*Makefile's compile rule*
 
 This rule states:
 
@@ -41,7 +50,9 @@ This rule will run, like a loop, until each .c file in SRC has been compiled int
 
 Next, Makefile will assemble all of the .s files into .o files. It does this by following the rule in the screenshot below:
 
-[Screenshot of assemble declaration]
+![Asseble-declaration.png](https://i.postimg.cc/FKv3GnQ2/Asseble-declaration.png)
+
+*Makefile's assemble rule*
 
 This rule follows the same general structure as the compilation rule. It states:
 
@@ -52,20 +63,26 @@ This rule follows the same general structure as the compilation rule. It states:
 
 Finally, Makefile links the individual .o files using a .elf file. It creates the .elf file by following the rule in the screenshot below:
 
-[Screenshot of linking declaration]
+![Linking-declaration.png](https://i.postimg.cc/668c8g60/Linking-declaration.png)
+
+*Makefile's link rule*
 
 This rule states:
 
 - Create the target TARGET_ELF (variable declared on line 263) from the prerequisites included in TARGET_OBJS. (Ignore the ifeq statement, this is only for FC running an STM32F1 microprocessor - which are no longer supported by Cleanflight).
 - The recipe for this rule includes a number of compiler options listed in the LD_FLAGS variable. (See screenshot below).
 	
-[Screenshot of LD_FLAGS]
+![LD-FLAGS-declaration.png](https://i.postimg.cc/W4tF9RHY/LD-FLAGS-declaration.png)
+
+*Assignment of LD_FLAGS variable*
 
 ## 5. Creating the Final Executable
 
 The final step in the process is to create the final .hex executable. It creates the executable by following the rule in the screenshot below:
 
-[Screenshot of TARGET_HEX declaration]
+![TARGET-HEX-declaration.png](https://i.postimg.cc/1zNRnyTS/TARGET-HEX-declaration.png)
+
+*This rule explains how to create the .hex executable*
 
 This rule states:
 
@@ -73,4 +90,6 @@ This rule states:
 
 (More specifically, this rule is actually ultimately invoked by the 'hex' rule by using the $(make) command (see screenshot below. But the result is the same: It creates the final executable file that will be flashed onto the microprocessor in the FC).
 
-[Screenshot of hex rule declaration]
+![hex-rule-declaration.png](https://i.postimg.cc/nrVtkxdC/hex-rule-declaration.png)
+
+*This rule is what actually invokes TARGET_HEX*
