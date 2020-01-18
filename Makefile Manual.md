@@ -17,7 +17,7 @@ Makefile first selects a group of .c files depending on the kind of microprocess
 
 ![SRC.png](https://i.postimg.cc/0Qt3dwhJ/SRC.png)
 
-^*Print of SRC variable using SPRACINGF3 as the target*
+^*What SRC looks like using SPRACINGF3 as the target*
 
 Once SRC is populated, Makefile creates a directory address for a .o file for each .c file listed in $(SRC). These directory addresses are stored as a concatenated string in the variable TARGET_OBJS, and will be used in the next step to compile the .c source files into .s files.
 
@@ -27,7 +27,7 @@ Once SRC is populated, Makefile creates a directory address for a .o file for ea
 
 ![TARGET-OBJS.png](https://i.postimg.cc/GhJXRYmw/TARGET-OBJS.png)
 
-^*Print of TARGET_OBJS variable using SPRACINGF3 as the target*
+^*What TARGET_OBJS looks like using SPRACINGF3 as the target*
 
 ## 2. Compilation
 
