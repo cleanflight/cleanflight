@@ -15,7 +15,7 @@ For more information on Makefiles, please see the GNU make manual: https://www.g
 
 Makefile first selects a group of .c files depending on the kind of microprocessor in the FC. These source files are stored as a concatenated string in the variable SRC. For more details of exactly how SRC is created and which files comprise it, see source.mk located at ./make/source.mk.
 
-[![SRC.png](https://i.postimg.cc/0Qt3dwhJ/SRC.png)]
+![SRC.png](https://i.postimg.cc/0Qt3dwhJ/SRC.png)
 
 Once SRC is populated, Makefile creates a directory address for a .o file for each .c file listed in $(SRC). These directory addresses are stored as a concatenated string in the variable TARGET_OBJS, and will be used in the next step to compile the .c source files into .s files.
 
