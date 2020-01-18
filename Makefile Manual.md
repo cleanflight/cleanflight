@@ -17,17 +17,17 @@ Makefile first selects a group of .c files depending on the kind of microprocess
 
 ![SRC.png](https://i.postimg.cc/0Qt3dwhJ/SRC.png)
 
-   *Print of SRC variable using SPRACINGF3 as the target*
+^*Print of SRC variable using SPRACINGF3 as the target*
 
 Once SRC is populated, Makefile creates a directory address for a .o file for each .c file listed in $(SRC). These directory addresses are stored as a concatenated string in the variable TARGET_OBJS, and will be used in the next step to compile the .c source files into .s files.
 
 ![TARGET-OBJS-declaration.png](https://i.postimg.cc/sxCrZSW9/TARGET-OBJS-declaration.png)
 
-   *Assignment of TARGET_OBJS variable*
+^*Assignment of TARGET_OBJS variable*
 
 ![TARGET-OBJS.png](https://i.postimg.cc/GhJXRYmw/TARGET-OBJS.png)
 
-   *Print of TARGET_OBJS variable using SPRACINGF3 as the target*
+^*Print of TARGET_OBJS variable using SPRACINGF3 as the target*
 
 ## 2. Compilation
 
@@ -35,7 +35,7 @@ Next, Makefile compiles all of the .c files included in SRC into .s files. It do
 
 ![Compile-declaration.png](https://i.postimg.cc/T13c0NnR/Compile-declaration.png)
 
-   *Makefile's compile rule*
+^*Makefile's compile rule*
 
 This rule states:
 
@@ -52,7 +52,7 @@ Next, Makefile will assemble all of the .s files into .o files. It does this by 
 
 ![Asseble-declaration.png](https://i.postimg.cc/FKv3GnQ2/Asseble-declaration.png)
 
-   *Makefile's assemble rule*
+^*Makefile's assemble rule*
 
 This rule follows the same general structure as the compilation rule. It states:
 
@@ -65,7 +65,7 @@ Finally, Makefile links the individual .o files using a .elf file. It creates th
 
 ![Linking-declaration.png](https://i.postimg.cc/668c8g60/Linking-declaration.png)
 
-   *Makefile's link rule*
+^*Makefile's link rule*
 
 This rule states:
 
@@ -74,7 +74,7 @@ This rule states:
 	
 ![LD-FLAGS-declaration.png](https://i.postimg.cc/W4tF9RHY/LD-FLAGS-declaration.png)
 
-   *Assignment of LD_FLAGS variable*
+^*Assignment of LD_FLAGS variable*
 
 ## 5. Creating the Final Executable
 
@@ -82,7 +82,7 @@ The final step in the process is to create the final .hex executable. It creates
 
 ![TARGET-HEX-declaration.png](https://i.postimg.cc/1zNRnyTS/TARGET-HEX-declaration.png)
 
-   *This rule explains how to create the .hex executable*
+^*This rule explains how to create the .hex executable*
 
 This rule states:
 
@@ -92,4 +92,4 @@ This rule states:
 
 ![hex-rule-declaration.png](https://i.postimg.cc/nrVtkxdC/hex-rule-declaration.png)
 
-   *This rule is what actually invokes TARGET_HEX*
+^*This rule is what actually invokes TARGET_HEX*
