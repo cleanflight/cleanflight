@@ -3,7 +3,7 @@ The purpose of this document is to explain the basic objectives of Cleanflight's
 For more information on Makefiles, please see the GNU make manual: https://www.gnu.org/software/make/manual/make.html
 
 
-##The basic objectives of the Makefile are:##
+##The basic objectives of the Makefile are:
 
 1. Select a group of .c source files depending on the version of microprocessor in the FC (STM32F1, STM32F2, STM32F3, STM32F4, or STM32F7)
 2. Compile those .c files into .s files (assembly language)
@@ -11,7 +11,7 @@ For more information on Makefiles, please see the GNU make manual: https://www.g
 4. Link the .o files using an .elf file
 5. Create the final executable file (.hex or .bin, to be flashed onto the FC's processor)
 
-##1. Source File Selection##
+##1. Source File Selection
 
 Makefile first selects a group of .c files depending on the kind of microprocessor in the FC. These source files are stored as a concatenated string in the variable SRC. For more details of exactly how SRC is created and which files comprise it, see source.mk located at ./make/source.mk.
 
@@ -22,7 +22,7 @@ Once SRC is populated, Makefile creates a directory address for a .o file for ea
 [Screenshot of TARGET_OBJS declaration]
 [Screenshot of TARGET_OBJS for SPRacingF3]
 
-##2. Compilation##
+##2. Compilation
 
 Next, Makefile compiles all of the .c files included in SRC into .s files. It does this by following the rule in the screenshot below:
 
@@ -36,7 +36,7 @@ This rule states:
 
 This rule will run, like a loop, until each .c file in SRC has been compiled into a .s assembly file and stored at ./obj/main/[target-name].
 
-##3. Assembly##
+##3. Assembly
 
 Next, Makefile will assemble all of the .s files into .o files. It does this by following the rule in the screenshot below:
 
@@ -46,7 +46,7 @@ This rule follows the same general structure as the compilation rule. It states:
 	- For every .s file found within the directory adress ./obj/main/[target-name], assemble a .o file.
 	- For every .S file found within the directory adress ./obj/main/[target-name], assemble a .o file. (This instruction is essentially only for the processor's .S startup file)
 
-##4. Linking##
+##4. Linking
 
 Finally, Makefile links the individual .o files using a .elf file. It creates the .elf file by following the rule in the screenshot below:
 
@@ -58,7 +58,7 @@ This rule states:
 	
 [Screenshot of LD_FLAGS]
 
-##5. Creating the Final Executable##
+##5. Creating the Final Executable
 
 The final step in the process is to create the final .hex executable. It creates the executable by following the rule in the screenshot below:
 
