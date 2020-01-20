@@ -50,3 +50,48 @@ Note: Also please remember to try and build a easily visualized map for the rest
 5. Begin looking into Makefile (what is does/ how it works).
 
 ### Next meeting: Monday, 01/13/2020 6:00pm - PSU: Circuits Lounge
+
+## 01/17/2020
+### Overview:
+The main objective of the meeting was to discuss the proposal for the Kit, 
+talk about our findings
+from the makefile and documentation in the cleanflight repo and RISC-V.
+ 
+### To Do:
+- Niko: PDS
+- Bliss: Send Email Michal and Roy, explore HiFive board
+- Eric: Trello vs Git- which to use for the project management, Makefile research
+- Ruben: IMU and porting drivers research
+
+
+### Done:
+- Makefile research mapping
+- Kit research and communication with Galois
+- Risc-V tools
+
+### Deliverables:
+- PDS draft until Friday 01/24/
+
+### Goals:
+- Each team member needs to build cleanflight on their machine
+- Continue exploring the repo
+
+### Sustains:
+- Keep meeting Monday and Friday at 6pm
+- Pair and meet to tackle more challenging parts when schedule permits, 
+outside regular meeting times
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
