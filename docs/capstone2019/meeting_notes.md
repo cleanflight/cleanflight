@@ -50,7 +50,7 @@ Note: Also please remember to try and build a easily visualized map for the rest
 5. Begin looking into Makefile (what is does/ how it works).
 
 ### Next meeting: Monday, 01/13/2020 6:00pm - PSU: Circuits Lounge
-
+----
 ## 01/17/2020
 ### Overview:
 The main objective of the meeting was to discuss the proposal for the Kit, 
@@ -62,7 +62,6 @@ from the makefile and documentation in the cleanflight repo and RISC-V.
 - Bliss: Send Email Michal and Roy, explore HiFive board
 - Eric: Trello vs Git- which to use for the project management, Makefile research
 - Ruben: IMU and porting drivers research
-
 
 ### Done:
 - Makefile research mapping
@@ -80,7 +79,48 @@ from the makefile and documentation in the cleanflight repo and RISC-V.
 - Keep meeting Monday and Friday at 6pm
 - Pair and meet to tackle more challenging parts when schedule permits, 
 outside regular meeting times
+-------
+## 01/20/2020
+### Overview:
+The main objective of the meeting was to discuss the project's timeline, the Project Definition Statement(PDS), the Weekly Progress Report and Milestones.
 
+### To Do:
+- Niko: Complete the PDS draft by Friday 01/24/2020,update Weekly report
+- Bliss: Work on RISC-V assembly with Freedom Studio
+- Eric: F3 Drivers
+- Ruben: IMU and SPI
+
+
+### Done:
+- Reviewed PDS
+- Defined Schedule
+- Defined Milestones
+- Began using Freedom Studio
+- Load Balanced the tasks
+
+### Deliverables:
+- PDS draft until Friday 01/24/ and Weekly Progress Report
+- Have a working example with the HiFive board (blink LED)
+- Improve the makefile mapping and agree upon what files need to be modified and how
+- Have Roy review our project timeline
+
+### Goals:
+- Each team member needs to build cleanflight on their machine
+- Continue exploring the repo
+- Have a good understanding how to interact with the board by the end of this week 
+- How SPI works
+
+### Sustains:
+- Keep meeting Monday and Friday at 6pm
+- Pair and meet to tackle more challenging parts when schedule permits,
+outside regular meeting times
+
+### Notes:
+- Ask Prof.Faust about SDK's and porting one architecture to another
+- Connect with Michal
+- Verify what is the expected deliverable at the end of the semester and what is expected next semester
+
+Next Meeting: 01/24/2020
 
 
 
