@@ -9,7 +9,10 @@
 
 ### Done 
 
-
+ - Bliss
+ - Eric
+ - Ruben
+ - Niko
 
 
 
