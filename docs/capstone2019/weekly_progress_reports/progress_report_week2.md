@@ -4,10 +4,7 @@
 
 ### Summary
 
- - Bliss
- - Eric
- - Ruben
- - Niko
+
 
 ### Done 
 
@@ -17,7 +14,6 @@
  - Niko
 
 ### TODO
-
 
  - Bliss
  - Eric
