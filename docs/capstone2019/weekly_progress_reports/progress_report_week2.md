@@ -26,13 +26,13 @@ We have been working on mapping the makefile, establish a good understanding of 
 
 
 #### Nikolay Summary :
-Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (documentation)
 
+	Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (documentation)
 
 
 #### Ruben Summary :
 
----
+
 
 ### Done:
 - Watched the videos that Eric has uploaded that describe building and porting a drone 
@@ -85,24 +85,20 @@ Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (do
 
 **Proposed Schedule for the next 10 weeks**
 
-| Week    | Goals and Tasks                                                                                                                                                                                   |
-|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Week 1  | Confirm availability,meet sponsor, schedule meeting times                                                                                                                                         |
-| Week 2  | Research RISC-V,Makefile,IMU                                                                                                                                                                      |
-| Week 3  | PDS(draft),Weekly Report, F3 Drivers, Freedom Studio, RISC-V Assembly, SPI, Weekly Report                                                                                                         |
-| Week 4  | PDS(final review),Weekly Report, get one sensor working with board,ECE 412 class check in                                                                                                         |
-| Week 5  | Use Cleanflight to a drone Kit, weekly report, ECE 412 team project review                                                                                                                        |
-| Week 6  | Begin porting the makefile, weekly report                                                                                                                                                         |
-| Week 7  | Continue porting makefile and SDK, begin unit testing,weekly report                                                                                                                               |
-| Week 8  | Port I/O, unit testing, weekly report                                                                                                                                                             |
-| Week 9  | Port Drivers, unit testing , weekly report                                                                                                                                                        |
-| Week 10 | Port Drivers, IMU, Cleanflight, integration testing                                                                                                                                               |
-| Week 11 | Acceptance testing, review with sponsor and advisor, deliver project; drone is using accelerometer and gyroscope and responds to basic commands such as up/down, left/right, forward and backward |
+| **Week**    	| **Goals and Tasks**                                                                                                                                                                                   |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Week 1** 	| Confirm availability,meet sponsor, schedule meeting times                                                                                                                                         |
+| **Week 2** 	| Research RISC-V,Makefile,IMU                                                                                                                                                                      |
+| **Week 3**  	| PDS(draft),Weekly Report, F3 Drivers, Freedom Studio, RISC-V Assembly, SPI, Weekly Report                                                                                                         |
+| **Week 4**  	| PDS(final review),Weekly Report, get one sensor working with board,ECE 412 class check in                                                                                                         |
+| **Week 5**  	| Use Cleanflight to a drone Kit, weekly report, ECE 412 team project review                                                                                                                        |
+| **Week 6** 	| Begin porting the makefile, weekly report                                                                                                                                                         |
+| **Week 7**	|Continue porting makefile and SDK, begin unit testing,weekly report                                                                                                                               |
+| **Week 8**	| Port I/O, unit testing, weekly report                                                                                                                                                             |
+| **Week 9**  	| Port Drivers, unit testing , weekly report                                                                                                                                                        |
+| **Week 10** 	| Port Drivers, IMU, Cleanflight, integration testing                                                                                                                                               |
+| **Week 11** 	| Acceptance testing, review with sponsor and advisor, deliver project; drone is using accelerometer and gyroscope and responds to basic commands such as up/down, left/right, forward and backward |
 
 
 
-=======
- - Bliss
- - Eric
- - Ruben
- - Niko
+

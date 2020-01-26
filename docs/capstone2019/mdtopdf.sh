@@ -1,18 +1,10 @@
 #!/bin/bash
-FILES=./*.md
-FILES1=./SPI_HiFive/*.md
-FILES2=./weekly_progress_reports/*.md
-for f in $FILES
+shopt -s globstar dotglob
+for f in **/*.md;
+
 do
-	markdown-pdf $f
+	filename="${f%.*}"	
+	pandoc $f -V geometry:margin=1in --latex-engine=lualatex -o $filename.pdf
 done
 
-for f in $FILES1
-do
-	markdown-pdf $f
-done
 
-for f in $FILES2
-do
-	markdown-pdf $f
-done
