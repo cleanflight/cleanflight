@@ -1,3 +1,5 @@
+# SPI
+
 Most of this info is in the soc manual so when I refer to page number, it references to the manual (fe310-g002-manual-v19p05.pdf).
 
 The board has 3 SPI instances (pg 10):
