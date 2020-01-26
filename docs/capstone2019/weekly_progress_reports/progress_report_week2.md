@@ -23,7 +23,7 @@ We have been working on mapping the makefile, establish a good understanding of 
 
 
 #### Eric Summary :
-- Created "Makefile Manual" document (located in root directory) which gives a high-level overiew of the Makefile's functionality. AKA what gets built and how for a particular target. 
+- Created "Makefile Manual" document (located in root directory under Makefile itself) which gives a high-level overiew of the Makefile's functionality. AKA what gets built and how for a particular target. 
 
 - To do: come up with a comprehensive list of which drivers are included in the final .hex executable. Specifically, Galois has tasked us with emulating the SPRacing F3 FC (F3 6DOF). I want to come up with a comprehensive list of drivers for that FC, so we have an idea of which files we need to port exactly.
 
