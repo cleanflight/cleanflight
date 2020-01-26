@@ -29,6 +29,7 @@ We have been working on mapping the makefile, establish a good understanding of 
 Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (documentation)
 
 
+
 #### Ruben Summary :
 
 ---
@@ -54,6 +55,10 @@ Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (do
 - Flowchart for porting 
 - Flowchart for makefile
 - Use a sensor with the HiFive board
+ - Bliss
+ - Eric
+ - Ruben
+ - Niko
 
 
 ### Challenges:
@@ -61,7 +66,10 @@ Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (do
 
 
 
----
+ - Bliss
+ - Eric
+ - Ruben
+ - Niko
 
 ### Notes:
 **Proposed Milestones**
@@ -93,3 +101,8 @@ Primerily worked on PDS, Project Schedule and Project Planning,meeting notes (do
 
 
 
+=======
+ - Bliss
+ - Eric
+ - Ruben
+ - Niko
