@@ -33,10 +33,10 @@ For interfacing with external devices, we only have access to (SPI1). The addres
 
 For programming exernal sensors to SPI, we need to know the following:
 
--endianess of SPI
--clock rate
--protocol
--# of bits per frame
+- endianess of SPI
+- clock rate
+- protocol
+- # of bits per frame
 
 __SPI endianess is MSB (pg 90)
 SPI clock rate is less than 100MHz (pg 84)
