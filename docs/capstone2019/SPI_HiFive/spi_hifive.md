@@ -17,17 +17,17 @@ For interfacing with external devices, we only have access to (SPI1). The addres
 
 ## SPI1
 
-**header pin 16 - GPIO_10 - SPI1_SS3
+**header pin 16 - GPIO_10 - SPI1_SS3**
 
-header pin 15 - GPIO_9 - SPI1_SS2
+**header pin 15 - GPIO_9 - SPI1_SS2**
 
-header pin 13 - GPIO_5 - SPI1_SCK
+**header pin 13 - GPIO_5 - SPI1_SCK**
 
-header pin 12 - GPIO_4 - SPI1_MISO
+**header pin 12 - GPIO_4 - SPI1_MISO**
 
-header pin 11 - GPIO_3 - SPI1_MOSI
+**header pin 11 - GPIO_3 - SPI1_MOSI**
 
-header pin 10 - GPIO_2 - SPI1_SS0**
+**header pin 10 - GPIO_2 - SPI1_SS0**
 
 
 
