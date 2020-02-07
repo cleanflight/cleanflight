@@ -1,0 +1,448 @@
+%% LyX 2.3.3 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[11pt]{article}
+\usepackage{mathpazo}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[active]{srcltx}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[unicode=true]
+ {hyperref}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\newcommand*\LyXZeroWidthSpace{\hspace{0pt}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+\newenvironment{lyxlist}[1]
+	{\begin{list}{}
+		{\settowidth{\labelwidth}{#1}
+		 \setlength{\leftmargin}{\labelwidth}
+		 \addtolength{\leftmargin}{\labelsep}
+		 \renewcommand{\makelabel}[1]{##1\hfil}}}
+	{\end{list}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Academic Title Page
+% LaTeX Template
+% Version 2.0 (17/7/17)
+%
+% This template was downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% WikiBooks (LaTeX - Title Creation) with modifications by:
+% Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+% 
+% Instructions for using this template:
+% This title page is capable of being compiled as is. This is not useful for 
+% including it in another document. To do this, you have two options: 
+%
+% 1) Copy/paste everything between \begin{document} and \end{document} 
+% starting at \begin{titlepage} and paste this into another LaTeX file where you 
+% want your title page.
+% OR
+% 2) Remove everything outside the \begin{titlepage} and \end{titlepage}, rename
+% this file and move it to the same directory as the LaTeX file you wish to add it to. 
+% Then add \input{./<new filename>.tex} to your LaTeX file where you want your
+% title page.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+
+
+% Required for inputting international characters
+% Output font encoding for international characters
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{indentfirst}
+\graphicspath{{images/} }
+% Palatino font
+
+\makeatother
+
+\begin{document}
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{titlepage} % Suppresses displaying the page number on the title page and the subsequent page counts as page 1
+ 
+\global\long\def\HRule{\rule{\linewidth}{0.5mm}}%
+ % Defines a new command for horizontal lines, change thickness here
+ \centering % Centre everything on the page
+ %------------------------------------------------
+ %	Headings
+ %------------------------------------------------
+ \textsc{Portland State University}\\[1.5cm] % Main heading such as the name of your university/college
+ \textsc{ECE 412}\\[0.5cm] % Major heading such as course name
+ \textsc{Capstone Project Proposal 2020}\\[0.5cm] % Minor heading such as course title
+ %------------------------------------------------
+ %	Title
+ %------------------------------------------------
+ \HRule\\[0.4cm]
+
+\textbf{\huge{}RISC-V Cleanflight Autopilot}\textbf{\\[0.4cm] % Title of your document
+ \HRule\\[1.5cm]}
+
+%------------------------------------------------
+%	Author(s)
+%------------------------------------------------
+\noindent\begin{minipage}[c]{1\textwidth}%
+ 
+\begin{center}
+Bliss Brass {- brass@pdx.edu}\\
+ % Your name
+ 
+\par\end{center}%
+\end{minipage}
+
+\noindent\begin{minipage}[c]{1\textwidth}%
+ 
+\begin{center}
+Eric Schulte {- eschulte@pdx.edu}\\
+ % Your name
+ 
+\par\end{center}%
+\end{minipage}
+
+\noindent\begin{minipage}[c]{1\textwidth}%
+ 
+\begin{center}
+Nikolay Nikolov {- nnikolov@pdx.edu}\\
+ % Your name
+ 
+\par\end{center}%
+\end{minipage}
+
+\noindent\begin{minipage}[c]{1\textwidth}%
+ 
+\begin{center}
+Ruben Maldonado {- mruben@pdx.edu}\\
+ % Your name
+ 
+\par\end{center}%
+\end{minipage}
+
+\LyXZeroWidthSpace{}
+
+\noindent\begin{minipage}[c]{1\textwidth}%
+
+\begin{center}
+\textit{\Large{}Advisor}{\Large{}:}\\
+{\Large{} Roy Kravitz % Supervisor's name
+ }{\Large\par}
+\par\end{center}%
+\end{minipage}\\
+\LyXZeroWidthSpace{}
+
+\noindent\begin{minipage}[c]{1\textwidth}%
+ 
+\begin{center}
+\textit{\Large{}Sponsor:}{\Large{}}\\
+{\Large{} Galois % Supervisor's name
+ }{\Large\par}
+\par\end{center}%
+\end{minipage}%------------------------------------------------
+ %	Date
+ %------------------------------------------------
+ \vfill{}
+\vfill{}
+\vfill{}
+{\large{}\today} % Date, change the \today to a set date if you want to be precise
+ %------------------------------------------------
+ %	Logo
+ %------------------------------------------------
+ \vfill{}
+\vfill{}
+\vfill{}
+\end{titlepage} \pagestyle{plain} \tableofcontents{}\newpage{}
+
+\section{Overview / Executive Summary}
+
+Our objective is to port Cleanflight, a mini open-source OS for racing drones to a board running on the RISC-V architecture. We are going to achieve our aim by turning SiFive’s HiFive1 Revision B RISC-V development board into the flight controller for a standard 4-propeller racing drone. 
+
+The successful completion of the project will act as a proof-of-concept for the newer RISC-V architecture, as compared to older RISC machines like ARM.
+
+Our project sponsor, Galois Inc., has asked us to deliver a flying racing drone with the HiFive1 Rev. B board running Cleanflight by the end of the spring term in June 2020. Our sponsor, Galois, is purchasing and providing a drone kit for us to replace the native flight controller with the HiFive1 Rev. B.
+
+\section{Project Design Specification}
+
+\subsection{Concept of operations / User stories}
+
+The primary purpose of this project is to demonstrate RISC-V’s capabilities in a fun and exciting way. The primary users will be Galois and possibly other drone hobbyists looking to adapt future RISC-V boards for use on racing drones. It may also be used by others as a reference or base-point to launch their own RISC-V based projects.
+
+\subsection{Stakeholders}
+
+The main project stakeholder is our project sponsor, Galois Inc. We will be providing them with a functioning drone running on RISC-V architecture. The other stakeholder (though they may not know it yet) is the Cleanflight development team. We will share our RISC-V port via Github pull request at the end of the project.
+
+\subsection{Background}
+
+RISC-V is an open-source Instruction Set Architecture (ISA) developed at UC Berkeley and introduced in 2010. RISC-V is a modular ISA centered around the philosophy of ‘using only the instruction registers that you need,’ meaning the ISA aims to minimize wasteful use of resources. RISC-V includes a static core, RV32I, with the option of adding one or more standard extensions that hardware can consist of or not based on the needs of an application. The modular concept enables very small and low energy implementations of RISC-V, which can be critical for embedded applications.
+
+In recent years RISC-V has even drawn the interest of companies such as Apple, Facebook, Google, and Samsung. Interested in the modular philosophy of the ISA, these companies have begun investing resources into creating their own RISC-V based silicon.
+The industry currently requires more practical applications to demonstrate the capabilities of RISC-V. We aim to create a racing drone to serve as one of these demonstration platforms.
+
+\subsection{Market Analysis}
+
+All drones, racing or otherwise, are controlled using a flight control board. The flight control board is a PCB that acts as the ‘brains’ of the drone; receiving the user input from an RC transmitter on the ground, processing the data, and outputting control instructions to the motors. All flight control boards must include at least two components: a processing unit, and an inertial measurement unit (IMU). Additional features may consist of components such as cameras, compasses, barometers, and telemetry devices.
+
+The popularity of drones has exploded over the last ten years. As a result, the flight controller market has grown to include a diverse set of products from hundreds of companies. It’s now possible to find a quality flight controller for between $25.00 - $50.00.
+
+By porting Cleanflight to the HiFive1 Rev. B development board, our team is essentially creating a custom flight control board. Our board won’t be the first RISC-V flight controller to market, but, as far as we can tell, it will be the first RISC-V board to support Cleanflight.
+
+We’ll be modeling our board’s functionality around that of the Seriously Pro Racing F3 Flight Controller (SPRacingF3). The SPRacingF3 includes an accelerometer and gyroscope for determining orientation and speed, a compass for determining direction, and a barometer for determining altitude. We plan on thoroughly implementing the accelerometer and gyroscope, while the compass and barometer are stretch goals.
+
+\subsection{Requirements}
+
+Most broadly, the drone must fly with the HiFive1 Rev. B running a ported version of Cleanflight. More specifically, the drone must respond accurately and responsively to user input controlling speed, direction, and altitude.
+
+Since Cleanflight is an open-source software project, our team must also document the porting process thoroughly enough so that someone else could recreate the project. We will share the final documentation with the Cleanflight development team via a Github and merge request at the end of the project. As such, a Cleanflight user should be able to use the CleanFlight tool to flash their own RISC-V based flight control board.
+
+Stretch requirements include implementing a compass and barometer to provide extra flight data.
+
+\subsection{Specifications}
+
+Our team must use Cleanflight as the flight control software, and use the HiFive1 Rev. B board as the flight control board. These are the only specifications provided by our project sponsor.
+
+
+\subsection{Deliverables}
+
+\begin{itemize}
+    \item Project Proposal
+    \begin{itemize}
+        \item Product Design Specification
+         \item Project Management Plan
+    \end{itemize}
+    \item Weekly Progress Report
+    \item Final report
+    \item ECE Capstone Poster Session poster
+    \item Github pull request (to merge RISC-V port into Cleanflight’s mainstream repository)
+
+\end{itemize}
+
+\subsection{Initial Designs}
+\subsubsection{Cleanflight’s Makefile}
+
+Cleanflight’s Makefile provides instructions to make utility on how to compile and build the final Cleanflight executable file. This executable file then gets flashed to the target flight control board.
+
+To create an executable for the RISC-V environment, our team must integrate RISC-V support into the Makefile. The first step in that process is exploring how the Makefile tells the compiler to build an executable. Below is a high-level block diagram of the Cleanflight Makefile’s functionality:
+
+\begin{figure}[ht]
+  \caption{Makefile flowchart.}
+  \centering
+    \includegraphics[width=50mm,scale=0.5]{make.png}
+\end{figure}
+
+
+\subsubsection{The Minimum Port}
+
+Before porting any specific Cleanflight drivers, we want to complete a ‘dry run’ of the porting process. This will involve editing Cleanflight’s makefile to include RISC-V development tools and flags, and getting the makefile to produce an executable for the HiFive1 Rev. B. The idea is to learn how to build RISC-V executables using a version of Cleanflight’s makefile, prior to attempting to port any specific software. We refer to this initial ‘dry run’ as the Minimum Port, and its steps are listed below:
+
+\begin{figure}[ht]
+  \caption{Minimum port flowchart.}
+  \centering
+    \includegraphics[width=50mm,scale=0.5]{min_port.png}
+\end{figure}
+
+\newpage
+
+\begin{enumerate}
+    \item Start with the Cleanflight makefile.
+    
+    \item Download and include a path to the prebuilt RISC-V toolchain which includes GCC, G++, GDB, etc.
+    
+    \item The toolchain comes with Freedom Studio, or it can be found on SiFive’s website. The path can then be hardcoded in the makefile, or the tool.mk file can be updated to find the toolchain.
+    
+    \item Add paths to .s and .S files. These files can be found after compiling a sample app with HiFive1 Rev. B listed as the target.
+    
+    \item Add Cflags, Ldflags, etc. These files can be found after compiling a sample app with HiFive1 Rev. B listed as the target.
+    
+    \item Add metal libs/includes files. These files can be found after compiling a sample app with HiFive1 Rev. B listed as the target.
+    \item Build a simple example program (i.e. flashing LEDs)
+    \item Exit makefile
+
+\end{enumerate}
+
+\subsection{Verification Plan}
+
+After completing the minimum port, we are planning on splitting the porting work into modules. 
+
+The first module to be ported is accelerometer firmware. Once that is complete, we will unit-test the firmware with the accelerometer chip to ensure standalone functionality. After the port of the accelerometer module, the team will split into two-person subteams - each focusing on their module. 
+
+One team is responsible for porting the receiver firmware, and the other responsible for porting the ESC/motor output firmware. Similar to the accelerometer module testing, each team will unit-test their module to check for standalone functionality.
+
+Once we confirm each module is working on its own, we will assemble the drone kit and install the HiFive1 Rev. B as the flight controller. The next stage is performing integration testing to ensure all modules function correctly together as a single package. 
+
+These are just preliminary verification plans, with more specifics to come. But as of right now, this is the general outline of our verification plan.
+
+\subsection{Risks}
+
+Therefore, we must develop an overall strategy before diving too deep into any specific code (i.e., first creating a “minimum port” discussed above).
+
+Another risk comes from the capabilities of the HiFive1 Rev. B itself. For example: are there enough GPIO pins and SPI ports to support Cleanflight? Will the program memory of the HiFive1 Rev. B be large enough for the final executable? These are the types of issues that could arise later in the porting process.
+
+Lastly, another risk is the compatibility between the stock drone kit and the HiFive1 Rev. B. The package supports the ARM-based flight controller. While the HiFive1 Rev. B should provide all the features of an ARM microcontroller, there may be a few compatibility issues.
+
+
+\newpage
+
+\section{Project Management Plan}
+
+\subsection{Timeline}
+
+\begin{figure}[h!]
+  \caption{Gantt Chart.}
+  \centering
+    \includegraphics[width=\textwidth, height=\textwidth]{Gantt.pdf}
+\end{figure}
+
+\newpage 
+
+\subsection{Milestones}
+
+\begin{enumerate}
+    \item Complete research phase
+    \item Complete Minimum Port (see PDS, Initial Designs section for more details)
+    \item Project Proposal approved by sponsor:
+    \begin{enumerate}
+        \item PDS
+        \item Project Management Plan
+        
+    \end{enumerate}
+    \item Accelerometer/Gyroscope module tested and ported to HiFive1 Rev. B
+    \item Receiver module tested and ported to HiFive1 Rev. B
+    \item ESC/motor output module tested and ported to HiFive1 Rev. B
+    \item Assemble drone kit and install HiFive1 Rev. B as flight control board
+    \item Complete final integration testing
+    \item Create final documentation:
+    \begin{enumerate}
+        \item RISC-V Github pull request
+        \item Final report
+        \item Presentation poster
+    \end{enumerate}
+\end{enumerate}
+
+\newpage
+
+\section{Project Budget and Resources}
+\subsection{BOM}
+
+\resizebox{\textwidth}{!}
+{
+\begin{tabular}{|c|c|c|c|c|} \hline  Item & Description & Qty. & Price & Total\tabularnewline \hline  \hline  LHI 280 Race Quad ARF  & Drone kit (including SPRacingF3 FC) & 1 & 105.99 & 105.99\tabularnewline \hline  Flysky FS-i6X 10CH 2.4GHz AFHDS RC Transmitter w/ FS-iA6B Receiver & RC transmitter and receiver & 1 & 45.85 & 45.85\tabularnewline \hline  Ovonic 11.1V 2200mAh Lipo Battery & Battery & 1 & 45.85 & 45.85\tabularnewline \hline  Sparkfun MPU-9250 Breakout board & Accelerometer/gyroscope & 1 & 14.95 & 14.95\tabularnewline \hline  HiFive1 Rev. B Development Board & RISC-V development board & 2 & 59.00 & 118 .00\tabularnewline \hline  Total &  &  &  & 330.64 \tabularnewline \hline  \end{tabular}
+
+}
+\newline
+
+Our total project budget comes out to roughly \$315.00. This budget includes: 
+\begin{enumerate}
+    \item Racing drone kit
+    \item RC transmitter and receiver
+    \item LIPO battery
+    \item MPU-9250 accelerometer breakout board
+    \item HiFive1 Rev. B Development Boards
+\end{enumerate}
+
+Our team hopes to receive all of these materials as soon as possible; we have already submitted a materials request to our project sponsor, and are hoping to hear back soon.
+
+We want to start tinkering with a functioning drone kit (that includes a functioning FC), to get a better idea of the process of building Cleanflight for a specific target FC. 
+
+This will hopefully give us a better understanding of how to do the same process with the HiFive1 Rev. B, the only difference being the ported software.
+
+Most likely, we will use the Capstone Lab and the EPL during the hardware assembly and testing phases.
+
+\newpage
+
+\section{Team members and relevant skills}
+
+\begin{lyxlist}{}
+
+\item Bliss Brass, CE :
+        \begin{itemize}
+             \item C,C++ scripting,LaTeX,Markdown
+             \item Firmware and Linux device drivers
+             \item Microprocessor Architecture
+        \end{itemize}
+        
+ 
+    
+\item Ruben Maldonado, CE :
+        \begin{itemize}
+            \item C,C++,Python, Shell scripting
+            \item Firmware and Linux device drivers
+            \item Microprocessor Architecture
+        \end{itemize}
+
+\item Nikolay Nikolov, CE : 
+    \begin{itemize}
+        \item C,C++,Python, Shell scripting,LaTeX,Markdown
+        \item Firmware and Linux device drivers
+        \item Microprocessor Architecture
+    \end{itemize}
+ 
+\item Eric Schulte, EE : 
+    \begin{itemize}
+        \item Basic microprocessor system design (ECE 371)
+        \item Hardware prototyping and testing
+        \item Some object-oriented coding (C/C++)
+    \end{itemize}
+    
+\end{lyxlist}
+
+\newpage
+
+\section{Development Process}
+
+\emph{Note: These plans are preliminary and subject to change, but this is the overall idea of how we expect the project to proceed.}
+
+Ruben has volunteered to act as a liaison between the team and our industry sponsor and faculty advisor. We are using Slack for daily communication, and Github’s Project feature for progress/task tracking.
+
+The plan is to have everybody working on tasks in a series for most of the project. Since we’re all new to software porting, we think this is the best strategy to minimize project setbacks. The first thing we’re going to ‘build’ is what we call the ‘minimum port’. 
+
+The minimum port entails creating a basic makefile, based on Cleanflight’s makefile, to build an executable of a simple demo program (i.e., flash some LEDs), and then flash it to the HiFive1 Rev. B using SiFive’s Freedom Studio. The simple makefile will serve as our team’s entry point into the Cleanflight code. Once we can compile and build a simple demo program, we can add more complexity and start building advanced executables like ported hardware drivers.
+
+With our custom makefile complete, our team will begin porting the necessary software for the MPU-9250 accelerometer. MPU-9250 is the device that will provide orientation and velocity/acceleration information to the flight control board. Since the accelerometer firmware will be our team’s first port, we’ve made this phase the longest of the project. We anticipate that this phase will be quite challenging. As such, our team plans to work in series.
+
+   Once the accelerometer port is complete, we’ll begin focusing on porting software for the receiver, and the Electric Speed Controllers (ESCs act as an intermediary device between the flight control board and servo motors controlling the propellers). Hopefully, soon we understand the porting process better, which is why we plan on splitting into teams of two for these ports. One group will work on porting receiver firmware, while the other ports software for the ESCs.
+
+   After the receiver and ESC ports are complete, we’ll remerge as a team of four to assemble the drone kit and perform integration testing. After this milestone, we build our final ported version of Cleanflight, flash it to the HiFive1 Rev. B, and see if the drone flies.
+
+   After final integration testing is complete, we will focus on compiling our project’s final documentation. The final documentation will include: assembling a Github pull request to submit our RISC-V port to the mainstream of Cleanflight, writing the final report, and creating the presentation poster. 
+   
+\emph{Note: We should be completing necessary documentation (i.e., wikis, manuals) for the Github pull request along the way, not all at once at the end.}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
+
