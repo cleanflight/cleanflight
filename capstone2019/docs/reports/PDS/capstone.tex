@@ -168,7 +168,7 @@ Ruben Maldonado {- mruben@pdx.edu}\\
 \vfill{}
 \end{titlepage} \pagestyle{plain} \tableofcontents{}\newpage{}
 
-\section{Overview / Executive Summary}
+\section{Executive Summary}
 
 Our objective is to port Cleanflight, a mini open-source OS for racing drones to a board running on the RISC-V architecture. We are going to achieve our aim by turning SiFive’s HiFive1 Revision B RISC-V development board into the flight controller for a standard 4-propeller racing drone. 
 
@@ -178,7 +178,7 @@ Our project sponsor, Galois Inc., has asked us to deliver a flying racing drone 
 
 \section{Project Design Specification}
 
-\subsection{Concept of operations / User stories}
+\subsection{Concept of operations}
 
 The primary purpose of this project is to demonstrate RISC-V’s capabilities in a fun and exciting way. The primary users will be Galois and possibly other drone hobbyists looking to adapt future RISC-V boards for use on racing drones. It may also be used by others as a reference or base-point to launch their own RISC-V based projects.
 
@@ -188,7 +188,11 @@ The main project stakeholder is our project sponsor, Galois Inc. We will be prov
 
 \subsection{Background}
 
-RISC-V is an open-source Instruction Set Architecture (ISA) developed at UC Berkeley and introduced in 2010. RISC-V is a modular ISA centered around the philosophy of ‘using only the instruction registers that you need,’ meaning the ISA aims to minimize wasteful use of resources. RISC-V includes a static core, RV32I, with the option of adding one or more standard extensions that hardware can consist of or not based on the needs of an application. The modular concept enables very small and low energy implementations of RISC-V, which can be critical for embedded applications.
+\subsubsection{Cleanflight}
+Cleanflight is an open-source flight control software for drones and fixed-wing aircraft. Written in the C language, Cleanflight currently supports over 100 flight control board models. Users compile and build model-specific versions of Cleanflight through a Google App or using a command line interface. Cleanflight currently only supports flight control boards with STM32 RISC microcontrollers.
+
+\subsubsection{RISC-V Architecture}
+RISC-V is an open-source Instruction Set Architecture (ISA) developed at UC Berkeley and introduced in 2010. RISC-V is a modular ISA centered around the philosophy of ‘use only what you need,’ meaning the ISA aims to minimize wasteful use of resources. RISC-V includes a static core, RV32I, with the option of adding one or more standard extensions that hardware can consist of or not based on the needs of an application. The modular concept enables very small and low energy implementations of RISC-V, which can be critical for embedded applications.
 
 In recent years RISC-V has even drawn the interest of companies such as Apple, Facebook, Google, and Samsung. Interested in the modular philosophy of the ISA, these companies have begun investing resources into creating their own RISC-V based silicon.
 The industry currently requires more practical applications to demonstrate the capabilities of RISC-V. We aim to create a racing drone to serve as one of these demonstration platforms.
@@ -197,7 +201,7 @@ The industry currently requires more practical applications to demonstrate the c
 
 All drones, racing or otherwise, are controlled using a flight control board. The flight control board is a PCB that acts as the ‘brains’ of the drone; receiving the user input from an RC transmitter on the ground, processing the data, and outputting control instructions to the motors. All flight control boards must include at least two components: a processing unit, and an inertial measurement unit (IMU). Additional features may consist of components such as cameras, compasses, barometers, and telemetry devices.
 
-The popularity of drones has exploded over the last ten years. As a result, the flight controller market has grown to include a diverse set of products from hundreds of companies. It’s now possible to find a quality flight controller for between $25.00 - $50.00.
+The popularity of drones has exploded over the last ten years. As a result, the flight controller market has grown to include a diverse set of products from hundreds of companies. It’s now possible to find a quality flight controller for between \$25.00 - \$50.00.
 
 By porting Cleanflight to the HiFive1 Rev. B development board, our team is essentially creating a custom flight control board. Our board won’t be the first RISC-V flight controller to market, but, as far as we can tell, it will be the first RISC-V board to support Cleanflight.
 
@@ -232,6 +236,16 @@ Our team must use Cleanflight as the flight control software, and use the HiFive
 \end{itemize}
 
 \subsection{Initial Designs}
+\subsubsection{Drone Kit Block Diagram}
+
+Below is the high-level block diagram for the assembled drone kit. The power distribution board (PDB) takes 11.1V power from the LIPO battery and converts it to 5V to power the receiver, flight control board and the electronic speed controllers (ESCs). Note: an additional 3.3V regulator must be included to safely power the HiFive1 Rev. B. The receiver detects signals from the transmitter on the ground and relays data to the flight control board via a UART interface. The flight control board also receives input from the MPU 9250 accelerometer/gyroscope, via a SPI interface. The flight control board then outputs control data to the four ESCs in the form of PWM signals. Lastly, the four propeller motors are connected to the four ESCs.
+
+\begin{figure}[ht]
+  \caption{Drone kit block diagram.}
+  \centering
+    \includegraphics[width=150mm,scale=1]{Block diagram.png}
+\end{figure}
+
 \subsubsection{Cleanflight’s Makefile}
 
 Cleanflight’s Makefile provides instructions to make utility on how to compile and build the final Cleanflight executable file. This executable file then gets flashed to the target flight control board.
@@ -241,7 +255,7 @@ To create an executable for the RISC-V environment, our team must integrate RISC
 \begin{figure}[ht]
   \caption{Makefile flowchart.}
   \centering
-    \includegraphics[width=50mm,scale=0.5]{make.png}
+    \includegraphics[width=50mm,scale=1]{make.png}
 \end{figure}
 
 
@@ -252,7 +266,7 @@ Before porting any specific Cleanflight drivers, we want to complete a ‘dry ru
 \begin{figure}[ht]
   \caption{Minimum port flowchart.}
   \centering
-    \includegraphics[width=50mm,scale=0.5]{min_port.png}
+    \includegraphics[width=40mm,scale=0.5]{min_port.png}
 \end{figure}
 
 \newpage
@@ -288,7 +302,7 @@ These are just preliminary verification plans, with more specifics to come. But 
 
 \subsection{Risks}
 
-Therefore, we must develop an overall strategy before diving too deep into any specific code (i.e., first creating a “minimum port” discussed above).
+Our team’s biggest risk is our mutual lack of porting experience. We all have experience with software development, but no one has actually ported software before. This unfamiliarity may introduce confusion and uncertainty throughout the project. Therefore, it’s important we develop an overall strategy before diving too deep into any specific code (i.e. first creating a “minimum port” discussed above).
 
 Another risk comes from the capabilities of the HiFive1 Rev. B itself. For example: are there enough GPIO pins and SPI ports to support Cleanflight? Will the program memory of the HiFive1 Rev. B be large enough for the final executable? These are the types of issues that could arise later in the porting process.
 
@@ -302,9 +316,9 @@ Lastly, another risk is the compatibility between the stock drone kit and the Hi
 \subsection{Timeline}
 
 \begin{figure}[h!]
-  \caption{Gantt Chart.}
+  \caption{Project schedule for winter and spring terms.}
   \centering
-    \includegraphics[width=\textwidth, height=\textwidth]{Gantt.pdf}
+    \includegraphics[width=175mm,scale=1]{Project Schedule.jpg}
 \end{figure}
 
 \newpage 
@@ -335,12 +349,12 @@ Lastly, another risk is the compatibility between the stock drone kit and the Hi
 
 \newpage
 
-\section{Project Budget and Resources}
-\subsection{BOM}
+\subsection{Project Budget and Resources}
+\subsubsection{BOM}
 
 \resizebox{\textwidth}{!}
 {
-\begin{tabular}{|c|c|c|c|c|} \hline  Item & Description & Qty. & Price & Total\tabularnewline \hline  \hline  LHI 280 Race Quad ARF  & Drone kit (including SPRacingF3 FC) & 1 & 105.99 & 105.99\tabularnewline \hline  Flysky FS-i6X 10CH 2.4GHz AFHDS RC Transmitter w/ FS-iA6B Receiver & RC transmitter and receiver & 1 & 45.85 & 45.85\tabularnewline \hline  Ovonic 11.1V 2200mAh Lipo Battery & Battery & 1 & 45.85 & 45.85\tabularnewline \hline  Sparkfun MPU-9250 Breakout board & Accelerometer/gyroscope & 1 & 14.95 & 14.95\tabularnewline \hline  HiFive1 Rev. B Development Board & RISC-V development board & 2 & 59.00 & 118 .00\tabularnewline \hline  Total &  &  &  & 330.64 \tabularnewline \hline  \end{tabular}
+\begin{tabular}{|c|c|c|c|c|} \hline  Item & Description & Qty. & Price & Total\tabularnewline \hline  \hline  LHI 280 Race Quad ARF  & Drone kit (including SPRacingF3 FC) & 1 & 105.99 & 105.99\tabularnewline \hline  Flysky FS-i6X 10CH 2.4GHz AFHDS RC Transmitter w/ FS-iA6B Receiver & RC transmitter and receiver & 1 & 45.85 & 45.85\tabularnewline \hline  Ovonic 11.1V 2200mAh Lipo Battery & Battery & 1 & 17.99 & 17.99\tabularnewline \hline  Sparkfun MPU-9250 Breakout board & Accelerometer/gyroscope & 1 & 14.95 & 14.95\tabularnewline \hline  HiFive1 Rev. B Development Board & RISC-V development board & 2 & 59.00 & 118 .00\tabularnewline \hline  Total &  &  &  & 315.69 \tabularnewline \hline  \end{tabular}
 
 }
 \newline
@@ -364,7 +378,7 @@ Most likely, we will use the Capstone Lab and the EPL during the hardware assemb
 
 \newpage
 
-\section{Team members and relevant skills}
+\subsection{Team members and relevant skills}
 
 \begin{lyxlist}{}
 
@@ -402,7 +416,7 @@ Most likely, we will use the Capstone Lab and the EPL during the hardware assemb
 
 \newpage
 
-\section{Development Process}
+\subsection{Development Process}
 
 \emph{Note: These plans are preliminary and subject to change, but this is the overall idea of how we expect the project to proceed.}
 
@@ -422,27 +436,4 @@ With our custom makefile complete, our team will begin porting the necessary sof
    
 \emph{Note: We should be completing necessary documentation (i.e., wikis, manuals) for the Github pull request along the way, not all at once at the end.}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \end{document}
-
