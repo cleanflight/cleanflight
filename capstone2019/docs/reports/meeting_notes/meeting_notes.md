@@ -277,6 +277,58 @@ Next Meeting: 01/31/2020
 
 
 
+ 02/10/20
+====================
+## Eric:
+
+- Delivered block diagram for the drone kit operation
+- Presented options for hardware shield (Interfacing between HiFive and Drone Kit Part
+- Team discussed options about using the shield
+- Midterm coming up
+
+### to do:
+
+- Update project schedule to incorporate shield
+- Update the PDS with the shield stuff
+
+## Niko:
+
+- License
+- Weekly Progress report
+- Start adding the docs in the shared drive
+
+### to do:
+
+1. **look up for more boards hifive boards**
+2. Add licensing in the PDS
+3. Min port
+
+## Bliss:
+
+**Had midterm**
+
+### to do:
+
+- Same as last week
+
+## Ruben:
+
+- Emailed Roy with contact info
+- Emailed Michal about update on HiFive boards and Amazon status, proposed regular meetings with Galois
+- Metal API presentation
+
+### to do:
+
+- Receipts and shopping with Michal
+- Metal API
+
+## General:
+
+- Wednesday the PDS
+- Practice presentation
+- Update PDS with shield
+- Friday present to Roy (tentatively)
+- Research other option
 
 
 
