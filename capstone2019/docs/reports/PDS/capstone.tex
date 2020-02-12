@@ -170,7 +170,7 @@ Ruben Maldonado {- mruben@pdx.edu}\\
 
 \section{Executive Summary}
 
-Our objective is to port Cleanflight, a mini open-source OS for racing drones to a board running on the RISC-V architecture. We are going to achieve our aim by turning SiFive’s HiFive1 Revision B RISC-V development board into the flight controller for a standard 4-propeller racing drone. 
+Our objective is to port Cleanflight, a mini open-source OS for drones to a board running on the RISC-V architecture. We are going to achieve our aim by turning SiFive’s HiFive1 Revision B RISC-V development board into the flight controller for a standard 4-propeller racing drone. 
 
 The successful completion of the project will act as a proof-of-concept for the newer RISC-V architecture, as compared to older RISC machines like ARM.
 
@@ -205,13 +205,13 @@ The popularity of drones has exploded over the last ten years. As a result, the 
 
 By porting Cleanflight to the HiFive1 Rev. B development board, our team is essentially creating a custom flight control board. Our board won’t be the first RISC-V flight controller to market, but, as far as we can tell, it will be the first RISC-V board to support Cleanflight.
 
-We’ll be modeling our board’s functionality around that of the Seriously Pro Racing F3 Flight Controller (SPRacingF3). The SPRacingF3 includes an accelerometer and gyroscope for determining orientation and speed, a compass for determining direction, and a barometer for determining altitude. We plan on thoroughly implementing the accelerometer and gyroscope, while the compass and barometer are stretch goals.
+We’ll be modeling our board’s functionality around that of the Seriously Pro Racing F3 Flight Controller (SPRacingF3). The SPRacingF3 includes an accelerometer and gyroscope for determining orientation and speed, a compass for determining direction, and a barometer for determining altitude. We plan on completely implementing the accelerometer and gyroscope, while the compass and barometer remain stretch goals.
 
 \subsection{Requirements}
 
 Most broadly, the drone must fly with the HiFive1 Rev. B running a ported version of Cleanflight. More specifically, the drone must respond accurately and responsively to user input controlling speed, direction, and altitude.
 
-Since Cleanflight is an open-source software project, our team must also document the porting process thoroughly enough so that someone else could recreate the project. We will share the final documentation with the Cleanflight development team via a Github and merge request at the end of the project. As such, a Cleanflight user should be able to use the CleanFlight tool to flash their own RISC-V based flight control board.
+Since Cleanflight is an open-source software project, our team must also document the porting process thoroughly enough so that someone else could recreate the project. We will share the final documentation with the Cleanflight development team via a Github merge request at the end of the project. As such, a Cleanflight user should be able to use the CleanFlight tool to flash their own RISC-V based flight control board.
 
 Stretch requirements include implementing a compass and barometer to provide extra flight data.
 
@@ -228,17 +228,17 @@ Our team must use Cleanflight as the flight control software, and use the HiFive
         \item Product Design Specification
          \item Project Management Plan
     \end{itemize}
-    \item Weekly Progress Report
+    \item Weekly progress reports
     \item Final report
     \item ECE Capstone Poster Session poster
-    \item Github pull request (to merge RISC-V port into Cleanflight’s mainstream repository)
+    \item Github merge request (to incorporate the RISC-V port into Cleanflight’s mainstream repository)
 
 \end{itemize}
 
 \subsection{Initial Designs}
 \subsubsection{Drone Kit Block Diagram}
 
-Below is the high-level block diagram for the assembled drone kit. The power distribution board (PDB) takes 11.1V power from the LIPO battery and converts it to 5V to power the receiver, flight control board and the electronic speed controllers (ESCs). Note: an additional 3.3V regulator must be included to safely power the HiFive1 Rev. B. The receiver detects signals from the transmitter on the ground and relays data to the flight control board via a UART interface. The flight control board also receives input from the MPU 9250 accelerometer/gyroscope, via a SPI interface. The flight control board then outputs control data to the four ESCs in the form of PWM signals. Lastly, the four propeller motors are connected to the four ESCs.
+Below is the high-level block diagram for the assembled drone kit. The power distribution board (PDB) takes 11.1V power from the LIPO battery and converts it to 5V, powering the receiver, flight control board and the electronic speed controllers (ESCs). Note: an additional 3.3V regulator must be included to safely power the HiFive1 Rev. B. The receiver detects signals from the transmitter on the ground and relays data to the flight control board via a UART interface. The flight control board also receives input from the MPU 9250 accelerometer/gyroscope, via a SPI interface. The flight control board then outputs control data to the four ESCs in the form of PWM signals. Lastly, the four propeller motors are connected to the four ESCs.
 
 \begin{figure}[ht]
   \caption{Drone kit block diagram.}
@@ -248,7 +248,7 @@ Below is the high-level block diagram for the assembled drone kit. The power dis
 
 \subsubsection{Cleanflight’s Makefile}
 
-Cleanflight’s Makefile provides instructions to make utility on how to compile and build the final Cleanflight executable file. This executable file then gets flashed to the target flight control board.
+Cleanflight’s Makefile provides instructions to the make utility on how to compile and build the final Cleanflight executable file. This executable file then gets flashed to the target flight control board.
 
 To create an executable for the RISC-V environment, our team must integrate RISC-V support into the Makefile. The first step in that process is exploring how the Makefile tells the compiler to build an executable. Below is a high-level block diagram of the Cleanflight Makefile’s functionality:
 
@@ -261,7 +261,7 @@ To create an executable for the RISC-V environment, our team must integrate RISC
 
 \subsubsection{The Minimum Port}
 
-Before porting any specific Cleanflight drivers, we want to complete a ‘dry run’ of the porting process. This will involve editing Cleanflight’s makefile to include RISC-V development tools and flags, and getting the makefile to produce an executable for the HiFive1 Rev. B. The idea is to learn how to build RISC-V executables using a version of Cleanflight’s makefile, prior to attempting to port any specific software. We refer to this initial ‘dry run’ as the Minimum Port, and its steps are listed below:
+Before porting any specific Cleanflight drivers, we want to complete a ‘dry run’ of the porting process. This will involve editing Cleanflight’s makefile to include RISC-V development tools and flags, and getting the makefile to produce an executable for the HiFive1 Rev. B. The idea is to learn how to build RISC-V executables using a version of Cleanflight’s makefile, prior to attempting to port any specific software. We refer to this initial dry run as the Minimum Port, and its steps are listed below:
 
 \begin{figure}[ht]
   \caption{Minimum port flowchart.}
@@ -290,23 +290,23 @@ Before porting any specific Cleanflight drivers, we want to complete a ‘dry ru
 
 \subsection{Verification Plan}
 
-After completing the minimum port, we are planning on splitting the porting work into modules. 
+After completing the minimum port, we plan on splitting the porting work into modules. 
 
-The first module to be ported is accelerometer firmware. Once that is complete, we will unit-test the firmware with the accelerometer chip to ensure standalone functionality. After the port of the accelerometer module, the team will split into two-person subteams - each focusing on their module. 
+The first module to be ported is the accelerometer firmware. Once that is complete, we will unit-test the firmware with the accelerometer chip to ensure standalone functionality. After the port of the accelerometer module, the team will split into two-person subteams, each focusing on one module. 
 
-One team is responsible for porting the receiver firmware, and the other responsible for porting the ESC/motor output firmware. Similar to the accelerometer module testing, each team will unit-test their module to check for standalone functionality.
+One team will be responsible for porting the receiver firmware, and the other responsible for porting the ESC/motor output firmware. Similar to the accelerometer module testing, each team will unit-test their module to check for standalone functionality.
 
-Once we confirm each module is working on its own, we will assemble the drone kit and install the HiFive1 Rev. B as the flight controller. The next stage is performing integration testing to ensure all modules function correctly together as a single package. 
+Once we confirm each module is working on its own, we will assemble the drone kit and install the HiFive1 Rev. B as the flight controller. The final step will be performing integration testing to ensure all modules function correctly together as a single package. 
 
 These are just preliminary verification plans, with more specifics to come. But as of right now, this is the general outline of our verification plan.
 
 \subsection{Risks}
 
-Our team’s biggest risk is our mutual lack of porting experience. We all have experience with software development, but no one has actually ported software before. This unfamiliarity may introduce confusion and uncertainty throughout the project. Therefore, it’s important we develop an overall strategy before diving too deep into any specific code (i.e. first creating a “minimum port” discussed above).
+Our team’s biggest risk is our mutual lack of porting experience. We all have experience with software development, but no one has actually ported software before. This unfamiliarity may introduce confusion and uncertainty throughout the project. Therefore, it’s important we develop an overall strategy before diving into any specific code (i.e. first creating a “minimum port” discussed above).
 
 Another risk comes from the capabilities of the HiFive1 Rev. B itself. For example: are there enough GPIO pins and SPI ports to support Cleanflight? Will the program memory of the HiFive1 Rev. B be large enough for the final executable? These are the types of issues that could arise later in the porting process.
 
-Lastly, another risk is the compatibility between the stock drone kit and the HiFive1 Rev. B. The package supports the ARM-based flight controller. While the HiFive1 Rev. B should provide all the features of an ARM microcontroller, there may be a few compatibility issues.
+Lastly, is the issue of compatibility between the stock drone kit and the HiFive1 Rev. B. Out of the box, the kit is designed to support an ARM-based flight controller. While the HiFive1 Rev. B should provide all the features of an ARM microcontroller, it’s possible there may be a few compatibility issues.
 
 
 \newpage
@@ -318,7 +318,7 @@ Lastly, another risk is the compatibility between the stock drone kit and the Hi
 \begin{figure}[h!]
   \caption{Project schedule for winter and spring terms.}
   \centering
-    \includegraphics[width=175mm,scale=1]{Project Schedule.jpg}
+    \includegraphics[width=170mm,scale=1]{Project Schedule.jpg}
 \end{figure}
 
 \newpage 
@@ -370,7 +370,7 @@ Our total project budget comes out to roughly \$315.00. This budget includes:
 
 Our team hopes to receive all of these materials as soon as possible; we have already submitted a materials request to our project sponsor, and are hoping to hear back soon.
 
-We want to start tinkering with a functioning drone kit (that includes a functioning FC), to get a better idea of the process of building Cleanflight for a specific target FC. 
+We want to start tinkering with a drone kit (including a functioning flight control board), to get a better idea of the process of building Cleanflight for a specific target.
 
 This will hopefully give us a better understanding of how to do the same process with the HiFive1 Rev. B, the only difference being the ported software.
 
@@ -420,20 +420,21 @@ Most likely, we will use the Capstone Lab and the EPL during the hardware assemb
 
 \emph{Note: These plans are preliminary and subject to change, but this is the overall idea of how we expect the project to proceed.}
 
-Ruben has volunteered to act as a liaison between the team and our industry sponsor and faculty advisor. We are using Slack for daily communication, and Github’s Project feature for progress/task tracking.
+Ruben has volunteered to act as liaison between the team and our industry sponsor and faculty advisor. We are using Slack for daily communication, and Github’s Project feature for progress/task tracking.
 
-The plan is to have everybody working on tasks in a series for most of the project. Since we’re all new to software porting, we think this is the best strategy to minimize project setbacks. The first thing we’re going to ‘build’ is what we call the ‘minimum port’. 
+The plan is to have everybody working on tasks in series for most of the project. Since we’re all new to software porting we think this is the best strategy to minimize setbacks. The first thing we’re going to ‘build’ is what we call the ‘minimum port’. 
 
-The minimum port entails creating a basic makefile, based on Cleanflight’s makefile, to build an executable of a simple demo program (i.e., flash some LEDs), and then flash it to the HiFive1 Rev. B using SiFive’s Freedom Studio. The simple makefile will serve as our team’s entry point into the Cleanflight code. Once we can compile and build a simple demo program, we can add more complexity and start building advanced executables like ported hardware drivers.
+The minimum port entails creating a basic makefile, based on Cleanflight’s makefile, to build an executable of a simple demo program (i.e. flash some LEDs), and then flash it to the HiFive1 Rev. B using SiFive’s Freedom Studio. This simple makefile will serve as our team’s entry-point into the Cleanflight code. Once we are able to compile and build a simple demo program we can add more complexity and start building advanced executables like ported hardware drivers.
 
-With our custom makefile complete, our team will begin porting the necessary software for the MPU-9250 accelerometer. MPU-9250 is the device that will provide orientation and velocity/acceleration information to the flight control board. Since the accelerometer firmware will be our team’s first port, we’ve made this phase the longest of the project. We anticipate that this phase will be quite challenging. As such, our team plans to work in series.
+	With our custom makefile complete, our team will begin porting the necessary software for the MPU-9250 accelerometer. This is the device that will provide orientation and velocity/acceleration information to the flight control board. Since the accelerometer software will be our team’s first port, we’ve made this phase the longest of the project. We anticipate this phase will be quite challenging. As such, our team plans to work in series.
+	
+	Once the accelerometer port is complete, we’ll begin focusing on porting software for the receiver and the Electric Speed Controllers. ESCs act as an intermediary device between the flight control board and motors controlling the propellers. Hopefully by this point the porting process will be better understood, which is why we plan on splitting into teams of two for these ports. One team will work on porting receiver software, while the other ports software for the ESCs.
+	
+	After the receiver and ESC ports are complete, we’ll again merge as a team of four to assemble the drone kit and perform integration testing. This will be the phase where we build our final ported version of Cleanflight, flash it to the HiFive1 Rev. B, and see if the drone flies.
+	
+	After final integration testing is complete, we will focus on compiling our project’s final documentation. This will include: assembling a Github merge request to submit our RISC-V port to the mainstream of Cleanflight, writing the final report, and creating the presentation poster.
 
-   Once the accelerometer port is complete, we’ll begin focusing on porting software for the receiver, and the Electric Speed Controllers (ESCs act as an intermediary device between the flight control board and servo motors controlling the propellers). Hopefully, soon we understand the porting process better, which is why we plan on splitting into teams of two for these ports. One group will work on porting receiver firmware, while the other ports software for the ESCs.
-
-   After the receiver and ESC ports are complete, we’ll remerge as a team of four to assemble the drone kit and perform integration testing. After this milestone, we build our final ported version of Cleanflight, flash it to the HiFive1 Rev. B, and see if the drone flies.
-
-   After final integration testing is complete, we will focus on compiling our project’s final documentation. The final documentation will include: assembling a Github pull request to submit our RISC-V port to the mainstream of Cleanflight, writing the final report, and creating the presentation poster. 
    
-\emph{Note: We should be completing necessary documentation (i.e., wikis, manuals) for the Github pull request along the way, not all at once at the end.}
+\emph{Note: We should be completing necessary documentation (i.e., wikis, manuals) for the Github merge request along the way, not all at once at the end.}
 
 \end{document}
