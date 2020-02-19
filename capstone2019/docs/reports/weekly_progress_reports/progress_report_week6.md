@@ -21,15 +21,14 @@ Authors:
 
 During week 6 we met twice with our advisor Roy Kravitz. He was present to our Monday meeting and shared insights. During the Friday meeting, we demoed our presentation. We also set a date to meet with our sponsor on Friday 21st of February. We are continuing into working on the minimum port.
 
-#### Updates for the Capstone Proposal
 
-#### Bliss Summary :
+## Bliss Summary :
 
 Had midterm
 
-##### Doing:
+### Doing:
 
-##### TODO:
+### TODO:
 
 - Continue Minimum Port
 - Build an example for the HiFive Board using the freedom SDK
@@ -39,25 +38,25 @@ Had midterm
 - Look into CleanFlight Makefiles structure
 - Continue to look into CleanFlights board/chip connections
 
-##### Done:
+### Done:
 
 - Talked with Mark to clarify with the project
 - Met with Roy to discuss new project ideas about whether to peruse integration from the Metal libraries provided by SiFive and up or go down from CleanFlight code and build in register connections that way
 
-#### Eric Summary :
+## Eric Summary :
 
-##### Doing :
+### Doing :
 
 - Working on the minimum port
 
-##### TODO :
+### TODO :
 
 - Begin designing hardware shield
 - Create custom Makefile based on Minimum Port strategy (see PDS)
 - Get the Makefile to build for the HiFive as a Target
 - Continue with minimum port
 
-##### Done :
+### Done :
 
 - Project Proposal
 - PDS presentation slides
@@ -66,13 +65,13 @@ Had midterm
 - Began research options for hardware shield
 - Updated PDS based on Roy’s suggestions
 
-#### Nikolay Summary :
+## Nikolay Summary :
 
-##### Doing:
+### Doing:
 
 - Min port
 
-##### TODO :
+### TODO :
 
 - Min port
 - Build an example for the HiFive Board
@@ -82,7 +81,7 @@ Had midterm
 - How to port in bare-metal 
 - Research freedom metal API 
 
-#####  Done :
+###  Done :
 
 - License
 - Weekly Progress report
@@ -90,7 +89,7 @@ Had midterm
 - Modified ppt for Proposal
 - Contacted a maintainer in Cleanflight repo
 
-#### Ruben Summary :
+## Ruben Summary :
 
 - Emailed Roy with contact info
 - Emailed Michal about an update on HiFive boards and Amazon status, proposed regular meetings with Galois
@@ -99,18 +98,18 @@ Had midterm
 - Created new directories in cleanflight
 - Made changes to files in cleanflight
 
-##### Done :
+### Done :
 
 - Sent the required emails
 - Started min port with the metal API provided by Freedom 
 
-- ##### TODO :
+### TODO :
 
 - Receipts and shopping with Michal
 - Email Michal for the Friday meeting
 - Continue with min port (goal with compiling sample program)
 
-- ### Challenges:
+### Challenges:
 
 - Midterms
 
