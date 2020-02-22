@@ -4,7 +4,7 @@ Weekly Progress Report
 Week 6
 ===========================
 
-### Date:02/09- 02/18
+## Date:02/09- 02/18
 
 Authors:
 --------
@@ -17,7 +17,7 @@ Authors:
 
 **Ruben Maldonado - mruben@pdx.edu**
 
-### Summary:
+## Summary:
 
 During week 6 we met twice with our advisor Roy Kravitz. He was present to our Monday meeting and shared insights. During the Friday meeting, we demoed our presentation. We also set a date to meet with our sponsor on Friday 21st of February. We are continuing into working on the minimum port.
 
@@ -41,7 +41,8 @@ Had midterm
 ### Done:
 
 - Talked with Mark to clarify with the project
-- Met with Roy to discuss new project ideas about whether to peruse integration from the Metal libraries provided by SiFive and up or go down from CleanFlight code and build in register connections that way
+- Met with Roy to discuss new project ideas about whether to peruse integration from the 
+Metal libraries provided by SiFive and up or go down from CleanFlight code and build in register connections that way
 
 ## Eric Summary :
 
@@ -55,6 +56,7 @@ Had midterm
 - Create custom Makefile based on Minimum Port strategy (see PDS)
 - Get the Makefile to build for the HiFive as a Target
 - Continue with minimum port
+- Update Project Schedule and replace presentation slide
 
 ### Done :
 
@@ -75,13 +77,13 @@ Had midterm
 
 - Min port
 - Build an example for the HiFive Board
-- And traceback using the Freedom SDK
-- Contact Cleanflight maintainers
-- Prep for the presentation 
-- How to port in bare-metal 
+	- And traceback using the Freedom SDK
+	- Contact Cleanflight maintainers
+	- Prep for the presentation 
+	- How to port in bare-metal 
 - Research freedom metal API 
 
-###  Done :
+### Done :
 
 - License
 - Weekly Progress report
@@ -89,7 +91,7 @@ Had midterm
 - Modified ppt for Proposal
 - Contacted a maintainer in Cleanflight repo
 
-## Ruben Summary :
+### Ruben Summary :
 
 - Emailed Roy with contact info
 - Emailed Michal about an update on HiFive boards and Amazon status, proposed regular meetings with Galois
@@ -109,13 +111,16 @@ Had midterm
 - Email Michal for the Friday meeting
 - Continue with min port (goal with compiling sample program)
 
-### Challenges:
+
+## Challenges:
 
 - Midterms
 
-- ### Notes:
+## Notes:
 
-- #### General Notes:
+### General Notes:
 
-- Giving Project Proposal presentation at Galois Inc. Friday, Feb. 21
-- Update from Michal - amazon cart with drone kit and other items arrive 2/18. Also, the sifive boards should be available by 2/21
+Giving Project Proposal presentation at Galois Inc. Friday, Feb. 21 (Canceled)
+Update from Michal - amazon cart with drone kit and other items arrive 2/18. Also, the sifive boards should be available by 2/21
+
+
