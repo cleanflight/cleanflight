@@ -1,0 +1,89 @@
+This document describes the following:
+
+-how to obtain the files specifc to our hardware from the freedom-e-sdk 
+-most of the relevant flow to our port process in the cleanflight makefile 
+-my changes made so far to integrate the minimum port
+
+@ruben
+------------------------
+------------------------
+
+To get the required files for specific hardware target run the cmd below at the freedom sdk root directory
+
+make [PROGRAM=example-spi] [TARGET=sifive-hifive1] [INCLUDE_METAL_SOURCES=1] STANDALONE_DEST=/path/to/desired/location standalone
+
+Source https://github.com/sifive/freedom-e-sdk
+
+------------
+
+After executing the cmd from above, I got the required files for our hardware specific
+
+->bsp == files specific to hifive1 revb board
+->freedom-metal == the freedom e sdk files
+->src == source to the example-spi program
+
+makefile == makefile with specific flags to board, folder structure definition, tool names (toolchain), and make command
+
+Most of the info required to compile can be found in this makefile. I just need to copy and paste and edit paths into the cleanflight makefile. I need
+to place folder 'bsp' and 'freedom-metal' inside cleanflight directory and update the paths in the target.mk file. 
+
+------------------------
+------------------------
+
+Changes to the cleanflight makefile start here 
+
+------------ tools.mk section (line ~86)
+
+The tools.mk file handles checking if toolchain (ARM SDK) and openOCD are installed and paths are set. If toolchain is not available, it will stop the make process and 
+informs user to run some command to automatically download, unzip and sets paths. Not sure of openOCD behaviour 
+
+This file also handles couple other tools needed for some targets
+
+
+For min port initially, assumption is that RISCV SDK is installed and paths are configured and no openocd is used (so all manually done).
+
+
+------------ targets.mk - section (line ~94)
+
+This file defines the offical targets, non valid targets, target groups, etc.
+
+For min porting initially, I edited this file with the following 
+added SIFIVE1REVB to offical tagets
+created new group target (RISCV_TARGETS)
+defined TARGET_MCU as SIFIVE1REVB
+
+see section (line !73)
+
+I created a new directory at $(ROOT)/src/main/target/$(BASE_TARGET)
+BASE_TARGET is SIFIVE1REVB
+
+inside this new directory, I need some files, and one is target.mk
+
+target.mk defines the features like sdcard, vcp and others.
+
+------------ section (line ~140)
+
+created new .mk file in $(ROOT)/make/mcu/$(TARGET_MCU).mk
+TARGET_MCU is SIFIVE1REVB
+
+For min port initially - SIFIVE1REVB.mk
+
+this file defines which specific includes to include based on hardware
+
+------------ section (line ~193)
+
+Declare the tool names for riscv toolchain (gcc, g++, gdb, etc)
+
+------------ section (line ~209 through line ~250)
+
+Declare the cflags, ldflags, etc for the hifive board
+
+------------ section (~lines ~280 - ~330)
+
+creates hex, bin
+compiles and assembles
+
+------------
+
+The rest of the makefile section handles listing supported tagets, flashing, cleanup, help and other functions available by the makefile 
+
