@@ -424,19 +424,20 @@ We will use the Capstone Lab and the EPL during the hardware assembly and testin
 \emph{Note: These plans are preliminary and subject to change, but this is the overall idea of how we expect the project to proceed.}
 
 Ruben has volunteered to act as liaison between the team and our industry sponsor and faculty advisor. We are using Slack for daily communication, and Github’s Project feature for progress/task tracking.
-
+ 
 The plan is to have everybody working on tasks in series for most of the project. Since we’re all new to software porting we think this is the best strategy to minimize setbacks. The first thing we’re going to ‘build’ is what we call the ‘minimum port’. 
-
+ 
 The minimum port entails creating a basic makefile, based on Cleanflight’s makefile, to build an executable of a simple demo program (i.e. flash some LEDs), and then flash it to the HiFive1 Rev. B using SiFive’s Freedom Studio. This simple makefile will serve as our team’s entry-point into the Cleanflight code. Once we are able to compile and build a simple demo program we can add more complexity and start building advanced executables like ported hardware drivers.
-
-	With our custom makefile complete, our team will begin porting the necessary software for the MPU-9250 accelerometer. This is the device that will provide orientation and velocity/acceleration information to the flight control board. Since the accelerometer software will be our team’s first port, we’ve made this phase the longest of the project. We anticipate this phase will be quite challenging. As such, our team plans to work in series.
+ 
+With our custom makefile complete, our team will begin porting the necessary software for the FS-iA6B Receiver. This device relays signals from the transmitter on the ground to the drone’s flight control board. Since the receiver firmware will be our team’s first port, we’ve made this phase the longest of the project. We anticipate this phase will be quite challenging; as such, our team plans to work in series.
 	
-	Once the accelerometer port is complete, we’ll begin focusing on porting software for the receiver and the Electric Speed Controllers. ESCs act as an intermediary device between the flight control board and motors controlling the propellers. Hopefully by this point the porting process will be better understood, which is why we plan on splitting into teams of two for these ports. One team will work on porting receiver software, while the other ports software for the ESCs.
+Once the receiver port is complete, we’ll begin focusing on porting firmware for the accelerometer and the electric speed controllers (ESC). ESCs act as an intermediary device between the flight control board and motors controlling the propellers. Hopefully by this point the porting process will be better understood, which is why we plan on splitting into teams of two to maximize efficiency. One team will work on porting accelerometer firmware, while the other ports firmware for the ESCs.
 	
-	After the receiver and ESC ports are complete, we’ll again merge as a team of four to assemble the drone kit and perform integration testing. This will be the phase where we build our final ported version of Cleanflight, flash it to the HiFive1 Rev. B, and see if the drone flies.
+We plan to incorporate three phases of testing throughout the project: One phase of unit-testing for the receiver module, another for the accelerometer and ESC modules, and a third phase for final integration testing. As part of the integration testing, we will swap the kit’s stock flight control board (SPRacingF3) with the HiFive1 Rev. B running the ported Cleanflight firmware.
+ 
+We plan to integrate modules cumulatively, meaning that as soon as we get one up and running we will immediately try to integrate it with the others. We hope this iterative process will result in less debugging effort needed during the final month of the project.
 	
-	After final integration testing is complete, we will focus on compiling our project’s final documentation. This will include: assembling a Github merge request to submit our RISC-V port to the mainstream of Cleanflight, writing the final report, and creating the presentation poster.
-
+After final integration testing is complete, we will focus on compiling our project’s final documentation. This will include: assembling a Github merge request to submit our RISC-V port to the mainstream of Cleanflight, writing the final report, and creating the presentation poster.
    
 \emph{Note: We should be completing necessary documentation (i.e., wikis, manuals) for the Github merge request along the way, not all at once at the end.}
 
