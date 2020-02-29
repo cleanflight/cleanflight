@@ -1,0 +1,242 @@
+<h1 data-number="1" id="crazybee-f3-fs" data-number="1"><span class="header-section-number">1</span> CrazyBee F3 FS</h1>
+<p><img src="images/CrazyBeeF3FStop.jpg" alt="CrazyBee F3 FS front" /> <img src="images/CrazyBeeF3FSbottom.jpg" alt="CrazyBee F3 FS back" /> ## Description CrazyBee F3 FS flight controller is a Highly integrated board for 1S Whoop brushless racing drone. It might be the world first Tiny whoop size brushless flight controller which integrated Receiver/4in1 ESC/OSD/Current Meter. ## MCU, Sensors and Features</p>
+<h3 data-number="1.0.1" id="hardware-and-features" data-number="1.0.1"><span class="header-section-number">1.0.1</span> Hardware and Features</h3>
+<ul>
+<li>MCU: STM32F303CCT6</li>
+<li>IMU: MPU6000 (SPI)</li>
+<li>IMU Interrupt: yes</li>
+<li>VCP: yes</li>
+<li>OSD: Betaflight OSD</li>
+<li>Battery Voltage Sensor: yes</li>
+<li>Integrated Voltage Regulator: yes, booster, 5V/800mA</li>
+<li>Integrated Current sensor：Max 14A, could be modified to 28A by replace resistor</li>
+<li>Integrated Flysky compatible receiver</li>
+<li>Buttons: 1 (Receiver bind button)</li>
+<li>Integrated 4x Blheli_s ESC: Max 5A per ESC</li>
+<li>ESC Connector: 3-pin, PicoBlade 1.25mm pitch</li>
+<li>Beeper output: 2-pin, soldering pad</li>
+<li>4 Rx Indicating LEDs: 2 x red and 2 x white</li>
+</ul>
+<h2 data-number="1.1" id="resource-mapping" data-number="1.1"><span class="header-section-number">1.1</span> Resource mapping</h2>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Label</th>
+<th style="text-align: left;">Pin</th>
+<th style="text-align: left;">Timer</th>
+<th style="text-align: left;">DMA</th>
+<th style="text-align: left;">Default</th>
+<th style="text-align: left;">Note</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">MPU6000_INT_EXTI</td>
+<td style="text-align: left;">PC13</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MPU6000_CS_PIN</td>
+<td style="text-align: left;">PA4</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MPU6000_SCK_PIN</td>
+<td style="text-align: left;">PA5</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MPU6000_MISO_PIN</td>
+<td style="text-align: left;">PA6</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MPU6000_MOSI_PIN</td>
+<td style="text-align: left;">PA7</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">OSD_CS_PIN</td>
+<td style="text-align: left;">PB1</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">OSD_SCK_PIN</td>
+<td style="text-align: left;">PA5</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">OSD_MISO_PIN</td>
+<td style="text-align: left;">PA6</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">OSD_MOSI_PIN</td>
+<td style="text-align: left;">PA7</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RX_CS_PIN</td>
+<td style="text-align: left;">PB12</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RX_SCK_PIN</td>
+<td style="text-align: left;">PB13</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RX_MISO_PIN</td>
+<td style="text-align: left;">PB14</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RX_MOSI_PIN</td>
+<td style="text-align: left;">PB15</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">SPI2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RX_IRQ_PIN</td>
+<td style="text-align: left;">PA8</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RX_BIND_PIN</td>
+<td style="text-align: left;">PA9</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RX_LED_PIN</td>
+<td style="text-align: left;">PA10</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PWM1</td>
+<td style="text-align: left;">PB8</td>
+<td style="text-align: left;">TIM8, CH2</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PWM2</td>
+<td style="text-align: left;">PB9</td>
+<td style="text-align: left;">TIM8, CH3</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PWM3</td>
+<td style="text-align: left;">PA3</td>
+<td style="text-align: left;">TIM2, CH4</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PWM4</td>
+<td style="text-align: left;">PA2</td>
+<td style="text-align: left;">TIM15,CH1</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">VBAT_ADC_PIN</td>
+<td style="text-align: left;">PA0</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">ADC1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RSSI_ADC_PIN</td>
+<td style="text-align: left;">PA1</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">ADC1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BEEPER</td>
+<td style="text-align: left;">PC15</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">UART3 TX</td>
+<td style="text-align: left;">PB10</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">will add pinout soon</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">UART3 RX</td>
+<td style="text-align: left;">PB11</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">will add pinout soon</td>
+</tr>
+</tbody>
+</table>
+<h2 data-number="1.2" id="manufacturers-and-distributors" data-number="1.2"><span class="header-section-number">1.2</span> Manufacturers and Distributors</h2>
+<p>https://www.banggood.com/Racerstar-Crazybee-F3-Flight-Controller-4-IN-1-5A-1S-Blheli_S-ESC-Compatible-Flysky-AFHDS-Receiver-p-1271331.html</p>
+<h2 data-number="1.3" id="designers" data-number="1.3"><span class="header-section-number">1.3</span> Designers</h2>
+<h2 data-number="1.4" id="maintainers" data-number="1.4"><span class="header-section-number">1.4</span> Maintainers</h2>
+<h2 data-number="1.5" id="faq-known-issues" data-number="1.5"><span class="header-section-number">1.5</span> FAQ &amp; Known Issues</h2>
+<p>See the same item for <a href="Board%20-%20CrazyBeeF3FR.md#FAQ%20&amp;%20Known%20ssues">CrazyBeeF3FR</a></p>
+<h2 data-number="1.6" id="other-resources" data-number="1.6"><span class="header-section-number">1.6</span> Other Resources</h2>
+<p>User Manual: http://img.banggood.com/file/products/20180225215703Crazybeef3flysky.pdf</p>

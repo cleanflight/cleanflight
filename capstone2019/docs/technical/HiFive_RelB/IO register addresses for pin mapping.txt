@@ -1,0 +1,4 @@
+Memory mapped I/O registers for GPIO pin mapping
+
+#define GPIO_IOF_EN     (0x38)
+#define GPIO_IOF_SEL    (0x3C)

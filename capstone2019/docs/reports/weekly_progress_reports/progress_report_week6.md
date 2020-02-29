@@ -4,7 +4,8 @@ Weekly Progress Report
 Week 6
 ===========================
 
-## Date:02/09- 02/18
+
+# Date:02/09- 02/18
 
 Authors:
 --------
@@ -17,7 +18,9 @@ Authors:
 
 **Ruben Maldonado - mruben@pdx.edu**
 
-## Summary:
+# Summary:
+
+
 
 During week 6 we met twice with our advisor Roy Kravitz. He was present to our Monday meeting and shared insights. During the Friday meeting, we demoed our presentation. We also set a date to meet with our sponsor on Friday 21st of February. We are continuing into working on the minimum port.
 

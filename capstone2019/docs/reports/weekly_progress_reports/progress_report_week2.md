@@ -11,25 +11,25 @@
 **Ruben Maldonado - mruben@pdx.edu**
 
 
-## Week 1 and 2
+# Week 1 and 2
 
-### Date:01/06- 01/19
+# Date:01/06- 01/19
 
-### Summary:
+# Summary:
 
 The team established consistent meeting times for Monday and Friday at 6 pm at EB93 at PSU. We also created a project schedule and set a draft of milestones.
 We decided to go ahead and make a proposal for ordering a drone kit, which we will use to port and test Cleanflight; initially using Arm and then RISC-V.
 
 We have been working on mapping the makefile, establish a good understanding of how SPI works and document it, understand the process of operation for  RISC-V, JTAG, startup file, SDK, IDE and porting to the particular architecture. We also have drafted the Project Design Specifications and we decided to track our project using the "GitHub Project". Our sponsors will receive a weekly email with our progress that is updated at the end of each calendar week on Sunday at 10 pm.
 
-#### Bliss Summary :
+## Bliss Summary :
 
 - Figured out how to install and run Freedom Studio, reading its documentation.
 - Tested example code on the HiFive board and hooked it up successfully.
 - General learning of the HiFive boards’ characteristics (onboard J-Tag device for example).
 - Investigating if/where a Startup.s file (or equivalent) may be for the HiFive board.
 
-#### Eric Summary :
+## Eric Summary :
 
 - Created the "Makefile Manual" document (located in the root directory under Makefile itself) which gives a high-level overview of the Makefile's functionality. AKA what gets built and how for a particular target. 
 
@@ -38,14 +38,14 @@ To do:
 
 
 
-#### Nikolay Summary :
+## Nikolay Summary :
 
 - Primarily worked on PDS, Project Schedule and Project Planning, meeting notes (documentation), formatting documentation and email Roy with updates, reviewed makefile
 To Do: 
 - Finish PDS
 
 
-#### Ruben Summary :
+## Ruben Summary :
 
 - Reviewed Cleanflight code to get code structure understanding
 - Researched IMU sensors and focused on current sensors already implemented in Cleanflight

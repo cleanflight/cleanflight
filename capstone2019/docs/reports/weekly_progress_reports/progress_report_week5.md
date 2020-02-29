@@ -4,7 +4,7 @@ Weekly Progress Report
 Week 5
 ===========================
 
-### Date:02/02- 02/09
+# Date:02/02- 02/09
 
 Authors:
 --------
@@ -17,21 +17,21 @@ Authors:
 
 **Ruben Maldonado - mruben@pdx.edu**
 
-### Summary:
+# Summary:
 
 During week 5 our team finalized the Capstone Proposal and had a meeting with Roy Kravitz to discuss it.
  We are in the process of refining our proposal in order for our sponsor and advisor to approve it. Further, we had an update meeting with professor Faust and professor Greenberg presenting our proposal. 
 
-#### Updates for the Capstone Proposal
+## Updates for the Capstone Proposal
 
-##### From the presentation with Mark and Andrew
+### From the presentation with Mark and Andrew
 - Hardware block diagram (not sure of how many levels)
 - Inform of what program language cleanflight uses
 - Licensing 
 
-#### Bliss Summary :
+## Bliss Summary :
 
-##### TO DO:
+### TO DO:
 
 - Research makefile and understand the implementation
 - Hardware code implementation
@@ -40,14 +40,14 @@ During week 5 our team finalized the Capstone Proposal and had a meeting with Ro
 
 
 
-##### Done:
+### Done:
 
 Updated PDS
 
 
-#### Eric Summary :
+### Eric Summary :
 
-##### TODO :
+### TODO :
 
 - Create Project Management Plan
 - Incorporate final edits to PDS
@@ -57,30 +57,30 @@ Updated PDS
 - Email Michal about new HiFive boards, the status of the order, propose meetings and propose project presentation meeting
 
 
-##### Done :
+### Done :
 
-#### Nikolay Summary :
+## Nikolay Summary :
 
-##### TODO :
+### TODO :
 
 - Copyrights research 
 - Look for alternative boards
 - Add licencing to PDS
 - Min port
 
-#####  Doing :
+###  Doing :
 
 - Review copyright
 - Minimum port
 
-#####  Done :
+###  Done :
 
 - PDS
 - Weekly report
 
-#### Ruben Summary :
+## Ruben Summary :
 
-##### TODO :
+### TODO :
 
 - Metal API code implementation
 - research pros and con of using metal API implementation
@@ -88,7 +88,7 @@ Updated PDS
 - Email Michal about new HiFive boards, the status of the order, propose meetings and propose project presentation meeting
 
 
-##### Done :
+### Done :
 
 - Compile and run sample code on Freedom E Metal SDK
 - SDK readme file
@@ -102,11 +102,11 @@ Updated PDS
 - Need to research how the receiver will communicate with board ie UART?
 
 
-### Challenges:
+## Challenges:
 
 - Midterms and job interviews made some members less available last week.
 
-### Notes:
+## Notes:
 
 - Eric has midterm Thursday of next week (will be focusing on that Tuesday, Wednesday of next week).
 - Met with Roy
