@@ -213,8 +213,6 @@ Most broadly, the drone must fly with the HiFive1 Rev. B running a ported versio
 
 Since Cleanflight is an open-source software project, our team must also document the porting process thoroughly enough so that someone else could recreate the project. We will share the final documentation with the Cleanflight development team via a Github merge request at the end of the project. As such, a Cleanflight user should be able to use the CleanFlight tool to flash their own RISC-V based flight control board.
 
-Stretch requirements include implementing a compass and barometer to provide extra flight data.
-
 \subsection{Specifications}
 
 Our team must use Cleanflight as the flight control software, and use the HiFive1 Rev. B board as the flight control board. These are the only specifications provided by our project sponsor.
@@ -238,12 +236,12 @@ Our team must use Cleanflight as the flight control software, and use the HiFive
 \subsection{Initial Designs}
 \subsubsection{Drone Kit Block Diagram}
 
-Below is the high-level block diagram for the assembled drone kit. The power distribution board (PDB) takes 11.1V power from the LIPO battery and converts it to 5V, powering the receiver, flight control board and the electronic speed controllers (ESCs). Note: an additional 3.3V regulator must be included to safely power the HiFive1 Rev. B. The receiver detects signals from the transmitter on the ground and relays data to the flight control board via a UART interface. The flight control board also receives input from the MPU 9250 accelerometer/gyroscope, via a SPI interface. The flight control board then outputs control data to the four ESCs in the form of PWM signals. Lastly, the four propeller motors are connected to the four ESCs.
+Below is the high-level block diagram for the assembled drone kit. The power distribution board (PDB) takes 11.1V power from the LIPO battery and converts it to 5V, powering the receiver, flight control board and the electronic speed controllers (ESCs). The receiver detects signals from the transmitter on the ground and relays data to the flight control board via a UART interface. The flight control board also receives input from the MPU 9250 accelerometer/gyroscope, via a SPI interface. The flight control board then outputs control data to the four ESCs in the form of PWM signals. Level shifters are required to step down input signal voltage from the receiver, and to step up output signal voltage to the ESCs. Lastly, the four propeller motors are connected to the four ESCs.
 
 \begin{figure}[ht]
   \caption{Drone kit block diagram.}
   \centering
-    \includegraphics[width=150mm,scale=1]{Block diagram.png}
+    \includegraphics[width=150mm,scale=1]{Block diagram V2.jpg}
 \end{figure}
 
 \subsubsection{Cleanflight’s Makefile}
@@ -292,11 +290,11 @@ Before porting any specific Cleanflight drivers, we want to complete a ‘dry ru
 
 After completing the minimum port, we plan on splitting the porting work into modules. 
 
-The first module to be ported is the accelerometer firmware. Once that is complete, we will unit-test the firmware with the accelerometer chip to ensure standalone functionality. After the port of the accelerometer module, the team will split into two-person subteams, each focusing on one module. 
+The first module to be ported is the receiver firmware. Once that is complete, we will unit-test the firmware with the FS-iA6B Receiver to ensure standalone functionality. After the port of the receiver module, the team will split into two-person subteams, each focusing on one module. 
 
-One team will be responsible for porting the receiver firmware, and the other responsible for porting the ESC/motor output firmware. Similar to the accelerometer module testing, each team will unit-test their module to check for standalone functionality.
+One team will be responsible for porting the accelerometer firmware, and the other responsible for porting the ESC/motor output firmware. Similar to the receiver module testing, each team will unit-test their module to check for standalone functionality.
 
-Once we confirm each module is working on its own, we will assemble the drone kit and install the HiFive1 Rev. B as the flight controller. The final step will be performing integration testing to ensure all modules function correctly together as a single package. 
+Once we confirm each module is working on its own, we will remove the stock flight control board from the drone and install the HiFive1 Rev. B as the flight controller. The final step will be performing integration testing to ensure all modules function correctly together as a single package. 
 
 These are just preliminary verification plans, with more specifics to come. But as of right now, this is the general outline of our verification plan.
 
@@ -318,7 +316,7 @@ Lastly, is the issue of compatibility between the stock drone kit and the HiFive
 \begin{figure}[h!]
   \caption{Project schedule for winter and spring terms.}
   \centering
-    \includegraphics[width=175mm,scale=1]{Project_Schedule.pdf}
+    \includegraphics[width=170mm,scale=1]{Project Schedule V2.jpg}
 \end{figure}
 
 \newpage 
@@ -328,16 +326,22 @@ Lastly, is the issue of compatibility between the stock drone kit and the HiFive
 \begin{enumerate}
     \item Complete research phase
     \item Complete Minimum Port (see PDS, Initial Designs section for more details)
-    \item Project Proposal approved by sponsor:
+    \item Project Proposal approved by sponsor
     \begin{enumerate}
         \item PDS
         \item Project Management Plan
-        
     \end{enumerate}
-    \item Accelerometer/Gyroscope module tested and ported to HiFive1 Rev. B
+    
+    \item Assemble drone kit and install stock flight control board
+    \begin{enumerate}
+        \item Flash Cleanflight to stock board
+        \item Test flight capabilities
+    \end{enumerate} 
+    
     \item Receiver module tested and ported to HiFive1 Rev. B
+    \item Accelerometer/Gyroscope module tested and ported to HiFive1 Rev. B
     \item ESC/motor output module tested and ported to HiFive1 Rev. B
-    \item Assemble drone kit and install HiFive1 Rev. B as flight control board
+    \item Install HiFive1 Rev. B as flight control board
     \item Complete final integration testing
     \item Create final documentation:
     \begin{enumerate}
@@ -369,9 +373,7 @@ Our total project budget comes out to roughly \$325.00. This budget includes:
     \item (1) Protoboard
 \end{enumerate}
 
-Our team hopes to receive all of these materials as soon as possible; we have already submitted a materials request to our project sponsor, and are hoping to hear back soon.
-
-We want to start tinkering with a drone kit (including a functioning flight control board), to get a better idea of the process of building Cleanflight for a specific target.
+We want to first assemble the stock drone kit (including the stock flight control board), and flash a standard build of Cleanflight to get a better idea of the build process for a specific target.
 
 This will hopefully give us a better understanding of how to do the same process with the HiFive1 Rev. B, the only difference being the ported software.
 
