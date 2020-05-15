@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -20,9 +20,12 @@
 
 #pragma once
 
+#include "drivers/exti.h"
+
 #include "pg/rx.h"
-#include "rx/rx.h"
 #include "pg/rx_spi.h"
+
+#include "rx/rx.h"
 
 // Used in MSP. Append at end.
 typedef enum {
@@ -39,13 +42,18 @@ typedef enum {
     RX_SPI_A7105_FLYSKY,
     RX_SPI_A7105_FLYSKY_2A,
     RX_SPI_NRF24_KN,
+    RX_SPI_SFHSS,
+    RX_SPI_CYRF6936_DSM,
+    RX_SPI_FRSKY_X_LBT,
+    RX_SPI_REDPINE,
     RX_SPI_PROTOCOL_COUNT
 } rx_spi_protocol_e;
 
 typedef enum {
     RX_SPI_RECEIVED_NONE = 0,
-    RX_SPI_RECEIVED_BIND,
-    RX_SPI_RECEIVED_DATA
+    RX_SPI_RECEIVED_BIND = (1 << 0),
+    RX_SPI_RECEIVED_DATA = (1 << 1),
+    RX_SPI_ROCESSING_REQUIRED = (1 << 2),
 } rx_spi_received_e;
 
 // RC channels in AETR order
@@ -70,6 +78,11 @@ typedef enum {
     RC_SPI_AUX14
 } rc_spi_aetr_e;
 
+typedef struct {
+    ioConfig_t ioConfig;
+    extiTrigger_t trigger;
+} rxSpiExtiConfig_t;
+
 // RC channels as used by deviation
 #define RC_CHANNEL_RATE        RC_SPI_AUX1
 #define RC_CHANNEL_FLIP        RC_SPI_AUX2
@@ -78,4 +91,4 @@ typedef enum {
 #define RC_CHANNEL_HEADLESS    RC_SPI_AUX5
 #define RC_CHANNEL_RTH         RC_SPI_AUX6 // return to home
 
-bool rxSpiInit(const rxSpiConfig_t *rxSpiConfig, rxRuntimeConfig_t *rxRuntimeConfig);
+bool rxSpiInit(const rxSpiConfig_t *rxSpiConfig, rxRuntimeState_t *rxRuntimeState);

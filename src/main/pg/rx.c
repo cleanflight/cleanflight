@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -20,7 +20,7 @@
 
 #include "platform.h"
 
-#if defined(USE_PWM) || defined(USE_PPM) || defined(USE_SERIAL_RX) || defined(USE_RX_MSP) || defined(USE_RX_NRF24)
+#if defined(USE_PWM) || defined(USE_PPM) || defined(USE_SERIAL_RX) || defined(USE_RX_MSP) || defined(USE_RX_SPI)
 
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
@@ -29,7 +29,7 @@
 #include "config/config_reset.h"
 
 #include "drivers/io.h"
-#include "fc/fc_rc.h"
+#include "fc/rc.h"
 #include "fc/rc_controls.h"
 #include "rx/rx.h"
 #include "rx/rx_spi.h"
@@ -55,18 +55,24 @@ void pgResetFn_rxConfig(rxConfig_t *rxConfig)
         .rssi_scale = RSSI_SCALE_DEFAULT,
         .rssi_offset = 0,
         .rssi_invert = 0,
+        .rssi_src_frame_lpf_period = 30,
         .rcInterpolation = RC_SMOOTHING_AUTO,
         .rcInterpolationChannels = INTERPOLATION_CHANNELS_RPYT,
         .rcInterpolationInterval = 19,
         .fpvCamAngleDegrees = 0,
-        .airModeActivateThreshold = 32,
+        .airModeActivateThreshold = 25,
         .max_aux_channel = DEFAULT_AUX_CHANNEL_COUNT,
-        .rc_smoothing_type = RC_SMOOTHING_TYPE_INTERPOLATION,
+        .rc_smoothing_type = RC_SMOOTHING_TYPE_FILTER,
         .rc_smoothing_input_cutoff = 0,      // automatically calculate the cutoff by default
         .rc_smoothing_derivative_cutoff = 0, // automatically calculate the cutoff by default
         .rc_smoothing_debug_axis = ROLL,     // default to debug logging for the roll axis
         .rc_smoothing_input_type = RC_SMOOTHING_INPUT_BIQUAD,
-        .rc_smoothing_derivative_type = RC_SMOOTHING_DERIVATIVE_BIQUAD,
+        .rc_smoothing_derivative_type = RC_SMOOTHING_DERIVATIVE_AUTO, // automatically choose type based on feedforward method
+        .rc_smoothing_auto_factor = 10,
+        .srxl2_unit_id = 1,
+        .srxl2_baud_fast = true,
+        .sbus_baud_fast = false,
+        .crsf_use_rx_snr = false,
     );
 
 #ifdef RX_CHANNELS_TAER

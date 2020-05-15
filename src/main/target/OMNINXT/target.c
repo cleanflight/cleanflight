@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -36,7 +36,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
     // Additional motors/servos
     DEF_TIM(TIM8,  CH4,  PC9,  TIM_USE_NONE,                0, 0), // MST5 Collision with TX/RX6 (useful for OCTO)
-    DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_NONE,                0, 0), // MST6 Collision with TX/RX6 (useful for OCTO)
+    DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_NONE,                0, 1), // MST6 Collision with TX/RX6 (useful for OCTO)
     DEF_TIM(TIM11, CH1,  PB9,  TIM_USE_NONE,                0, 0), // I2C1_SDA, MST7
     DEF_TIM(TIM10, CH1,  PB8,  TIM_USE_NONE,                0, 0), // I2C1_SCL, MST8
 
@@ -47,7 +47,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM1,  CH2,  PA9,  TIM_USE_LED,                 0, 0),
 
     // CAMCTL
-    DEF_TIM(TIM12, CH2,  PB15, TIM_USE_NONE,                0, 0),
+    DEF_TIM(TIM12, CH2,  PB15, TIM_USE_CAMERA_CONTROL,      0, 0),
 
     // Backdoor timers on UARTs
     DEF_TIM(TIM4,  CH1,  PB6,  TIM_USE_NONE,                0, 0), // UART1_TX Collision with PPM
@@ -62,7 +62,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM5,  CH2,  PA1,  TIM_USE_NONE,                0, 0), // UART4_RX
 
     DEF_TIM(TIM8,  CH1,  PC6,  TIM_USE_NONE,                0, 0), // UART6_TX Collision with MS1&2 (useful for OCTO)
-    DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_NONE,                0, 0), // UART6_RX Collision with MS1&2 (useful for OCTO)
+    DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_NONE,                0, 1), // UART6_RX Collision with MS1&2 (useful for OCTO)
 
     // Others
     DEF_TIM(TIM1,  CH3,  PA10, TIM_USE_NONE,                0, 0), // CS_ExtIMU, Collision with LED_STRIP

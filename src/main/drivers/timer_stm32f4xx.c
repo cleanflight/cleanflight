@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -20,11 +20,18 @@
 
 #include "platform.h"
 
+#ifdef USE_TIMER
+
 #include "common/utils.h"
+
+#include "drivers/dma.h"
+#include "drivers/io.h"
+#include "drivers/timer_def.h"
 
 #include "stm32f4xx.h"
 #include "rcc.h"
 #include "timer.h"
+
 
 const timerDef_t timerDefinitions[HARDWARE_TIMER_DEFINITION_COUNT] = {
     { .TIMx = TIM1,  .rcc = RCC_APB2(TIM1),  .inputIrq = TIM1_CC_IRQn},
@@ -34,7 +41,9 @@ const timerDef_t timerDefinitions[HARDWARE_TIMER_DEFINITION_COUNT] = {
     { .TIMx = TIM5,  .rcc = RCC_APB1(TIM5),  .inputIrq = TIM5_IRQn},
     { .TIMx = TIM6,  .rcc = RCC_APB1(TIM6),  .inputIrq = 0},
     { .TIMx = TIM7,  .rcc = RCC_APB1(TIM7),  .inputIrq = 0},
-#if !defined(STM32F411xE) && !defined(STM32F446xx)
+#if defined(STM32F446xx)
+    { .TIMx = TIM8,  .rcc = RCC_APB2(TIM8),  .inputIrq = 0},
+#elif !defined(STM32F411xE)
     { .TIMx = TIM8,  .rcc = RCC_APB2(TIM8),  .inputIrq = TIM8_CC_IRQn},
 #endif
     { .TIMx = TIM9,  .rcc = RCC_APB2(TIM9),  .inputIrq = TIM1_BRK_TIM9_IRQn},
@@ -46,6 +55,138 @@ const timerDef_t timerDefinitions[HARDWARE_TIMER_DEFINITION_COUNT] = {
     { .TIMx = TIM14, .rcc = RCC_APB1(TIM14), .inputIrq = TIM8_TRG_COM_TIM14_IRQn},
 #endif
 };
+
+#if defined(USE_TIMER_MGMT)
+const timerHardware_t fullTimerHardware[FULL_TIMER_CHANNEL_COUNT] = {
+    // Auto-generated from 'timer_def.h'
+//PORTA
+    DEF_TIM(TIM2, CH1, PA0, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH2, PA1, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH3, PA2, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH4, PA3, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH1, PA5, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH1N, PA7, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH1, PA8, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH2, PA9, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH3, PA10, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH1N, PA11, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH1, PA15, TIM_USE_ANY, 0, 0),
+
+    DEF_TIM(TIM5, CH1, PA0, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM5, CH2, PA1, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM5, CH3, PA2, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM5, CH4, PA3, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH1, PA6, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH2, PA7, TIM_USE_ANY, 0, 0),
+
+    DEF_TIM(TIM9, CH1, PA2, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM9, CH2, PA3, TIM_USE_ANY, 0, 0),
+#if !defined(STM32F411xE)
+    DEF_TIM(TIM8, CH1N, PA5, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM8, CH1N, PA7, TIM_USE_ANY, 0, 0),
+
+    DEF_TIM(TIM13, CH1, PA6, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM14, CH1, PA7, TIM_USE_ANY, 0, 0),
+#endif
+
+//PORTB
+    DEF_TIM(TIM1, CH2N, PB0, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH3N, PB1, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH2, PB3, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH3, PB10, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM2, CH4, PB11, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH1N, PB13, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH2N, PB14, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH3N, PB15, TIM_USE_ANY, 0, 0),
+
+    DEF_TIM(TIM3, CH3, PB0, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH4, PB1, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH1, PB4, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH2, PB5, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH1, PB6, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH2, PB7, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH3, PB8, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH4, PB9, TIM_USE_ANY, 0, 0),
+
+#if !defined(STM32F411xE)
+    DEF_TIM(TIM8, CH2N, PB0, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM8, CH3N, PB1, TIM_USE_ANY, 0, 0),
+#endif
+    DEF_TIM(TIM10, CH1, PB8, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM11, CH1, PB9, TIM_USE_ANY, 0, 0),
+#if !defined(STM32F411xE)
+    DEF_TIM(TIM8, CH2N, PB14, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM8, CH3N, PB15, TIM_USE_ANY, 0, 0),
+
+    DEF_TIM(TIM12, CH1, PB14, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM12, CH2, PB15, TIM_USE_ANY, 0, 0),
+#endif
+
+//PORTC
+    DEF_TIM(TIM3, CH1, PC6, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH2, PC7, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH3, PC8, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM3, CH4, PC9, TIM_USE_ANY, 0, 0),
+
+#if !defined(STM32F411xE)
+    DEF_TIM(TIM8, CH1, PC6, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM8, CH2, PC7, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM8, CH3, PC8, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM8, CH4, PC9, TIM_USE_ANY, 0, 0),
+#endif
+
+//PORTD
+    DEF_TIM(TIM4, CH1, PD12, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH2, PD13, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH3, PD14, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM4, CH4, PD15, TIM_USE_ANY, 0, 0),
+
+//PORTE
+    DEF_TIM(TIM1, CH1N, PE8, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH1, PE9, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH2N, PE10, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH2, PE11, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH3N, PE12, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH3, PE13, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM1, CH4, PE14, TIM_USE_ANY, 0, 0),
+
+    DEF_TIM(TIM9, CH1, PE5, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM9, CH2, PE6, TIM_USE_ANY, 0, 0),
+
+//PORTF
+#if !defined(STM32F411xE)
+    DEF_TIM(TIM10, CH1, PF6, TIM_USE_ANY, 0, 0),
+    DEF_TIM(TIM11, CH1, PF7, TIM_USE_ANY, 0, 0),
+#endif
+
+//PORTH
+// Port H is not available for LPQFP-100 or 144 package
+//    DEF_TIM(TIM5, CH1, PH10, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM5, CH2, PH11, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM5, CH3, PH12, TIM_USE_ANY, 0, 0),
+//
+//#if !defined(STM32F411xE)
+//    DEF_TIM(TIM8, CH1N, PH13, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM8, CH2N, PH14, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM8, CH3N, PH15, TIM_USE_ANY, 0, 0),
+//
+//    DEF_TIM(TIM12, CH1, PH6, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM12, CH2, PH9, TIM_USE_ANY, 0, 0),
+//#endif
+
+//PORTI
+// Port I is not available for LPQFP-100 or 144 package
+//    DEF_TIM(TIM5, CH4, PI0, TIM_USE_ANY, 0, 0),
+//
+//#if !defined(STM32F411xE)
+//    DEF_TIM(TIM8, CH4, PI2, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM8, CH1, PI5, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM8, CH2, PI6, TIM_USE_ANY, 0, 0),
+//    DEF_TIM(TIM8, CH3, PI7, TIM_USE_ANY, 0, 0),
+//#endif
+};
+#endif
+
 
 /*
     need a mapping from dma and timers to pins, and the values should all be set here to the dmaMotors array.
@@ -98,3 +239,4 @@ uint32_t timerClock(TIM_TypeDef *tim)
     #error "No timer clock defined correctly for MCU"
 #endif
 }
+#endif

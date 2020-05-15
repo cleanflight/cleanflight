@@ -34,6 +34,9 @@ stm32.mak
 # eclipse launch configurations
 /support/eclipse
 
+# ozone launch configurations
+/support/ozone
+
 # artefacts for Visual Studio Code
 /.vscode/
 
@@ -44,3 +47,6 @@ stm32.mak
 .vagrant
 ubuntu*.log
 /.vs
+
+# EEPROM image file (created by SITL)
+eeprom.bin

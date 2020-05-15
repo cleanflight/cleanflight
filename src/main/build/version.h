@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,8 +23,9 @@
 #include "common/utils.h"
 
 #define FC_FIRMWARE_NAME            "Cleanflight"
-#define FC_VERSION_MAJOR            2  // increment when a major release is made (big new feature, etc)
-#define FC_VERSION_MINOR            5  // increment when a minor release is made (small new feature, change etc)
+#define FC_FIRMWARE_IDENTIFIER      "CLFL"
+#define FC_VERSION_MAJOR            4  // increment when a major release is made (big new feature, etc)
+#define FC_VERSION_MINOR            2  // increment when a minor release is made (small new feature, change etc)
 #define FC_VERSION_PATCH_LEVEL      0  // increment when a bug is fixed
 
 #define FC_VERSION_STRING STR(FC_VERSION_MAJOR) "." STR(FC_VERSION_MINOR) "." STR(FC_VERSION_PATCH_LEVEL)

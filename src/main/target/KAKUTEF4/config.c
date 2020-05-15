@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,12 +23,15 @@
 
 #include "platform.h"
 
+#if defined(FLYWOOF405)
+#include "pg/piniobox.h"
+#endif
+
 #ifdef USE_TARGET_CONFIG
 
 #include "config_helper.h"
 #include "io/serial.h"
-#include "pg/bus_spi.h"
-#include "rx/rx.h"
+#include "pg/max7456.h"
 #include "telemetry/telemetry.h"
 
 #define TELEMETRY_UART          SERIAL_PORT_USART1
@@ -39,26 +42,15 @@ static targetSerialPortFunction_t targetSerialPortFunction[] = {
 
 void targetConfiguration(void)
 {
+#if defined(FLYWOOF405)
+    pinioBoxConfigMutable()->permanentId[0] = 40;
+    pinioBoxConfigMutable()->permanentId[1] = 41;
+#endif
     targetSerialPortFunctionConfig(targetSerialPortFunction, ARRAYLEN(targetSerialPortFunction));
     telemetryConfigMutable()->halfDuplex = 0;
     telemetryConfigMutable()->telemetry_inverted = true;
 
-    // Register MAX7456 CS pin as OPU
-
-    // Invalidate IPU entry first
-    for (int i = 0 ; i < SPI_PREINIT_IPU_COUNT ; i++) {
-        if (spiPreinitIPUConfig(i)->csnTag == IO_TAG(MAX7456_SPI_CS_PIN)) {
-            spiPreinitIPUConfigMutable(i)->csnTag = IO_TAG(NONE);
-            break;
-        }
-    }
-
-    // Add as OPU entry
-    for (int i = 0 ; i < SPI_PREINIT_OPU_COUNT ; i++) {
-        if (spiPreinitOPUConfig(i)->csnTag == IO_TAG(NONE)) {
-            spiPreinitOPUConfigMutable(i)->csnTag = IO_TAG(MAX7456_SPI_CS_PIN);
-            break;
-        }
-    }
+    // Mark MAX7456 CS pin as OPU
+    max7456ConfigMutable()->preInitOPU = true;
 }
 #endif

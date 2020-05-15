@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -28,10 +28,10 @@
 
 #define USE_BEEPER
 #define BEEPER_PIN              PA15
-#define BEEPER_OPT              PA2
 
 #define USE_EXTI
-#define MPU_INT_EXTI            PA3
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN         PA3
 #define USE_MPU_DATA_READY_SIGNAL
 //#define DEBUG_MPU_DATA_READY_INTERRUPT
 
@@ -39,8 +39,8 @@
 #define USE_SPI_DEVICE_1
 #define USE_SPI_DEVICE_2
 
-#define MPU6000_CS_PIN          PA4
-#define MPU6000_SPI_INSTANCE    SPI1
+#define GYRO_1_CS_PIN           PA4
+#define GYRO_1_SPI_INSTANCE     SPI1
 
 #define FLASH_CS_PIN            PB12
 #define FLASH_SPI_INSTANCE      SPI2
@@ -50,11 +50,10 @@
 
 #define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
-#define GYRO_MPU6000_ALIGN CW270_DEG
+#define GYRO_1_ALIGN       CW270_DEG
 
 #define USE_ACC
 #define USE_ACC_SPI_MPU6000
-#define ACC_MPU6000_ALIGN CW270_DEG
 
 // MPU6000 interrupts
 #define USE_MPU_DATA_READY_SIGNAL
@@ -97,8 +96,6 @@
 #define VBAT_ADC_PIN            PA0
 #define RSSI_ADC_PIN            PB0
 
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
-
 //#define USE_RANGEFINDER
 //#define USE_RANGEFINDER_HCSR04
 //#define RANGEFINDER_HCSR04_ECHO_PIN          PB0
@@ -107,7 +104,18 @@
 #undef USE_MAG
 
 #ifdef CC3D_OPBL
+//#undef USE_SERVOS
+#undef USE_BARO
+#undef USE_RANGEFINDER
+#undef USE_RANGEFINDER_HCSR04
 #undef USE_SERIAL_4WAY_BLHELI_INTERFACE
+//#undef USE_SERIALRX_SPEKTRUM   // SRXL, DSM2 and DSMX protocol
+//#undef USE_SERIALRX_SBUS       // Frsky and Futaba receivers
+//#undef USE_SERIALRX_IBUS       // FlySky and Turnigy receivers
+#undef USE_SERIALRX_CRSF       // Team Black Sheep Crossfire protocol
+#undef USE_SERIALRX_SUMD       // Graupner Hott protocol
+#undef USE_SERIALRX_SUMH       // Graupner legacy protocol
+#undef USE_SERIALRX_XBUS       // JR
 #endif
 
 

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,6 +21,7 @@
 #pragma once
 
 #include "common/time.h"
+#include "common/sensor_alignment.h"
 #include "drivers/io_types.h"
 #include "drivers/sensor.h"
 #include "pg/pg.h"
@@ -34,7 +35,8 @@ typedef enum {
     MAG_HMC5883 = 2,
     MAG_AK8975 = 3,
     MAG_AK8963 = 4,
-    MAG_QMC5883 = 5
+    MAG_QMC5883 = 5,
+    MAG_LIS3MDL = 6
 } magSensor_e;
 
 typedef struct mag_s {
@@ -47,7 +49,7 @@ extern mag_t mag;
 typedef struct compassConfig_s {
     int16_t mag_declination;                // Get your magnetic decliniation from here : http://magnetic-declination.com/
                                             // For example, -6deg 37min, = -637 Japan, format is [sign]dddmm (degreesminutes) default is zero.
-    sensor_align_e mag_align;               // mag alignment
+    uint8_t mag_alignment;                  // mag alignment
     uint8_t mag_hardware;                   // Which mag hardware to use on boards with more than one device
     uint8_t mag_bustype;
     uint8_t mag_i2c_device;
@@ -56,6 +58,7 @@ typedef struct compassConfig_s {
     ioTag_t mag_spi_csn;
     ioTag_t interruptTag;
     flightDynamicsTrims_t magZero;
+    sensorAlignment_t mag_customAlignment;
 } compassConfig_t;
 
 PG_DECLARE(compassConfig_t, compassConfig);
@@ -63,3 +66,7 @@ PG_DECLARE(compassConfig_t, compassConfig);
 bool compassIsHealthy(void);
 void compassUpdate(timeUs_t currentTime);
 bool compassInit(void);
+void compassPreInit(void);
+void compassStartCalibration(void);
+bool compassIsCalibrationComplete(void);
+

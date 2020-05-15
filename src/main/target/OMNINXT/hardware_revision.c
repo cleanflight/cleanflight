@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -150,12 +150,18 @@ static uint16_t adcIDDetectReadVrefint(void)
 #endif
 
 #if defined(OMNINXT7)
-#define VREFINT_CAL_ADDR  0x1FF07A2A
 
 #include "drivers/adc_impl.h"
 
 static adcDevice_t adcIDDetHardware = 
-    { .ADCx = ADC1, .rccADC = RCC_APB2(ADC1), .DMAy_Streamx = ADC1_DMA_STREAM, .channel = DMA_CHANNEL_0 };
+    {
+        .ADCx = ADC1,
+        .rccADC = RCC_APB2(ADC1),
+#if !defined(USE_DMA_SPEC)
+        .DMAy_Streamx = ADC1_DMA_STREAM,
+        .channel = DMA_CHANNEL_0
+#endif
+    };
 
 // XXX adcIDDetectInitDevice is an exact copy of adcInitDevice() from adc_stm32f7xx.c. Export and use?
 
@@ -296,6 +302,7 @@ void updateHardwareRevision(void)
     // Empty
 }
 
+// XXX Can be gone as sensors/gyro.c is not calling this anymore
 ioTag_t selectMPUIntExtiConfigByHardwareRevision(void)
 {
     return IO_TAG_NONE;

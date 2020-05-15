@@ -1,45 +1,13 @@
 # 1. ARE YOU REQUESTING SUPPORT?
 
--- YES / NO --
+## Please consider using other user support options such as asking the manufacturer of the hardware you are using, RCGroups: https://rcgroups.com/forums/showthread.php?2249574, or Slack (registration at http://cleanflight.com/slack/) or other user support forums & groups (e.g. Facebook).
 
-# 2. If you answered YES to the above question go here instead:
-
-https://www.rcgroups.com/forums/showthread.php?2249574-Cleanflight-firmware-for-STM32F3-based-FCBs-Check-First-Post-Please%21%21
-
-Alternatively use other forums, slack or IRC for support.
-
-# 3. If you answered NO to the first question.  Delete everything above this line, read the guidelines (see link above this form) and continue.
-
-# A - Description
-
--- replace this line with a summary of the issue/problem/feature
-
-# B - Steps To Repeat
-
--- replace this line with a list of steps to repeat your problem
-
-# C - Video Links
-
--- provide a link to a video showing your problem, as applicable --
-
-# D - Forum post links
-
--- provide links to forum posts if you have discussed this with others --
-
-# E - Version Information
-
-Cleanflight: vX.X.X or commit SHA
-Configurator: vX.X.X or commit SHA
-
-# E - Other information
-
--- provide additional information such as.
--- flight controller make/model
--- config dump + diff
--- esc make/model/config
--- receiver make/model/config
--- transmitter make/model/config
--- schematics
--- diagrams
--- operating system
--- etc.
+## If you believe there is an issue with the firmware itself please follow these steps:
+1. Describe your problem;
+2. Include ways to reproduce the problem;
+3. Provide as much information as possible about your hardware and software, including:
+- what hardware / software you are using;
+- the version of all the software used;
+- how things are connected / wired up.
+4. Create a `diff` and post it here in a code block. Put ``` (three backticks) at the start and end of the `diff` block;
+5. Remove this Text :).

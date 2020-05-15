@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,18 +23,17 @@
 #define TARGET_BOARD_IDENTIFIER "DLF7"
 #define USBD_PRODUCT_STRING  "DALRCF722DUAL"
 
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 #define LED0_PIN                PC14
 
 #define USE_BEEPER
 #define BEEPER_PIN              PC13
 #define BEEPER_INVERTED
 
-#define USE_DUAL_GYRO
 #define USE_EXTI
+#define USE_GYRO_EXTI
 #define GYRO_1_EXTI_PIN         PB10
 #define GYRO_2_EXTI_PIN         PC4
-#define MPU_INT_EXTI
 
 #define GYRO_1_CS_PIN                       PB0   
 #define GYRO_1_SPI_INSTANCE                 SPI1
@@ -52,15 +51,9 @@
 #define USE_ACC_SPI_MPU6000
 #define USE_ACC_SPI_MPU6500
 
-#define ACC_MPU6000_1_ALIGN           CW180_DEG
-#define GYRO_MPU6000_1_ALIGN          CW180_DEG
-#define GYRO_1_ALIGN                GYRO_MPU6000_1_ALIGN
-#define ACC_1_ALIGN                 ACC_MPU6000_1_ALIGN
+#define GYRO_1_ALIGN                CW180_DEG
 
-#define ACC_MPU6500_2_ALIGN         CW0_DEG
-#define GYRO_MPU6500_2_ALIGN        CW0_DEG
-#define GYRO_2_ALIGN                GYRO_MPU6500_2_ALIGN 
-#define ACC_2_ALIGN                 ACC_MPU6500_2_ALIGN
+#define GYRO_2_ALIGN                CW0_DEG
 
 #define GYRO_CONFIG_USE_GYRO_DEFAULT GYRO_CONFIG_USE_GYRO_1 
 
@@ -69,6 +62,7 @@
 
 #define USE_MAG
 #define USE_MAG_HMC5883
+#define USE_MAG_LIS3MDL
 
 #define USE_VCP
 #define USE_UART1
@@ -129,7 +123,8 @@
 
 #define USE_ADC
 #define ADC_INSTANCE                        ADC3
-#define ADC3_DMA_STREAM                     DMA2_Stream0
+#define ADC3_DMA_OPT                        0  // DMA 2 Stream 0 Channel 2 
+
 
 #define VBAT_ADC_PIN                        PC1
 #define CURRENT_METER_ADC_PIN               PC0
@@ -143,15 +138,10 @@
 
 #define USE_OSD
 
-#define USE_LED_STRIP
-
 #define DEFAULT_RX_FEATURE                  FEATURE_RX_SERIAL
 #define DEFAULT_FEATURES                    FEATURE_OSD
 #define SERIALRX_UART                       SERIAL_PORT_USART1
 #define SERIALRX_PROVIDER                   SERIALRX_SBUS
-
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 
 #define TARGET_IO_PORTA         0xffff

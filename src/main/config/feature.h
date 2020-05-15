@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -50,7 +50,7 @@ typedef enum {
     FEATURE_TRANSPONDER = 1 << 21,
     FEATURE_AIRMODE = 1 << 22,
     FEATURE_RX_SPI = 1 << 25,
-    FEATURE_SOFTSPI = 1 << 26,
+    //FEATURE_SOFTSPI = 1 << 26, (removed)
     FEATURE_ESC_SENSOR = 1 << 27,
     FEATURE_ANTI_GRAVITY = 1 << 28,
     FEATURE_DYNAMIC_FILTER = 1 << 29,
@@ -62,14 +62,11 @@ typedef struct featureConfig_s {
 
 PG_DECLARE(featureConfig_t, featureConfig);
 
-void latchActiveFeatures(void);
-bool featureConfigured(uint32_t mask);
-bool feature(uint32_t mask);
-void featureSet(uint32_t mask);
-void featureClear(uint32_t mask);
-void featureClearAll(void);
-uint32_t featureMask(void);
-
-void intFeatureClearAll(uint32_t *features);
-void intFeatureSet(uint32_t mask, uint32_t *features);
-void intFeatureClear(uint32_t mask, uint32_t *features);
+void featureInit(void);
+bool featureIsEnabled(const uint32_t mask);
+bool featureIsConfigured(const uint32_t mask);
+void featureEnableImmediate(const uint32_t mask);
+void featureDisableImmediate(const uint32_t mask);
+void featureConfigSet(const uint32_t mask);
+void featureConfigClear(const uint32_t mask);
+void featureConfigReplace(const uint32_t mask);

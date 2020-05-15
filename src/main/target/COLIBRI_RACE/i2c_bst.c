@@ -25,9 +25,9 @@
 #include "drivers/time.h"
 #include "drivers/timer.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/controlrate_profile.h"
-#include "fc/fc_core.h"
+#include "fc/core.h"
 #include "fc/rc_adjustments.h"
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
@@ -41,6 +41,7 @@
 #include "io/flashfs.h"
 #include "io/beeper.h"
 
+#include "pg/motor.h"
 #include "pg/rx.h"
 
 #include "rx/rx.h"
@@ -153,14 +154,11 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXARM, "ARM;", 0 },
     { BOXANGLE, "ANGLE;", 1 },
     { BOXHORIZON, "HORIZON;", 2 },
-    { BOXBARO, "BARO;", 3 },
     //{ BOXVARIO, "VARIO;", 4 },
     { BOXMAG, "MAG;", 5 },
     { BOXHEADFREE, "HEADFREE;", 6 },
     { BOXHEADADJ, "HEADADJ;", 7 },
     { BOXCAMSTAB, "CAMSTAB;", 8 },
-    { BOXGPSHOME, "GPS HOME;", 10 },
-    { BOXGPSHOLD, "GPS HOLD;", 11 },
     { BOXPASSTHRU, "PASSTHRU;", 12 },
     { BOXBEEPERON, "BEEPER;", 13 },
     { BOXLEDLOW, "LEDLOW;", 15 },
@@ -281,7 +279,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             }
             break;
         case BST_STATUS:
-            bstWrite16(getTaskDeltaTime(TASK_GYROPID));
+            bstWrite16(getTaskDeltaTimeUs(TASK_PID));
 #ifdef USE_I2C
             bstWrite16(i2cGetErrorCounter());
 #else
@@ -294,13 +292,10 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             junk = 0;
             tmp = IS_ENABLED(FLIGHT_MODE(ANGLE_MODE)) << BOXANGLE |
                     IS_ENABLED(FLIGHT_MODE(HORIZON_MODE)) << BOXHORIZON |
-                    IS_ENABLED(FLIGHT_MODE(BARO_MODE)) << BOXBARO |
                     IS_ENABLED(FLIGHT_MODE(MAG_MODE)) << BOXMAG |
                     IS_ENABLED(FLIGHT_MODE(HEADFREE_MODE)) << BOXHEADFREE |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXHEADADJ)) << BOXHEADADJ |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXCAMSTAB)) << BOXCAMSTAB |
-                    IS_ENABLED(FLIGHT_MODE(GPS_HOME_MODE)) << BOXGPSHOME |
-                    IS_ENABLED(FLIGHT_MODE(GPS_HOLD_MODE)) << BOXGPSHOLD |
                     IS_ENABLED(FLIGHT_MODE(PASSTHRU_MODE)) << BOXPASSTHRU |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXBEEPERON)) << BOXBEEPERON |
                     IS_ENABLED(IS_RC_MODE_ACTIVE(BOXLEDLOW)) << BOXLEDLOW |
@@ -319,7 +314,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             bstWrite8(getCurrentPidProfileIndex());
             break;
         case BST_LOOP_TIME:
-            bstWrite16(getTaskDeltaTime(TASK_GYROPID));
+            bstWrite16(getTaskDeltaTimeUs(TASK_PID));
             break;
         case BST_RC_TUNING:
             bstWrite8(currentControlRateProfile->rcRates[FD_ROLL]);
@@ -378,9 +373,9 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             bstWrite16(compassConfig()->mag_declination / 10);
 
             bstWrite8(voltageSensorADCConfig(VOLTAGE_SENSOR_ADC_VBAT)->vbatscale);
-            bstWrite8(batteryConfig()->vbatmincellvoltage);
-            bstWrite8(batteryConfig()->vbatmaxcellvoltage);
-            bstWrite8(batteryConfig()->vbatwarningcellvoltage);
+            bstWrite8((batteryConfig()->vbatmincellvoltage + 5) / 10);
+            bstWrite8((batteryConfig()->vbatmaxcellvoltage + 5) / 10);
+            bstWrite8((batteryConfig()->vbatwarningcellvoltage + 5) / 10);
             break;
 
         case BST_FEATURE:
@@ -406,17 +401,15 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
 #ifdef USE_LED_STRIP
         case BST_LED_COLORS:
             for (i = 0; i < LED_CONFIGURABLE_COLOR_COUNT; i++) {
-                hsvColor_t *color = &ledStripConfigMutable()->colors[i];
-                bstWrite16(color->h);
-                bstWrite8(color->s);
-                bstWrite8(color->v);
+                bstWrite16(0);
+                bstWrite8(0);
+                bstWrite8(0);
             }
             break;
 
         case BST_LED_STRIP_CONFIG:
             for (i = 0; i < LED_MAX_STRIP_LENGTH; i++) {
-                const ledConfig_t *ledConfig = &ledStripConfig()->ledConfigs[i];
-                bstWrite32(*ledConfig);
+                bstWrite32(0);
             }
             break;
 #endif
@@ -427,14 +420,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             bstWrite8(rcControlsConfig()->yaw_deadband);
             break;
         case BST_FC_FILTERS:
-            switch (gyroConfig()->gyro_hardware_lpf) { // Extra safety to prevent OSD setting corrupt values
-                case GYRO_HARDWARE_LPF_1KHZ_SAMPLE:
-                    bstWrite16(1);
-                    break;
-                default:
-                    bstWrite16(0);
-                    break;
-            }
+            bstWrite16(0);
             break;
         default:
             // we do not know how to handle the (valid) message, indicate error BST
@@ -500,7 +486,7 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
                     mac->range.startStep = bstRead8();
                     mac->range.endStep = bstRead8();
 
-                    useRcControlsConfig(currentPidProfile);
+                    rcControlsInit();
                 } else {
                     ret = BST_FAILED;
                 }
@@ -535,18 +521,25 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
             compassConfigMutable()->mag_declination = bstRead16() * 10;
 
             voltageSensorADCConfigMutable(VOLTAGE_SENSOR_ADC_VBAT)->vbatscale = bstRead8();  // actual vbatscale as intended
-            batteryConfigMutable()->vbatmincellvoltage = bstRead8();  // vbatlevel_warn1 in MWC2.3 GUI
-            batteryConfigMutable()->vbatmaxcellvoltage = bstRead8();  // vbatlevel_warn2 in MWC2.3 GUI
-            batteryConfigMutable()->vbatwarningcellvoltage = bstRead8();  // vbatlevel when buzzer starts to alert
+            batteryConfigMutable()->vbatmincellvoltage = bstRead8() * 10;  // vbatlevel_warn1 in MWC2.3 GUI
+            batteryConfigMutable()->vbatmaxcellvoltage = bstRead8() * 10;  // vbatlevel_warn2 in MWC2.3 GUI
+            batteryConfigMutable()->vbatwarningcellvoltage = bstRead8() * 10;  // vbatlevel when buzzer starts to alert
             break;
 
+#if defined(USE_ACC)
         case BST_ACC_CALIBRATION:
            if (!ARMING_FLAG(ARMED))
-               accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
+               accStartCalibration();
            break;
+#endif
+
+#if defined(USE_MAG)
         case BST_MAG_CALIBRATION:
-           if (!ARMING_FLAG(ARMED))
-               ENABLE_STATE(CALIBRATE_MAG);
+           if (!ARMING_FLAG(ARMED)) {
+               compassStartCalibration();
+           }
+#endif
+
            break;
         case BST_EEPROM_WRITE:
             if (ARMING_FLAG(ARMED)) {
@@ -558,10 +551,9 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
             readEEPROM();
             break;
         case BST_SET_FEATURE:
-            featureClearAll();
-            featureSet(bstRead32()); // features bitmap
+            featureConfigReplace(bstRead32()); // features bitmap
 #ifdef SERIALRX_UART
-            if (featureConfigured(FEATURE_RX_SERIAL)) {
+            if (featureIsEnabled(FEATURE_RX_SERIAL)) {
                 serialConfigMutable()->portConfigs[SERIALRX_UART].functionMask = FUNCTION_RX_SERIAL;
             } else {
                 serialConfigMutable()->portConfigs[SERIALRX_UART].functionMask = FUNCTION_NONE;
@@ -589,11 +581,10 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
         case BST_SET_LED_COLORS:
            //for (i = 0; i < CONFIGURABLE_COLOR_COUNT; i++) {
            {
-               i = bstRead8();
-               hsvColor_t *color = &ledStripConfigMutable()->colors[i];
-               color->h = bstRead16();
-               color->s = bstRead8();
-               color->v = bstRead8();
+               bstRead8();
+               bstRead16();
+               bstRead8();
+               bstRead8();
            }
            break;
         case BST_SET_LED_STRIP_CONFIG:
@@ -603,9 +594,11 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
                    ret = BST_FAILED;
                    break;
                }
-               ledConfig_t *ledConfig = &ledStripConfigMutable()->ledConfigs[i];
+#if defined(USE_LED_STRIP_STATUS_MODE)
+               ledConfig_t *ledConfig = &ledStripStatusModeConfigMutable()->ledConfigs[i];
                *ledConfig = bstRead32();
                reevaluateLedConfig();
+#endif
            }
            break;
 #endif
@@ -614,7 +607,7 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
             break;
         case BST_DISARM:
             if (ARMING_FLAG(ARMED)) {
-                    disarm();
+                disarm(DISARM_REASON_SERIAL_COMMAND);
             }
             setArmingDisabled(ARMING_DISABLED_BST);
             break;
@@ -628,14 +621,7 @@ static bool bstSlaveProcessWriteCommand(uint8_t bstWriteCommand)
             rcControlsConfigMutable()->yaw_deadband = bstRead8();
             break;
         case BST_SET_FC_FILTERS:
-            switch (bstRead16()) {
-                case 1:
-                    gyroConfigMutable()->gyro_hardware_lpf = GYRO_HARDWARE_LPF_1KHZ_SAMPLE;
-                    break;
-                default:
-                    gyroConfigMutable()->gyro_hardware_lpf = GYRO_HARDWARE_LPF_NORMAL;
-                    break;
-            }
+            bstRead16(); // 1KHz sampling no longer supported
             break;
 
         default:
@@ -790,29 +776,29 @@ static void bstMasterWrite16(uint16_t data)
 #ifdef USE_GPS
 static void bstMasterWrite32(uint32_t data)
 {
-    bstMasterWrite16((uint8_t)(data >> 16));
-    bstMasterWrite16((uint8_t)(data >> 0));
+    bstMasterWrite16((uint16_t)(data >> 16));
+    bstMasterWrite16((uint16_t)(data >> 0));
 }
 
 static int32_t lat = 0;
 static int32_t lon = 0;
-static uint16_t alt = 0;
+static uint16_t altM = 0;
 static uint8_t numOfSat = 0;
 #endif
 
 #ifdef USE_GPS
 bool writeGpsPositionPrameToBST(void)
 {
-    if ((lat != gpsSol.llh.lat) || (lon != gpsSol.llh.lon) || (alt != gpsSol.llh.alt) || (numOfSat != gpsSol.numSat)) {
+    if ((lat != gpsSol.llh.lat) || (lon != gpsSol.llh.lon) || (altM != (gpsSol.llh.altCm / 100)) || (numOfSat != gpsSol.numSat)) {
         lat = gpsSol.llh.lat;
         lon = gpsSol.llh.lon;
-        alt = gpsSol.llh.alt;
+        altM = gpsSol.llh.altCm / 100;
         numOfSat = gpsSol.numSat;
         uint16_t speed = (gpsSol.groundSpeed * 9 / 25);
         uint16_t gpsHeading = 0;
         uint16_t altitude = 0;
         gpsHeading = gpsSol.groundCourse * 10;
-        altitude = alt * 10 + 1000;
+        altitude = altM + 1000;  // To be verified: in m +1000m offset for neg. altitudes?
 
         bstMasterStartBuffer(PUBLIC_ADDRESS);
         bstMasterWrite8(GPS_POSITION_FRAME_ID);
@@ -863,7 +849,6 @@ bool writeFCModeToBST(void)
     tmp = IS_ENABLED(ARMING_FLAG(ARMED)) |
            IS_ENABLED(FLIGHT_MODE(ANGLE_MODE)) << 1 |
            IS_ENABLED(FLIGHT_MODE(HORIZON_MODE)) << 2 |
-           IS_ENABLED(FLIGHT_MODE(BARO_MODE)) << 3 |
            IS_ENABLED(FLIGHT_MODE(MAG_MODE)) << 4 |
            IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAIRMODE)) << 5 |
            IS_ENABLED(FLIGHT_MODE(FAILSAFE_MODE)) << 7;

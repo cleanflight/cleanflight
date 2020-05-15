@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -57,6 +57,7 @@
 
 #define Q12 (1 << 12)
 
+#define HZ_TO_INTERVAL(x) (1.0f / (x))
 #define HZ_TO_INTERVAL_US(x) (1000000 / (x))
 
 typedef int32_t fix12_t;
@@ -92,6 +93,10 @@ typedef union {
     fp_angles_def angles;
 } fp_angles_t;
 
+typedef struct fp_rotationMatrix_s {
+    float m[3][3];              // matrix
+} fp_rotationMatrix_t;
+
 int gcd(int num, int denom);
 float powerf(float base, int exp);
 int32_t applyDeadband(int32_t value, int32_t deadband);
@@ -109,7 +114,8 @@ float scaleRangef(float x, float srcFrom, float srcTo, float destFrom, float des
 void normalizeV(struct fp_vector *src, struct fp_vector *dest);
 
 void rotateV(struct fp_vector *v, fp_angles_t *delta);
-void buildRotationMatrix(fp_angles_t *delta, float matrix[3][3]);
+void buildRotationMatrix(fp_angles_t *delta, fp_rotationMatrix_t *rotation);
+void applyRotation(float *v, fp_rotationMatrix_t *rotationMatrix);
 
 int32_t quickMedianFilter3(int32_t * v);
 int32_t quickMedianFilter5(int32_t * v);

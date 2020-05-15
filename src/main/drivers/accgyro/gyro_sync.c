@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -47,46 +47,44 @@ bool gyroSyncCheckUpdate(gyroDev_t *gyro)
     return ret;
 }
 
-uint32_t gyroSetSampleRate(gyroDev_t *gyro, uint8_t lpf, uint8_t gyroSyncDenominator, bool gyro_use_32khz)
+uint16_t gyroSetSampleRate(gyroDev_t *gyro)
 {
-    float gyroSamplePeriod;
+    uint16_t gyroSampleRateHz;
+    uint16_t accSampleRateHz;
 
-    if (lpf == GYRO_HARDWARE_LPF_NORMAL || lpf == GYRO_HARDWARE_LPF_EXPERIMENTAL) {
-        if (gyro_use_32khz) {
-            gyro->gyroRateKHz = GYRO_RATE_32_kHz;
-            gyroSamplePeriod = 31.25f;
-        } else {
-            switch (gyro->mpuDetectionResult.sensor) {
-            case BMI_160_SPI:
+    switch (gyro->mpuDetectionResult.sensor) {
+        case BMI_160_SPI:
+            gyro->gyroRateKHz = GYRO_RATE_3200_Hz;
+            gyroSampleRateHz = 3200;
+            accSampleRateHz = 800;
+            break;
+        case BMI_270_SPI:
+#ifdef USE_GYRO_DLPF_EXPERIMENTAL
+            if (gyro->hardware_lpf == GYRO_HARDWARE_LPF_EXPERIMENTAL) {
+                // 6.4KHz sampling, but data is unfiltered (no hardware DLPF)
+                gyro->gyroRateKHz = GYRO_RATE_6400_Hz;
+                gyroSampleRateHz = 6400;
+            } else
+#endif
+            {
                 gyro->gyroRateKHz = GYRO_RATE_3200_Hz;
-                gyroSamplePeriod = 312.0f;
-                break;
-            case ICM_20649_SPI:
-                gyro->gyroRateKHz = GYRO_RATE_9_kHz;
-                gyroSamplePeriod = 1000000.0f / 9000.0f;
-                break;
-            default:
-                gyro->gyroRateKHz = GYRO_RATE_8_kHz;
-                gyroSamplePeriod = 125.0f;
-                break;
+                gyroSampleRateHz = 3200;
             }
-        }
-    } else {
-        switch (gyro->mpuDetectionResult.sensor) {
+            accSampleRateHz = 800;
+            break;
         case ICM_20649_SPI:
-            gyro->gyroRateKHz = GYRO_RATE_1100_Hz;
-            gyroSamplePeriod = 1000000.0f / 1100.0f;
+            gyro->gyroRateKHz = GYRO_RATE_9_kHz;
+            gyroSampleRateHz = 9000;
+            accSampleRateHz = 1125;
             break;
         default:
-            gyro->gyroRateKHz = GYRO_RATE_1_kHz;
-            gyroSamplePeriod = 1000.0f;
+            gyro->gyroRateKHz = GYRO_RATE_8_kHz;
+            gyroSampleRateHz = 8000;
+            accSampleRateHz = 1000;
             break;
-        }
-        gyroSyncDenominator = 1; // Always full Sampling 1khz
     }
 
-    // calculate gyro divider and targetLooptime (expected cycleTime)
-    gyro->mpuDividerDrops  = gyroSyncDenominator - 1;
-    const uint32_t targetLooptime = (uint32_t)(gyroSyncDenominator * gyroSamplePeriod);
-    return targetLooptime;
+    gyro->mpuDividerDrops  = 0; // we no longer use the gyro's sample divider
+    gyro->accSampleRateHz = accSampleRateHz;
+    return gyroSampleRateHz;
 }

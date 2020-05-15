@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -39,6 +39,9 @@ typedef uint64_t timeUs_t;
 typedef uint32_t timeUs_t;
 #define TIMEUS_MAX UINT32_MAX
 #endif
+
+#define TIMEZONE_OFFSET_MINUTES_MIN -780  // -13 hours
+#define TIMEZONE_OFFSET_MINUTES_MAX 780   // +13 hours
 
 static inline timeDelta_t cmpTimeUs(timeUs_t a, timeUs_t b) { return (timeDelta_t)(a - b); }
 
@@ -95,4 +98,6 @@ bool rtcSet(rtcTime_t *t);
 bool rtcGetDateTime(dateTime_t *dt);
 bool rtcSetDateTime(dateTime_t *dt);
 
+void rtcPersistWrite(int16_t offsetMinutes);
+bool rtcPersistRead(rtcTime_t *t);
 #endif

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -19,6 +19,8 @@
  */
 
 #pragma once
+
+#include "drivers/pwm_output.h"
 
 #define ESCSERIAL_BUFFER_SIZE 1024
 
@@ -37,7 +39,8 @@ typedef enum {
 } escProtocol_e;
 
 // serialPort API
-void escEnablePassthrough(serialPort_t *escPassthroughPort, uint16_t output, uint8_t mode);
+struct motorDevConfig_s;
+bool escEnablePassthrough(serialPort_t *escPassthroughPort, const struct motorDevConfig_s *motorConfig, uint16_t escIndex, uint8_t mode);
 
 typedef struct escSerialConfig_s {
     ioTag_t ioTag;

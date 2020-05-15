@@ -1,5 +1,5 @@
 ## SITL in gazebo 8 with ArduCopterPlugin
-SITL (software in the loop) simulator allows you to run betaflight/cleanflight without any hardware.
+SITL (software in the loop) simulator allows you to run the firmware without any hardware.
 Currently only tested on Ubuntu 16.04, x86_64, gcc (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609.
 
 ### install gazebo 8
@@ -21,7 +21,7 @@ see [here](http://gazebosim.org/tutorials?tut=modifying_world&cat=build_world#Ph
 `max_step_size` should NOT higher than `0.0025` as I tested.
 smaller mean more accurate, but need higher speed CPU to run as realtime.
 
-### build betaflight
+### build the firmware
 run `make TARGET=SITL`
 
 ### settings
@@ -33,13 +33,13 @@ In `configuration` page:
 2. `PID loop frequency` as high as it can.
 
 ### start and run
-1. start betaflight: `./obj/main/betaflight_SITL.elf`
+1. start the firmware: `./obj/main/cleanflight_SITL.elf`
 2. start gazebo: `gazebo --verbose ./iris_arducopter_demo.world`
 4. connect your transmitter and fly/test, I used a app to send `MSP_SET_RAW_RC`, code available [here](https://github.com/cs8425/msp-controller).
 
 ### note
-betaflight	->	gazebo	`udp://127.0.0.1:9002`
-gazebo	->	betaflight	`udp://127.0.0.1:9003`
+firmware	->	gazebo	`udp://127.0.0.1:9002`
+gazebo	->	firmware	`udp://127.0.0.1:9003`
 
 UARTx will bind on `tcp://127.0.0.1:576x` when port been open.
 

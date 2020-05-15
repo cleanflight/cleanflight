@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -47,7 +47,7 @@
 #include "io/gps.h"
 #include "io/serial.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/runtime_config.h"
 
 #include "flight/imu.h"
@@ -77,28 +77,17 @@ static char *gpsPacketLogChar = gpsPacketLog;
 int32_t GPS_home[2];
 uint16_t GPS_distanceToHome;        // distance to home point in meters
 int16_t GPS_directionToHome;        // direction to home or hol point in degrees
+uint32_t GPS_distanceFlownInCm;     // distance flown since armed in centimeters
+int16_t GPS_verticalSpeedInCmS;     // vertical speed in cm/s
 float dTnav;             // Delta Time in milliseconds for navigation computations, updated with every good GPS read
-int16_t actual_speed[2] = { 0, 0 };
 int16_t nav_takeoff_bearing;
-navigationMode_e nav_mode = NAV_MODE_NONE;    // Navigation mode
 
-// moving average filter variables
-#define GPS_FILTERING              1    // add a 5 element moving average filter to GPS coordinates, helps eliminate gps noise but adds latency
-#ifdef GPS_FILTERING
-#define GPS_FILTER_VECTOR_LENGTH 5
-static uint8_t GPS_filter_index = 0;
-static int32_t GPS_filter[2][GPS_FILTER_VECTOR_LENGTH];
-static int32_t GPS_filter_sum[2];
-static int32_t GPS_read[2];
-static int32_t GPS_filtered[2];
-static int32_t GPS_degree[2];   //the lat lon degree without any decimals (lat/10 000 000)
-static uint16_t fraction3[2];
-#endif
+#define GPS_DISTANCE_FLOWN_MIN_SPEED_THRESHOLD_CM_S 15 // 5.4Km/h 3.35mph
 
 gpsSolutionData_t gpsSol;
 uint32_t GPS_packetCount = 0;
 uint32_t GPS_svInfoReceivedCount = 0; // SV = Space Vehicle, counter increments each time SV info is received.
-uint8_t GPS_update = 0;             // it's a binary toggle to distinct a GPS position update
+uint8_t GPS_update = 0;             // toogle to distinct a GPS position update (directly or via MSP)
 
 uint8_t GPS_numCh;                          // Number of channels
 uint8_t GPS_svinfo_chn[GPS_SV_MAXSATS];     // Channel number
@@ -138,26 +127,10 @@ static const gpsInitData_t gpsInitData[] = {
 #ifdef USE_GPS_UBLOX
 static const uint8_t ubloxInit[] = {
     //Preprocessor Pedestrian Dynamic Platform Model Option
-    #if defined(GPS_UBLOX_MODE_PEDESTRIAN)
     0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x03, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
-    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Pedistrian and
+    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Pedestrian and
     0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,           // capturing the data from the U-Center binary console.
     0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0xC2,
-
-    //Preprocessor Airborne_1g Dynamic Platform Model Option
-    #elif defined(GPS_UBLOX_MODE_AIRBORNE_1G)
-    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x06, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
-    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Airborne with
-    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,           // <1g acceleration and capturing the data from the U-Center binary console.
-    0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1A, 0x28,
-
-    //Default Airborne_4g Dynamic Platform Model
-    #else
-    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
-    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Airborne with
-    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,           // <4g acceleration and capturing the data from the U-Center binary console.
-    0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x6C,
-    #endif
 
     // DISABLE NMEA messages
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x05, 0x00, 0xFF, 0x19,           // VGS: Course over ground and Ground speed
@@ -178,52 +151,84 @@ static const uint8_t ubloxInit[] = {
     0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A,             // set rate to 5Hz (measurement period: 200ms, navigation rate: 1 cycle)
 };
 
-// UBlox 6 Protocol documentation - GPS.G6-SW-10018-F
-// SBAS Configuration Settings Desciption, Page 4/210
-// 31.21 CFG-SBAS (0x06 0x16), Page 142/210
-// A.10 SBAS Configuration (UBX-CFG-SBAS), Page 198/210 - GPS.G6-SW-10018-F
+static const uint8_t ubloxAirborne[] = {
+    //Preprocessor Airborne_1g Dynamic Platform Model Option
+    #if defined(GPS_UBLOX_MODE_AIRBORNE_1G)
+    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x06, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
+    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Airborne with
+    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,           // <1g acceleration and capturing the data from the U-Center binary console.
+    0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1A, 0x28,
 
-#define UBLOX_SBAS_PREFIX_LENGTH 10
-
-static const uint8_t ubloxSbasPrefix[UBLOX_SBAS_PREFIX_LENGTH] = { 0xB5, 0x62, 0x06, 0x16, 0x08, 0x00, 0x03, 0x07, 0x03, 0x00 };
-
-#define UBLOX_SBAS_MESSAGE_LENGTH 6
-typedef struct ubloxSbas_s {
-    sbasMode_e mode;
-    uint8_t message[UBLOX_SBAS_MESSAGE_LENGTH];
-} ubloxSbas_t;
-
-
-
-// Note: these must be defined in the same order is sbasMode_e since no lookup table is used.
-static const ubloxSbas_t ubloxSbas[] = {
-    // NOTE this could be optimized to save a few bytes of flash space since the same prefix is used for each command.
-    { SBAS_AUTO,  { 0x00, 0x00, 0x00, 0x00, 0x31, 0xE5}},
-    { SBAS_EGNOS, { 0x51, 0x08, 0x00, 0x00, 0x8A, 0x41}},
-    { SBAS_WAAS,  { 0x04, 0xE0, 0x04, 0x00, 0x19, 0x9D}},
-    { SBAS_MSAS,  { 0x00, 0x02, 0x02, 0x00, 0x35, 0xEF}},
-    { SBAS_GAGAN, { 0x80, 0x01, 0x00, 0x00, 0xB2, 0xE8}}
+    //Default Airborne_4g Dynamic Platform Model
+    #else
+    0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x08, 0x03, 0x00,           // CFG-NAV5 - Set engine settings
+    0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x05, 0x00, 0xFA, 0x00,           // Collected by resetting a GPS unit to defaults. Changing mode to Airborne with
+    0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x3C, 0x00, 0x00, 0x00,           // <4g acceleration and capturing the data from the U-Center binary console.
+    0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x6C,
+    #endif
 };
 
-// Remove QZSS and add Galileo (only 3 GNSS systems supported simultaneously)
-// Frame captured from uCenter
-static const uint8_t ubloxGalileoInit[] = {
-        0xB5, 0x62, 0x06, 0x3E, 0x3C,                       // UBX-CGF-GNSS
-        0x00, 0x00, 0x20, 0x20, 0x07,                       // GNSS
-        0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01,     // GPS
-        0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,     // SBAS
-        0x02, 0x04, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01,     // Galileo
-        0x03, 0x08, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01,     // BeiDou
-        0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x03,     // IMES
-        0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x05,     // QZSS
-        0x06, 0x08, 0x0E, 0x00, 0x01, 0x00, 0x01, 0x01,     // GLONASS
-        0x55, 0x47
-};
+typedef struct {
+    uint8_t preamble1;
+    uint8_t preamble2;
+    uint8_t msg_class;
+    uint8_t msg_id;
+    uint16_t length;
+} ubx_header;
+
+typedef struct {
+    uint8_t mode;
+    uint8_t usage;
+    uint8_t maxSBAS;
+    uint8_t scanmode2;
+    uint32_t scanmode1;
+} ubx_sbas;
+
+typedef struct {
+    uint8_t gnssId;
+    uint8_t resTrkCh;
+    uint8_t maxTrkCh;
+    uint8_t reserved1;
+    uint32_t flags;
+} ubx_configblock;
+
+typedef struct {
+    uint8_t msgVer;
+    uint8_t numTrkChHw;
+    uint8_t numTrkChUse;
+    uint8_t numConfigBlocks;
+    ubx_configblock configblocks[7];
+} ubx_gnss;
+
+typedef union {
+    ubx_sbas sbas;
+    ubx_gnss gnss;
+} ubx_payload;
+
+typedef struct {
+    ubx_header header;
+    ubx_payload payload;
+} __attribute__((packed)) ubx_message;
+
+#define UBLOX_MODE_ENABLED    0x1
+#define UBLOX_MODE_TEST       0x2
+
+#define UBLOX_USAGE_RANGE     0x1
+#define UBLOX_USAGE_DIFFCORR  0x2
+#define UBLOX_USAGE_INTEGRITY 0x4
+
+#define UBLOX_GNSS_ENABLE     0x1
+#define UBLOX_GNSS_DEFAULT_SIGCFGMASK 0x10000
+
+#define UBLOX_SBAS_MESSAGE_LENGTH 14
+#define UBLOX_GNSS_MESSAGE_LENGTH 66
+
 #endif // USE_GPS_UBLOX
 
 typedef enum {
     GPS_UNKNOWN,
     GPS_INITIALIZING,
+    GPS_INITIALIZED,
     GPS_CHANGE_BAUD,
     GPS_CONFIGURE,
     GPS_RECEIVING_DATA,
@@ -237,10 +242,14 @@ PG_REGISTER_WITH_RESET_TEMPLATE(gpsConfig_t, gpsConfig, PG_GPS_CONFIG, 0);
 
 PG_RESET_TEMPLATE(gpsConfig_t, gpsConfig,
     .provider = GPS_NMEA,
-    .sbasMode = SBAS_AUTO,
+    .sbasMode = SBAS_NONE,
     .autoConfig = GPS_AUTOCONFIG_ON,
     .autoBaud = GPS_AUTOBAUD_OFF,
-    .gps_ublox_use_galileo = false
+    .gps_ublox_use_galileo = false,
+    .gps_ublox_mode = UBLOX_AIRBORNE,
+    .gps_set_home_point_once = false,
+    .gps_use_3d_speed = false,
+    .sbas_integrity = false
 );
 
 static void shiftPacketLog(void)
@@ -281,7 +290,12 @@ void gpsInit(void)
 
     gpsData.lastMessage = millis();
 
-    serialPortConfig_t *gpsPortConfig = findSerialPortConfig(FUNCTION_GPS);
+    if (gpsConfig()->provider == GPS_MSP) { // no serial ports used when GPS_MSP is configured
+        gpsSetState(GPS_INITIALIZED);
+        return;
+    }
+
+    const serialPortConfig_t *gpsPortConfig = findSerialPortConfig(FUNCTION_GPS);
     if (!gpsPortConfig) {
         return;
     }
@@ -364,6 +378,35 @@ void gpsInitNmea(void)
 #endif // USE_GPS_NMEA
 
 #ifdef USE_GPS_UBLOX
+static void ubloxSendByteUpdateChecksum(const uint8_t data, uint8_t *checksumA, uint8_t *checksumB)
+{
+    *checksumA += data;
+    *checksumB += *checksumA;
+    serialWrite(gpsPort, data);
+}
+
+static void ubloxSendDataUpdateChecksum(const uint8_t *data, uint8_t len, uint8_t *checksumA, uint8_t *checksumB)
+{
+    while (len--) {
+        ubloxSendByteUpdateChecksum(*data, checksumA, checksumB);
+        data++;
+    }
+}
+
+static void ubloxSendConfigMessage(const uint8_t *data, uint8_t len)
+{
+    uint8_t checksumA = 0, checksumB = 0;
+    serialWrite(gpsPort, data[0]);
+    serialWrite(gpsPort, data[1]);
+    ubloxSendDataUpdateChecksum(&data[2], len-2, &checksumA, &checksumB);
+    serialWrite(gpsPort, checksumA);
+    serialWrite(gpsPort, checksumB);
+
+    // Save state for ACK waiting
+    gpsData.ackWaitingMsgId = data[3]; //save message id for ACK
+    gpsData.ackState = UBLOX_ACK_WAITING;
+}
+
 void gpsInitUblox(void)
 {
     uint32_t now;
@@ -418,40 +461,165 @@ void gpsInitUblox(void)
             }
 
             if (gpsData.messageState == GPS_MESSAGE_STATE_INIT) {
-
                 if (gpsData.state_position < sizeof(ubloxInit)) {
-                    serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
+                    if (gpsData.state_position < sizeof(ubloxAirborne)) {
+                        if (gpsConfig()->gps_ublox_mode == UBLOX_AIRBORNE) {
+                            serialWrite(gpsPort, ubloxAirborne[gpsData.state_position]);
+                        } else {
+                            serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
+                        }
+                    } else {
+                        serialWrite(gpsPort, ubloxInit[gpsData.state_position]);
+                    }
                     gpsData.state_position++;
                 } else {
                     gpsData.state_position = 0;
                     gpsData.messageState++;
+                    gpsData.ackState = UBLOX_ACK_IDLE;
                 }
             }
 
             if (gpsData.messageState == GPS_MESSAGE_STATE_SBAS) {
-                if (gpsData.state_position < UBLOX_SBAS_PREFIX_LENGTH) {
-                    serialWrite(gpsPort, ubloxSbasPrefix[gpsData.state_position]);
-                    gpsData.state_position++;
-                } else if (gpsData.state_position < UBLOX_SBAS_PREFIX_LENGTH + UBLOX_SBAS_MESSAGE_LENGTH) {
-                    serialWrite(gpsPort, ubloxSbas[gpsConfig()->sbasMode].message[gpsData.state_position - UBLOX_SBAS_PREFIX_LENGTH]);
-                    gpsData.state_position++;
-                } else {
-                    gpsData.state_position = 0;
-                    gpsData.messageState++;
+                switch (gpsData.ackState) {
+                    case UBLOX_ACK_IDLE:
+                        {
+                            ubx_message tx_buffer;
+                            tx_buffer.header.preamble1 = 0xB5;
+                            tx_buffer.header.preamble2 = 0x62;
+                            tx_buffer.header.msg_class = 0x06;
+                            tx_buffer.header.msg_id = 0x16;
+                            tx_buffer.header.length = 8;
+
+                            //NOTE: default ublox config for sbas mode is: UBLOX_MODE_ENABLED, test is disabled
+                            tx_buffer.payload.sbas.mode = UBLOX_MODE_TEST;
+                            if (gpsConfig()->sbasMode != SBAS_NONE) {
+                                tx_buffer.payload.sbas.mode |= UBLOX_MODE_ENABLED;
+                            }
+
+                            //NOTE: default ublox config for sbas mode is: UBLOX_USAGE_RANGE | UBLOX_USAGE_DIFFCORR, integrity is disabled
+                            tx_buffer.payload.sbas.usage = UBLOX_USAGE_RANGE | UBLOX_USAGE_DIFFCORR;
+                            if (gpsConfig()->sbas_integrity) {
+                                tx_buffer.payload.sbas.usage |= UBLOX_USAGE_INTEGRITY;
+                            }
+
+                            tx_buffer.payload.sbas.maxSBAS = 3;
+                            tx_buffer.payload.sbas.scanmode2 = 0;
+                            switch (gpsConfig()->sbasMode) {
+                                case SBAS_AUTO:
+                                    tx_buffer.payload.sbas.scanmode1 = 0; 
+                                    break;
+                                case SBAS_EGNOS:
+                                    tx_buffer.payload.sbas.scanmode1 = 0x00010048; //PRN123, PRN126, PRN136
+                                    break;
+                                case SBAS_WAAS:
+                                    tx_buffer.payload.sbas.scanmode1 = 0x0004A800; //PRN131, PRN133, PRN135, PRN138
+                                    break;
+                                case SBAS_MSAS:
+                                    tx_buffer.payload.sbas.scanmode1 = 0x00020200; //PRN129, PRN137
+                                    break;
+                                case SBAS_GAGAN:
+                                    tx_buffer.payload.sbas.scanmode1 = 0x00001180; //PRN127, PRN128, PRN132
+                                    break;
+                                default:
+                                    tx_buffer.payload.sbas.scanmode1 = 0; 
+                                    break;
+                            }
+                            ubloxSendConfigMessage((const uint8_t *) &tx_buffer, UBLOX_SBAS_MESSAGE_LENGTH);
+                        }
+                        break;
+                    case UBLOX_ACK_GOT_NACK: //TODO: implement a retry count, for now just ignore errors as the rest of the code is doing
+                    case UBLOX_ACK_GOT_ACK:
+                        gpsData.state_position = 0;
+                        gpsData.ackState = UBLOX_ACK_IDLE;
+                        gpsData.messageState++;
+                        break;
+                    default:
+                        break;
                 }
             }
 
-            if (gpsData.messageState == GPS_MESSAGE_STATE_GALILEO) {
-                if ((gpsConfig()->gps_ublox_use_galileo) && (gpsData.state_position < sizeof(ubloxGalileoInit))) {
-                    serialWrite(gpsPort, ubloxGalileoInit[gpsData.state_position]);
-                    gpsData.state_position++;
-                } else {
-                    gpsData.state_position = 0;
-                    gpsData.messageState++;
+            if (gpsData.messageState == GPS_MESSAGE_STATE_GNSS) {
+                switch (gpsData.ackState) {
+                    case UBLOX_ACK_IDLE:
+                        {
+                            ubx_message tx_buffer;
+                            tx_buffer.header.preamble1 = 0xB5;
+                            tx_buffer.header.preamble2 = 0x62;
+                            tx_buffer.header.msg_class = 0x06;
+                            tx_buffer.header.msg_id = 0x3E;
+                            tx_buffer.header.length = 60;
+
+                            tx_buffer.payload.gnss.msgVer = 0;
+                            tx_buffer.payload.gnss.numTrkChHw = 32;
+                            tx_buffer.payload.gnss.numTrkChUse = 32;
+                            tx_buffer.payload.gnss.numConfigBlocks = 7;
+
+                            tx_buffer.payload.gnss.configblocks[0].gnssId = 0;    //GPS
+                            tx_buffer.payload.gnss.configblocks[0].resTrkCh = 8;  //min channels
+                            tx_buffer.payload.gnss.configblocks[0].maxTrkCh = 16; //max channels
+                            tx_buffer.payload.gnss.configblocks[0].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[0].flags = UBLOX_GNSS_ENABLE | UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x01000000; //last number is undocumented and was captured from uCenter
+
+                            tx_buffer.payload.gnss.configblocks[1].gnssId = 1;    //SBAS
+                            tx_buffer.payload.gnss.configblocks[1].resTrkCh = 1;  //min channels
+                            tx_buffer.payload.gnss.configblocks[1].maxTrkCh = 3;  //max channels
+                            tx_buffer.payload.gnss.configblocks[1].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[1].flags = UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x01000000; //last number is undocumented and was captured from uCenter
+                            if (gpsConfig()->sbasMode != SBAS_NONE) {
+                                tx_buffer.payload.gnss.configblocks[1].flags |= UBLOX_GNSS_ENABLE;
+                            }
+
+                            tx_buffer.payload.gnss.configblocks[2].gnssId = 2;    //Galileo
+                            tx_buffer.payload.gnss.configblocks[2].resTrkCh = 4;  //min channels
+                            tx_buffer.payload.gnss.configblocks[2].maxTrkCh = 8;  //max channels
+                            tx_buffer.payload.gnss.configblocks[2].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[2].flags = UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x01000000; //last number is undocumented and was captured from uCenter
+                            if (gpsConfig()->gps_ublox_use_galileo) {
+                                tx_buffer.payload.gnss.configblocks[2].flags |= UBLOX_GNSS_ENABLE;
+                            }
+
+                            tx_buffer.payload.gnss.configblocks[3].gnssId = 3;    //BeiDou
+                            tx_buffer.payload.gnss.configblocks[3].resTrkCh = 8;  //min channels
+                            tx_buffer.payload.gnss.configblocks[3].maxTrkCh = 16;  //max channels
+                            tx_buffer.payload.gnss.configblocks[3].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[3].flags = UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x01000000; //last number is undocumented and was captured from uCenter
+
+                            tx_buffer.payload.gnss.configblocks[4].gnssId = 4;    //IMES
+                            tx_buffer.payload.gnss.configblocks[4].resTrkCh = 0;  //min channels
+                            tx_buffer.payload.gnss.configblocks[4].maxTrkCh = 8;  //max channels
+                            tx_buffer.payload.gnss.configblocks[4].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[4].flags = UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x03000000; //last number is undocumented and was captured from uCenter
+
+                            tx_buffer.payload.gnss.configblocks[5].gnssId = 5;    //QZSS
+                            tx_buffer.payload.gnss.configblocks[5].resTrkCh = 0;  //min channels
+                            tx_buffer.payload.gnss.configblocks[5].maxTrkCh = 3;  //max channels
+                            tx_buffer.payload.gnss.configblocks[5].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[5].flags = UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x05000000; //last number is undocumented and was captured from uCenter
+                            if (!gpsConfig()->gps_ublox_use_galileo) {
+                                tx_buffer.payload.gnss.configblocks[5].flags |= UBLOX_GNSS_ENABLE;
+                            }
+
+                            tx_buffer.payload.gnss.configblocks[6].gnssId = 6;    //GLONASS
+                            tx_buffer.payload.gnss.configblocks[6].resTrkCh = 8;  //min channels
+                            tx_buffer.payload.gnss.configblocks[6].maxTrkCh = 14; //max channels
+                            tx_buffer.payload.gnss.configblocks[6].reserved1 = 0;
+                            tx_buffer.payload.gnss.configblocks[6].flags = UBLOX_GNSS_ENABLE | UBLOX_GNSS_DEFAULT_SIGCFGMASK | 0x01000000; //last number is undocumented and was captured from uCenter
+                            
+                            ubloxSendConfigMessage((const uint8_t *) &tx_buffer, UBLOX_GNSS_MESSAGE_LENGTH);
+                        }
+                        break;
+                    case UBLOX_ACK_GOT_NACK: //TODO: implement a retry count, for now just ignore errors as the rest of the code is doing
+                    case UBLOX_ACK_GOT_ACK:
+                        gpsData.state_position = 0;
+                        gpsData.ackState = UBLOX_ACK_IDLE;
+                        gpsData.messageState++;
+                        break;
+                    default:
+                        break;
                 }
             }
 
-            if (gpsData.messageState >= GPS_MESSAGE_STATE_ENTRY_COUNT) {
+            if (gpsData.messageState >= GPS_MESSAGE_STATE_INITIALIZED) {
                 // ublox should be initialised, try receiving
                 gpsSetState(GPS_RECEIVING_DATA);
             }
@@ -474,6 +642,8 @@ void gpsInitHardware(void)
         gpsInitUblox();
 #endif
         break;
+    default:
+        break;
     }
 }
 
@@ -492,10 +662,17 @@ void gpsUpdate(timeUs_t currentTimeUs)
     if (gpsPort) {
         while (serialRxBytesWaiting(gpsPort))
             gpsNewData(serialRead(gpsPort));
+    } else if (GPS_update & GPS_MSP_UPDATE) { // GPS data received via MSP
+        gpsSetState(GPS_RECEIVING_DATA);
+        gpsData.lastMessage = millis();
+        sensorsSet(SENSOR_GPS);
+        onGpsNewData();
+        GPS_update &= ~GPS_MSP_UPDATE;
     }
 
     switch (gpsData.state) {
         case GPS_UNKNOWN:
+        case GPS_INITIALIZED:
             break;
 
         case GPS_INITIALIZING:
@@ -523,11 +700,33 @@ void gpsUpdate(timeUs_t currentTimeUs)
                 // remove GPS from capability
                 sensorsClear(SENSOR_GPS);
                 gpsSetState(GPS_LOST_COMMUNICATION);
+#ifdef USE_GPS_UBLOX
+            } else {
+                if (gpsConfig()->autoConfig == GPS_AUTOCONFIG_ON) { // Only if autoconfig is enabled
+                    if ((gpsData.messageState == GPS_MESSAGE_STATE_INITIALIZED) && STATE(GPS_FIX) && (gpsConfig()->gps_ublox_mode == UBLOX_DYNAMIC)) {
+                        gpsData.messageState = GPS_MESSAGE_STATE_PEDESTRIAN_TO_AIRBORNE;
+                        gpsData.state_position = 0;
+                    }
+                    if (gpsData.messageState == GPS_MESSAGE_STATE_PEDESTRIAN_TO_AIRBORNE) {
+                        if (gpsData.state_position < sizeof(ubloxAirborne)) {
+                            if (isSerialTransmitBufferEmpty(gpsPort)) {
+                                serialWrite(gpsPort, ubloxAirborne[gpsData.state_position]);
+                                gpsData.state_position++;
+                            }
+                        } else {
+                            gpsData.messageState = GPS_MESSAGE_STATE_ENTRY_COUNT;
+                        }
+                    }
+                }
+#endif //USE_GPS_UBLOX
             }
             break;
     }
     if (sensors(SENSOR_GPS)) {
         updateGpsIndicator(currentTimeUs);
+    }
+    if (!ARMING_FLAG(ARMED) && !gpsConfig()->gps_set_home_point_once) {
+        DISABLE_STATE(GPS_FIX_HOME);
     }
 #if defined(USE_GPS_RESCUE)
     if (gpsRescueIsConfigured()) {
@@ -547,10 +746,7 @@ static void gpsNewData(uint16_t c)
     gpsData.lastMessage = millis();
     sensorsSet(SENSOR_GPS);
 
-    if (GPS_update == 1)
-        GPS_update = 0;
-    else
-        GPS_update = 1;
+    GPS_update ^= GPS_DIRECT_TICK;
 
 #if 0
     debug[3] = GPS_update;
@@ -572,10 +768,17 @@ bool gpsNewFrame(uint8_t c)
         return gpsNewFrameUBLOX(c);
 #endif
         break;
+    default:
+        break;
     }
     return false;
 }
 
+// Check for healthy communications
+bool gpsIsHealthy()
+{
+    return (gpsData.state == GPS_RECEIVING_DATA);
+}
 
 /* This is a light implementation of a GPS frame decoding
    This should work with most of modern GPS devices configured to output 5 frames.
@@ -673,7 +876,7 @@ typedef struct gpsDataNmea_s {
     int32_t latitude;
     int32_t longitude;
     uint8_t numSat;
-    int32_t altitude;
+    int32_t altitudeCm;
     uint16_t speed;
     uint16_t hdop;
     uint16_t ground_course;
@@ -703,12 +906,13 @@ static bool gpsNewFrameNMEA(char c)
             string[offset] = 0;
             if (param == 0) {       //frame identification
                 gps_frame = NO_FRAME;
-                if (string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'G' && string[4] == 'A')
+                if (0 == strcmp(string, "GPGGA") || 0 == strcmp(string, "GNGGA")) {
                     gps_frame = FRAME_GGA;
-                if (string[0] == 'G' && string[1] == 'P' && string[2] == 'R' && string[3] == 'M' && string[4] == 'C')
+                } else if (0 == strcmp(string, "GPRMC") || 0 == strcmp(string, "GNRMC")) {
                     gps_frame = FRAME_RMC;
-                if (string[0] == 'G' && string[1] == 'P' && string[2] == 'G' && string[3] == 'S' && string[4] == 'V')
+                } else if (0 == strcmp(string, "GPGSV")) {
                     gps_frame = FRAME_GSV;
+                }
             }
 
             switch (gps_frame) {
@@ -744,7 +948,7 @@ static bool gpsNewFrameNMEA(char c)
                             gps_Msg.hdop = grab_fields(string, 1) * 100;          // hdop
                             break;
                         case 9:
-                            gps_Msg.altitude = grab_fields(string, 1) * 10;     // altitude in centimeters. Note: NMEA delivers altitude with 1 or 3 decimals. It's safer to cut at 0.1m and multiply by 10
+                            gps_Msg.altitudeCm = grab_fields(string, 1) * 10;     // altitude in centimeters. Note: NMEA delivers altitude with 1 or 3 decimals. It's safer to cut at 0.1m and multiply by 10
                             break;
                     }
                     break;
@@ -835,7 +1039,7 @@ static bool gpsNewFrameNMEA(char c)
                             gpsSol.llh.lat = gps_Msg.latitude;
                             gpsSol.llh.lon = gps_Msg.longitude;
                             gpsSol.numSat = gps_Msg.numSat;
-                            gpsSol.llh.alt = gps_Msg.altitude;
+                            gpsSol.llh.altCm = gps_Msg.altitudeCm;
                             gpsSol.hdop = gps_Msg.hdop;
                         }
                         break;
@@ -878,19 +1082,11 @@ static bool gpsNewFrameNMEA(char c)
 #ifdef USE_GPS_UBLOX
 // UBX support
 typedef struct {
-    uint8_t preamble1;
-    uint8_t preamble2;
-    uint8_t msg_class;
-    uint8_t msg_id;
-    uint16_t length;
-} ubx_header;
-
-typedef struct {
     uint32_t time;              // GPS msToW
     int32_t longitude;
     int32_t latitude;
     int32_t altitude_ellipsoid;
-    int32_t altitude_msl;
+    int32_t altitudeMslMm;
     uint32_t horizontal_accuracy;
     uint32_t vertical_accuracy;
 } ubx_nav_posllh;
@@ -955,6 +1151,11 @@ typedef struct {
     uint16_t reserved2;         // Reserved
     ubx_nav_svinfo_channel channel[16];         // 16 satellites * 12 byte
 } ubx_nav_svinfo;
+
+typedef struct {
+    uint8_t clsId;               // Class ID of the acknowledged message 
+    uint8_t msgId;               // Message ID of the acknowledged message
+} ubx_ack;
 
 enum {
     PREAMBLE1 = 0xb5,
@@ -1034,6 +1235,7 @@ static union {
     ubx_nav_solution solution;
     ubx_nav_velned velned;
     ubx_nav_svinfo svinfo;
+    ubx_ack ack;
     uint8_t bytes[UBLOX_PAYLOAD_SIZE];
 } _buffer;
 
@@ -1059,7 +1261,7 @@ static bool UBLOX_parse_gps(void)
         //i2c_dataset.time                = _buffer.posllh.time;
         gpsSol.llh.lon = _buffer.posllh.longitude;
         gpsSol.llh.lat = _buffer.posllh.latitude;
-        gpsSol.llh.alt = _buffer.posllh.altitude_msl / 10;  //alt in cm
+        gpsSol.llh.altCm = _buffer.posllh.altitudeMslMm / 10;  //alt in cm
         if (next_fix) {
             ENABLE_STATE(GPS_FIX);
         } else {
@@ -1091,7 +1293,7 @@ static bool UBLOX_parse_gps(void)
         break;
     case MSG_VELNED:
         *gpsPacketLogChar = LOG_UBLOX_VELNED;
-        // speed_3d                        = _buffer.velned.speed_3d;  // cm/s
+        gpsSol.speed3d = _buffer.velned.speed_3d;       // cm/s
         gpsSol.groundSpeed = _buffer.velned.speed_2d;    // cm/s
         gpsSol.groundCourse = (uint16_t) (_buffer.velned.heading_2d / 10000);     // Heading 2D deg * 100000 rescaled to deg * 10
         _new_speed = true;
@@ -1102,12 +1304,28 @@ static bool UBLOX_parse_gps(void)
         if (GPS_numCh > 16)
             GPS_numCh = 16;
         for (i = 0; i < GPS_numCh; i++) {
-            GPS_svinfo_chn[i]= _buffer.svinfo.channel[i].chn;
-            GPS_svinfo_svid[i]= _buffer.svinfo.channel[i].svid;
-            GPS_svinfo_quality[i]=_buffer.svinfo.channel[i].quality;
-            GPS_svinfo_cno[i]= _buffer.svinfo.channel[i].cno;
+            GPS_svinfo_chn[i] = _buffer.svinfo.channel[i].chn;
+            GPS_svinfo_svid[i] = _buffer.svinfo.channel[i].svid;
+            GPS_svinfo_quality[i] =_buffer.svinfo.channel[i].quality;
+            GPS_svinfo_cno[i] = _buffer.svinfo.channel[i].cno;
+        }
+        for (i = GPS_numCh; i < 16; i++) {
+            GPS_svinfo_chn[i] = 0;
+            GPS_svinfo_svid[i] = 0;
+            GPS_svinfo_quality[i] = 0;
+            GPS_svinfo_cno[i] = 0;
         }
         GPS_svInfoReceivedCount++;
+        break;
+    case MSG_ACK_ACK:
+        if ((gpsData.ackState == UBLOX_ACK_WAITING) && (_buffer.ack.msgId == gpsData.ackWaitingMsgId)) {
+            gpsData.ackState = UBLOX_ACK_GOT_ACK;
+        }
+        break;
+    case MSG_ACK_NACK:
+        if ((gpsData.ackState == UBLOX_ACK_WAITING) && (_buffer.ack.msgId == gpsData.ackWaitingMsgId)) {
+            gpsData.ackState = UBLOX_ACK_GOT_NACK;
+        }
         break;
     default:
         return false;
@@ -1213,7 +1431,7 @@ static void gpsHandlePassthrough(uint8_t data)
 {
      gpsNewData(data);
  #ifdef USE_DASHBOARD
-     if (feature(FEATURE_DASHBOARD)) {
+     if (featureIsEnabled(FEATURE_DASHBOARD)) {
          dashboardUpdate(micros());
      }
  #endif
@@ -1229,7 +1447,7 @@ void gpsEnablePassthrough(serialPort_t *gpsPassthroughPort)
         serialSetMode(gpsPort, gpsPort->mode | MODE_TX);
 
 #ifdef USE_DASHBOARD
-    if (feature(FEATURE_DASHBOARD)) {
+    if (featureIsEnabled(FEATURE_DASHBOARD)) {
         dashboardShowFixedPage(PAGE_GPS);
     }
 #endif
@@ -1241,20 +1459,59 @@ float GPS_scaleLonDown = 1.0f;  // this is used to offset the shrinking longitud
 
 void GPS_calc_longitude_scaling(int32_t lat)
 {
-    float rads = (ABS((float)lat) / 10000000.0f) * 0.0174532925f;
+    float rads = (fabsf((float)lat) / 10000000.0f) * 0.0174532925f;
     GPS_scaleLonDown = cos_approx(rads);
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+// Calculate the distance flown and vertical speed from gps position data
+//
+static void GPS_calculateDistanceFlownVerticalSpeed(bool initialize)
+{
+    static int32_t lastCoord[2] = { 0, 0 };
+    static int32_t lastAlt;
+    static int32_t lastMillis;
+
+    int currentMillis = millis();
+
+    if (initialize) {
+        GPS_distanceFlownInCm = 0;
+        GPS_verticalSpeedInCmS = 0;
+    } else {
+        if (STATE(GPS_FIX_HOME) && ARMING_FLAG(ARMED)) {
+            uint16_t speed = gpsConfig()->gps_use_3d_speed ? gpsSol.speed3d : gpsSol.groundSpeed;
+            // Only add up movement when speed is faster than minimum threshold
+            if (speed > GPS_DISTANCE_FLOWN_MIN_SPEED_THRESHOLD_CM_S) {
+                uint32_t dist;
+                int32_t dir;
+                GPS_distance_cm_bearing(&gpsSol.llh.lat, &gpsSol.llh.lon, &lastCoord[LAT], &lastCoord[LON], &dist, &dir);
+                if (gpsConfig()->gps_use_3d_speed) {
+                    dist = sqrtf(powf(gpsSol.llh.altCm - lastAlt, 2.0f) + powf(dist, 2.0f));
+                }
+                GPS_distanceFlownInCm += dist;
+            }
+        }
+        GPS_verticalSpeedInCmS = (gpsSol.llh.altCm - lastAlt) * 1000 / (currentMillis - lastMillis);
+        GPS_verticalSpeedInCmS = constrain(GPS_verticalSpeedInCmS, -1500, 1500);
+    }
+    lastCoord[LON] = gpsSol.llh.lon;
+    lastCoord[LAT] = gpsSol.llh.lat;
+    lastAlt = gpsSol.llh.altCm;
+    lastMillis = currentMillis;
+}
 
 void GPS_reset_home_position(void)
 {
-    if (STATE(GPS_FIX) && gpsSol.numSat >= 5) {
-        GPS_home[LAT] = gpsSol.llh.lat;
-        GPS_home[LON] = gpsSol.llh.lon;
-        GPS_calc_longitude_scaling(gpsSol.llh.lat); // need an initial value for distance and bearing calc
-        // Set ground altitude
-        ENABLE_STATE(GPS_FIX_HOME);
+    if (!STATE(GPS_FIX_HOME) || !gpsConfig()->gps_set_home_point_once) {
+        if (STATE(GPS_FIX) && gpsSol.numSat >= 5) {
+            GPS_home[LAT] = gpsSol.llh.lat;
+            GPS_home[LON] = gpsSol.llh.lon;
+            GPS_calc_longitude_scaling(gpsSol.llh.lat); // need an initial value for distance and bearing calc
+            // Set ground altitude
+            ENABLE_STATE(GPS_FIX_HOME);
+        }
     }
+    GPS_calculateDistanceFlownVerticalSpeed(true); //Initialize
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -1287,70 +1544,11 @@ void GPS_calculateDistanceAndDirectionToHome(void)
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////
-// Calculate our current speed vector from gps position data
-//
-static void GPS_calc_velocity(void)
-{
-    static int16_t speed_old[2] = { 0, 0 };
-    static int32_t last_coord[2] = { 0, 0 };
-    static uint8_t init = 0;
-
-    if (init) {
-        float tmp = 1.0f / dTnav;
-        actual_speed[GPS_X] = (float)(gpsSol.llh.lon - last_coord[LON]) * GPS_scaleLonDown * tmp;
-        actual_speed[GPS_Y] = (float)(gpsSol.llh.lat - last_coord[LAT]) * tmp;
-
-        actual_speed[GPS_X] = (actual_speed[GPS_X] + speed_old[GPS_X]) / 2;
-        actual_speed[GPS_Y] = (actual_speed[GPS_Y] + speed_old[GPS_Y]) / 2;
-
-        speed_old[GPS_X] = actual_speed[GPS_X];
-        speed_old[GPS_Y] = actual_speed[GPS_Y];
-    }
-    init = 1;
-
-    last_coord[LON] = gpsSol.llh.lon;
-    last_coord[LAT] = gpsSol.llh.lat;
-}
-
 void onGpsNewData(void)
 {
     if (!(STATE(GPS_FIX) && gpsSol.numSat >= 5)) {
         return;
     }
-
-    if (!ARMING_FLAG(ARMED))
-        DISABLE_STATE(GPS_FIX_HOME);
-
-    if (!STATE(GPS_FIX_HOME) && ARMING_FLAG(ARMED))
-        GPS_reset_home_position();
-
-    // Apply moving average filter to GPS data
-#if defined(GPS_FILTERING)
-    GPS_filter_index = (GPS_filter_index + 1) % GPS_FILTER_VECTOR_LENGTH;
-    for (int axis = 0; axis < 2; axis++) {
-        GPS_read[axis] = axis == LAT ? gpsSol.llh.lat : gpsSol.llh.lon; // latest unfiltered data is in GPS_latitude and GPS_longitude
-        GPS_degree[axis] = GPS_read[axis] / 10000000;   // get the degree to assure the sum fits to the int32_t
-
-        // How close we are to a degree line ? its the first three digits from the fractions of degree
-        // later we use it to Check if we are close to a degree line, if yes, disable averaging,
-        fraction3[axis] = (GPS_read[axis] - GPS_degree[axis] * 10000000) / 10000;
-
-        GPS_filter_sum[axis] -= GPS_filter[axis][GPS_filter_index];
-        GPS_filter[axis][GPS_filter_index] = GPS_read[axis] - (GPS_degree[axis] * 10000000);
-        GPS_filter_sum[axis] += GPS_filter[axis][GPS_filter_index];
-        GPS_filtered[axis] = GPS_filter_sum[axis] / GPS_FILTER_VECTOR_LENGTH + (GPS_degree[axis] * 10000000);
-        if (nav_mode == NAV_MODE_POSHOLD) {             // we use gps averaging only in poshold mode...
-            if (fraction3[axis] > 1 && fraction3[axis] < 999) {
-                if (axis == LAT) {
-                    gpsSol.llh.lat = GPS_filtered[LAT];
-                } else {
-                    gpsSol.llh.lon = GPS_filtered[LON];
-                }
-            }
-        }
-    }
-#endif
 
     //
     // Calculate time delta for navigation loop, range 0-1.0f, in seconds
@@ -1363,8 +1561,9 @@ void onGpsNewData(void)
     dTnav = MIN(dTnav, 1.0f);
 
     GPS_calculateDistanceAndDirectionToHome();
-    // calculate the current velocity based on gps coordinates continously to get a valid speed at the moment when we start navigating
-    GPS_calc_velocity();
+    if (ARMING_FLAG(ARMED)) {
+        GPS_calculateDistanceFlownVerticalSpeed(false);
+    }
 
 #ifdef USE_GPS_RESCUE
     rescueNewGpsData();

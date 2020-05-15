@@ -6,7 +6,7 @@ This SpeedyBee F4 AIO board integrates the Bluetooth module, with SpeedyBee App,
 ### Hardware Features
 * MCU: STM32F405
 * IMU: MPU6000
-* OSD: BetaFlight OSD w/ AT7456E chip
+* OSD: Cleanflight OSD w/ AT7456E chip
 * BLE Module: inner connect to UART5 for remote setting with SpeedyBee App or other similar apps
 * BlackBox: 16Mb onboard dataflash
 * Current Sensor: 200A(Scale 608)

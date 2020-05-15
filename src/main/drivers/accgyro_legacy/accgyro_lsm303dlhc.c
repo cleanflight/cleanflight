@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -151,12 +151,6 @@ static bool lsm303dlhcAccRead(accDev_t *acc)
     acc->ADCRaw[Y] = (int16_t)((buf[3] << 8) | buf[2]) / 2;
     acc->ADCRaw[Z] = (int16_t)((buf[5] << 8) | buf[4]) / 2;
 
-#if 0
-    debug[0] = (int16_t)((buf[1] << 8) | buf[0]);
-    debug[1] = (int16_t)((buf[3] << 8) | buf[2]);
-    debug[2] = (int16_t)((buf[5] << 8) | buf[4]);
-#endif
-
     return true;
 }
 
@@ -166,8 +160,9 @@ bool lsm303dlhcAccDetect(accDev_t *acc)
     uint8_t status;
 
     ack = i2cRead(MPU_I2C_INSTANCE, LSM303DLHC_ACCEL_ADDRESS, LSM303DLHC_STATUS_REG_A, 1, &status);
-    if (!ack)
+    if (!ack) {
         return false;
+    }
 
     acc->initFn = lsm303dlhcAccInit;
     acc->readFn = lsm303dlhcAccRead;

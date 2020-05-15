@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -45,34 +45,36 @@ static int srxlScreenSize(const displayPort_t *displayPort)
     return displayPort->rows * displayPort->cols;
 }
 
-static int srxlWriteChar(displayPort_t *displayPort, uint8_t col, uint8_t row, uint8_t c)
+static int srxlWriteChar(displayPort_t *displayPort, uint8_t col, uint8_t row, uint8_t attr, uint8_t c)
 {
-    return (spektrumTmTextGenPutChar(col, row, c));
     UNUSED(displayPort);
+    UNUSED(attr);
+
+    return (spektrumTmTextGenPutChar(col, row, c));
 }
 
 
-static int srxlWriteString(displayPort_t *displayPort, uint8_t col, uint8_t row, const char *s)
+static int srxlWriteString(displayPort_t *displayPort, uint8_t col, uint8_t row, uint8_t attr, const char *s)
 {
     while (*s) {
-        srxlWriteChar(displayPort,  col++, row, *(s++));
+        srxlWriteChar(displayPort, col++, row, attr, *(s++));
     }
     return 0;
 }
 
 static int srxlClearScreen(displayPort_t *displayPort)
 {
-    for (int row = 0;  row < SPEKTRUM_SRXL_TEXTGEN_BUFFER_ROWS; row++) {
+    for (int row = 0; row < SPEKTRUM_SRXL_TEXTGEN_BUFFER_ROWS; row++) {
         for (int col= 0; col < SPEKTRUM_SRXL_TEXTGEN_BUFFER_COLS; col++) {
-            srxlWriteChar(displayPort, col, row, ' ');
+            srxlWriteChar(displayPort, col, row, DISPLAYPORT_ATTR_NONE, ' ');
         }
     }
-    srxlWriteString(displayPort, 1, 0,  "BETAFLIGHT");
+    srxlWriteString(displayPort, 1, 0, DISPLAYPORT_ATTR_NONE, "CLEANFLIGHT");
 
-    if ( displayPort->grabCount == 0 ) {
-        srxlWriteString(displayPort, 0, 2,  CMS_STARTUP_HELP_TEXT1);
-        srxlWriteString(displayPort, 2, 3,  CMS_STARTUP_HELP_TEXT2);
-        srxlWriteString(displayPort, 2, 4,  CMS_STARTUP_HELP_TEXT3);
+    if (displayPort->grabCount == 0) {
+        srxlWriteString(displayPort, 0, 2, DISPLAYPORT_ATTR_NONE, CMS_STARTUP_HELP_TEXT1);
+        srxlWriteString(displayPort, 2, 3, DISPLAYPORT_ATTR_NONE, CMS_STARTUP_HELP_TEXT2);
+        srxlWriteString(displayPort, 2, 4, DISPLAYPORT_ATTR_NONE, CMS_STARTUP_HELP_TEXT3);
     }
     return 0;
 }
@@ -130,7 +132,10 @@ static const displayPortVTable_t srxlVTable = {
     .heartbeat = srxlHeartbeat,
     .resync = srxlResync,
     .isSynced = srxlIsSynced,
-    .txBytesFree = srxlTxBytesFree
+    .txBytesFree = srxlTxBytesFree,
+    .layerSupported = NULL,
+    .layerSelect = NULL,
+    .layerCopy = NULL,
 };
 
 displayPort_t *displayPortSrxlInit()

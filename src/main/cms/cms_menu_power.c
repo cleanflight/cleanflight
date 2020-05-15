@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -37,12 +37,12 @@
 #include "sensors/current.h"
 #include "sensors/voltage.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 
 voltageMeterSource_e batteryConfig_voltageMeterSource;
 currentMeterSource_e batteryConfig_currentMeterSource;
 
-uint8_t batteryConfig_vbatmaxcellvoltage;
+uint16_t batteryConfig_vbatmaxcellvoltage;
 
 uint8_t voltageSensorADCConfig_vbatscale;
 
@@ -54,8 +54,10 @@ int16_t currentSensorVirtualConfig_scale;
 int16_t currentSensorVirtualConfig_offset;
 #endif
 
-static long cmsx_Power_onEnter(void)
+static const void *cmsx_Power_onEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     batteryConfig_voltageMeterSource = batteryConfig()->voltageMeterSource;
     batteryConfig_currentMeterSource = batteryConfig()->currentMeterSource;
 
@@ -71,11 +73,12 @@ static long cmsx_Power_onEnter(void)
     currentSensorVirtualConfig_offset = currentSensorVirtualConfig()->offset;
 #endif
 
-    return 0;
+    return NULL;
 }
 
-static long cmsx_Power_onExit(const OSD_Entry *self)
+static const void *cmsx_Power_onExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
     batteryConfigMutable()->voltageMeterSource = batteryConfig_voltageMeterSource;
@@ -93,17 +96,17 @@ static long cmsx_Power_onExit(const OSD_Entry *self)
     currentSensorVirtualConfigMutable()->offset = currentSensorVirtualConfig_offset;
 #endif
 
-    return 0;
+    return NULL;
 }
 
-static OSD_Entry cmsx_menuPowerEntries[] =
+static const OSD_Entry cmsx_menuPowerEntries[] =
 {
     { "-- POWER --", OME_Label, NULL, NULL, 0},
 
-    { "V METER", OME_TAB, NULL, &(OSD_TAB_t){ &batteryConfig_voltageMeterSource, VOLTAGE_METER_COUNT - 1, voltageMeterSourceNames }, 0 },
-    { "I METER", OME_TAB, NULL, &(OSD_TAB_t){ &batteryConfig_currentMeterSource, CURRENT_METER_COUNT - 1, currentMeterSourceNames }, 0 },
+    { "V METER", OME_TAB, NULL, &(OSD_TAB_t){ &batteryConfig_voltageMeterSource, VOLTAGE_METER_COUNT - 1, voltageMeterSourceNames }, REBOOT_REQUIRED },
+    { "I METER", OME_TAB, NULL, &(OSD_TAB_t){ &batteryConfig_currentMeterSource, CURRENT_METER_COUNT - 1, currentMeterSourceNames }, REBOOT_REQUIRED },
 
-    { "VBAT CLMAX", OME_UINT8, NULL, &(OSD_UINT8_t) { &batteryConfig_vbatmaxcellvoltage, 10, 50, 1 }, 0 },
+    { "VBAT CLMAX", OME_UINT16, NULL, &(OSD_UINT16_t) { &batteryConfig_vbatmaxcellvoltage, VBAT_CELL_VOTAGE_RANGE_MIN, VBAT_CELL_VOTAGE_RANGE_MAX, 1 }, 0 },
 
     { "VBAT SCALE", OME_UINT8, NULL, &(OSD_UINT8_t){ &voltageSensorADCConfig_vbatscale, VBAT_SCALE_MIN, VBAT_SCALE_MAX, 1 }, 0 },
 
@@ -126,6 +129,7 @@ CMS_Menu cmsx_menuPower = {
 #endif
     .onEnter = cmsx_Power_onEnter,
     .onExit = cmsx_Power_onExit,
+    .onDisplayUpdate = NULL,
     .entries = cmsx_menuPowerEntries
 };
 

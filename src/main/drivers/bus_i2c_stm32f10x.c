@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -35,7 +35,7 @@
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_i2c_impl.h"
 
-#define CLOCKSPEED 800000    // i2c clockspeed 400kHz default (conform specs), 800kHz  and  1200kHz (Betaflight default)
+#define CLOCKSPEED 800000    // i2c clockspeed 400kHz default (conform specs), 800kHz  and  1200kHz (firwmare default)
 
 // Number of bits in I2C protocol phase
 #define LEN_ADDR 7
@@ -86,7 +86,11 @@ const i2cHardware_t i2cHardware[I2CDEV_COUNT] = {
             I2CPINDEF(PF1,  GPIO_AF_I2C2),
         },
         .sdaPins = {
+#if defined(STM32F446xx)
+            I2CPINDEF(PC12, GPIO_AF_I2C2),
+#else
             I2CPINDEF(PB11, GPIO_AF_I2C2),
+#endif
             I2CPINDEF(PF0,  GPIO_AF_I2C2),
 
 #if defined(STM32F40_41xxx) || defined (STM32F411xE)
@@ -174,6 +178,10 @@ bool i2cWriteBuffer(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t len_,
     }
 
     i2cState_t *state = &i2cDevice[device].state;
+    if (state->busy) {
+        return false;
+    }
+
     uint32_t timeout = I2C_DEFAULT_TIMEOUT;
 
     state->addr = addr_ << 1;
@@ -196,32 +204,52 @@ bool i2cWriteBuffer(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t len_,
         I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, ENABLE);            // allow the interrupts to fire off again
     }
 
-    timeout = I2C_DEFAULT_TIMEOUT;
+    return true;
+}
+
+bool i2cBusy(I2CDevice device, bool *error)
+{
+    i2cState_t *state = &i2cDevice[device].state;
+
+    if (error) {
+        *error = state->error;
+    }
+    return state->busy;
+}
+
+bool i2cWait(I2CDevice device)
+{
+    i2cState_t *state = &i2cDevice[device].state;
+    uint32_t timeout = I2C_DEFAULT_TIMEOUT;
+
     while (state->busy && --timeout > 0) {; }
     if (timeout == 0)
-        return i2cHandleHardwareFailure(device);
+        return i2cHandleHardwareFailure(device) && i2cWait(device);
 
     return !(state->error);
 }
 
 bool i2cWrite(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t data)
 {
-    return i2cWriteBuffer(device, addr_, reg_, 1, &data);
+    return i2cWriteBuffer(device, addr_, reg_, 1, &data) && i2cWait(device);
 }
 
-bool i2cRead(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
+bool i2cReadBuffer(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
 {
     if (device == I2CINVALID || device > I2CDEV_COUNT) {
         return false;
     }
 
     I2C_TypeDef *I2Cx = i2cDevice[device].reg;
-
     if (!I2Cx) {
         return false;
     }
 
     i2cState_t *state = &i2cDevice[device].state;
+    if (state->busy) {
+        return false;
+    }
+
     uint32_t timeout = I2C_DEFAULT_TIMEOUT;
 
     state->addr = addr_ << 1;
@@ -244,12 +272,12 @@ bool i2cRead(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t
         I2C_ITConfig(I2Cx, I2C_IT_EVT | I2C_IT_ERR, ENABLE);            // allow the interrupts to fire off again
     }
 
-    timeout = I2C_DEFAULT_TIMEOUT;
-    while (state->busy && --timeout > 0) {; }
-    if (timeout == 0)
-        return i2cHandleHardwareFailure(device);
+    return true;
+}
 
-    return !(state->error);
+bool i2cRead(I2CDevice device, uint8_t addr_, uint8_t reg_, uint8_t len, uint8_t* buf)
+{
+    return i2cReadBuffer(device, addr_, reg_, len, buf) && i2cWait(device);
 }
 
 static void i2c_er_handler(I2CDevice device) {

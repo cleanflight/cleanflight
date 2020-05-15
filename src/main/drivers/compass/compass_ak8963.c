@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -366,7 +366,7 @@ static bool ak8963Init(magDev_t *mag)
     return true;
 }
 
-void ak8963BusInit(const busDevice_t *busdev)
+void ak8963BusInit(busDevice_t *busdev)
 {
     switch (busdev->bustype) {
 #ifdef USE_MAG_AK8963
@@ -380,7 +380,11 @@ void ak8963BusInit(const busDevice_t *busdev)
         IOHi(busdev->busdev_u.spi.csnPin);                                                  // Disable
         IOInit(busdev->busdev_u.spi.csnPin, OWNER_COMPASS_CS, 0);
         IOConfigGPIO(busdev->busdev_u.spi.csnPin, IOCFG_OUT_PP);
-        spiSetDivisor(busdev->busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+#ifdef USE_SPI_TRANSACTION
+        spiBusTransactionInit(busdev, SPI_MODE3_POL_HIGH_EDGE_2ND, SPI_CLOCK_STANDARD);
+#else
+        spiBusSetDivisor(busdev, SPI_CLOCK_STANDARD);
+#endif
         break;
 #endif
 
@@ -410,7 +414,7 @@ void ak8963BusDeInit(const busDevice_t *busdev)
 
 #ifdef USE_MAG_SPI_AK8963
     case BUSTYPE_SPI:
-        spiPreinitCsByIO(busdev->busdev_u.spi.csnPin);
+        spiPreinitByIO(busdev->busdev_u.spi.csnPin);
         break;
 #endif
 

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -20,13 +20,26 @@
 
 #pragma once
 
-#include "interface/crsf_protocol.h"
+#include "rx/crsf_protocol.h"
 
 
 #define CRSF_PORT_OPTIONS       (SERIAL_STOPBITS_1 | SERIAL_PARITY_NO)
 #define CRSF_PORT_MODE          MODE_RXTX
 
 #define CRSF_MAX_CHANNEL        16
+
+#define CRSF_RSSI_MIN (-130)
+#define CRSF_RSSI_MAX 0
+#define CRSF_SNR_MIN (-30)
+#define CRSF_SNR_MAX 20
+
+/* For documentation purposes
+typedef enum {
+    CRSF_RF_MODE_4_FPS = 0,
+    CRSF_RF_MODE_50_FPS,
+    CRSF_RF_MODE_150_FPS,
+} crsfRfMode_e;
+*/
 
 typedef struct crsfFrameDef_s {
     uint8_t deviceAddress;
@@ -44,6 +57,6 @@ void crsfRxWriteTelemetryData(const void *data, int len);
 void crsfRxSendTelemetryData(void);
 
 struct rxConfig_s;
-struct rxRuntimeConfig_s;
-bool crsfRxInit(const struct rxConfig_s *initialRxConfig, struct rxRuntimeConfig_s *rxRuntimeConfig);
+struct rxRuntimeState_s;
+bool crsfRxInit(const struct rxConfig_s *initialRxConfig, struct rxRuntimeState_s *rxRuntimeState);
 bool crsfRxIsActive(void);

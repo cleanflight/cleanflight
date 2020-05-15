@@ -42,6 +42,8 @@ There are various modes that can be toggled on or off.  Modes can be enabled/dis
 | 45 | PARALYZE                 | Permanently disable a crashed craft until it is power cycled                         |
 | 46 | GPS RESCUE               | Enable 'GPS Rescue' to return the craft to the location where it was last armed      |
 | 47 | ACRO TRAINER             | Enable 'acro trainer' angle limiting in acro mode                                    |
+| 48 | DISABLE VTX CONTROL      | Disable the control of VTX settings through the OSD                                  |
+| 49 | LAUNCH CONTROL           | Race start assistance system                                                         |
 
 ## Auto-leveled flight
 
@@ -103,7 +105,7 @@ Use the GUI configuration tool to allow easy configuration when channel.
 
 There is a CLI command, `aux` that allows auxillary configuration.  It takes 5 arguments as follows:
 
-* AUD range slot number (0 - 39)
+* AUX range slot number (0 - 39)
 * mode id (see mode list above)
 * AUX channel index (AUX1 = 0, AUX2 = 1,... etc)
 * low position, from 900 to 2100. Should be a multiple of 25.

@@ -32,10 +32,21 @@
 
 #include "platform.h"
 
-#include "drivers/sdmmc_sdio.h"
-#include "drivers/light_led.h"
-#include "drivers/io.h"
+#ifdef USE_SDCARD
+
 #include "common/utils.h"
+
+#include "drivers/dma.h"
+#include "drivers/dma_reqmap.h"
+#include "drivers/io.h"
+#include "drivers/light_led.h"
+#include "drivers/sdcard.h"
+#include "drivers/sdmmc_sdio.h"
+#include "drivers/usb_msc.h"
+
+#include "pg/pg.h"
+#include "pg/sdcard.h"
+#include "pg/sdio.h"
 
 #ifdef USE_HAL_DRIVER
 #include "usbd_msc.h"
@@ -94,47 +105,47 @@ static int8_t STORAGE_GetMaxLun (void);
 static uint8_t  STORAGE_Inquirydata[] = {//36
 
   /* LUN 0 */
-  0x00,
-  0x80,
-  0x02,
-  0x02,
+    0x00,
+    0x80,
+    0x02,
+    0x02,
 #ifdef USE_HAL_DRIVER
-  (STANDARD_INQUIRY_DATA_LEN - 5),
+    (STANDARD_INQUIRY_DATA_LEN - 5),
 #else
-  (USBD_STD_INQUIRY_LENGTH - 5),
+    (USBD_STD_INQUIRY_LENGTH - 5),
 #endif
-  0x00,
-  0x00,
-  0x00,
-  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
-  'P', 'r', 'o', 'd', 'u', 't', ' ', ' ', /* Product      : 16 Bytes */
-  ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-  '0', '.', '0' ,'1',                     /* Version      : 4 Bytes */
+    0x00,
+    0x00,
+    0x00,
+    'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
+    'P', 'r', 'o', 'd', 'u', 't', ' ', ' ', /* Product      : 16 Bytes */
+    ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    '0', '.', '0' ,'1',                     /* Version      : 4 Bytes */
 };
 
 #ifdef USE_HAL_DRIVER
 USBD_StorageTypeDef USBD_MSC_MICRO_SDIO_fops =
 {
-  STORAGE_Init,
-  STORAGE_GetCapacity,
-  STORAGE_IsReady,
-  STORAGE_IsWriteProtected,
-  STORAGE_Read,
-  STORAGE_Write,
-  STORAGE_GetMaxLun,
-  (int8_t*)STORAGE_Inquirydata,
+    STORAGE_Init,
+    STORAGE_GetCapacity,
+    STORAGE_IsReady,
+    STORAGE_IsWriteProtected,
+    STORAGE_Read,
+    STORAGE_Write,
+    STORAGE_GetMaxLun,
+    (int8_t*)STORAGE_Inquirydata,
 };
 #else
 USBD_STORAGE_cb_TypeDef USBD_MSC_MICRO_SDIO_fops =
 {
-  STORAGE_Init,
-  STORAGE_GetCapacity,
-  STORAGE_IsReady,
-  STORAGE_IsWriteProtected,
-  STORAGE_Read,
-  STORAGE_Write,
-  STORAGE_GetMaxLun,
-  (int8_t*)STORAGE_Inquirydata,
+    STORAGE_Init,
+    STORAGE_GetCapacity,
+    STORAGE_IsReady,
+    STORAGE_IsWriteProtected,
+    STORAGE_Read,
+    STORAGE_Write,
+    STORAGE_GetMaxLun,
+    (int8_t*)STORAGE_Inquirydata,
 };
 #endif
 
@@ -147,19 +158,36 @@ USBD_STORAGE_cb_TypeDef USBD_MSC_MICRO_SDIO_fops =
 *******************************************************************************/
 static int8_t STORAGE_Init (uint8_t lun)
 {
-	//Initialize SD_DET
-#ifdef SDCARD_DETECT_PIN
-	const IO_t sd_det = IOGetByTag(IO_TAG(SDCARD_DETECT_PIN));
-	IOInit(sd_det, OWNER_SDCARD_DETECT, 0);
-	IOConfigGPIO(sd_det, IOCFG_IPU);
+    //Initialize SD_DET
+    const IO_t sd_det = IOGetByTag(sdcardConfig()->cardDetectTag);
+    IOInit(sd_det, OWNER_SDCARD_DETECT, 0);
+    IOConfigGPIO(sd_det, IOCFG_IPU);
+
+    UNUSED(lun);
+    LED0_OFF;
+
+#ifdef USE_DMA_SPEC
+        const dmaChannelSpec_t *dmaChannelSpec = dmaGetChannelSpecByPeripheral(DMA_PERIPH_SDIO, 0, sdioConfig()->dmaopt);
+
+    if (!dmaChannelSpec) {
+        return 1;
+    }
+
+    SD_Initialize_LL((DMA_ARCH_TYPE *)dmaChannelSpec->ref);
+#else
+    SD_Initialize_LL(SDCARD_SDIO_DMA_OPT);
 #endif
 
-	UNUSED(lun);
-	LED0_OFF;
-	SD_Initialize_LL(SDIO_DMA);
-	if (SD_Init() != 0) return 1;
-	LED0_ON;
-	return 0;
+    if (!sdcard_isInserted()) {
+        return 1;
+    }
+    if (SD_Init() != 0) {
+        return 1;
+    }
+
+    mscSetActive();
+
+    return 0;
 }
 
 /*******************************************************************************
@@ -175,15 +203,15 @@ static int8_t STORAGE_GetCapacity (uint8_t lun, uint32_t *block_num, uint16_t *b
 static int8_t STORAGE_GetCapacity (uint8_t lun, uint32_t *block_num, uint32_t *block_size)
 #endif
 {
-	UNUSED(lun);
-	if (SD_IsDetected() == 0) {
-		return -1;
-	}
-	SD_GetCardInfo();
+    UNUSED(lun);
+    if (!sdcard_isInserted()) {
+        return -1;
+    }
+    SD_GetCardInfo();
 
-	*block_num = SD_CardInfo.CardCapacity;
-	*block_size = 512;
-	return (0);
+    *block_num = SD_CardInfo.CardCapacity;
+    *block_size = 512;
+    return (0);
 }
 
 /*******************************************************************************
@@ -195,12 +223,12 @@ static int8_t STORAGE_GetCapacity (uint8_t lun, uint32_t *block_num, uint32_t *b
 *******************************************************************************/
 static int8_t  STORAGE_IsReady (uint8_t lun)
 {
-	UNUSED(lun);
-	int8_t ret = -1;
-	if (SD_GetState() == true && SD_IsDetected() == SD_PRESENT) {
+    UNUSED(lun);
+    int8_t ret = -1;
+    if (SD_GetState() == true && sdcard_isInserted()) {
         ret = 0;
-	}
-	return ret;
+    }
+    return ret;
 }
 
 /*******************************************************************************
@@ -212,8 +240,8 @@ static int8_t  STORAGE_IsReady (uint8_t lun)
 *******************************************************************************/
 static int8_t  STORAGE_IsWriteProtected (uint8_t lun)
 {
-  UNUSED(lun);
-  return  0;
+    UNUSED(lun);
+    return  0;
 }
 
 /*******************************************************************************
@@ -228,20 +256,18 @@ static int8_t STORAGE_Read (uint8_t lun,
                  uint32_t blk_addr,
                  uint16_t blk_len)
 {
-	UNUSED(lun);
-	if (SD_IsDetected() == 0) {
-		return -1;
-	}
-	LED1_ON;
-	//buf should be 32bit aligned, but usually is so we don't do byte alignment
-	if (SD_ReadBlocks_DMA(blk_addr, (uint32_t*) buf, 512, blk_len) == 0) {
-		while (SD_CheckRead());
-		while(SD_GetState() == false);
-		LED1_OFF;
-		return 0;
-	}
-	LED1_OFF;
-	return -1;
+    UNUSED(lun);
+    if (!sdcard_isInserted()) {
+        return -1;
+    }
+    //buf should be 32bit aligned, but usually is so we don't do byte alignment
+    if (SD_ReadBlocks_DMA(blk_addr, (uint32_t*) buf, 512, blk_len) == 0) {
+        while (SD_CheckRead());
+        while(SD_GetState() == false);
+        mscSetActive();
+        return 0;
+    }
+    return -1;
 }
 /*******************************************************************************
 * Function Name  : Write_Memory
@@ -255,20 +281,18 @@ static int8_t STORAGE_Write (uint8_t lun,
                   uint32_t blk_addr,
                   uint16_t blk_len)
 {
-	UNUSED(lun);
-	if (SD_IsDetected() == 0) {
-		return -1;
-	}
-	LED1_ON;
-	//buf should be 32bit aligned, but usually is so we don't do byte alignment
-	if (SD_WriteBlocks_DMA(blk_addr, (uint32_t*) buf, 512, blk_len) == 0) {
-		while (SD_CheckWrite());
-		while(SD_GetState() == false);
-		LED1_OFF;
-		return 0;
-	}
-	LED1_OFF;
-	return -1;
+    UNUSED(lun);
+    if (!sdcard_isInserted()) {
+        return -1;
+    }
+    //buf should be 32bit aligned, but usually is so we don't do byte alignment
+    if (SD_WriteBlocks_DMA(blk_addr, (uint32_t*) buf, 512, blk_len) == 0) {
+        while (SD_CheckWrite());
+        while(SD_GetState() == false);
+        mscSetActive();
+        return 0;
+    }
+    return -1;
 }
 /*******************************************************************************
 * Function Name  : Write_Memory
@@ -279,8 +303,9 @@ static int8_t STORAGE_Write (uint8_t lun,
 *******************************************************************************/
 static int8_t STORAGE_GetMaxLun (void)
 {
-  return (STORAGE_LUN_NBR - 1);
+    return (STORAGE_LUN_NBR - 1);
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
+#endif // USE_SDCARD

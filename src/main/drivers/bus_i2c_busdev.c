@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -34,6 +34,16 @@ bool i2cBusWriteRegister(const busDevice_t *busdev, uint8_t reg, uint8_t data)
     return i2cWrite(busdev->busdev_u.i2c.device, busdev->busdev_u.i2c.address, reg, data);
 }
 
+bool i2cBusWriteRegisterStart(const busDevice_t *busdev, uint8_t reg, uint8_t data)
+{
+    // Need a static value, not on the stack
+    static uint8_t byte;
+
+    byte = data;
+
+    return i2cWriteBuffer(busdev->busdev_u.i2c.device, busdev->busdev_u.i2c.address, reg, sizeof (byte), &byte);
+}
+
 bool i2cBusReadRegisterBuffer(const busDevice_t *busdev, uint8_t reg, uint8_t *data, uint8_t length)
 {
     return i2cRead(busdev->busdev_u.i2c.device, busdev->busdev_u.i2c.address, reg, length, data);
@@ -45,4 +55,15 @@ uint8_t i2cBusReadRegister(const busDevice_t *busdev, uint8_t reg)
     i2cRead(busdev->busdev_u.i2c.device, busdev->busdev_u.i2c.address, reg, 1, &data);
     return data;
 }
+
+bool i2cBusReadRegisterBufferStart(const busDevice_t *busdev, uint8_t reg, uint8_t *data, uint8_t length)
+{
+    return i2cReadBuffer(busdev->busdev_u.i2c.device, busdev->busdev_u.i2c.address, reg, length, data);
+}
+
+bool i2cBusBusy(const busDevice_t *busdev, bool *error)
+{
+    return i2cBusy(busdev->busdev_u.i2c.device, error);
+}
+
 #endif

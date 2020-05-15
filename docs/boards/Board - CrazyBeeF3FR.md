@@ -14,7 +14,7 @@ It might be the world first Tiny whoop size brushless flight controller which in
   - IMU: MPU6000 (SPI) 
   - IMU Interrupt: yes
   - VCP: yes
-  - OSD: Betaflight OSD
+  - OSD: Cleanflight OSD
   - Battery Voltage Sensor: yes
   - Integrated Voltage Regulator: yes, booster, 5V/800mA
   - Integrated Current sensor：Max 14A, could be modified to 28A by replace resistor

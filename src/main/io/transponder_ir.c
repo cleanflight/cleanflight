@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -38,7 +38,7 @@
 #include "drivers/system.h"
 #include "drivers/usb_io.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 
 #include "io/transponder_ir.h"
 
@@ -52,13 +52,7 @@ void pgResetFn_transponderConfig(transponderConfig_t *transponderConfig)
         .data = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0x0, 0x0, 0x0 }, // Note, this is NOT a valid transponder code, it's just for testing production hardware
         .ioTag = IO_TAG_NONE
     );
-
-    for (int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
-        if (timerHardware[i].usageFlags & TIM_USE_TRANSPONDER) {
-            transponderConfig->ioTag = timerHardware[i].tag;
-            break;
-        }
-    }
+    transponderConfig->ioTag = timerioTagGetByUsage(TIM_USE_TRANSPONDER, 0);
 }
 
 static bool transponderInitialised = false;

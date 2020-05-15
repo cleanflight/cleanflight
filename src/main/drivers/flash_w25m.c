@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,7 +21,7 @@
 /*
  * Winbond W25M series stacked die flash driver.
  * Handles homogeneous stack of identical dies by calling die drivers.
- * 
+ *
  * Author: jflyper
  */
 
@@ -43,12 +43,14 @@
 
 #include "flash_m25p16.h"
 #include "flash_w25m.h"
+#include "flash_w25n01g.h"
 
 #include "pg/flash.h"
 
 #define W25M_INSTRUCTION_SOFTWARE_DIE_SELECT         0xC2
 
 #define JEDEC_ID_WINBOND_W25M512                     0xEF7119 // W25Q256 x 2
+#define JEDEC_ID_WINBOND_W25M02G                     0xEFAB21 // W25N01G x 2
 
 static const flashVTable_t w25m_vTable;
 
@@ -69,18 +71,20 @@ static void w25m_dieSelect(busDevice_t *busdev, int die)
 
     uint8_t command[2] = { W25M_INSTRUCTION_SOFTWARE_DIE_SELECT, die };
 
+#ifdef SPI_BUS_TRANSACTION
+    spiBusTransactionTransfer(busdev, command, NULL, 2);
+#else
     spiBusTransfer(busdev, command, NULL, 2);
+#endif
 
     activeDie = die;
 }
 
 static bool w25m_isReady(flashDevice_t *fdevice)
 {
-    UNUSED(fdevice);
-
     for (int die = 0 ; die < dieCount ; die++) {
         if (dieDevice[die].couldBeBusy) {
-            w25m_dieSelect(fdevice->busdev, die);
+            w25m_dieSelect(fdevice->io.handle.busdev, die);
             if (!dieDevice[die].vTable->isReady(&dieDevice[die])) {
                 return false;
             }
@@ -90,11 +94,11 @@ static bool w25m_isReady(flashDevice_t *fdevice)
     return true;
 }
 
-static bool w25m_waitForReady(flashDevice_t *fdevice, uint32_t timeoutMillis)
+static bool w25m_waitForReady(flashDevice_t *fdevice)
 {
-    uint32_t time = millis();
-    while (!w25m_isReady(fdevice)) {
-        if (millis() - time > timeoutMillis) {
+    for (int die = 0 ; die < dieCount ; die++) {
+        w25m_dieSelect(fdevice->io.handle.busdev, die);
+        if (!dieDevice[die].vTable->waitForReady(&dieDevice[die])) {
             return false;
         }
     }
@@ -106,18 +110,37 @@ bool w25m_detect(flashDevice_t *fdevice, uint32_t chipID)
 {
 
     switch (chipID) {
+#ifdef USE_FLASH_W25M512
     case JEDEC_ID_WINBOND_W25M512:
         // W25Q256 x 2
         dieCount = 2;
 
         for (int die = 0 ; die < dieCount ; die++) {
-            w25m_dieSelect(fdevice->busdev, die);
-            dieDevice[die].busdev = fdevice->busdev;
+            w25m_dieSelect(fdevice->io.handle.busdev, die);
+            dieDevice[die].io.handle.busdev = fdevice->io.handle.busdev;
+            dieDevice[die].io.mode = fdevice->io.mode;
             m25p16_detect(&dieDevice[die], JEDEC_ID_WINBOND_W25Q256);
         }
 
         fdevice->geometry.flashType = FLASH_TYPE_NOR;
         break;
+#endif
+
+#ifdef USE_FLASH_W25M02G
+    case JEDEC_ID_WINBOND_W25M02G:
+        // W25N01G x 2
+        dieCount = 2;
+
+        for (int die = 0 ; die < dieCount ; die++) {
+            w25m_dieSelect(fdevice->io.handle.busdev, die);
+            dieDevice[die].io.handle.busdev = fdevice->io.handle.busdev;
+            dieDevice[die].io.mode = fdevice->io.mode;
+            w25n01g_detect(&dieDevice[die], JEDEC_ID_WINBOND_W25N01GV);
+        }
+
+        fdevice->geometry.flashType = FLASH_TYPE_NAND;
+        break;
+#endif
 
     default:
         // Not a valid W25M series device
@@ -128,7 +151,7 @@ bool w25m_detect(flashDevice_t *fdevice, uint32_t chipID)
         return false;
     }
 
-    fdevice->geometry.sectors = dieDevice[0].geometry.sectors;
+    fdevice->geometry.sectors = dieDevice[0].geometry.sectors * dieCount;
     fdevice->geometry.sectorSize = dieDevice[0].geometry.sectorSize;
     fdevice->geometry.pagesPerSector = dieDevice[0].geometry.pagesPerSector;
     fdevice->geometry.pageSize = dieDevice[0].geometry.pageSize;
@@ -143,7 +166,7 @@ void w25m_eraseSector(flashDevice_t *fdevice, uint32_t address)
 {
     int dieNumber = address / dieSize;
 
-    w25m_dieSelect(fdevice->busdev, dieNumber);
+    w25m_dieSelect(fdevice->io.handle.busdev, dieNumber);
 
     dieDevice[dieNumber].vTable->eraseSector(&dieDevice[dieNumber], address % dieSize);
 }
@@ -151,7 +174,7 @@ void w25m_eraseSector(flashDevice_t *fdevice, uint32_t address)
 void w25m_eraseCompletely(flashDevice_t *fdevice)
 {
     for (int dieNumber = 0 ; dieNumber < dieCount ; dieNumber++) {
-        w25m_dieSelect(fdevice->busdev, dieNumber);
+        w25m_dieSelect(fdevice->io.handle.busdev, dieNumber);
         dieDevice[dieNumber].vTable->eraseCompletely(&dieDevice[dieNumber]);
     }
 }
@@ -164,7 +187,7 @@ void w25m_pageProgramBegin(flashDevice_t *fdevice, uint32_t address)
     UNUSED(fdevice);
 
     currentWriteDie = address / dieSize;
-    w25m_dieSelect(fdevice->busdev, currentWriteDie);
+    w25m_dieSelect(fdevice->io.handle.busdev, currentWriteDie);
     currentWriteAddress = address % dieSize;
     dieDevice[currentWriteDie].vTable->pageProgramBegin(&dieDevice[currentWriteDie], currentWriteAddress);
 }
@@ -206,7 +229,7 @@ int w25m_readBytes(flashDevice_t *fdevice, uint32_t address, uint8_t *buffer, in
         uint32_t dieAddress = address % dieSize;
         tlen = MIN(dieAddress + rlen, dieSize) - dieAddress;
 
-        w25m_dieSelect(fdevice->busdev, dieNumber);
+        w25m_dieSelect(fdevice->io.handle.busdev, dieNumber);
 
         rbytes = dieDevice[dieNumber].vTable->readBytes(&dieDevice[dieNumber], dieAddress, buffer, tlen);
 

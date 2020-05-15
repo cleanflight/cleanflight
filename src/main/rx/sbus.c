@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,7 +24,7 @@
 
 #include "platform.h"
 
-#ifdef USE_SERIAL_RX
+#ifdef USE_SERIALRX_SBUS
 
 #include "build/debug.h"
 
@@ -56,7 +56,12 @@
  * time to send frame: 3ms.
  */
 
-#define SBUS_TIME_NEEDED_PER_FRAME 3000
+#define SBUS_BAUDRATE                 100000
+#define SBUS_RX_REFRESH_RATE          11000
+#define SBUS_TIME_NEEDED_PER_FRAME    3000
+
+#define SBUS_FAST_BAUDRATE              200000
+#define SBUS_FAST_RX_REFRESH_RATE       6000
 
 #define SBUS_STATE_FAILSAFE (1 << 0)
 #define SBUS_STATE_SIGNALLOSS (1 << 1)
@@ -64,8 +69,6 @@
 #define SBUS_FRAME_SIZE (SBUS_CHANNEL_DATA_LENGTH + 2)
 
 #define SBUS_FRAME_BEGIN_BYTE 0x0F
-
-#define SBUS_BAUDRATE 100000
 
 #if !defined(SBUS_PORT_OPTIONS)
 #define SBUS_PORT_OPTIONS (SERIAL_STOPBITS_2 | SERIAL_PARITY_EVEN)
@@ -79,7 +82,6 @@ enum {
     DEBUG_SBUS_STATE_FLAGS,
     DEBUG_SBUS_FRAME_TIME,
 };
-
 
 struct sbusFrame_s {
     uint8_t syncByte;
@@ -101,21 +103,21 @@ typedef union sbusFrame_u {
 
 typedef struct sbusFrameData_s {
     sbusFrame_t frame;
-    uint32_t startAtUs;
-    uint16_t stateFlags;
+    timeUs_t startAtUs;
     uint8_t position;
     bool done;
 } sbusFrameData_t;
 
+static timeUs_t lastRcFrameTimeUs = 0;
 
 // Receive ISR callback
 static void sbusDataReceive(uint16_t c, void *data)
 {
     sbusFrameData_t *sbusFrameData = data;
 
-    const uint32_t nowUs = micros();
+    const timeUs_t nowUs = microsISR();
 
-    const int32_t sbusFrameTime = nowUs - sbusFrameData->startAtUs;
+    const timeDelta_t sbusFrameTime = cmpTimeUs(nowUs, sbusFrameData->startAtUs);
 
     if (sbusFrameTime > (long)(SBUS_TIME_NEEDED_PER_FRAME + 500)) {
         sbusFrameData->position = 0;
@@ -139,9 +141,9 @@ static void sbusDataReceive(uint16_t c, void *data)
     }
 }
 
-static uint8_t sbusFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
+static uint8_t sbusFrameStatus(rxRuntimeState_t *rxRuntimeState)
 {
-    sbusFrameData_t *sbusFrameData = rxRuntimeConfig->frameData;
+    sbusFrameData_t *sbusFrameData = rxRuntimeState->frameData;
     if (!sbusFrameData->done) {
         return RX_FRAME_PENDING;
     }
@@ -149,33 +151,42 @@ static uint8_t sbusFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
 
     DEBUG_SET(DEBUG_SBUS, DEBUG_SBUS_FRAME_FLAGS, sbusFrameData->frame.frame.channels.flags);
 
-    if (sbusFrameData->frame.frame.channels.flags & SBUS_FLAG_SIGNAL_LOSS) {
-        sbusFrameData->stateFlags |= SBUS_STATE_SIGNALLOSS;
-        DEBUG_SET(DEBUG_SBUS, DEBUG_SBUS_STATE_FLAGS, sbusFrameData->stateFlags);
-    }
-    if (sbusFrameData->frame.frame.channels.flags & SBUS_FLAG_FAILSAFE_ACTIVE) {
-        sbusFrameData->stateFlags |= SBUS_STATE_FAILSAFE;
-        DEBUG_SET(DEBUG_SBUS, DEBUG_SBUS_STATE_FLAGS, sbusFrameData->stateFlags);
+    const uint8_t frameStatus = sbusChannelsDecode(rxRuntimeState, &sbusFrameData->frame.frame.channels);
+
+    if (!(frameStatus & (RX_FRAME_FAILSAFE | RX_FRAME_DROPPED))) {
+        lastRcFrameTimeUs = sbusFrameData->startAtUs;
     }
 
-    DEBUG_SET(DEBUG_SBUS, DEBUG_SBUS_STATE_FLAGS, sbusFrameData->stateFlags);
-
-    return sbusChannelsDecode(rxRuntimeConfig, &sbusFrameData->frame.frame.channels);
+    return frameStatus;
 }
 
-bool sbusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
+static timeUs_t sbusFrameTimeUs(void)
+{
+    return lastRcFrameTimeUs;
+}
+
+bool sbusInit(const rxConfig_t *rxConfig, rxRuntimeState_t *rxRuntimeState)
 {
     static uint16_t sbusChannelData[SBUS_MAX_CHANNEL];
     static sbusFrameData_t sbusFrameData;
+    static uint32_t sbusBaudRate;
 
-    rxRuntimeConfig->channelData = sbusChannelData;
-    rxRuntimeConfig->frameData = &sbusFrameData;
-    sbusChannelsInit(rxConfig, rxRuntimeConfig);
+    rxRuntimeState->channelData = sbusChannelData;
+    rxRuntimeState->frameData = &sbusFrameData;
+    sbusChannelsInit(rxConfig, rxRuntimeState);
 
-    rxRuntimeConfig->channelCount = SBUS_MAX_CHANNEL;
-    rxRuntimeConfig->rxRefreshRate = 11000;
+    rxRuntimeState->channelCount = SBUS_MAX_CHANNEL;
 
-    rxRuntimeConfig->rcFrameStatusFn = sbusFrameStatus;
+    if (rxConfig->sbus_baud_fast) {
+        rxRuntimeState->rxRefreshRate = SBUS_FAST_RX_REFRESH_RATE;
+        sbusBaudRate  = SBUS_FAST_BAUDRATE;
+    } else {
+        rxRuntimeState->rxRefreshRate = SBUS_RX_REFRESH_RATE;
+        sbusBaudRate  = SBUS_BAUDRATE;
+    }
+
+    rxRuntimeState->rcFrameStatusFn = sbusFrameStatus;
+    rxRuntimeState->rcFrameTimeUsFn = sbusFrameTimeUs;
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
@@ -183,7 +194,7 @@ bool sbusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
     }
 
 #ifdef USE_TELEMETRY
-    bool portShared = telemetryCheckRxPortShared(portConfig);
+    bool portShared = telemetryCheckRxPortShared(portConfig, rxRuntimeState->serialrxProvider);
 #else
     bool portShared = false;
 #endif
@@ -192,7 +203,7 @@ bool sbusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         FUNCTION_RX_SERIAL,
         sbusDataReceive,
         &sbusFrameData,
-        SBUS_BAUDRATE,
+        sbusBaudRate,
         portShared ? MODE_RXTX : MODE_RX,
         SBUS_PORT_OPTIONS | (rxConfig->serialrx_inverted ? 0 : SERIAL_INVERTED) | (rxConfig->halfDuplex ? SERIAL_BIDIR : 0)
         );

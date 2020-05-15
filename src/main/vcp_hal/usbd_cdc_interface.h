@@ -50,10 +50,8 @@
 #define __USBD_CDC_IF_H
 
 /* Includes ------------------------------------------------------------------*/
-#include "common/maths.h"
 
 #include "usbd_cdc.h"
-#include "stm32f7xx_hal.h"
 #include "usbd_core.h"
 #include "usbd_desc.h"
 
@@ -65,7 +63,7 @@
 
 /* Periodically, the state of the buffer "UserTxBuffer" is checked.
    The period depends on CDC_POLLING_INTERVAL */
-#define CDC_POLLING_INTERVAL             10 /* in ms. The max is 65 and the min is 1 */
+#define CDC_POLLING_INTERVAL             5 /* in ms. The max is 65 and the min is 1 */
 
 /* Exported typef ------------------------------------------------------------*/
 /* The following structures groups all needed parameters to be configured for the

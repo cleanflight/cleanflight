@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -19,6 +19,8 @@
  */
 
 #pragma once
+
+#include "common/utils.h"
 
 // FIXME some of these are flight modes, some of these are general status indicators
 typedef enum {
@@ -44,23 +46,29 @@ typedef enum {
     ARMING_DISABLED_BAD_RX_RECOVERY = (1 << 3),
     ARMING_DISABLED_BOXFAILSAFE     = (1 << 4),
     ARMING_DISABLED_RUNAWAY_TAKEOFF = (1 << 5),
-    ARMING_DISABLED_THROTTLE        = (1 << 6),
-    ARMING_DISABLED_ANGLE           = (1 << 7),
-    ARMING_DISABLED_BOOT_GRACE_TIME = (1 << 8),
-    ARMING_DISABLED_NOPREARM        = (1 << 9),
-    ARMING_DISABLED_LOAD            = (1 << 10),
-    ARMING_DISABLED_CALIBRATING     = (1 << 11),
-    ARMING_DISABLED_CLI             = (1 << 12),
-    ARMING_DISABLED_CMS_MENU        = (1 << 13),
-    ARMING_DISABLED_OSD_MENU        = (1 << 14),
+    ARMING_DISABLED_CRASH_DETECTED  = (1 << 6),
+    ARMING_DISABLED_THROTTLE        = (1 << 7),
+    ARMING_DISABLED_ANGLE           = (1 << 8),
+    ARMING_DISABLED_BOOT_GRACE_TIME = (1 << 9),
+    ARMING_DISABLED_NOPREARM        = (1 << 10),
+    ARMING_DISABLED_LOAD            = (1 << 11),
+    ARMING_DISABLED_CALIBRATING     = (1 << 12),
+    ARMING_DISABLED_CLI             = (1 << 13),
+    ARMING_DISABLED_CMS_MENU        = (1 << 14),
     ARMING_DISABLED_BST             = (1 << 15),
     ARMING_DISABLED_MSP             = (1 << 16),
     ARMING_DISABLED_PARALYZE        = (1 << 17),
     ARMING_DISABLED_GPS             = (1 << 18),
-    ARMING_DISABLED_ARM_SWITCH      = (1 << 19), // Needs to be the last element, since it's always activated if one of the others is active when arming
+    ARMING_DISABLED_RESC            = (1 << 19),
+    ARMING_DISABLED_RPMFILTER       = (1 << 20),
+    ARMING_DISABLED_REBOOT_REQUIRED = (1 << 21),
+    ARMING_DISABLED_DSHOT_BITBANG   = (1 << 22),
+    ARMING_DISABLED_ACC_CALIBRATION = (1 << 23),
+    ARMING_DISABLED_MOTOR_PROTOCOL  = (1 << 24),
+    ARMING_DISABLED_ARM_SWITCH      = (1 << 25), // Needs to be the last element, since it's always activated if one of the others is active when arming
 } armingDisableFlags_e;
 
-#define ARMING_DISABLE_FLAGS_COUNT 20
+#define ARMING_DISABLE_FLAGS_COUNT (LOG2(ARMING_DISABLED_ARM_SWITCH) + 1)
 
 extern const char *armingDisableFlagNames[ARMING_DISABLE_FLAGS_COUNT];
 
@@ -73,9 +81,9 @@ typedef enum {
     ANGLE_MODE      = (1 << 0),
     HORIZON_MODE    = (1 << 1),
     MAG_MODE        = (1 << 2),
-    BARO_MODE       = (1 << 3),
-    GPS_HOME_MODE   = (1 << 4),
-    GPS_HOLD_MODE   = (1 << 5),
+//    BARO_MODE       = (1 << 3),
+//    GPS_HOME_MODE   = (1 << 4),
+//    GPS_HOLD_MODE   = (1 << 5),
     HEADFREE_MODE   = (1 << 6),
 //    UNUSED_MODE     = (1 << 7), // old autotune
     PASSTHRU_MODE   = (1 << 8),
@@ -96,9 +104,6 @@ extern uint16_t flightModeFlags;
    [BOXANGLE]       = LOG2(ANGLE_MODE),                  \
    [BOXHORIZON]     = LOG2(HORIZON_MODE),                \
    [BOXMAG]         = LOG2(MAG_MODE),                    \
-   [BOXBARO]        = LOG2(BARO_MODE),                   \
-   [BOXGPSHOME]     = LOG2(GPS_HOME_MODE),               \
-   [BOXGPSHOLD]     = LOG2( GPS_HOLD_MODE),              \
    [BOXHEADFREE]    = LOG2(HEADFREE_MODE),               \
    [BOXPASSTHRU]    = LOG2(PASSTHRU_MODE),               \
    [BOXFAILSAFE]    = LOG2(FAILSAFE_MODE),               \
@@ -109,9 +114,6 @@ extern uint16_t flightModeFlags;
 typedef enum {
     GPS_FIX_HOME   = (1 << 0),
     GPS_FIX        = (1 << 1),
-    CALIBRATE_MAG  = (1 << 2),
-    SMALL_ANGLE    = (1 << 3),
-    FIXED_WING     = (1 << 4)                    // set when in flying_wing or airplane mode. currently used by althold selection code
 } stateFlags_t;
 
 #define DISABLE_STATE(mask) (stateFlags &= ~(mask))

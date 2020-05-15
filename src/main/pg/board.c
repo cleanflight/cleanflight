@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -38,20 +38,20 @@ PG_REGISTER_WITH_RESET_FN(boardConfig_t, boardConfig, PG_BOARD_CONFIG, 0);
 void pgResetFn_boardConfig(boardConfig_t *boardConfig)
 {
     if (boardInformationIsSet()) {
-        strncpy(boardConfig->manufacturerId, getManufacturerId(), MAX_MANUFACTURER_ID_LENGTH);
-        strncpy(boardConfig->boardName, getBoardName(), MAX_BOARD_NAME_LENGTH);
+        strncpy(boardConfig->manufacturerId, getManufacturerId(), MAX_MANUFACTURER_ID_LENGTH + 1);
+        strncpy(boardConfig->boardName, getBoardName(), MAX_BOARD_NAME_LENGTH + 1);
         boardConfig->boardInformationSet = true;
     } else {
-#if !defined(GENERIC_TARGET)
-        strncpy(boardConfig->boardName, targetName, MAX_BOARD_NAME_LENGTH);
+#if !defined(USE_UNIFIED_TARGET)
+        strncpy(boardConfig->boardName, targetName, MAX_BOARD_NAME_LENGTH + 1);
 
 #if defined(TARGET_MANUFACTURER_IDENTIFIER)
-        strncpy(boardConfig->manufacturerId, TARGET_MANUFACTURER_IDENTIFIER, MAX_MANUFACTURER_ID_LENGTH);
+        strncpy(boardConfig->manufacturerId, TARGET_MANUFACTURER_IDENTIFIER, MAX_MANUFACTURER_ID_LENGTH + 1);
 #endif
         boardConfig->boardInformationSet = true;
 #else
         boardConfig->boardInformationSet = false;
-#endif // GENERIC_TARGET
+#endif // USE_UNIFIED_TARGET
     }
 
 #if defined(USE_SIGNATURE)

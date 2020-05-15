@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,9 +23,10 @@
 
 #include "platform.h"
 
-#ifdef USE_FLASHFS
+#ifdef USE_FLASH_CHIP
 
 #include "drivers/bus_spi.h"
+#include "drivers/bus_quadspi.h"
 #include "drivers/io.h"
 
 #include "pg/pg.h"
@@ -33,15 +34,20 @@
 
 #include "flash.h"
 
+#ifndef FLASH_CS_PIN
+#define FLASH_CS_PIN NONE
+#endif
+
 PG_REGISTER_WITH_RESET_FN(flashConfig_t, flashConfig, PG_FLASH_CONFIG, 0);
 
 void pgResetFn_flashConfig(flashConfig_t *flashConfig)
 {
-#ifdef FLASH_CS_PIN
     flashConfig->csTag = IO_TAG(FLASH_CS_PIN);
-#else
-    flashConfig->csTag = IO_TAG_NONE;
-#endif
+#if defined(USE_SPI) && defined(FLASH_SPI_INSTANCE)
     flashConfig->spiDevice = SPI_DEV_TO_CFG(spiDeviceByInstance(FLASH_SPI_INSTANCE));
+#endif
+#if defined(USE_QUADSPI) && defined(FLASH_QUADSPI_INSTANCE)
+    flashConfig->quadSpiDevice = QUADSPI_DEV_TO_CFG(quadSpiDeviceByInstance(FLASH_QUADSPI_INSTANCE));
+#endif
 }
 #endif

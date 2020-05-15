@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,6 +24,12 @@
 
 #include "drivers/io_types.h"
 
+typedef enum {
+    FIRMWARE_EXTI_TRIGGER_RISING = 0,
+    FIRMWARE_EXTI_TRIGGER_FALLING = 1,
+    FIRMWARE_EXTI_TRIGGER_BOTH = 2
+} extiTrigger_t;
+
 typedef struct extiCallbackRec_s extiCallbackRec_t;
 typedef void extiHandlerCallback(extiCallbackRec_t *self);
 
@@ -34,10 +40,6 @@ struct extiCallbackRec_s {
 void EXTIInit(void);
 
 void EXTIHandlerInit(extiCallbackRec_t *cb, extiHandlerCallback *fn);
-#if defined(STM32F7)
-void EXTIConfig(IO_t io, extiCallbackRec_t *cb, int irqPriority, ioConfig_t config);
-#else
-void EXTIConfig(IO_t io, extiCallbackRec_t *cb, int irqPriority, EXTITrigger_TypeDef trigger);
-#endif
+void EXTIConfig(IO_t io, extiCallbackRec_t *cb, int irqPriority, ioConfig_t config, extiTrigger_t trigger);
 void EXTIRelease(IO_t io);
 void EXTIEnable(IO_t io, bool enable);

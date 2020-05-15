@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -39,23 +39,6 @@
 
 #include "pg/bus_i2c.h"
 
-// Backward compatibility for overclocking and internal pullup.
-// These will eventually be configurable through PG-based configurator
-// (and/or probably through some cli extension).
-
-#ifndef I2C1_OVERCLOCK
-#define I2C1_OVERCLOCK false
-#endif
-#ifndef I2C2_OVERCLOCK
-#define I2C2_OVERCLOCK false
-#endif
-#ifndef I2C3_OVERCLOCK
-#define I2C3_OVERCLOCK false
-#endif
-#ifndef I2C4_OVERCLOCK
-#define I2C4_OVERCLOCK false
-#endif
-
 void i2cHardwareConfigure(const i2cConfig_t *i2cConfig)
 {
     for (int index = 0 ; index < I2CDEV_COUNT ; index++) {
@@ -73,13 +56,13 @@ void i2cHardwareConfigure(const i2cConfig_t *i2cConfig)
         for (int pindex = 0 ; pindex < I2C_PIN_SEL_MAX ; pindex++) {
             if (i2cConfig[device].ioTagScl == hardware->sclPins[pindex].ioTag) {
                 pDev->scl = IOGetByTag(i2cConfig[device].ioTagScl);
-#if defined(STM32F4)
+#if defined(STM32F4) || defined(STM32H7) || defined(STM32G4)
                 pDev->sclAF = hardware->sclPins[pindex].af;
 #endif
             }
             if (i2cConfig[device].ioTagSda == hardware->sdaPins[pindex].ioTag) {
                 pDev->sda = IOGetByTag(i2cConfig[device].ioTagSda);
-#if defined(STM32F4)
+#if defined(STM32F4) || defined(STM32H7) || defined(STM32G4)
                 pDev->sdaAF = hardware->sdaPins[pindex].af;
 #endif
             }

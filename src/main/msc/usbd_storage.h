@@ -1,20 +1,22 @@
 /*
  * This file is part of Cleanflight.
  *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Cleanflight is free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Cleanflight is distributed in the hope that it
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
- */
-/*
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
+ *
  * Author: Chris Hockuba (https://github.com/conkerkh)
  */
 
@@ -27,20 +29,28 @@
 #include "usbd_msc_core.h"
 #endif
 
+#include "common/time.h"
+
 #ifdef USE_HAL_DRIVER
 extern USBD_StorageTypeDef *USBD_STORAGE_fops;
-#ifdef USE_SDCARD
+#ifdef USE_SDCARD_SDIO
 extern USBD_StorageTypeDef USBD_MSC_MICRO_SDIO_fops;
+#endif
+#ifdef USE_SDCARD_SPI
+extern USBD_StorageTypeDef USBD_MSC_MICRO_SD_SPI_fops;
 #endif
 #ifdef USE_FLASHFS
 extern USBD_StorageTypeDef USBD_MSC_EMFAT_fops;
 #endif
-#else
+#else // USE_HAL_DRIVER
 extern USBD_STORAGE_cb_TypeDef *USBD_STORAGE_fops;
-#ifdef USE_SDCARD
+#ifdef USE_SDCARD_SDIO
 extern USBD_STORAGE_cb_TypeDef USBD_MSC_MICRO_SDIO_fops;
+#endif
+#ifdef USE_SDCARD_SPI
+extern USBD_STORAGE_cb_TypeDef USBD_MSC_MICRO_SD_SPI_fops;
 #endif
 #ifdef USE_FLASHFS
 extern USBD_STORAGE_cb_TypeDef USBD_MSC_EMFAT_fops;
 #endif
-#endif
+#endif // USE_HAL_DRIVER

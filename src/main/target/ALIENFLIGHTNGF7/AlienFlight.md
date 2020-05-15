@@ -24,7 +24,7 @@ Here are the general hardware specifications for this boards:
 - STM32F103CBT6 MCU (ALIENFLIGHTF1)
 - STM32F303CCT6 MCU (ALIENFLIGHTF3)
 - STM32F405RGT6 MCU (ALIENFLIGHTF4)
-- STM32F711RET6 MCU (ALIENFLIGHTNGF7)
+- STM32F722RET6 MCU (ALIENFLIGHTNGF7)
 - MPU6050/6500/9250/ICM-20602 accelerometer/gyro(/mag) sensor unit
 - The MPU sensor interrupt is connected to the MCU for all published designs and enabled in the firmware
 - 4-8 x 4.2A to 9.5A brushed ESCs, integrated, to run the strongest micro motors (brushed variants)
@@ -63,11 +63,11 @@ The pin layout for the AlienFlight F1 is very similar to NAZE32 or the related c
 
 (**) OpenSky receiver with telemetry is enabled by default if present on the board.
 
-The AlienFlight firmware will be built as target ALIENFLIGHTF1, ALIENFLIGHTF3, ALIENFLIGHTF4 or ALIENFLIGHTNGF7. The firmware image will come with alternative default settings which will give the user a plug and play experience. There is no computer needed to get this into the air with a small Quadcopter. A preconfigured custom mixer for an Octocopter is part of the default settings to allow clean straight wiring with the AlienFlight. The mixer can be activated with "mixer custom" in the CLI. To use the AlienFlight controller in a Hexa- or Octocopter or to do some more tuning additional configuration changes can be done as usual in the CLI or the BetaFlight configurator.
+The AlienFlight firmware will be built as target ALIENFLIGHTF1, ALIENFLIGHTF3, ALIENFLIGHTF4 or ALIENFLIGHTNGF7. The firmware image will come with alternative default settings which will give the user a plug and play experience. There is no computer needed to get this into the air with a small Quadcopter. A preconfigured custom mixer for an Octocopter is part of the default settings to allow clean straight wiring with the AlienFlight. The mixer can be activated with "mixer custom" in the CLI. To use the AlienFlight controller in a Hexa- or Octocopter or to do some more tuning additional configuration changes can be done as usual in the CLI or the Configurator.
 
 ## Flashing the firmware
 
-The firmware can be updated with the BetaFlight configurator as for any other target. All AlienFlight boards have a boot jumper which need to be closed for initial flashing or for recovery from a broken firmware.
+The firmware can be updated with the Configurator as for any other target. All AlienFlight boards have a boot jumper which need to be closed for initial flashing or for recovery from a broken firmware.
 
 The firmware for the OpenSky receiver can be updated via serial pass-through and the embedded boot loader. The initial flashing need to be done with the ISP programming pins. The target for the embedded AlienFlight OpenSky receiver is "AFF4RX". Please refer to the OpenSky project for more details.
 

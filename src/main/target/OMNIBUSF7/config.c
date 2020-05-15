@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -29,9 +29,14 @@
 
 #include "io/serial.h"
 
+#ifdef FPVM_BETAFLIGHTF7
+#define ESC_SENSOR_UART         SERIAL_PORT_USART1
+#elif defined(OMNIBUSF7V2)
+#define ESC_SENSOR_UART         SERIAL_PORT_USART7
+#endif
+
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
-#if defined(OMNIBUSF7V2) && defined(ESC_SENSOR_UART)
-    // OMNIBUS F7 V2 has an option to connect UART7_RX to ESC telemetry
+#ifdef ESC_SENSOR_UART
     { ESC_SENSOR_UART, FUNCTION_ESC_SENSOR },
 #else
     { SERIAL_PORT_NONE, FUNCTION_NONE },

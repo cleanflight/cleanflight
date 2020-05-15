@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,12 +23,9 @@
 
 #define USBD_PRODUCT_STRING     "YUPIF7"
 
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 
 #define LED0_PIN                PB4
-
-//define camera control
-#define CAMERA_CONTROL_PIN      PB7
 
 #define USE_BEEPER
 #define BEEPER_PIN              PB14
@@ -42,22 +39,24 @@
 #define SPI1_MISO_PIN           PA6
 #define SPI1_MOSI_PIN           PA7
 
-#define ICM20689_CS_PIN         PA4
-#define ICM20689_SPI_INSTANCE   SPI1
-
 #define USE_EXTI
-#define MPU_INT_EXTI            PC4
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN         PC4
+
 #define USE_MPU_DATA_READY_SIGNAL
 
-#define USE_GYRO
-#define USE_GYRO_SPI_ICM20689
-#define GYRO_ICM20689_ALIGN     CW90_DEG
+// ICM 20689
+#define GYRO_1_CS_PIN           PA4
+#define GYRO_1_SPI_INSTANCE     SPI1
 
 #define USE_ACC
 #define USE_ACC_SPI_ICM20689
-#define ACC_ICM20689_ALIGN      CW90_DEG
 
-// *************** UART ****************************
+#define USE_GYRO
+#define USE_GYRO_SPI_ICM20689
+#define GYRO_1_ALIGN            CW90_DEG
+
+// Serial ports
 #define USE_VCP
 #define USE_USB_DETECT
 #define USB_DETECT_PIN          PA8
@@ -113,7 +112,10 @@
 #define MAG_I2C_INSTANCE       (I2CDEV_1)
 #define USE_MAG
 #define USE_MAG_HMC5883
+#define MAG_HMC5883_ALIGN CW270_DEG_FLIP
 #define USE_MAG_QMC5883
+#define MAG_QMC5883_ALIGN CW270_DEG_FLIP
+#define USE_MAG_LIS3MDL
 
 // *************** OSD *****************************
 #define USE_MAX7456
@@ -122,8 +124,10 @@
 
 // *************** ADC *****************************
 #define USE_ADC
-#define ADC1_DMA_STREAM         DMA2_Stream0
-#define RSSI_ADC_GPIO_PIN               PC0
+#define ADC_INSTANCE         ADC1  // Default added
+#define ADC1_DMA_OPT            0  // DMA 2 Stream 0 Channel 0 
+
+#define RSSI_ADC_PIN                    PC0
 #define VBAT_ADC_PIN                    PC1
 #define CURRENT_METER_ADC_PIN           PC2
 #define CURRENT_METER_SCALE_DEFAULT     235
@@ -138,7 +142,6 @@
 #define DEFAULT_FEATURES        (FEATURE_OSD)
 
 #define USE_ESCSERIAL
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 #define TARGET_IO_PORTA         0xffff
 #define TARGET_IO_PORTB         0xffff
@@ -146,4 +149,4 @@
 #define TARGET_IO_PORTD         (BIT(2))
 
 #define USABLE_TIMER_CHANNEL_COUNT 9
-#define USED_TIMERS             (TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(12))
+#define USED_TIMERS             (TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(12))

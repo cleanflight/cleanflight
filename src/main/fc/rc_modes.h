@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -33,9 +33,6 @@ typedef enum {
     BOXANGLE,
     BOXHORIZON,
     BOXMAG,
-    BOXBARO,
-    BOXGPSHOME,
-    BOXGPSHOLD,
     BOXHEADFREE,
     BOXPASSTHRU,
     BOXFAILSAFE,
@@ -75,6 +72,8 @@ typedef enum {
     BOXUSER4,
     BOXPIDAUDIO,
     BOXACROTRAINER,
+    BOXVTXCONTROLDISABLE,
+    BOXLAUNCHCONTROL,
     CHECKBOX_ITEM_COUNT
 } boxId_e;
 
@@ -116,6 +115,20 @@ typedef struct modeActivationCondition_s {
 
 PG_DECLARE_ARRAY(modeActivationCondition_t, MAX_MODE_ACTIVATION_CONDITION_COUNT, modeActivationConditions);
 
+#if defined(USE_CUSTOM_BOX_NAMES)
+
+#define MAX_BOX_USER_NAME_LENGTH 16
+
+typedef struct modeActivationConfig_s {
+    char box_user_1_name[MAX_BOX_USER_NAME_LENGTH];
+    char box_user_2_name[MAX_BOX_USER_NAME_LENGTH];
+    char box_user_3_name[MAX_BOX_USER_NAME_LENGTH];
+    char box_user_4_name[MAX_BOX_USER_NAME_LENGTH];
+} modeActivationConfig_t;
+
+PG_DECLARE(modeActivationConfig_t, modeActivationConfig);
+#endif
+
 typedef struct modeActivationProfile_s {
     modeActivationCondition_t modeActivationConditions[MAX_MODE_ACTIVATION_CONDITION_COUNT];
 } modeActivationProfile_t;
@@ -125,9 +138,12 @@ typedef struct modeActivationProfile_s {
 bool IS_RC_MODE_ACTIVE(boxId_e boxId);
 void rcModeUpdate(boxBitmask_t *newState);
 
-bool isAirmodeActive(void);
+bool airmodeIsEnabled(void);
 
 bool isRangeActive(uint8_t auxChannelIndex, const channelRange_t *range);
 void updateActivatedModes(void);
 bool isModeActivationConditionPresent(boxId_e modeId);
+bool isModeActivationConditionLinked(boxId_e modeId);
 void removeModeActivationCondition(boxId_e modeId);
+bool isModeActivationConditionConfigured(const modeActivationCondition_t *mac, const modeActivationCondition_t *emptyMac);
+void analyzeModeActivationConditions(void);

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -31,28 +31,28 @@
 #include "build/debug.h"
 
 #include "common/maths.h"
-#include "common/utils.h"
 #include "common/time.h"
+#include "common/utils.h"
 
+#include "config/config.h"
 #include "config/feature.h"
-#include "pg/pg.h"
-#include "pg/pg_ids.h"
 
 #include "drivers/io.h"
-#include "drivers/time.h"
 #include "drivers/rangefinder/rangefinder.h"
 #include "drivers/rangefinder/rangefinder_hcsr04.h"
 #include "drivers/rangefinder/rangefinder_lidartf.h"
+#include "drivers/time.h"
 
-#include "fc/config.h"
 #include "fc/runtime_config.h"
-#include "fc/fc_tasks.h"
+
+#include "pg/pg.h"
+#include "pg/pg_ids.h"
+
+#include "scheduler/scheduler.h"
 
 #include "sensors/sensors.h"
 #include "sensors/rangefinder.h"
 #include "sensors/battery.h"
-
-#include "scheduler/scheduler.h"
 
 //#include "uav_interconnect/uav_interconnect.h"
 
@@ -77,13 +77,6 @@ PG_RESET_TEMPLATE(rangefinderConfig_t, rangefinderConfig,
 
 #ifdef USE_RANGEFINDER_HCSR04
 PG_REGISTER_WITH_RESET_TEMPLATE(sonarConfig_t, sonarConfig, PG_SONAR_CONFIG, 1);
-
-#ifndef RANGEFINDER_HCSR04_TRIGGER_PIN
-#define RANGEFINDER_HCSR04_TRIGGER_PIN NONE
-#endif
-#ifndef RANGEFINDER_HCSR04_ECHO_PIN
-#define RANGEFINDER_HCSR04_ECHO_PIN NONE
-#endif
 
 PG_RESET_TEMPLATE(sonarConfig_t, sonarConfig,
     .triggerTag = IO_TAG(RANGEFINDER_HCSR04_TRIGGER_PIN),

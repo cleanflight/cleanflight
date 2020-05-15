@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -34,89 +34,143 @@
 #include "drivers/bus_spi.h"
 #include "drivers/io.h"
 #include "drivers/io_impl.h"
+#include "drivers/nvic.h"
 #include "drivers/rcc.h"
 #include "drivers/system.h"
+#include "drivers/time.h"
 
 #include "pg/rx_spi.h"
 
 #include "rx_spi.h"
 
+#define ENABLE_RX() IOLo(busdev->busdev_u.spi.csnPin)
+#define DISABLE_RX() IOHi(busdev->busdev_u.spi.csnPin)
+
 static busDevice_t rxSpiDevice;
 static busDevice_t *busdev = &rxSpiDevice;
 
-#define DISABLE_RX()    {IOHi(busdev->busdev_u.spi.csnPin);}
-#define ENABLE_RX()     {IOLo(busdev->busdev_u.spi.csnPin);}
+static IO_t extiPin = IO_NONE;
+static extiCallbackRec_t rxSpiExtiCallbackRec;
+static bool extiLevel = true;
+
+static volatile bool extiHasOccurred = false;
+static volatile timeUs_t lastExtiTimeUs = 0;
+
+void rxSpiDevicePreInit(const rxSpiConfig_t *rxSpiConfig)
+{
+    spiPreinitRegister(rxSpiConfig->csnTag, IOCFG_IPU, 1);
+}
+
+void rxSpiExtiHandler(extiCallbackRec_t* callback)
+{
+    UNUSED(callback);
+
+    const timeUs_t extiTimeUs = microsISR();
+
+    if (IORead(extiPin) == extiLevel) {
+        lastExtiTimeUs = extiTimeUs;
+        extiHasOccurred = true;
+    }
+}
 
 bool rxSpiDeviceInit(const rxSpiConfig_t *rxSpiConfig)
 {
-    if (!rxSpiConfig->spibus) {
+    SPI_TypeDef *instance = spiInstanceByDevice(SPI_CFG_TO_DEV(rxSpiConfig->spibus));
+
+    if (!instance) {
         return false;
     }
 
-    spiBusSetInstance(busdev, spiInstanceByDevice(SPI_CFG_TO_DEV(rxSpiConfig->spibus)));
+    spiBusSetInstance(busdev, instance);
 
     const IO_t rxCsPin = IOGetByTag(rxSpiConfig->csnTag);
     IOInit(rxCsPin, OWNER_RX_SPI_CS, 0);
     IOConfigGPIO(rxCsPin, SPI_IO_CS_CFG);
     busdev->busdev_u.spi.csnPin = rxCsPin;
 
-    DISABLE_RX();
+    IOHi(rxCsPin);
+#ifdef USE_SPI_TRANSACTION
+    spiBusTransactionInit(busdev, SPI_MODE0_POL_LOW_EDGE_1ST, SPI_CLOCK_STANDARD);
+#else
+    spiBusSetDivisor(busdev, SPI_CLOCK_STANDARD);
+#endif
 
-    spiSetDivisor(busdev->busdev_u.spi.instance, SPI_CLOCK_STANDARD);
+    extiPin = IOGetByTag(rxSpiConfig->extiIoTag);
+
+    if (extiPin) {
+        IOInit(extiPin, OWNER_RX_SPI_EXTI, 0);
+    }
 
     return true;
 }
 
+void rxSpiExtiInit(ioConfig_t rxSpiExtiPinConfig, extiTrigger_t rxSpiExtiPinTrigger)
+{
+    if (extiPin) {
+        if (rxSpiExtiPinTrigger == FIRMWARE_EXTI_TRIGGER_FALLING) {
+            extiLevel = false;
+        }
+        EXTIHandlerInit(&rxSpiExtiCallbackRec, rxSpiExtiHandler);
+        EXTIConfig(extiPin, &rxSpiExtiCallbackRec, NVIC_PRIO_MPU_INT_EXTI, rxSpiExtiPinConfig, rxSpiExtiPinTrigger);
+        EXTIEnable(extiPin, true);
+    }
+}
+
+
 uint8_t rxSpiTransferByte(uint8_t data)
 {
-    return spiTransferByte(busdev->busdev_u.spi.instance, data);
+    return spiBusTransferByte(busdev, data);
 }
 
-uint8_t rxSpiWriteByte(uint8_t data)
+void rxSpiWriteByte(uint8_t data)
 {
-    ENABLE_RX();
-    const uint8_t ret = rxSpiTransferByte(data);
-    DISABLE_RX();
-    return ret;
+    spiBusWriteByte(busdev, data);
 }
 
-uint8_t rxSpiWriteCommand(uint8_t command, uint8_t data)
+void rxSpiWriteCommand(uint8_t command, uint8_t data)
 {
-    ENABLE_RX();
-    const uint8_t ret = rxSpiTransferByte(command);
-    rxSpiTransferByte(data);
-    DISABLE_RX();
-    return ret;
+    spiBusWriteRegister(busdev, command, data);
 }
 
-uint8_t rxSpiWriteCommandMulti(uint8_t command, const uint8_t *data, uint8_t length)
+void rxSpiWriteCommandMulti(uint8_t command, const uint8_t *data, uint8_t length)
 {
-    ENABLE_RX();
-    const uint8_t ret = rxSpiTransferByte(command);
-    for (uint8_t i = 0; i < length; i++) {
-        rxSpiTransferByte(data[i]);
-    }
-    DISABLE_RX();
-    return ret;
+    spiBusWriteRegisterBuffer(busdev, command, data, length);
 }
 
 uint8_t rxSpiReadCommand(uint8_t command, uint8_t data)
 {
-    ENABLE_RX();
-    rxSpiTransferByte(command);
-    const uint8_t ret = rxSpiTransferByte(data);
-    DISABLE_RX();
-    return ret;
+    UNUSED(data);
+    return spiBusRawReadRegister(busdev, command);
 }
 
-uint8_t rxSpiReadCommandMulti(uint8_t command, uint8_t commandData, uint8_t *retData, uint8_t length)
+void rxSpiReadCommandMulti(uint8_t command, uint8_t commandData, uint8_t *retData, uint8_t length)
 {
-    ENABLE_RX();
-    const uint8_t ret = rxSpiTransferByte(command);
-    for (uint8_t i = 0; i < length; i++) {
-        retData[i] = rxSpiTransferByte(commandData);
-    }
-    DISABLE_RX();
-    return ret;
+    UNUSED(commandData);
+    spiBusRawReadRegisterBuffer(busdev, command, retData, length);
+}
+
+bool rxSpiExtiConfigured(void)
+{
+    return extiPin != IO_NONE;
+}
+
+bool rxSpiGetExtiState(void)
+{
+    return IORead(extiPin);
+}
+
+bool rxSpiPollExti(void)
+{
+    return extiHasOccurred;
+}
+
+void rxSpiResetExti(void)
+{
+    extiHasOccurred = false;
+}
+
+timeUs_t rxSpiGetLastExtiTimeUs(void)
+{
+    return lastExtiTimeUs;
 }
 #endif

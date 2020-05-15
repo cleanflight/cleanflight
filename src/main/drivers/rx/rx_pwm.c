@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -371,7 +371,7 @@ void pwmRxInit(const pwmConfig_t *pwmConfig)
 
         pwmInputPort_t *port = &pwmInputPorts[channel];
 
-        const timerHardware_t *timer = timerGetByTag(pwmConfig->ioTags[channel]);
+        const timerHardware_t *timer = timerAllocate(pwmConfig->ioTags[channel], OWNER_PWMINPUT, RESOURCE_INDEX(channel));
 
         if (!timer) {
             /* TODO: maybe fail here if not enough channels? */
@@ -407,6 +407,7 @@ void pwmRxInit(const pwmConfig_t *pwmConfig)
 
 #define FIRST_PWM_PORT 0
 
+#ifdef USE_PWM_OUTPUT
 void ppmAvoidPWMTimerClash(TIM_TypeDef *pwmTimer)
 {
     pwmOutputPort_t *motors = pwmGetMotors();
@@ -419,6 +420,7 @@ void ppmAvoidPWMTimerClash(TIM_TypeDef *pwmTimer)
         return;
     }
 }
+#endif
 
 void ppmRxInit(const ppmConfig_t *ppmConfig)
 {
@@ -426,13 +428,15 @@ void ppmRxInit(const ppmConfig_t *ppmConfig)
 
     pwmInputPort_t *port = &pwmInputPorts[FIRST_PWM_PORT];
 
-    const timerHardware_t *timer = timerGetByTag(ppmConfig->ioTag);
+    const timerHardware_t *timer = timerAllocate(ppmConfig->ioTag, OWNER_PPMINPUT, 0);
     if (!timer) {
         /* TODO: fail here? */
         return;
     }
 
+#ifdef USE_PWM_OUTPUT
     ppmAvoidPWMTimerClash(timer->tim);
+#endif
 
     port->mode = INPUT_MODE_PPM;
     port->timerHardware = timer;

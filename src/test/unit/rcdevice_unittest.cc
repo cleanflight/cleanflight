@@ -40,8 +40,9 @@ extern "C" {
 
     #include "scheduler/scheduler.h"
     #include "io/rcdevice_cam.h"
-    #include "io/osd.h"
     #include "io/rcdevice.h"
+
+    #include "osd/osd.h"
 
     #include "pg/pg.h"
     #include "pg/pg_ids.h"
@@ -57,7 +58,7 @@ extern "C" {
     extern runcamDevice_t *camDevice;
     extern bool isButtonPressed;
     extern bool rcdeviceInMenu;
-    extern rcdeviceWaitingResponseQueue watingResponseQueue;
+    extern rcdeviceWaitingResponseQueue waitingResponseQueue;
     PG_REGISTER_WITH_RESET_FN(rcdeviceConfig_t, rcdeviceConfig, PG_RCDEVICE_CONFIG, 0);
     bool unitTestIsSwitchActivited(boxId_e boxId)
     {
@@ -66,14 +67,21 @@ extern "C" {
         return switchState.isActivated;
     }
 
+
     void pgResetFn_rcdeviceConfig(rcdeviceConfig_t *rcdeviceConfig)
-{
-    rcdeviceConfig->initDeviceAttempts = 4;
-    rcdeviceConfig->initDeviceAttemptInterval = 1000;
-}
+    {
+        rcdeviceConfig->initDeviceAttempts = 4;
+        rcdeviceConfig->initDeviceAttemptInterval = 1000;
+
+        rcdeviceConfig->feature = 0;
+        rcdeviceConfig->protocolVersion = 0;
+    }
 
     uint32_t millis(void);
     int minTimeout = 180;
+
+    void rcdeviceSend5KeyOSDCableSimualtionEvent(rcdeviceCamSimulationKeyEvent_e key);
+    rcdeviceResponseParseContext_t* rcdeviceRespCtxQueueShift(rcdeviceWaitingResponseQueue *queue);
 }
 
 #define MAX_RESPONSES_COUNT 10
@@ -95,6 +103,7 @@ typedef struct testData_s {
 } testData_t;
 
 static testData_t testData;
+extern rcdeviceWaitingResponseQueue waitingResponseQueue;
 
 static void clearResponseBuff()
 {
@@ -102,7 +111,21 @@ static void clearResponseBuff()
     testData.responseBufCount = 0;
     memset(testData.responseBufsLen, 0, MAX_RESPONSES_COUNT);
     memset(testData.responesBufs, 0, MAX_RESPONSES_COUNT * 60);
+
+    while (rcdeviceRespCtxQueueShift(&waitingResponseQueue)) {
+
+    }
 }
+
+static void resetRCDeviceStatus()
+{
+    isButtonPressed = false;
+    rcdeviceInMenu = false;
+    PG_RESET(rcdeviceConfig);
+    clearResponseBuff();
+}
+
+
 
 static void addResponseData(uint8_t *data, uint8_t dataLen, bool withDataForFlushSerial)
 {
@@ -115,62 +138,75 @@ static void addResponseData(uint8_t *data, uint8_t dataLen, bool withDataForFlus
 TEST(RCDeviceTest, TestRCSplitInitWithoutPortConfigurated)
 {
     runcamDevice_t device;
-    watingResponseQueue.headPos = 0;
-    watingResponseQueue.tailPos = 0;
-    watingResponseQueue.itemCount = 0;
+    
+    resetRCDeviceStatus();
+
+    waitingResponseQueue.headPos = 0;
+    waitingResponseQueue.tailPos = 0;
+    waitingResponseQueue.itemCount = 0;
     memset(&testData, 0, sizeof(testData));
     runcamDeviceInit(&device);
-    EXPECT_EQ(false, device.isReady);
+    EXPECT_FALSE(device.isReady);
 }
 
 TEST(RCDeviceTest, TestRCSplitInitWithoutOpenPortConfigurated)
 {
     runcamDevice_t device;
 
-    watingResponseQueue.headPos = 0;
-    watingResponseQueue.tailPos = 0;
-    watingResponseQueue.itemCount = 0;
+    resetRCDeviceStatus();
+
+    waitingResponseQueue.headPos = 0;
+    waitingResponseQueue.tailPos = 0;
+    waitingResponseQueue.itemCount = 0;
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = false;
     testData.isRunCamSplitPortConfigurated = true;
 
     runcamDeviceInit(&device);
-    EXPECT_EQ(false, device.isReady);
+    EXPECT_FALSE(device.isReady);
 }
 
 TEST(RCDeviceTest, TestInitDevice)
 {
     runcamDevice_t device;
 
+    resetRCDeviceStatus();
+
     // test correct response
-    watingResponseQueue.headPos = 0;
-    watingResponseQueue.tailPos = 0;
-    watingResponseQueue.itemCount = 0;
+    waitingResponseQueue.headPos = 0;
+    waitingResponseQueue.tailPos = 0;
+    waitingResponseQueue.itemCount = 0;
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
     testData.isRunCamSplitPortConfigurated = true;
     testData.isAllowBufferReadWrite = true;
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBD };
-    addResponseData(responseData, sizeof(responseData), true);
+    
     
     runcamDeviceInit(&device);
+    testData.millis += 3001;
+    rcdeviceReceive(millis() * 1000);
+    addResponseData(responseData, sizeof(responseData), true);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
+    rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(device.isReady, true);
+    EXPECT_TRUE(device.isReady);
 }
 
 TEST(RCDeviceTest, TestInitDeviceWithInvalidResponse)
 {
     runcamDevice_t device;
 
+    resetRCDeviceStatus();
+
     // test correct response data with incorrect len
-    watingResponseQueue.headPos = 0;
-    watingResponseQueue.tailPos = 0;
-    watingResponseQueue.itemCount = 0;
+    waitingResponseQueue.headPos = 0;
+    waitingResponseQueue.tailPos = 0;
+    waitingResponseQueue.itemCount = 0;
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
     testData.isRunCamSplitPortConfigurated = true;
@@ -179,12 +215,13 @@ TEST(RCDeviceTest, TestInitDeviceWithInvalidResponse)
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBD, 0x33 };
     addResponseData(responseData, sizeof(responseData), true);
     runcamDeviceInit(&device);
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
-    EXPECT_EQ(device.isReady, true);
+    EXPECT_TRUE(device.isReady);
     clearResponseBuff();
     testData.millis += minTimeout;
 
@@ -192,12 +229,13 @@ TEST(RCDeviceTest, TestInitDeviceWithInvalidResponse)
     uint8_t responseDataWithInvalidCRC[] = { 0xCC, 0x01, 0x37, 0x00, 0xBE };
     addResponseData(responseDataWithInvalidCRC, sizeof(responseDataWithInvalidCRC), true);
     runcamDeviceInit(&device);
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
-    EXPECT_EQ(device.isReady, false);
+    EXPECT_FALSE(device.isReady);
     clearResponseBuff();
     testData.millis += minTimeout;
 
@@ -205,13 +243,14 @@ TEST(RCDeviceTest, TestInitDeviceWithInvalidResponse)
     uint8_t incompleteResponseData[] = { 0xCC, 0x01, 0x37 };
     addResponseData(incompleteResponseData, sizeof(incompleteResponseData), true);
     runcamDeviceInit(&device);
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(device.isReady, false);
+    EXPECT_FALSE(device.isReady);
     clearResponseBuff();
     testData.millis += minTimeout;
 
@@ -221,22 +260,25 @@ TEST(RCDeviceTest, TestInitDeviceWithInvalidResponse)
     testData.isRunCamSplitPortConfigurated = true;
     testData.isAllowBufferReadWrite = true;
     runcamDeviceInit(&device);
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
-    EXPECT_EQ(device.isReady, false);
+    EXPECT_FALSE(device.isReady);
     clearResponseBuff();
     testData.millis += minTimeout;
 }
 
 TEST(RCDeviceTest, TestWifiModeChangeWithDeviceUnready)
 {
+    resetRCDeviceStatus();
+
     // test correct response
-    watingResponseQueue.headPos = 0;
-    watingResponseQueue.tailPos = 0;
-    watingResponseQueue.itemCount = 0;
+    waitingResponseQueue.headPos = 0;
+    waitingResponseQueue.tailPos = 0;
+    waitingResponseQueue.itemCount = 0;
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
     testData.isRunCamSplitPortConfigurated = true;
@@ -245,13 +287,14 @@ TEST(RCDeviceTest, TestWifiModeChangeWithDeviceUnready)
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBC }; // wrong response
     addResponseData(responseData, sizeof(responseData), true);
     rcdeviceInit();
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(camDevice->isReady, false);
+    EXPECT_FALSE(camDevice->isReady);
 
     // bind aux1, aux2, aux3 channel to wifi button, power button and change mode
     for (uint8_t i = 0; i <= (BOXCAMERA3 - BOXCAMERA1); i++) {
@@ -276,6 +319,8 @@ TEST(RCDeviceTest, TestWifiModeChangeWithDeviceUnready)
     modeActivationConditionsMutable(2)->range.startStep = CHANNEL_VALUE_TO_STEP(1300);
     modeActivationConditionsMutable(2)->range.endStep = CHANNEL_VALUE_TO_STEP(1600);
 
+    analyzeModeActivationConditions();
+    
     // make the binded mode inactive
     rcData[modeActivationConditions(0)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 1800;
     rcData[modeActivationConditions(1)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 900;
@@ -286,13 +331,21 @@ TEST(RCDeviceTest, TestWifiModeChangeWithDeviceUnready)
     // runn process loop
     rcdeviceUpdate(0);
 
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA1));
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA2));
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA3));
+    // remove all request from queue
+    for (int i = 0; i < 10; i++) {
+        testData.millis += 500000;
+        rcdeviceReceive(millis());
+    }
+
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA1));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA2));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA3));
 }
 
 TEST(RCDeviceTest, TestWifiModeChangeWithDeviceReady)
 {
+    resetRCDeviceStatus();
+
     // test correct response
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
@@ -301,15 +354,19 @@ TEST(RCDeviceTest, TestWifiModeChangeWithDeviceReady)
     testData.maxTimesOfRespDataAvailable = 0;
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBD };
     addResponseData(responseData, sizeof(responseData), true);
+
     camDevice->info.features = 15;
     rcdeviceInit();
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
+    
+
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(camDevice->isReady, true);
+    EXPECT_TRUE(camDevice->isReady);
 
     // bind aux1, aux2, aux3 channel to wifi button, power button and change mode
     for (uint8_t i = 0; i <= BOXCAMERA3 - BOXCAMERA1; i++) {
@@ -334,6 +391,8 @@ TEST(RCDeviceTest, TestWifiModeChangeWithDeviceReady)
     modeActivationConditionsMutable(2)->modeId = BOXCAMERA3;
     modeActivationConditionsMutable(2)->range.startStep = CHANNEL_VALUE_TO_STEP(1900);
     modeActivationConditionsMutable(2)->range.endStep = CHANNEL_VALUE_TO_STEP(2100);
+
+    analyzeModeActivationConditions();
 
     rcData[modeActivationConditions(0)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 1700;
     rcData[modeActivationConditions(1)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 2000;
@@ -346,13 +405,21 @@ TEST(RCDeviceTest, TestWifiModeChangeWithDeviceReady)
     testData.maxTimesOfRespDataAvailable = randNum;
     rcdeviceUpdate((timeUs_t)0);
 
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA1));
-    EXPECT_EQ(true, unitTestIsSwitchActivited(BOXCAMERA2));
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA3));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA1));
+    EXPECT_TRUE(unitTestIsSwitchActivited(BOXCAMERA2));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA3));
+
+    // remove all request from queue
+    for (int i = 0; i < 10; i++) {
+        testData.millis += 500000;
+        rcdeviceReceive(millis());
+    }
 }
 
 TEST(RCDeviceTest, TestWifiModeChangeCombine)
 {
+    resetRCDeviceStatus();
+
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
     testData.isRunCamSplitPortConfigurated = true;
@@ -361,13 +428,14 @@ TEST(RCDeviceTest, TestWifiModeChangeCombine)
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBD };
     addResponseData(responseData, sizeof(responseData), true);
     rcdeviceInit();
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, camDevice->isReady);
+    EXPECT_TRUE(camDevice->isReady);
 
     // bind aux1, aux2, aux3 channel to wifi button, power button and change mode
     for (uint8_t i = 0; i <= BOXCAMERA3 - BOXCAMERA1; i++) {
@@ -392,6 +460,8 @@ TEST(RCDeviceTest, TestWifiModeChangeCombine)
     modeActivationConditionsMutable(2)->modeId = BOXCAMERA3;
     modeActivationConditionsMutable(2)->range.startStep = CHANNEL_VALUE_TO_STEP(1900);
     modeActivationConditionsMutable(2)->range.endStep = CHANNEL_VALUE_TO_STEP(2100);
+
+    analyzeModeActivationConditions();
 
     // // make the binded mode inactive
     rcData[modeActivationConditions(0)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 1700;
@@ -404,9 +474,9 @@ TEST(RCDeviceTest, TestWifiModeChangeCombine)
     testData.maxTimesOfRespDataAvailable = randNum;
     rcdeviceUpdate((timeUs_t)0);
 
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA1));
-    EXPECT_EQ(true, unitTestIsSwitchActivited(BOXCAMERA2));
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA3));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA1));
+    EXPECT_TRUE(unitTestIsSwitchActivited(BOXCAMERA2));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA3));
 
 
     // // make the binded mode inactive
@@ -415,26 +485,34 @@ TEST(RCDeviceTest, TestWifiModeChangeCombine)
     rcData[modeActivationConditions(2)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 1900;
     updateActivatedModes();
     rcdeviceUpdate((timeUs_t)0);
-    EXPECT_EQ(true, unitTestIsSwitchActivited(BOXCAMERA1));
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA2));
-    EXPECT_EQ(true, unitTestIsSwitchActivited(BOXCAMERA3));
+    EXPECT_TRUE(unitTestIsSwitchActivited(BOXCAMERA1));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA2));
+    EXPECT_TRUE(unitTestIsSwitchActivited(BOXCAMERA3));
 
 
     rcData[modeActivationConditions(2)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 1899;
     updateActivatedModes();
     rcdeviceUpdate((timeUs_t)0);
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA3));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA3));
 
     rcData[modeActivationConditions(1)->auxChannelIndex + NON_AUX_CHANNEL_COUNT] = 2001;
     updateActivatedModes();
     rcdeviceUpdate((timeUs_t)0);
-    EXPECT_EQ(true, unitTestIsSwitchActivited(BOXCAMERA1));
-    EXPECT_EQ(true, unitTestIsSwitchActivited(BOXCAMERA2));
-    EXPECT_EQ(false, unitTestIsSwitchActivited(BOXCAMERA3));
+    EXPECT_TRUE(unitTestIsSwitchActivited(BOXCAMERA1));
+    EXPECT_TRUE(unitTestIsSwitchActivited(BOXCAMERA2));
+    EXPECT_FALSE(unitTestIsSwitchActivited(BOXCAMERA3));
+
+    // remove all request from queue
+    for (int i = 0; i < 10; i++) {
+        testData.millis += 500000;
+        rcdeviceReceive(millis());
+    }
 }
 
 TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
 {
+    resetRCDeviceStatus();
+
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
     testData.isRunCamSplitPortConfigurated = true;
@@ -443,13 +521,14 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBD };
     addResponseData(responseData, sizeof(responseData), true);
     rcdeviceInit();
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, camDevice->isReady);
+    EXPECT_TRUE(camDevice->isReady);
     clearResponseBuff();
 
     // test timeout of open connection
@@ -458,7 +537,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     testData.millis += 3000;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, rcdeviceInMenu);
+    EXPECT_FALSE(rcdeviceInMenu);
     clearResponseBuff();
 
     // open connection with correct response
@@ -467,7 +546,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_OPEN);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu);
+    EXPECT_TRUE(rcdeviceInMenu);
     clearResponseBuff();
 
     // open connection with correct response but wrong data length 
@@ -476,7 +555,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_OPEN);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu);
+    EXPECT_TRUE(rcdeviceInMenu);
     clearResponseBuff();
     
     // open connection with invalid crc
@@ -485,7 +564,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_OPEN);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu); // when crc wrong won't change the menu state
+    EXPECT_TRUE(rcdeviceInMenu); // when crc wrong won't change the menu state
     clearResponseBuff();
 
     // test timeout of close connection
@@ -494,7 +573,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     testData.millis += 3000;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu); // close menu timeout won't change the menu state
+    EXPECT_TRUE(rcdeviceInMenu); // close menu timeout won't change the menu state
     clearResponseBuff();
 
     // close connection with correct response
@@ -503,7 +582,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_CLOSE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, rcdeviceInMenu);
+    EXPECT_FALSE(rcdeviceInMenu);
     clearResponseBuff();
 
     // close connection with correct response but wrong data length 
@@ -511,7 +590,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_OPEN); // open menu again
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu);
+    EXPECT_TRUE(rcdeviceInMenu);
     clearResponseBuff();
 
     uint8_t responseDataOfCloseConnection1[] = { 0xCC, 0x21, 0x11, 0xC1 };
@@ -519,7 +598,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_CLOSE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, rcdeviceInMenu);
+    EXPECT_FALSE(rcdeviceInMenu);
     clearResponseBuff();
 
     // close connection with response that invalid crc
@@ -527,7 +606,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_OPEN); // open menu again
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu);
+    EXPECT_TRUE(rcdeviceInMenu);
     clearResponseBuff();
 
     uint8_t responseDataOfCloseConnection2[] = { 0xCC, 0x21, 0xA1 };
@@ -535,7 +614,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_CONNECTION_CLOSE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, rcdeviceInMenu);
+    EXPECT_TRUE(rcdeviceInMenu);
     clearResponseBuff();
 
     // release button first
@@ -544,7 +623,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, isButtonPressed);
+    EXPECT_FALSE(isButtonPressed);
     clearResponseBuff();
 
     // simulate press button with no response
@@ -552,7 +631,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     testData.millis += 2000;
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, isButtonPressed);
+    EXPECT_FALSE(isButtonPressed);
     clearResponseBuff();
 
     // simulate press button with correct response
@@ -561,7 +640,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_ENTER);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, isButtonPressed);
+    EXPECT_TRUE(isButtonPressed);
     clearResponseBuff();
 
     // simulate press button with correct response but wrong data length 
@@ -569,7 +648,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, isButtonPressed);
+    EXPECT_FALSE(isButtonPressed);
     clearResponseBuff();
 
     uint8_t responseDataOfSimulation2[] = { 0xCC, 0xA5, 0x22 };
@@ -577,7 +656,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_ENTER);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, isButtonPressed);
+    EXPECT_TRUE(isButtonPressed);
     clearResponseBuff();
 
     // simulate press button event with incorrect response
@@ -586,7 +665,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_ENTER);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, isButtonPressed);
+    EXPECT_TRUE(isButtonPressed);
     clearResponseBuff();
 
     // simulate release button with correct response
@@ -594,7 +673,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, isButtonPressed);
+    EXPECT_FALSE(isButtonPressed);
     clearResponseBuff();
 
     // simulate release button with correct response but wrong data length
@@ -602,7 +681,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_ENTER);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(true, isButtonPressed);
+    EXPECT_TRUE(isButtonPressed);
     clearResponseBuff();
 
     uint8_t responseDataOfSimulation5[] = { 0xCC, 0xA5, 0xFF };
@@ -610,7 +689,7 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, isButtonPressed);
+    EXPECT_FALSE(isButtonPressed);
     clearResponseBuff();
 
     // simulate release button with incorrect response
@@ -619,20 +698,33 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationProtocol)
     rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
     rcdeviceReceive(millis() * 1000);
     testData.millis += minTimeout;
-    EXPECT_EQ(false, isButtonPressed);
+    EXPECT_FALSE(isButtonPressed);
     clearResponseBuff();
+
+    // remove all request from queue
+    for (int i = 0; i < 300; i++) {
+        testData.millis += 500000;
+        rcdeviceReceive(millis());
+    }
 }
 
 TEST(RCDeviceTest, Test5KeyOSDCableSimulationWithout5KeyFeatureSupport)
 {
+    resetRCDeviceStatus();
+    
     // test simulation without device init
     rcData[THROTTLE] = FIVE_KEY_JOYSTICK_MID; // THROTTLE Mid
     rcData[ROLL] = FIVE_KEY_JOYSTICK_MID; // ROLL Mid
     rcData[PITCH] = FIVE_KEY_JOYSTICK_MID; // PITCH Mid
     rcData[YAW] = FIVE_KEY_JOYSTICK_MAX; // Yaw High
-    rcdeviceUpdate(0);
-    EXPECT_EQ(false, rcdeviceInMenu);
-    
+    rcdeviceUpdate(millis() * 1000);
+    EXPECT_FALSE(rcdeviceInMenu);
+    // remove all request from queue
+    for (int i = 0; i < 10; i++) {
+        testData.millis += 500000;
+        rcdeviceReceive(millis());
+    }
+
     // init device that have not 5 key OSD cable simulation feature
     memset(&testData, 0, sizeof(testData));
     testData.isRunCamSplitOpenPortSupported = true;
@@ -640,23 +732,31 @@ TEST(RCDeviceTest, Test5KeyOSDCableSimulationWithout5KeyFeatureSupport)
     testData.isAllowBufferReadWrite = true;
     testData.maxTimesOfRespDataAvailable = 0;
     uint8_t responseData[] = { 0xCC, 0x01, 0x37, 0x00, 0xBD };
-    addResponseData(responseData, sizeof(responseData), true);
+    
     rcdeviceInit();
+    testData.millis += 3001;
     rcdeviceReceive(millis() * 1000);
     testData.millis += 200;
     testData.responseDataReadPos = 0;
     testData.indexOfCurrentRespBuf = 0;
+    addResponseData(responseData, sizeof(responseData), true);
     rcdeviceReceive(millis() * 1000);
     testData.millis += 200;
-    EXPECT_EQ(camDevice->isReady, true);
+    EXPECT_TRUE(camDevice->isReady);
     clearResponseBuff();
 
     // open connection, rcdeviceInMenu will be false if the codes is right
     uint8_t responseDataOfOpenConnection[] = { 0xCC, 0x11, 0xe7 };
     addResponseData(responseDataOfOpenConnection, sizeof(responseDataOfOpenConnection), false);
-    rcdeviceUpdate(0);
-    EXPECT_EQ(false, rcdeviceInMenu);
+    rcdeviceUpdate(millis() * 1000);
+    EXPECT_FALSE(rcdeviceInMenu);
     clearResponseBuff();
+
+    // remove all request from queue
+    for (int i = 0; i < 10; i++) {
+        testData.millis += 500000;
+        rcdeviceReceive(millis());
+    }
 }
 
 extern "C" {
@@ -691,7 +791,7 @@ extern "C" {
         return NULL;
     }
 
-    serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function)
+    const serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function)
     {
         UNUSED(function);
         if (testData.isRunCamSplitPortConfigurated) {
@@ -845,7 +945,7 @@ extern "C" {
         sbufWriteU8(dst, (uint8_t)val);
     }
 
-    bool feature(uint32_t) { return false; }
+    bool featureIsEnabled(uint32_t) { return false; }
 
     void serialWriteBuf(serialPort_t *instance, const uint8_t *data, int count) 
     { 
@@ -860,7 +960,7 @@ extern "C" {
         // testData.maxTimesOfRespDataAvailable = testData.responseDataLen + 1;
     }
 
-    serialPortConfig_t *findNextSerialPortConfig(serialPortFunction_e function)
+    const serialPortConfig_t *findNextSerialPortConfig(serialPortFunction_e function)
     {
         UNUSED(function);
 

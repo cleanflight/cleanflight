@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -48,7 +48,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     #if defined(KAKUTEF4V2)														   
     DEF_TIM(TIM8, CH3, PC8, TIM_USE_LED,   0, 0), // LED_STRIP - DMA2_ST2
     #elif defined(FLYWOOF405)
-    DEF_TIM(TIM1, CH2, PA9,  TIM_USE_PWM, 0, 0),     // FC CAM	
+    DEF_TIM(TIM1, CH2, PA9, TIM_USE_CAMERA_CONTROL, 0, 0),     // FC CAM
     #else
     DEF_TIM(TIM5, CH1, PA0, TIM_USE_MOTOR, 0, 0), // S5_OUT - DMA1_ST2
     DEF_TIM(TIM8, CH3, PC8, TIM_USE_MOTOR, 0, 1), // S6_OUT - DMA2_ST4

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -37,7 +37,7 @@
 #define BEEPER_PIN              PC13
 #define BEEPER_INVERTED
 
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 
 #ifdef OMNINXT4
 #define USE_INVERTER
@@ -46,6 +46,10 @@
 
 #define USE_ACC
 #define USE_GYRO
+// MPU interrupts
+//#define USE_EXTI
+//#define USE_GYRO_EXTI
+//#define USE_MPU_DATA_READY_SIGNAL
 
 // For debugging with NUC405RG
 #define USE_FAKE_ACC
@@ -57,33 +61,27 @@
 #define USE_ACC_SPI_MPU6500
 #define USE_GYRO_SPI_MPU6500
 
-#define USE_DUAL_GYRO
-
 #define GYRO_1_SPI_INSTANCE     SPI1
 #define GYRO_1_CS_PIN           PB12          // Onboard IMU
 #define GYRO_1_ALIGN            CW0_DEG
-#define ACC_1_ALIGN             CW0_DEG
+#define GYRO_1_EXTI_PIN         NONE
 
 #define GYRO_2_SPI_INSTANCE     SPI1
 #define GYRO_2_CS_PIN           PA8           // External IMU
-#define GYRO_2_ALIGN            CW0_DEG
-#define ACC_2_ALIGN             CW0_DEG
+#define GYRO_2_ALIGN            CW270_DEG
+#define GYRO_2_EXTI_PIN         NONE
 
 #define GYRO_CONFIG_USE_GYRO_DEFAULT GYRO_CONFIG_USE_GYRO_1
-
-// MPU interrupts
-//#define USE_EXTI
-//#define MPU_INT_EXTI            PC4
-//#define USE_MPU_DATA_READY_SIGNAL
 
 #define USE_MAG
 #define MAG_I2C_INSTANCE        (I2CDEV_1) 
 #define USE_MAG_HMC5883
+#define USE_MAG_LIS3MDL
 
 #define USE_BARO
 #define USE_BARO_SPI_LPS
-#define LPS_SPI_INSTANCE        SPI2
-#define LPS_CS_PIN              PA10
+#define BARO_SPI_INSTANCE       SPI2
+#define BARO_CS_PIN             PA10
 #define DEFAULT_BARO_SPI_LPS
 
 #define BARO_I2C_INSTANCE       (I2CDEV_1)
@@ -94,8 +92,6 @@
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI2
 #define MAX7456_SPI_CS_PIN      PA15
-#define MAX7456_SPI_CLK         (SPI_CLOCK_STANDARD) // 10MHz
-#define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
@@ -172,12 +168,12 @@
 
 #define USE_ADC
 #define ADC_INSTANCE            ADC1
+#define ADC1_DMA_OPT            1  // DMA 2 Stream 4 Channel 0 (compat default)
+#define ADC1_DMA_OPT            1  // DMA 2 Stream 4 Channel 0 (compat default)
 #define VBAT_ADC_PIN            PC0  // 11:1 (10K + 1K) divider
 #define CURRENT_METER_ADC_PIN   PC1
 #define RSSI_ADC_PIN            PC4
 #define EXTERNAL1_ADC_PIN       PA4
-
-#define CAMERA_CONTROL_PIN      PB15
 
 #define USE_TRANSPONDER
 
@@ -192,12 +188,10 @@
 #define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_ADC
 
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
-
 #define TARGET_IO_PORTA (0xffff & ~(BIT(14)|BIT(13))) // Less SWC and SWD
 #define TARGET_IO_PORTB (0xffff)
 #define TARGET_IO_PORTC (0xffff)
 #define TARGET_IO_PORTD BIT(2)
 
-#define USABLE_TIMER_CHANNEL_COUNT 22
+#define USABLE_TIMER_CHANNEL_COUNT 21
 #define USED_TIMERS ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(10) | TIM_N(11) | TIM_N(12))

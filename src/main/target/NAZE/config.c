@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -25,19 +25,16 @@
 
 #ifdef USE_TARGET_CONFIG
 
-#include "blackbox/blackbox.h"
-
 #include "common/axis.h"
 #include "common/utils.h"
 
 #include "drivers/io.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/rc_controls.h"
 #include "fc/controlrate_profile.h"
 
 #include "flight/failsafe.h"
-#include "flight/mixer.h"
 #include "flight/pid.h"
 
 #include "pg/rx.h"
@@ -50,6 +47,7 @@
 
 #include "pg/beeper_dev.h"
 #include "pg/flash.h"
+#include "pg/motor.h"
 
 #include "hardware_revision.h"
 
@@ -63,8 +61,9 @@ void targetConfiguration(void)
 
     motorConfigMutable()->minthrottle = 1049;
 
-    gyroConfigMutable()->gyro_hardware_lpf = GYRO_HARDWARE_LPF_1KHZ_SAMPLE;
-    gyroConfigMutable()->gyro_lowpass_hz = 100;
+    gyroDeviceConfigMutable()->extiTag = selectMPUIntExtiConfigByHardwareRevision();
+
+    gyroConfigMutable()->gyro_soft_lpf_hz = 100;
     gyroConfigMutable()->gyro_soft_notch_hz_1 = 0;
     gyroConfigMutable()->gyro_soft_notch_hz_2 = 0;
 
@@ -73,7 +72,7 @@ void targetConfiguration(void)
         rxChannelRangeConfigsMutable(channel)->max = 1860;
     }*/
 
-    for (uint8_t pidProfileIndex = 0; pidProfileIndex < MAX_PROFILE_COUNT; pidProfileIndex++) {
+    for (uint8_t pidProfileIndex = 0; pidProfileIndex < PID_PROFILE_COUNT; pidProfileIndex++) {
         pidProfile_t *pidProfile = pidProfilesMutable(pidProfileIndex);
 
         pidProfile->pid[PID_ROLL].P = 60;
@@ -118,15 +117,10 @@ void targetConfiguration(void)
     }
 #endif
 
-#ifdef MAG_INT_EXTI
+#if defined(USE_MAG) && defined(MAG_INT_EXTI)
     if (hardwareRevision < NAZE32_REV5) {
         compassConfigMutable()->interruptTag = IO_TAG(PB12);
     }
-#endif
-
-#ifdef BLACKBOX
-    if (hardwareRevision >= NAZE32_REV5)
-        blackboxConfigMutable()->device = BLACKBOX_DEVICE_FLASH;
 #endif
 }
 

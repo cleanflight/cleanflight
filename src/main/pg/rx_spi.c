@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -40,5 +40,15 @@ void pgResetFn_rxSpiConfig(rxSpiConfig_t *rxSpiConfig)
     // Basic SPI
     rxSpiConfig->csnTag = IO_TAG(RX_NSS_PIN);
     rxSpiConfig->spibus = SPI_DEV_TO_CFG(spiDeviceByInstance(RX_SPI_INSTANCE));
+
+    rxSpiConfig->extiIoTag = IO_TAG(RX_SPI_EXTI_PIN);
+
+    rxSpiConfig->bindIoTag = IO_TAG(RX_SPI_BIND_PIN);
+    rxSpiConfig->ledIoTag = IO_TAG(RX_SPI_LED_PIN);
+#ifdef RX_SPI_LED_INVERTED
+    rxSpiConfig->ledInversion = true;
+#else
+    rxSpiConfig->ledInversion = false;
+#endif
 }
 #endif

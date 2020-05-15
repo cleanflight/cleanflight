@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -19,6 +19,8 @@
  */
 
 #pragma once
+
+#define USE_TELEMETRY_IBUS
 
 #define USE_TARGET_CONFIG
 #define TARGET_VALIDATECONFIG
@@ -56,7 +58,8 @@
 
 #define USE_EXTI
 #define MAG_INT_EXTI            PC14
-#define MPU_INT_EXTI            PC13
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN         PC13
 #define MMA8451_INT_PIN         PA5
 
 #define USE_MPU_DATA_READY_SIGNAL
@@ -72,8 +75,8 @@
 #define FLASH_CS_PIN            NAZE_SPI_CS_PIN
 #define FLASH_SPI_INSTANCE      NAZE_SPI_INSTANCE
 
-#define MPU6500_CS_PIN          NAZE_SPI_CS_PIN
-#define MPU6500_SPI_INSTANCE    NAZE_SPI_INSTANCE
+#define GYRO_1_CS_PIN           NAZE_SPI_CS_PIN
+#define GYRO_1_SPI_INSTANCE     NAZE_SPI_INSTANCE
 
 #define USE_FLASHFS
 #define USE_FLASH_M25P16
@@ -84,9 +87,7 @@
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
 
-#define GYRO_MPU3050_ALIGN      CW0_DEG
-#define GYRO_MPU6050_ALIGN      CW0_DEG
-#define GYRO_MPU6500_ALIGN      CW0_DEG
+#define GYRO_1_ALIGN            CW0_DEG
 
 #define USE_ACC
 //#define USE_ACC_ADXL345
@@ -97,19 +98,21 @@
 #define USE_ACC_SPI_MPU6500
 
 //#define ACC_ADXL345_ALIGN       CW270_DEG
-#define ACC_MPU6050_ALIGN       CW0_DEG
 //#define ACC_MMA8452_ALIGN       CW90_DEG
 //#define ACC_BMA280_ALIGN        CW0_DEG
-#define ACC_MPU6500_ALIGN       CW0_DEG
 
-#define USE_BARO
-#define USE_BARO_MS5611 // needed for Flip32 board
-#define USE_BARO_BMP280
 
+// Barometer dropped to make flash space
+//#define USE_BARO
+//#define USE_BARO_MS5611 // needed for Flip32 board
+//#define USE_BARO_BMP280
+
+// Compass dropped to make flash space
 //#define USE_MAG
 //#define USE_MAG_HMC5883
 //#define MAG_HMC5883_ALIGN       CW180_DEG
 
+// Rangefinder dropped to make flash space
 //#define USE_RANGEFINDER
 //#define USE_RANGEFINDER_HCSR04
 //#define RANGEFINDER_HCSR04_TRIGGER_PIN       PB0

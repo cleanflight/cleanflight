@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -136,13 +136,6 @@ static inline uint8_t __basepriSetRetVal(uint8_t prio)
 // - at exit of block (all exit paths) (parameter value if written into memory, but may be cached in register for subsequent use)
 // On gcc 5 and higher, this protects only memory passed as parameter (any type can be used)
 // this macro can be used only ONCE PER LINE, but multiple uses per block are fine
-
-#if (__GNUC__ > 7)
-# warning "Please verify that ATOMIC_BARRIER works as intended"
-// increment version number if BARRIER works
-// TODO - use flag to disable ATOMIC_BARRIER and use full barrier instead
-// you should check that local variable scope with cleanup spans entire block
-#endif
 
 #ifndef __UNIQL
 # define __UNIQL_CONCAT2(x,y) x ## y

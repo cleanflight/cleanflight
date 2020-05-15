@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -44,7 +44,7 @@ FAST_CODE float nullFilterApply(filter_t *filter, float input)
 
 // PT1 Low Pass filter
 
-float pt1FilterGain(uint16_t f_cut, float dT)
+float pt1FilterGain(float f_cut, float dT)
 {
     float RC = 1 / ( 2 * M_PI_FLOAT * f_cut);
     return dT / (RC + dT);
@@ -208,6 +208,8 @@ void laggedMovingAverageInit(laggedMovingAverage_t *filter, uint16_t windowSize,
     filter->movingWindowIndex = 0;
     filter->windowSize = windowSize;
     filter->buf = buf;
+    filter->movingSum = 0;
+    memset(filter->buf, 0, windowSize * sizeof(float));
     filter->primed = false;
 }
 
