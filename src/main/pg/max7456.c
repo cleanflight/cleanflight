@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -37,5 +37,6 @@ void pgResetFn_max7456Config(max7456Config_t *config)
     config->clockConfig = MAX7456_CLOCK_CONFIG_DEFAULT;
     config->csTag = IO_TAG(MAX7456_SPI_CS_PIN);
     config->spiDevice = SPI_DEV_TO_CFG(spiDeviceByInstance(MAX7456_SPI_INSTANCE));
+    config->preInitOPU = false;
 }
 #endif // USE_MAX7456

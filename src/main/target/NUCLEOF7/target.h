@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -33,32 +33,39 @@
 #define BEEPER_PIN PA0
 #define BEEPER_INVERTED
 
+#undef USE_MULTI_GYRO // XXX Drop this if target has I2C configured
+
 #define USE_ACC
 #define USE_FAKE_ACC
 #define USE_ACC_MPU6050
-#define ACC_MPU6050_ALIGN CW270_DEG
 
 #define USE_GYRO
 #define USE_FAKE_GYRO
 #define USE_GYRO_MPU6050
-#define GYRO_MPU6050_ALIGN CW270_DEG
+#define GYRO_1_ALIGN       CW270_DEG
 
 // MPU6050 interrupts
 #define USE_MPU_DATA_READY_SIGNAL
-#define MPU_INT_EXTI PB15
+#define USE_EXTI
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN    PB15
 #define USE_EXTI
 
 #define USE_MAG
 #define USE_FAKE_MAG
 #define USE_MAG_HMC5883
 #define USE_MAG_QMC5883
+#define USE_MAG_LIS3MDL
 #define MAG_HMC5883_ALIGN CW270_DEG_FLIP
 
 #define USE_BARO
 #define USE_FAKE_BARO
 #define USE_BARO_MS5611
+#define USE_BARO_SPI_BMP388
+#define BARO_SPI_INSTANCE       SPI1
+#define BARO_CS_PIN             SPI1_NSS_PIN
 
-#define USABLE_TIMER_CHANNEL_COUNT 16
+#define USABLE_TIMER_CHANNEL_COUNT 11
 
 #define USE_VCP
 #define USE_USB_DETECT
@@ -119,18 +126,22 @@
 #define SPI4_MOSI_PIN           PE14
 
 #define USE_SDCARD
+#define USE_SDCARD_SPI
 #define SDCARD_DETECT_INVERTED
 #define SDCARD_DETECT_PIN                   PF14
-
 #define SDCARD_SPI_INSTANCE                 SPI4
 #define SDCARD_SPI_CS_PIN                   SPI4_NSS_PIN
+#define SPI4_TX_DMA_OPT                     0     // DMA 2 Stream 1 Channel 4
 
-#define SDCARD_SPI_INITIALIZATION_CLOCK_DIVIDER 256 // 422kHz
-// Divide to under 25MHz for normal operation:
-#define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER 8 // 27MHz
-
-#define SDCARD_DMA_STREAM_TX_FULL           DMA2_Stream1
-#define SDCARD_DMA_CHANNEL                  4
+#define USE_FLASHFS
+#define USE_FLASH_CHIP
+#define USE_FLASH_M25P16
+#define USE_FLASH_W25N01G          // 1Gb NAND flash support
+#define USE_FLASH_W25M             // Stacked die support
+#define USE_FLASH_W25M512          // 512Kb (256Kb x 2 stacked) NOR flash support
+#define USE_FLASH_W25M02G          // 2Gb (1Gb x 2 stacked) NAND flash support
+#define FLASH_SPI_INSTANCE      SPI4
+#define FLASH_CS_PIN            PE10
 
 #define USE_I2C
 #define USE_I2C_DEVICE_1
@@ -141,14 +152,12 @@
 #define USE_ADC
 #define VBAT_ADC_PIN                PA3
 #define CURRENT_METER_ADC_PIN       PC0
-#define RSSI_ADC_GPIO_PIN           PC3
+#define RSSI_ADC_PIN                PC3
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
 #define SERIALRX_PROVIDER       SERIALRX_SBUS
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 #define TARGET_IO_PORTA 0xffff
 #define TARGET_IO_PORTB 0xffff
@@ -158,4 +167,4 @@
 #define TARGET_IO_PORTF 0xffff
 #define TARGET_IO_PORTG 0xffff
 
-#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(12) | TIM_N(8) | TIM_N(9) | TIM_N(10) | TIM_N(11))
+#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(9) | TIM_N(12) )

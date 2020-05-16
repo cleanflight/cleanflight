@@ -26,7 +26,7 @@ extern "C" {
 #include "io/serial.h"
 #include "io/gps.h"
 #include "flight/imu.h"
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/rc_controls.h"
 #include "telemetry/telemetry.h"
 #include "telemetry/ibus.h"
@@ -35,7 +35,7 @@ extern "C" {
 #include "sensors/barometer.h"
 #include "sensors/acceleration.h"
 #include "scheduler/scheduler.h"
-#include "fc/fc_tasks.h"
+#include "fc/tasks.h"
 }
 
 #include "unittest_macros.h"
@@ -62,7 +62,7 @@ int16_t gyroGetTemperature(void) {
     return gyroTemperature;
 }
 
-static uint16_t vbat = 100;
+static uint16_t vbat = 1000;
 uint16_t getVbat(void)
 {
     return vbat;
@@ -108,7 +108,7 @@ throttleStatus_e calculateThrottleStatus(void)
     return throttleStatus;
 }
 
-bool feature(uint32_t mask)
+bool featureIsEnabled(uint32_t mask)
 {
     return (definedFeatures & mask) != 0;
 }
@@ -128,7 +128,7 @@ typedef struct serialPortStub_s {
 } serialPortStub_t;
 
 
-static uint16_t testBatteryVoltage = 100;
+static uint16_t testBatteryVoltage = 1000;
 uint16_t getBatteryVoltage(void)
 {
     return testBatteryVoltage;
@@ -154,15 +154,15 @@ static bool portIsShared = false;
 static bool openSerial_called = false;
 static bool telemetryDetermineEnabledState_stub_retval;
 
-void rescheduleTask(cfTaskId_e taskId, uint32_t newPeriodMicros)
+void rescheduleTask(taskId_e taskId, timeDelta_t newPeriodUs)
 {
     EXPECT_EQ(TASK_TELEMETRY, taskId);
-    EXPECT_EQ(1000, newPeriodMicros);
+    EXPECT_EQ(1000, newPeriodUs);
 }
 
 
 
-serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function)
+const serialPortConfig_t *findSerialPortConfig(serialPortFunction_e function)
 {
     EXPECT_EQ(FUNCTION_TELEMETRY_IBUS, function);
     return findSerialPortConfig_stub_retval;
@@ -181,6 +181,12 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing)
 {
     (void) portSharing;
     return telemetryDetermineEnabledState_stub_retval;
+}
+
+
+bool telemetryIsSensorEnabled(sensor_e sensor) {
+    UNUSED(sensor);
+    return true;
 }
 
 
@@ -463,13 +469,13 @@ TEST_F(IbusTelemteryProtocolUnitTest, Test_IbusRespondToGetMeasurementVbattCellV
     //Given ibus command: Sensor at address 1, please send your measurement
     //then we respond with: I'm reading 0.1 volts
     testBatteryCellCount =3;
-    testBatteryVoltage = 30;
+    testBatteryVoltage = 300;
     checkResponseToCommand("\x04\xA1\x5a\xff", 4, "\x06\xA1\x64\x00\xf4\xFe", 6);
 
     //Given ibus command: Sensor at address 1, please send your measurement
     //then we respond with: I'm reading 0.1 volts
     testBatteryCellCount =1;
-    testBatteryVoltage = 10;
+    testBatteryVoltage = 100;
     checkResponseToCommand("\x04\xA1\x5a\xff", 4, "\x06\xA1\x64\x00\xf4\xFe", 6);
 }
 
@@ -480,13 +486,13 @@ TEST_F(IbusTelemteryProtocolUnitTest, Test_IbusRespondToGetMeasurementVbattPackV
     //Given ibus command: Sensor at address 1, please send your measurement
     //then we respond with: I'm reading 0.1 volts
     testBatteryCellCount =3;
-    testBatteryVoltage = 10;
+    testBatteryVoltage = 100;
     checkResponseToCommand("\x04\xA1\x5a\xff", 4, "\x06\xA1\x64\x00\xf4\xFe", 6);
 
     //Given ibus command: Sensor at address 1, please send your measurement
     //then we respond with: I'm reading 0.1 volts
     testBatteryCellCount =1;
-    testBatteryVoltage = 10;
+    testBatteryVoltage = 100;
     checkResponseToCommand("\x04\xA1\x5a\xff", 4, "\x06\xA1\x64\x00\xf4\xFe", 6);
 }
 
@@ -574,7 +580,7 @@ TEST_F(IbusTelemteryProtocolUnitTestDaisyChained, Test_IbusRespondToGetMeasureme
     //Given ibus command: Sensor at address 3, please send your measurement
     //then we respond with: I'm reading 0.1 volts
     testBatteryCellCount = 1;
-    testBatteryVoltage = 10;
+    testBatteryVoltage = 100;
     checkResponseToCommand("\x04\xA3\x58\xff", 4, "\x06\xA3\x64\x00\xf2\xfe", 6);
 
     //Given ibus command: Sensor at address 4, please send your measurement

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -32,6 +32,24 @@
 #include "pg/max7456.h"
 #include "pg/pg.h"
 
+#ifdef SYNERGYF4
+#include "io/vtx.h"
+#include "io/ledstrip.h"
+#include "config/config.h"
+#include "pg/piniobox.h"
+#include "common/axis.h"
+#include "sensors/barometer.h"
+#include "sensors/compass.h"
+#include "sensors/gyro.h"
+#include "flight/pid.h"
+#include "drivers/pwm_output.h"
+#include "pg/motor.h"
+
+static targetSerialPortFunction_t targetSerialPortFunction[] = {
+    { SERIAL_PORT_USART1, FUNCTION_RX_SERIAL },
+    { SERIAL_PORT_USART3,  FUNCTION_VTX_SMARTAUDIO },
+};
+#endif
 #ifdef EXUAVF4PRO
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
     { SERIAL_PORT_USART1, FUNCTION_TELEMETRY_SMARTPORT },
@@ -50,6 +68,14 @@ void targetConfiguration(void)
 
 #ifdef EXUAVF4PRO
     targetSerialPortFunctionConfig(targetSerialPortFunction, ARRAYLEN(targetSerialPortFunction));
+#endif
+#ifdef SYNERGYF4
+    pinioBoxConfigMutable()->permanentId[0] = 40;
+    vtxSettingsConfigMutable()->pitModeFreq = 0;
+    ledStripStatusModeConfigMutable()->ledConfigs[0] = DEFINE_LED(0, 0, 0, 0, LF(COLOR), LO(VTX), 0);
+    targetSerialPortFunctionConfig(targetSerialPortFunction, ARRAYLEN(targetSerialPortFunction));
+    motorConfigMutable()->dev.motorPwmProtocol = PWM_TYPE_DSHOT600;
+    pidConfigMutable()->pid_process_denom = 1; // 8kHz PID
 #endif
 }
 #endif

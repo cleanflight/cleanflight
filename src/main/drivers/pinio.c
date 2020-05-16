@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -51,6 +51,11 @@ void pinioInit(const pinioConfig_t *pinioConfig)
 
         switch (pinioConfig->config[i] & PINIO_CONFIG_MODE_MASK) {
         case PINIO_CONFIG_MODE_OUT_PP:
+            // Initial state after reset is input, pull-up.
+            // Avoid momentary off by presetting the output to hi.
+            if (pinioConfig->config[i] & PINIO_CONFIG_OUT_INVERTED) {
+                IOHi(io);
+            }
             IOConfigGPIO(io, IOCFG_OUT_PP);
             break;
         }
@@ -59,12 +64,13 @@ void pinioInit(const pinioConfig_t *pinioConfig)
         {
             pinioRuntime[i].inverted = true;
             IOHi(io);
+            pinioRuntime[i].state = true;
         } else {
             pinioRuntime[i].inverted = false;
             IOLo(io);
+            pinioRuntime[i].state = false;
         }
         pinioRuntime[i].io = io;
-        pinioRuntime[i].state = false;
     }
 }
 

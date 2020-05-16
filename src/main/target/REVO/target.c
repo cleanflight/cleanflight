@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -28,6 +28,16 @@
 #include "drivers/timer_def.h"
 
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+#if defined(ELINF405)
+    DEF_TIM(TIM3,  CH3,  PB0, TIM_USE_MOTOR, 0, 0),
+    DEF_TIM(TIM3,  CH4,  PB1, TIM_USE_MOTOR, 0, 0),
+    DEF_TIM(TIM2,  CH4,  PA3, TIM_USE_MOTOR, 0, 1),
+    DEF_TIM(TIM2,  CH3,  PA2, TIM_USE_MOTOR, 0, 0),
+    DEF_TIM(TIM1,  CH1,  PA8, TIM_USE_ANY,   0, 0),
+    DEF_TIM(TIM8,  CH4,  PC9, TIM_USE_ANY,   0, 0),
+    DEF_TIM(TIM4,  CH1,  PB6, TIM_USE_PPM | TIM_USE_LED,   0, 0),
+    DEF_TIM(TIM4,  CH2,  PB7, TIM_USE_CAMERA_CONTROL, 0, 0),
+#else
     DEF_TIM(TIM12, CH1, PB14, TIM_USE_PWM | TIM_USE_PPM,   0, 0), // PPM (5th pin on FlexiIO port)
     DEF_TIM(TIM12, CH2, PB15, TIM_USE_PWM,                 0, 0), // S2_IN
     DEF_TIM(TIM8,  CH1, PC6,  TIM_USE_PWM,                 0, 0), // S3_IN
@@ -47,5 +57,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #else
     DEF_TIM(TIM5,  CH2, PA1,  TIM_USE_MOTOR | TIM_USE_LED, 0, 0), // S5_OUT / LED
     DEF_TIM(TIM5,  CH1, PA0,  TIM_USE_MOTOR,               0, 0), // S6_OUT D1_ST2
+#endif
 #endif
 };

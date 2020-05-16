@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -36,7 +36,7 @@
 
 #include "platform.h"
 
-#ifdef USE_TELEMETRY
+#ifdef USE_TELEMETRY_LTM
 
 #include "build/build_config.h"
 
@@ -49,7 +49,7 @@
 #include "drivers/sensor.h"
 #include "drivers/accgyro/accgyro.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/rc_controls.h"
 #include "fc/runtime_config.h"
 
@@ -84,7 +84,7 @@
 #define LTM_CYCLETIME   100
 
 static serialPort_t *ltmPort;
-static serialPortConfig_t *portConfig;
+static const serialPortConfig_t *portConfig;
 static bool ltmEnabled;
 static portSharing_e ltmPortSharing;
 static uint8_t ltm_crc;
@@ -148,9 +148,9 @@ static void ltm_gframe(void)
     ltm_serialise_8((uint8_t)(gpsSol.groundSpeed / 100));
 
 #if defined(USE_BARO) || defined(USE_RANGEFINDER)
-    ltm_alt = (sensors(SENSOR_RANGEFINDER) || sensors(SENSOR_BARO)) ? getEstimatedAltitude() : gpsSol.llh.alt * 100;
+    ltm_alt = (sensors(SENSOR_RANGEFINDER) || sensors(SENSOR_BARO)) ? getEstimatedAltitudeCm() : gpsSol.llh.altCm;
 #else
-    ltm_alt = gpsSol.llh.alt * 100;
+    ltm_alt = gpsSol.llh.altCm;
 #endif
     ltm_serialise_32(ltm_alt);
     ltm_serialise_8((gpsSol.numSat << 2) | gps_fix_type);
@@ -175,14 +175,8 @@ static void ltm_sframe(void)
     uint8_t lt_statemode;
     if (FLIGHT_MODE(PASSTHRU_MODE))
         lt_flightmode = 0;
-    else if (FLIGHT_MODE(GPS_HOME_MODE))
-        lt_flightmode = 13;
-    else if (FLIGHT_MODE(GPS_HOLD_MODE))
-        lt_flightmode = 9;
     else if (FLIGHT_MODE(HEADFREE_MODE))
         lt_flightmode = 4;
-    else if (FLIGHT_MODE(BARO_MODE))
-        lt_flightmode = 8;
     else if (FLIGHT_MODE(ANGLE_MODE))
         lt_flightmode = 2;
     else if (FLIGHT_MODE(HORIZON_MODE))
@@ -194,7 +188,7 @@ static void ltm_sframe(void)
     if (failsafeIsActive())
         lt_statemode |= 2;
     ltm_initialise_packet('S');
-    ltm_serialise_16(getBatteryVoltage() * 100);    //vbat converted to mv
+    ltm_serialise_16(getBatteryVoltage() * 10);    //vbat converted to mV
     ltm_serialise_16(0);             //  current, not implemented
     ltm_serialise_8(constrain(scaleRange(getRssi(), 0, RSSI_MAX_VALUE, 0, 255), 0, 255));        // scaled RSSI (uchar)
     ltm_serialise_8(0);              // no airspeed
@@ -295,7 +289,7 @@ void configureLtmTelemetryPort(void)
 
 void checkLtmTelemetryState(void)
 {
-    if (portConfig && telemetryCheckRxPortShared(portConfig)) {
+    if (portConfig && telemetryCheckRxPortShared(portConfig, rxRuntimeState.serialrxProvider)) {
         if (!ltmEnabled && telemetrySharedPort != NULL) {
             ltmPort = telemetrySharedPort;
             ltmEnabled = true;

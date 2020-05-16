@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -74,14 +74,9 @@ typedef enum {
 typedef enum {
     RC_SMOOTHING_DERIVATIVE_OFF,
     RC_SMOOTHING_DERIVATIVE_PT1,
-    RC_SMOOTHING_DERIVATIVE_BIQUAD
+    RC_SMOOTHING_DERIVATIVE_BIQUAD,
+    RC_SMOOTHING_DERIVATIVE_AUTO,
 } rcSmoothingDerivativeFilter_e;
-
-typedef enum {
-    RC_SMOOTHING_VALUE_INPUT_ACTIVE,
-    RC_SMOOTHING_VALUE_DERIVATIVE_ACTIVE,
-    RC_SMOOTHING_VALUE_AVERAGE_FRAME
-} rcSmoothingInfoType_e;
 
 #define ROL_LO (1 << (2 * ROLL))
 #define ROL_CE (3 << (2 * ROLL))
@@ -100,7 +95,10 @@ typedef enum {
 
 #define CONTROL_RATE_CONFIG_RC_RATES_MAX  255
 
-// (Super) rates are constrained to [0, 100] for Betaflight rates, so values higher than 100 won't make a difference. Range extended for RaceFlight rates.
+#define CONTROL_RATE_CONFIG_RATE_LIMIT_MIN	200
+#define CONTROL_RATE_CONFIG_RATE_LIMIT_MAX	1998
+
+// (Super) rates are constrained to [0, 100] for Legacy rates, so values higher than 100 won't make a difference. Range extended for RaceFlight rates.
 #define CONTROL_RATE_CONFIG_RATE_MAX  255
 
 #define CONTROL_RATE_CONFIG_TPA_MAX              100
@@ -122,10 +120,17 @@ typedef union rcSmoothingFilterTypes_u {
 typedef struct rcSmoothingFilter_s {
     bool filterInitialized;
     rcSmoothingFilterTypes_t filter[4];
+    rcSmoothingInputFilter_e inputFilterType;
+    uint8_t inputCutoffSetting;
     uint16_t inputCutoffFrequency;
+    rcSmoothingDerivativeFilter_e derivativeFilterTypeSetting;
+    rcSmoothingDerivativeFilter_e derivativeFilterType;
+    uint8_t derivativeCutoffSetting;
     uint16_t derivativeCutoffFrequency;
     int averageFrameTimeUs;
     rcSmoothingFilterTraining_t training;
+    uint8_t debugAxis;
+    uint8_t autoSmoothnessFactor;
 } rcSmoothingFilter_t;
 
 typedef struct rcControlsConfig_s {
@@ -166,6 +171,4 @@ void processRcStickPositions();
 bool isUsingSticksForArming(void);
 
 int32_t getRcStickDeflection(int32_t axis, uint16_t midrc);
-struct pidProfile_s;
-struct modeActivationCondition_s;
-void useRcControlsConfig(struct pidProfile_s *pidProfileToUse);
+void rcControlsInit(void);

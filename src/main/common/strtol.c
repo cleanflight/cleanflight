@@ -15,13 +15,15 @@
  *  License along with this library; if not, see
  *  <http://www.gnu.org/licenses/>.
 
- * Adapted for Betaflight by Petr Ledvina, 2018
+ * Adapted for Cleanflight by Petr Ledvina, 2018
 
  */
 
 
 #include <ctype.h>
 #include <limits.h>
+
+#include "platform.h"
 
 #include "common/utils.h"
 

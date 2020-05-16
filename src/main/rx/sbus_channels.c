@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,7 +24,7 @@
 
 #include "platform.h"
 
-#ifdef USE_SERIAL_RX
+#ifdef USE_SBUS_CHANNELS
 
 #include "common/utils.h"
 
@@ -41,9 +41,9 @@
 #define SBUS_DIGITAL_CHANNEL_MIN 173
 #define SBUS_DIGITAL_CHANNEL_MAX 1812
 
-uint8_t sbusChannelsDecode(rxRuntimeConfig_t *rxRuntimeConfig, const sbusChannels_t *channels)
+uint8_t sbusChannelsDecode(rxRuntimeState_t *rxRuntimeState, const sbusChannels_t *channels)
 {
-    uint16_t *sbusChannelData = rxRuntimeConfig->channelData;
+    uint16_t *sbusChannelData = rxRuntimeState->channelData;
     sbusChannelData[0] = channels->chan0;
     sbusChannelData[1] = channels->chan1;
     sbusChannelData[2] = channels->chan2;
@@ -87,18 +87,18 @@ uint8_t sbusChannelsDecode(rxRuntimeConfig_t *rxRuntimeConfig, const sbusChannel
     return RX_FRAME_COMPLETE;
 }
 
-static uint16_t sbusChannelsReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
+static uint16_t sbusChannelsReadRawRC(const rxRuntimeState_t *rxRuntimeState, uint8_t chan)
 {
     // Linear fitting values read from OpenTX-ppmus and comparing with values received by X4R
     // http://www.wolframalpha.com/input/?i=linear+fit+%7B173%2C+988%7D%2C+%7B1812%2C+2012%7D%2C+%7B993%2C+1500%7D
-    return (5 * rxRuntimeConfig->channelData[chan] / 8) + 880;
+    return (5 * rxRuntimeState->channelData[chan] / 8) + 880;
 }
 
-void sbusChannelsInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
+void sbusChannelsInit(const rxConfig_t *rxConfig, rxRuntimeState_t *rxRuntimeState)
 {
-    rxRuntimeConfig->rcReadRawFn = sbusChannelsReadRawRC;
+    rxRuntimeState->rcReadRawFn = sbusChannelsReadRawRC;
     for (int b = 0; b < SBUS_MAX_CHANNEL; b++) {
-        rxRuntimeConfig->channelData[b] = (16 * rxConfig->midrc) / 10 - 1408;
+        rxRuntimeState->channelData[b] = (16 * rxConfig->midrc) / 10 - 1408;
     }
 }
 #endif

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -22,6 +22,8 @@
 #include <stdint.h>
 
 #include "platform.h"
+
+#ifdef USE_ACC_MMA8452
 
 #include "drivers/io.h"
 #include "drivers/bus_i2c.h"
@@ -86,7 +88,7 @@ static uint8_t device_id;
 static inline void mma8451ConfigureInterrupt(void)
 {
 #ifdef MMA8451_INT_PIN
-    IOInit(IOGetByTag(IO_TAG(MMA8451_INT_PIN)), OWNER_MPU_EXTI, 0);
+    IOInit(IOGetByTag(IO_TAG(MMA8451_INT_PIN)), OWNER_GYRO_EXTI, 0);
     // TODO - maybe pullup / pulldown ?
     IOConfigGPIO(IOGetByTag(IO_TAG(MMA8451_INT_PIN)), IOCFG_IN_FLOATING);
 #endif
@@ -139,3 +141,4 @@ bool mma8452Detect(accDev_t *acc)
     device_id = sig;
     return true;
 }
+#endif

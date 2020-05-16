@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,9 +24,12 @@
 
 #include "platform.h"
 
+#ifdef USE_DMA
+
 #include "drivers/nvic.h"
 #include "drivers/dma.h"
-#include "resource.h"
+#include "drivers/rcc.h"
+#include "drivers/resource.h"
 
 /*
  * DMA descriptors.
@@ -74,14 +77,7 @@ DEFINE_DMA_IRQ_HANDLER(2, 7, DMA2_ST7_HANDLER)
 
 static void enableDmaClock(int index)
 {
-    const uint32_t rcc = dmaDescriptors[index].dma == DMA1 ? RCC_AHB1ENR_DMA1EN : RCC_AHB1ENR_DMA2EN;
-    do {
-        __IO uint32_t tmpreg;
-        SET_BIT(RCC->AHB1ENR, rcc);
-        /* Delay after an RCC peripheral clock enabling */
-        tmpreg = READ_BIT(RCC->AHB1ENR, rcc);
-        UNUSED(tmpreg);
-    } while (0);
+    RCC_ClockCmd(dmaDescriptors[index].dma == DMA1 ? RCC_AHB1(DMA1) : RCC_AHB1(DMA2), ENABLE);
 }
 
 void dmaInit(dmaIdentifier_e identifier, resourceOwner_e owner, uint8_t resourceIndex)
@@ -89,8 +85,8 @@ void dmaInit(dmaIdentifier_e identifier, resourceOwner_e owner, uint8_t resource
     const int index = DMA_IDENTIFIER_TO_INDEX(identifier);
 
     enableDmaClock(index);
-    dmaDescriptors[index].owner = owner;
-    dmaDescriptors[index].resourceIndex = resourceIndex;
+    dmaDescriptors[index].owner.owner = owner;
+    dmaDescriptors[index].owner.resourceIndex = resourceIndex;
 }
 
 void dmaSetHandler(dmaIdentifier_e identifier, dmaCallbackHandlerFuncPtr callback, uint32_t priority, uint32_t userParam)
@@ -105,17 +101,12 @@ void dmaSetHandler(dmaIdentifier_e identifier, dmaCallbackHandlerFuncPtr callbac
     HAL_NVIC_EnableIRQ(dmaDescriptors[index].irqN);
 }
 
-resourceOwner_e dmaGetOwner(dmaIdentifier_e identifier)
+const resourceOwner_t *dmaGetOwner(dmaIdentifier_e identifier)
 {
-    return dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].owner;
+    return &dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].owner;
 }
 
-uint8_t dmaGetResourceIndex(dmaIdentifier_e identifier)
-{
-    return dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].resourceIndex;
-}
-
-dmaIdentifier_e dmaGetIdentifier(const DMA_Stream_TypeDef* stream)
+dmaIdentifier_e dmaGetIdentifier(const dmaResource_t* stream)
 {
     for (int i = 0; i < DMA_LAST_HANDLER; i++) {
         if (dmaDescriptors[i].ref == stream) {
@@ -125,7 +116,7 @@ dmaIdentifier_e dmaGetIdentifier(const DMA_Stream_TypeDef* stream)
     return 0;
 }
 
-DMA_Stream_TypeDef* dmaGetRefByIdentifier(const dmaIdentifier_e identifier)
+dmaResource_t *dmaGetRefByIdentifier(const dmaIdentifier_e identifier)
 {
     return dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].ref;
 }
@@ -139,3 +130,4 @@ uint32_t dmaGetChannel(const uint8_t channel)
 {
     return ((uint32_t)channel*2)<<24;
 }
+#endif

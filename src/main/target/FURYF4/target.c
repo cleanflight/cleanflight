@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -36,5 +36,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM2, CH3,  PA2, TIM_USE_MOTOR, 0, 0 ), // S4_OUT - DMA1_ST1_CH3
 
     DEF_TIM(TIM5, CH1,  PA0, TIM_USE_LED,   0, 0 ), // LED_STRIP - DMA1_ST2_CH6
+    DEF_TIM(TIM11, CH1, PB9,  TIM_USE_CAMERA_CONTROL,  0, 0), // CAM_CTL
 
 };

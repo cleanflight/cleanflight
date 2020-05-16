@@ -41,7 +41,7 @@ extern "C" {
     #include "drivers/serial.h"
     #include "drivers/system.h"
 
-    #include "fc/config.h"
+    #include "config/config.h"
     #include "fc/runtime_config.h"
 
     #include "flight/pid.h"
@@ -61,6 +61,7 @@ extern "C" {
     #include "telemetry/telemetry.h"
     #include "telemetry/msp_shared.h"
 
+    rssiSource_e rssiSource;
     bool airMode;
 
     uint16_t testBatteryVoltage = 0;
@@ -124,8 +125,8 @@ TEST(TelemetryCrsfTest, TestGPS)
     gpsSol.llh.lat = 56 * GPS_DEGREES_DIVIDER;
     gpsSol.llh.lon = 163 * GPS_DEGREES_DIVIDER;
     ENABLE_STATE(GPS_FIX);
-    gpsSol.llh.alt = 2345 * 100;              // altitude in cm
-    gpsSol.groundSpeed = 163;                 // speed in 0.1m/s, 16.3 m/s = 58.68 km/h, so CRSF (km/h *10) value is 587
+    gpsSol.llh.altCm = 2345 * 100;            // altitude in cm / 100 + 1000m offset, so CRSF value should be 3345
+    gpsSol.groundSpeed = 1630;                // speed in cm/s, 16.3 m/s = 58.68 km/h, so CRSF (km/h *10) value is 587
     gpsSol.numSat = 9;
     gpsSol.groundCourse = 1479;     // degrees * 10
     frameLen = getCrsfFrame(frame, CRSF_FRAMETYPE_GPS);
@@ -164,7 +165,7 @@ TEST(TelemetryCrsfTest, TestBattery)
     EXPECT_EQ(67, remaining);
     EXPECT_EQ(crfsCrc(frame, frameLen), frame[11]);
 
-    testBatteryVoltage = 33; // 3.3V = 3300 mv
+    testBatteryVoltage = 330; // 3.3V = 3300 mv
     testAmperage = 2960; // = 29.60A = 29600mA - amperage is in 0.01A steps
     testmAhDrawn = 1234;
     frameLen = getCrsfFrame(frame, CRSF_FRAMETYPE_BATTERY_SENSOR);
@@ -216,9 +217,30 @@ TEST(TelemetryCrsfTest, TestFlightMode)
 {
     uint8_t frame[CRSF_FRAME_SIZE_MAX];
 
-    // nothing set, so ACRO mode
+    ENABLE_STATE(GPS_FIX);
+    ENABLE_STATE(GPS_FIX_HOME);
+
     airMode = false;
+
+    DISABLE_ARMING_FLAG(ARMED);
+
+    // nothing set, so ACRO mode
     int frameLen = getCrsfFrame(frame, CRSF_FRAMETYPE_FLIGHT_MODE);
+    EXPECT_EQ(6 + FRAME_HEADER_FOOTER_LEN, frameLen);
+    EXPECT_EQ(CRSF_SYNC_BYTE, frame[0]); // address
+    EXPECT_EQ(8, frame[1]); // length
+    EXPECT_EQ(0x21, frame[2]); // type
+    EXPECT_EQ('A', frame[3]);
+    EXPECT_EQ('C', frame[4]);
+    EXPECT_EQ('R', frame[5]);
+    EXPECT_EQ('O', frame[6]);
+    EXPECT_EQ('*', frame[7]);
+    EXPECT_EQ(0, frame[8]);
+    EXPECT_EQ(crfsCrc(frame, frameLen), frame[9]);
+
+    ENABLE_ARMING_FLAG(ARMED);
+
+    frameLen = getCrsfFrame(frame, CRSF_FRAMETYPE_FLIGHT_MODE);
     EXPECT_EQ(5 + FRAME_HEADER_FOOTER_LEN, frameLen);
     EXPECT_EQ(CRSF_SYNC_BYTE, frame[0]); // address
     EXPECT_EQ(7, frame[1]); // length
@@ -229,7 +251,6 @@ TEST(TelemetryCrsfTest, TestFlightMode)
     EXPECT_EQ('O', frame[6]);
     EXPECT_EQ(0, frame[7]);
     EXPECT_EQ(crfsCrc(frame, frameLen), frame[8]);
-
 
     enableFlightMode(ANGLE_MODE);
     EXPECT_EQ(ANGLE_MODE, FLIGHT_MODE(ANGLE_MODE));
@@ -292,8 +313,9 @@ gpsSolutionData_t gpsSol;
 void beeperConfirmationBeeps(uint8_t beepCount) {UNUSED(beepCount);}
 
 uint32_t micros(void) {return 0;}
+uint32_t microsISR(void) {return micros();}
 
-bool feature(uint32_t) {return true;}
+bool featureIsEnabled(uint32_t) {return true;}
 
 uint32_t serialRxBytesWaiting(const serialPort_t *) {return 0;}
 uint32_t serialTxBytesFree(const serialPort_t *) {return 0;}
@@ -305,14 +327,15 @@ serialPort_t *openSerialPort(serialPortIdentifier_e, serialPortFunction_e, seria
 void closeSerialPort(serialPort_t *) {}
 bool isSerialTransmitBufferEmpty(const serialPort_t *) { return true; }
 
-serialPortConfig_t *findSerialPortConfig(serialPortFunction_e) {return NULL;}
+const serialPortConfig_t *findSerialPortConfig(serialPortFunction_e) {return NULL;}
 
 bool telemetryDetermineEnabledState(portSharing_e) {return true;}
-bool telemetryCheckRxPortShared(const serialPortConfig_t *) {return true;}
+bool telemetryCheckRxPortShared(const serialPortConfig_t *, SerialRXType) {return true;}
+bool telemetryIsSensorEnabled(sensor_e) {return true;}
 
 portSharing_e determinePortSharing(const serialPortConfig_t *, serialPortFunction_e) {return PORTSHARING_NOT_SHARED;}
 
-bool isAirmodeActive(void) {return airMode;}
+bool airmodeIsEnabled(void) {return airMode;}
 
 int32_t getAmperage(void) {
     return testAmperage;
@@ -320,6 +343,14 @@ int32_t getAmperage(void) {
 
 uint16_t getBatteryVoltage(void) {
     return testBatteryVoltage;
+}
+
+uint16_t getLegacyBatteryVoltage(void) {
+    return (testBatteryVoltage + 5) / 10;
+}
+
+uint16_t getBatteryAverageCellVoltage(void) {
+    return 0;
 }
 
 batteryState_e getBatteryState(void) {
@@ -330,12 +361,16 @@ uint8_t calculateBatteryPercentageRemaining(void) {
     return 67;
 }
 
+int32_t getEstimatedAltitudeCm(void) {
+	return gpsSol.llh.altCm;    // function returns cm not m.
+}
+    
 int32_t getMAhDrawn(void){
   return testmAhDrawn;
 }
 
 bool sendMspReply(uint8_t, mspResponseFnPtr) { return false; }
-bool handleMspFrame(uint8_t *, int)  { return false; }
+bool handleMspFrame(uint8_t *, int, uint8_t *)  { return false; }
 void crsfScheduleMspResponse(void) {};
 bool isBatteryVoltageConfigured(void) { return true; }
 bool isAmperageConfigured(void) { return true; }

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -22,24 +22,28 @@
 #include <stdint.h>
 
 #include "platform.h"
+
 #include "drivers/bus.h"
 #include "drivers/bus_i2c.h"
 #include "drivers/bus_spi.h"
-#include "io/serial.h"
+
 #include "hardware_revision.h"
+
+#include "io/serial.h"
+
 #include "pg/bus_i2c.h"
 #include "pg/bus_spi.h"
 
-
-extern void spiPreInit(void); // XXX In fc/fc_init.c
+#include "sensors/initialisation.h"
 
 void targetBusInit(void)
 {
 #ifdef USE_SPI
     spiPinConfigure(spiPinConfig(0));
-    spiPreInit();
+    sensorsPreInit();
+    spiPreinit();
 #ifdef USE_SPI_DEVICE_2
-    spiInit(SPIDEV_2);
+    spiInit(SPIDEV_2, false); // Leading edge not required for legacy sensors
 #endif
 #endif
 

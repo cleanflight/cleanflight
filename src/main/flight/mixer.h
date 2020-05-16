@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,20 +24,10 @@
 
 #include "common/time.h"
 #include "pg/pg.h"
-#include "drivers/pwm_output_counts.h"
 #include "drivers/io_types.h"
 #include "drivers/pwm_output.h"
 
 #define QUAD_MOTOR_COUNT 4
-#define BRUSHED_MOTORS_PWM_RATE 16000
-#define BRUSHLESS_MOTORS_PWM_RATE 480
-
-// Digital protocol has fixed values
-#define DSHOT_DISARM_COMMAND      0
-#define DSHOT_MIN_THROTTLE       48
-#define DSHOT_MAX_THROTTLE     2047
-#define DSHOT_3D_DEADBAND_LOW  1047
-#define DSHOT_3D_DEADBAND_HIGH 1048
 
 // Note: this is called MultiType/MULTITYPE_* in baseflight.
 typedef enum mixerMode
@@ -91,20 +81,10 @@ typedef struct mixerConfig_s {
     uint8_t mixerMode;
     bool yaw_motors_reversed;
     uint8_t crashflip_motor_percent;
+    uint8_t crashflip_expo;
 } mixerConfig_t;
 
 PG_DECLARE(mixerConfig_t, mixerConfig);
-
-typedef struct motorConfig_s {
-    motorDevConfig_t dev;
-    uint16_t digitalIdleOffsetValue;        // Idle value for DShot protocol, full motor output = 10000
-    uint16_t minthrottle;                   // Set the minimum throttle command sent to the ESC (Electronic Speed Controller). This is the minimum value that allow motors to run at a idle speed.
-    uint16_t maxthrottle;                   // This is the maximum value for the ESCs at full power this value can be increased up to 2000
-    uint16_t mincommand;                    // This is the value for the ESCs when they are not armed. In some cases, this value must be lowered down to 900 for some specific ESCs
-    uint8_t motorPoleCount;                // Magnetic poles in the motors for calculating actual RPM from eRPM provided by ESC telemetry
-} motorConfig_t;
-
-PG_DECLARE(motorConfig_t, motorConfig);
 
 #define CHANNEL_FORWARDING_DISABLED (uint8_t)0xFF
 
@@ -117,23 +97,22 @@ struct rxConfig_s;
 uint8_t getMotorCount(void);
 float getMotorMixRange(void);
 bool areMotorsRunning(void);
-bool mixerIsOutputSaturated(int axis, float errorRate);
 
 void mixerLoadMix(int index, motorMixer_t *customMixers);
+void initEscEndpoints(void);
 void mixerInit(mixerMode_e mixerMode);
+void mixerInitProfile(void);
 
 void mixerConfigureOutput(void);
 
 void mixerResetDisarmedMotors(void);
 void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensation);
-void syncMotors(bool enabled);
-void writeMotors(void);
 void stopMotors(void);
-void stopPwmAllMotors(void);
+void writeMotors(void);
 
-float convertExternalToMotor(uint16_t externalValue);
-uint16_t convertMotorToExternal(float motorValue);
 bool mixerIsTricopter(void);
 
 void mixerSetThrottleAngleCorrection(int correctionValue);
-
+float mixerGetThrottle(void);
+mixerMode_e getMixerMode(void);
+bool isFixedWing(void);

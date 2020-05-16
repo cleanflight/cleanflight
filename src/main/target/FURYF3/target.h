@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -28,35 +28,6 @@
 //    #define USBD_PRODUCT_STRING     "FuryF3"
 #endif
 
-// Removed to make the firmware fit into flash (in descending order of priority):
-//#undef USE_GYRO_OVERFLOW_CHECK
-//#undef USE_GYRO_LPF2
-
-//#undef USE_ITERM_RELAX
-//#undef USE_RC_SMOOTHING_FILTER
-
-//#undef USE_MSP_DISPLAYPORT
-//#undef USE_MSP_OVER_TELEMETRY
-
-//#undef USE_HUFFMAN
-//#undef USE_PINIO
-//#undef USE_PINIOBOX
-
-#undef USE_TELEMETRY_HOTT
-#undef USE_TELEMETRY_MAVLINK
-#undef USE_TELEMETRY_LTM
-#undef USE_SERIALRX_XBUS
-#undef USE_SERIALRX_SUMH
-#undef USE_PWM
-
-#undef USE_BOARD_INFO
-#undef USE_EXTENDED_CMS_MENUS
-#undef USE_RTC_TIME
-#undef USE_RX_MSP
-#undef USE_ESC_SENSOR_INFO
-
-#define CONFIG_PREFER_ACC_ON
-
 #define LED0_PIN                PC14
 
 #define USE_BEEPER
@@ -64,40 +35,27 @@
 #define BEEPER_INVERTED
 
 #define USE_EXTI
-#define MPU_INT_EXTI            PA3
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN         PA3
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 
-#define ICM20689_CS_PIN          PA4
-#define ICM20689_SPI_INSTANCE    SPI1
-
-#define MPU6000_CS_PIN          PA4
-#define MPU6000_SPI_INSTANCE    SPI1
-
-#define MPU6500_CS_PIN          PA4
-#define MPU6500_SPI_INSTANCE    SPI1
+#define GYRO_1_CS_PIN           PA4
+#define GYRO_1_SPI_INSTANCE     SPI1
 
 #define USE_GYRO
-#define USE_GYRO_SPI_ICM20689
-#define GYRO_ICM20689_ALIGN      CW180_DEG
-
 #define USE_GYRO_SPI_MPU6000
-#define GYRO_MPU6000_ALIGN      CW180_DEG
-
-#define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
-#define GYRO_MPU6500_ALIGN      CW90_DEG
+#define USE_GYRO_SPI_ICM20689
+// MPU6000 and ICM20689 are CW180 aligned.
+// MPU6500 is CW90 aligned, but can't handle this.
+// Must be configured after flashing.
+#define GYRO_1_ALIGN            CW180_DEG
 
 #define USE_ACC
-#define USE_ACC_SPI_ICM20689
-#define ACC_ICM20689_ALIGN       CW180_DEG
-
 #define USE_ACC_SPI_MPU6000
-#define ACC_MPU6000_ALIGN       CW180_DEG
-
-#define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
-#define ACC_MPU6500_ALIGN       CW90_DEG
+#define USE_ACC_SPI_ICM20689
 
 #define USE_SPI
 #define USE_SPI_DEVICE_1
@@ -113,8 +71,6 @@
     #define USE_MAX7456
     #define MAX7456_SPI_INSTANCE    SPI1
     #define MAX7456_SPI_CS_PIN      PC13
-    #define MAX7456_SPI_CLK         (SPI_CLOCK_STANDARD) // 10MHz
-    #define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
     #define USE_FLASHFS
     #define USE_FLASH_M25P16
@@ -128,17 +84,11 @@
 #else
 
     #define USE_SDCARD
-
+    #define USE_SDCARD_SPI
     #define SDCARD_DETECT_INVERTED
-
     #define SDCARD_DETECT_PIN                   PB2
     #define SDCARD_SPI_INSTANCE                 SPI2
     #define SDCARD_SPI_CS_PIN                   SPI2_NSS_PIN
-
-    // SPI2 is on the APB1 bus whose clock runs at 36MHz. Divide to under 400kHz for init:
-    #define SDCARD_SPI_INITIALIZATION_CLOCK_DIVIDER 128
-    // Divide to under 25MHz for normal operation:
-    #define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER     2
 
     // Note, this is the same DMA channel as UART1_RX. Luckily we don't use DMA for USART Rx.
     #define SDCARD_DMA_CHANNEL_TX               DMA1_Channel5
@@ -191,8 +141,6 @@
 #define CURRENT_METER_ADC_PIN   PA2
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 #define REMAP_TIM17_DMA
 

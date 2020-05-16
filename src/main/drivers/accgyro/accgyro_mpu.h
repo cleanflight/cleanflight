@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -45,6 +45,7 @@
 #define ICM20608G_WHO_AM_I_CONST            (0xAF)
 #define ICM20649_WHO_AM_I_CONST             (0xE1)
 #define ICM20689_WHO_AM_I_CONST             (0x98)
+#define ICM42605_WHO_AM_I_CONST             (0x42)
 
 // RA = Register Address
 
@@ -140,14 +141,6 @@
 // RF = Register Flag
 #define MPU_RF_DATA_RDY_EN (1 << 0)
 
-typedef void (*mpuResetFnPtr)(void);
-
-extern mpuResetFnPtr mpuResetFn;
-
-typedef struct mpuConfiguration_s {
-    mpuResetFnPtr resetFn;
-} mpuConfiguration_t;
-
 enum gyro_fsr_e {
     INV_FSR_250DPS = 0,
     INV_FSR_500DPS,
@@ -162,12 +155,6 @@ enum icm_high_range_gyro_fsr_e {
     ICM_HIGH_RANGE_FSR_2000DPS,
     ICM_HIGH_RANGE_FSR_4000DPS,
     NUM_ICM_HIGH_RANGE_GYRO_FSR
-};
-
-enum fchoice_b {
-    FCB_DISABLED = 0x00,
-    FCB_8800_32 = 0x01,
-    FCB_3600_32 = 0x02
 };
 
 enum clock_sel_e {
@@ -212,7 +199,10 @@ typedef enum {
     ICM_20608_SPI,
     ICM_20649_SPI,
     ICM_20689_SPI,
+    ICM_42605_SPI,
     BMI_160_SPI,
+    BMI_270_SPI,
+    L3GD20_SPI,
 } mpuSensor_e;
 
 typedef enum {
@@ -226,12 +216,13 @@ typedef struct mpuDetectionResult_s {
 } mpuDetectionResult_t;
 
 struct gyroDev_s;
+struct gyroDeviceConfig_s;
 void mpuGyroInit(struct gyroDev_s *gyro);
 bool mpuGyroRead(struct gyroDev_s *gyro);
 bool mpuGyroReadSPI(struct gyroDev_s *gyro);
-void mpuDetect(struct gyroDev_s *gyro);
+void mpuPreInit(const struct gyroDeviceConfig_s *config);
+bool mpuDetect(struct gyroDev_s *gyro, const struct gyroDeviceConfig_s *config);
 uint8_t mpuGyroDLPF(struct gyroDev_s *gyro);
-uint8_t mpuGyroFCHOICE(struct gyroDev_s *gyro);
 uint8_t mpuGyroReadRegister(const busDevice_t *bus, uint8_t reg);
 
 struct accDev_s;

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -63,7 +63,7 @@ static uint8_t dataIndex = 0;
 static uint8_t cksum[2] = {0};
 static uint8_t counter = 0;
 
-static rxRuntimeConfig_t *rxRuntimeConfigPtr;
+static rxRuntimeState_t *rxRuntimeStatePtr;
 static serialPort_t *serialPort;
 
 #define SUPPORTED_CHANNEL_COUNT (4 + CRTP_CPPM_EMU_MAX_AUX_CHANNELS)
@@ -187,9 +187,9 @@ static void dataReceive(uint16_t c, void *data)
     }
 }
 
-static uint8_t frameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
+static uint8_t frameStatus(rxRuntimeState_t *rxRuntimeState)
 {
-    UNUSED(rxRuntimeConfig);
+    UNUSED(rxRuntimeState);
 
     if (!rcFrameComplete) {
         return RX_FRAME_PENDING;
@@ -201,18 +201,18 @@ static uint8_t frameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
     return RX_FRAME_COMPLETE;
 }
 
-static uint16_t readRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
+static uint16_t readRawRC(const rxRuntimeState_t *rxRuntimeState, uint8_t chan)
 {
-    if (chan >= rxRuntimeConfig->channelCount) {
+    if (chan >= rxRuntimeState->channelCount) {
         return 0;
     }
     return channelData[chan];
 }
 
 
-bool targetCustomSerialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
+bool targetCustomSerialRxInit(const rxConfig_t *rxConfig, rxRuntimeState_t *rxRuntimeState)
 {
-    rxRuntimeConfigPtr = rxRuntimeConfig;
+    rxRuntimeStatePtr = rxRuntimeState;
 
     if (rxConfig->serialrx_provider != SERIALRX_TARGET_CUSTOM)
     {
@@ -224,10 +224,10 @@ bool targetCustomSerialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxR
         return false;
     }
 
-    rxRuntimeConfig->channelCount = SUPPORTED_CHANNEL_COUNT;
-    rxRuntimeConfig->rxRefreshRate = 20000; // Value taken from rx_spi.c (NRF24 is being used downstream)
-    rxRuntimeConfig->rcReadRawFn = readRawRC;
-    rxRuntimeConfig->rcFrameStatusFn = frameStatus;
+    rxRuntimeState->channelCount = SUPPORTED_CHANNEL_COUNT;
+    rxRuntimeState->rxRefreshRate = 20000; // Value taken from rx_spi.c (NRF24 is being used downstream)
+    rxRuntimeState->rcReadRawFn = readRawRC;
+    rxRuntimeState->rcFrameStatusFn = frameStatus;
 
     serialPort = openSerialPort(portConfig->identifier,
         FUNCTION_RX_SERIAL,

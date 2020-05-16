@@ -3,10 +3,10 @@
 #
 
 ifeq ($(OPBL),yes)
-LD_SCRIPT = $(LINKER_DIR)/stm32_flash_f303_$(FLASH_SIZE)k_opbl.ld
+LD_SCRIPT = $(LINKER_DIR)/stm32_flash_f303_$(TARGET_FLASH_SIZE)k_opbl.ld
 endif
 
-TARGET_FLASH   := 256
+MCU_FLASH_SIZE  := 256
 # note that there is no hardfault debugging startup file assembly handler for other platforms
 ifeq ($(DEBUG_HARDFAULTS),F3)
 CFLAGS               += -DDEBUG_HARDFAULTS
@@ -43,14 +43,23 @@ DEVICE_STDPERIPH_SRC := $(DEVICE_STDPERIPH_SRC)\
                         $(USBPERIPH_SRC)
 endif
 
-ifneq ($(filter SDCARD, $(FEATURES)),)
+ifneq ($(filter SDCARD_SPI, $(FEATURES)),)
 INCLUDE_DIRS    := $(INCLUDE_DIRS) \
                    $(FATFS_DIR) \
 
 VPATH           := $(VPATH):$(FATFS_DIR)
 endif
 
-LD_SCRIPT       = $(LINKER_DIR)/stm32_flash_f303_$(FLASH_SIZE)k.ld
+ifneq ($(filter SDCARD_SDIO, $(FEATURES)),)
+INCLUDE_DIRS    := $(INCLUDE_DIRS) \
+                   $(FATFS_DIR) \
+
+VPATH           := $(VPATH):$(FATFS_DIR)
+endif
+
+ifeq ($(LD_SCRIPT),)
+LD_SCRIPT       = $(LINKER_DIR)/stm32_flash_f303_$(TARGET_FLASH_SIZE)k.ld
+endif
 
 ARCH_FLAGS      = -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
 DEVICE_FLAGS    = -DSTM32F303xC -DSTM32F303
@@ -68,7 +77,7 @@ VCP_SRC = \
 
 
 MCU_COMMON_SRC = \
-            target/system_stm32f30x.c \
+            startup/system_stm32f30x.c \
             drivers/adc_stm32f30x.c \
             drivers/bus_i2c_stm32f30x.c \
             drivers/bus_spi_stdperiph.c \
@@ -76,7 +85,8 @@ MCU_COMMON_SRC = \
             drivers/light_ws2811strip_stdperiph.c \
             drivers/transponder_ir_io_stdperiph.c \
             drivers/pwm_output_dshot.c \
-            drivers/serial_uart_init.c \
+            drivers/pwm_output_dshot_shared.c \
+            drivers/serial_uart_stdperiph.c \
             drivers/serial_uart_stm32f30x.c \
             drivers/system_stm32f30x.c \
             drivers/timer_stm32f30x.c

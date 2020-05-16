@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -68,10 +68,9 @@ typedef enum {
     DEBUG_FFT_TIME,
     DEBUG_FFT_FREQ,
     DEBUG_RX_FRSKY_SPI,
+    DEBUG_RX_SFHSS_SPI,
     DEBUG_GYRO_RAW,
-    DEBUG_DUAL_GYRO,
     DEBUG_DUAL_GYRO_RAW,
-    DEBUG_DUAL_GYRO_COMBINE,
     DEBUG_DUAL_GYRO_DIFF,
     DEBUG_MAX7456_SIGNAL,
     DEBUG_MAX7456_SPICLOCK,
@@ -80,10 +79,10 @@ typedef enum {
     DEBUG_RANGEFINDER,
     DEBUG_RANGEFINDER_QUALITY,
     DEBUG_LIDAR_TF,
-    DEBUG_CORE_TEMP,
+    DEBUG_ADC_INTERNAL,
     DEBUG_RUNAWAY_TAKEOFF,
     DEBUG_SDIO,
-    DEBUG_CURRENT,
+    DEBUG_CURRENT_SENSOR,
     DEBUG_USB,
     DEBUG_SMARTAUDIO,
     DEBUG_RTH,
@@ -93,6 +92,26 @@ typedef enum {
     DEBUG_RX_SIGNAL_LOSS,
     DEBUG_RC_SMOOTHING_RATE,
     DEBUG_ANTI_GRAVITY,
+    DEBUG_DYN_LPF,
+    DEBUG_RX_SPEKTRUM_SPI,
+    DEBUG_DSHOT_RPM_TELEMETRY,
+    DEBUG_RPM_FILTER,
+    DEBUG_D_MIN,
+    DEBUG_AC_CORRECTION,
+    DEBUG_AC_ERROR,
+    DEBUG_DUAL_GYRO_SCALED,
+    DEBUG_DSHOT_RPM_ERRORS,
+    DEBUG_CRSF_LINK_STATISTICS_UPLINK,
+    DEBUG_CRSF_LINK_STATISTICS_PWR,
+    DEBUG_CRSF_LINK_STATISTICS_DOWN,
+    DEBUG_BARO,
+    DEBUG_GPS_RESCUE_THROTTLE_PID,
+    DEBUG_DYN_IDLE,
+    DEBUG_FF_LIMIT,
+    DEBUG_FF_INTERPOLATED,
+    DEBUG_BLACKBOX_OUTPUT,
+    DEBUG_GYRO_SAMPLE,
+    DEBUG_RX_TIMING,
     DEBUG_COUNT
 } debugType_e;
 

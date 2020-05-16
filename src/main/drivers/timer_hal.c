@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,6 +24,8 @@
 #include <math.h>
 
 #include "platform.h"
+
+#ifdef USE_TIMER
 
 #include "build/atomic.h"
 
@@ -65,7 +67,7 @@ timerConfig_t timerConfig[USED_TIMER_COUNT + 1];
 typedef struct {
     channelType_t type;
 } timerChannelInfo_t;
-timerChannelInfo_t timerChannelInfo[USABLE_TIMER_CHANNEL_COUNT];
+timerChannelInfo_t timerChannelInfo[TIMER_CHANNEL_COUNT];
 
 typedef struct {
     uint8_t priority;
@@ -139,6 +141,9 @@ static uint8_t lookupTimerIndex(const TIM_TypeDef *tim)
 #if USED_TIMERS & TIM_N(17)
         _CASE(17);
 #endif
+#if USED_TIMERS & TIM_N(20)
+        _CASE(20);
+#endif
     default:  return ~1;  // make sure final index is out of range
     }
 #undef _CASE
@@ -172,6 +177,7 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #if USED_TIMERS & TIM_N(8)
     _DEF(8),
 #endif
+#if !(defined(STM32H7) || defined(STM32G4))
 #if USED_TIMERS & TIM_N(9)
     _DEF(9),
 #endif
@@ -181,6 +187,8 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #if USED_TIMERS & TIM_N(11)
     _DEF(11),
 #endif
+#endif
+#if !defined(STM32G4)
 #if USED_TIMERS & TIM_N(12)
     _DEF(12),
 #endif
@@ -190,6 +198,7 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #if USED_TIMERS & TIM_N(14)
     _DEF(14),
 #endif
+#endif
 #if USED_TIMERS & TIM_N(15)
     _DEF(15),
 #endif
@@ -198,6 +207,11 @@ TIM_TypeDef * const usedTimers[USED_TIMER_COUNT] = {
 #endif
 #if USED_TIMERS & TIM_N(17)
     _DEF(17),
+#endif
+#if defined(STM32G4)
+#if USED_TIMERS & TIM_N(20)
+    _DEF(20),
+#endif
 #endif
 #undef _DEF
 };
@@ -257,18 +271,26 @@ const int8_t timerNumbers[USED_TIMER_COUNT] = {
 #if USED_TIMERS & TIM_N(17)
     _DEF(17),
 #endif
+#if USED_TIMERS & TIM_N(20)
+    _DEF(20),
+#endif
 #undef _DEF
 };
 
-int8_t timerGetTIMNumber(const TIM_TypeDef *tim)
+int8_t timerGetNumberByIndex(uint8_t index)
 {
-    uint8_t index = lookupTimerIndex(tim);
-
     if (index < USED_TIMER_COUNT) {
         return timerNumbers[index];
     } else {
         return 0;
     }
+}
+
+int8_t timerGetTIMNumber(const TIM_TypeDef *tim)
+{
+    uint8_t index = lookupTimerIndex(tim);
+
+    return timerGetNumberByIndex(index);
 }
 
 static inline uint8_t lookupChannelIndex(const uint16_t channel)
@@ -337,7 +359,11 @@ void configTimeBase(TIM_TypeDef *tim, uint16_t period, uint32_t hz)
     timerHandle[timerIndex].Handle.Init.RepetitionCounter = 0x0000;
 
     HAL_TIM_Base_Init(&timerHandle[timerIndex].Handle);
-    if (tim == TIM1 || tim == TIM2 || tim == TIM3 || tim == TIM4 || tim == TIM5 || tim == TIM8 || tim == TIM9) {
+    if (tim == TIM1 || tim == TIM2 || tim == TIM3 || tim == TIM4 || tim == TIM5 || tim == TIM8
+#if !(defined(STM32H7) || defined(STM32G4))
+        || tim == TIM9
+#endif
+      ) {
         TIM_ClockConfigTypeDef sClockSourceConfig;
         memset(&sClockSourceConfig, 0, sizeof(sClockSourceConfig));
         sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
@@ -373,10 +399,22 @@ void timerConfigure(const timerHardware_t *timerHardwarePtr, uint16_t period, ui
     switch (irq) {
 
     case TIM1_CC_IRQn:
+#if defined(STM32F7)
         timerNVICConfigure(TIM1_UP_TIM10_IRQn);
+#elif defined(STM32H7)
+        timerNVICConfigure(TIM1_UP_IRQn);
+#elif defined(STM32G4)
+        timerNVICConfigure(TIM1_UP_TIM16_IRQn);
+#else
+        // Empty
+#endif
         break;
     case TIM8_CC_IRQn:
+#if defined(STM32G4)
+        timerNVICConfigure(TIM8_UP_IRQn);
+#else
         timerNVICConfigure(TIM8_UP_TIM13_IRQn);
+#endif
         break;
 
     }
@@ -389,8 +427,8 @@ void timerChInit(const timerHardware_t *timHw, channelType_t type, int irqPriori
     if (timerIndex >= USED_TIMER_COUNT) {
         return;
     }
-    unsigned channel = timHw - timerHardware;
-    if (channel >= USABLE_TIMER_CHANNEL_COUNT)
+    unsigned channel = timHw - TIMER_HARDWARE;
+    if (channel >= TIMER_CHANNEL_COUNT)
         return;
 
     timerChannelInfo[channel].type = type;
@@ -762,10 +800,20 @@ static void timCCxHandler(TIM_TypeDef *tim, timerConfig_t *timerConfig)
 
 #if USED_TIMERS & TIM_N(1)
 _TIM_IRQ_HANDLER(TIM1_CC_IRQHandler, 1);
-#  if USED_TIMERS & TIM_N(10)
-_TIM_IRQ_HANDLER2(TIM1_UP_TIM10_IRQHandler, 1, 10);  // both timers are in use
+#  if defined(STM32H7)
+_TIM_IRQ_HANDLER(TIM1_UP_IRQHandler, 1);
+#  elif defined(STM32G4)
+#    if USED_TIMERS & TIM_N(16)
+_TIM_IRQ_HANDLER2(TIM1_UP_TIM16_IRQHandler, 1, 16);  // both timers are in use
+#    else
+_TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 1);       // timer16 is not used timers are in use
+#    endif
 #  else
+#    if USED_TIMERS & TIM_N(10)
+_TIM_IRQ_HANDLER2(TIM1_UP_TIM10_IRQHandler, 1, 10);  // both timers are in use
+#    else
 _TIM_IRQ_HANDLER(TIM1_UP_TIM10_IRQHandler, 1);     // timer10 is not used
+#    endif
 #  endif
 #endif
 
@@ -784,6 +832,9 @@ _TIM_IRQ_HANDLER(TIM5_IRQHandler, 5);
 
 #if USED_TIMERS & TIM_N(8)
 _TIM_IRQ_HANDLER(TIM8_CC_IRQHandler, 8);
+#  if defined(STM32G4)
+_TIM_IRQ_HANDLER(TIM8_UP_IRQHandler, 8);
+#  endif
 
 #  if USED_TIMERS & TIM_N(13)
 _TIM_IRQ_HANDLER2(TIM8_UP_TIM13_IRQHandler, 8, 13);  // both timers are in use
@@ -801,14 +852,31 @@ _TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM11_IRQHandler, 11);
 #if USED_TIMERS & TIM_N(12)
 _TIM_IRQ_HANDLER(TIM8_BRK_TIM12_IRQHandler, 12);
 #endif
+#if defined(STM32H7) && (USED_TIMERS & TIM_N(14))
+_TIM_IRQ_HANDLER(TIM8_TRG_COM_TIM14_IRQHandler, 14);
+#endif
 #if USED_TIMERS & TIM_N(15)
+#  if defined(STM32H7)
+_TIM_IRQ_HANDLER(TIM15_IRQHandler, 15);
+#  else
 _TIM_IRQ_HANDLER(TIM1_BRK_TIM15_IRQHandler, 15);
+#  endif
+#endif
+#if defined(STM32H7) && (USED_TIMERS & TIM_N(16))
+_TIM_IRQ_HANDLER(TIM16_IRQHandler, 16);
 #endif
 #if defined(STM32F303xC) && ((USED_TIMERS & (TIM_N(1)|TIM_N(16))) == (TIM_N(16)))
 _TIM_IRQ_HANDLER(TIM1_UP_TIM16_IRQHandler, 16);    // only timer16 is used, not timer1
 #endif
 #if USED_TIMERS & TIM_N(17)
+#  if defined(STM32H7)
+_TIM_IRQ_HANDLER(TIM17_IRQHandler, 17);
+#  else
 _TIM_IRQ_HANDLER(TIM1_TRG_COM_TIM17_IRQHandler, 17);
+#  endif
+#endif
+#if USED_TIMERS & TIM_N(20)
+_TIM_IRQ_HANDLER(TIM20_CC_IRQHandler, 20);
 #endif
 
 void timerInit(void)
@@ -839,6 +907,7 @@ void timerInit(void)
 #if USED_TIMERS & TIM_N(8)
     __HAL_RCC_TIM8_CLK_ENABLE();
 #endif
+#if !defined(STM32H7)
 #if USED_TIMERS & TIM_N(9)
     __HAL_RCC_TIM9_CLK_ENABLE();
 #endif
@@ -847,6 +916,7 @@ void timerInit(void)
 #endif
 #if USED_TIMERS & TIM_N(11)
     __HAL_RCC_TIM11_CLK_ENABLE();
+#endif
 #endif
 #if USED_TIMERS & TIM_N(12)
     __HAL_RCC_TIM12_CLK_ENABLE();
@@ -866,15 +936,18 @@ void timerInit(void)
 #if USED_TIMERS & TIM_N(17)
     __HAL_RCC_TIM17_CLK_ENABLE();
 #endif
+#if USED_TIMERS & TIM_N(20)
+    __HAL_RCC_TIM20_CLK_ENABLE();
+#endif
 
     /* enable the timer peripherals */
-    for (int i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
-        RCC_ClockCmd(timerRCC(timerHardware[i].tim), ENABLE);
+    for (int i = 0; i < TIMER_CHANNEL_COUNT; i++) {
+        RCC_ClockCmd(timerRCC(TIMER_HARDWARE[i].tim), ENABLE);
     }
 
-#if defined(STM32F3) || defined(STM32F4) || defined(STM32F7)
-    for (unsigned timerIndex = 0; timerIndex < USABLE_TIMER_CHANNEL_COUNT; timerIndex++) {
-        const timerHardware_t *timerHardwarePtr = &timerHardware[timerIndex];
+#if defined(STM32F3) || defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
+    for (unsigned timerIndex = 0; timerIndex < TIMER_CHANNEL_COUNT; timerIndex++) {
+        const timerHardware_t *timerHardwarePtr = &TIMER_HARDWARE[timerIndex];
         if (timerHardwarePtr->usageFlags == TIM_USE_NONE) {
             continue;
         }
@@ -884,12 +957,12 @@ void timerInit(void)
 #endif
 
     /* enable the timer peripherals */
-    for (unsigned i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
-        RCC_ClockCmd(timerRCC(timerHardware[i].tim), ENABLE);
+    for (unsigned i = 0; i < TIMER_CHANNEL_COUNT; i++) {
+        RCC_ClockCmd(timerRCC(TIMER_HARDWARE[i].tim), ENABLE);
     }
 
     // initialize timer channel structures
-    for (unsigned i = 0; i < USABLE_TIMER_CHANNEL_COUNT; i++) {
+    for (unsigned i = 0; i < TIMER_CHANNEL_COUNT; i++) {
         timerChannelInfo[i].type = TYPE_FREE;
     }
 
@@ -907,10 +980,10 @@ void timerStart(void)
     for (unsigned timer = 0; timer < USED_TIMER_COUNT; timer++) {
         int priority = -1;
         int irq = -1;
-        for (unsigned hwc = 0; hwc < USABLE_TIMER_CHANNEL_COUNT; hwc++) {
-            if ((timerChannelInfo[hwc].type != TYPE_FREE) && (timerHardware[hwc].tim == usedTimers[timer])) {
+        for (unsigned hwc = 0; hwc < TIMER_CHANNEL_COUNT; hwc++) {
+            if ((timerChannelInfo[hwc].type != TYPE_FREE) && (TIMER_HARDWARE[hwc].tim == usedTimers[timer])) {
                 // TODO - move IRQ to timer info
-                irq = timerHardware[hwc].irq;
+                irq = TIMER_HARDWARE[hwc].irq;
             }
         }
         // TODO - aggregate required timer paramaters
@@ -1121,3 +1194,4 @@ HAL_StatusTypeDef DMA_SetCurrDataCounter(TIM_HandleTypeDef *htim, uint32_t Chann
     /* Return function status */
     return HAL_OK;
 }
+#endif

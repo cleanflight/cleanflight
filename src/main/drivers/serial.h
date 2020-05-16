@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,6 +21,9 @@
 #pragma once
 
 #include "drivers/io.h"
+#include "drivers/io_types.h"
+#include "drivers/resource.h"
+
 #include "pg/pg.h"
 
 typedef enum {
@@ -56,6 +59,7 @@ typedef enum {
 #define CTRL_LINE_STATE_RTS (1 << 1)
 
 typedef void (*serialReceiveCallbackPtr)(uint16_t data, void *rxCallbackData);   // used by serial drivers to return frames to app
+typedef void (*serialIdleCallbackPtr)();
 
 typedef struct serialPort_s {
 
@@ -77,6 +81,8 @@ typedef struct serialPort_s {
 
     serialReceiveCallbackPtr rxCallback;
     void *rxCallbackData;
+
+    serialIdleCallbackPtr idleCallback;
 
     uint8_t identifier;
 } serialPort_t;

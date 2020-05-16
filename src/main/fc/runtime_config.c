@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -32,7 +32,7 @@ uint16_t flightModeFlags = 0;
 
 static uint32_t enabledSensors = 0;
 
-// Must be shorter than OSD_WARNINGS_MAX_SIZE (11) to be displayed fully in OSD
+// Must be no longer than OSD_WARNINGS_MAX_SIZE (11) to be displayed fully in OSD
 const char *armingDisableFlagNames[]= {
     "NOGYRO",
     "FAILSAFE",
@@ -40,6 +40,7 @@ const char *armingDisableFlagNames[]= {
     "BADRX",
     "BOXFAILSAFE",
     "RUNAWAY",
+    "CRASH",
     "THROTTLE",
     "ANGLE",
     "BOOTGRACE",
@@ -48,12 +49,17 @@ const char *armingDisableFlagNames[]= {
     "CALIB",
     "CLI",
     "CMS",
-    "OSD",
     "BST",
     "MSP",
     "PARALYZE",
     "GPS",
-    "ARMSWITCH"
+    "RESCUE_SW",
+    "RPMFILTER",
+    "REBOOT_REQD",
+    "DSHOT_BBANG",
+    "NO_ACC_CAL",
+    "MOTOR_PROTO",
+    "ARMSWITCH",
 };
 
 static armingDisableFlags_e armingDisableFlags = 0;

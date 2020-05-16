@@ -39,15 +39,7 @@ Up to 4 RX channels can be used to make different adjustments at the same time.
 
 The adjustment the Adjustment Channel makes is controlled by the Range Channel.
 
-The following adjustments can be made, in flight, as well as on the ground.
-
-* RC Rate
-* RC Expo
-* Throttle Expo
-* Roll & Pitch Rate
-* Yaw Rate
-* Pitch+Roll P I and D
-* Yaw P I and D
+The available adjustments are listed in [this table](#adjustment-functions).
 
 Example scenarios:
 Up to 4 3-position switches or pots can be used to adjust 4 different settings at the same time.
@@ -76,7 +68,6 @@ Note that if the same pot is used as the Adjustment Channel to make multiple adj
 The CLI command `adjrange` is used to configure adjustment ranges.
 
 12 adjustment ranges can be defined.
-4 adjustments can be made at the same time, each simultaneous adjustment requires an adjustment slot.
 
 Show the current ranges using:
 
@@ -84,60 +75,65 @@ Show the current ranges using:
 
 Configure a range using:
 
-`adjrange <index> <slot> <range channel> <range start> <range end> <adjustment function> <adjustment channel>`
+`adjrange <index> 0 <range channel> <range start> <range end> <adjustment function> <adjustment channel>`
 
 
 
 | Argument | Value | Meaning |
 | -------- | ----- |-------- |
-| Index | 0 - 11 | Select the adjustment range to configure |
-| Slot | 0 - 3 | Select the adjustment slot to use |
+| Index | 0 - 29 | Select the adjustment range to configure |
+| 0 | 0 | Used as slot before Cleanflight 4.2 |
 | Range Channel | 0 based index, AUX1 = 0, AUX2 = 1 | The AUX channel to use to select an adjustment for a switch/pot | 
 | Range Start | 900 - 2100. Steps of 25, e.g. 900, 925, 950... | Start of range | 
 | Range End | 900 - 2100 | End of range |
-| Adjustment function | 0 - 11 | See Adjustment function table |
+| Adjustment function | | See [Adjustment functions table](#adjustment-functions) |
 | Adjustment channel | 0 based index, AUX1 = 0, AUX2 = 1 | The channel that is controlled by a 3 Position switch/Pot |
 | Center Value | If this is non-zero then Absolute Mode is used for this range otherwise Increment/Decrement Mode is used. In Absolute Mode this value is the value which will be assigned to the setting when the Adjustment Channel is set to mid-position. |
 | Scale Value | This specifies the amount that will be subtracted/added to the center value when the Adjustment Channel is at min/max respectively. |
 
 Range Start/End values should match the values sent by your receiver.
 
-Normally Range Channel and Slot values are grouped together over multiple adjustment ranges.
-
 The Range Channel and the Adjustment Channel can be the same channel.  This is useful when you want a single 3 Position switch to be dedicated
 to a single adjustment function regardless of other switch positions.
  
 The adjustment function is applied to the adjustment channel when range channel is between the range values.
-The adjustment is made when the adjustment channel is in the high or low position.  high = mid_rc + 200, low = mid_rc - 200.  by default this is 1700 and 1300 respectively.
+The adjustment is made when the adjustment channel is in the high or low position.  high = mid\_rc + 200, low = mid\_rc - 200.  by default this is 1700 and 1300 respectively.
 
-When the Range Channel does not fall into Start/End range the assigned slot will retain it's state and will continue to apply the adjustment. For
-this reason ensure that you define enough ranges to cover the range channel's usable range.
-
-### Adjustment function
+### Adjustment functions
 
 | Value | Adjustment | Notes |
 | ----- | ---------- |------ |
-| 0     | None |
-| 1     | RC RATE |
-| 2     | RC_EXPO |
-| 3     | THROTTLE_EXPO |
-| 4     | PITCH_ROLL_RATE |
-| 5     | YAW_RATE |
-| 6     | PITCH_ROLL_P |
-| 7     | PITCH_ROLL_I |
-| 8     | PITCH_ROLL_D |
-| 9     | YAW_P |
-| 10    | YAW_I |
-| 11    | YAW_D |
-| 12    | RATE_PROFILE | Switch between 3 rate profiles using a 3 position switch. |
-| 13    | PITCH_RATE |
-| 14    | ROLL_RATE |
-| 15    | PITCH_P |
-| 16    | PITCH_I |
-| 17    | PITCH_D |
-| 18    | ROLL_P |
-| 19    | ROLL_I |
-| 20    | ROLL_D |
+| 0     | None | |
+| 1     | RC RATE | Step / absolute setting |
+| 2     | RC\_EXPO | Step / absolute setting |
+| 3     | THROTTLE\_EXPO | Step / absolute setting |
+| 4     | PITCH\_ROLL\_RATE | Step / absolute setting |
+| 5     | YAW\_RATE | Step / absolute setting |
+| 6     | PITCH\_ROLL\_P | Step / absolute setting |
+| 7     | PITCH\_ROLL\_I | Step / absolute setting |
+| 8     | PITCH\_ROLL\_D | Step / absolute setting |
+| 9     | YAW\_P | Step / absolute setting |
+| 10    | YAW\_I | Step / absolute setting |
+| 11    | YAW\_D | Step / absolute setting |
+| 12    | RATE\_PROFILE | Switch between 3 or 6 rate profiles (uses `rate_6pos_switch` setting) |
+| 13    | PITCH\_RATE | Step / absolute setting |
+| 14    | ROLL\_RATE | Step / absolute setting |
+| 15    | PITCH\_P | Step / absolute setting |
+| 16    | PITCH\_I | Step / absolute setting |
+| 17    | PITCH\_D | Step / absolute setting |
+| 18    | ROLL\_P | Step / absolute setting |
+| 19    | ROLL\_I | Step / absolute setting |
+| 20    | ROLL\_D | Step / absolute setting |
+| 21    | RC\_RATE\_YAW | Step / absolute setting |
+| 22    | PITCH\_ROLL\_F | Step / absolute setting |
+| 23    | FEEDFORWARD\_TRANSITION | Step / absolute setting |
+| 24    | HORIZON\_STRENGTH | Select the horizon strength |
+| 25    | PID\_AUDIO | Select the PID value to be turned into tones |
+| 26    | PITCH\_F | Step / absolute setting |
+| 27    | ROLL\_F | Step / absolute setting |
+| 28    | YAW\_F | Step / absolute setting |
+| 29    | OSD\_PROFILE | Switch between 3 OSD profiles |
+| 30    | LED\_PROFILE | Switch between the RACE / BEACON / STATUS LED strip profiles |
 
 ## Examples
 
@@ -149,7 +145,7 @@ adjrange 0 0 3 900 2100 4 3 0 0
 
 explained:
 
-* configure adjrange 0 to use adjustment slot 1 (0) so that when aux4
+* configure adjrange 0 so that when aux4
 (3) in the range 900-2100 then use adjustment 4 (pitch/roll rate) when aux 4 (3)
 is in the appropriate position. 
 * note that Center/Scale values are both zero, so this range will use increment/decrement mode.
@@ -158,15 +154,15 @@ is in the appropriate position.
 ### Example 2 - 2 Position switch used to enable adjustment of RC rate via a 3 position switch
 
 ```
-adjrange 1 1 0 900 1700 0 2 0 0
-adjrange 2 1 0 1700 2100 1 2 0 0
+adjrange 1 0 0 900 1700 0 2 0 0
+adjrange 2 0 0 1700 2100 1 2 0 0
 ```
 explained:
 
-* configure adjrange 1 to use adjustment slot 2 (1) so that when aux1
+* configure adjrange 1 so that when aux1
 (0) in the range 900-1700 then do nothing (0) when aux 3 (2) is in any
 position.
-* configure adjrange 2 to use adjustment slot 2 (1) so that when aux1
+* configure adjrange 2 so that when aux1
 (0) in the range 1700-2100 then use adjustment rc rate (1) when aux 3
 (2) is in the appropriate position.
 * note that Center/Scale values are both zero, so this range will use increment/decrement mode.
@@ -178,32 +174,32 @@ range.
 ### Example 3 - 6 Position switch used to select PID tuning adjustments via a 3 position switch
 
 ```
-adjrange 3 2 1 900 1150 6 3 0 0
-adjrange 4 2 1 1150 1300 7 3 0 0
-adjrange 5 2 1 1300 1500 8 3 0 0
-adjrange 6 2 1 1500 1700 9 3 0 0
-adjrange 7 2 1 1700 1850 10 3 0 0
-adjrange 8 2 1 1850 2100 11 3 0 0
+adjrange 3 0 1 900 1150 6 3 0 0
+adjrange 4 0 1 1150 1300 7 3 0 0
+adjrange 5 0 1 1300 1500 8 3 0 0
+adjrange 6 0 1 1500 1700 9 3 0 0
+adjrange 7 0 1 1700 1850 10 3 0 0
+adjrange 8 0 1 1850 2100 11 3 0 0
 ```
 
 explained:
 
-* configure adjrange 3 to use adjustment slot 3 (2) so that when aux2
+* configure adjrange 3 so that when aux2
 (1) in the range 900-1150 then use adjustment Pitch/Roll P (6) when aux 4
 (3) is in the appropriate position.
-* configure adjrange 4 to use adjustment slot 3 (2) so that when aux2
+* configure adjrange 4 so that when aux2
 (1) in the range 1150-1300 then use adjustment Pitch/Roll I (7) when aux 4
 (3) is in the appropriate position.
-* configure adjrange 5 to use adjustment slot 3 (2) so that when aux2
+* configure adjrange 5 so that when aux2
 (1) in the range 1300-1500 then use adjustment Pitch/Roll D (8) when aux 4
 (3) is in the appropriate position.
-* configure adjrange 6 to use adjustment slot 3 (2) so that when aux2
+* configure adjrange 6 so that when aux2
 (1) in the range 1500-1700 then use adjustment Yaw P (9) when aux 4
 (3) is in the appropriate position.
-* configure adjrange 7 to use adjustment slot 3 (2) so that when aux2
+* configure adjrange 7 so that when aux2
 (1) in the range 1700-1850 then use adjustment Yaw I (10) when aux 4
 (3) is in the appropriate position.
-* configure adjrange 8 to use adjustment slot 3 (2) so that when aux2
+* configure adjrange 8 so that when aux2
 (1) in the range 1850-2100 then use adjustment Yaw D (11) when aux 4
 (3) is in the appropriate position.
 * note that Center/Scale values are both zero, so this range will use increment/decrement mode.
@@ -211,12 +207,12 @@ explained:
 ### Example 4 - Use a single 3 position switch to change between 3 different rate profiles
 
 ```
-adjrange 11 3 3 900 2100 12 3 0 0
+adjrange 11 0 3 900 2100 12 3 0 0
 ```
 
 explained:
 
-* configure adjrange 11 to use adjustment slot 4 (3) so that when aux4
+* configure adjrange 11 so that when aux4
 (3) in the range 900-2100 then use adjustment Rate Profile (12) when aux 4
 (3) is in the appropriate position.
 * note that Center/Scale values are both zero, so this range will use increment/decrement mode.

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -28,6 +28,20 @@
 
 #ifdef USE_BLACKBOX
 
+#include "build/debug.h"
+
+// Debugging code that become useful when output bandwidth saturation is suspected.
+// Set debug_mode = BLACKBOX_OUTPUT to see following debug values.
+//
+// 0: Average output bandwidth in last 100ms
+// 1: Maximum hold of above.
+// 2: Bytes dropped due to output buffer full.
+//
+// Note that bandwidth usage slightly increases when DEBUG_BB_OUTPUT is enabled,
+// as output will include debug variables themselves.
+
+#define DEBUG_BB_OUTPUT
+
 #include "blackbox.h"
 #include "blackbox_io.h"
 
@@ -40,6 +54,10 @@
 #include "io/serial.h"
 
 #include "msp/msp_serial.h"
+
+#ifdef USE_SDCARD
+#include "drivers/sdcard.h"
+#endif
 
 #define BLACKBOX_SERIAL_PORT_MODE MODE_TX
 
@@ -58,7 +76,7 @@ static struct {
     afatfsFilePtr_t logFile;
     afatfsFilePtr_t logDirectory;
     afatfsFinder_t logDirectoryFinder;
-    uint32_t largestLogFileNumber;
+    int32_t largestLogFileNumber;
 
     enum {
         BLACKBOX_SDCARD_INITIAL,
@@ -83,8 +101,19 @@ void blackboxOpen(void)
     }
 }
 
+#ifdef DEBUG_BB_OUTPUT
+static uint32_t bbBits;
+static timeMs_t bbLastclearMs;
+static uint16_t bbRateMax;
+static uint32_t bbDrops;
+#endif
+
 void blackboxWrite(uint8_t value)
 {
+#ifdef DEBUG_BB_OUTPUT
+    bbBits += 8;
+#endif
+
     switch (blackboxConfig()->device) {
 #ifdef USE_FLASHFS
     case BLACKBOX_DEVICE_FLASH:
@@ -98,9 +127,40 @@ void blackboxWrite(uint8_t value)
 #endif
     case BLACKBOX_DEVICE_SERIAL:
     default:
-        serialWrite(blackboxPort, value);
+        {
+            int txBytesFree = serialTxBytesFree(blackboxPort);
+
+#ifdef DEBUG_BB_OUTPUT
+            bbBits += 2;
+            DEBUG_SET(DEBUG_BLACKBOX_OUTPUT, 3, txBytesFree);
+#endif
+
+            if (txBytesFree == 0) {
+#ifdef DEBUG_BB_OUTPUT
+                ++bbDrops;
+                DEBUG_SET(DEBUG_BLACKBOX_OUTPUT, 2, bbDrops);
+#endif
+                return;
+            }
+            serialWrite(blackboxPort, value);
+        }
         break;
     }
+
+#ifdef DEBUG_BB_OUTPUT
+    timeMs_t now = millis();
+
+    if (now > bbLastclearMs + 100) {  // Debug log every 100[msec]
+        uint16_t bbRate = ((bbBits * 10 + 5) / (now - bbLastclearMs)) / 10; // In unit of [Kbps]
+        DEBUG_SET(DEBUG_BLACKBOX_OUTPUT, 0, bbRate);
+        if (bbRate > bbRateMax) {
+            bbRateMax = bbRate;
+            DEBUG_SET(DEBUG_BLACKBOX_OUTPUT, 1, bbRateMax);
+        }
+        bbLastclearMs = now;
+        bbBits = 0;
+    }
+#endif
 }
 
 // Print the null-terminated string 's' to the blackbox device and return the number of bytes written
@@ -129,7 +189,7 @@ int blackboxWriteString(const char *s)
     default:
         pos = (uint8_t*) s;
         while (*pos) {
-            serialWrite(blackboxPort, *pos);
+            blackboxWrite(*pos);
             pos++;
         }
 
@@ -201,7 +261,7 @@ bool blackboxDeviceOpen(void)
     switch (blackboxConfig()->device) {
     case BLACKBOX_DEVICE_SERIAL:
         {
-            serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
+            const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
             baudRate_e baudRateIndex;
             portOptions_e portOptions = SERIAL_PARITY_NO | SERIAL_NOT_INVERTED;
 
@@ -380,7 +440,7 @@ static void blackboxLogFileCreated(afatfsFilePtr_t file)
 
 static void blackboxCreateLogFile(void)
 {
-    uint32_t remainder = blackboxSDCard.largestLogFileNumber + 1;
+    int32_t remainder = blackboxSDCard.largestLogFileNumber + 1;
 
     char filename[] = LOGFILE_PREFIX "00000." LOGFILE_SUFFIX;
 
@@ -428,7 +488,7 @@ static bool blackboxSDCardBeginLog(void)
                     memcpy(logSequenceNumberString, directoryEntry->filename + 3, 5);
                     logSequenceNumberString[5] = '\0';
 
-                    blackboxSDCard.largestLogFileNumber = MAX((uint32_t) atoi(logSequenceNumberString), blackboxSDCard.largestLogFileNumber);
+                    blackboxSDCard.largestLogFileNumber = MAX((int32_t)atoi(logSequenceNumberString), blackboxSDCard.largestLogFileNumber);
                 }
             } else {
                 // We're done checking all the files on the card, now we can create a new log file
@@ -538,12 +598,38 @@ bool isBlackboxDeviceFull(void)
     }
 }
 
-unsigned int blackboxGetLogNumber(void)
+bool isBlackboxDeviceWorking(void)
 {
+    switch (blackboxConfig()->device) {
+    case BLACKBOX_DEVICE_SERIAL:
+        return blackboxPort != NULL;
+
 #ifdef USE_SDCARD
-    return blackboxSDCard.largestLogFileNumber;
+    case BLACKBOX_DEVICE_SDCARD:
+        return sdcard_isInserted() && sdcard_isFunctional() && (afatfs_getFilesystemState() == AFATFS_FILESYSTEM_STATE_READY);
 #endif
-    return 0;
+
+#ifdef USE_FLASHFS
+    case BLACKBOX_DEVICE_FLASH:
+        return flashfsIsReady();
+#endif
+
+    default:
+        return false;
+    }
+}
+
+int32_t blackboxGetLogNumber(void)
+{
+    switch (blackboxConfig()->device) {
+#ifdef USE_SDCARD
+    case BLACKBOX_DEVICE_SDCARD:
+        return blackboxSDCard.largestLogFileNumber;
+#endif
+
+    default:
+        return -1;
+    }
 }
 
 /**

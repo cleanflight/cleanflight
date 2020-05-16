@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -33,12 +33,12 @@
 
 typedef struct i2cPinDef_s {
     ioTag_t ioTag;
-#if defined(STM32F4)
+#if defined(STM32F4) || defined(STM32H7) || defined(STM32G4)
     uint8_t af;
 #endif
 } i2cPinDef_t;
 
-#if defined(STM32F4)
+#if defined(STM32F4) || defined(STM32H7) || defined(STM32G4)
 #define I2CPINDEF(pin, af) { DEFIO_TAG_E(pin), af }
 #elif defined(STM32F1)
 #define I2CPINDEF(pin, af) { DEFIO_TAG_E(pin) }
@@ -79,7 +79,7 @@ typedef struct i2cDevice_s {
     I2C_TypeDef *reg;
     IO_t scl;
     IO_t sda;
-#ifdef STM32F4
+#if defined(STM32F4) || defined(STM32H7) || defined(STM32G4)
     uint8_t sclAF;
     uint8_t sdaAF;
 #endif

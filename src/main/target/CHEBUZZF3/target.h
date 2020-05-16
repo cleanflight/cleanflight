@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -46,15 +46,10 @@
 #define SPI2_MOSI_PIN           PB15
 
 #define USE_SDCARD
-
+#define USE_SDCARD_SPI
 #define SDCARD_DETECT_PIN                    PC14
 #define SDCARD_SPI_INSTANCE                  SPI2
 #define SDCARD_SPI_CS_PIN                    SPI2_NSS_PIN
-
-// SPI2 is on the APB1 bus whose clock runs at 36MHz. Divide to under 400kHz for init:
-#define SDCARD_SPI_INITIALIZATION_CLOCK_DIVIDER 128
-// Divide to under 25MHz for normal operation:
-#define SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER 2
 
 // Note, this is the same DMA channel as UART1_RX. Luckily we don't use DMA for USART Rx.
 #define SDCARD_DMA_CHANNEL_TX               DMA1_Channel5
@@ -64,12 +59,11 @@
 #define USE_GYRO_MPU6050
 
 //#define L3GD20_SPI                      SPI1
-//#define L3GD20_CS_GPIO_CLK_PERIPHERAL   RCC_AHBPeriph_GPIOE
 //#define L3GD20_CS_GPIO                  GPIOE
 //#define L3GD20_CS_PIN                   PE3
 
 //#define GYRO_L3GD20_ALIGN CW270_DEG
-#define GYRO_MPU6050_ALIGN CW0_DEG
+#define GYRO_1_ALIGN       CW0_DEG
 
 #define USE_ACC
 #define USE_ACC_MPU6050
@@ -81,7 +75,6 @@
 //#define LSM303DLHC_I2C_INT1_PIN              PE4
 //#define LSM303DLHC_I2C_INT2_PIN              PE5
 
-#define ACC_MPU6050_ALIGN       CW0_DEG
 
 #define USE_BARO
 #define USE_BARO_MS5611
@@ -111,8 +104,6 @@
 #define CURRENT_METER_ADC_PIN   PC1
 #define RSSI_ADC_PIN            PC2
 #define EXTERNAL1_ADC_PIN       PC3
-
-#undef USE_LED_STRIP
 
 // IO - assuming 303 in 64pin package, TODO
 #define TARGET_IO_PORTA         0xffff

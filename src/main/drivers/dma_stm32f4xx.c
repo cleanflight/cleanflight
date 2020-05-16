@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,6 +23,8 @@
 #include <string.h>
 
 #include "platform.h"
+
+#ifdef USE_DMA
 
 #include "drivers/nvic.h"
 #include "dma.h"
@@ -76,22 +78,22 @@ void dmaInit(dmaIdentifier_e identifier, resourceOwner_e owner, uint8_t resource
 {
     const int index = DMA_IDENTIFIER_TO_INDEX(identifier);
     RCC_AHB1PeriphClockCmd(DMA_RCC(dmaDescriptors[index].dma), ENABLE);
-    dmaDescriptors[index].owner = owner;
-    dmaDescriptors[index].resourceIndex = resourceIndex;
+    dmaDescriptors[index].owner.owner = owner;
+    dmaDescriptors[index].owner.resourceIndex = resourceIndex;
 }
 
 #define RETURN_TCIF_FLAG(s, n) if (s == DMA1_Stream ## n || s == DMA2_Stream ## n) return DMA_IT_TCIF ## n
 
-uint32_t dmaFlag_IT_TCIF(const DMA_Stream_TypeDef *stream)
+uint32_t dmaFlag_IT_TCIF(const dmaResource_t *stream)
 {
-    RETURN_TCIF_FLAG(stream, 0);
-    RETURN_TCIF_FLAG(stream, 1);
-    RETURN_TCIF_FLAG(stream, 2);
-    RETURN_TCIF_FLAG(stream, 3);
-    RETURN_TCIF_FLAG(stream, 4);
-    RETURN_TCIF_FLAG(stream, 5);
-    RETURN_TCIF_FLAG(stream, 6);
-    RETURN_TCIF_FLAG(stream, 7);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 0);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 1);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 2);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 3);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 4);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 5);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 6);
+    RETURN_TCIF_FLAG((DMA_ARCH_TYPE *)stream, 7);
     return 0;
 }
 
@@ -113,37 +115,32 @@ void dmaSetHandler(dmaIdentifier_e identifier, dmaCallbackHandlerFuncPtr callbac
     NVIC_Init(&NVIC_InitStructure);
 }
 
-resourceOwner_e dmaGetOwner(dmaIdentifier_e identifier)
+const resourceOwner_t *dmaGetOwner(dmaIdentifier_e identifier)
 {
-    return dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].owner;
+    return &dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].owner;
 }
 
-uint8_t dmaGetResourceIndex(dmaIdentifier_e identifier)
-{
-    return dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].resourceIndex;
-}
-
-dmaIdentifier_e dmaGetIdentifier(const DMA_Stream_TypeDef* stream)
+dmaIdentifier_e dmaGetIdentifier(const dmaResource_t* instance)
 {
     for (int i = 0; i < DMA_LAST_HANDLER; i++) {
-        if (dmaDescriptors[i].ref == stream) {
+        if (dmaDescriptors[i].ref == instance) {
             return i + 1;
         }
     }
     return 0;
 }
 
-dmaChannelDescriptor_t* dmaGetDescriptor(const DMA_Stream_TypeDef* stream)
+dmaChannelDescriptor_t* dmaGetDescriptor(const dmaResource_t* instance)
 {
     for (int i = 0; i < DMA_LAST_HANDLER; i++) {
-        if (dmaDescriptors[i].ref == stream) {
+        if (dmaDescriptors[i].ref == instance) {
             return &dmaDescriptors[i];
         }
     }
     return NULL;
 }
 
-DMA_Stream_TypeDef* dmaGetRefByIdentifier(const dmaIdentifier_e identifier)
+dmaResource_t* dmaGetRefByIdentifier(const dmaIdentifier_e identifier)
 {
     return dmaDescriptors[DMA_IDENTIFIER_TO_INDEX(identifier)].ref;
 }
@@ -157,3 +154,4 @@ uint32_t dmaGetChannel(const uint8_t channel)
 {
     return ((uint32_t)channel*2)<<24;
 }
+#endif

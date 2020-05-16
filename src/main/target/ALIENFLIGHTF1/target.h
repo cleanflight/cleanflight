@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -37,12 +37,11 @@
 #define USE_GYRO
 #define USE_GYRO_MPU6050
 
-#define GYRO_MPU6050_ALIGN      CW0_DEG
+#define GYRO_1_ALIGN            CW0_DEG
 
 #define USE_ACC
 #define USE_ACC_MPU6050
 
-#define ACC_MPU6050_ALIGN       CW0_DEG
 
 #define USE_UART1
 #define USE_UART2
@@ -71,8 +70,6 @@
 #define SERIALRX_PROVIDER       SERIALRX_SPEKTRUM2048
 #define SERIALRX_UART           SERIAL_PORT_USART2
 #define RX_CHANNELS_TAER
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 // IO - assuming all IOs on 48pin package
 #define TARGET_IO_PORTA         0xffff

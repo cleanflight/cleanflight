@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,6 +23,9 @@
 #include "drivers/io_types.h"
 
 #include "pg/pg.h"
+
+#define GET_FRAME_ERR_LPF_FREQUENCY(period) (1 / (period / 10.0f))
+#define FRAME_ERR_RESAMPLE_US 100000
 
 typedef struct rxConfig_s {
     uint8_t rcmap[RX_MAPPABLE_CHANNEL_COUNT];  // mapping of radio channels to internal RPYTA+ order
@@ -56,6 +59,13 @@ typedef struct rxConfig_s {
     uint8_t rc_smoothing_debug_axis;        // Axis to log as debug values when debug_mode = RC_SMOOTHING
     uint8_t rc_smoothing_input_type;        // Input filter type (0 = PT1, 1 = BIQUAD)
     uint8_t rc_smoothing_derivative_type;   // Derivative filter type (0 = OFF, 1 = PT1, 2 = BIQUAD)
+    uint8_t rc_smoothing_auto_factor;       // Used to adjust the "smoothness" determined by the auto cutoff calculations
+    uint8_t rssi_src_frame_lpf_period;      // Period of the cutoff frequency for the source frame RSSI filter (in 0.1 s)
+
+    uint8_t srxl2_unit_id; // Spektrum SRXL2 RX unit id
+    uint8_t srxl2_baud_fast; // Select Spektrum SRXL2 fast baud rate
+    uint8_t sbus_baud_fast; // Select SBus fast baud rate
+    uint8_t crsf_use_rx_snr; // Use RX SNR (in dB) instead of RSSI dBm for CRSF
 } rxConfig_t;
 
 PG_DECLARE(rxConfig_t, rxConfig);

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,7 +21,10 @@
 #pragma once
 
 #include "drivers/time.h"
-#include "interface/msp.h"
+
+#include "io/serial.h"
+
+#include "msp/msp.h"
 
 // Each MSP port requires state and a receive buffer, revisit this default if someone needs more than 3 MSP ports.
 #define MAX_MSP_PORT_COUNT 3
@@ -59,8 +62,9 @@ typedef enum {
 
 typedef enum {
     MSP_PENDING_NONE,
-    MSP_PENDING_BOOTLOADER,
-    MSP_PENDING_CLI
+    MSP_PENDING_BOOTLOADER_ROM,
+    MSP_PENDING_CLI,
+    MSP_PENDING_BOOTLOADER_FLASH,
 } mspPendingSystemRequest_e;
 
 #define MSP_PORT_INBUF_SIZE 192
@@ -109,6 +113,7 @@ typedef struct mspPort_s {
     uint8_t checksum1;
     uint8_t checksum2;
     bool sharedWithTelemetry;
+    mspDescriptor_t descriptor;
 } mspPort_t;
 
 void mspSerialInit(void);
@@ -117,5 +122,5 @@ void mspSerialProcess(mspEvaluateNonMspData_e evaluateNonMspData, mspProcessComm
 void mspSerialAllocatePorts(void);
 void mspSerialReleasePortIfAllocated(struct serialPort_s *serialPort);
 void mspSerialReleaseSharedTelemetryPorts(void);
-int mspSerialPush(uint8_t cmd, uint8_t *data, int datalen, mspDirection_e direction);
+int mspSerialPush(serialPortIdentifier_e port, uint8_t cmd, uint8_t *data, int datalen, mspDirection_e direction);
 uint32_t mspSerialTxBytesFree(void);

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -20,6 +20,9 @@
 
 #pragma once
 
+#include "common/axis.h"
+#include "common/maths.h"
+
 #include "pg/pg.h"
 
 typedef struct boardAlignment_s {
@@ -30,5 +33,7 @@ typedef struct boardAlignment_s {
 
 PG_DECLARE(boardAlignment_t, boardAlignment);
 
-void alignSensors(float *dest, uint8_t rotation);
+void alignSensorViaMatrix(float *dest, fp_rotationMatrix_t* rotationMatrix);
+void alignSensorViaRotation(float *dest, uint8_t rotation);
+
 void initBoardAlignment(const boardAlignment_t *boardAlignment);

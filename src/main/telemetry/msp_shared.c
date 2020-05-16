@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -30,7 +30,8 @@
 
 #include "common/utils.h"
 
-#include "interface/msp.h"
+#include "msp/msp.h"
+#include "msp/msp_protocol.h"
 
 #include "telemetry/crsf.h"
 #include "telemetry/msp_shared.h"
@@ -44,6 +45,8 @@
 #define TELEMETRY_MSP_SEQ_MASK   0x0F
 #define TELEMETRY_MSP_RES_ERROR (-10)
 
+#define TELEMETRY_REQUEST_SKIPS_AFTER_EEPROMWRITE 5
+
 enum {
     TELEMETRY_MSP_VER_MISMATCH=0,
     TELEMETRY_MSP_CRC_ERROR=1,
@@ -56,6 +59,7 @@ static mspRxBuffer_t mspRxBuffer;
 static mspTxBuffer_t mspTxBuffer;
 static mspPacket_t mspRxPacket;
 static mspPacket_t mspTxPacket;
+static mspDescriptor_t mspSharedDescriptor;
 
 void initSharedMsp(void)
 {
@@ -68,6 +72,8 @@ void initSharedMsp(void)
     mspPackage.responsePacket = &mspTxPacket;
     mspPackage.responsePacket->buf.ptr = mspPackage.responseBuffer;
     mspPackage.responsePacket->buf.end = mspPackage.responseBuffer;
+
+    mspSharedDescriptor = mspDescriptorAlloc();
 }
 
 static void processMspPacket(void)
@@ -77,7 +83,7 @@ static void processMspPacket(void)
     mspPackage.responsePacket->buf.end = mspPackage.responseBuffer;
 
     mspPostProcessFnPtr mspPostProcessFn = NULL;
-    if (mspFcProcessCommand(mspPackage.requestPacket, mspPackage.responsePacket, &mspPostProcessFn) == MSP_RESULT_ERROR) {
+    if (mspFcProcessCommand(mspSharedDescriptor, mspPackage.requestPacket, mspPackage.responsePacket, &mspPostProcessFn) == MSP_RESULT_ERROR) {
         sbufWriteU8(&mspPackage.responsePacket->buf, TELEMETRY_MSP_ERROR);
     }
     if (mspPostProcessFn) {
@@ -98,7 +104,7 @@ void sendMspErrorResponse(uint8_t error, int16_t cmd)
     sbufSwitchToReader(&mspPackage.responsePacket->buf, mspPackage.responseBuffer);
 }
 
-bool handleMspFrame(uint8_t *frameStart, int frameLength)
+bool handleMspFrame(uint8_t *frameStart, int frameLength, uint8_t *skipsBeforeResponse)
 {
     static uint8_t mspStarted = 0;
     static uint8_t lastSeq = 0;
@@ -168,6 +174,11 @@ bool handleMspFrame(uint8_t *frameStart, int frameLength)
             sendMspErrorResponse(TELEMETRY_MSP_CRC_ERROR, packet->cmd);
             return true;
         }
+    }
+
+    // Skip a few telemetry requests if command is MSP_EEPROM_WRITE
+    if (packet->cmd == MSP_EEPROM_WRITE && skipsBeforeResponse) {
+        *skipsBeforeResponse = TELEMETRY_REQUEST_SKIPS_AFTER_EEPROMWRITE;
     }
 
     mspStarted = 0;

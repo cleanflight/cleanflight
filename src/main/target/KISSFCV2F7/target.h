@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -26,6 +26,8 @@
 
 #define USBD_PRODUCT_STRING "KISSFCV2F7"
 
+#undef USE_CUSTOM_DEFAULTS_ADDRESS
+
 #define LED0_PIN   PA8  // blue
 #define LED1_PIN   PC8 // blingbling
 #define LED1_INVERTED
@@ -34,16 +36,15 @@
 #define BEEPER_PIN              PC9
 #define BEEPER_INVERTED
 
-#define MPU6000_CS_PIN          PB12
-#define MPU6000_SPI_INSTANCE    SPI2
+#define GYRO_1_CS_PIN           PB12
+#define GYRO_1_SPI_INSTANCE     SPI2
 
 #define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
-#define GYRO_MPU6000_ALIGN      CW90_DEG
+#define GYRO_1_ALIGN            CW90_DEG
 
 #define USE_ACC
 #define USE_ACC_SPI_MPU6000
-#define ACC_MPU6000_ALIGN       CW90_DEG
 
 
 #define USE_SPI
@@ -100,7 +101,7 @@
 #define SPEKTRUM_BIND_PIN        UART2_RX_PIN
 
 #define USE_ADC
-#define BOARD_HAS_VOLTAGE_DIVIDER
+#define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define VBAT_SCALE_DEFAULT      160
 #define VBAT_ADC_PIN            PB1
 
@@ -114,4 +115,4 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 8
 
-#define USED_TIMERS  ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(12) | TIM_N(8) | TIM_N(9) | TIM_N(10) | TIM_N(11))
+#define USED_TIMERS  ( TIM_N(2) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) )

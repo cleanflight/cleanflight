@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -38,6 +38,8 @@
 
 #include "rx/rx.h"
 
+#include "pg/rcdevice.h"
+
 #ifdef USE_RCDEVICE
 
 #define IS_HI(X) (rcData[X] > FIVE_KEY_CABLE_JOYSTICK_MAX)
@@ -55,7 +57,7 @@ bool waitingDeviceResponse = false;
 
 static bool isFeatureSupported(uint8_t feature)
 {
-    if (camDevice->info.features & feature) {
+    if (camDevice->info.features & feature || rcdeviceConfig()->feature & feature) {
         return true;
     }
 
@@ -67,22 +69,13 @@ bool rcdeviceIsEnabled(void)
     return camDevice->serialPort != NULL;
 }
 
-static bool rcdeviceIs5KeyEnabled(void)
-{
-    if (camDevice->serialPort != NULL && isFeatureSupported(RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE)) {
-        return true;
-    }
-
-    return false;
-}
-
 static void rcdeviceCameraControlProcess(void)
 {
     for (boxId_e i = BOXCAMERA1; i <= BOXCAMERA3; i++) {
         uint8_t switchIndex = i - BOXCAMERA1;
 
         if (IS_RC_MODE_ACTIVE(i)) {
-            
+
             // check last state of this mode, if it's true, then ignore it.
             // Here is a logic to make a toggle control for this mode
             if (switchStates[switchIndex].isActivated) {
@@ -94,22 +87,22 @@ static void rcdeviceCameraControlProcess(void)
             case BOXCAMERA1:
                 if (isFeatureSupported(RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON)) {
                     // avoid display wifi page when arming, in the next firmware(>2.0) of rcsplit we have change the wifi page logic:
-                    // when the wifi was turn on it won't turn off the analog video output, 
+                    // when the wifi was turn on it won't turn off the analog video output,
                     // and just put a wifi indicator on the right top of the video output. here is for the old split firmware
-                    if (!ARMING_FLAG(ARMED) && ((getArmingDisableFlags() & ARMING_DISABLED_RUNAWAY_TAKEOFF) == 0)) {
+                    if (!ARMING_FLAG(ARMED) && !(getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))) {
                         behavior = RCDEVICE_PROTOCOL_CAM_CTRL_SIMULATE_WIFI_BTN;
                     }
                 }
                 break;
             case BOXCAMERA2:
                 if (isFeatureSupported(RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON)) {
-                    behavior = RCDEVICE_PROTOCOL_CAM_CTRL_SIMULATE_POWER_BTN;        
+                    behavior = RCDEVICE_PROTOCOL_CAM_CTRL_SIMULATE_POWER_BTN;
                 }
                 break;
             case BOXCAMERA3:
                 if (isFeatureSupported(RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE)) {
                     // avoid change camera mode when arming
-                    if (!ARMING_FLAG(ARMED) && ((getArmingDisableFlags() & ARMING_DISABLED_RUNAWAY_TAKEOFF) == 0)) {
+                    if (!ARMING_FLAG(ARMED) && !(getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))) {
                         behavior = RCDEVICE_PROTOCOL_CAM_CTRL_CHANGE_MODE;
                     }
                 }
@@ -129,15 +122,12 @@ static void rcdeviceCameraControlProcess(void)
 
 static void rcdeviceSimulationOSDCableFailed(rcdeviceResponseParseContext_t *ctx)
 {
+    waitingDeviceResponse = false;
     if (ctx->command == RCDEVICE_PROTOCOL_COMMAND_5KEY_CONNECTION) {
         uint8_t operationID = ctx->paramData[0];
         if (operationID == RCDEVICE_PROTOCOL_5KEY_CONNECTION_CLOSE) {
-            waitingDeviceResponse = false;
             return;
         }
-    } else {
-        rcdeviceInMenu = false;
-        waitingDeviceResponse = false;
     }
 }
 
@@ -145,6 +135,7 @@ static void rcdeviceSimulationRespHandle(rcdeviceResponseParseContext_t *ctx)
 {
     if (ctx->result != RCDEVICE_RESP_SUCCESS) {
         rcdeviceSimulationOSDCableFailed(ctx);
+        waitingDeviceResponse = false;
         return;
     }
 
@@ -164,7 +155,6 @@ static void rcdeviceSimulationRespHandle(rcdeviceResponseParseContext_t *ctx)
                 rcdeviceInMenu = true;
                 beeper(BEEPER_CAM_CONNECTION_OPEN);
             } else {
-                rcdeviceInMenu = false;
                 beeper(BEEPER_CAM_CONNECTION_CLOSE);
             }
         } else if (operationID == RCDEVICE_PROTOCOL_5KEY_CONNECTION_CLOSE) {
@@ -246,25 +236,23 @@ static void rcdevice5KeySimulationProcess(timeUs_t currentTimeUs)
     }
 #endif
 
-    if (ARMING_FLAG(ARMED) || getArmingDisableFlags() & ARMING_DISABLED_RUNAWAY_TAKEOFF) {
-        return;
-    }
-
-    if (waitingDeviceResponse) {
+    if (ARMING_FLAG(ARMED) || (getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))) {
         return;
     }
 
     if (isButtonPressed) {
         if (IS_MID(YAW) && IS_MID(PITCH) && IS_MID(ROLL)) {
-            if (rcdeviceIs5KeyEnabled()) {
-                rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
-                waitingDeviceResponse = true;
-            }
+            rcdeviceSend5KeyOSDCableSimualtionEvent(RCDEVICE_CAM_KEY_RELEASE);
+            waitingDeviceResponse = true;
         }
     } else {
+        if (waitingDeviceResponse) {
+            return;
+        }
+
         rcdeviceCamSimulationKeyEvent_e key = RCDEVICE_CAM_KEY_NONE;
 
-        if (IS_MID(THROTTLE) && IS_MID(ROLL) && IS_MID(PITCH) && IS_LO(YAW)) { // Disconnect HI YAW
+        if (IS_MID(THROTTLE) && IS_MID(ROLL) && IS_MID(PITCH) && IS_LO(YAW)) { // Disconnect Lo YAW
             if (rcdeviceInMenu) {
                 key = RCDEVICE_CAM_KEY_CONNECTION_CLOSE;
             }
@@ -289,10 +277,9 @@ static void rcdevice5KeySimulationProcess(timeUs_t currentTimeUs)
         }
 
         if (key != RCDEVICE_CAM_KEY_NONE) {
-            if (rcdeviceIs5KeyEnabled()) {
-                rcdeviceSend5KeyOSDCableSimualtionEvent(key);
-                waitingDeviceResponse = true;
-            }
+            rcdeviceSend5KeyOSDCableSimualtionEvent(key);
+            isButtonPressed = true;
+            waitingDeviceResponse = true;
         }
     }
 }
@@ -300,8 +287,9 @@ static void rcdevice5KeySimulationProcess(timeUs_t currentTimeUs)
 void rcdeviceUpdate(timeUs_t currentTimeUs)
 {
     rcdeviceReceive(currentTimeUs);
-    
+
     rcdeviceCameraControlProcess();
+
     rcdevice5KeySimulationProcess(currentTimeUs);
 }
 

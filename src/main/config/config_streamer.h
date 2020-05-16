@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -26,12 +26,26 @@
 // Streams data out to the EEPROM, padding to the write size as
 // needed, and updating the checksum as it goes.
 
+#ifdef CONFIG_IN_EXTERNAL_FLASH
+#define CONFIG_STREAMER_BUFFER_SIZE 8 // Must not be greater than the smallest flash page size of all compiled-in flash devices.
+typedef uint32_t config_streamer_buffer_align_type_t;
+#elif defined(STM32H7)
+#define CONFIG_STREAMER_BUFFER_SIZE 32  // Flash word = 256-bits
+typedef uint64_t config_streamer_buffer_align_type_t;
+#elif defined(STM32G4)
+#define CONFIG_STREAMER_BUFFER_SIZE 8   // Flash word = 64-bits
+typedef uint64_t config_streamer_buffer_align_type_t;
+#else
+#define CONFIG_STREAMER_BUFFER_SIZE 4
+typedef uint32_t config_streamer_buffer_align_type_t;
+#endif
+
 typedef struct config_streamer_s {
     uintptr_t address;
     int size;
     union {
-        uint8_t b[4];
-        uint32_t w;
+        uint8_t b[CONFIG_STREAMER_BUFFER_SIZE];
+        config_streamer_buffer_align_type_t w;
     } buffer;
     int at;
     int err;

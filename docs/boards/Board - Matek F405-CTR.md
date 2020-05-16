@@ -14,7 +14,7 @@ Full details on the Matek Sys F405-CTR can be found on the Matek Website: [matek
   * *MCU:* [STM32F405RGT6](http://www.st.com/content/ccc/resource/technical/document/datasheet/ef/92/76/6d/bb/c2/4f/f7/DM00037051.pdf/files/DM00037051.pdf/jcr:content/translations/en.DM00037051.pdf)
   * *IMU:* [MPU6000](https://www.invensense.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf) (connected via SPI)
   * *Baro:* [BMP280](https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001-19.pdf) (connected via I2C)
-  * *OSD:* BetaFlight OSD (AT7456E IC)
+  * *OSD:* Cleanflight OSD (AT7456E IC)
 * *Blackbox:* MicroSD card slot (SD/SDHC)
 * 5 UARTs
 

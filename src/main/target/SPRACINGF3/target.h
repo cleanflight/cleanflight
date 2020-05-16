@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -32,37 +32,6 @@
 #define TARGET_BOARD_IDENTIFIER "SRF3"
 #endif
 
-// Removed to make the firmware fit into flash (in descending order of priority):
-//#undef USE_GYRO_OVERFLOW_CHECK
-//#undef USE_GYRO_LPF2
-
-//#undef USE_ITERM_RELAX
-//#undef USE_RC_SMOOTHING_FILTER
-
-//#undef USE_MSP_DISPLAYPORT
-//#undef USE_MSP_OVER_TELEMETRY
-
-//#undef USE_HUFFMAN
-//#undef USE_PINIO
-//#undef USE_PINIOBOX
-
-//#undef USE_TELEMETRY_HOTT
-//#undef USE_TELEMETRY_MAVLINK
-//#undef USE_TELEMETRY_LTM
-//#undef USE_SERIALRX_XBUS
-//#undef USE_SERIALRX_SUMH
-//#undef USE_PWM
-
-#undef USE_BOARD_INFO
-#undef USE_EXTENDED_CMS_MENUS
-#undef USE_RTC_TIME
-#undef USE_RX_MSP
-#undef USE_ESC_SENSOR_INFO
-
-#if defined(IRCSYNERGYF3)
-#undef USE_LED_STRIP
-#endif
-
 #if defined(ZCOREF3)
 
 #define LED0_PIN                PB8
@@ -78,7 +47,8 @@
 #endif
 
 #define USE_EXTI
-#define MPU_INT_EXTI            PC13
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN          PC13
 #define USE_MPU_DATA_READY_SIGNAL
 #define ENSURE_MPU_DATA_READY_IS_LOW
 
@@ -91,21 +61,17 @@
 
 #if defined(FLIP32F3OSD)
 #define USE_GYRO_MPU6500
-#define GYRO_MPU6500_ALIGN CW270_DEG
+#define GYRO_1_ALIGN            CW270_DEG
 
 #define USE_ACC_MPU6500
-#define ACC_MPU6500_ALIGN CW270_DEG
 
 #elif defined(ZCOREF3)
-#define USE_GYRO
 #define USE_GYRO_MPU6500
 #define USE_GYRO_SPI_MPU6500
-#define GYRO_MPU6500_ALIGN      CW180_DEG
+#define GYRO_1_ALIGN            CW180_DEG
 
-#define USE_ACC
 #define USE_ACC_MPU6500
 #define USE_ACC_SPI_MPU6500
-#define ACC_MPU6500_ALIGN       CW180_DEG
 
 #define USE_SPI_DEVICE_1 // PB9,3,4,5 on AF5 SPI1 (MPU)
 
@@ -114,26 +80,22 @@
 #define SPI1_MISO_PIN           PB4
 #define SPI1_MOSI_PIN           PB5
 
-#define MPU6500_CS_PIN          PB9
-#define MPU6500_SPI_INSTANCE    SPI1
+#define GYRO_1_CS_PIN           PB9
+#define GYRO_1_SPI_INSTANCE     SPI1
 
 #elif defined(IRCSYNERGYF3)
-#define GYRO
 #define USE_GYRO_SPI_MPU6000
-#define GYRO_MPU6000_ALIGN      CW270_DEG
+#define GYRO_1_ALIGN            CW270_DEG
 
-#define ACC
 #define USE_ACC_SPI_MPU6000
-#define ACC_MPU6000_ALIGN       CW270_DEG
 
-#define MPU6000_CS_PIN           PB12
-#define MPU6000_SPI_INSTANCE     SPI2
+#define GYRO_1_CS_PIN           PB12
+#define GYRO_1_SPI_INSTANCE     SPI2
 #else
 #define USE_GYRO_MPU6050
-#define GYRO_MPU6050_ALIGN      CW270_DEG
+#define GYRO_1_ALIGN            CW270_DEG
 
 #define USE_ACC_MPU6050
-#define ACC_MPU6050_ALIGN       CW270_DEG
 #endif
 
 #if defined(FLIP32F3OSD)
@@ -241,8 +203,6 @@
 #define DEFAULT_RX_FEATURE      FEATURE_RX_PPM
 #define DEFAULT_FEATURES        (FEATURE_RSSI_ADC | FEATURE_TELEMETRY)
 #endif
-
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 // IO - stm32f303cc in 48pin package
 #define TARGET_IO_PORTA         0xffff

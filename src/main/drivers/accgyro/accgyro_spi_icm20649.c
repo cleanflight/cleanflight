@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,6 +23,8 @@
 #include <stdlib.h>
 
 #include "platform.h"
+
+#ifdef USE_GYRO_SPI_ICM20649
 
 #include "common/axis.h"
 #include "common/maths.h"
@@ -45,11 +47,6 @@ static void icm20649SpiInit(const busDevice_t *bus)
         return;
     }
 
-#ifndef USE_DUAL_GYRO
-    IOInit(bus->busdev_u.spi.csnPin, OWNER_MPU_CS, 0);
-    IOConfigGPIO(bus->busdev_u.spi.csnPin, SPI_IO_CS_CFG);
-    IOHi(bus->busdev_u.spi.csnPin);
-#endif
 
     // all registers can be read/written at full speed (7MHz +-10%)
     // TODO verify that this works at 9MHz and 10MHz on non F7
@@ -208,3 +205,4 @@ bool icm20649AccRead(accDev_t *acc)
 
     return true;
 }
+#endif

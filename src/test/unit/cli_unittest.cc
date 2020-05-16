@@ -17,7 +17,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #include <limits.h>
 
@@ -27,45 +26,52 @@ extern "C" {
     #include "platform.h"
     #include "target.h"
     #include "build/version.h"
+    #include "cli/cli.h"
+    #include "cli/settings.h"
+    #include "common/printf.h"
     #include "config/feature.h"
-    #include "pg/pg.h"
-    #include "pg/pg_ids.h"
-    #include "pg/rx.h"
     #include "drivers/buf_writer.h"
     #include "drivers/vtx_common.h"
-    #include "fc/config.h"
+    #include "config/config.h"
     #include "fc/rc_adjustments.h"
     #include "fc/runtime_config.h"
     #include "flight/mixer.h"
     #include "flight/pid.h"
     #include "flight/servos.h"
-    #include "interface/cli.h"
-    #include "interface/msp.h"
-    #include "interface/msp_box.h"
-    #include "interface/settings.h"
     #include "io/beeper.h"
     #include "io/ledstrip.h"
-    #include "io/osd.h"
     #include "io/serial.h"
     #include "io/vtx.h"
+    #include "msp/msp.h"
+    #include "msp/msp_box.h"
+    #include "osd/osd.h"
+    #include "pg/pg.h"
+    #include "pg/pg_ids.h"
     #include "pg/beeper.h"
+    #include "pg/rx.h"
     #include "rx/rx.h"
     #include "scheduler/scheduler.h"
     #include "sensors/battery.h"
+    #include "sensors/gyro.h"
 
-    void cliSet(char *cmdline);
-    void cliGet(char *cmdline);
-
+    void cliSet(const char *cmdName, char *cmdline);
+    int cliGetSettingIndex(char *name, uint8_t length);
+    void *cliGetValuePointer(const clivalue_t *value);
+    
     const clivalue_t valueTable[] = {
-        { "array_unit_test",             VAR_INT8  | MODE_ARRAY | MASTER_VALUE, .config.array.length = 3, PG_RESERVED_FOR_TESTING_1, 0 }
+        { "array_unit_test",   VAR_INT8  | MODE_ARRAY  | MASTER_VALUE, .config.array.length = 3,      PG_RESERVED_FOR_TESTING_1, 0 },
+        { "str_unit_test",     VAR_UINT8 | MODE_STRING | MASTER_VALUE, .config.string = { 0, 16, 0 }, PG_RESERVED_FOR_TESTING_1, 0 },
+        { "wos_unit_test",     VAR_UINT8 | MODE_STRING | MASTER_VALUE, .config.string = { 0, 16, STRING_FLAGS_WRITEONCE }, PG_RESERVED_FOR_TESTING_1, 0 },
     };
     const uint16_t valueTableEntryCount = ARRAYLEN(valueTable);
     const lookupTableEntry_t lookupTables[] = {};
+    const char * const lookupTableOsdDisplayPortDevice[] = {};
 
 
     PG_REGISTER(osdConfig_t, osdConfig, PG_OSD_CONFIG, 0);
     PG_REGISTER(batteryConfig_t, batteryConfig, PG_BATTERY_CONFIG, 0);
     PG_REGISTER(ledStripConfig_t, ledStripConfig, PG_LED_STRIP_CONFIG, 0);
+    PG_REGISTER(ledStripStatusModeConfig_t, ledStripStatusModeConfig, PG_LED_STRIP_STATUS_MODE_CONFIG, 0);
     PG_REGISTER(systemConfig_t, systemConfig, PG_SYSTEM_CONFIG, 0);
     PG_REGISTER(pilotConfig_t, pilotConfig, PG_PILOT_CONFIG, 0);
     PG_REGISTER_ARRAY(adjustmentRange_t, MAX_ADJUSTMENT_RANGE_COUNT, adjustmentRanges, PG_ADJUSTMENT_RANGE_CONFIG, 0);
@@ -80,27 +86,27 @@ extern "C" {
     PG_REGISTER_ARRAY(rxChannelRangeConfig_t, NON_AUX_CHANNEL_COUNT, rxChannelRangeConfigs, PG_RX_CHANNEL_RANGE_CONFIG, 0);
     PG_REGISTER_ARRAY(rxFailsafeChannelConfig_t, MAX_SUPPORTED_RC_CHANNEL_COUNT, rxFailsafeChannelConfigs, PG_RX_FAILSAFE_CHANNEL_CONFIG, 0);
     PG_REGISTER(pidConfig_t, pidConfig, PG_PID_CONFIG, 0);
+    PG_REGISTER(gyroConfig_t, gyroConfig, PG_GYRO_CONFIG, 0);
 
     PG_REGISTER_WITH_RESET_FN(int8_t, unitTestData, PG_RESERVED_FOR_TESTING_1, 0);
 }
 
 #include "unittest_macros.h"
 #include "gtest/gtest.h"
-TEST(CLIUnittest, TestCliSet)
+
+TEST(CLIUnittest, TestCliSetArray)
 {
+    char *str = (char *)"array_unit_test    =   123,  -3  , 1";
+    cliSet("", str);
 
-    cliSet((char *)"array_unit_test    =   123,  -3  , 1");
+    const uint16_t index = cliGetSettingIndex(str, 15);
+    EXPECT_LT(index, valueTableEntryCount);
 
-    const clivalue_t cval = {
-        .name = "array_unit_test",
-        .type = MODE_ARRAY | MASTER_VALUE | VAR_INT8,
-        .pgn = PG_RESERVED_FOR_TESTING_1,
-        .offset = 0
-    };
+    const clivalue_t val = valueTable[index];
 
     printf("\n===============================\n");
-    int8_t *data = (int8_t *)cliGetValuePointer(&cval);
-    for(int i=0; i<3; i++){
+    int8_t *data = (int8_t *)cliGetValuePointer(&val);
+    for(int i=0; i < val.config.array.length; i++){
         printf("data[%d] = %d\n", i, data[i]);
     }
     printf("\n===============================\n");
@@ -109,10 +115,82 @@ TEST(CLIUnittest, TestCliSet)
     EXPECT_EQ(123, data[0]);
     EXPECT_EQ( -3, data[1]);
     EXPECT_EQ(  1, data[2]);
+}
+
+TEST(CLIUnittest, TestCliSetStringNoFlags)
+{
+    char *str = (char *)"str_unit_test    =   SAMPLE"; 
+    cliSet("", str);
+
+    const uint16_t index = cliGetSettingIndex(str, 13);
+    EXPECT_LT(index, valueTableEntryCount);
+
+    const clivalue_t val = valueTable[index];
+
+    printf("\n===============================\n");
+    uint8_t *data = (uint8_t *)cliGetValuePointer(&val);
+    for(int i = 0; i < val.config.string.maxlength && data[i] != 0; i++){
+        printf("data[%d] = %d (%c)\n", i, data[i], data[i]);
+    }
+    printf("\n===============================\n");
 
 
-    //cliGet((char *)"osd_item_vbat");
-    //EXPECT_EQ(false, false);
+    EXPECT_EQ('S', data[0]);
+    EXPECT_EQ('A', data[1]);
+    EXPECT_EQ('M', data[2]);
+    EXPECT_EQ('P', data[3]);
+    EXPECT_EQ('L', data[4]);
+    EXPECT_EQ('E', data[5]);
+    EXPECT_EQ(0,   data[6]);
+}
+
+TEST(CLIUnittest, TestCliSetStringWriteOnce)
+{
+    char *str1 = (char *)"wos_unit_test    =   SAMPLE"; 
+    char *str2 = (char *)"wos_unit_test    =   ELPMAS"; 
+    cliSet("", str1);
+
+    const uint16_t index = cliGetSettingIndex(str1, 13);
+    EXPECT_LT(index, valueTableEntryCount);
+
+    const clivalue_t val = valueTable[index];
+
+    printf("\n===============================\n");
+    uint8_t *data = (uint8_t *)cliGetValuePointer(&val);
+    for(int i = 0; i < val.config.string.maxlength && data[i] != 0; i++){
+        printf("data[%d] = %d (%c)\n", i, data[i], data[i]);
+    }
+    printf("\n===============================\n");
+
+    EXPECT_EQ('S', data[0]);
+    EXPECT_EQ('A', data[1]);
+    EXPECT_EQ('M', data[2]);
+    EXPECT_EQ('P', data[3]);
+    EXPECT_EQ('L', data[4]);
+    EXPECT_EQ('E', data[5]);
+    EXPECT_EQ(0,   data[6]);
+
+    cliSet("", str2);
+
+    EXPECT_EQ('S', data[0]);
+    EXPECT_EQ('A', data[1]);
+    EXPECT_EQ('M', data[2]);
+    EXPECT_EQ('P', data[3]);
+    EXPECT_EQ('L', data[4]);
+    EXPECT_EQ('E', data[5]);
+    EXPECT_EQ(0,   data[6]);
+
+    cliSet("", str1);
+
+    EXPECT_EQ('S', data[0]);
+    EXPECT_EQ('A', data[1]);
+    EXPECT_EQ('M', data[2]);
+    EXPECT_EQ('P', data[3]);
+    EXPECT_EQ('L', data[4]);
+    EXPECT_EQ('E', data[5]);
+    EXPECT_EQ(0,   data[6]);
+
+    printf("\n");
 }
 
 // STUBS
@@ -146,21 +224,12 @@ uint8_t getMotorCount() {
     return 4;
 }
 
+size_t getEEPROMStorageSize() {
+    return 0;
+}
+
 
 void setPrintfSerialPort(struct serialPort_s) {}
-
-void tfp_printf(const char * expectedFormat, ...) {
-    va_list args;
-
-    va_start(args, expectedFormat);
-    vprintf(expectedFormat, args);
-    va_end(args);
-}
-
-
-void tfp_format(void *, void (*) (void *, char), const char * expectedFormat, va_list va) {
-    vprintf(expectedFormat, va);
-}
 
 static const box_t boxes[] = { { 0, "DUMMYBOX", 0 } };
 const box_t *findBoxByPermanentId(uint8_t) { return &boxes[0]; }
@@ -194,7 +263,7 @@ void beeperOffSet(uint32_t) {}
 void beeperOffClear(uint32_t) {}
 void beeperOffClearAll(void) {}
 bool parseColor(int, const char *) {return false; }
-void resetEEPROM(void) {}
+bool resetEEPROM(bool) { return true; }
 void bufWriterFlush(bufWriter_t *) {}
 void mixerResetDisarmedMotors(void) {}
 void gpsEnablePassthrough(struct serialPort_s *) {}
@@ -204,13 +273,14 @@ const char rcChannelLetters[] = "AERT12345678abcdefgh";
 void parseRcChannels(const char *, rxConfig_t *){}
 void mixerLoadMix(int, motorMixer_t *) {}
 bool setModeColor(ledModeIndex_e, int, int) { return false; }
-float convertExternalToMotor(uint16_t ){ return 1.0; }
+float motorConvertFromExternal(uint16_t) { return 1.0; }
+void motorShutdown(void) { }
 uint8_t getCurrentPidProfileIndex(void){ return 1; }
 uint8_t getCurrentControlRateProfileIndex(void){ return 1; }
 void changeControlRateProfile(uint8_t) {}
 void resetAllRxChannelRangeConfigurations(rxChannelRangeConfig_t *) {}
 void writeEEPROM() {}
-serialPortConfig_t *serialFindPortConfiguration(serialPortIdentifier_e) {return NULL; }
+serialPortConfig_t *serialFindPortConfigurationMutable(serialPortIdentifier_e) {return NULL; }
 baudRate_e lookupBaudRateIndex(uint32_t){return BAUD_9600; }
 serialPortUsage_t *findSerialPortUsageByIdentifier(serialPortIdentifier_e){ return NULL; }
 serialPort_t *openSerialPort(serialPortIdentifier_e, serialPortFunction_e, serialReceiveCallbackPtr, void *, uint32_t, portMode_e, portOptions_e) { return NULL; }
@@ -230,7 +300,7 @@ uint8_t __config_start = 0x00;
 uint8_t __config_end = 0x10;
 uint16_t averageSystemLoadPercent = 0;
 
-timeDelta_t getTaskDeltaTime(cfTaskId_e){ return 0; }
+timeDelta_t getTaskDeltaTimeUs(taskId_e){ return 0; }
 uint16_t currentRxRefreshRate = 9000;
 armingDisableFlags_e getArmingDisableFlags(void) { return ARMING_DISABLED_NO_GYRO; }
 
@@ -238,9 +308,10 @@ const char *armingDisableFlagNames[]= {
 "DUMMYDISABLEFLAGNAME"
 };
 
-void getTaskInfo(cfTaskId_e, cfTaskInfo_t *) {}
+void getTaskInfo(taskId_e, taskInfo_t *) {}
 void getCheckFuncInfo(cfCheckFuncInfo_t *) {}
-void schedulerResetTaskMaxExecutionTime(cfTaskId_e) {}
+void schedulerResetTaskMaxExecutionTime(taskId_e) {}
+void schedulerResetCheckFunctionMaxExecutionTime(void) {}
 
 const char * const targetName = "UNITTEST";
 const char* const buildDate = "Jan 01 2017";
@@ -257,10 +328,10 @@ void schedulerSetCalulateTaskStatistics(bool) {}
 void setArmingDisabled(armingDisableFlags_e) {}
 
 void waitForSerialPortToFinishTransmitting(serialPort_t *) {}
-void stopPwmAllMotors(void) {}
 void systemResetToBootloader(void) {}
-void resetConfigs(void) {}
+void resetConfig(void) {}
 void systemReset(void) {}
+void writeUnmodifiedConfigToEEPROM(void) {}
 
 void changePidProfile(uint8_t) {}
 bool serialIsPortAvailable(serialPortIdentifier_e) { return false; }
@@ -274,11 +345,21 @@ void serialSetCtrlLineState(serialPort_t *, uint16_t ) {}
 
 void serialSetBaudRateCb(serialPort_t *, void (*)(serialPort_t *context, uint32_t baud), serialPort_t *) {}
 
-char *getBoardName(void) { return NULL; };
-char *getManufacturerId(void) { return NULL; };
-bool boardInformationIsSet(void) { return true; };
+char *getBoardName(void) { return NULL; }
+char *getManufacturerId(void) { return NULL; }
+bool boardInformationIsSet(void) { return true; }
 
 bool setBoardName(char *newBoardName) { UNUSED(newBoardName); return true; };
 bool setManufacturerId(char *newManufacturerId) { UNUSED(newManufacturerId); return true; };
 bool persistBoardInformation(void) { return true; };
+
+void activeAdjustmentRangeReset(void) {}
+void analyzeModeActivationConditions(void) {}
+bool isModeActivationConditionConfigured(const modeActivationCondition_t *, const modeActivationCondition_t *) { return false; }
+
+void delay(uint32_t) {}
+displayPort_t *osdGetDisplayPort(osdDisplayPortDevice_e *) { return NULL; }
+mcuTypeId_e getMcuTypeId(void) { return MCU_TYPE_UNKNOWN; }
+uint16_t getCurrentRxRefreshRate(void) { return 0; }
+uint16_t getAverageSystemLoadPercent(void) { return 0; }
 }

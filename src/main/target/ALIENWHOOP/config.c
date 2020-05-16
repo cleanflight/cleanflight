@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -47,7 +47,7 @@
 #include "common/filter.h"
 #include "config/feature.h"
 #include "drivers/pwm_esc_detect.h"
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/controlrate_profile.h"
 #include "fc/rc_controls.h"
 #include "fc/rc_modes.h"
@@ -57,6 +57,7 @@
 #include "io/beeper.h"
 #include "io/serial.h"
 #include "pg/rx.h"
+#include "pg/motor.h"
 #include "rx/rx.h"
 #include "sensors/barometer.h"
 #include "sensors/boardalignment.h"
@@ -72,7 +73,7 @@
 
 void targetConfiguration(void)
 {
-    if (hardwareMotorType == MOTOR_BRUSHED) {
+    if (getDetectedMotorType() == MOTOR_BRUSHED) {
         motorConfigMutable()->dev.motorPwmRate = BRUSHED_MOTORS_PWM_RATE;
         motorConfigMutable()->minthrottle = 1050; // for 6mm and 7mm brushed
     }
@@ -96,27 +97,18 @@ void targetConfiguration(void)
 #if defined(BREADBOARD)
     boardAlignmentMutable()->pitchDegrees = 90; // vertical breakout board
     barometerConfigMutable()->baro_hardware = BARO_DEFAULT; // still testing not on V1 or V2 pcb
-#else
-    barometerConfigMutable()->baro_hardware = BARO_NONE;
 #endif
 
     compassConfigMutable()->mag_hardware =  MAG_NONE;
 
     systemConfigMutable()->cpu_overclock = 2; //216MHZ
 
-    /* Default to 32kHz enabled at 16/16 */
-    gyroConfigMutable()->gyro_use_32khz = 1; // enable 32kHz sampling
-    gyroConfigMutable()->gyroMovementCalibrationThreshold = 200; // aka moron_threshold
-    gyroConfigMutable()->gyro_sync_denom = 2;  // 16kHz gyro
-    pidConfigMutable()->pid_process_denom = 1; // 16kHz PID
-    gyroConfigMutable()->gyro_lowpass2_hz = 751;
-
     pidConfigMutable()->runaway_takeoff_prevention = false;
 
-    featureSet((FEATURE_DYNAMIC_FILTER | FEATURE_AIRMODE | FEATURE_ANTI_GRAVITY) ^ FEATURE_RX_PARALLEL_PWM);
+    featureConfigSet((FEATURE_DYNAMIC_FILTER | FEATURE_AIRMODE | FEATURE_ANTI_GRAVITY) ^ FEATURE_RX_PARALLEL_PWM);
 
     /* AlienWhoop PIDs tested with 6mm and 7mm motors on most frames */
-    for (uint8_t pidProfileIndex = 0; pidProfileIndex < MAX_PROFILE_COUNT; pidProfileIndex++) {
+    for (uint8_t pidProfileIndex = 0; pidProfileIndex < PID_PROFILE_COUNT; pidProfileIndex++) {
         pidProfile_t *pidProfile = pidProfilesMutable(pidProfileIndex);
 
 	pidProfile->pidSumLimit = 1000;

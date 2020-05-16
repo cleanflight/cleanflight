@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -49,19 +49,26 @@
 
 #include "config/feature.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 
 #ifdef USE_TARGET_CONFIG
 
 #include "config_helper.h"
 
+#define GPS_UART                            SERIAL_PORT_USART3
 #define TELEMETRY_UART                      SERIAL_PORT_UART5
 
-#ifdef USE_TELEMETRY
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
-    { TELEMETRY_UART, FUNCTION_TELEMETRY_SMARTPORT },
-};
+#ifdef USE_GPS
+    { GPS_UART,       FUNCTION_GPS },
 #endif
+#ifdef USE_TELEMETRY
+    { TELEMETRY_UART, FUNCTION_TELEMETRY_SMARTPORT },
+#endif
+#if !defined(USE_GPS) && !defined(USE_TELEMETRY)
+    { SERIAL_PORT_NONE, FUNCTION_NONE },
+#endif
+};
 
 void targetConfiguration(void)
 {

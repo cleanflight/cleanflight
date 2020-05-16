@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -31,6 +31,7 @@
 
 #include "drivers/io.h"
 #include "drivers/dma.h"
+#include "drivers/motor.h"
 #include "drivers/serial.h"
 #include "drivers/serial_tcp.h"
 #include "drivers/system.h"
@@ -45,15 +46,18 @@ const timerHardware_t timerHardware[1]; // unused
 #include "flight/imu.h"
 
 #include "config/feature.h"
-#include "fc/config.h"
+#include "config/config.h"
 #include "scheduler/scheduler.h"
 
 #include "pg/rx.h"
+#include "pg/motor.h"
 
 #include "rx/rx.h"
 
 #include "dyad.h"
 #include "target/SITL/udplink.h"
+
+uint32_t SystemCoreClock;
 
 static fdm_packet fdmPkt;
 static servo_packet pwmPkt;
@@ -112,7 +116,7 @@ void updateState(const fdm_packet* pkt) {
     fakeGyroSet(fakeGyroDev, x, y, z);
 //    printf("[gyr]%lf,%lf,%lf\n", pkt->imu_angular_velocity_rpy[0], pkt->imu_angular_velocity_rpy[1], pkt->imu_angular_velocity_rpy[2]);
 
-#if defined(SKIP_IMU_CALC)
+#if !defined(USE_IMU_CALC)
 #if defined(SET_IMU_FROM_EULER)
     // set from Euler
     double qw = pkt->imu_orientation_quat[0];
@@ -210,7 +214,6 @@ void systemInit(void) {
     printf("[system]Init...\n");
 
     SystemCoreClock = 500 * 1e6; // fake 500MHz
-    FLASH_Unlock();
 
     if (pthread_mutex_init(&updateLock, NULL) != 0) {
         printf("Create updateLock error!\n");
@@ -229,7 +232,7 @@ void systemInit(void) {
     }
 
     ret = udpInit(&pwmLink, "127.0.0.1", 9002, false);
-    printf("init PwnOut UDP link...%d\n", ret);
+    printf("init PwmOut UDP link...%d\n", ret);
 
     ret = udpInit(&stateLink, NULL, 9003, true);
     printf("start UDP server...%d\n", ret);
@@ -251,7 +254,9 @@ void systemReset(void){
     pthread_join(udpWorker, NULL);
     exit(0);
 }
-void systemResetToBootloader(void) {
+void systemResetToBootloader(bootloaderRequestType_e requestType) {
+    UNUSED(requestType);
+
     printf("[system]ResetToBootloader!\n");
     workerRunning = false;
     pthread_join(tcpWorker, NULL);
@@ -376,26 +381,13 @@ int timeval_sub(struct timespec *result, struct timespec *x, struct timespec *y)
 
 
 // PWM part
-static bool pwmMotorsEnabled = false;
-static pwmOutputPort_t motors[MAX_SUPPORTED_MOTORS];
+pwmOutputPort_t motors[MAX_SUPPORTED_MOTORS];
 static pwmOutputPort_t servos[MAX_SUPPORTED_SERVOS];
 
 // real value to send
 static int16_t motorsPwm[MAX_SUPPORTED_MOTORS];
 static int16_t servosPwm[MAX_SUPPORTED_SERVOS];
 static int16_t idlePulse;
-
-void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t _idlePulse, uint8_t motorCount) {
-    UNUSED(motorConfig);
-    UNUSED(motorCount);
-
-    idlePulse = _idlePulse;
-
-    for (int motorIndex = 0; motorIndex < MAX_SUPPORTED_MOTORS && motorIndex < motorCount; motorIndex++) {
-        motors[motorIndex].enabled = true;
-    }
-    pwmMotorsEnabled = true;
-}
 
 void servoDevInit(const servoDevConfig_t *servoConfig) {
     UNUSED(servoConfig);
@@ -404,39 +396,60 @@ void servoDevInit(const servoDevConfig_t *servoConfig) {
     }
 }
 
+static motorDevice_t motorPwmDevice; // Forward
+
 pwmOutputPort_t *pwmGetMotors(void) {
     return motors;
 }
 
-void pwmEnableMotors(void) {
-    pwmMotorsEnabled = true;
-}
-
-bool pwmAreMotorsEnabled(void) {
-    return pwmMotorsEnabled;
-}
-
-bool isMotorProtocolDshot(void)
+static float pwmConvertFromExternal(uint16_t externalValue)
 {
-    return false;
+    return (float)externalValue;
 }
 
-void pwmWriteMotor(uint8_t index, float value) {
+static uint16_t pwmConvertToExternal(float motorValue)
+{
+    return (uint16_t)motorValue;
+}
+
+static void pwmDisableMotors(void)
+{
+    motorPwmDevice.enabled = false;
+}
+
+static bool pwmEnableMotors(void)
+{
+    motorPwmDevice.enabled = true;
+
+    return true;
+}
+
+static void pwmWriteMotor(uint8_t index, float value)
+{
     motorsPwm[index] = value - idlePulse;
 }
 
-void pwmShutdownPulsesForAllMotors(uint8_t motorCount) {
-    UNUSED(motorCount);
-    pwmMotorsEnabled = false;
+static void pwmWriteMotorInt(uint8_t index, uint16_t value)
+{
+    pwmWriteMotor(index, (float)value);
 }
 
-void pwmCompleteMotorUpdate(uint8_t motorCount) {
-    UNUSED(motorCount);
+static void pwmShutdownPulsesForAllMotors(void)
+{
+    motorPwmDevice.enabled = false;
+}
+
+bool pwmIsMotorEnabled(uint8_t index) {
+    return motors[index].enabled;
+}
+
+static void pwmCompleteMotorUpdate(void)
+{
     // send to simulator
     // for gazebo8 ArduCopterPlugin remap, normal range = [0.0, 1.0], 3D rang = [-1.0, 1.0]
 
     double outScale = 1000.0;
-    if (feature(FEATURE_3D)) {
+    if (featureIsEnabled(FEATURE_3D)) {
         outScale = 500.0;
     }
 
@@ -455,6 +468,43 @@ void pwmWriteServo(uint8_t index, float value) {
     servosPwm[index] = value;
 }
 
+static motorDevice_t motorPwmDevice = {
+    .vTable = {
+        .postInit = motorPostInitNull,
+        .convertExternalToMotor = pwmConvertFromExternal,
+        .convertMotorToExternal = pwmConvertToExternal,
+        .enable = pwmEnableMotors,
+        .disable = pwmDisableMotors,
+        .isMotorEnabled = pwmIsMotorEnabled,
+        .updateStart = motorUpdateStartNull,
+        .write = pwmWriteMotor,
+        .writeInt = pwmWriteMotorInt,
+        .updateComplete = pwmCompleteMotorUpdate,
+        .shutdown = pwmShutdownPulsesForAllMotors,
+    }
+};
+
+motorDevice_t *motorPwmDevInit(const motorDevConfig_t *motorConfig, uint16_t _idlePulse, uint8_t motorCount, bool useUnsyncedPwm)
+{
+    UNUSED(motorConfig);
+    UNUSED(useUnsyncedPwm);
+
+    if (motorCount > 4) {
+        return NULL;
+    }
+
+    idlePulse = _idlePulse;
+
+    for (int motorIndex = 0; motorIndex < MAX_SUPPORTED_MOTORS && motorIndex < motorCount; motorIndex++) {
+        motors[motorIndex].enabled = true;
+    }
+    motorPwmDevice.count = motorCount; // Never used, but seemingly a right thing to set it anyways.
+    motorPwmDevice.initialized = true;
+    motorPwmDevice.enabled = false;
+
+    return &motorPwmDevice;
+}
+
 // ADC part
 uint16_t adcGetChannel(uint8_t channel) {
     UNUSED(channel);
@@ -467,7 +517,6 @@ char _Min_Stack_Size;
 
 // fake EEPROM
 static FILE *eepromFd = NULL;
-uint8_t eepromData[EEPROM_SIZE];
 
 void FLASH_Unlock(void) {
     if (eepromFd != NULL) {
@@ -531,14 +580,20 @@ FLASH_Status FLASH_ProgramWord(uintptr_t addr, uint32_t value) {
     return FLASH_COMPLETE;
 }
 
-void uartPinConfigure(const serialPinConfig_t *pSerialPinConfig)
+void IOConfigGPIO(IO_t io, ioConfig_t cfg)
 {
-    UNUSED(pSerialPinConfig);
-    printf("uartPinConfigure");
+    UNUSED(io);
+    UNUSED(cfg);
+    printf("IOConfigGPIO\n");
 }
 
 void spektrumBind(rxConfig_t *rxConfig)
 {
     UNUSED(rxConfig);
-    printf("spektrumBind");
+    printf("spektrumBind\n");
+}
+
+void unusedPinsInit(void)
+{
+    printf("unusedPinsInit\n");
 }

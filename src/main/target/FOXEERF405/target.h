@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -31,9 +31,6 @@
 #define BEEPER_PIN              PA4
 #define BEEPER_INVERTED
 
-//define camera control
-#define CAMERA_CONTROL_PIN PB3
-
 //Gyro & ACC------------------------------- 
 #define USE_SPI
 #define USE_SPI_DEVICE_1
@@ -43,29 +40,23 @@
 #define SPI1_MOSI_PIN           PA7
 
 #define USE_EXTI
-#define MPU_INT_EXTI            PC4
+#define USE_GYRO_EXTI
+#define GYRO_1_EXTI_PIN         PC4
 #define USE_MPU_DATA_READY_SIGNAL
 
 #define USE_GYRO
 #define USE_ACC
+#define GYRO_1_CS_PIN           PB2
+#define GYRO_1_SPI_INSTANCE     SPI1
+#define GYRO_1_ALIGN            CW90_DEG
+
 //------ICM20689
-#define ICM20689_CS_PIN          PB2 
-#define ICM20689_SPI_INSTANCE    SPI1
-
 #define USE_GYRO_SPI_ICM20689
-#define GYRO_ICM20689_ALIGN      CW90_DEG
-
 #define USE_ACC_SPI_ICM20689
-#define ACC_ICM20689_ALIGN       CW90_DEG
+
 //------MPU6000
-#define MPU6000_CS_PIN           PB2 
-#define MPU6000_SPI_INSTANCE     SPI1
-
 #define USE_GYRO_SPI_MPU6000
-#define GYRO_MPU6000_ALIGN      CW90_DEG
-
 #define USE_ACC_SPI_MPU6000
-#define ACC_MPU6000_ALIGN       CW90_DEG
 
 //Baro & MAG------------------------------- 
 #define USE_I2C
@@ -133,7 +124,9 @@
 
 //ADC ----------------------------------------------
 #define USE_ADC
-#define ADC1_DMA_STREAM         DMA2_Stream0
+#define ADC_INSTANCE         ADC1  // Default added
+#define ADC1_DMA_OPT            0  // DMA 2 Stream 0 Channel 0 
+
 #define VBAT_ADC_PIN            PC0
 #define CURRENT_METER_ADC_PIN   PC1
 #define RSSI_ADC_PIN            PA0  //TIM5_CH1 & UART4_TX & TELEMETRY & FPORT
@@ -143,12 +136,10 @@
 
 #define CURRENT_METER_SCALE_DEFAULT     166
 
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_PIN PA3
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
-
 
 #define TARGET_IO_PORTA         0xffff
 #define TARGET_IO_PORTB         0xffff

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <drivers/vtx_table.h>
 
 #include "platform.h"
 
@@ -34,61 +35,127 @@
 
 #include "drivers/vtx_common.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 
-#include "io/vtx_string.h"
 #include "io/vtx_rtc6705.h"
 #include "io/vtx.h"
 
 static uint8_t cmsx_vtxBand;
 static uint8_t cmsx_vtxChannel;
 static uint8_t cmsx_vtxPower;
+static uint8_t cmsx_vtxPit;
 
-static OSD_TAB_t entryVtxBand =         {&cmsx_vtxBand, VTX_RTC6705_BAND_COUNT - 1, &vtx58BandNames[1]};
-static OSD_UINT8_t entryVtxChannel =    {&cmsx_vtxChannel, 1, VTX_SETTINGS_CHANNEL_COUNT, 1};
-static OSD_TAB_t entryVtxPower =        {&cmsx_vtxPower, VTX_RTC6705_POWER_COUNT - 1 - VTX_RTC6705_MIN_POWER, &rtc6705PowerNames[VTX_RTC6705_MIN_POWER]};
+static OSD_TAB_t entryVtxBand;
+static OSD_TAB_t entryVtxChannel;
+static OSD_TAB_t entryVtxPower;
+static const char * const cmsxCmsPitNames[] = {
+        "---",
+        "OFF",
+        "ON ",
+};
+static OSD_TAB_t entryVtxPit = {&cmsx_vtxPit, 2, cmsxCmsPitNames};
 
 static void cmsx_Vtx_ConfigRead(void)
 {
-    cmsx_vtxBand = vtxSettingsConfig()->band - 1;
-    cmsx_vtxChannel = vtxSettingsConfig()->channel;
-    cmsx_vtxPower = vtxSettingsConfig()->power - VTX_RTC6705_MIN_POWER;
+    vtxCommonGetBandAndChannel(vtxCommonDevice(), &cmsx_vtxBand, &cmsx_vtxChannel);
+    vtxCommonGetPowerIndex(vtxCommonDevice(), &cmsx_vtxPower);
+    unsigned status;
+    if (vtxCommonGetStatus(vtxCommonDevice(), &status)) {
+        cmsx_vtxPit = status & VTX_STATUS_PIT_MODE ? 2 : 1;
+    } else {
+        cmsx_vtxPit = 0;
+    }
 }
 
 static void cmsx_Vtx_ConfigWriteback(void)
 {
     // update vtx_ settings
-    vtxSettingsConfigMutable()->band = cmsx_vtxBand + 1;
+    vtxSettingsConfigMutable()->band = cmsx_vtxBand;
     vtxSettingsConfigMutable()->channel = cmsx_vtxChannel;
-    vtxSettingsConfigMutable()->power = cmsx_vtxPower + VTX_RTC6705_MIN_POWER;
-    vtxSettingsConfigMutable()->freq = vtx58_Bandchan2Freq(cmsx_vtxBand + 1, cmsx_vtxChannel);
+    vtxSettingsConfigMutable()->power = cmsx_vtxPower;
+    vtxSettingsConfigMutable()->freq = vtxCommonLookupFrequency(vtxCommonDevice(), cmsx_vtxBand, cmsx_vtxChannel);
 
     saveConfigAndNotify();
 }
 
-static long cmsx_Vtx_onEnter(void)
+static const void *cmsx_Vtx_onEnter(displayPort_t *pDisp)
 {
+    UNUSED(pDisp);
+
     cmsx_Vtx_ConfigRead();
 
-    return 0;
+    entryVtxBand.val = &cmsx_vtxBand;
+    entryVtxBand.max = vtxTableBandCount;
+    entryVtxBand.names = vtxTableBandNames;
+
+    entryVtxChannel.val = &cmsx_vtxChannel;
+    entryVtxChannel.max = vtxTableChannelCount;
+    entryVtxChannel.names = vtxTableChannelNames;
+
+    entryVtxPower.val = &cmsx_vtxPower;
+    entryVtxPower.max = vtxTablePowerLevels;
+    entryVtxPower.names = vtxTablePowerLabels;
+
+    return NULL;
 }
 
-static long cmsx_Vtx_onExit(const OSD_Entry *self)
+static const void *cmsx_Vtx_onExit(displayPort_t *pDisp, const OSD_Entry *self)
 {
+    UNUSED(pDisp);
     UNUSED(self);
 
+    vtxCommonSetPitMode(vtxCommonDevice(), cmsx_vtxPit);
     cmsx_Vtx_ConfigWriteback();
 
-    return 0;
+    return NULL;
 }
 
-
-static OSD_Entry cmsx_menuVtxEntries[] =
+static const void *cmsx_Vtx_onBandChange(displayPort_t *pDisp, const void *self)
 {
+    UNUSED(pDisp);
+    UNUSED(self);
+    if (cmsx_vtxBand == 0) {
+        cmsx_vtxBand = 1;
+    }
+    return NULL;
+}
+
+static const void *cmsx_Vtx_onChanChange(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+    if (cmsx_vtxChannel == 0) {
+        cmsx_vtxChannel = 1;
+    }
+    return NULL;
+}
+
+static const void *cmsx_Vtx_onPowerChange(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+    if (cmsx_vtxPower == 0) {
+        cmsx_vtxPower = 1;
+    }
+    return NULL;
+}
+
+static const void *cmsx_Vtx_onPitChange(displayPort_t *pDisp, const void *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+    if (cmsx_vtxPit == 0) {
+        cmsx_vtxPit = 1;
+    }
+    return NULL;
+}
+
+static const OSD_Entry cmsx_menuVtxEntries[] = {
     {"--- VTX ---", OME_Label, NULL, NULL, 0},
-    {"BAND", OME_TAB, NULL, &entryVtxBand, 0},
-    {"CHANNEL", OME_UINT8, NULL, &entryVtxChannel, 0},
-    {"POWER", OME_TAB, NULL, &entryVtxPower, 0},
+    {"BAND", OME_TAB, cmsx_Vtx_onBandChange, &entryVtxBand, 0},
+    {"CHANNEL", OME_TAB, cmsx_Vtx_onChanChange, &entryVtxChannel, 0},
+    {"POWER", OME_TAB, cmsx_Vtx_onPowerChange, &entryVtxPower, 0},
+    {"PIT", OME_TAB, cmsx_Vtx_onPitChange, &entryVtxPit, 0},
     {"BACK", OME_Back, NULL, NULL, 0},
     {NULL, OME_END, NULL, NULL, 0}
 };
@@ -99,7 +166,8 @@ CMS_Menu cmsx_menuVtxRTC6705 = {
     .GUARD_type = OME_MENU,
 #endif
     .onEnter = cmsx_Vtx_onEnter,
-    .onExit= cmsx_Vtx_onExit,
+    .onExit = cmsx_Vtx_onExit,
+    .onDisplayUpdate = NULL,
     .entries = cmsx_menuVtxEntries
 };
 

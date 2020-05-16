@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,13 +24,14 @@
 
 #include "platform.h"
 
+#ifdef USE_UART
+
 #include "build/build_config.h"
 
 #include "io/serial.h"
 #include "drivers/serial.h"
 #include "drivers/serial_uart.h"
 
-#include "pg/pg.h"
 #include "pg/pg_ids.h"
 
 // Backward compatibility for exisiting targets
@@ -204,6 +205,18 @@
 # endif
 #endif
 
+#ifdef USE_UART9
+# if !defined(UART9_RX_PIN)
+#  define UART9_RX_PIN NONE
+# endif
+# if !defined(UART9_TX_PIN)
+#  define UART9_TX_PIN NONE
+# endif
+# if !defined(INVERTER_PIN_UART9)
+#  define INVERTER_PIN_UART9 NONE
+# endif
+#endif
+
 #ifdef USE_SOFTSERIAL1
 # if !defined(SOFTSERIAL1_RX_PIN)
 #  define SOFTSERIAL1_RX_PIN NONE
@@ -253,6 +266,9 @@ static const serialDefaultPin_t serialDefaultPin[] = {
 #ifdef USE_UART8
     { SERIAL_PORT_USART8, IO_TAG(UART8_RX_PIN), IO_TAG(UART8_TX_PIN), IO_TAG(INVERTER_PIN_UART8) },
 #endif
+#ifdef USE_UART9
+    { SERIAL_PORT_LPUART1, IO_TAG(UART9_RX_PIN), IO_TAG(UART9_TX_PIN), IO_TAG(INVERTER_PIN_UART9) },
+#endif
 #ifdef USE_SOFTSERIAL1
     { SERIAL_PORT_SOFTSERIAL1, IO_TAG(SOFTSERIAL1_RX_PIN), IO_TAG(SOFTSERIAL1_TX_PIN), IO_TAG(NONE) },
 #endif
@@ -272,4 +288,5 @@ void pgResetFn_serialPinConfig(serialPinConfig_t *serialPinConfig)
         serialPinConfig->ioTagInverter[SERIAL_PORT_IDENTIFIER_TO_INDEX(defpin->ident)] = defpin->inverterIO;
     }
 }
+#endif
 #endif

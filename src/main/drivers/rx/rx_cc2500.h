@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -157,16 +157,16 @@ enum {
 #define CC2500_LQI_CRC_OK_BM 0x80
 #define CC2500_LQI_EST_BM 0x7F
 
-uint8_t cc2500ReadFifo(uint8_t *dpbuffer, uint8_t len);
-uint8_t cc2500WriteFifo(uint8_t *dpbuffer, uint8_t len);
+void cc2500ReadFifo(uint8_t *dpbuffer, uint8_t len);
+void cc2500WriteFifo(uint8_t *dpbuffer, uint8_t len);
 
-uint8_t cc2500ReadRegisterMulti(uint8_t address, uint8_t *data,
+void cc2500ReadRegisterMulti(uint8_t address, uint8_t *data,
                                  uint8_t length);
-uint8_t cc2500WriteRegisterMulti(uint8_t address, uint8_t *data,
+void cc2500WriteRegisterMulti(uint8_t address, uint8_t *data,
                                   uint8_t length);
 
 uint8_t cc2500ReadReg(uint8_t reg);
 void cc2500Strobe(uint8_t address);
-uint8_t cc2500WriteReg(uint8_t address, uint8_t data);
+void cc2500WriteReg(uint8_t address, uint8_t data);
 void cc2500SetPower(uint8_t power);
 uint8_t cc2500Reset(void);

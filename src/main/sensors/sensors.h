@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -36,15 +36,13 @@ typedef struct int16_flightDynamicsTrims_s {
     int16_t roll;
     int16_t pitch;
     int16_t yaw;
+    int16_t calibrationCompleted;
 } flightDynamicsTrims_def_t;
 
 typedef union flightDynamicsTrims_u {
-    int16_t raw[3];
+    int16_t raw[4];
     flightDynamicsTrims_def_t values;
 } flightDynamicsTrims_t;
-
-#define CALIBRATING_ACC_CYCLES              400
-#define CALIBRATING_BARO_CYCLES             200 // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
 
 typedef enum {
     SENSOR_GYRO = 1 << 0, // always present

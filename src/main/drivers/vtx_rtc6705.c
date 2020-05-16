@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -30,15 +30,17 @@
 
 #include "platform.h"
 
-#if defined(USE_VTX_RTC6705) && !defined(USE_VTX_RTC6705_SOFTSPI)
+#if defined(USE_VTX_RTC6705)
 
 #include "common/maths.h"
 
 #include "drivers/bus_spi.h"
+#include "drivers/bus_spi_impl.h"
 #include "drivers/io.h"
 #include "drivers/time.h"
-#include "drivers/vtx_rtc6705.h"
+#include "drivers/vtx_rtc6705_soft_spi.h"
 
+#include "vtx_rtc6705.h"
 
 #define RTC6705_SET_HEAD 0x3210 //fosc=8mhz r=400
 #define RTC6705_SET_R  400     //Reference clock
@@ -50,17 +52,11 @@
 #ifdef RTC6705_POWER_PIN
 static IO_t vtxPowerPin     = IO_NONE;
 #endif
-static IO_t vtxCSPin        = IO_NONE;
 
-#define DISABLE_RTC6705()   IOHi(vtxCSPin)
+static busDevice_t *busdev = NULL;
 
-#ifdef USE_RTC6705_CLK_HACK
-static IO_t vtxCLKPin       = IO_NONE;
-// HACK for missing pull up on CLK line - drive the CLK high *before* enabling the CS pin.
-#define ENABLE_RTC6705()    {IOHi(vtxCLKPin); delayMicroseconds(5); IOLo(vtxCSPin); }
-#else
-#define ENABLE_RTC6705()    IOLo(vtxCSPin)
-#endif
+#define DISABLE_RTC6705()   IOHi(busdev->busdev_u.spi.csnPin)
+#define ENABLE_RTC6705()    IOLo(busdev->busdev_u.spi.csnPin)
 
 #define DP_5G_MASK          0x7000 // b111000000000000
 #define PA5G_BS_MASK        0x0E00 // b000111000000000
@@ -73,10 +69,6 @@ static IO_t vtxCLKPin       = IO_NONE;
 
 #define RTC6705_RW_CONTROL_BIT      (1 << 4)
 #define RTC6705_ADDRESS             (0x07)
-
-#define ENABLE_VTX_POWER()          IOLo(vtxPowerPin)
-#define DISABLE_VTX_POWER()         IOHi(vtxPowerPin)
-
 
 /**
  * Reverse a uint32_t (LSB to MSB)
@@ -97,28 +89,47 @@ static uint32_t reverse32(uint32_t in)
 /**
  * Start chip if available
  */
-void rtc6705IOInit(void)
+bool rtc6705IOInit(const vtxIOConfig_t *vtxIOConfig)
 {
-#ifdef RTC6705_POWER_PIN
-    vtxPowerPin = IOGetByTag(IO_TAG(RTC6705_POWER_PIN));
-    IOInit(vtxPowerPin, OWNER_VTX, 0);
+    static busDevice_t busInstance;
 
-    DISABLE_VTX_POWER();
-    IOConfigGPIO(vtxPowerPin, IOCFG_OUT_PP);
+    IO_t csnPin = IOGetByTag(vtxIOConfig->csTag);
+    if (!csnPin) {
+        return false;
+    }
+
+    vtxPowerPin = IOGetByTag(vtxIOConfig->powerTag);
+    if (vtxPowerPin) {
+        IOInit(vtxPowerPin, OWNER_VTX_POWER, 0);
+
+        IOHi(vtxPowerPin);
+
+        IOConfigGPIO(vtxPowerPin, IOCFG_OUT_PP);
+    }
+
+    SPI_TypeDef *vtxSpiInstance = spiInstanceByDevice(SPI_CFG_TO_DEV(vtxIOConfig->spiDevice));
+    if (vtxSpiInstance) {
+        busdev = &busInstance;
+
+        busdev->busdev_u.spi.csnPin = csnPin;
+        IOInit(busdev->busdev_u.spi.csnPin, OWNER_VTX_CS, 0);
+
+        DISABLE_RTC6705();
+        // GPIO bit is enabled so here so the output is not pulled low when the GPIO is set in output mode.
+        // Note: It's critical to ensure that incorrect signals are not sent to the VTX.
+        IOConfigGPIO(busdev->busdev_u.spi.csnPin, IOCFG_OUT_PP);
+
+        busdev->bustype = BUSTYPE_SPI;
+        spiBusSetInstance(busdev, vtxSpiInstance);
+
+        return true;
+#if defined(USE_VTX_RTC6705_SOFTSPI)
+    } else {
+        return rtc6705SoftSpiIOInit(vtxIOConfig, csnPin);
 #endif
+    }
 
-#ifdef USE_RTC6705_CLK_HACK
-    vtxCLKPin = IOGetByTag(IO_TAG(RTC6705_CLK_PIN));
-    // we assume the CLK pin will have been initialised by the SPI code.
-#endif
-
-    vtxCSPin = IOGetByTag(IO_TAG(RTC6705_CS_PIN));
-    IOInit(vtxCSPin, OWNER_VTX, 0);
-
-    DISABLE_RTC6705();
-    // GPIO bit is enabled so here so the output is not pulled low when the GPIO is set in output mode.
-    // Note: It's critical to ensure that incorrect signals are not sent to the VTX.
-    IOConfigGPIO(vtxCSPin, IOCFG_OUT_PP);
+    return false;;
 }
 
 /**
@@ -132,10 +143,10 @@ static void rtc6705Transfer(uint32_t command)
 
     ENABLE_RTC6705();
 
-    spiTransferByte(RTC6705_SPI_INSTANCE, (command >> 24) & 0xFF);
-    spiTransferByte(RTC6705_SPI_INSTANCE, (command >> 16) & 0xFF);
-    spiTransferByte(RTC6705_SPI_INSTANCE, (command >> 8) & 0xFF);
-    spiTransferByte(RTC6705_SPI_INSTANCE, (command >> 0) & 0xFF);
+    spiTransferByte(busdev->busdev_u.spi.instance, (command >> 24) & 0xFF);
+    spiTransferByte(busdev->busdev_u.spi.instance, (command >> 16) & 0xFF);
+    spiTransferByte(busdev->busdev_u.spi.instance, (command >> 8) & 0xFF);
+    spiTransferByte(busdev->busdev_u.spi.instance, (command >> 0) & 0xFF);
 
     delayMicroseconds(2);
 
@@ -150,6 +161,14 @@ static void rtc6705Transfer(uint32_t command)
  */
 void rtc6705SetFrequency(uint16_t frequency)
 {
+#if defined(USE_VTX_RTC6705_SOFTSPI)
+    if (!busdev) {
+        rtc6705SoftSpiSetFrequency(frequency);
+
+        return;
+    }
+#endif
+
     frequency = constrain(frequency, VTX_RTC6705_FREQ_MIN, VTX_RTC6705_FREQ_MAX);
 
     const uint32_t val_a = ((((uint64_t)frequency*(uint64_t)RTC6705_SET_DIVMULT*(uint64_t)RTC6705_SET_R)/(uint64_t)RTC6705_SET_DIVMULT) % RTC6705_SET_FDIV) / RTC6705_SET_NDIV; //Casts required to make sure correct math (large numbers)
@@ -159,7 +178,7 @@ void rtc6705SetFrequency(uint16_t frequency)
     val_hex |= (val_a << 5);
     val_hex |= (val_n << 12);
 
-    spiSetDivisor(RTC6705_SPI_INSTANCE, SPI_CLOCK_SLOW);
+    spiSetDivisor(busdev->busdev_u.spi.instance, SPI_CLOCK_SLOW);
 
     rtc6705Transfer(RTC6705_SET_HEAD);
     delayMicroseconds(10);
@@ -168,30 +187,36 @@ void rtc6705SetFrequency(uint16_t frequency)
 
 void rtc6705SetRFPower(uint8_t rf_power)
 {
-    rf_power = constrain(rf_power, VTX_RTC6705_MIN_POWER, VTX_RTC6705_POWER_COUNT - 1);
+    rf_power = constrain(rf_power, 1, 2);
+#if defined(USE_VTX_RTC6705_SOFTSPI)
+    if (!busdev) {
+        rtc6705SoftSpiSetRFPower(rf_power);
 
-    spiSetDivisor(RTC6705_SPI_INSTANCE, SPI_CLOCK_SLOW);
+        return;
+    }
+#endif
 
     uint32_t val_hex = RTC6705_RW_CONTROL_BIT; // write
     val_hex |= RTC6705_ADDRESS; // address
     const uint32_t data = rf_power > 1 ? PA_CONTROL_DEFAULT : (PA_CONTROL_DEFAULT | PD_Q5G_MASK) & (~(PA5G_PW_MASK | PA5G_BS_MASK));
     val_hex |= data << 5; // 4 address bits and 1 rw bit.
 
+    spiSetDivisor(busdev->busdev_u.spi.instance, SPI_CLOCK_SLOW);
+
     rtc6705Transfer(val_hex);
 }
 
 void rtc6705Disable(void)
 {
-#ifdef RTC6705_POWER_PIN
-    DISABLE_VTX_POWER();
-#endif
+    if (vtxPowerPin) {
+        IOHi(vtxPowerPin);
+    }
 }
 
 void rtc6705Enable(void)
 {
-#ifdef RTC6705_POWER_PIN
-    ENABLE_VTX_POWER();
-#endif
+    if (vtxPowerPin) {
+        IOLo(vtxPowerPin);
+    }
 }
-
 #endif

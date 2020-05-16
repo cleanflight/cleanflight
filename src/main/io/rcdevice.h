@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -38,6 +38,11 @@
 #define RCDEVICE_PROTOCOL_COMMAND_5KEY_SIMULATION_PRESS             0x02
 #define RCDEVICE_PROTOCOL_COMMAND_5KEY_SIMULATION_RELEASE           0x03
 #define RCDEVICE_PROTOCOL_COMMAND_5KEY_CONNECTION                   0x04
+
+// Old protocol defines
+#define RCSPLIT_PACKET_HEADER           0x55
+#define RCSPLIT_PACKET_CMD_CTRL  0x01
+#define RCSPLIT_PACKET_TAIL     0xaa
 
 // Feature Flag sets, it's a uint16_t flag
 typedef enum {
@@ -110,7 +115,7 @@ typedef struct runcamDevice_s {
     bool isReady;
 } runcamDevice_t;
 
-#define MAX_WAITING_RESPONSES 5
+#define MAX_WAITING_RESPONSES 1
 
 typedef enum {
     RCDEVICE_RESP_SUCCESS = 0,
@@ -131,7 +136,7 @@ struct rcdeviceResponseParseContext_s {
     runcamDevice_t *device;
     uint8_t paramData[RCDEVICE_PROTOCOL_MAX_DATA_SIZE];
     uint8_t paramDataLen;
-    uint8_t protocolVer;
+    uint8_t protocolVersion;
     int maxRetryTimes;
     void *userInfo;
     rcdeviceResponseStatus_e result;

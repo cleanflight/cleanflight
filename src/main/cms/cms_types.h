@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -54,37 +54,39 @@ typedef enum
     OME_MAX = OME_MENU
 } OSD_MenuElement;
 
-typedef long (*CMSEntryFuncPtr)(displayPort_t *displayPort, const void *ptr);
+typedef const void *(*CMSEntryFuncPtr)(displayPort_t *displayPort, const void *ptr);
 
 typedef struct
 {
-    const char * const text;
-    const OSD_MenuElement type;
-    const CMSEntryFuncPtr func;
+    const char * text;
+    OSD_MenuElement type;
+    CMSEntryFuncPtr func;
     void *data;
     uint8_t flags;
-} OSD_Entry;
+} __attribute__((packed)) OSD_Entry;
 
 // Bits in flags
 #define PRINT_VALUE    0x01  // Value has been changed, need to redraw
 #define PRINT_LABEL    0x02  // Text label should be printed
 #define DYNAMIC        0x04  // Value should be updated dynamically
 #define OPTSTRING      0x08  // (Temporary) Flag for OME_Submenu, indicating func should be called to get a string to display.
+#define REBOOT_REQUIRED 0x10 // Reboot is required if the value is changed
 
-#define IS_PRINTVALUE(p) ((p)->flags & PRINT_VALUE)
-#define SET_PRINTVALUE(p) { (p)->flags |= PRINT_VALUE; }
-#define CLR_PRINTVALUE(p) { (p)->flags &= ~PRINT_VALUE; }
+#define IS_PRINTVALUE(x) ((x) & PRINT_VALUE)
+#define SET_PRINTVALUE(x) do { (x) |= PRINT_VALUE; } while (0)
+#define CLR_PRINTVALUE(x) do { (x) &= ~PRINT_VALUE; } while (0)
 
-#define IS_PRINTLABEL(p) ((p)->flags & PRINT_LABEL)
-#define SET_PRINTLABEL(p) { (p)->flags |= PRINT_LABEL; }
-#define CLR_PRINTLABEL(p) { (p)->flags &= ~PRINT_LABEL; }
+#define IS_PRINTLABEL(x) ((x) & PRINT_LABEL)
+#define SET_PRINTLABEL(x) do { (x) |= PRINT_LABEL; } while (0)
+#define CLR_PRINTLABEL(x) do { (x) &= ~PRINT_LABEL; } while (0)
 
 #define IS_DYNAMIC(p) ((p)->flags & DYNAMIC)
 
-typedef long (*CMSMenuFuncPtr)(void);
+typedef const void *(*CMSMenuFuncPtr)(displayPort_t *pDisp);
 
 // Special return value(s) for function chaining by CMSMenuFuncPtr
-#define MENU_CHAIN_BACK  (-1) // Causes automatic cmsMenuBack
+extern int menuChainBack;
+#define MENU_CHAIN_BACK  (&menuChainBack) // Causes automatic cmsMenuBack
 
 /*
 onExit function is called with self:
@@ -93,7 +95,9 @@ onExit function is called with self:
 (2) NULL if called from menu exit (forced exit at top level).
 */
 
-typedef long (*CMSMenuOnExitPtr)(const OSD_Entry *self);
+typedef const void *(*CMSMenuOnExitPtr)(displayPort_t *pDisp, const OSD_Entry *self);
+
+typedef const void *(*CMSMenuOnDisplayUpdatePtr)(displayPort_t *pDisp, const OSD_Entry *selected);
 
 typedef struct
 {
@@ -104,7 +108,8 @@ typedef struct
 #endif
     const CMSMenuFuncPtr onEnter;
     const CMSMenuOnExitPtr onExit;
-    OSD_Entry *entries;
+    const CMSMenuOnDisplayUpdatePtr onDisplayUpdate;
+    const OSD_Entry *entries;
 } CMS_Menu;
 
 typedef struct
@@ -159,7 +164,3 @@ typedef struct
 {
     char *val;
 } OSD_String_t;
-
-// This is a function used in the func member if the type is OME_Submenu.
-
-typedef char * (*CMSMenuOptFuncPtr)(void);

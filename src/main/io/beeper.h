@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -30,7 +30,7 @@
 #endif
 
 typedef enum {
-    // IMPORTANT: these are in priority order, 0 = Highest
+    // IMPORTANT: the order of the elements should be preserved for backwards compatibility with the configurator.
     BEEPER_SILENCE = 0,             // Silence, see beeperSilence()
 
     BEEPER_GYRO_CALIBRATED,
@@ -41,14 +41,14 @@ typedef enum {
     BEEPER_ARMING_GPS_FIX,          // Beep a special tone when arming the board and GPS has fix
     BEEPER_BAT_CRIT_LOW,            // Longer warning beeps when battery is critically low (repeats)
     BEEPER_BAT_LOW,                 // Warning beeps when battery is getting low (repeats)
-    BEEPER_GPS_STATUS,              // FIXME **** Disable beeper when connected to USB ****
-    BEEPER_RX_SET,                  // Beeps when aux channel is set for beep or beep sequence how many satellites has found if GPS enabled
+    BEEPER_GPS_STATUS,              // Use the number of beeps to indicate how many GPS satellites were found
+    BEEPER_RX_SET,                  // Beeps when aux channel is set for beep
     BEEPER_ACC_CALIBRATION,         // ACC inflight calibration completed confirmation
     BEEPER_ACC_CALIBRATION_FAIL,    // ACC inflight calibration failed
     BEEPER_READY_BEEP,              // Ring a tone when GPS is locked and ready
     BEEPER_MULTI_BEEPS,             // Internal value used by 'beeperConfirmationBeeps()'.
     BEEPER_DISARM_REPEAT,           // Beeps sounded while stick held in disarm position
-    BEEPER_ARMED,                   // Warning beeps when board is armed (repeats until board is disarmed or throttle is increased)
+    BEEPER_ARMED,                   // Warning beeps when board is armed with motors off when idle (repeats until board is disarmed or throttle is increased)
     BEEPER_SYSTEM_INIT,             // Initialisation beeps when board is powered on
     BEEPER_USB,                     // Some boards have beeper powered USB connected
     BEEPER_BLACKBOX_ERASE,          // Beep when blackbox erase completes
@@ -56,6 +56,7 @@ typedef enum {
     BEEPER_CAM_CONNECTION_OPEN,     // When the 5 key simulation stated
     BEEPER_CAM_CONNECTION_CLOSE,    // When the 5 key simulation stop
     BEEPER_RC_SMOOTHING_INIT_FAIL,  // Warning beep pattern when armed and rc smoothing has not initialized filters
+    BEEPER_ARMING_GPS_NO_FIX,       // Beep a special tone when arming the board and GPS has no fix
     BEEPER_ALL,                     // Turn ON or OFF all beeper conditions
     // BEEPER_ALL must remain at the bottom of this enum
 } beeperMode_e;
@@ -85,6 +86,7 @@ typedef enum {
     | BEEPER_GET_FLAG(BEEPER_CAM_CONNECTION_OPEN) \
     | BEEPER_GET_FLAG(BEEPER_CAM_CONNECTION_CLOSE) \
     | BEEPER_GET_FLAG(BEEPER_RC_SMOOTHING_INIT_FAIL) \
+    | BEEPER_GET_FLAG(BEEPER_ARMING_GPS_NO_FIX) \
     )
 
 #define DSHOT_BEACON_ALLOWED_MODES ( \

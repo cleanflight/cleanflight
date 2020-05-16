@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,8 +21,10 @@
 #pragma once
 
 #include <stdbool.h>
-#include "pg/pg.h"
+
 #include "fc/rc_modes.h"
+
+#include "pg/pg.h"
 
 typedef enum {
     ADJUSTMENT_NONE = 0,
@@ -58,6 +60,8 @@ typedef enum {
     ADJUSTMENT_PITCH_F,
     ADJUSTMENT_ROLL_F,
     ADJUSTMENT_YAW_F,
+    ADJUSTMENT_OSD_PROFILE,
+    ADJUSTMENT_LED_PROFILE,
     ADJUSTMENT_FUNCTION_COUNT
 } adjustmentFunction_e;
 
@@ -77,7 +81,7 @@ typedef struct adjustmentConfig_s {
     adjustmentData_t data;
 } adjustmentConfig_t;
 
-#define MAX_ADJUSTMENT_RANGE_COUNT 15
+#define MAX_ADJUSTMENT_RANGE_COUNT 30
 
 typedef struct adjustmentRange_s {
     // when aux channel is in range...
@@ -85,34 +89,28 @@ typedef struct adjustmentRange_s {
     channelRange_t range;
 
     // ..then apply the adjustment function to the auxSwitchChannel ...
-    uint8_t adjustmentFunction;
+    uint8_t adjustmentConfig;
     uint8_t auxSwitchChannelIndex;
 
-    // ... via slot
-    uint8_t adjustmentIndex;
     uint16_t adjustmentCenter;
     uint16_t adjustmentScale;
 } adjustmentRange_t;
 
 PG_DECLARE_ARRAY(adjustmentRange_t, MAX_ADJUSTMENT_RANGE_COUNT, adjustmentRanges);
 
-#define ADJUSTMENT_INDEX_OFFSET 1
-
-typedef struct adjustmentState_s {
-    uint8_t auxChannelIndex;
-    const adjustmentConfig_t *config;
+typedef struct timedAdjustmentState_s {
     uint32_t timeoutAt;
-} adjustmentState_t;
+    uint8_t adjustmentRangeIndex;
+    bool ready;
+} timedAdjustmentState_t;
 
-#ifndef MAX_SIMULTANEOUS_ADJUSTMENT_COUNT
-#define MAX_SIMULTANEOUS_ADJUSTMENT_COUNT 4 // enough for 4 x 3position switches / 4 aux channel
-#endif
+typedef struct continuosAdjustmentState_s {
+    uint8_t adjustmentRangeIndex;
+    int16_t lastRcData;
+} continuosAdjustmentState_t;
 
-void resetAdjustmentStates(void);
-void updateAdjustmentStates(void);
 struct controlRateConfig_s;
 void processRcAdjustments(struct controlRateConfig_s *controlRateConfig);
-struct pidProfile_s;
-void useAdjustmentConfig(struct pidProfile_s *pidProfileToUse);
 const char *getAdjustmentsRangeName(void);
 int getAdjustmentsRangeValue(void);
+void activeAdjustmentRangeReset(void);

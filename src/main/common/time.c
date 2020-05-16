@@ -1,5 +1,5 @@
 /*
- * This file is part of INAV.
+ * This file is part of Cleanflight.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -26,9 +26,13 @@
 
 #include <stdint.h>
 
+#include "platform.h"
+
 #include "common/maths.h"
 #include "common/printf.h"
 #include "common/time.h"
+
+#include "drivers/persistent.h"
 
 #include "pg/pg_ids.h"
 
@@ -196,7 +200,8 @@ bool dateTimeFormatUTC(char *buf, dateTime_t *dt)
 
 bool dateTimeFormatLocal(char *buf, dateTime_t *dt)
 {
-    return dateTimeFormat(buf, dt, timeConfig()->tz_offsetMinutes, false);
+    const int16_t timezoneOffset = rtcIsDateTimeValid(dt) ? timeConfig()->tz_offsetMinutes : 0;
+    return dateTimeFormat(buf, dt, timezoneOffset, false);
 }
 
 bool dateTimeFormatLocalShort(char *buf, dateTime_t *dt)
@@ -262,4 +267,32 @@ bool rtcSetDateTime(dateTime_t *dt)
     return rtcSet(&t);
 }
 
+#if defined(USE_PERSISTENT_OBJECTS)
+void rtcPersistWrite(int16_t offsetMinutes)
+{
+    rtcTime_t workTime;
+    uint32_t highLongWord = 0;
+    uint32_t lowLongWord = 0;
+    if (rtcGet(&workTime)) {
+        workTime += (offsetMinutes * 60 * MILLIS_PER_SECOND);
+        highLongWord = (uint32_t)(workTime >> 32);
+        lowLongWord = (uint32_t)(workTime & 0xffffffff);
+    }
+    persistentObjectWrite(PERSISTENT_OBJECT_RTC_HIGH, highLongWord);
+    persistentObjectWrite(PERSISTENT_OBJECT_RTC_LOW, lowLongWord);
+}
+
+bool rtcPersistRead(rtcTime_t *t)
+{
+    const uint32_t highLongWord = persistentObjectRead(PERSISTENT_OBJECT_RTC_HIGH);
+    const uint32_t lowLongWord = persistentObjectRead(PERSISTENT_OBJECT_RTC_LOW);
+
+    if ((highLongWord != 0) || (lowLongWord != 0)) {
+        *t = ((uint64_t)highLongWord << 32) + lowLongWord;
+        return true;
+    } else {
+        return false;
+    }
+}
 #endif
+#endif // USE_RTC_TIME

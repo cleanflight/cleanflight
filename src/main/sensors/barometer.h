@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -30,7 +30,8 @@ typedef enum {
     BARO_MS5611 = 3,
     BARO_BMP280 = 4,
     BARO_LPS = 5,
-    BARO_QMP6988 = 6
+    BARO_QMP6988 = 6,
+    BARO_BMP388 = 7
 } baroSensor_e;
 
 #define BARO_SAMPLE_COUNT_MAX   48
@@ -45,7 +46,8 @@ typedef struct barometerConfig_s {
     uint8_t baro_sample_count;              // size of baro filter array
     uint16_t baro_noise_lpf;                // additional LPF to reduce baro noise
     uint16_t baro_cf_vel;                   // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity)
-    uint16_t baro_cf_alt;                   // apply CF to use ACC for height estimation
+    ioTag_t baro_eoc_tag;
+    ioTag_t baro_xclr_tag;
 } barometerConfig_t;
 
 PG_DECLARE(barometerConfig_t, barometerConfig);
@@ -59,9 +61,11 @@ typedef struct baro_s {
 
 extern baro_t baro;
 
+void baroPreInit(void);
 bool baroDetect(baroDev_t *dev, baroSensor_e baroHardwareToUse);
-bool isBaroCalibrationComplete(void);
-void baroSetCalibrationCycles(uint16_t calibrationCyclesRequired);
+bool baroIsCalibrationComplete(void);
+void baroStartCalibration(void);
+void baroSetGroundLevel(void);
 uint32_t baroUpdate(void);
 bool isBaroReady(void);
 int32_t baroCalculateAltitude(void);

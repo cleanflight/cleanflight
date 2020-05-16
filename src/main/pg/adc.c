@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -28,6 +28,7 @@
 #include "pg/pg.h"
 #include "pg/pg_ids.h"
 
+#include "drivers/adc.h"
 #include "drivers/adc_impl.h"
 #include "drivers/io.h"
 
@@ -38,7 +39,20 @@ PG_REGISTER_WITH_RESET_FN(adcConfig_t, adcConfig, PG_ADC_CONFIG, 0);
 
 void pgResetFn_adcConfig(adcConfig_t *adcConfig)
 {
+    STATIC_ASSERT(ADCDEV_COUNT >= MAX_ADC_SUPPORTED, adc_count_mismatch);
+
     adcConfig->device = ADC_DEV_TO_CFG(adcDeviceByInstance(ADC_INSTANCE));
+    adcConfig->dmaopt[ADCDEV_1] = ADC1_DMA_OPT;
+#if defined(STM32F3) || defined(STM32F4) || defined(STM32F7) || defined(STM32H7) || defined(STM32G4)
+    adcConfig->dmaopt[ADCDEV_2] = ADC2_DMA_OPT;
+    adcConfig->dmaopt[ADCDEV_3] = ADC3_DMA_OPT;
+#endif
+#if defined(STM32F3) || defined(STM32G4)
+    adcConfig->dmaopt[ADCDEV_4] = ADC4_DMA_OPT;
+#endif
+#if defined(STM32G4)
+    adcConfig->dmaopt[ADCDEV_5] = ADC5_DMA_OPT;
+#endif
 
 #ifdef VBAT_ADC_PIN
     adcConfig->vbat.enabled = true;
@@ -60,5 +74,8 @@ void pgResetFn_adcConfig(adcConfig_t *adcConfig)
     adcConfig->rssi.ioTag = IO_TAG(RSSI_ADC_PIN);
 #endif
 
+    adcConfig->vrefIntCalibration = 0;
+    adcConfig->tempSensorCalibration1 = 0;
+    adcConfig->tempSensorCalibration2 = 0;
 }
 #endif // USE_ADC

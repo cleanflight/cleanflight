@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -55,11 +55,12 @@
 #define PP_CALL(macro, ...) macro(__VA_ARGS__)
 
 #if !defined(UNUSED)
-#define UNUSED(x) (void)(x)
+#define UNUSED(x) (void)(x) // Variables and parameters that are not used
 #endif
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-#define STATIC_ASSERT(condition, name) \
-    typedef char assert_failed_ ## name [(condition) ? 1 : -1 ] __attribute__((unused))
+
+#define DISCARD(x) (void)(x) // To explicitly ignore result of x (usually an I/O register access).
+
+#define STATIC_ASSERT(condition, name) _Static_assert((condition), #name)
 
 
 #define BIT(x) (1 << (x))

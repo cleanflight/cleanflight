@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -23,10 +23,9 @@
 
 #include <string.h>
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "drivers/vtx_common.h"
 #include "io/vtx.h"
-#include "io/vtx_string.h"
 
 #include "io/spektrum_vtx_control.h"
 
@@ -70,12 +69,12 @@ const uint8_t vtxTrampPi[SPEKTRUM_VTX_POWER_COUNT] = {
     VTX_TRAMP_POWER_200                // Manual               -           -        -     -
 };
 #endif // USE_VTX_TRAMP
-
+//todo: enable pit mode where appropriate, for all protcols
 #ifdef USE_VTX_RTC6705
 // RTC6705 "---", 25 or 200 mW
 const uint8_t vtxRTC6705Pi[SPEKTRUM_VTX_POWER_COUNT] = {
-    VTX_6705_POWER_OFF,                // Off
-    VTX_6705_POWER_OFF,                //   1 -  14mW
+    VTX_6705_POWER_25,                // Off
+    VTX_6705_POWER_25,                //   1 -  14mW
     VTX_6705_POWER_25,                 //  15 -  25mW
     VTX_6705_POWER_25,                 //  26 -  99mW
     VTX_6705_POWER_200,                // 100 - 299mW
@@ -200,7 +199,7 @@ void spektrumVtxControl(void)
         if ((prevSettings.band != band) || (prevSettings.channel != channel)) {
             newSettings.band    = band;
             newSettings.channel = channel;
-            newSettings.freq    = vtx58_Bandchan2Freq(band, channel);
+            newSettings.freq    = vtxCommonLookupFrequency(vtxDevice, band, channel);
         }
 #endif
         // Seems to be no unified internal VTX API standard for power levels/indexes, VTX device brand specific.
@@ -209,9 +208,9 @@ void spektrumVtxControl(void)
             newSettings.power   = power;
         }
         // Everyone seems to agree on what PIT ON/OFF means
-        uint8_t currentPitMode = 0;
-        if (vtxCommonGetPitMode(vtxDevice, &currentPitMode)) {
-            if (currentPitMode != vtx.pitMode) {
+        unsigned vtxCurrentStatus;
+        if (vtxCommonGetStatus(vtxDevice, &vtxCurrentStatus)) {
+            if ((vtxCurrentStatus & VTX_STATUS_PIT_MODE) != vtx.pitMode) {
                 vtxCommonSetPitMode(vtxDevice, vtx.pitMode);
             }
         }

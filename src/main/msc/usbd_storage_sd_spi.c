@@ -35,10 +35,11 @@
 
 #include "usbd_storage.h"
 
-#include "drivers/sdcard.h"
-#include "drivers/light_led.h"
-#include "drivers/io.h"
 #include "drivers/bus_spi.h"
+#include "drivers/io.h"
+#include "drivers/light_led.h"
+#include "drivers/sdcard.h"
+#include "drivers/usb_msc.h"
 
 #include "pg/sdcard.h"
 #include "pg/bus_spi.h"
@@ -110,7 +111,7 @@ static uint8_t  STORAGE_Inquirydata[] = {//36
 };
 
 #ifdef USE_HAL_DRIVER
-USBD_StorageTypeDef USBD_MSC_MICRO_SDIO_fops =
+USBD_StorageTypeDef USBD_MSC_MICRO_SD_SPI_fops =
 {
   STORAGE_Init,
   STORAGE_GetCapacity,
@@ -122,7 +123,7 @@ USBD_StorageTypeDef USBD_MSC_MICRO_SDIO_fops =
   (int8_t*)STORAGE_Inquirydata,
 };
 #else
-USBD_STORAGE_cb_TypeDef USBD_MSC_MICRO_SDIO_fops =
+USBD_STORAGE_cb_TypeDef USBD_MSC_MICRO_SD_SPI_fops =
 {
   STORAGE_Init,
   STORAGE_GetCapacity,
@@ -148,7 +149,7 @@ static int8_t STORAGE_Init (uint8_t lun)
 	LED0_OFF;
 	sdcard_init(sdcardConfig());
 	while (sdcard_poll() == 0);
-	LED0_ON;
+    mscSetActive();
 	return 0;
 }
 
@@ -214,12 +215,11 @@ static int8_t STORAGE_Read (uint8_t lun,
                  uint16_t blk_len)
 {
 	UNUSED(lun);
-	LED1_ON;
 	for (int i = 0; i < blk_len; i++) {
 	    while (sdcard_readBlock(blk_addr + i, buf + (512 * i), NULL, NULL) == 0);
 		while (sdcard_poll() == 0);
 	}
-	LED1_OFF;
+    mscSetActive();
 	return 0;
 }
 /*******************************************************************************
@@ -235,14 +235,13 @@ static int8_t STORAGE_Write (uint8_t lun,
                   uint16_t blk_len)
 {
 	UNUSED(lun);
-	LED1_ON;
 	for (int i = 0; i < blk_len; i++) {
 		while (sdcard_writeBlock(blk_addr + i, buf + (i * 512), NULL, NULL) != SDCARD_OPERATION_IN_PROGRESS) {
 			sdcard_poll();
 		}
 		while (sdcard_poll() == 0);
 	}
-	LED1_OFF;
+    mscSetActive();
 	return 0;
 }
 /*******************************************************************************

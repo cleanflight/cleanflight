@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -24,7 +24,7 @@
 
 #include "platform.h"
 
-#if defined(USE_SERIAL_RX) && defined(USE_SERIALRX_XBUS)
+#ifdef USE_SERIALRX_XBUS
 
 #include "common/crc.h"
 
@@ -235,9 +235,9 @@ static void xBusDataReceive(uint16_t c, void *data)
 }
 
 // Indicate time to read a frame from the data...
-static uint8_t xBusFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
+static uint8_t xBusFrameStatus(rxRuntimeState_t *rxRuntimeState)
 {
-    UNUSED(rxRuntimeConfig);
+    UNUSED(rxRuntimeState);
 
     if (!xBusFrameReceived) {
         return RX_FRAME_PENDING;
@@ -248,12 +248,12 @@ static uint8_t xBusFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
     return RX_FRAME_COMPLETE;
 }
 
-static uint16_t xBusReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
+static uint16_t xBusReadRawRC(const rxRuntimeState_t *rxRuntimeState, uint8_t chan)
 {
     uint16_t data;
 
     // Deliver the data wanted
-    if (chan >= rxRuntimeConfig->channelCount) {
+    if (chan >= rxRuntimeState->channelCount) {
         return 0;
     }
 
@@ -262,13 +262,13 @@ static uint16_t xBusReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t 
     return data;
 }
 
-bool xBusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
+bool xBusInit(const rxConfig_t *rxConfig, rxRuntimeState_t *rxRuntimeState)
 {
     uint32_t baudRate;
 
-    switch (rxConfig->serialrx_provider) {
+    switch (rxRuntimeState->serialrxProvider) {
     case SERIALRX_XBUS_MODE_B:
-        rxRuntimeConfig->channelCount = XBUS_CHANNEL_COUNT;
+        rxRuntimeState->channelCount = XBUS_CHANNEL_COUNT;
         xBusFrameReceived = false;
         xBusDataIncoming = false;
         xBusFramePosition = 0;
@@ -278,7 +278,7 @@ bool xBusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         xBusProvider = SERIALRX_XBUS_MODE_B;
         break;
     case SERIALRX_XBUS_MODE_B_RJ01:
-        rxRuntimeConfig->channelCount = XBUS_RJ01_CHANNEL_COUNT;
+        rxRuntimeState->channelCount = XBUS_RJ01_CHANNEL_COUNT;
         xBusFrameReceived = false;
         xBusDataIncoming = false;
         xBusFramePosition = 0;
@@ -292,10 +292,10 @@ bool xBusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         break;
     }
 
-    rxRuntimeConfig->rxRefreshRate = 11000;
+    rxRuntimeState->rxRefreshRate = 11000;
 
-    rxRuntimeConfig->rcReadRawFn = xBusReadRawRC;
-    rxRuntimeConfig->rcFrameStatusFn = xBusFrameStatus;
+    rxRuntimeState->rcReadRawFn = xBusReadRawRC;
+    rxRuntimeState->rcFrameStatusFn = xBusFrameStatus;
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
@@ -303,7 +303,7 @@ bool xBusInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
     }
 
 #ifdef USE_TELEMETRY
-    bool portShared = telemetryCheckRxPortShared(portConfig);
+    bool portShared = telemetryCheckRxPortShared(portConfig, rxRuntimeState->serialrxProvider);
 #else
     bool portShared = false;
 #endif

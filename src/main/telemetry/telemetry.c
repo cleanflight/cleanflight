@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -38,7 +38,7 @@
 
 #include "io/serial.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/rc_modes.h"
 #include "fc/runtime_config.h"
 
@@ -58,7 +58,7 @@
 #include "telemetry/ibus.h"
 #include "telemetry/msp_shared.h"
 
-PG_REGISTER_WITH_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig, PG_TELEMETRY_CONFIG, 2);
+PG_REGISTER_WITH_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig, PG_TELEMETRY_CONFIG, 3);
 
 PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
     .telemetry_inverted = false,
@@ -76,7 +76,8 @@ PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
             IBUS_SENSOR_TYPE_RPM_FLYSKY,
             IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE
     },
-    .smartport_use_extra_sensors = false,
+    .disabledSensors = ESC_SENSOR_ALL,
+    .mavlink_mah_as_heading_divisor = 0,
 );
 
 void telemetryInit(void)
@@ -101,6 +102,9 @@ void telemetryInit(void)
 #endif
 #ifdef USE_TELEMETRY_CRSF
     initCrsfTelemetry();
+#if defined(USE_MSP_OVER_TELEMETRY)
+    initCrsfMspBuffer();
+#endif
 #endif
 #ifdef USE_TELEMETRY_SRXL
     initSrxlTelemetry();
@@ -110,7 +114,6 @@ void telemetryInit(void)
 #endif
 #if defined(USE_MSP_OVER_TELEMETRY)
     initSharedMsp();
-    initCrsfMspBuffer();
 #endif
 
     telemetryCheckState();
@@ -130,24 +133,24 @@ bool telemetryDetermineEnabledState(portSharing_e portSharing)
     return enabled;
 }
 
-bool telemetryCheckRxPortShared(const serialPortConfig_t *portConfig)
+bool telemetryCheckRxPortShared(const serialPortConfig_t *portConfig, const SerialRXType serialrxProvider)
 {
     if (portConfig->functionMask & FUNCTION_RX_SERIAL && portConfig->functionMask & TELEMETRY_SHAREABLE_PORT_FUNCTIONS_MASK &&
-        (rxConfig()->serialrx_provider == SERIALRX_SPEKTRUM1024 ||
-        rxConfig()->serialrx_provider == SERIALRX_SPEKTRUM2048 ||
-        rxConfig()->serialrx_provider == SERIALRX_SBUS ||
-        rxConfig()->serialrx_provider == SERIALRX_SUMD ||
-        rxConfig()->serialrx_provider == SERIALRX_SUMH ||
-        rxConfig()->serialrx_provider == SERIALRX_XBUS_MODE_B ||
-        rxConfig()->serialrx_provider == SERIALRX_XBUS_MODE_B_RJ01 ||
-        rxConfig()->serialrx_provider == SERIALRX_IBUS)) {
+        (serialrxProvider == SERIALRX_SPEKTRUM1024 ||
+        serialrxProvider == SERIALRX_SPEKTRUM2048 ||
+        serialrxProvider == SERIALRX_SBUS ||
+        serialrxProvider == SERIALRX_SUMD ||
+        serialrxProvider == SERIALRX_SUMH ||
+        serialrxProvider == SERIALRX_XBUS_MODE_B ||
+        serialrxProvider == SERIALRX_XBUS_MODE_B_RJ01 ||
+        serialrxProvider == SERIALRX_IBUS)) {
 
         return true;
     }
 #ifdef USE_TELEMETRY_IBUS
-    if (   portConfig->functionMask & FUNCTION_TELEMETRY_IBUS
+    if (portConfig->functionMask & FUNCTION_TELEMETRY_IBUS
         && portConfig->functionMask & FUNCTION_RX_SERIAL
-        && rxConfig()->serialrx_provider == SERIALRX_IBUS) {
+        && serialrxProvider == SERIALRX_IBUS) {
         // IBUS serial RX & telemetry
         return true;
     }
@@ -221,5 +224,10 @@ void telemetryProcess(uint32_t currentTime)
 #ifdef USE_TELEMETRY_IBUS
     handleIbusTelemetry();
 #endif
+}
+
+bool telemetryIsSensorEnabled(sensor_e sensor)
+{
+    return ~(telemetryConfig()->disabledSensors) & sensor;
 }
 #endif

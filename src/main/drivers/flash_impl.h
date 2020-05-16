@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -28,8 +28,23 @@
 
 struct flashVTable_s;
 
+typedef enum {
+    FLASHIO_NONE = 0,
+    FLASHIO_SPI,
+    FLASHIO_QUADSPI
+} flashDeviceIoMode_e;
+
+typedef struct flashDeviceIO_s {
+    union {
+        busDevice_t *busdev; // Device interface dependent handle (spi/i2c)
+    #ifdef USE_QUADSPI
+        QUADSPI_TypeDef *quadSpi;
+    #endif
+    } handle;
+    flashDeviceIoMode_e mode;
+} flashDeviceIO_t;
+
 typedef struct flashDevice_s {
-    busDevice_t *busdev;
     const struct flashVTable_s *vTable;
     flashGeometry_t geometry;
     uint32_t currentWriteAddress;
@@ -38,11 +53,13 @@ typedef struct flashDevice_s {
     // for writes. This allows us to avoid polling for writable status
     // when it is definitely ready already.
     bool couldBeBusy;
+    uint32_t timeoutAt;
+    flashDeviceIO_t io;
 } flashDevice_t;
 
 typedef struct flashVTable_s {
     bool (*isReady)(flashDevice_t *fdevice);
-    bool (*waitForReady)(flashDevice_t *fdevice, uint32_t timeoutMillis);
+    bool (*waitForReady)(flashDevice_t *fdevice);
     void (*eraseSector)(flashDevice_t *fdevice, uint32_t address);
     void (*eraseCompletely)(flashDevice_t *fdevice);
     void (*pageProgramBegin)(flashDevice_t *fdevice, uint32_t address);

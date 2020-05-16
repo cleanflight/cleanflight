@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -26,29 +26,24 @@
 
 #ifdef USE_TRANSPONDER
 
-#include "dma.h"
-#include "drivers/nvic.h"
+#include "drivers/dma.h"
+#include "drivers/dma_reqmap.h"
 #include "drivers/io.h"
-#include "rcc.h"
-#include "timer.h"
+#include "drivers/nvic.h"
+#include "drivers/rcc.h"
+#include "drivers/timer.h"
+#include "drivers/transponder_ir_arcitimer.h"
+#include "drivers/transponder_ir_erlt.h"
+#include "drivers/transponder_ir_ilap.h"
 
 #include "transponder_ir.h"
-#include "drivers/transponder_ir_arcitimer.h"
-#include "drivers/transponder_ir_ilap.h"
-#include "drivers/transponder_ir_erlt.h"
 
 volatile uint8_t transponderIrDataTransferInProgress = 0;
 
-
 static IO_t transponderIO = IO_NONE;
 static TIM_TypeDef *timer = NULL;
-#if defined(STM32F3)
-static DMA_Channel_TypeDef *dmaRef = NULL;
-#elif defined(STM32F4)
-static DMA_Stream_TypeDef *dmaRef = NULL;
-#else
-#error "Transponder not supported on this MCU."
-#endif
+uint8_t alternateFunction;
+static dmaResource_t *dmaRef = NULL;
 
 transponder_t transponder;
 
@@ -57,7 +52,7 @@ static void TRANSPONDER_DMA_IRQHandler(dmaChannelDescriptor_t* descriptor)
     if (DMA_GET_FLAG_STATUS(descriptor, DMA_IT_TCIF)) {
         transponderIrDataTransferInProgress = 0;
 
-        DMA_Cmd(descriptor->ref, DISABLE);
+        xDMA_Cmd(descriptor->ref, DISABLE);
         DMA_CLEAR_FLAG(descriptor, DMA_IT_TCIF);
     }
 }
@@ -72,10 +67,29 @@ void transponderIrHardwareInit(ioTag_t ioTag, transponder_t *transponder)
     TIM_OCInitTypeDef  TIM_OCInitStructure;
     DMA_InitTypeDef DMA_InitStructure;
 
-    const timerHardware_t *timerHardware = timerGetByTag(ioTag);
+    const timerHardware_t *timerHardware = timerAllocate(ioTag, OWNER_TRANSPONDER, 0);
     timer = timerHardware->tim;
+    alternateFunction = timerHardware->alternateFunction;
 
-    if (timerHardware->dmaRef == NULL) {
+#if defined(USE_DMA_SPEC)
+    const dmaChannelSpec_t *dmaSpec = dmaGetChannelSpecByTimer(timerHardware);
+
+    if (dmaSpec == NULL) {
+        return;
+    }
+
+    dmaRef = dmaSpec->ref;
+#if defined(STM32F4)
+    uint32_t dmaChannel = dmaSpec->channel;
+#endif
+#else
+    dmaRef = timerHardware->dmaRef;
+#if defined(STM32F4)
+    uint32_t dmaChannel = timerHardware->dmaChannel;
+#endif
+#endif
+
+    if (dmaRef == NULL) {
         return;
     }
 
@@ -83,8 +97,8 @@ void transponderIrHardwareInit(ioTag_t ioTag, transponder_t *transponder)
     IOInit(transponderIO, OWNER_TRANSPONDER, 0);
     IOConfigGPIOAF(transponderIO, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_DOWN), timerHardware->alternateFunction);
 
-    dmaInit(timerHardware->dmaIrqHandler, OWNER_TRANSPONDER, 0);
-    dmaSetHandler(timerHardware->dmaIrqHandler, TRANSPONDER_DMA_IRQHandler, NVIC_PRIO_TRANSPONDER_DMA, 0);
+    dmaInit(dmaGetIdentifier(dmaRef), OWNER_TRANSPONDER, 0);
+    dmaSetHandler(dmaGetIdentifier(dmaRef), TRANSPONDER_DMA_IRQHandler, NVIC_PRIO_TRANSPONDER_DMA, 0);
 
     RCC_ClockCmd(timerRCC(timer), ENABLE);
 
@@ -119,9 +133,8 @@ void transponderIrHardwareInit(ioTag_t ioTag, transponder_t *transponder)
     TIM_CtrlPWMOutputs(timer, ENABLE);
 
     /* configure DMA */
-    dmaRef = timerHardware->dmaRef;
-    DMA_Cmd(dmaRef, DISABLE);
-    DMA_DeInit(dmaRef);
+    xDMA_Cmd(dmaRef, DISABLE);
+    xDMA_DeInit(dmaRef);
 
     DMA_StructInit(&DMA_InitStructure);
     DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)timerCCR(timer, timerHardware->channel);
@@ -130,7 +143,7 @@ void transponderIrHardwareInit(ioTag_t ioTag, transponder_t *transponder)
     DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
     DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
 #elif defined(STM32F4)
-    DMA_InitStructure.DMA_Channel = timerHardware->dmaChannel;
+    DMA_InitStructure.DMA_Channel = dmaChannel;
     DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)&(transponder->transponderIrDMABuffer);
     DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
 #endif
@@ -148,11 +161,11 @@ void transponderIrHardwareInit(ioTag_t ioTag, transponder_t *transponder)
     DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
     DMA_InitStructure.DMA_Priority = DMA_Priority_High;
 
-    DMA_Init(dmaRef, &DMA_InitStructure);
+    xDMA_Init(dmaRef, &DMA_InitStructure);
 
     TIM_DMACmd(timer, timerDmaSource(timerHardware->channel), ENABLE);
 
-    DMA_ITConfig(dmaRef, DMA_IT_TC, ENABLE);
+    xDMA_ITConfig(dmaRef, DMA_IT_TC, ENABLE);
 }
 
 bool transponderIrInit(const ioTag_t ioTag, const transponderProvider_e provider)
@@ -185,14 +198,16 @@ bool isTransponderIrReady(void)
     return !transponderIrDataTransferInProgress;
 }
 
-static uint16_t dmaBufferOffset;
-
 void transponderIrWaitForTransmitComplete(void)
 {
+#ifdef DEBUG
     static uint32_t waitCounter = 0;
+#endif
 
     while (transponderIrDataTransferInProgress) {
+#ifdef DEBUG
         waitCounter++;
+#endif
     }
 }
 
@@ -204,19 +219,19 @@ void transponderIrUpdateData(const uint8_t* transponderData)
 
 void transponderIrDMAEnable(transponder_t *transponder)
 {
-    DMA_SetCurrDataCounter(dmaRef, transponder->dma_buffer_size);  // load number of bytes to be transferred
+    xDMA_SetCurrDataCounter(dmaRef, transponder->dma_buffer_size);  // load number of bytes to be transferred
     TIM_SetCounter(timer, 0);
     TIM_Cmd(timer, ENABLE);
-    DMA_Cmd(dmaRef, ENABLE);
+    xDMA_Cmd(dmaRef, ENABLE);
 }
 
 void transponderIrDisable(void)
 {
-    DMA_Cmd(dmaRef, DISABLE);
+    xDMA_Cmd(dmaRef, DISABLE);
     TIM_Cmd(timer, DISABLE);
 
     IOInit(transponderIO, OWNER_TRANSPONDER, 0);
-    IOConfigGPIOAF(transponderIO, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_DOWN), timerHardware->alternateFunction);
+    IOConfigGPIOAF(transponderIO, IO_CONFIG(GPIO_Mode_AF, GPIO_Speed_50MHz, GPIO_OType_PP, GPIO_PuPd_DOWN), alternateFunction);
 
 #ifdef TRANSPONDER_INVERTED
     IOHi(transponderIO);
@@ -228,8 +243,6 @@ void transponderIrDisable(void)
 void transponderIrTransmit(void)
 {
     transponderIrWaitForTransmitComplete();
-
-    dmaBufferOffset = 0;
 
     transponderIrDataTransferInProgress = 1;
     transponderIrDMAEnable(&transponder);

@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -52,22 +52,3 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM16, CH1, PA6,  TIM_USE_LED,   0), // PWM11 - PB15
 
 };
-
-// XXX Requires some additional work here.
-// XXX Can't do this now without proper semantics about I2C on this target.
-#ifdef USE_BST
-void targetBusInit(void)
-{
-#ifdef USE_SPI
-    spiPinConfigure(spiPinConfig(0));
-#ifdef USE_SPI_DEVICE_1
-    spiInit(SPIDEV_1);
-#endif
-#endif
-
-    i2cHardwareConfigure(i2cConfig(0));
-    i2cInit(I2CDEV_2);
-
-    bstInit(BST_DEVICE);
-}
-#endif

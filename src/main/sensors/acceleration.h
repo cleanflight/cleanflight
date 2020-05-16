@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -42,13 +42,15 @@ typedef enum {
     ACC_ICM20608G,
     ACC_ICM20649,
     ACC_ICM20689,
+    ACC_ICM42605,
     ACC_BMI160,
+    ACC_BMI270,
     ACC_FAKE
 } accelerationSensor_e;
 
 typedef struct acc_s {
     accDev_t dev;
-    uint32_t accSamplingInterval;
+    uint16_t sampleRateHz;
     float accADC[XYZ_AXIS_COUNT];
     bool isAccelUpdatedAtLeastOnce;
 } acc_t;
@@ -65,10 +67,9 @@ typedef union rollAndPitchTrims_u {
     rollAndPitchTrims_t_def values;
 } rollAndPitchTrims_t;
 
-
+#if defined(USE_ACC)
 typedef struct accelerometerConfig_s {
     uint16_t acc_lpf_hz;                    // cutoff frequency for the low pass filter used on the acc z-axis for althold in Hz
-    sensor_align_e acc_align;               // acc alignment
     uint8_t acc_hardware;                   // Which acc hardware to use on boards with more than one device
     bool acc_high_fsr;
     flightDynamicsTrims_t accZero;
@@ -76,13 +77,16 @@ typedef struct accelerometerConfig_s {
 } accelerometerConfig_t;
 
 PG_DECLARE(accelerometerConfig_t, accelerometerConfig);
+#endif
 
-bool accInit(uint32_t gyroTargetLooptime);
+bool accInit(uint16_t accSampleRateHz);
 bool accIsCalibrationComplete(void);
-void accSetCalibrationCycles(uint16_t calibrationCyclesRequired);
+bool accHasBeenCalibrated(void);
+void accStartCalibration(void);
 void resetRollAndPitchTrims(rollAndPitchTrims_t *rollAndPitchTrims);
 void accUpdate(timeUs_t currentTimeUs, rollAndPitchTrims_t *rollAndPitchTrims);
 bool accGetAccumulationAverage(float *accumulation);
 union flightDynamicsTrims_u;
 void setAccelerationTrims(union flightDynamicsTrims_u *accelerationTrimsToUse);
 void accInitFilters(void);
+void applyAccelerometerTrimsDelta(union rollAndPitchTrims_u *rollAndPitchTrimsDelta);

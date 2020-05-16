@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -34,39 +34,38 @@
 #include "common/maths.h"
 
 #include "config/feature.h"
-#include "pg/pg.h"
-#include "pg/pg_ids.h"
-#include "pg/rx.h"
-
-#include "cms/cms.h"
 
 #include "drivers/camera_control.h"
 
-#include "fc/config.h"
-#include "fc/fc_core.h"
-#include "fc/rc_controls.h"
-#include "fc/fc_rc.h"
+#include "config/config.h"
+#include "fc/core.h"
+#include "fc/rc.h"
 #include "fc/runtime_config.h"
-
-#include "io/gps.h"
-#include "io/beeper.h"
-#include "io/motors.h"
-#include "io/vtx_control.h"
-#include "io/dashboard.h"
-
-#include "sensors/barometer.h"
-#include "sensors/battery.h"
-#include "sensors/sensors.h"
-#include "sensors/gyro.h"
-#include "sensors/acceleration.h"
-
-#include "rx/rx.h"
-#include "scheduler/scheduler.h"
 
 #include "flight/pid.h"
 #include "flight/failsafe.h"
 
-static pidProfile_t *pidProfile;
+#include "io/beeper.h"
+#include "io/dashboard.h"
+#include "io/gps.h"
+#include "io/motors.h"
+#include "io/vtx_control.h"
+
+#include "pg/pg.h"
+#include "pg/pg_ids.h"
+#include "pg/rx.h"
+
+#include "rx/rx.h"
+
+#include "scheduler/scheduler.h"
+
+#include "sensors/acceleration.h"
+#include "sensors/barometer.h"
+#include "sensors/battery.h"
+#include "sensors/compass.h"
+#include "sensors/gyro.h"
+
+#include "rc_controls.h"
 
 // true if arming is done via the sticks (as opposed to a switch)
 static bool isUsingSticksToArm = true;
@@ -108,12 +107,12 @@ bool isUsingSticksForArming(void)
 
 bool areSticksInApModePosition(uint16_t ap_mode)
 {
-    return ABS(rcCommand[ROLL]) < ap_mode && ABS(rcCommand[PITCH]) < ap_mode;
+    return fabsf(rcCommand[ROLL]) < ap_mode && fabsf(rcCommand[PITCH]) < ap_mode;
 }
 
 throttleStatus_e calculateThrottleStatus(void)
 {
-    if (feature(FEATURE_3D)) {
+    if (featureIsEnabled(FEATURE_3D)) {
         if (IS_RC_MODE_ACTIVE(BOX3D) || flight3DConfig()->switched_mode3d) {
             if (rcData[THROTTLE] < rxConfig()->mincheck) {
                 return THROTTLE_LOW;
@@ -135,6 +134,7 @@ throttleStatus_e calculateThrottleStatus(void)
     rcDelayMs -= (t); \
     doNotRepeat = false; \
 }
+
 void processRcStickPositions()
 {
     // time the sticks are maintained
@@ -144,12 +144,6 @@ void processRcStickPositions()
     // an extra guard for disarming through switch to prevent that one frame can disarm it
     static uint8_t rcDisarmTicks;
     static bool doNotRepeat;
-
-#ifdef USE_CMS
-    if (cmsInMenu) {
-        return;
-    }
-#endif
 
     // checking sticks positions
     uint8_t stTmp = 0;
@@ -163,8 +157,8 @@ void processRcStickPositions()
         }
     }
     if (stTmp == rcSticks) {
-        if (rcDelayMs <= INT16_MAX - (getTaskDeltaTime(TASK_SELF) / 1000)) {
-            rcDelayMs += getTaskDeltaTime(TASK_SELF) / 1000;
+        if (rcDelayMs <= INT16_MAX - (getTaskDeltaTimeUs(TASK_SELF) / 1000)) {
+            rcDelayMs += getTaskDeltaTimeUs(TASK_SELF) / 1000;
         }
     } else {
         rcDelayMs = 0;
@@ -185,7 +179,7 @@ void processRcStickPositions()
             if (ARMING_FLAG(ARMED) && rxIsReceivingSignal() && !failsafeIsActive()  ) {
                 rcDisarmTicks++;
                 if (rcDisarmTicks > 3) {
-                    disarm();
+                    disarm(DISARM_REASON_SWITCH);
                 }
             }
         }
@@ -195,7 +189,7 @@ void processRcStickPositions()
             // Disarm on throttle down + yaw
             resetTryingToArm();
             if (ARMING_FLAG(ARMED))
-                disarm();
+                disarm(DISARM_REASON_STICKS);
             else {
                 beeper(BEEPER_DISARM_REPEAT);     // sound tone while stick held
                 repeatAfter(STICK_AUTOREPEAT_MS); // disarm tone will repeat
@@ -207,6 +201,7 @@ void processRcStickPositions()
                 // before they're able to rearm
                 unsetArmingDisabled(ARMING_DISABLED_RUNAWAY_TAKEOFF);
 #endif
+                unsetArmingDisabled(ARMING_DISABLED_CRASH_DETECTED);
             }
         }
         return;
@@ -216,7 +211,8 @@ void processRcStickPositions()
             if (!ARMING_FLAG(ARMED)) {
                 // Arm via YAW
                 tryArm();
-                if (isTryingToArm()) {
+                if (isTryingToArm() ||
+                    ((getArmingDisableFlags() == ARMING_DISABLED_CALIBRATING) && armingConfig()->gyro_cal_on_first_arm)) {
                     doNotRepeat = false;
                 }
             } else {
@@ -228,7 +224,7 @@ void processRcStickPositions()
         resetTryingToArm();
     }
 
-    if (ARMING_FLAG(ARMED) || doNotRepeat || rcDelayMs <= STICK_DELAY_MS || (getArmingDisableFlags() & ARMING_DISABLED_RUNAWAY_TAKEOFF)) {
+    if (ARMING_FLAG(ARMED) || doNotRepeat || rcDelayMs <= STICK_DELAY_MS || (getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))) {
         return;
     }
     doNotRepeat = true;
@@ -240,20 +236,21 @@ void processRcStickPositions()
         gyroStartCalibration(false);
 
 #ifdef USE_GPS
-        if (feature(FEATURE_GPS)) {
+        if (featureIsEnabled(FEATURE_GPS)) {
             GPS_reset_home_position();
         }
 #endif
 
 #ifdef USE_BARO
-        if (sensors(SENSOR_BARO))
-            baroSetCalibrationCycles(10); // calibrate baro to new ground level (10 * 25 ms = ~250 ms non blocking)
+        if (sensors(SENSOR_BARO)) {
+            baroSetGroundLevel();
+        }
 #endif
 
         return;
     }
 
-    if (feature(FEATURE_INFLIGHT_ACC_CAL) && (rcSticks == THR_LO + YAW_LO + PIT_HI + ROL_HI)) {
+    if (featureIsEnabled(FEATURE_INFLIGHT_ACC_CAL) && (rcSticks == THR_LO + YAW_LO + PIT_HI + ROL_HI)) {
         // Inflight ACC Calibration
         handleInflightCalibrationStickPosition();
         return;
@@ -279,18 +276,22 @@ void processRcStickPositions()
         saveConfigAndNotify();
     }
 
+#ifdef USE_ACC
     if (rcSticks == THR_HI + YAW_LO + PIT_LO + ROL_CE) {
         // Calibrating Acc
-        accSetCalibrationCycles(CALIBRATING_ACC_CYCLES);
+        accStartCalibration();
         return;
     }
+#endif
 
-
+#if defined(USE_MAG)
     if (rcSticks == THR_HI + YAW_HI + PIT_LO + ROL_CE) {
         // Calibrating Mag
-        ENABLE_STATE(CALIBRATE_MAG);
+        compassStartCalibration();
+
         return;
     }
+#endif
 
 
     if (FLIGHT_MODE(ANGLE_MODE|HORIZON_MODE)) {
@@ -318,8 +319,13 @@ void processRcStickPositions()
             break;
         }
         if (shouldApplyRollAndPitchTrimDelta) {
-            applyAndSaveAccelerometerTrimsDelta(&accelerometerTrimsDelta);
+#if defined(USE_ACC)
+            applyAccelerometerTrimsDelta(&accelerometerTrimsDelta);
+#endif
+            saveConfigAndNotify();
+
             repeatAfter(STICK_AUTOREPEAT_MS);
+
             return;
         }
     } else {
@@ -391,9 +397,8 @@ int32_t getRcStickDeflection(int32_t axis, uint16_t midrc) {
     return MIN(ABS(rcData[axis] - midrc), 500);
 }
 
-void useRcControlsConfig(pidProfile_t *pidProfileToUse)
+void rcControlsInit(void)
 {
-    pidProfile = pidProfileToUse;
-
-    isUsingSticksToArm = !isModeActivationConditionPresent(BOXARM);
+    analyzeModeActivationConditions();
+    isUsingSticksToArm = !isModeActivationConditionPresent(BOXARM) && systemConfig()->enableStickArming;
 }

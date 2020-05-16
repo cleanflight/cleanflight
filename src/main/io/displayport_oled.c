@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -59,15 +59,19 @@ static int oledScreenSize(const displayPort_t *displayPort)
     return displayPort->rows * displayPort->cols;
 }
 
-static int oledWriteString(displayPort_t *displayPort, uint8_t x, uint8_t y, const char *s)
+static int oledWriteString(displayPort_t *displayPort, uint8_t x, uint8_t y, uint8_t attr, const char *s)
 {
+    UNUSED(attr);
+
     i2c_OLED_set_xy(displayPort->device, x, y);
     i2c_OLED_send_string(displayPort->device, s);
     return 0;
 }
 
-static int oledWriteChar(displayPort_t *displayPort, uint8_t x, uint8_t y, uint8_t c)
+static int oledWriteChar(displayPort_t *displayPort, uint8_t x, uint8_t y, uint8_t attr, uint8_t c)
 {
+    UNUSED(attr);
+
     i2c_OLED_set_xy(displayPort->device, x, y);
     i2c_OLED_send_char(displayPort->device, c);
     return 0;
@@ -114,7 +118,10 @@ static const displayPortVTable_t oledVTable = {
     .heartbeat = oledHeartbeat,
     .resync = oledResync,
     .isSynced = oledIsSynced,
-    .txBytesFree = oledTxBytesFree
+    .txBytesFree = oledTxBytesFree,
+    .layerSupported = NULL,
+    .layerSelect = NULL,
+    .layerCopy = NULL,
 };
 
 displayPort_t *displayPortOledInit(void *device)

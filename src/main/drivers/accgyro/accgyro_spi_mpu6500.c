@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -41,11 +41,6 @@
 
 static void mpu6500SpiInit(const busDevice_t *bus)
 {
-#ifndef USE_DUAL_GYRO
-    IOInit(bus->busdev_u.spi.csnPin, OWNER_MPU_CS, 0);
-    IOConfigGPIO(bus->busdev_u.spi.csnPin, SPI_IO_CS_CFG);
-    IOHi(bus->busdev_u.spi.csnPin);
-#endif
 
     spiSetDivisor(bus->busdev_u.spi.instance, SPI_CLOCK_FAST);
 }
@@ -73,6 +68,9 @@ uint8_t mpu6500SpiDetect(const busDevice_t *bus)
         break;
     case ICM20608G_WHO_AM_I_CONST:
         mpuDetected = ICM_20608_SPI;
+        break;
+    case ICM42605_WHO_AM_I_CONST:
+        mpuDetected = ICM_42605_SPI;
         break;
     default:
         mpuDetected = MPU_NONE;

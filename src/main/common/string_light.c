@@ -1,13 +1,13 @@
 /*
- * This file is part of Cleanflight and Betaflight.
+ * This file is part of Cleanflight.
  *
- * Cleanflight and Betaflight are free software. You can redistribute
+ * Cleanflight is free software. You can redistribute
  * this software and/or modify this software under the terms of the
  * GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Cleanflight and Betaflight are distributed in the hope that they
+ * Cleanflight is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -21,6 +21,8 @@
 #include <limits.h>
 #include <ctype.h>
 #include <string.h>
+
+#include "platform.h"
 
 #include "typeconversion.h"
 
@@ -61,7 +63,7 @@ int toupper(int c)
 
 int strcasecmp(const char * s1, const char * s2)
 {
-    return strncasecmp(s1, s2, (size_t)-1);
+    return strncasecmp(s1, s2, (size_t)INT_MAX);
 }
 
 int strncasecmp(const char * s1, const char * s2, size_t n)
