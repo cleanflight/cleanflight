@@ -246,6 +246,7 @@ bool requiresSpiLeadingEdge(SPIDevice device)
     return false;
 }
 
+#ifndef TARGET_BUS_INIT
 static void configureSPIAndQuadSPI(void)
 {
 #ifdef USE_SPI
@@ -285,6 +286,7 @@ static void configureSPIAndQuadSPI(void)
 #endif
 #endif // USE_QUAD_SPI
 }
+#endif
 
 #ifdef USE_SDCARD
 static void sdCardAndFSInit()
