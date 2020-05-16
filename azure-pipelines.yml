@@ -14,7 +14,7 @@
 
 variables:
   owner: cleanflight
-  repoName: cleanflight-pull-requests
+  repoName: cleanflight-firmware-pull-requests
   releaseNotes: This is a build of a community provided pull request. It may be unstable and result in corrupted configurations or data loss. **Use only for testing.**
 
 name: $(Build.RequestedFor)_$(Build.SourceBranchName)_$(BuildID)
