@@ -28,7 +28,19 @@
 #include "drivers/io_types.h"
 #include "drivers/dma_reqmap.h"
 
+#if defined(STM32F1)
+#define MAX_ADC_SUPPORTED 1
+#elif defined(STM32F3)
 #define MAX_ADC_SUPPORTED 4
+#elif defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
+#define MAX_ADC_SUPPORTED 3
+#elif defined(STM32G4)
+#define MAX_ADC_SUPPORTED 5
+#elif defined(UNIT_TEST)
+#define MAX_ADC_SUPPORTED 5
+#else
+#error Missing MCU ADC configuration
+#endif
 
 typedef struct adcChannelConfig_t {
     bool enabled;
