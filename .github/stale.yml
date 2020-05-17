@@ -12,6 +12,8 @@ exemptLabels:
   - BUG
   - Feature Request
   - Pinned
+  - Idea
+  - Task
 
 # Set to true to ignore issues in a project (defaults to false)
 exemptProjects: false
