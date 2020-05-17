@@ -2,6 +2,7 @@
 ![Cleanflight](docs/assets/cleanflight/cleanflight-logo-light-wide-1-240px.jpg)
 
 [![Build Status](https://travis-ci.com/cleanflight/cleanflight.svg?branch=master)](https://travis-ci.com/cleanflight/cleanflight)
+[![Build Status](https://dev.azure.com/cleanflight-flight-control/cleanflight-firmware/_apis/build/status/cleanflight.cleanflight?branchName=master)](https://dev.azure.com/cleanflight-flight-control/cleanflight-firmware/_build/latest?definitionId=1&branchName=master)
 
 Cleanflight is flight controller software for multi-rotor and fixed wings.  The Cleanflight project, and related projects are
 used on the majority of flight controllers used around the world.  There is no other software used on as many flight-controllers!
