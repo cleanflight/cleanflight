@@ -340,7 +340,7 @@ $(TARGET_LST): $(TARGET_ELF)
 
 $(TARGET_S19): $(TARGET_ELF)
 	@echo "Creating srec/S19 $(TARGET_S19)" "$(STDOUT)"
-	$(V1) $(OBJCOPY) --output-target=srec $(TARGET_S19)
+	$(V1) $(OBJCOPY) --output-target=srec $< $@
 
 ifeq ($(EXST),no)
 $(TARGET_BIN): $(TARGET_ELF)
