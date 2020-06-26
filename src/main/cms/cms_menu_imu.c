@@ -73,6 +73,9 @@ static uint8_t rateProfileIndex;
 static char rateProfileIndexString[MAX_RATE_PROFILE_NAME_LENGTH + 5];
 static controlRateConfig_t rateProfile;
 
+static uint16_t errorBoost;
+static uint8_t errorBoostLimit;
+
 static const char * const osdTableThrottleLimitType[] = {
     "OFF", "SCALE", "CLIP"
 };
@@ -162,6 +165,8 @@ static const void *cmsx_PidRead(void)
         tempPid[i][2] = pidProfile->pid[i].D;
         tempPidF[i] = pidProfile->pid[i].F;
     }
+    errorBoost = pidProfile->errorBoost;
+    errorBoostLimit = pidProfile->errorBoostLimit;
 
     return NULL;
 }
@@ -188,6 +193,9 @@ static const void *cmsx_PidWriteback(displayPort_t *pDisp, const OSD_Entry *self
         pidProfile->pid[i].D = tempPid[i][2];
         pidProfile->pid[i].F = tempPidF[i];
     }
+    pidProfile->errorBoost = errorBoost;
+    pidProfile->errorBoostLimit = errorBoostLimit;
+
     pidInitConfig(currentPidProfile);
 
     return NULL;
@@ -212,7 +220,10 @@ static const OSD_Entry cmsx_menuPidEntries[] =
     { "YAW   D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][2],   0, 200, 1 }, 0 },
     { "YAW   F", OME_UINT16, NULL, &(OSD_UINT16_t){ &tempPidF[PID_YAW],   0, 2000, 1 }, 0 },
 
-    { "BACK", OME_Back, NULL, NULL, 0 },
+    { "NLPID BOOST", OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoost,      0,  100,  5}, 0 },
+    { "BOOST LIMIT", OME_UINT8, NULL, &(OSD_UINT8_t){ &errorBoostLimit,   0,  250,  1}, 0 },
+
+	{ "BACK", OME_Back, NULL, NULL, 0 },
     { NULL, OME_END, NULL, NULL, 0 }
 };
 

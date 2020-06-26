@@ -141,6 +141,24 @@ static FAST_RAM_ZERO_INIT float airmodeThrottleOffsetLimit;
 
 PG_REGISTER_ARRAY_WITH_RESET_FN(pidProfile_t, PID_PROFILE_COUNT, pidProfiles, PG_PID_PROFILE, 15);
 
+static float       errorBoostLimit = 5.0f;
+static float       errorMultiplier = 1e-9f;
+
+float nlPIDboost( float errorRate, float weight)
+{
+	const float boost = (errorRate * errorRate) * errorMultiplier * weight;
+
+	if (weight > 0.0f && errorRate != 0.0f)
+	{
+		const float ratio = boost / errorRate;
+		if (ratio < errorBoostLimit)
+		{
+			return 1.0f + ratio;
+		}
+	}
+	return 1.0f;
+}
+
 void resetPidProfile(pidProfile_t *pidProfile)
 {
     RESET_CONFIG(pidProfile_t, pidProfile,
@@ -229,6 +247,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dyn_lpf_curve_expo = 5,
         .level_race_mode = false,
         .vbat_sag_compensation = 0,
+        .errorBoost = 35,
+        .errorBoostLimit = 15,
     );
 #ifndef USE_D_MIN
     pidProfile->pid[PID_ROLL].D = 30;
@@ -350,7 +370,13 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 {
     STATIC_ASSERT(FD_YAW == 2, FD_YAW_incorrect); // ensure yaw axis is 2
 
-    if (targetPidLooptime == 0) {
+    float errorBoost = (float) pidProfile->errorBoost;
+    errorBoostLimit = (float) pidProfile->errorBoostLimit;
+
+	errorMultiplier = errorBoost * errorBoost * 1e-9f;
+	errorBoostLimit = errorBoostLimit / 1000.0f;
+
+	if (targetPidLooptime == 0) {
         // no looptime set, so set all the filters to null
         dtermNotchApplyFn = nullFilterApply;
         dtermLowpassApplyFn = nullFilterApply;
@@ -1424,6 +1450,12 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         // -----calculate error rate
         const float gyroRate = gyro.gyroADCf[axis]; // Process variable from gyro output in deg/sec
         float errorRate = currentPidSetpoint - gyroRate; // r - y
+        if (axis != FD_YAW)
+        {
+            const float deflection =  1.5f * getRcDeflectionAbs(axis);
+            const float weight = 1.0f - MIN(deflection, 1.0f);
+            errorRate *= nlPIDboost(errorRate, weight);
+        }
 #if defined(USE_ACC)
         handleCrashRecovery(
             pidProfile->crash_recovery, angleTrim, axis, currentTimeUs, gyroRate,
