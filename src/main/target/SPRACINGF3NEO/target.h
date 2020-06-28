@@ -23,6 +23,10 @@
 #define TARGET_BOARD_IDENTIFIER "SP3N"
 #define USE_TARGET_CONFIG
 
+#ifndef SPRACINGF3NEO_REV
+#define SPRACINGF3NEO_REV 5
+#endif
+
 #define LED0_PIN                PB9
 #define LED1_PIN                PB2
 
@@ -101,12 +105,21 @@
 #define USE_VTX_RTC6705
 
 #define RTC6705_CS_PIN          PF4
+#if (SPRACINGF3NEO_REV >= 5)
 #define RTC6705_SPI_INSTANCE    SPI3
+#else
+#define RTC6705_SPI_INSTANCE    SPI1
+#endif
 #define RTC6705_POWER_PIN       PC3
 
 #define USE_MAX7456
+#if (SPRACINGF3NEO_REV >= 5)
 #define MAX7456_SPI_INSTANCE    SPI3
-#define MAX7456_SPI_CS_PIN      PA15
+#define MAX7456_SPI_CS_PIN      SPI3_NSS_PIN
+#else
+#define MAX7456_SPI_INSTANCE    SPI1
+#define MAX7456_SPI_CS_PIN      SPI1_NSS_PIN
+#endif
 #define MAX7456_DMA_IRQ_HANDLER_ID          DMA2_CH1_HANDLER
 
 #define SPI_SHARED_MAX7456_AND_RTC6705
@@ -121,8 +134,14 @@
 // Note, this is the same DMA channel as UART1_RX. Luckily we don't use DMA for USART Rx.
 #define SDCARD_DMA_CHANNEL_TX               DMA1_Channel5
 
+#if (SPRACINGF3NEO_REV >= 5)
 #define GYRO_1_CS_PIN                    SPI1_NSS_PIN
 #define GYRO_1_SPI_INSTANCE              SPI1
+#else
+#define GYRO_1_CS_PIN                    SPI3_NSS_PIN
+#define GYRO_1_SPI_INSTANCE              SPI3
+#endif
+
 
 #define CURRENT_METER_SCALE_DEFAULT 300
 
