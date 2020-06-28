@@ -192,6 +192,8 @@ typedef struct pidProfile_s {
     uint8_t dyn_lpf_curve_expo;             // set the curve for dynamic dterm lowpass filter
     uint8_t level_race_mode;                // NFE race mode - when true pitch setpoint calcualtion is gyro based in level mode
     uint8_t vbat_sag_compensation;          // Reduce motor output by this percentage of the maximum compensation amount
+    // I_DECAY
+    uint8_t i_decay;						// i-term decay
     uint16_t errorBoost;                    // the weight of the non linear boost
     uint8_t errorBoostLimit;                // percentage of the error for the non linear pid boost
 } pidProfile_t;
