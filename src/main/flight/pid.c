@@ -141,8 +141,6 @@ static FAST_RAM_ZERO_INIT float airmodeThrottleOffsetLimit;
 
 PG_REGISTER_ARRAY_WITH_RESET_FN(pidProfile_t, PID_PROFILE_COUNT, pidProfiles, PG_PID_PROFILE, 15);
 
-#define SIGN(x) ((x > 0.0f) - (x < 0.0f))
-
 static float       errorBoostLimit = 5.0f;
 static float       errorMultiplier = 1e-9f;
 
@@ -253,7 +251,6 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dyn_lpf_curve_expo = 5,
         .level_race_mode = false,
         .vbat_sag_compensation = 0,
-        .i_decay = 6,
         .errorBoost = 35,
         .errorBoostLimit = 15,
     );
@@ -1511,22 +1508,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             axisDynCi = (axis == FD_YAW) ? dynCi : dT; // only apply windup protection to yaw
         }
 
-        // I_DECAY
-        float ITermNew = (Ki * axisDynCi + agGain) * itermErrorRate;
-        if (ITermNew != 0.0f)
-        {
-            if (SIGN(previousIterm) != SIGN(ITermNew))
-            {
-            	const float newVal = ITermNew * (float)pidProfile->i_decay;
-            	if (fabs(previousIterm) > fabs(newVal))
-            	{
-            		ITermNew = newVal;
-            	}
-            }
-        }
-
-        pidData[axis].I = constrainf(previousIterm + ITermNew, -itermLimit, itermLimit);
-        //pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate, -itermLimit, itermLimit);
+        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate, -itermLimit, itermLimit);
 
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;
