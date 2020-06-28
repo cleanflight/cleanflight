@@ -9,6 +9,12 @@ BASE_TARGET   := $(call get_base_target,$(TARGET))
 # silently ignore if the file is not present. Allows for target specific.
 -include $(ROOT)/src/main/target/$(BASE_TARGET)/$(TARGET).mk
 
+ifneq ("$(wildcard $(ROOT)/src/main/target/$(BASE_TARGET)/$(TARGET).h)","")
+    TARGET_INCLUDE := \"$(TARGET).h\" 
+else
+    TARGET_INCLUDE := \"target.h\"
+endif
+
 ifeq ($(filter $(TARGET),$(OPBL_TARGETS)), $(TARGET))
 OPBL            = yes
 endif
@@ -54,4 +60,4 @@ ifneq ($(BASE_TARGET), $(TARGET))
 TARGET_FLAGS  	:= $(TARGET_FLAGS) -D$(BASE_TARGET)
 endif
 
-TARGET_FLAGS  	:= $(TARGET_FLAGS) -D$(TARGET_MCU)
+TARGET_FLAGS  	:= $(TARGET_FLAGS) -D$(TARGET_MCU) -DTARGET_INCLUDE=$(TARGET_INCLUDE)
