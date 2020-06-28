@@ -144,17 +144,13 @@ PG_REGISTER_ARRAY_WITH_RESET_FN(pidProfile_t, PID_PROFILE_COUNT, pidProfiles, PG
 static float       errorBoostLimit = 5.0f;
 static float       errorMultiplier = 1e-9f;
 
-float nlPIDboost( float errorRate, float weight, int axis)
+float nlPIDboost( float errorRate, float weight)
 {
 	const float boost = (errorRate * errorRate) * errorMultiplier * weight;
 
 	if (weight > 0.0f && errorRate != 0.0f)
 	{
-		int index = axis * 2;
-
 		const float ratio = boost / errorRate;
-        DEBUG_SET(DEBUG_NLPID, index, lrintf(ratio * 100.0f));
-        DEBUG_SET(DEBUG_NLPID, index+1, lrintf(errorBoostLimit * 100.0f));
 		if (ratio < errorBoostLimit)
 		{
 			return 1.0f + ratio;
@@ -1456,10 +1452,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         float errorRate = currentPidSetpoint - gyroRate; // r - y
         if (axis != FD_YAW)
         {
-        	// log the output to see the fft and possible unwanted spikes
             const float deflection =  1.5f * getRcDeflectionAbs(axis);
             const float weight = 1.0f - MIN(deflection, 1.0f);
-            errorRate *= nlPIDboost(errorRate, weight, axis);
+            errorRate *= nlPIDboost(errorRate, weight);
         }
 #if defined(USE_ACC)
         handleCrashRecovery(
