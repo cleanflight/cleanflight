@@ -124,7 +124,11 @@
 #endif
 
 #include "target/common_pre.h"
+#ifdef TARGET_INCLUDE
+#include TARGET_INCLUDE
+#else
 #include "target.h"
+#endif
 #include "target/common_deprecated_post.h"
 #include "target/common_post.h"
 #include "target/common_defaults_post.h"
