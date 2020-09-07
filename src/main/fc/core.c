@@ -345,7 +345,7 @@ void updateArmingStatus(void)
 
 #ifdef USE_GPS_RESCUE
         if (gpsRescueIsConfigured()) {
-            if (gpsRescueConfig()->allowArmingWithoutFix || STATE(GPS_FIX) || ARMING_FLAG(WAS_EVER_ARMED)) {
+            if (gpsRescueConfig()->allowArmingWithoutFix || STATE(GPS_FIX) || ARMING_FLAG(WAS_EVER_ARMED) || IS_RC_MODE_ACTIVE(BOXFLIPOVERAFTERCRASH)) {
                 unsetArmingDisabled(ARMING_DISABLED_GPS);
             } else {
                 setArmingDisabled(ARMING_DISABLED_GPS);
@@ -434,7 +434,9 @@ void updateArmingStatus(void)
 void disarm(flightLogDisarmReason_e reason)
 {
     if (ARMING_FLAG(ARMED)) {
-        ENABLE_ARMING_FLAG(WAS_EVER_ARMED);
+        if (!flipOverAfterCrashActive) {
+            ENABLE_ARMING_FLAG(WAS_EVER_ARMED);
+        }
         DISABLE_ARMING_FLAG(ARMED);
         lastDisarmTimeUs = micros();
 
