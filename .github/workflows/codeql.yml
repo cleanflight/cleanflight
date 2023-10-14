@@ -116,6 +116,7 @@ jobs:
         category: "/language:${{matrix.language}}"
 
     - name: Archive CodeQL results
+      if: success() || failure()
       uses: actions/upload-artifact@v3
       with:
         name: codeql-results
